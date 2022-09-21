@@ -40,6 +40,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
     <!-- Main CSS-->
     <link href="css/style.css" rel="stylesheet" media="all">
+    
 </head>
 
 <body>
@@ -49,12 +50,11 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                 <div class="card-heading"></div>
                 <div class="card-body">
                     <h2 class="title"><i class="bi bi-folder-check"></i> Datos de cabecera - Costos de Nacionalizacion</h2>
-                    <form method="POST">
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <div class="rs-select2 js-select-simple select--no-search">
-                                            <select id="proveedor">
+                                            <select id="proveedor" style="width: 283.16px;">
                                             <option selected disabled>PROVEEDOR</option>
                                             <?php
                                         
@@ -72,38 +72,39 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1" type="text" placeholder="CONTENEDOR" id="contenedor">
+                                        <input class="input--style-1 mayusc" type="text" placeholder="CONTENEDOR" id="contenedor">
                                     </div>    
                                 </div>
                             </div>
                             <div class="row row-space">
-                            <div class="col-md-5">
+                                <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1" type="text" placeholder="DESPACHO N°" id="despacho">
+                                        <input class="input--style-1 mayusc" type="text" placeholder="DESPACHO N°" id="despacho" required>
                                     </div>    
                                 </div>
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" placeholder="MATERIAL" id="material" oninput="validarTextoEntrada(this, '[a-záéíóúñ ]')" required>
+                                        <input class="input--style-1 mayusc" type="text" placeholder="MATERIAL" id="material" oninput="validarTextoEntrada(this, '[a-záéíóúñ ]')">
                                     </div>    
                                 </div>
                             </div>
                             <div class="row row-space">
                             <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1" type="text" placeholder="ORIGEN" id="origen">
+                                        <input class="input--style-1 mayusc" type="text" placeholder="ORIGEN" id="origen">
                                     </div>    
                                 </div>
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <input class="input--style-1 js-datepicker" type="text" placeholder="FECHA DE EMBARQUE" id="fechaEmbarque">
                                         <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar"></i>
-                                    </div>                                </div>
+                                    </div>                                
+                                </div>
                             </div>
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1" type="text" placeholder="FACTURA PROVEEDOR" id="facturaProveedor">
+                                        <input class="input--style-1 mayusc" type="text" placeholder="FACTURA PROVEEDOR" id="facturaProveedor">
                                     </div>    
                                 </div>
                                 <div class="col-md-5">
@@ -121,8 +122,8 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <div class="rs-select2 js-select-simple select--no-search">
-                                            <select id="formaPago">
+                                        <div class="rs-select2 js-select-simple select--no-search ">
+                                            <select id="formaPago" style="width: 283.16px;">
                                                 <option disabled="disabled" selected="selected">FORMA DE PAGO</option>
                                                 <option>PAGO ANTICIPADO BBVA</option>
                                                 <option>PAGO VISTA BBVA</option>
@@ -172,14 +173,15 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                             </div>
 
                         <div class="p-t-20">
-                            <button class="btn btn-primary" type="submit">Guardar <i class="bi bi-cloud-download"></i></button>
+                            <button class="btn btn-primary" id="btnSave">Guardar <i class="bi bi-cloud-download"></i></button>
                         </div>
-                    </form>
                 </div>
             </div>
         </div>
     </div>
 
+    
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Jquery JS-->
     <script src="vendor/jquery/jquery.min.js"></script>
     <!-- Vendor JS-->
@@ -198,6 +200,6 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
 <script>
 
-
+   
 
 </script>

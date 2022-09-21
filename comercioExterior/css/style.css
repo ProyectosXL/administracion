@@ -328,7 +328,6 @@
   }
   
   .rs-select2 .select2-container {
-    width: 300px;
     outline: none;
   }
   
@@ -398,6 +397,10 @@
     border: 1px solid #e0e0e0;
     margin-top: 6px;
     overflow: hidden;
+  }
+
+  .select2 .select2-container .select2-container--default{
+    width: 295px;
   }
   
   /* ==========================================================================
