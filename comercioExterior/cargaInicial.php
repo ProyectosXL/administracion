@@ -38,6 +38,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
     <link href="vendor/select2/select2.min.css" rel="stylesheet" media="all">
     <link href="vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
 
+    <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
     <!-- Main CSS-->
     <link href="css/style.css" rel="stylesheet" media="all">
     
@@ -53,7 +54,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <div class="rs-select2 js-select-simple select--no-search">
+                                      <!--   <div class="rs-select2 js-select-simple select--no-search"> -->
                                             <select id="proveedor" style="width: 283.16px;">
                                             <option selected disabled>PROVEEDOR</option>
                                             <?php
@@ -61,25 +62,53 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                             foreach($todosLosProveedores as $valor => $value){
                                             /* $cuenta=$value-> */
                                             ?>
-                                            <option id="proveedor" value="<?= $value->COD_PROVEE; ?>"><?= $value->NOM_PROVEE; ?></option>
+                                            <option id="proveedor-" value="<?= $value->COD_PROVEE; ?>"><?= $value->NOM_PROVEE; ?></option>
                                             <?php   
                                             }
                                             ?>
                                             </select>
                                             <div class="select-dropdown"></div>
-                                        </div>        
+                                        <!-- </div>      -->   
                                     </div>    
                                 </div>
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" placeholder="CONTENEDOR" id="contenedor">
+                                        <input class="input--style-1 mayusc" type="text" placeholder="Nº ORDEN PROVEEDOR" id="contenedor">
                                     </div>    
                                 </div>
                             </div>
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
+                                        <input class="input--style-1 js-datepicker4" type="text" placeholder="FECHA DESP. ADUANA" id="fechaDespacho">
+                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar4"></i>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="input-group">
                                         <input class="input--style-1 mayusc" type="text" placeholder="DESPACHO N°" id="despacho" required>
+                                    </div>    
+                                </div>
+                            </div>
+                            <div class="row row-space">
+                                <div class="col-md-5">
+                                    <div class="input-group">
+                                        <input class="input--style-1 js-datepicker" type="text" placeholder="FECHA DE EMBARQUE" id="fechaEmbarque">
+                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar"></i>
+                                    </div>                                
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="input-group">
+                                        <input class="input--style-1 js-datepicker3" type="text" placeholder="FECHA ARRIBO" id="fechaArribo">
+                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar3"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row row-space">
+                                <div class="col-md-5">
+                                    <div class="input-group">
+                                        <input class="input--style-1 soloNum" type="text" placeholder="NUMERO BL" id="numeroBl">
                                     </div>    
                                 </div>
                                 <div class="col-md-5">
@@ -89,35 +118,49 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>
                             </div>
                             <div class="row row-space">
-                            <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" placeholder="ORIGEN" id="origen">
-                                    </div>    
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 js-datepicker" type="text" placeholder="FECHA DE EMBARQUE" id="fechaEmbarque">
-                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar"></i>
-                                    </div>                                
-                                </div>
-                            </div>
-                            <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" placeholder="FACTURA PROVEEDOR" id="facturaProveedor">
-                                    </div>    
-                                </div>
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <input class="input--style-1 js-datepicker2" type="text" placeholder="FECHA FACTURA" id="fechaFactura">
                                         <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar2"></i>
                                     </div>
                                 </div>
+                                <div class="col-md-5">
+                                    <div class="input-group">
+                                        <input class="input--style-1 mayusc" type="text" placeholder="FACTURA PROVEEDOR" id="facturaProveedor">
+                                    </div>    
+                                </div>
                             </div>
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1 soloNum" type="text" placeholder="ORDEN DE COMPRA" id="ordenCompra">
+                                        <input class="input--style-1 mayusc" type="text" value="CHINA" placeholder="ORIGEN" id="origen">
+                                    </div>    
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="input-group">
+                                        <input class="input--style-1 decimales currencyInput" type="text" placeholder="VALOR F.O.B. U$S" id="valorFobDolar">
+                                    </div>    
+                                </div>
+                            </div>
+                            <div class="row row-space">
+                                <div class="col-md-5">
+                                    <div class="input-group">
+                                        <input class="input--style-1 decimales currencyInput" onkeyup="calcular()" type="text" placeholder="TIPO DE CAMBIO DESPACHO" id="tipoCambio">
+                                    </div>    
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="input-group">
+                                        <input class="input--style-1 decimales" type="text" placeholder="VALOR F.O.B. $" id="valorFobPeso" readonly>
+                                    </div>
+                                </div>      
+                            </div>
+                            <div class="row row-space">
+                                <div class="col-md-5">
+                                    <div class="input-group">
+                                        <!-- <input class="input--style-1 soloNum" type="text" placeholder="ORDEN DE COMPRA" id="ordenCompra"> -->
+                                        <select name="" id="ordenCompra">
+                                            <option value="" disabled selected>ORDEN DE COMPRA</option>
+                                        </select>
                                     </div>    
                                 </div>
                                 <div class="col-md-5">
@@ -125,53 +168,15 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                         <div class="rs-select2 js-select-simple select--no-search ">
                                             <select id="formaPago" style="width: 283.16px;">
                                                 <option disabled="disabled" selected="selected">FORMA DE PAGO</option>
-                                                <option>PAGO ANTICIPADO BBVA</option>
-                                                <option>PAGO VISTA BBVA</option>
+                                                <option>PAGO ANTICIPADO</option>
+                                                <option>PAGO VISTA</option>
+                                                <option>PAGO DIFERIDO</option>
                                             </select>
                                             <div class="select-dropdown"></div>
                                         </div>        
                                     </div>    
                                 </div>
                             </div>
-                            <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 soloNum" type="text" placeholder="NUMERO BL" id="numeroBl">
-                                    </div>    
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 decimales currencyInput" type="text" placeholder="TIPO DE CAMBIO DESPACHO" id="tipoCambio">
-                                    </div>    
-                                </div>
-                            </div>
-                            <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 decimales currencyInput" onchange="calcular()" type="text" placeholder="VALOR F.O.B. U$S" id="valorFobDolar">
-                                    </div>    
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 decimales currencyInput" type="text" placeholder="VALOR F.O.B. $" id="valorFobPeso" readonly>
-                                    </div>
-                                </div>      
-                            </div>
-                            <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 js-datepicker3" type="text" placeholder="FECHA ARRIBO" id="fechaArribo">
-                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar3"></i>
-                                    </div>
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 js-datepicker4" type="text" placeholder="FECHA DESP. ADUANA" id="fechaDespacho">
-                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar4"></i>
-                                    </div>
-                                </div>
-                            </div>
-
                         <div class="p-t-20">
                             <button class="btn btn-primary" id="btnSave">Guardar <i class="bi bi-cloud-download"></i></button>
                         </div>

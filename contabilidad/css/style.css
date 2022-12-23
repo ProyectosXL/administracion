@@ -1,0 +1,90 @@
+
+body{
+    width: 99%;
+    margin: 10px 0 0 10px;
+    overflow-x: hidden;
+}
+
+table{
+    font-size: 0.66em;
+}
+
+h2{
+    margin: 15px 0 15px 10px;
+    font-weight: bold;
+}
+
+.table .thead-dark th {
+    color: wheat;
+    background-color: #343a40;
+}
+
+.btn-success{
+    margin-left: 10rem;
+}
+
+.biHeader{
+    font-size: 18px;
+}
+
+.form-check-label{
+    font-size: 14px;
+}
+
+#titleCheck{
+    font-weight: bold;
+}
+
+#contCheck{
+    position: relative;
+    margin-left: 5.5%;
+}
+
+#titlePrincipal{
+    margin-top: 1.7rem;
+}
+
+#btnSend{
+    margin-left: 2rem;
+}
+
+#btnAmort{
+    margin-left: 0.0rem;
+}
+
+#amortiza{
+    width: 2.5rem;
+}
+
+.hasta{
+    position: relative;
+    margin-top: -69px;
+    margin-left: 8.5rem;
+}
+
+.form-control-sm{
+    width: 130px;
+}
+
+#search{
+    position: relative;
+    margin-top: -59px;
+    margin-left: 17rem;
+}
+
+.btn-group{
+    height: 55px;
+    margin-top: 1.2em;
+    /* position: relative; */
+    
+}
+
+#btnaddrow{
+    position: relative;
+    margin-left: 97%;
+}
+
+.alert-danger{
+    margin-top: 0.5rem;
+    height:5rem;
+}

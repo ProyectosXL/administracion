@@ -434,7 +434,7 @@
   
   .card-1 .card-body {
     padding: 0 90px;
-    padding-top: 55px;
+    padding-top: 25px;
     padding-bottom: 65px;
   }
   
@@ -446,3 +446,23 @@
     }
   }
   
+  /******************select***********************/
+
+  #proveedor,#ordenCompra
+  {
+    padding: 8.2px 0;
+    color: #666;
+    outline: none;
+    margin: 0;
+    border: none;
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+    width: 100%;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  
+  .icon{
+    font-size: x-large;
+  }
