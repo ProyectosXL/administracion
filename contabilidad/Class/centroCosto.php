@@ -6,7 +6,7 @@ class CentroCosto
 
     function __construct(){
 
-        require_once './../../class/conexion.php';
+        require_once __DIR__.'/../../class/conexion.php';
         $cid = new Conexion();
         $this->cid_central = $cid->conectar('servidor');
 

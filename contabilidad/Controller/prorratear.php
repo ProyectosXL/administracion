@@ -13,7 +13,7 @@ class prorratear
     private function ejecutarQuery($sqlEnviado)
     {
         try {
-            require_once './../../class/conexion.php';
+            require_once __DIR__.'/../../class/conexion.php';
 
             $cid = new Conexion();
             $cid_central = $cid->conectar('servidor');
