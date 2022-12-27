@@ -14,7 +14,7 @@ class Conexion
         try {
             $conexion_central = array("Database" => $this->database, "UID" => $this->user, "PWD" => $this->pass, "CharacterSet" => $this->character);
             $cid_central = sqlsrv_connect($this->servidor, $conexion_central);
-
+            
             if ( $cid_central === false) {
                 die(print_r(sqlsrv_errors(), true));
             } else {

@@ -7,6 +7,7 @@ $proveedor = new Proveedor();
 $todosLosProveedores = $proveedor->traerProveedores();
 $todosLosProveedores = json_decode($todosLosProveedores);
 
+
 ?>
 
 <!DOCTYPE html>

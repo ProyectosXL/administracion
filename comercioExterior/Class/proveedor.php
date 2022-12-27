@@ -7,20 +7,19 @@ class Proveedor
     private function retornarArray($sqlEnviado)
     {
 
-        require_once 'conexion.php';
-
+        require_once './../../Class/conexion.php';
         $cid = new Conexion();
-        $cid_central = $cid->conectar();
+        $cid_central = $cid->conectar('central');
         $sql = $sqlEnviado;
-
+        
         $stmt = sqlsrv_query($cid_central, $sql);
-
+        
         $rows = array();
-
+        
         while ($v = sqlsrv_fetch_array($stmt)) {
             $rows[] = $v;
         }
-
+        
 
         return $rows;
     }
@@ -28,15 +27,20 @@ class Proveedor
 
     public function traerProveedores()
     {
-
-        $sql = "SELECT COD_PROVEE, NOM_PROVEE FROM CPA01 WHERE COD_PROVEE LIKE 'Z%' ORDER BY 2 ASC
-        ";
-
-        $rows = $this->retornarArray($sql);
         
-        $myJSON = json_encode($rows);
+        $sql = "SELECT COD_PROVEE, NOM_PROVEE FROM CPA01 WHERE COD_PROVEE LIKE 'Z%' ORDER BY 2 ASC";
+        
+        try{
+            $rows = $this->retornarArray($sql);
+            
+            $myJSON = json_encode($rows);
+            return $myJSON;
 
-        return $myJSON;
+        } catch (\Throwable $th) {
+
+            print_r($th);
+
+        }
 
     }
 

@@ -1,8 +1,8 @@
 <?php
-include 'conexion.php';
+require_once './../../Class/conexion.php';
 
 $cid = new Conexion();
-$cid_central = $cid->conectar();
+$cid_central = $cid->conectar('servidor');
 
 if (isset($_POST['codRubro'])) {
     try {
