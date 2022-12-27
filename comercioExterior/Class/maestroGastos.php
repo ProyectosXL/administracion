@@ -5,7 +5,7 @@ class Gastos
 {
     function __construct() {
 
-        require_once './../../Class/conexion.php';
+        require_once './../../class/conexion.php';
         $cid = new Conexion();
         $this->cid_central = $cid->conectar('central');
 

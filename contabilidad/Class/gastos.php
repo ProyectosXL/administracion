@@ -8,7 +8,7 @@ class Gastos
 
     function __construct(){
 
-        require_once './../../Class/conexion.php';
+        require_once './../../class/conexion.php';
         $cid = new Conexion();
         $this->cid_central = $cid->conectar('servidor');
 
@@ -47,7 +47,7 @@ class Gastos
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
         try{
-            
+
             $rows = array();
     
             while( $v = sqlsrv_fetch_array( $stmt) ) {

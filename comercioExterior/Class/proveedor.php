@@ -7,7 +7,7 @@ class Proveedor
     private function retornarArray($sqlEnviado)
     {
 
-        require_once './../../Class/conexion.php';
+        require_once './../../class/conexion.php';
         $cid = new Conexion();
         $cid_central = $cid->conectar('central');
         $sql = $sqlEnviado;
@@ -29,7 +29,7 @@ class Proveedor
     {
         
         $sql = "SELECT COD_PROVEE, NOM_PROVEE FROM CPA01 WHERE COD_PROVEE LIKE 'Z%' ORDER BY 2 ASC";
-        
+
         try{
             $rows = $this->retornarArray($sql);
             
