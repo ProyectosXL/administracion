@@ -59,7 +59,6 @@ function calcularTotales()
 }
 
 let sacarParseo = (string) => {
-  console.log("string",string);
   numero = convertToNumber(string);
   valorEnFloat = numero.replace(",",".");
   valor = parseFloat(valorEnFloat);
