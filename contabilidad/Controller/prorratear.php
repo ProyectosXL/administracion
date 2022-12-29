@@ -4,6 +4,8 @@
 $desde = $_GET['desde'];
 $hasta = $_GET['hasta'];
 
+$p = new prorratear();
+$p->prorratearRegistros($desde, $hasta);
 // $desde = '2022-01-01';
 // $hasta = '2022-01-31';
 
@@ -33,12 +35,25 @@ class prorratear
 
     public function prorratearRegistros($desde, $hasta)
     {
+        try {
+            require_once '../Class/conexion.php';
+            $cid = new Conexion();
+            $cid_central = $cid->conectar();
 
-        $sql = "EXEC RO_SP_PRORRATEAR_INTEGRAL '$desde', '$hasta'";
+            $sql = "DECLARE @ResultForPos int;
+            EXEC @ResultForPos = RO_SP_PRORRATEAR_INTEGRAL ?, ?
+            SELECT @ResultForPos as valor";
 
-        $stmt = sqlsrv_query($cid_central, $sql);
-
-        print(sqlsrv_next_result($stmt));
-
+            $params = array($desde, $hasta);
+            $stmt = sqlsrv_query($cid_central, $sql, $params);
+            $next_result = sqlsrv_next_result($stmt);
+            $next_result = sqlsrv_next_result($stmt);
+            $next_result = sqlsrv_next_result($stmt);
+            $salida['resultado']=sqlsrv_rows_affected($stmt);
+            /* echo "Rows affected: " . sqlsrv_rows_affected($stmt) . "<br />"; */
+            echo json_encode($salida);
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
     }
 }
