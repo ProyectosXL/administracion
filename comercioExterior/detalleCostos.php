@@ -71,7 +71,7 @@ $todosLosGastos = $gastos->traerGastos();
                                     <td id="id"><?=  $key['ID_MG']?></td>
                                     <td><?=  $key['GASTOS']?></td>
                                     <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)"></input></td>
-                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  id="tipoCambio" value="<?= ($valor <= 5) ? $_GET['tipoCambio'] : "0" ?>"></input></td>
+                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($valor <= 5) ? $_GET['tipoCambio'] : "0" ?>"></input></td>
                                     <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly></input></td>
                                     <td><input style="text-align:center"></input></td>
                                     <td><input></input></td>
