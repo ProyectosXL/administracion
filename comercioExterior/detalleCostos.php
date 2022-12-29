@@ -43,9 +43,10 @@ $todosLosGastos = $gastos->traerGastos();
                         </div>
                         <div class="row justify-content-md-center">
                             <div class="col-md-auto"><i class="bi bi-airplane-fill icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Nº Orden Proveedor</label><?= ' '.$_GET['contenedor']?></h5></div>
-                            <div class="col-md-auto"><i class="bi bi-cash icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Valor F.O.B. $: </label><?= ' '.$_GET['valorFobPeso']?></h5></div>
-                            <div class="col-md-auto"><i class="bi bi-cash-coin icon"></i><h5 class="mb-1"><label  id="totalGastos" style="font-weight: bold;">Gastos $:</label></h5></div>
-                            <div class="col-md-auto"><i class="bi bi-percent icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Costos nac.: </label> 64.23%</h5></div>
+                            <div class="col-md-auto"><i class="bi bi-cash icon"></i><h5 class="mb-1" id ="valorPesosFob" attr-value = "<?=  $_GET['valorFobPeso'] ?>"><label style="font-weight: bold;" >Valor F.O.B. $: </label><?= ' '.$_GET['valorFobPeso']?></h5></div>
+                            <div id="idEncabezado" attr-value="<?= $_GET['idEncabezado'] ?>" hidden></div>
+                            <div class="col-md-auto"><i class="bi bi-cash-coin icon"></i><h5 class="mb-1"><label  id="totalGastosDetalle" style="font-weight: bold;">Gastos $:</label></h5></div>
+                            <div class="col-md-auto"><i class="bi bi-percent icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Costos nac.: </label> <span id="porcentaje"></span></h5></div>
                         </div>
                     </div>
                     <h2 class="title"><i class="bi bi-folder-check"></i> Detalle Costos de Nacionalizacion</h2>
@@ -69,9 +70,9 @@ $todosLosGastos = $gastos->traerGastos();
                                 <tr>
                                     <td id="id"><?=  $key['ID_MG']?></td>
                                     <td><?=  $key['GASTOS']?></td>
-                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar"></input></td>
-                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  id="tipoCambio" value="0"></input></td>
-                                    <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" onchange="totalGastos();" readonly></input></td>
+                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)"></input></td>
+                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  id="tipoCambio" value="<?= ($valor <= 6) ? $_GET['tipoCambio'] : "0" ?>"></input></td>
+                                    <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly></input></td>
                                     <td><input style="text-align:center"></input></td>
                                     <td><input></input></td>
                                 </tr>
@@ -83,12 +84,13 @@ $todosLosGastos = $gastos->traerGastos();
                                     <td></td>
                                     <td></td>
                                     <td></td>
-                                    <td id="totalGastos"></td>
+                                    <td id="totalGastosDetalleR" value="0"></td>
                                     <td></td>
                                     <td></td>
                                 </tr>
                             </tbody>
                         </table>
+                        <div><button class="btn btn-primary" id="btnSaveDetalle">Guardar <i class="bi bi-cloud-download"></i></button></div>
                 </div>
             </div>
         </div>

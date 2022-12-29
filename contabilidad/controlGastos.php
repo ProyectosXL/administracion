@@ -5,7 +5,6 @@ include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
 
 $gastos = new Gastos();
-
 $rubroContable = new RubroContable();
 $todosLosRubros = $rubroContable->traerRubrosContables();
 $todosLosRubros = json_decode($todosLosRubros);
