@@ -4,10 +4,6 @@ let btnSave = document.querySelector("#btnSaveDetalle");
 
 function iniciarEscucha() {
   /* Gastos.value=0; */
-  let inputTipoCambio = document.querySelectorAll(".tipoCambio");
-  inputTipoCambio.forEach((input) => {
-    input.addEventListener("keyup", calcular);
-  });
 }
 
 const parseNumber = (value)=>{
@@ -23,41 +19,6 @@ const convertToNumber = (numero)=>{
 
 }
 
-//Calcula valor FOB en pesos según cotización de tipoCambio//
-function calcular(e) {
-  let tipoCambio = parseFloat(e.target.value);
-  
-  let valorFobDolar = parseFloat(
-    e.target.parentElement.parentElement.children[2].children[0].value
-  );
-  
-  let valorFobPeso = tipoCambio * valorFobDolar;
-  if (tipoCambio == "") {
-    e.target.parentElement.parentElement.children[4].children[0].value =
-    parseFloat(valorFobDolar);
-  } else {
-    e.target.parentElement.parentElement.children[4].children[0].value =
-    parseFloat(valorFobPeso);
-  }
-  calcularTotales();
-
-}
-
-
-function calcularTotales()
-{
-    let importes=document.querySelectorAll('.importe');
-    let sum=0;
-    importes.forEach(importe=>{
-        if(importe.value!==''){
-        sum = (parseFloat(sum))+parseFloat(importe.value)
-}});
-    concat = 'Gastos: $'+parseNumber(sum);
-    // 'Gastos:'+new Intl.NumberFormat("es-ar",{style: "currency", currency: "ARS", minimumFractionDigits: 0}).format(sum);
-    Gastos.textContent=concat;
-    
-}
-
 let sacarParseo = (string) => {
   numero = convertToNumber(string);
   valorEnFloat = numero.replace(",",".");
@@ -68,15 +29,22 @@ let sacarParseo = (string) => {
 
 const iniciarCalculo = (data)=>{
 
-  let tipoCambio = parseFloat(data.parentElement.parentElement.childNodes[7].childNodes[0].value)
-  
+  data = data.parentElement.parentElement.childNodes[5].childNodes[0];
+  let tipoCambio = (data.parentElement.parentElement.childNodes[7].childNodes[0].value)
+  tipoCambio = tipoCambio.replace(",",".");
+  tipoCambio = parseFloat(tipoCambio);
+
   let valorFobDolar = (data.value);
+
   let NumberFobDolar = valorFobDolar.replace(",",".");
   let valorFobPeso = NumberFobDolar * tipoCambio;
 
   if( tipoCambio == 0 ){
     valorFobPeso = valorFobDolar
+    valorFobPeso = valorFobPeso.replace(",",".");
+    valorFobPeso = parseFloat(valorFobPeso);
   };
+  
 
   data.parentElement.parentElement.childNodes[9].childNodes[0].value = parseFloat(valorFobPeso).toFixed(2);
 
