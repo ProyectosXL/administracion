@@ -23,6 +23,7 @@ $datosDeCabezera['fechaArribo']= $_POST['fechaArribo'];
 $datosDeCabezera['fechaDespacho']= $_POST['fechaDespacho'];
 
 $result = $cid->insertarEncabezado($datosDeCabezera);
+echo ($result);
 
 
 

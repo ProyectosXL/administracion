@@ -2,7 +2,6 @@
 <?php
 
 class Conexion{
-
     function __construct(){
 
         require_once(__DIR__.'/classEnv.php');
@@ -17,7 +16,7 @@ class Conexion{
         $this->user = $this->envVars['USER'];
         $this->pass = $this->envVars['PASS'];
         $this->character = $this->envVars['CHARACTER'];
-        
+
     }
 
     private function servidor($nameServer) {

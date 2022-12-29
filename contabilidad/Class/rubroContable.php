@@ -7,7 +7,7 @@ class RubroContable
 
         require_once __DIR__.'/../../class/conexion.php';
         $cid = new Conexion();
-        $this->cid_central = $cid->conectar('servidor');
+        $this->cid_central = $cid->conectar('central');
 
     } 
 
