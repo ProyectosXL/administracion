@@ -79,9 +79,6 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <input class="form-check-input" type="checkbox" onclick="checkControladoAll(this);" value="" id="defaultCheck2">
                         <label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label>
                     </div>
-                    <div>
-                        <strong>Nombre: </strong><p id="nombre"></p>
-                    </div>
                 </div>
             </div>     
         </div>

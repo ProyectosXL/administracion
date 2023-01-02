@@ -70,7 +70,7 @@ function guardarCabecera(){
      el.parentElement.style.border="";
  }
 
- selected.forEach(el=>{ if(el.value == '' || el.value.includes("PROVEEDOR")|| el.value.includes("FORMA") ){
+ selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")|| el.value.includes("FORMA DE PAGO") ){
      el.parentElement.style.border="1px solid red";
      b=1;
  }else{
