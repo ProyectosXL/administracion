@@ -3,7 +3,7 @@
 try {
     require_once __DIR__.'/../../class/conexion.php';
     $cid = new Conexion();
-    $cid_central = $cid->conectar('servidor');
+    $cid_central = $cid->conectar('central');
 
     $fecha = $_POST['fecha'];
     $codCentro = $_POST['codCentro'];

@@ -2,7 +2,7 @@
 require_once __DIR__.'/../../class/conexion.php';
 
 $cid = new Conexion();
-$cid_central = $cid->conectar('servidor');
+$cid_central = $cid->conectar('central');
 
 if (isset($_POST['codRubro'])) {
     try {
