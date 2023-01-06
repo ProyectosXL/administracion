@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", iniciarEscucha);
 let Gastos = document.getElementById("totalGastos");
-let btnSave = document.querySelector("#btnSaveDetalle");
+
 
 function iniciarEscucha() {
   /* Gastos.value=0; */
@@ -19,8 +19,11 @@ const convertToNumber = (numero)=>{
 
 }
 
-let sacarParseo = (string) => {
-  numero = convertToNumber(string);
+let sacarParseo = (string,isNumber = false) => {
+  numero  = string;
+  if(isNumber == false){
+    numero = convertToNumber(string);
+  }
   valorEnFloat = numero.replace(",",".");
   valor = parseFloat(valorEnFloat);
 
@@ -75,7 +78,7 @@ const totalGastos = ()=> {
   totalResult.textContent ='Gastos: $'+ parseNumber(sum);
 
   valor = sacarParseo(valorPesosFob);
-
+  
   let result = ((sum / valor)*100)
   let numberResult = (parseFloat(result).toFixed(2));
   porcentajeSpan.textContent = numberResult + "%";
@@ -98,38 +101,45 @@ const calcularSobreFob = (data)=>{
 
 }
 
-btnSave.addEventListener("click",()=>{
+if(document.querySelector("#btnSaveDetalle") != null){
 
-  let importeEnDolares =  document.querySelector("#valorPesosFob").getAttribute("attr-value") ;
-  let importeTotalDolares = sacarParseo(importeEnDolares);
+  let btnSave = document.querySelector("#btnSaveDetalle");
 
-  let tipoCambio = document.querySelector(".tipoCambio").value;
 
-  let importeEnPesos = document.querySelector("#totalGastosDetalle").getAttribute("attr-value");
-  let importeTotalEnPesos = sacarParseo(importeEnPesos);
+  btnSave.addEventListener("click",()=>{
+    let rows = document.querySelectorAll("#id");
+    let arrayDatos = [];
+    let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
+    rows.forEach((e , x) => {
 
-  let porcentaje = document.querySelector("#porcentaje").getAttribute("attr-value");
-  let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
-  
-  $.ajax({
-    url: 'Controller/insertarDetalle.php',
-    method: 'POST',
-    data: {
-      importeEnDolares:importeTotalDolares,
-      tipoCambio:tipoCambio,
-      importeEnPesos:importeTotalEnPesos,
-      porcentaje:porcentaje,
-      idEncabezado:idEncabezado
-      
-    },
-  });
-  Swal.fire({
-    title: 'Detalle guardado!',
-    icon: 'success',
-    showDenyButton: true,
-    showCancelButton: false,
-    showConfirmButton: false,
-    denyButtonText: `Volver`,
-    })
+    let rowsElement = e.parentElement;
+    let Gastos = rowsElement.childNodes[3].textContent;
+    let importeEnDolares = sacarParseo(rowsElement.childNodes[5].childNodes[0].value,true);
+    let tipoCambio = sacarParseo(rowsElement.childNodes[7].childNodes[0].value,true);
+    let importeEnPesos = sacarParseo(rowsElement.childNodes[9].childNodes[0].value,true);
+    let sobreFob = rowsElement.childNodes[11].childNodes[0].textContent.replace("%","");
+    let observaciones = rowsElement.childNodes[13].childNodes[0].value
 
-})
+    arrayDatos [x] = [Gastos,importeEnDolares,tipoCambio,importeEnPesos,sobreFob,observaciones]
+
+    });
+
+    arrayDatos[16] = idEncabezado;
+    $.ajax({
+      url: 'Controller/insertarDetalle.php',
+      method: 'POST',
+      data:{
+        "array":arrayDatos
+      },
+    });
+    Swal.fire({
+      title: 'Detalle guardado!',
+      icon: 'success',
+      showDenyButton: true,
+      showCancelButton: false,
+      showConfirmButton: false,
+      denyButtonText: `Volver`,
+      })
+
+  })
+}

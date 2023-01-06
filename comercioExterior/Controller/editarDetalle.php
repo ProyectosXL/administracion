@@ -13,10 +13,10 @@ foreach($datosDetalle as $key => $value){
     $newArray[$key]['importeEnPesos']= $value[3];
     $newArray[$key]['sobreFob']= $value[4];
     $newArray[$key]['observaciones']= $value[5];
-    
+    $newArray[$key]['idDetalle']= $value[6];
+    $newArray[$key]['idEncabezado'] = $value[7];
 }
-
-$result = $cid->insertarDetalle($newArray,$datosDetalle[16]);
+$result = $cid->editarDetalle($newArray);
 echo ($result);
 
 

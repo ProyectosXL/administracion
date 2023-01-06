@@ -65,6 +65,9 @@ h2{
 .form-control-sm{
     width: 130px;
 }
+.form-control-s{
+    width: 50px;
+}
 
 #search{
     position: relative;
