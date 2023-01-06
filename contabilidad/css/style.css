@@ -69,7 +69,7 @@ h2{
 #search{
     position: relative;
     margin-top: -59px;
-    margin-left: 17rem;
+    margin-left: 25.5rem;
 }
 
 .btn-group{
@@ -87,4 +87,10 @@ h2{
 .alert-danger{
     margin-top: 0.5rem;
     height:5rem;
+}
+
+#estado{
+    position: relative;
+    margin-top: -3.92rem;
+    margin-left: 17rem;
 }

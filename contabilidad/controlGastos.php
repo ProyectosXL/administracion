@@ -48,20 +48,25 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <div id="titlePrincipal" class="col-md-auto">
                     <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos - Informe Económico</h3>
                 </div>
-                <div class="form-row">
+                <div class="form-row" style="width: 30%;">
                     <form action="">
                         <div class="desde">
-                            <label class="col-sm col-form-label">Desde:</label>
+                            <label class="col- col-form-label">Desde:</label>
                             <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
                         </div>
 
                         <div class="hasta">
-                            <label class="col-sm col-form-label">Hasta:</label>
+                            <label class="col- col-form-label">Hasta:</label>
                             <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
                         </div>
-                        <!-- <div class="form-row mt-auto"> -->
+                        <div id="estado">
+                            <label>Estado:</label>
+                            <select class="form-control form-control-sm" name="estado">
+                                <option value="" selected></option>
+                                <option value="0">Pendiente</option>
+                            </select>
+                        </div>
                             <button type="submit" name="submit" class="btn btn-primary" id="search">Buscar <i class="bi bi-search"></i></button>
-                        <!-- </div> -->
                     </form>
                 </div>
                 <div class="btn-group">
@@ -87,7 +92,13 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
         if(isset($_GET['desde'])){
         
-            $todosLosGastos = $gastos->traerGastos($desde, $hasta);
+            if (isset($_GET['estado'])!= ''){
+                $estado = $_GET['estado'];}
+                else {
+                $estado = '%';
+                }
+        
+            $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado);
 
         ?>
 
