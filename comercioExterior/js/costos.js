@@ -104,7 +104,7 @@ const calcularSobreFob = (data)=>{
 if(document.querySelector("#btnSaveDetalle") != null){
 
   let btnSave = document.querySelector("#btnSaveDetalle");
-
+  
 
   btnSave.addEventListener("click",()=>{
     let rows = document.querySelectorAll("#id");
@@ -140,6 +140,11 @@ if(document.querySelector("#btnSaveDetalle") != null){
       showConfirmButton: false,
       denyButtonText: `Volver`,
       })
+      .then((e) => {
+
+        window.location = "index.php"
+      })
+
 
   })
 }
