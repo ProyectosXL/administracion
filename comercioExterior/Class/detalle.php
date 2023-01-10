@@ -10,21 +10,53 @@ class Detalle{
 
     }
      
-    public function insertarDetalle($datosDetalle){   
-        
-        $sql = "INSERT INTO RO_T_IMPORTACIONES_DETALLE(ID_MG, IMPORTE_U\$S, TIPO_CAMBIO, IMPORTE_$, PORCENTAJE, OBSERVACIONES, FECHA_MOD)
-            VALUES ('".$datosDetalle['idEncabezado']."','".$datosDetalle['importeEnDolares']."','".$datosDetalle['tipoCambio']."','".$datosDetalle['importeEnPesos']."','".$datosDetalle['porcentaje']."','',GETDATE())
-        ;";
+    public function insertarDetalle($datosDetalle,$idCabezera){   
+        foreach ($datosDetalle as $dato) {
 
-        try {
+            $sql = "INSERT INTO RO_T_IMPORTACIONES_DETALLE(ID_MG, IMPORTE_U\$S, TIPO_CAMBIO, IMPORTE_$, PORCENTAJE, OBSERVACIONES, FECHA_MOD,GASTOS)
+                VALUES ('".$idCabezera."','".$dato['importeEnDolares']."','".$dato['tipoCambio']."','".$dato['importeEnPesos']."','".$dato['sobreFob']."','".$dato['observaciones']."',GETDATE(),'".$dato['Gastos']."')
+            ;";
 
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            try {
+                
+                $stmt = sqlsrv_query($this->cid_central, $sql);
 
-        } catch (Exception $e) {
-
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+            } catch (Exception $e) {
     
+                echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        
+            }
         }
+
+
+    }  
+    public function editarDetalle($datosDetalle){   
+        foreach ($datosDetalle as $dato) {
+
+            $sql = " UPDATE RO_T_IMPORTACIONES_DETALLE SET 
+                [IMPORTE_U\$S] = '".$dato['importeEnDolares']."', 
+                TIPO_CAMBIO ='".$dato['tipoCambio']."', 
+                IMPORTE_$ = '".$dato['importeEnPesos']."' , 
+                PORCENTAJE = '".$dato['sobreFob']."', 
+                OBSERVACIONES = '".$dato['observaciones']."', 
+                FECHA_MOD = GETDATE(),
+                GASTOS = '".$dato['Gastos']."'
+                WHERE ID_MG ='".$dato['idEncabezado']."' AND ID ='".$dato['idDetalle']."'";
+
+            try {
+                
+                $stmt = sqlsrv_query($this->cid_central, $sql);
+                
+            } catch (Exception $e) {
+                
+                echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        
+            }
+        }
+        // var_dump($datosDetalle);
+        // die();
+
+
 
     }  
 

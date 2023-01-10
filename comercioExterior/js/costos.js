@@ -1,13 +1,9 @@
 document.addEventListener("DOMContentLoaded", iniciarEscucha);
 let Gastos = document.getElementById("totalGastos");
-let btnSave = document.querySelector("#btnSaveDetalle");
+
 
 function iniciarEscucha() {
   /* Gastos.value=0; */
-  let inputTipoCambio = document.querySelectorAll(".tipoCambio");
-  inputTipoCambio.forEach((input) => {
-    input.addEventListener("keyup", calcular);
-  });
 }
 
 const parseNumber = (value)=>{
@@ -23,44 +19,11 @@ const convertToNumber = (numero)=>{
 
 }
 
-//Calcula valor FOB en pesos según cotización de tipoCambio//
-function calcular(e) {
-  let tipoCambio = parseFloat(e.target.value);
-  
-  let valorFobDolar = parseFloat(
-    e.target.parentElement.parentElement.children[2].children[0].value
-  );
-  
-  let valorFobPeso = tipoCambio * valorFobDolar;
-  if (tipoCambio == "") {
-    e.target.parentElement.parentElement.children[4].children[0].value =
-    parseFloat(valorFobDolar);
-  } else {
-    e.target.parentElement.parentElement.children[4].children[0].value =
-    parseFloat(valorFobPeso);
+let sacarParseo = (string,isNumber = false) => {
+  numero  = string;
+  if(isNumber == false){
+    numero = convertToNumber(string);
   }
-  calcularTotales();
-
-}
-
-
-function calcularTotales()
-{
-    let importes=document.querySelectorAll('.importe');
-    let sum=0;
-    importes.forEach(importe=>{
-        if(importe.value!==''){
-        sum = (parseFloat(sum))+parseFloat(importe.value)
-}});
-    concat = 'Gastos: $'+parseNumber(sum);
-    // 'Gastos:'+new Intl.NumberFormat("es-ar",{style: "currency", currency: "ARS", minimumFractionDigits: 0}).format(sum);
-    Gastos.textContent=concat;
-    
-}
-
-let sacarParseo = (string) => {
-  console.log("string",string);
-  numero = convertToNumber(string);
   valorEnFloat = numero.replace(",",".");
   valor = parseFloat(valorEnFloat);
 
@@ -69,15 +32,22 @@ let sacarParseo = (string) => {
 
 const iniciarCalculo = (data)=>{
 
-  let tipoCambio = parseFloat(data.parentElement.parentElement.childNodes[7].childNodes[0].value)
-  
+  data = data.parentElement.parentElement.childNodes[5].childNodes[0];
+  let tipoCambio = (data.parentElement.parentElement.childNodes[7].childNodes[0].value)
+  tipoCambio = tipoCambio.replace(",",".");
+  tipoCambio = parseFloat(tipoCambio);
+
   let valorFobDolar = (data.value);
+
   let NumberFobDolar = valorFobDolar.replace(",",".");
   let valorFobPeso = NumberFobDolar * tipoCambio;
 
   if( tipoCambio == 0 ){
     valorFobPeso = valorFobDolar
+    valorFobPeso = valorFobPeso.replace(",",".");
+    valorFobPeso = parseFloat(valorFobPeso);
   };
+  
 
   data.parentElement.parentElement.childNodes[9].childNodes[0].value = parseFloat(valorFobPeso).toFixed(2);
 
@@ -108,7 +78,7 @@ const totalGastos = ()=> {
   totalResult.textContent ='Gastos: $'+ parseNumber(sum);
 
   valor = sacarParseo(valorPesosFob);
-
+  
   let result = ((sum / valor)*100)
   let numberResult = (parseFloat(result).toFixed(2));
   porcentajeSpan.textContent = numberResult + "%";
@@ -131,38 +101,50 @@ const calcularSobreFob = (data)=>{
 
 }
 
-btnSave.addEventListener("click",()=>{
+if(document.querySelector("#btnSaveDetalle") != null){
 
-  let importeEnDolares =  document.querySelector("#valorPesosFob").getAttribute("attr-value") ;
-  let importeTotalDolares = sacarParseo(importeEnDolares);
-
-  let tipoCambio = document.querySelector(".tipoCambio").value;
-
-  let importeEnPesos = document.querySelector("#totalGastosDetalle").getAttribute("attr-value");
-  let importeTotalEnPesos = sacarParseo(importeEnPesos);
-
-  let porcentaje = document.querySelector("#porcentaje").getAttribute("attr-value");
-  let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
+  let btnSave = document.querySelector("#btnSaveDetalle");
   
-  $.ajax({
-    url: 'Controller/insertarDetalle.php',
-    method: 'POST',
-    data: {
-      importeEnDolares:importeTotalDolares,
-      tipoCambio:tipoCambio,
-      importeEnPesos:importeTotalEnPesos,
-      porcentaje:porcentaje,
-      idEncabezado:idEncabezado
-      
-    },
-  });
-  Swal.fire({
-    title: 'Detalle guardado!',
-    icon: 'success',
-    showDenyButton: true,
-    showCancelButton: false,
-    showConfirmButton: false,
-    denyButtonText: `Volver`,
-    })
 
-})
+  btnSave.addEventListener("click",()=>{
+    let rows = document.querySelectorAll("#id");
+    let arrayDatos = [];
+    let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
+    rows.forEach((e , x) => {
+
+    let rowsElement = e.parentElement;
+    let Gastos = rowsElement.childNodes[3].textContent;
+    let importeEnDolares = sacarParseo(rowsElement.childNodes[5].childNodes[0].value,true);
+    let tipoCambio = sacarParseo(rowsElement.childNodes[7].childNodes[0].value,true);
+    let importeEnPesos = sacarParseo(rowsElement.childNodes[9].childNodes[0].value,true);
+    let sobreFob = rowsElement.childNodes[11].childNodes[0].textContent.replace("%","");
+    let observaciones = rowsElement.childNodes[13].childNodes[0].value
+
+    arrayDatos [x] = [Gastos,importeEnDolares,tipoCambio,importeEnPesos,sobreFob,observaciones]
+
+    });
+
+    arrayDatos[16] = idEncabezado;
+    $.ajax({
+      url: 'Controller/insertarDetalle.php',
+      method: 'POST',
+      data:{
+        "array":arrayDatos
+      },
+    });
+    Swal.fire({
+      title: 'Detalle guardado!',
+      icon: 'success',
+      showDenyButton: true,
+      showCancelButton: false,
+      showConfirmButton: false,
+      denyButtonText: `Volver`,
+      })
+      .then((e) => {
+
+        window.location = "index.php"
+      })
+
+
+  })
+}

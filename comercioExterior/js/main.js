@@ -23,12 +23,12 @@ function buscarCuentas()
         if (conexion1.readyState == 4 && conexion1.status == 200) {
           ordenes = JSON.parse(conexion1.responseText);
         
-          console.log(ordenes);
+
           limpiarSelect();
            dibujarSelectOrdenes(ordenes); 
           /*  inputCuenta.textContent = cuenta["VTEX_CUENTA"]; */
         } else {
-          console.log("aguanta");
+
         }
       };
       conexion1.open(
@@ -62,22 +62,41 @@ const limpiarSelect = () => {
 //Guarda datos de cabecera//  
 function guardarCabecera(){
 
- let b=0;
- inputs.forEach(el=>{ if(el.value == '' ){
-     el.parentElement.style.border="1px solid red";
-     b=1;
- }else{
-     el.parentElement.style.border="";
- }
+    let b=0;
+    let proveedor = document.querySelector("#proveedor");
+    let origen = document.querySelector("#origen");
+    let ordenCompra = document.querySelector("#ordenCompra");
 
- selected.forEach(el=>{ if(el.value == '' || el.value.includes("PROVEEDOR")|| el.value.includes("FORMA") ){
-     el.parentElement.style.border="1px solid red";
-     b=1;
- }else{
-     el.parentElement.style.border="";
- }
-  
- });
+    if (ordenCompra.selectedIndex == 0) {
+        ordenCompra.style.border="1px solid red";
+        b=1;
+    }
+    
+    if (origen.value == "") {
+        origen.style.border="1px solid red";
+        b=1;
+    }
+    
+    if (proveedor.selectedIndex == 0) {
+        proveedor.style.border="1px solid red";
+        b=1;
+    }
+
+    inputs.forEach(el=>{ if(el.value == ''){
+        el.parentElement.style.border="1px solid red";
+        b=1;
+    }else{
+        el.parentElement.style.border="";
+    }
+   
+    selected.forEach(el=>{ if(el.value == '' || el.value.includes("PROVEEDOR")|| el.value.includes("FORMA") ){
+        el.parentElement.style.border="1px solid red";
+        b=1;
+    }else{
+        el.parentElement.style.border="";
+    }
+    
+    });
 
     var cod_proveedor = document.getElementById('proveedor').value;
     var proveedor = document.getElementById('proveedor').selectedOptions[0].innerHTML;
@@ -247,7 +266,7 @@ function guardarCabecera(){
                 selectOrdenes.selectedIndex = "0";
           }
         } else {
-          console.log("aguanta");
+
         }
       };
       conexion1.open(

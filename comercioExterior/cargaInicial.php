@@ -139,7 +139,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1 decimales currencyInput" type="text" placeholder="VALOR F.O.B. U$S" id="valorFobDolar">
+                                        <input class="input--style-1 decimales currencyInput" onkeyup="calcular()" type="text" placeholder="VALOR F.O.B. U$S" id="valorFobDolar">
                                     </div>    
                                 </div>
                             </div>

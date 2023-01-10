@@ -1,11 +1,9 @@
 <?php
-
-include 'Class/maestroGastos.php';
-
-$gastos = new Gastos();
-$todosLosGastos = $gastos->traerGastos();
-
+require_once __DIR__ ."./Controller/listarOrden.php";
+$ordenCompra = $_GET['idEncabezado']; 
+$orden = listarPorOrdenCompra($ordenCompra);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -39,10 +37,10 @@ $todosLosGastos = $gastos->traerGastos();
                 <div class="card-body">
                     <div class="alert alert-primary">
                         <div class="row justify-content-md-center mb-2">
-                            <div class="col-md-auto"><h3 class="mb-1" style="font-weight: bold;"><i class="bi bi-box-seam-fill"></i> <?= $_GET['proveedor'].'-'.$_GET['ordenCompra']?></h3></div>
+                            <div class="col-md-auto"><h3 class="mb-1" style="font-weight: bold;"><i class="bi bi-box-seam-fill"></i> <?= $_GET['proveedor'].'-'.$_GET['ordenDeCompra']?></h3></div>
                         </div>
                         <div class="row justify-content-md-center">
-                            <div class="col-md-auto"><i class="bi bi-airplane-fill icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Nº Orden Proveedor</label><?= ' '.$_GET['contenedor']?></h5></div>
+                            <div class="col-md-auto"><i class="bi bi-airplane-fill icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Nº Orden Proveedor</label><?= ' '.$_GET['codProveedor']?></h5></div>
                             <div class="col-md-auto"><i class="bi bi-cash icon"></i><h5 class="mb-1" id ="valorPesosFob" attr-value = "<?=  $_GET['valorFobPeso'] ?>"><label style="font-weight: bold;" >Valor F.O.B. $: </label><?= ' '.$_GET['valorFobPeso']?></h5></div>
                             <div id="idEncabezado" attr-value="<?= $_GET['idEncabezado'] ?>" hidden></div>
                             <div class="col-md-auto"><i class="bi bi-cash-coin icon"></i><h5 class="mb-1"><label  id="totalGastosDetalle" style="font-weight: bold;">Gastos $:</label></h5></div>
@@ -65,16 +63,16 @@ $todosLosGastos = $gastos->traerGastos();
                             <tbody id="table">
 
                                 <?php
-                                foreach($todosLosGastos as $valor => $key){
+                                foreach($orden as $valor => $key){
                                 ?>
                                 <tr>
-                                    <td id="id"><?=  $key['ID_MG']?></td>
+                                    <td id="id" attr-value="<?=$key['ID']?>"><?=  ($valor+1)?></td>
                                     <td><?=  $key['GASTOS']?></td>
-                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)"></input></td>
-                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($valor <= 5) ? $_GET['tipoCambio'] : "0" ?>"></input></td>
-                                    <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly></input></td>
-                                    <td><input style="text-align:center"></input></td>
-                                    <td><input></input></td>
+                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "<?=$key['IMPORTE_U$S']?>"></input></td>
+                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($valor <= 5) ? $key['TIPO_CAMBIO'] : "0" ?>"></input></td>
+                                    <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly value="<?=$key['IMPORTE_$']?>"></input></td>
+                                    <td><input style="text-align:center"  value="<?= $key['PORCENTAJE']?>%"></input></td>
+                                    <td><input><?=$key['OBSERVACIONES']?></input></td>
                                 </tr>
                             <?php
                             }   
@@ -90,7 +88,7 @@ $todosLosGastos = $gastos->traerGastos();
                                 </tr>
                             </tbody>
                         </table>
-                        <div><button class="btn btn-primary" id="btnSaveDetalle">Guardar <i class="bi bi-cloud-download"></i></button></div>
+                        <div><button class="btn btn-primary" id="btnUpdateDetalle">Guardar <i class="bi bi-cloud-download"></i></button></div>
                 </div>
             </div>
         </div>
@@ -104,6 +102,7 @@ $todosLosGastos = $gastos->traerGastos();
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk" crossorigin="anonymous"></script>
     <script src="js/costos.js"></script>
+    <script src="js/editar.js"></script>
 
 </body>
 </html>
