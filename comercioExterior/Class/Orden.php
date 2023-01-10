@@ -9,9 +9,13 @@ class Orden{
 
     }
 
-    public function listarOrden(){
+    public function listarOrden($idEncabezado = null){
+        
         $date = date('Y-m-d', strtotime("-90 days"));
-        $sql = "SELECT ID,FECHA_MOV,COD_PROVEE,PROVEEDOR,DESPACHO,ORDEN_COMPRA,VALOR_FOB_PESO FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE FECHA_MOV > '$date' ORDER BY FECHA_MOV DESC ;";
+        $sql = "SELECT ID,FECHA_MOV,COD_PROVEE,PROVEEDOR,DESPACHO,ORDEN_COMPRA,VALOR_FOB_PESO FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE FECHA_MOV > '$date' ORDER BY FECHA_MOV DESC";
+        if($idEncabezado != null){
+            $sql = " SELECT * FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ID = $idEncabezado ";
+        }
         try{
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
@@ -31,7 +35,6 @@ class Orden{
     }
 
     public function traerPorOrdenCompra($id) {
-        $id= 106;
         $sql = "SELECT * FROM RO_T_IMPORTACIONES_DETALLE WHERE ID_MG =".$id.";";
         try{
             $stmt = sqlsrv_query( $this->cid_central, $sql );

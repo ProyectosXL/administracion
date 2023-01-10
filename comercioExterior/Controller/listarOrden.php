@@ -2,12 +2,12 @@
 
 require_once __DIR__ ."/../Class/Orden.php";
 
-function listar (){
+function listar ($idEncabezado = null){
 
     $ordenes = new Orden();
-    $listaDeOrdenes = $ordenes->listarOrden();
+    $listaDeOrdenes = $ordenes->listarOrden($idEncabezado);
     return ( $listaDeOrdenes);
-    // echo "datos"
+
 
 }
 

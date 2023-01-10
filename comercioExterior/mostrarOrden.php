@@ -98,7 +98,7 @@ $listaDeOrdenes = listar();
                 <td ><?= $orden['COD_PROVEE']?></td>
                 <td><?= $orden['ORDEN_COMPRA']?></td>
                 <td><button style="" onclick="verDetalle('<?= $orden['ID']?>','<?= $orden['PROVEEDOR']?>','<?= $orden['ORDEN_COMPRA']?>','<?= $orden['COD_PROVEE']?>','<?= $orden['VALOR_FOB_PESO']?>')"><i class="fa fa-pencil-square-o fa-3x" aria-hidden="true"></i></button></td>
-                <td><button ><i class="fa fa-download fa-2x" aria-hidden="true" ></i></button></td>
+                <td><button ><i class="fa fa-download fa-2x" aria-hidden="true" onclick="imprimir('<?=$orden['ID']?>')"></i></button></td>
 
             </tr>
             <?php
@@ -132,6 +132,8 @@ $listaDeOrdenes = listar();
 const verDetalle = (id,prov,orden,codProv,valorFobPeso)=>{
     window.location = "editarOrden.php?idEncabezado="+id+"&proveedor="+prov+"&ordenDeCompra="+orden+"&codProveedor="+codProv+"&valorFobPeso="+valorFobPeso;
 }
-
+const imprimir=(id)=>{
+    window.location = "imprimir.php?idEncabezado="+id
+}
 
 </script>
