@@ -100,14 +100,49 @@ function guardarAmortizar(e) {
   conexion.send(infoActualizar);
 }
 
+let eh;
 function guardarControlado(datoMasivo = 0, e) {
   let controlado;
+  eh = datoMasivo;
+
   /* let dato = e.target; */
   let dato = datoMasivo != 0 ? datoMasivo : e.target;
-  if (dato.checked == true) {
+  let codRubro =
+    datoMasivo != 0
+      ? datoMasivo.parentElement.parentElement.children[10].children[0].value
+      : e.target.parentElement.parentElement.children[10].children[0].value;
+  let codProrrateo =
+    datoMasivo != 0
+      ? datoMasivo.parentElement.parentElement.children[12].children[0].value
+      : e.target.parentElement.parentElement.children[12].children[0].value;
+  if (dato.checked == true && codRubro !== "" && codProrrateo !== "") {
     controlado = 1;
   } else {
+    if (codRubro == "" && codProrrateo == "") {
+      Swal.fire({
+        icon: "error",
+        title: "Error de control",
+        text: "Debe definir el código del rubro contable y código de prorrateo!",
+      });
+    } else {
+      if (codRubro == "") {
+        Swal.fire({
+          icon: "error",
+          title: "Error de control",
+          text: "Debe definir el código del rubro contable!",
+        });
+      } else {
+       if(codProrrateo == ""){
+          Swal.fire({
+            icon: "error",
+            title: "Error de control",
+            text: "Debe definir el código de prorrateo!",
+          });
+        }
+      }
+    }
     controlado = 0;
+    dato.checked = false;
   }
   let ID = dato.parentElement.parentElement.children[20].textContent;
   /*   let codRubro = Dato.value;
@@ -139,14 +174,14 @@ function completarCampoRubro(e) {
   // 5 - al evento change de un codRubro se llama a la funcion completarCampoRubro, e , es el evento con la información de cual elemnto del dom fue clickeado
   let Dato = e.target; // 6 - guardo el elemento del html donde se produjo el evento.
   /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let n_comp = Dato.parentElement.parentElement.children[9].textContent;
+  let ID = Dato.parentElement.parentElement.children[20].textContent;
   let codRubro = Dato.value;
   let rubroDesc = Dato.parentElement.parentElement.children[11];
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
       rubroDesc.textContent = conexion.responseText;
-      guardarCambiosRubro(n_comp, codRubro, rubroDesc.textContent);
+      guardarCambiosRubro(ID, codRubro, rubroDesc.textContent);
     }
   };
   conexion.open("GET", "Class/rubroContable.php?codigo=" + Dato.value, true);
@@ -156,7 +191,7 @@ function completarCampoRubro(e) {
 function completarCampoProrrateo(e) {
   let Dato = e.target;
   /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let n_comp = Dato.parentElement.parentElement.children[9].textContent;
+  let ID = Dato.parentElement.parentElement.children[20].textContent;
   let codProrrateo = Dato.value;
   let prorrateoDesc = Dato.parentElement.parentElement.children[13];
   /* let txtDescProrrateo = e.target; */
@@ -166,14 +201,14 @@ function completarCampoProrrateo(e) {
       /*  Dato.parentElement.parentElement.children[14].textContent =
         conexion.responseText; */
       prorrateoDesc.textContent = conexion.responseText;
-      guardarCambiosProrrateo(n_comp, codProrrateo, prorrateoDesc.textContent);
+      guardarCambiosProrrateo(ID, codProrrateo, prorrateoDesc.textContent);
     }
   };
   conexion.open("GET", "Class/prorrateo.php?codigo=" + codProrrateo, true);
   conexion.send();
 }
 
-function guardarCambiosRubro(n_comp, codRubro, rubroDesc) {
+function guardarCambiosRubro(ID, codRubro, rubroDesc) {
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
@@ -190,16 +225,16 @@ function guardarCambiosRubro(n_comp, codRubro, rubroDesc) {
     "application/x-www-form-urlencoded"
   );
   let infoActualizar =
-    "n_comp=" +
-    encodeURIComponent(n_comp) +
+    "ID=" +
+    encodeURIComponent(ID) +
     "&codRubro=" +
     encodeURIComponent(codRubro) +
     "&descRubro=" +
-    encodeURIComponent(rubroDesc);
+    encodeURIComponent(rubroDesc.trimStart());
   conexion.send(infoActualizar);
 }
 
-function guardarCambiosProrrateo(n_comp, codProrrateo, prorrateoDesc) {
+function guardarCambiosProrrateo(ID, codProrrateo, prorrateoDesc) {
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
@@ -216,12 +251,12 @@ function guardarCambiosProrrateo(n_comp, codProrrateo, prorrateoDesc) {
     "application/x-www-form-urlencoded"
   );
   let infoActualizar =
-    "n_comp=" +
-    encodeURIComponent(n_comp) +
+    "ID=" +
+    encodeURIComponent(ID) +
     "&codProrrateo=" +
     encodeURIComponent(codProrrateo) +
     "&descRubro=" +
-    encodeURIComponent(prorrateoDesc);
+    encodeURIComponent(prorrateoDesc.trimStart());
   conexion.send(infoActualizar);
 }
 

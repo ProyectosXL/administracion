@@ -61,12 +61,15 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         </div>
                         <div id="estado">
                             <label>Estado:</label>
-                            <select class="form-control form-control-sm" name="estado">
-                                <option value="" selected></option>
-                                <option value="0">Pendiente</option>
+                            <select class="form-control form-control-sm estado" name="estado">
+                                <option value="" selected>Todos</option>
+                                <option value="1">Amortizar</option>
+                                <option value="2">Excluidos</option>
+                                <option value="3">Pendiente asignar</option>
+                                <option value="0">Pendiente control</option>
                             </select>
                         </div>
-                            <button type="submit" name="submit" class="btn btn-primary" id="search">Buscar <i class="bi bi-search"></i></button>
+                            <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
                     </form>
                 </div>
                 <div class="btn-group">
@@ -175,7 +178,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <td><?php if ($key->AMORTIZADO == 1){?>
                     <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?=  $key->AMORTIZAR ?>" disabled>
                 <?php } else { ?> 
-                    <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?=  $key->AMORTIZAR ?>">
+                    <input class="amortiza" type="number" id="amortiza" min="1" name="inputNum" value="<?=  $key->AMORTIZAR ?>">
                 <?php } ?> 
                 </td>
                 <td><input class="checkExcluir" type="checkbox" <?php if ($key->EXCLUIR == 1) {echo 'checked';} ?>></td>
