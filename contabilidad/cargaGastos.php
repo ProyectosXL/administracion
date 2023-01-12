@@ -239,9 +239,9 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
 <script>
     // In your Javascript (external .js resource or <script> tag)
-    // $(document).ready(function() {
-    //     $('.mi-selector').select2();
-    // });
+    $(document).ready(function() {
+        $('.mi-selector').select2();
+    });
 </script>
 
 </html>
