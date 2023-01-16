@@ -29,15 +29,15 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                         <!------------------------------------------------------------>
 
     <!-- Icons font CSS-->
-    <link href="vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-    <link href="vendor/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <link href="assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
     <!-- Font special for pages-->
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
     <!-- Vendor CSS-->
-    <link href="vendor/select2/select2.min.css" rel="stylesheet" media="all">
-    <link href="vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+    <link href="assets/select2/select2.min.css" rel="stylesheet" media="all">
+    <link href="assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
 
     <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
     <!-- Main CSS-->
@@ -189,11 +189,11 @@ $todosLosProveedores = json_decode($todosLosProveedores);
     
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Jquery JS-->
-    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="assets/jquery/jquery.min.js"></script>
     <!-- Vendor JS-->
-    <script src="vendor/select2/select2.min.js"></script>
-    <script src="vendor/datepicker/moment.min.js"></script>
-    <script src="vendor/datepicker/daterangepicker.js"></script>
+    <script src="assets/select2/select2.min.js"></script>
+    <script src="assets/datepicker/moment.min.js"></script>
+    <script src="assets/datepicker/daterangepicker.js"></script>
 
     <!-- Main JS-->
     <script src="js/global.js"></script>

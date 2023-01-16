@@ -16,15 +16,15 @@ $todosLosGastos = $gastos->traerGastos();
     <!-- BOOTSTRAP -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <!-- Icons font CSS-->
-    <link href="vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-    <link href="vendor/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <link href="assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
     <!-- Font special for pages-->
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
     <!-- Vendor CSS-->
-    <link href="vendor/select2/select2.min.css" rel="stylesheet" media="all">
-    <link href="vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+    <link href="assets/select2/select2.min.css" rel="stylesheet" media="all">
+    <link href="assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
 
     <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
     <!-- Main CSS-->
@@ -98,7 +98,7 @@ $todosLosGastos = $gastos->traerGastos();
 
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Jquery JS-->
-    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="assets/jquery/jquery.min.js"></script>
 
     <!-- <script src="js/main.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
