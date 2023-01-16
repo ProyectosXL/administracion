@@ -97,7 +97,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <td class="auxiliar"></td>
                 <td class="sector"></td>
                 <td>
-                    <select class="codCuenta" style="width: 65px;">
+                    <select class="codCuenta" style="width: 210px;">
                         <option selected disabled></option>
                         <?php           
                         foreach($todasLasCuentasContables as $valor => $value){
@@ -109,10 +109,10 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     </select>    
                 </td>
                 <td class="cuenta"></td>
-                <td><input class="importe" type="number"></input></td>
+                <td><input class="importe" type="number" style="width: 110px;"></input></td>
                 <td><input class="leyenda" type="text"></input></td>
                 <td>
-                    <select class="codRubro" style="width: 65px;" class="mi-selector">
+                    <select class="codRubro" style="width: 140px;" class="mi-selector">
                         <option selected disabled></option>
                         <?php           
                         foreach($todosLosRubros as $valor => $value){
@@ -125,7 +125,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 </td>
                 <td class="rubro"></td>
                 <td>
-                    <select class="codProrrateo" style="width: 50px;">
+                    <select class="codProrrateo" style="width: 160px;">
                         <option selected disabled></option>
                         <?php           
                         foreach($todosLosMetodos as $valor => $value){
@@ -138,7 +138,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 </td>
                 <td class="descProrrateo"></td>
                 <td class="suc"></td>
-                <td><input class="amortizar" type="number" name="" id=""></td>
+                <td><input class="amortizar" type="number" style="width: 60px;"></td>
             </tr>
             </tbody>
     </table>
