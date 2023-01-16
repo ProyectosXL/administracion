@@ -4,51 +4,55 @@
 class CentroCosto
 {
 
+    function __construct(){
+
+        require_once __DIR__.'/../../class/conexion.php';
+        $cid = new Conexion();
+        $this->cid_central = $cid->conectar('central');
+
+    } 
+
     public function traerCentroCostos(){
-        try {
 
-            $servidor_central = 'servidor';
-            $conexion_central = array( "Database"=>"LAKER_SA", "UID"=>"sa", "PWD"=>"Axoft1988", "CharacterSet" => "UTF-8");
-            $cid_central = sqlsrv_connect($servidor_central, $conexion_central);
-             
-         } catch (PDOException $e){
-                 echo $e->getMessage();
-         }
+        $sql = "SELECT * FROM RO_T_CENTRO_DE_COSTOS";
 
-        $sql = "SELECT * FROM RO_T_CENTRO_DE_COSTOS
-        ";
-        $stmt = sqlsrv_query( $cid_central, $sql );
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        try{
+            
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            $myJSON = json_encode($rows);
+    
+            return $myJSON;
 
-        $rows = array();
+        } catch (\Throwable $th){
 
-        while( $v = sqlsrv_fetch_array( $stmt) ) {
-            $rows[] = $v;
+            print_r($th);
+
         }
 
-        $myJSON = json_encode($rows);
-
-        return $myJSON;
     }
 
     function traerDescripcion($codigo)
     {
-        try {
-
-            $servidor_central = 'servidor';
-            $conexion_central = array("Database" => "LAKER_SA", "UID" => "sa", "PWD" => "Axoft1988", "CharacterSet" => "UTF-8");
-            $cid_central = sqlsrv_connect($servidor_central, $conexion_central);
-        } catch (PDOException $e) {
-            echo $e->getMessage();
-        }
-
         $sql = "SELECT TOP 1 DESC_AUXILIAR, SECTOR, NUM_SUCURSAL FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = '$codigo'";
-        $stmt = sqlsrv_query($cid_central, $sql);
-
-
-        $dato = sqlsrv_fetch_array($stmt);
-            
-        // echo $dato['DESC_AUXILIAR'];
-       echo json_encode($dato);
+        try {
+           
+           $stmt = sqlsrv_query($this->cid_central, $sql);
+   
+   
+           $dato = sqlsrv_fetch_array($stmt);
+               
+           // echo $dato['DESC_AUXILIAR'];
+          echo json_encode($dato);
+       
+        } catch (\Throwable $th){
+            print_r($th);
+        }
 
 
     }

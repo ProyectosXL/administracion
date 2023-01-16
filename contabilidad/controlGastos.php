@@ -5,7 +5,6 @@ include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
 
 $gastos = new Gastos();
-
 $rubroContable = new RubroContable();
 $todosLosRubros = $rubroContable->traerRubrosContables();
 $todosLosRubros = json_decode($todosLosRubros);
@@ -49,20 +48,28 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <div id="titlePrincipal" class="col-md-auto">
                     <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos - Informe Económico</h3>
                 </div>
-                <div class="form-row">
+                <div class="form-row" style="width: 30%;">
                     <form action="">
                         <div class="desde">
-                            <label class="col-sm col-form-label">Desde:</label>
+                            <label class="col- col-form-label">Desde:</label>
                             <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
                         </div>
 
                         <div class="hasta">
-                            <label class="col-sm col-form-label">Hasta:</label>
+                            <label class="col- col-form-label">Hasta:</label>
                             <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
                         </div>
-                        <!-- <div class="form-row mt-auto"> -->
-                            <button type="submit" name="submit" class="btn btn-primary" id="search">Buscar <i class="bi bi-search"></i></button>
-                        <!-- </div> -->
+                        <div id="estado">
+                            <label>Estado:</label>
+                            <select class="form-control form-control-sm estado" name="estado">
+                                <option value="" selected>Todos</option>
+                                <option value="1">Amortizar</option>
+                                <option value="2">Excluidos</option>
+                                <option value="3">Pendiente asignar</option>
+                                <option value="0">Pendiente control</option>
+                            </select>
+                        </div>
+                            <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
                     </form>
                 </div>
                 <div class="btn-group">
@@ -80,9 +87,6 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <input class="form-check-input" type="checkbox" onclick="checkControladoAll(this);" value="" id="defaultCheck2">
                         <label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label>
                     </div>
-                    <div>
-                        <strong>Nombre: </strong><p id="nombre"></p>
-                    </div>
                 </div>
             </div>     
         </div>
@@ -91,7 +95,13 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
         if(isset($_GET['desde'])){
         
-            $todosLosGastos = $gastos->traerGastos($desde, $hasta);
+            if (isset($_GET['estado'])!= ''){
+                $estado = $_GET['estado'];}
+                else {
+                $estado = '%';
+                }
+        
+            $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado);
 
         ?>
 
@@ -168,7 +178,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <td><?php if ($key->AMORTIZADO == 1){?>
                     <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?=  $key->AMORTIZAR ?>" disabled>
                 <?php } else { ?> 
-                    <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?=  $key->AMORTIZAR ?>">
+                    <input class="amortiza" type="number" id="amortiza" min="1" name="inputNum" value="<?=  $key->AMORTIZAR ?>">
                 <?php } ?> 
                 </td>
                 <td><input class="checkExcluir" type="checkbox" <?php if ($key->EXCLUIR == 1) {echo 'checked';} ?>></td>

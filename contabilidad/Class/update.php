@@ -1,16 +1,16 @@
 <?php
-include 'conexion.php';
+require_once __DIR__.'/../../class/conexion.php';
 
 $cid = new Conexion();
-$cid_central = $cid->conectar();
+$cid_central = $cid->conectar('central');
 
 if (isset($_POST['codRubro'])) {
     try {
         $codRubro = $_POST['codRubro'];
         $RubroDescripcion = $_POST['descRubro'];
         /*  $Cuenta = $_POST['cuenta']; */
-        $n_comp = $_POST['n_comp'];
-        $sql = "UPDATE RO_T_INTEGRAL_TANGO_2 SET COD_RUBRO='$codRubro',RUBRO_CONTABLE='$RubroDescripcion' WHERE N_COMP='$n_comp'
+        $ID= $_POST['ID'];
+        $sql = "UPDATE RO_T_INTEGRAL_TANGO_2 SET COD_RUBRO='$codRubro',RUBRO_CONTABLE='$RubroDescripcion' WHERE ID='$ID'
     ";
         $stmt = sqlsrv_query($cid_central, $sql);
 
@@ -24,8 +24,8 @@ if (isset($_POST['codRubro'])) {
             $codProrrateo = $_POST['codProrrateo'];
             $ProrrateoDescripcion = $_POST['descRubro'];
             /*  $Cuenta = $_POST['cuenta']; */
-            $n_comp = $_POST['n_comp'];
-            $sql = "UPDATE RO_T_INTEGRAL_TANGO_2 SET COD_PRORRATEO='$codProrrateo',DESC_PRORRATEO='$ProrrateoDescripcion' WHERE N_COMP='$n_comp'
+            $ID= $_POST['ID'];
+            $sql = "UPDATE RO_T_INTEGRAL_TANGO_2 SET COD_PRORRATEO='$codProrrateo',DESC_PRORRATEO='$ProrrateoDescripcion' WHERE ID='$ID'
         ";
             $stmt = sqlsrv_query($cid_central, $sql);
 

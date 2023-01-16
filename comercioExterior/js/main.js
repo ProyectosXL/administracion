@@ -70,7 +70,7 @@ function guardarCabecera(){
      el.parentElement.style.border="";
  }
 
- selected.forEach(el=>{ if(el.value == '' || el.value.includes("PROVEEDOR")|| el.value.includes("FORMA") ){
+ selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")|| el.value.includes("FORMA DE PAGO") ){
      el.parentElement.style.border="1px solid red";
      b=1;
  }else{
@@ -118,6 +118,7 @@ function guardarCabecera(){
      if (result.isConfirmed) {
         let env = 1;
         let url = (env == 1) ? 'insertarEncabezado.php' : 'test.php';
+        let id = null;
         $.ajax({
             url: 'Controller/'+url,
             method: 'POST',
@@ -140,6 +141,9 @@ function guardarCabecera(){
                 fechaArribo: fechaArribo, 
                 fechaDespacho: fechaDespacho
             },
+            success : function(data) {
+               id = data;
+            }
         });
             Swal.fire({
                 title: 'Despacho guardado!',
@@ -150,7 +154,7 @@ function guardarCabecera(){
                 denyButtonText: `Cargar detalle`,
                 })
          .then(function () {
-            window.location = "detalleCostos.php?ordenCompra="+ordenCompra+'&proveedor='+proveedor+'&valorFobPeso='+valorFobPeso+'&contenedor='+contenedor;
+            window.location = "detalleCostos.php?ordenCompra="+ordenCompra+'&proveedor='+proveedor+'&valorFobPeso='+valorFobPeso+'&contenedor='+contenedor+'&tipoCambio='+tipoCambio+'&idEncabezado='+id;
         });
      } else if (result.isDenied) {
          Swal.fire('El despacho no fue guardado', '', 'info')
@@ -162,8 +166,8 @@ function guardarCabecera(){
     const parseNumber = (value)=>{
         return value.toLocaleString('en-US', {
             style: 'decimal',
-            maximumFractionDigits: 2,
-            minimumFractionDigits: 2
+            // maximumFractionDigits: 2,
+            // minimumFractionDigits: 2
             });
     }
 
@@ -176,10 +180,13 @@ function guardarCabecera(){
 
      //Calcula valor FOB en pesos según cotización de tipoCambio// 
      function calcular(){
-        var tipoCambio = parseFloat(document.getElementById('tipoCambio').value);
-        var valorFobDolar = parseFloat(document.getElementById('valorFobDolar').getAttribute("originalvalue"));
+        var tipoCambio = (document.getElementById('tipoCambio').value);
+        tipoCambio = tipoCambio.replace(",",".");
+        tipoCambio = parseFloat(tipoCambio);
 
-        console.log(tipoCambio,valorFobDolar)
+        var valorFobDolar = (document.getElementById('valorFobDolar').getAttribute("originalvalue"));
+        valorFobDolar = valorFobDolar.replace(",",".");
+        valorFobDolar = parseFloat(valorFobDolar);
         var resultado = valorFobDolar * tipoCambio;
         document.getElementById('valorFobPeso').value = resultado.toLocaleString('en-US', {
             style: 'decimal',
