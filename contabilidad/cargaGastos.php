@@ -40,17 +40,17 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <!-- Including Font Awesome CSS from CDN to show icons -->
     <link rel="stylesheet" href=" https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-
+    <link rel="stylesheet" href="css/style.css"></link>
     
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
    
     
-    <link rel="stylesheet" href="css/style.css"></link>
+    
  
 </head>
 <body>
     
-    
+    <span class="select2-search__field"></span>
         <div class="alert alert-secondary">
             <div class="row">
                 <div id="titlePrincipal" class="col-md-auto">
@@ -83,7 +83,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <td></td>
                 <td><input type="date" class="fecha" value="<?= $hasta ?>"></td>
                 <td>
-                    <select class="codCentro mi-selector">
+                    <select class="codCentro select-auxiliar">
                         <option selected disabled></option>
                         <?php           
                         foreach($todosLosCentrosCosto as $valor => $value){
@@ -239,9 +239,19 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
 <script>
     // In your Javascript (external .js resource or <script> tag)
-    // $(document).ready(function() {
-    //     $('.mi-selector').select2();
-    // });
+    $(document).ready(function() {
+        $('.select-auxiliar').select2();
+    });
+    $(document).ready(function() {
+        $('.codCuenta').select2();
+    });
+    $(document).ready(function() {
+        $('.codRubro').select2();
+    });
+    $(document).ready(function() {
+        $('.codProrrateo').select2();
+    });
+    
 </script>
 
 </html>

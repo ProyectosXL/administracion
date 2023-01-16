@@ -1,103 +1,75 @@
-window.addEventListener("DOMContentLoaded", iniciarEscuchaSelect); //1 - cuando se termina de carga toda la pagina, comienza a escuchar los eventos del dom
-
-const selectRubro = document.querySelectorAll(".codRubro"); //2 - guardo en un array todos los check donde se va escuchar si se produjo un cambio
-const selectProrrateo = document.querySelectorAll(".codProrrateo");
-const selectCentro = document.querySelectorAll(".codCentro");
-const selectCuenta = document.querySelectorAll(".codCuenta");
+document.addEventListener("DOMContentLoaded", iniciarEscuchaSelect); 
 let conexion;
 
 function iniciarEscuchaSelect() {
-  //3 - se llama a la funcion de paso 1
-  selectRubro.forEach(
-    (
-      select // 4 - recorre cada elemento del array, para saber quien es el elto donde se produjo el click
-    ) => select.addEventListener("change", completarCampoRubro)
-  );
-  selectProrrateo.forEach((select) =>
-    select.addEventListener("change", completarCampoProrrateo)
-  );
-  selectCentro.forEach((select) =>
-    select.addEventListener("change", completarCampoCentro)
-  );
-  selectCuenta.forEach((select) =>
-    select.addEventListener("change", completarCampoCuenta)
-  );
+  $(".select-auxiliar").on("select2:select", function (e) {
+    console.log("ID seleccionado: " + e.params.data.id);
+    completarAuxiliar(e.params.data.id);
+  });
+  $(".codCuenta").on("select2:select", function (e) {
+    console.log("ID seleccionado: " + e.params.data.id);
+    completarCuenta(e.params.data.id);
+  });
+  $(".codRubro").on("select2:select", function (e) {
+    console.log("ID seleccionado: " + e.params.data.id);
+    completarCampoRubro(e.params.data.id);
+  });
+  $(".codProrrateo").on("select2:select", function (e) {
+    console.log("ID seleccionado: " + e.params.data.id);
+    completarCampoProrrateo(e.params.data.id);
+  });
 }
 
-function completarCampoRubro(e) {
-  // 5 - al evento change de un codRubro se llama a la funcion completarCampoRubro, e , es el evento con la información de cual elemnto del dom fue clickeado
-  let Dato = e.target; // 6 - guardo el elemento del html donde se produjo el evento.
-  /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let n_comp = Dato.parentElement.parentElement.children[8].textContent;
-  let codRubro = Dato.value;
-  let rubroDesc = Dato.parentElement.parentElement.children[10];
+function completarCampoRubro(dato) {
+  let rubroDesc=document.querySelector('.rubro');
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
       rubroDesc.textContent = conexion.responseText;
     }
   };
-  conexion.open("GET", "Class/rubroContable.php?codigo=" + Dato.value, true);
+  conexion.open("GET", "Class/rubroContable.php?codigo=" + dato, true);
   conexion.send();
 }
 
-function completarCampoProrrateo(e) {
-  let Dato = e.target;
-  /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let n_comp = Dato.parentElement.parentElement.children[8].textContent;
-  let codProrrateo = Dato.value;
-  let prorrateoDesc = Dato.parentElement.parentElement.children[12];
-  /* let txtDescProrrateo = e.target; */
+function completarCampoProrrateo(dato) {
+ let prorrateoDesc = document.querySelector('.descProrrateo');
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
       prorrateoDesc.textContent = conexion.responseText;
     }
   };
-  conexion.open("GET", "Class/prorrateo.php?codigo=" + codProrrateo, true);
+  conexion.open("GET", "Class/prorrateo.php?codigo=" + dato, true);
   conexion.send();
 }
 
-function completarCampoCentro(e) {
-  /* let Dato = e.target; */
-  let Dato=document.querySelector('.codCentro').value;
-  console.log(Dato);
-  /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let n_comp = Dato.parentElement.parentElement.children[1].textContent;
-  let codCentro = Dato.value;
-  let centroDesc = Dato.parentElement.parentElement.children[3];
-  let sector = Dato.parentElement.parentElement.children[4];
-  let numSuc = Dato.parentElement.parentElement.children[13];
-  /* let txtDescProrrateo = e.target; */
+function completarAuxiliar(dato) {
+  let DESC_AUXILIAR = document.querySelector(".auxiliar");
+let SECTOR = document.querySelector(".sector");
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
       let info = JSON.parse(conexion.responseText);
-      centroDesc.textContent = info.DESC_AUXILIAR;
-      sector.textContent = info.SECTOR;
-      numSuc.textContent = info.NUM_SUCURSAL;
+      DESC_AUXILIAR.textContent = info.DESC_AUXILIAR;
+      SECTOR.textContent = info.SECTOR;
     }
   };
-  conexion.open("GET", "Class/centroCosto.php?codigo=" + codCentro, true);
+  conexion.open("GET", "Class/centroCosto.php?codigo=" + dato, true);
   conexion.send();
 }
-
-function completarCampoCuenta(e) {
-  let Dato = e.target;
-  /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let n_comp = Dato.parentElement.parentElement.children[5].textContent;
-  let codCuenta = Dato.value;
-  let cuentaDesc = Dato.parentElement.parentElement.children[6];
-  /* let txtDescProrrateo = e.target; */
+function completarCuenta(dato) {
+  let descCuenta = document.querySelector(".cuenta");
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
-      cuentaDesc.textContent = conexion.responseText;
+      descCuenta.textContent = conexion.responseText;
     }
   };
-  conexion.open("GET", "Class/cuentaContable.php?codigo=" + codCuenta, true);
+  conexion.open("GET", "Class/cuentaContable.php?codigo=" + dato, true);
   conexion.send();
 }
+
 
 //Tabla dinámica//
 
