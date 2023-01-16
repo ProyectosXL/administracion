@@ -44,22 +44,11 @@ function completarCampoProrrateo(dato) {
   conexion.send();
 }
 
-<<<<<<< HEAD
-function completarCampoCentro(e) {
-  let Dato = e.target;
-  // let Dato=document.querySelector('.codCentro').value;
-  /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let n_comp = Dato.parentElement.parentElement.children[1].textContent;
-  let codCentro = Dato.value;
-  let centroDesc = Dato.parentElement.parentElement.children[3];
-  let sector = Dato.parentElement.parentElement.children[4];
-  let numSuc = Dato.parentElement.parentElement.children[13];
-  /* let txtDescProrrateo = e.target; */
-=======
+
 function completarAuxiliar(dato) {
   let DESC_AUXILIAR = document.querySelector(".auxiliar");
 let SECTOR = document.querySelector(".sector");
->>>>>>> 3df633174af969be0acb1a6356602263fc8619ef
+
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
