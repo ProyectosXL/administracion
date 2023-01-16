@@ -132,7 +132,7 @@ function guardarControlado(datoMasivo = 0, e) {
           text: "Debe definir el código del rubro contable!",
         });
       } else {
-       if(codProrrateo == ""){
+        if (codProrrateo == "") {
           Swal.fire({
             icon: "error",
             title: "Error de control",
@@ -345,24 +345,93 @@ function prorratearGastos() {
 
   let desde = document.getElementsByName("desde")[0].value;
   let hasta = document.getElementsByName("hasta")[0].value;
-  fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
+  const swalWithBootstrapButtons = Swal.mixin({
+    customClass: {
+      confirmButton: "btn btn-success",
+      cancelButton: "btn btn-danger",
+    },
+    buttonsStyling: false,
+  });
+
+  swalWithBootstrapButtons
+    .fire({
+      title: "Desea realizar el prorrateo?",
+      text: "Ya no se podran deshacer los cambios!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ok, prorratear!",
+      cancelButtonText: "No, cancelar!",
+      reverseButtons: true,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        /******************************* */
+        fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
+          .then((respuesta) => respuesta.json())
+          .then((perfil) => {
+            if (perfil.resultado == 0) {
+              Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "No hay gastos para prorratear!",
+              });
+            }else{
+              swalWithBootstrapButtons.fire(
+                "Prorrateado!",
+                "Los gastos fueron prorrateados",
+                "success"
+              );
+            }
+          });
+        /******************************** */
+      } else if (
+        /* Read more about handling dismissals below */
+        result.dismiss === Swal.DismissReason.cancel
+      ) {
+        swalWithBootstrapButtons.fire(
+          "Cancelado",
+          "Los gastos no fueron prorrateados :(",
+          "error"
+        );
+      }
+    });
+
+  /******************************************************* */
+/*   fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
     .then((respuesta) => respuesta.json())
     .then((perfil) => {
       if (perfil.resultado == 0) {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "No hay gastos prorratear",
+          text: "No hay gastos para prorratear!",
         });
       } else {
-        Swal.fire({
-          icon: "sucess",
-          title: "ok",
-          text: "bla bla bla",
-        });
-        setTimeout(() => {
-          location.reload(true);
-        }, "5000");
+        swalWithBootstrapButtons
+          .fire({
+            title: "Desea realizar el prorrateo?",
+            text: "Ya no se podran deshacer los cambios!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Ok, prorratear!",
+            cancelButtonText: "No, cancelar!",
+            reverseButtons: true,
+          })
+          .then((result) => {
+            if (result.isConfirmed) {
+              swalWithBootstrapButtons.fire(
+                "Prorrateado!",
+                "Los gastos fueron prorrateados",
+                "success"
+              );
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+              swalWithBootstrapButtons.fire(
+                "Cancelado",
+                "Los gastos no fueron prorrateados :(",
+                "error"
+              );
+            }
+          });
       }
-    });
+    }); */
 }

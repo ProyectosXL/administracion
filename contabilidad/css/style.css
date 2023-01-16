@@ -19,10 +19,6 @@ h2{
     background-color: #343a40;
 }
 
-.btn-success{
-    margin-left: 10rem;
-}
-
 .biHeader{
     font-size: 18px;
 }
@@ -42,10 +38,6 @@ h2{
 
 #titlePrincipal{
     margin-top: 1.7rem;
-}
-
-#btnSend{
-    margin-left: 2rem;
 }
 
 #btnAmort{
@@ -113,4 +105,9 @@ select, input{
     border: 1px solid #aaa;
     border-radius: 4px;
     height: 28px;
+}
+
+.btn:not(:disabled):not(.disabled) {
+    cursor: pointer;
+    margin-left: 15px;
 }

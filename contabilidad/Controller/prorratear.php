@@ -36,9 +36,11 @@ class prorratear
     public function prorratearRegistros($desde, $hasta)
     {
         try {
-            require_once '../Class/conexion.php';
+            require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar();
+          /*   $cid_central = $cid->conectar(); */
+          $cid_central = $cid->conectar('central');
+
 
             $sql = "DECLARE @ResultForPos int;
             EXEC @ResultForPos = RO_SP_PRORRATEAR_INTEGRAL ?, ?

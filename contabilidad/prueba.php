@@ -43,3 +43,52 @@ echo $periodo;
 <br/>
 
 
+function prorratearGastos() {
+  /*  $nombre = document.querySelector("#nombre"), */
+
+  let desde = document.getElementsByName("desde")[0].value;
+  let hasta = document.getElementsByName("hasta")[0].value;
+
+  const swalWithBootstrapButtons = Swal.mixin({
+    customClass: {
+      confirmButton: 'btn btn-success',
+      cancelButton: 'btn btn-danger'
+    },
+    buttonsStyling: false
+  });
+
+  fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
+    .then((respuesta) => respuesta.json())
+    .then((perfil) => {
+      if (perfil.resultado == 0)      
+      swalWithBootstrapButtons.fire({
+        title: 'Desea realizar el prorrateo?',
+        text: "Ya no se podran deshacer los cambios!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ok, prorratear!',
+        cancelButtonText: 'No, cancelar!',
+        reverseButtons: true
+      }).then((result) => {
+        if (result.isConfirmed) {
+          swalWithBootstrapButtons.fire(
+            'Prorrateado!',
+            'Los gastos fueron prorrateados',
+            'success'
+          )
+        } else if (
+          /* Read more about handling dismissals below */
+          result.dismiss === Swal.DismissReason.cancel
+        ) {
+          swalWithBootstrapButtons.fire(
+            'Cancelado',
+            'Los gastos no fueron prorrateados :(',
+            'error'
+          )
+        }
+      })
+
+    });
+}
+
+

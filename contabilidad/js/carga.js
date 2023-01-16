@@ -59,9 +59,8 @@ function completarCampoProrrateo(e) {
 }
 
 function completarCampoCentro(e) {
-  /* let Dato = e.target; */
-  let Dato=document.querySelector('.codCentro').value;
-  console.log(Dato);
+  let Dato = e.target;
+  // let Dato=document.querySelector('.codCentro').value;
   /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
   let n_comp = Dato.parentElement.parentElement.children[1].textContent;
   let codCentro = Dato.value;
