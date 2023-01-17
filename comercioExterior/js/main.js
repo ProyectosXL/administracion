@@ -67,6 +67,7 @@ function guardarCabecera(){
     let origen = document.querySelector("#origen");
     let ordenCompra = document.querySelector("#ordenCompra");
 
+
     if (ordenCompra.selectedIndex == 0) {
         ordenCompra.style.border="1px solid red";
         b=1;
@@ -97,6 +98,19 @@ function guardarCabecera(){
     }
     
     });
+
+/* 
+  // chequear esta function
+selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")|| el.value.includes("FORMA DE PAGO") ){
+     el.parentElement.style.border="1px solid red";
+     b=1;
+ }else{
+     el.parentElement.style.border="";
+ }
+  
+ });
+ */
+
 
     var cod_proveedor = document.getElementById('proveedor').value;
     var proveedor = document.getElementById('proveedor').selectedOptions[0].innerHTML;

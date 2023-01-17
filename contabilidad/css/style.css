@@ -19,10 +19,6 @@ h2{
     background-color: #343a40;
 }
 
-.btn-success{
-    margin-left: 10rem;
-}
-
 .biHeader{
     font-size: 18px;
 }
@@ -42,10 +38,6 @@ h2{
 
 #titlePrincipal{
     margin-top: 1.7rem;
-}
-
-#btnSend{
-    margin-left: 2rem;
 }
 
 #btnAmort{
@@ -69,10 +61,14 @@ h2{
     width: 50px;
 }
 
+.estado{
+    width: 150px;
+}
+
 #search{
     position: relative;
     margin-top: -59px;
-    margin-left: 17rem;
+    margin-left: 26.6rem;
 }
 
 .btn-group{
@@ -90,4 +86,31 @@ h2{
 .alert-danger{
     margin-top: 0.5rem;
     height:5rem;
+}
+
+#estado{
+    position: relative;
+    margin-top: -3.92rem;
+    margin-left: 17rem;
+}
+
+.select2-search__field{
+    font-size: 12px;
+}
+
+.select2-results__options {
+    font-size: 10.5px;
+    width: fit-content;
+}
+
+select, input{
+    background-color: #fff;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    height: 28px;
+}
+
+.btn:not(:disabled):not(.disabled) {
+    cursor: pointer;
+    margin-left: 15px;
 }
