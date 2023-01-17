@@ -16,6 +16,7 @@ class Orden{
         if($idEncabezado != null){
             $sql = " SELECT * FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ID = $idEncabezado ";
         }
+     
         try{
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
