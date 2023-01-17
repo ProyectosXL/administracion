@@ -159,8 +159,8 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <!-- <input class="input--style-1 soloNum" type="text" placeholder="ORDEN DE COMPRA" id="ordenCompra"> -->
-                                        <select name="" id="ordenCompra">
-                                            <option value="" disabled selected>ORDEN DE COMPRA</option>
+                                        <select id="ordenCompra">
+                                            <option disabled="disabled" selected="selected">ORDEN DE COMPRA</option>
                                         </select>
                                     </div>    
                                 </div>

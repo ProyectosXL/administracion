@@ -39,16 +39,18 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
     <!-- Including Font Awesome CSS from CDN to show icons -->
     <link rel="stylesheet" href=" https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
-	<link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.bootstrap4.min.css"></link>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    
     <link rel="stylesheet" href="css/style.css"></link>
+    
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+   
+    
+    
  
 </head>
 <body>
     
-    
+    <span class="select2-search__field"></span>
         <div class="alert alert-secondary">
             <div class="row">
                 <div id="titlePrincipal" class="col-md-auto">
@@ -81,7 +83,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <td></td>
                 <td><input type="date" class="fecha" value="<?= $hasta ?>"></td>
                 <td>
-                    <select class="codCentro" style="width: 65px;">
+                    <select class="codCentro select-auxiliar">
                         <option selected disabled></option>
                         <?php           
                         foreach($todosLosCentrosCosto as $valor => $value){
@@ -95,7 +97,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <td class="auxiliar"></td>
                 <td class="sector"></td>
                 <td>
-                    <select class="codCuenta" style="width: 65px;">
+                    <select class="codCuenta" style="width: 210px;">
                         <option selected disabled></option>
                         <?php           
                         foreach($todasLasCuentasContables as $valor => $value){
@@ -107,10 +109,10 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     </select>    
                 </td>
                 <td class="cuenta"></td>
-                <td><input class="importe" type="number"></input></td>
+                <td><input class="importe" type="number" style="width: 110px;"></input></td>
                 <td><input class="leyenda" type="text"></input></td>
                 <td>
-                    <select class="codRubro" style="width: 65px;">
+                    <select class="codRubro" style="width: 140px;" class="mi-selector">
                         <option selected disabled></option>
                         <?php           
                         foreach($todosLosRubros as $valor => $value){
@@ -123,7 +125,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 </td>
                 <td class="rubro"></td>
                 <td>
-                    <select class="codProrrateo" style="width: 50px;">
+                    <select class="codProrrateo" style="width: 160px;">
                         <option selected disabled></option>
                         <?php           
                         foreach($todosLosMetodos as $valor => $value){
@@ -136,7 +138,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 </td>
                 <td class="descProrrateo"></td>
                 <td class="suc"></td>
-                <td><input class="amortizar" type="number" name="" id=""></td>
+                <td><input class="amortizar" type="number" style="width: 60px;"></td>
             </tr>
             </tbody>
     </table>
@@ -221,15 +223,35 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <?php
     }
     ?>
-
+    <script src="https://code.jquery.com/jquery-3.6.3.js" integrity="sha256-nQLuAZGRRcILA+6dMBOvcRh5Pe310sBpanc6+QBmyVM=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="js/carga.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script> -->
+  
 
 </body>
+
+<script>
+    // In your Javascript (external .js resource or <script> tag)
+    $(document).ready(function() {
+        $('.select-auxiliar').select2();
+    });
+    $(document).ready(function() {
+        $('.codCuenta').select2();
+    });
+    $(document).ready(function() {
+        $('.codRubro').select2();
+    });
+    $(document).ready(function() {
+        $('.codProrrateo').select2();
+    });
+    
+</script>
+
 </html>

@@ -3,7 +3,7 @@
 try {
     require_once __DIR__.'/../../class/conexion.php';
     $cid = new Conexion();
-    $cid_central = $cid->conectar('servidor');
+    $cid_central = $cid->conectar('central');
 
     $fecha = $_POST['fecha'];
     $codCentro = $_POST['codCentro'];
@@ -32,7 +32,7 @@ try {
             [T_COMP],[RAZON_SOCIAL],[PROVEEDOR],[N_COMP],[IMPUTACIONES],[COD_RUBRO],[RUBRO_CONTABLE],[COD_PRORRATEO],[DESC_PRORRATEO],[NUM_SUCURSAL],[EXCLUIR],
             [CONTROLADO],[AMORTIZAR],[AMORTIZADO],[PERIODO],[ID_AA],[PRORRATEADO])
             VALUES ('CUENTAS2','$codCentro','$fecha','$auxiliar','$sector','$codCuenta','$cuenta',$importe,'$leyenda',NULL,NULL,NULL,NULL,NULL,'$codRubro',
-            '$rubro','$codProrrateo','$descProrrateo','$suc',NULL,1,'$amortizar',NULL,'$periodo',NULL,NULL)
+            '$rubro','$codProrrateo','$descProrrateo','$suc',0,1,'$amortizar',NULL,NULL,NULL,NULL)
     ";
     $stmt = sqlsrv_query($cid_central, $sql);
     sqlsrv_execute($stmt);
