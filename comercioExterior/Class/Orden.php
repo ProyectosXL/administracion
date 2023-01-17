@@ -44,6 +44,18 @@ class Orden{
             while( $v = sqlsrv_fetch_array( $stmt) ) {
                 $rows[] = $v;
             }
+
+            foreach ($rows as $key => &$value) {
+                foreach ($value as $k => &$v) {
+                    if((gettype($v)== 'string') && substr($v, 0, 1) == '.'){
+                        $v = '0'.$v;
+                    }
+                }
+            }
+
+            // print_r($rows);
+            // die();
+
             return ($rows);
             
     
