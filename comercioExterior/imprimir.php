@@ -60,7 +60,7 @@ $htmlContent ='
 
         margin-left: auto; 
         margin-right: auto;  
-        padding-left: 30px; 
+        padding-left: 5px; 
         padding-right: 30px;
     }
 
@@ -72,14 +72,14 @@ $htmlContent ='
 
     .headerCenter {
         border:  solid black 1px;
-        width: 40%;
+        width: 293px;
         float:left;
     }
 
     .headerRight {
         border:  solid black 1px;
         float:left;
-        width: 32%;
+        width: 35%;
         height: 209px;
     }
 
@@ -93,44 +93,48 @@ $htmlContent ='
         text-align: center;
         float:left;
         width: 25%;
-        height: 6%;
+        height: 3%;
     }
     .importeEnDolarIndice{
         border:solid black 1px;
         text-align: center;
         float:left;
-        width: 10%;
-        height: 6%;
+        width: 71px;
+        height: 3%;
+        font-size: 12px;
     }
     .tipoCambioIndice {
         border:solid black 1px;
         text-align: center;
         float:left;
-        width: 87px;
-        height: 6%;
+        width: 71px;
+        height: 3%;
     }
     .importePesosIndice {
         border:solid black 1px;
         text-align: center;
         float:left;
-        width: 10%;
-        height: 6%;
+        width: 71px;
+        height: 3%;
+        font-size: 12px;
     }
 
     .sobreFobIndice {
         border:solid black 1px;
         text-align: center;
         float:left;
-        width: 10%;
-        height: 6%;
+        width: 74px;
+        height: 3%;
+        font-size: 12px;
     }
     .observacionesIndice {
         padding-left:10px;
         border:solid black 1px;
         text-align: center;
         float:left;
-        width: 31%;
-        height: 6%;
+        width: 224px;
+        height: 3%;
+        font-size: 12px;
     }
     .bodyGastos{
         border:solid black 1px;
@@ -151,7 +155,7 @@ $htmlContent ='
         border:solid black 1px;
         text-align: right;
         float:left;
-        width: 87px;
+        width: 10%;
         height: 80%;
         padding-right: 4px;
     }
@@ -177,17 +181,17 @@ $htmlContent ='
 </style>
 
 <body>
-    <div style="padding-left:4%">
+    <div>
         <div>
             <div class ="headerLeft" >
                 <div style="padding-left:2px">
                     <div>PROVEEDOR </div>
                     <div>DESPACHO N°</div>
-                    <div>MATERIAL:</div>
+                    <div>MATERIAL</div>
                     <div>ORIGEN</div>
                     <div>FECHA EMBARQUE</div>
                     <div>FECHA ARRIBO</div>
-                    <div>FACTURA PROVEEDOR</div>
+                    <div>FACTURA P</div>
                     <div>FECHA FACTURA</div>
                     <div>ORDEN DE COMPRA</div>
                     <div>FORMA DE PAGO</div>
@@ -218,7 +222,7 @@ $htmlContent ='
             <div class ="headerRight">
                 <div style="padding-left:2px">
                     <div>
-                    <div>Numero BL <span style="text-align:right;">'. $dataEncabezado['NUMERO_BL'].'</span></div>                
+                    <div>Numero BL &nbsp;&nbsp;&nbsp;<span>'. $dataEncabezado['NUMERO_BL'].'</span></div>                
                 </div>
                 <div>
                     <div><br></div>                
@@ -227,16 +231,13 @@ $htmlContent ='
                     <div><br></div>                
                 </div>
                 <div>
-                    <div>VALOR F.O.B  <strong>U$S</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>    
+                    <div>VALOR F.O.B  &nbsp;<strong>U$S</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>    
                 </div>
                 <div>
-                    <div>VALOR F.O.B  <strong>$</strong>'. $dataEncabezado['VALOR_FOB_PESO'].'</div>    
+                    <div>VALOR F.O.B &nbsp; <strong>$</strong>'. $dataEncabezado['VALOR_FOB_PESO'].'</div>    
                 </div>
                 <div>
-                    <div>GASTOS <strong>$</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>    
-                </div>
-                <div>
-                    <div><br></div>                
+                    <div>GASTOS &nbsp; <strong>$</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>    
                 </div>
                 <div>
                     <div><br></div>                
@@ -248,7 +249,10 @@ $htmlContent ='
                     <div><br></div>                
                 </div>
                 <div>
-                    <div>costo nacionalizacion<strong>$</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>   
+                    <div><br></div>                
+                </div>
+                <div>
+                    <div>costo nacionalizacion &nbsp;&nbsp;<strong>$</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>   
                 </div>
             </div>
         </div>
@@ -285,7 +289,13 @@ $htmlContent ='
     <div class="bodyGastos"><div>';
 
     foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:5px"> ' .$value['GASTOS'].'</div>';
+        if($value['GASTOS'] == "Gastos multa dest. Fuera termino"){
+            $value['GASTOS'] = "Gastos multa dest.fuer.ter";
+        }
+        if($value['GASTOS'] == "Tasa estadistica monto maximo"){
+            $value['GASTOS'] = "Tasa est monto max";
+        }
+        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px"> ' .$value['GASTOS'].'</div>';
     } ;
 
     $htmlContent = $htmlContent .'
@@ -295,7 +305,7 @@ $htmlContent ='
     ';
 
     foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:5px;">' .$value['IMPORTE_U$S'].'</div>';
+        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px;">' .$value['IMPORTE_U$S'].'</div>';
     } ;
 
 
@@ -304,52 +314,52 @@ $htmlContent ='
     <div class="bodyTc">';
 
     foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:5px">' .$value['TIPO_CAMBIO'].'</div>';
+        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px">' .$value['TIPO_CAMBIO'].'</div>';
     };
 
     $htmlContent= $htmlContent .'
 
     </div> <div class="bodyCenter">';
     foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:5px">' .$value['IMPORTE_$'].'</div>';
+        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px">' .$value['IMPORTE_$'].'</div>';
     };
 
     $htmlContent = $htmlContent.
     ' </div><div class="bodyCenter bodyCenterPorcentaje">';
 
     foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:5px"> %  ' .$value['PORCENTAJE'].'</div>';
+        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px"> %  ' .$value['PORCENTAJE'].'</div>';
     } ;
 
     $htmlContent=$htmlContent.
 
     ' </div>
 
-    <div style="border:  solid black 1px;text-align: center;float:left;width: 32%;height: 80%" >';
+    <div style="border:  solid black 1px;text-align: center;float:left;width: 234px;height: 80%" >';
 
     foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:5px">' .$value['OBSERVACIONES'].'</div>';
+        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px">' .$value['OBSERVACIONES'].'</div>';
     } ;
 
     $htmlContent=$htmlContent.'
     </div> 
 
     <div class="" style="clear:both;" >
-    <div><div class="gastosCosteables" >TOTAL GASTOS COSTEABLES</div>
+    <div><div class="gastosCosteables" >Total Gastos Costeables</div>
 
-    <div class="" style="border:  solid black 1px;text-align: center;float:left;width: 10%" >'
+    <div class="" style="border:  solid black 1px;text-align: center;float:left;width: 72px" >'
 
     .$totalDeGastos.'
 
-    </div><div class="" style="text-align: center;float:left;width: 87px" >'
+    </div><div class="" style="text-align: center;float:left;width: 71px" >'
 
     .$tc.'
 
-    </div><div class="" style="border:  solid black 1px;text-align: center;float:left;width: 10%" >'
+    </div><div class="" style="border:  solid black 1px;text-align: center;float:left;width: 71px" >'
 
     .$importeEnPesos.'
 
-    </div><div class="" style="border:  solid black 1px;text-align: center;float:left;width: 10%" > %  '
+    </div><div class="" style="border:  solid black 1px;text-align: center;float:left;width: 76px" > %  '
 
     .$sobreFob.'
 
