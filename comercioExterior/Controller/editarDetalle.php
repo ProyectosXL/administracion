@@ -1,13 +1,14 @@
 <?php
+$datosDetalle = $input = json_decode(file_get_contents("php://input"), true);
+
 require_once '../Class/detalle.php';
 $cid = new Detalle();
-$datosDetalle = $_POST['array'];
+// $datosDetalle = $_POST['array'];
 
 $newArray = [];
 
 foreach($datosDetalle as $key => $value){
-
-    $newArray[$key]['Gastos']= $value[0];
+    $newArray[$key]['gastos']= $value[0];
     $newArray[$key]['importeEnDolares']= $value[1];
     $newArray[$key]['tipoCambio']= $value[2];
     $newArray[$key]['importeEnPesos']= $value[3];

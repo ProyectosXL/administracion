@@ -67,12 +67,13 @@ $orden = listarPorOrdenCompra($ordenCompra);
                                 ?>
                                 <tr>
                                     <td id="id" attr-value="<?=$key['ID']?>"><?=  ($valor+1)?></td>
-                                    <td><?=  $key['GASTOS']?></td>
+                                    <td><input style="text-align:center" type="text"  value = "<?=  $key['GASTOS']?>"></input></td>
                                     <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "<?=$key['IMPORTE_U$S']?>"></input></td>
-                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($valor <= 5) ? $key['TIPO_CAMBIO'] : "0" ?>"></input></td>
+                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($key['TIPO_CAMBIO']) ? $key['TIPO_CAMBIO'] : "0" ?>"></input></td>
                                     <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly value="<?=$key['IMPORTE_$']?>"></input></td>
-                                    <td><input style="text-align:center"  value="<?= $key['PORCENTAJE']?>%"></input></td>
+                                    <td><input style="text-align:center"  value="<?= $key['PORCENTAJE']?>%" readonly></input></td>
                                     <td><input><?=$key['OBSERVACIONES']?></input></td>
+                                    <td><button type="button" class="btn btn-danger" onclick="borrarGasto(this)">X</button></td>
                                 </tr>
                             <?php
                             }   
@@ -88,7 +89,7 @@ $orden = listarPorOrdenCompra($ordenCompra);
                                 </tr>
                             </tbody>
                         </table>
-                        <div><button class="btn btn-primary" id="btnUpdateDetalle">Guardar <i class="bi bi-cloud-download"></i></button></div>
+                        <div><button class="btn btn-primary m-r" id="btnAgregarDetalle" >Agregar Gasto <i class="bi bi-cloud-download"></i></button> <button class="btn btn-primary" id="btnUpdateDetalle">Guardar <i class="bi bi-cloud-download"></i></button></div>
                 </div>
             </div>
         </div>

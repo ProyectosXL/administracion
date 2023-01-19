@@ -62,6 +62,7 @@ $htmlContent ='
         margin-right: auto;  
         padding-left: 5px; 
         padding-right: 30px;
+        font-size:12px;
     }
 
     .headerLeft {
@@ -80,7 +81,7 @@ $htmlContent ='
         border:  solid black 1px;
         float:left;
         width: 35%;
-        height: 209px;
+        height: 157px;
     }
 
     .separacion {
@@ -259,116 +260,68 @@ $htmlContent ='
     </div>   
 
     <div>
-    <div class="separacion" >
-        <div></div>
-    </div>
-    <div class="gastosIndice">
-        <div style="padding-top:10px">GASTOS</div>
-    </div>
-    <div class="importeEnDolarIndice"> IMPORTE <div> U$S </div> </div>
-    <div class="tipoCambioIndice">
-    TC
-    </div>
-    <div class="importePesosIndice" >
-    IMPORTE
-    <div>$</div>
-    </div>
-    <div class="sobreFobIndice">
-    $SOBRE<div>F.O.B</div>
-    </div>
-    <div class="observacionesIndice" >
-    <div style="padding-top:10px">OBSERVACIONES</div>
-    </div>
+        <div class="separacion" >
+            <div></div>
+        </div>
 
-    </div>    
-    <div>
-    <div class="separacion">
-    <div></div>
-    </div>
-
-    <div class="bodyGastos"><div>';
-
-    foreach ($dataDetalle as $key => $value) { 
-        if($value['GASTOS'] == "Gastos multa dest. Fuera termino"){
-            $value['GASTOS'] = "Gastos multa dest.fuer.ter";
-        }
-        if($value['GASTOS'] == "Tasa estadistica monto maximo"){
-            $value['GASTOS'] = "Tasa est monto max";
-        }
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px"> ' .$value['GASTOS'].'</div>';
-    } ;
-
-    $htmlContent = $htmlContent .'
-
-    </div></div>
-    <div class="bodyImporteDolar">
+        <table class="" style="width:700px;border-collapse:collapse; border: none;">
+            <thead style="border :solid black 1px;">
+                <th style="border-right :solid black 1px;width:165px">GASTOS</th>
+                <th style="border-right :solid black 1px;width:60">IMPORTE USD</th>
+                <th style="border-right :solid black 1px;width:60">TC</th>
+                <th>IMPORTE $</th>
+                <th>SOBRE F.O.B</th>
+                <th>OBSERVACIONES</th>
+            </thead>
+            <tbody style="border:solid black 1px;">
     ';
 
-    foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px;">' .$value['IMPORTE_U$S'].'</div>';
+    foreach ($dataDetalle as $key => $value) {
+    
+     
+        $htmlContent .= 
+        '
+                <tr style="margin-top:0px;margin-bottom:0px;">
+                    <td style="border-right:solid 1px;text-align:center;padding-bottom:15px">' .$value['GASTOS'].'</td>
+                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px"><span>'.$value['IMPORTE_U$S'] .'</span></td>
+                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px"><span>'.$value['TIPO_CAMBIO'] .'</span></td>
+                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px"><span >'.$value['IMPORTE_$'] .'</span></td>
+                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px"><span>%'.$value['PORCENTAJE'] .'</span></td>
+                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px">'.$value['OBSERVACIONES'] .'</td>
+
+                </tr>
+
+        ';
     } ;
 
+    
 
-    $htmlContent= $htmlContent .'</div>
 
-    <div class="bodyTc">';
+    $htmlContent=$htmlContent.= ' 
+    
+            </tbody>
+        </table>
+    </div>
 
-    foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px">' .$value['TIPO_CAMBIO'].'</div>';
-    };
+            <table >
+            <tbody>
+                <tr style="">
+                    <td style="width:160px">Total Gastos Costeables</td>
+                    <td style ="width:80px;text-align:right">'.$totalDeGastos.'</td>
+                    <td  style ="width:80px;text-align:right">'.$tc.'</td>
+                    <td  style ="width:95px;text-align:right">'.$sobreFob.'</td>
+                    <td  style ="width:110px;text-align:right">'.$importeEnPesos.'</td>
+                    <td></td>
+                </tr>  
+            </tbody>
+            </table>
 
-    $htmlContent= $htmlContent .'
 
-    </div> <div class="bodyCenter">';
-    foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px">' .$value['IMPORTE_$'].'</div>';
-    };
+    
 
-    $htmlContent = $htmlContent.
-    ' </div><div class="bodyCenter bodyCenterPorcentaje">';
+</body>
 
-    foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px"> %  ' .$value['PORCENTAJE'].'</div>';
-    } ;
-
-    $htmlContent=$htmlContent.
-
-    ' </div>
-
-    <div style="border:  solid black 1px;text-align: center;float:left;width: 234px;height: 80%" >';
-
-    foreach ($dataDetalle as $key => $value) { 
-        $htmlContent = $htmlContent .  '<div style="padding-bottom:10px">' .$value['OBSERVACIONES'].'</div>';
-    } ;
-
-    $htmlContent=$htmlContent.'
-    </div> 
-
-    <div class="" style="clear:both;" >
-    <div><div class="gastosCosteables" >Total Gastos Costeables</div>
-
-    <div class="" style="border:  solid black 1px;text-align: center;float:left;width: 72px" >'
-
-    .$totalDeGastos.'
-
-    </div><div class="" style="text-align: center;float:left;width: 71px" >'
-
-    .$tc.'
-
-    </div><div class="" style="border:  solid black 1px;text-align: center;float:left;width: 71px" >'
-
-    .$importeEnPesos.'
-
-    </div><div class="" style="border:  solid black 1px;text-align: center;float:left;width: 76px" > %  '
-
-    .$sobreFob.'
-
-    </div></div>
-    </div> ';
-
-    $htmlContent= $htmlContent .'</div></div>    </div>
-
-</body>';
+</html>';
 
 
 
@@ -377,8 +330,7 @@ $htmlContent ='
 
 
 <?php 
-// var_dump($htmlContent);
-// die();
+
 
 require '../vendor/autoload.php';
 
@@ -390,8 +342,9 @@ use Dompdf\Dompdf;
 // print_r($htmlContent);
 // die();
 
+
 $dompdf = new Dompdf();
-$dompdf->loadHtml($htmlContent);
+$dompdf->loadHtml($htmlContent,'UTF-8');
 
 // (Optional) Setup the paper size and orientation
 $dompdf->setPaper('A4', 'portrait');

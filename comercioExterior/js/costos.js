@@ -30,31 +30,41 @@ let sacarParseo = (string,isNumber = false) => {
   return valor;
 }
 
-const iniciarCalculo = (data)=>{
+const iniciarCalculo = (data,isCopy = null)=>{
+ 
+  let table = document.querySelector("#table")
+  let rows = table.querySelectorAll("tr:not(:last-child)")
 
-  data = data.parentElement.parentElement.childNodes[5].childNodes[0];
-  let tipoCambio = (data.parentElement.parentElement.childNodes[7].childNodes[0].value)
-  tipoCambio = tipoCambio.replace(",",".");
-  tipoCambio = parseFloat(tipoCambio);
+  rows.forEach((x,e)=>{
 
-  let valorFobDolar = (data.value);
+      total = 0;
+    
+        let tipoCambio =(x.querySelectorAll("td")[3].firstChild.value).replace(",",".");
 
-  let NumberFobDolar = valorFobDolar.replace(",",".");
-  let valorFobPeso = NumberFobDolar * tipoCambio;
+        if(tipoCambio == 0){
+          total = (x.querySelectorAll("td")[2].firstChild.value ).replace(",",".")
 
-  if( tipoCambio == 0 ){
-    valorFobPeso = valorFobDolar
-    valorFobPeso = valorFobPeso.replace(",",".");
-    valorFobPeso = parseFloat(valorFobPeso);
-  };
-  
+        }else{
+          total = (x.querySelectorAll("td")[2].firstChild.value ).replace(",",".")* (x.querySelectorAll("td")[3].firstChild.value).replace(",",".");
+        }
+ 
+        x.querySelectorAll("td")[4].firstChild.value =parseFloat(total).toFixed(2);
 
-  data.parentElement.parentElement.childNodes[9].childNodes[0].value = parseFloat(valorFobPeso).toFixed(2);
+        let sobreFob = x.querySelectorAll("td")[5]
+        let importeEnPesos = x.querySelectorAll("td")[4].firstChild.value
+        
+        let valorPesosFob = document.querySelector("#valorPesosFob").getAttribute("attr-value");
 
+        valor = sacarParseo(valorPesosFob)
+
+        let result = ((importeEnPesos / valor)*100) ;
+        sobreFob.firstChild.value = result.toFixed(2) + "%";
+
+      
+  })
   totalGastos();
-  calcularSobreFob(data);
-
 }
+
 
 const totalGastos = ()=> {
 
@@ -86,20 +96,6 @@ const totalGastos = ()=> {
 
 } 
 
-
-const calcularSobreFob = (data)=>{
-
-  let sobreFob = data.parentElement.parentElement.childNodes[11];
-  let importeEnPesos = parseFloat(data.parentElement.parentElement.childNodes[9].childNodes[0].value);
-
-  let valorPesosFob = document.querySelector("#valorPesosFob").getAttribute("attr-value");
-
-  valor = sacarParseo(valorPesosFob)
-
-  let result = ((importeEnPesos / valor)*100) ;
-  sobreFob.textContent = result.toFixed(2) + "%";
-
-}
 
 if(document.querySelector("#btnSaveDetalle") != null){
 
