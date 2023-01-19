@@ -14,7 +14,9 @@ class Gastos
 
     } 
 
-    public function traerGastos($desde, $hasta, $estado){
+      
+
+    public function traerGastos($desde, $hasta, $estado, $codRubro){
 
     if($estado == '0'){
 
@@ -37,8 +39,10 @@ class Gastos
 
     }else{
             $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL 
+                    AND COD_RUBRO LIKE '$codRubro'
                         UNION ALL
-                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) AND PRORRATEADO IS NULL 
+                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
+                    AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro'
             ";
     }
         $stmt = sqlsrv_query( $this->cid_central, $sql );

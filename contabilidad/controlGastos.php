@@ -46,33 +46,51 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         <div class="alert alert-secondary">
             <div class="row">
                 <div id="titlePrincipal" class="col-md-auto">
-                    <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos - Informe Económico</h3>
+                    <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos</h3>
                 </div>
-                <div class="form-row" style="width: 30%;">
-                    <form action="">
-                        <div class="desde">
-                            <label class="col- col-form-label">Desde:</label>
-                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
-                        </div>
+                <div class="form-row">
+                    <form>
+                        <div class="contenedor">
+                            <div class="col-">
+                                <label>Desde:</label>
+                                <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
+                            </div>
 
-                        <div class="hasta">
-                            <label class="col- col-form-label">Hasta:</label>
-                            <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
+                            <div class="col-">
+                                <label>Hasta:</label>
+                                <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
+                            </div>
+                            <div id="estado">
+                                <label>Estado:</label>
+                                <select class="form-control form-control-sm estado" name="estado">
+                                    <option value="" selected>Todos</option>
+                                    <option value="1">Amortizar</option>
+                                    <option value="2">Excluidos</option>
+                                    <option value="3">Pendiente asignar</option>
+                                    <option value="0">Pendiente control</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="Rubro">Rubro:</label>
+                                <select class="form-control form-control-sm" name="codRubro">
+                                    <option selected disabled>Todos</option>
+                                    <?php           
+                                    foreach($todosLosRubros as $valor => $value){
+                                    ?>
+                                    <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO.'-'.$value->RUBRO_CONTABLE; ?></option>
+                                    <?php   
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div>
+                                <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
+                            </div>
                         </div>
-                        <div id="estado">
-                            <label>Estado:</label>
-                            <select class="form-control form-control-sm estado" name="estado">
-                                <option value="" selected>Todos</option>
-                                <option value="1">Amortizar</option>
-                                <option value="2">Excluidos</option>
-                                <option value="3">Pendiente asignar</option>
-                                <option value="0">Pendiente control</option>
-                            </select>
-                        </div>
-                            <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
+                            
                     </form>
                 </div>
-                <div class="btn-group" style="margin-left: 0;">
+                <div class="btn-group">
                     <button class="btn btn-danger mt-3" id="btnAmort">Amortizar <i class="bi bi-calendar2-week"></i></button>
                     <button class="btn btn-info mt-3" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
                     <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnSend">Procesar <i class="bi bi-check2-square"></i></button>
@@ -100,8 +118,14 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 else {
                 $estado = '%';
                 }
+            
+            if (isset($_GET['codRubro'])!= ''){
+                $codRubro = $_GET['codRubro'];}
+                else {
+                $codRubro = '%';
+                }
         
-            $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado);
+            $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro);
 
         ?>
 
