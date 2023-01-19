@@ -253,7 +253,7 @@ $htmlContent ='
                     <div><br></div>                
                 </div>
                 <div>
-                    <div>costo nacionalizacion &nbsp;&nbsp;<strong>$</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>   
+                    <div>costo nacionalizacion &nbsp;&nbsp;'. $sobreFob.'%</div>   
                 </div>
             </div>
         </div>
@@ -308,9 +308,9 @@ $htmlContent ='
                 <tr style="">
                     <td style="width:160px">Total Gastos Costeables</td>
                     <td style ="width:80px;text-align:right">'.$totalDeGastos.'</td>
-                    <td  style ="width:80px;text-align:right">'.$tc.'</td>
-                    <td  style ="width:95px;text-align:right">'.$sobreFob.'</td>
-                    <td  style ="width:110px;text-align:right">'.$importeEnPesos.'</td>
+                    <td  style ="width:80px;text-align:right"></td>
+                    <td  style ="width:95px;text-align:right">'.$importeEnPesos.'</td>
+                    <td  style ="width:110px;text-align:right">'.$sobreFob.'%</td>
                     <td></td>
                 </tr>  
             </tbody>
