@@ -1,9 +1,9 @@
-document.addEventListener("DOMContentLoaded", iniciarEscucha);
+document.addEventListener("DOMContentLoaded", functionInitial);
 let Gastos = document.getElementById("totalGastos");
 
 
-function iniciarEscucha() {
-  /* Gastos.value=0; */
+function functionInitial() {
+  totalGastos();
 }
 
 const parseNumber = (value)=>{
@@ -120,12 +120,12 @@ if(document.querySelector("#btnSaveDetalle") != null){
 
     });
 
-    arrayDatos[16] = idEncabezado;
     $.ajax({
-      url: 'Controller/insertarDetalle.php',
+      url: 'Controller/OrdenDeCompraController.php',
       method: 'POST',
       data:{
-        "array":arrayDatos
+        "array": arrayDatos, 
+        "idEncabezado": idEncabezado
       },
     });
     Swal.fire({
@@ -137,7 +137,6 @@ if(document.querySelector("#btnSaveDetalle") != null){
       denyButtonText: `Volver`,
       })
       .then((e) => {
-
         window.location = "index.php"
       })
 
