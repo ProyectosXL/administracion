@@ -1,3 +1,4 @@
+
 <?php 
 require_once __DIR__.'./Controller/listarOrden.php';
 $arrayEncabezado = listar($_GET['idEncabezado']);
@@ -28,330 +29,157 @@ foreach ($dataDetalle as $value) {
     }
 }
 
-$htmlContent =' 
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- BOOTSTRAP -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
-<!-- Icons font CSS-->
-<link href="vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-<link href="vendor/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
-<!-- Font special for pages-->
-<link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
-<!-- Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-<!-- Vendor CSS-->
-<link href="vendor/select2/select2.min.css" rel="stylesheet" media="all">
-<link href="vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-<!-- <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg"> -->
-<!-- Main CSS-->
-<!-- <link href="css/style.css" rel="stylesheet" media="all"> -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <title>Document</title>
 </head>
-<style> 
-
-    body {  
-
-        margin-left: auto; 
-        margin-right: auto;  
-        padding-left: 5px; 
-        padding-right: 30px;
-        font-size:12px;
-    }
-
-    .headerLeft {
-        border:  solid black 1px;
-        width: 25%;
-        float:left
-    }
-
-    .headerCenter {
-        border:  solid black 1px;
-        width: 293px;
-        float:left;
-    }
-
-    .headerRight {
-        border:  solid black 1px;
-        float:left;
-        width: 35%;
-        height: 157px;
-    }
-
-    .separacion {
-        clear:both;
-        width: 20%;
-    }
-
-    .gastosIndice{
-        border:solid black 1px;
-        text-align: center;
-        float:left;
-        width: 25%;
-        height: 3%;
-    }
-    .importeEnDolarIndice{
-        border:solid black 1px;
-        text-align: center;
-        float:left;
-        width: 71px;
-        height: 3%;
-        font-size: 12px;
-    }
-    .tipoCambioIndice {
-        border:solid black 1px;
-        text-align: center;
-        float:left;
-        width: 71px;
-        height: 3%;
-    }
-    .importePesosIndice {
-        border:solid black 1px;
-        text-align: center;
-        float:left;
-        width: 71px;
-        height: 3%;
-        font-size: 12px;
-    }
-
-    .sobreFobIndice {
-        border:solid black 1px;
-        text-align: center;
-        float:left;
-        width: 74px;
-        height: 3%;
-        font-size: 12px;
-    }
-    .observacionesIndice {
-        padding-left:10px;
-        border:solid black 1px;
-        text-align: center;
-        float:left;
-        width: 224px;
-        height: 3%;
-        font-size: 12px;
-    }
-    .bodyGastos{
-        border:solid black 1px;
-        text-align: center;
-        float:left;
-        width: 25%;
-        height: 80%;
-    }
-    .bodyImporteDolar {
-        border:solid black 1px;
-        text-align: right;
-        float:left;
-        width: 10%;
-        height: 80%;  
-        padding-right: 4px; 
-    }
-    .bodyTc {
-        border:solid black 1px;
-        text-align: right;
-        float:left;
-        width: 10%;
-        height: 80%;
-        padding-right: 4px;
-    }
-    .bodyCenter {
-        border:solid black 1px;
-        text-align: right;
-        float:left;
-        width: 10%;
-        height: 80%;
-        padding-right: 4px;
-    }
-    .bodyCenterPorcentaje {
-        padding-left: 4px !important;
-        text-align: left !important;
-    }
-    .gastosCosteables {
-        border:solid black 1px;
-        text-align: center;
-        float:left;
-        width: 25%;
-    }
-
+<style>
+    body{font-size:12px }
 </style>
-
 <body>
-    <div>
-        <div>
-            <div class ="headerLeft" >
-                <div style="padding-left:2px">
-                    <div>PROVEEDOR </div>
-                    <div>DESPACHO N°</div>
-                    <div>MATERIAL</div>
-                    <div>ORIGEN</div>
-                    <div>FECHA EMBARQUE</div>
-                    <div>FECHA ARRIBO</div>
-                    <div>FACTURA P</div>
-                    <div>FECHA FACTURA</div>
-                    <div>ORDEN DE COMPRA</div>
-                    <div>FORMA DE PAGO</div>
-                    <div></div>
-                    <div >TC DEL DESPACHO</div>
-                    <div></div>
-                </div>
-            </div>
 
-            <div class ="headerCenter">
-                <div style="padding-left:2px">
-                    <div>'.$dataEncabezado['PROVEEDOR'].'</div>
-                    <div>'.$dataEncabezado['DESPACHO'].'</div>
-                    <div>'.$dataEncabezado['MATERIAL'].'</div>
-                    <div>'.$dataEncabezado['ORIGEN'].'</div>
-                    <div>'.$dataEncabezado['FECHA_EMB']->format('d/m/Y').'</div>
-                    <div>'.$dataEncabezado['FECHA_ARR']->format('d/m/Y').'</div>
-                    <div>'.$dataEncabezado['FACTURA'].'</div>
-                    <div>'.$dataEncabezado['FECHA_FACT']->format('d/m/Y').'</div>
-                    <div>'.$dataEncabezado['ORDEN_COMPRA'].'SDASDA</div>
-                    <div>'.$dataEncabezado['FORMA_PAGO'].'</div>
-                    <div></div>
-                    <div>'.$dataEncabezado['TIPO_CAMBIO'].'</div>
-                    <div></div>
-                </div>
-            </div>
+    <div class="container border border-secondary">
+        <div class="row">
+            <div class="col-2 border border-secondary" >
+                <div class="row" style="">PROVEEDOR</div>
+                <div class="row">DESPACHO N°</div>
+                <div class="row">MATERIAL</div>
+                <div class="row">ORIGEN</div>
+                <div class="row">FECHA EMBARQUE</div>
+                <div class="row">FECHA ARRIBO</div>
+                <div class="row">FACTURA PROVEEDOR</div>
+                <div class="row">FECHA FACTURA</div>
+                <div class="row">ORDEN DE COMPRA</div>
+                <div class="row">FORMA DE PAGO</div>
+                <div class="row"><br></div>
+                <div class="row">TC DEL DESPACHO</div>
+                <div class="row"></div> 
+           </div>
+           <div class="col-6 border border-secondary" >
+               <div class="row " style=" white-space: pre;"><?=$dataEncabezado['PROVEEDOR'] ?></div>
+                 <div class="row"><?=$dataEncabezado['DESPACHO'] ?></div>
+                <div class="row"><?=$dataEncabezado['MATERIAL'] ?></div>
+                <div class="row"><?=$dataEncabezado['ORIGEN'] ?></div>
+                <div class="row"><?=$dataEncabezado['FECHA_EMB']->format('d/m/Y') ?></div>
+                <div class="row"><?=$dataEncabezado['FECHA_ARR']->format('d/m/Y') ?></div>
+                <div class="row"><?=$dataEncabezado['FACTURA'] ?></div>
+                <div class="row"><?=$dataEncabezado['FECHA_FACT']->format('d/m/Y') ?></div>
+                <div class="row"><?=$dataEncabezado['ORDEN_COMPRA'] ?></div>
+                <div class="row"><?=$dataEncabezado['FORMA_PAGO'] ?></div>
+                <div class="row"><br></div>
+                <div class="row"><br></div>
+                <div class="row"><?=$dataEncabezado['TIPO_CAMBIO'] ?></div>
+                <div class="row"><br></div>
+           </div>
+           <div class="col-4 border border-secondary" >
 
-            <div class ="headerRight">
-                <div style="padding-left:2px">
-                    <div>
-                    <div>Numero BL &nbsp;&nbsp;&nbsp;<span>'. $dataEncabezado['NUMERO_BL'].'</span></div>                
+                <div class="row">
+                    <div class="col">Número BL</div>
+                    <div class="col"><?= $dataEncabezado['NUMERO_BL']?></div>
                 </div>
-                <div>
-                    <div><br></div>                
+
+                <div class="row"><br></div>
+                <div class="row"><br></div>
+
+                <div class="row">
+                    <div class="col" style =" white-space: pre;">VALOR F.O.B</div>
+                    <div class="col">U$S</div>
+                    <div class="col"><?= $dataEncabezado['VALOR_FOB_DOLAR']?></div>
                 </div>
-                <div>
-                    <div><br></div>                
+
+                <div class="row">
+                    <div class="col" style =" white-space: pre;">VALOR F.O.B </div>
+                    <div class="col">$</div>
+                    <div class="col"><?= $dataEncabezado['VALOR_FOB_PESO']?></div>
                 </div>
-                <div>
-                    <div>VALOR F.O.B  &nbsp;<strong>U$S</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>    
-                </div>
-                <div>
-                    <div>VALOR F.O.B &nbsp; <strong>$</strong>'. $dataEncabezado['VALOR_FOB_PESO'].'</div>    
-                </div>
-                <div>
-                    <div>GASTOS &nbsp; <strong>$</strong>'. $dataEncabezado['VALOR_FOB_DOLAR'].'</div>    
-                </div>
-                <div>
-                    <div><br></div>                
-                </div>
-                <div>
-                    <div><br></div>                
-                </div>
-                <div>
-                    <div><br></div>                
-                </div>
-                <div>
-                    <div><br></div>                
-                </div>
-                <div>
-                    <div>costo nacionalizacion &nbsp;&nbsp;'. $sobreFob.'%</div>   
-                </div>
-            </div>
+                <div class="row">
+                    <div class="col" style =" white-space: pre;">GASTOS </div>
+                    <div class="col">  $</div>
+                    <div class="col"><?= $dataEncabezado['VALOR_FOB_PESO']?></div>
+                </div>  
+                <div class="row"><br></div>
+                <div class="row"><br></div>
+                <div class="row"><br></div>
+                <div class="row"><br></div>
+                <div class="row"><br></div>
+                <div class="row"><br></div>
+
+                <div class="row" style =" white-space: pre;">
+                    <div class="col" style =" white-space: pre;">Costo Nacionalizacion $</div>
+                    <div class="col"><?= $sobreFob?>% </div>
+                </div>  
+
+           </div>
         </div>
-    </div>   
-
-    <div>
-        <div class="separacion" >
-            <div></div>
+        <div class="row">
+           <div class="col-2 border border-secondary text-center">
+                <div class="row" style="display: block;">GASTOS</div>
+           </div>
+           <div class="col-6 border border-secondary">
+                <div class="row">
+                    <div class="col border-end border-secondary text-center">IMPORTE U$S</div>
+                    <div class="col border-end border-secondary text-center">TC</div>
+                    <div class="col border-end border-secondary text-center">IMPORTE $</div>
+                    <div class="col text-center">% SOBRE F.O.B</div>
+                </div>
+    
+           </div>
+           <div class="col-4 border border-secondary text-center">
+                <div class="col">OBSERVACIONES</div>
+           </div>
         </div>
 
-        <table class="" style="width:700px;border-collapse:collapse; border: none;">
-            <thead style="border :solid black 1px;">
-                <th style="border-right :solid black 1px;width:165px">GASTOS</th>
-                <th style="border-right :solid black 1px;width:60">IMPORTE USD</th>
-                <th style="border-right :solid black 1px;width:60">TC</th>
-                <th>IMPORTE $</th>
-                <th>SOBRE F.O.B</th>
-                <th>OBSERVACIONES</th>
-            </thead>
-            <tbody style="border:solid black 1px;">
-    ';
+        <?php 
+            foreach ($dataDetalle as $key => $value) {
+            
+        ?>
+                <div class="row text-center" style="padding-bottom:10px">
+                    <div class="col-2 text-center">
+                        <?= $value['GASTOS']; ?>
+                    </div>
+                    <div class="col-6 col-md-offset-3 text-center">
+                        <div class="row ">
+                            <div class="col"  ><?= $value['IMPORTE_U$S']; ?></div>
+                            <div class="col"  ><?= $value['TIPO_CAMBIO']; ?></div>
+                            <div class="col"  ><?= $value['IMPORTE_$']; ?></div>
+                            <div class="col" ><?= $value['PORCENTAJE']; ?>%</div>
+                        </div>
+                    </div>
+                    <div class="col-4" >
+                        <?= $value['OBSERVACIONES']; ?>
+                    </div>
+                </div>
+        <?php
+            }
+        ?>
+        <div class="row">
+            <div class="col" style="border:solid black 1px;">
+                <div class="row">
+                    <div class="col-2">total gastos costeables</div>
+                    <div class="col-6" style="text-align:center">
+                        <div class="row">
+                            <div class="col border border-secondary" style="height:42px" >U$S <?= $totalDeGastos;?></div>
+                            <div class="col border border-secondary"></div>
+                            <div class="col border border-secondary"><?= $importeEnPesos;?></div>
+                            <div class="col border border-secondary"><?= $sobreFob;?></div>
+                        </div>
+                    </div>
+                    <div class="col-4" style="text-align:center"></div>
+                </div>
+        
+            </div>
 
-    foreach ($dataDetalle as $key => $value) {
-    
-     
-        $htmlContent .= 
-        '
-                <tr style="margin-top:0px;margin-bottom:0px;">
-                    <td style="border-right:solid 1px;text-align:center;padding-bottom:15px">' .$value['GASTOS'].'</td>
-                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px"><span>'.$value['IMPORTE_U$S'] .'</span></td>
-                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px"><span>'.$value['TIPO_CAMBIO'] .'</span></td>
-                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px"><span >'.$value['IMPORTE_$'] .'</span></td>
-                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px"><span>%'.$value['PORCENTAJE'] .'</span></td>
-                    <td style="border-right:solid 1px;text-align:right;padding-bottom:15px">'.$value['OBSERVACIONES'] .'</td>
-
-                </tr>
-
-        ';
-    } ;
-
-    
-
-
-    $htmlContent=$htmlContent.= ' 
-    
-            </tbody>
-        </table>
+        </div>
     </div>
-
-            <table >
-            <tbody>
-                <tr style="">
-                    <td style="width:160px">Total Gastos Costeables</td>
-                    <td style ="width:80px;text-align:right">'.$totalDeGastos.'</td>
-                    <td  style ="width:80px;text-align:right"></td>
-                    <td  style ="width:95px;text-align:right">'.$importeEnPesos.'</td>
-                    <td  style ="width:110px;text-align:right">'.$sobreFob.'%</td>
-                    <td></td>
-                </tr>  
-            </tbody>
-            </table>
-
-
-    
-
 </body>
-
-</html>';
-
-
-
-
-?>
-
-
-<?php 
-
-
-require '../vendor/autoload.php';
-
-// reference the Dompdf namespace
-use Dompdf\Dompdf;
-
-// instantiate and use the dompdf class
-
-// print_r($htmlContent);
-// die();
-
-
-$dompdf = new Dompdf();
-$dompdf->loadHtml($htmlContent,'UTF-8');
-
-// (Optional) Setup the paper size and orientation
-$dompdf->setPaper('A4', 'portrait');
-
-// Render the HTML as PDF
-$dompdf->render();
-
-// Output the generated PDF to Browser
-$dompdf->stream();
-?>
+</html>
+<script>
+    //    window.print();
+</script>
