@@ -1,14 +1,12 @@
 let btnUpdateDetalle = document.querySelector("#btnUpdateDetalle");
 let btnAgregarDetalle = document.querySelector("#btnAgregarDetalle");
 btnUpdateDetalle.addEventListener("click",()=> {
-    // let rows = document.querySelectorAll("#id");
     let arrayDatos = [];
     let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
 
    
     let table = document.querySelector("#table")
     let rows = table.querySelectorAll("tr:not(:last-child)")
-    let acumTotal = 0;
   
     rows.forEach((x,e)=>{
       
@@ -20,36 +18,38 @@ btnUpdateDetalle.addEventListener("click",()=> {
       let sobreFob = x.querySelectorAll("td")[5].firstChild.value.replace("%","");
       let observaciones = x.querySelectorAll("td")[6].firstChild.value;
 
-      arrayDatos [e] = [gastos,importeEnDolares,tipoCambio,importeEnPesos,sobreFob,observaciones,idDetalle,idEncabezado]
-
+      arrayDatos [e] = [gastos, importeEnDolares, tipoCambio, importeEnPesos, sobreFob, observaciones, idDetalle]
 
     })
 
 
-    fetch('Controller/editarDetalle.php', {
-    method: "POST",
-    body:JSON.stringify(arrayDatos),
-    headers: { 
-        "Content-type" : "application/json"
-    }
+    $.ajax({
+      url: 'Controller/OrdenDeCompraController.php',
+      method: 'POST',
+      data:{
+        "array": arrayDatos, 
+        "idEncabezado": idEncabezado
+      },
     })
-    .then(response => {
+    .done(function(e) {
+
+      Swal.fire({
+        title: 'Detalle guardado!',
+        icon: 'success',
+        showDenyButton: true,
+        showCancelButton: false,
+        showConfirmButton: false,
+        denyButtonText: `Volver`,
+        })
+        .then((e) => {
+          window.location = "../comercioExterior/mostrarOrden.php"
+        })
+
     })
-
-    Swal.fire({
-      title: 'Detalle guardado!',
-      icon: 'success',
-      showDenyButton: true,
-      showCancelButton: false,
-      showConfirmButton: false,
-      denyButtonText: `Volver`,
-      })
-      .then((e) => {
-
-        window.location = "../comercioExterior/mostrarOrden.php"
-      })
 
 })
+
+
 btnAgregarDetalle.addEventListener("click",()=>{
 
 

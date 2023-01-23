@@ -33,7 +33,7 @@ h2{
 
 #contCheck{
     position: relative;
-    margin-left: 5.5%;
+    margin-left: 5%;
 }
 
 #titlePrincipal{
@@ -48,34 +48,32 @@ h2{
     width: 2.5rem;
 }
 
-.hasta{
-    position: relative;
-    margin-top: -69px;
-    margin-left: 8.5rem;
-}
-
-.form-control-sm{
-    width: 130px;
-}
 .form-control-s{
     width: 50px;
 }
 
-.estado{
-    width: 150px;
+#search{
+    margin-top: 2rem;
 }
 
-#search{
-    position: relative;
-    margin-top: -59px;
-    margin-left: 26.6rem;
+form{
+    width: 500px;
+}
+
+.form-control-sm{
+    width: 150px;
+    margin-left: 0;
+}
+
+.rubro{
+    width: 250px;
 }
 
 .btn-group{
+    position: relative;
+    margin-left: 12rem;
     height: 55px;
-    margin-top: 1.2em;
-    /* position: relative; */
-    
+    margin-top: 1em;
 }
 
 #btnaddrow{
@@ -88,10 +86,9 @@ h2{
     height:5rem;
 }
 
-#estado{
-    position: relative;
-    margin-top: -3.92rem;
-    margin-left: 17rem;
+.contenedor{
+    display: flex;
+    align-items: center;
 }
 
 .select2-search__field{

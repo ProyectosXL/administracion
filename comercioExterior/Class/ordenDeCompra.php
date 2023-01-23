@@ -4,15 +4,20 @@
 class OrdenDeCompra
 {
 
-    private function retornarArray($sql)
-    {
+    function __construct(){
+
         require_once __DIR__.'/../../class/conexion.php';
 
         $cid = new Conexion();
-        $cid_central = $cid->conectar('central');
+        $this->cid_central = $cid->conectar('central');
+
+    }
+
+    private function retornarArray($sql)
+    {
 
         try {
-            $stmt = sqlsrv_query($cid_central, $sql);
+            $stmt = sqlsrv_query($this->cid_central, $sql);
 
             $rows = array();
 
@@ -28,7 +33,6 @@ class OrdenDeCompra
 
         return $rows;
     }
-
 
     public function traerOrdenDeCompra($proveedor)
     {
@@ -49,7 +53,9 @@ class OrdenDeCompra
                              WHERE A.FECHA_MOV >=GETDATE()-365 AND A.TCOMP_IN_S = 'RP' AND B.COD_PRO_CL LIKE 'Z%'
                              ) A 
                            )
-                        AND FEC_EMISIO >=GETDATE()-365 AND COD_PROVEE like '%$proveedor'";
+                        AND FEC_EMISIO >=GETDATE()-365 
+                        AND COD_PROVEE like '%$proveedor'
+                        ";
     
             $rows = $this->retornarArray($sql);
     
@@ -77,6 +83,45 @@ class OrdenDeCompra
             echo 'El comprobante existe';
         }
     }
+
+    public function deleteDetalle($idEncabezado){
+
+        $sql = "DELETE RO_T_IMPORTACIONES_DETALLE WHERE ID_MG ='".$idEncabezado."'";
+
+        try {
+                
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        } catch (Exception $e) {
+            
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+    
+        }
+    }
+
+    public function insertDetalle($datosDetalle, $idCabezera){   
+
+        foreach ($datosDetalle as $dato) {
+
+            $sql = "
+            INSERT INTO RO_T_IMPORTACIONES_DETALLE(ID_MG, IMPORTE_U\$S, TIPO_CAMBIO, IMPORTE_$, PORCENTAJE, OBSERVACIONES, FECHA_MOD,GASTOS)
+            VALUES (".$idCabezera.", ".$dato['importeEnDolares'].", ".$dato['tipoCambio'].", ".$dato['importeEnPesos'].", ".$dato['sobreFob'].", '".$dato['observaciones']."',GETDATE(),'".$dato['gastos']."')
+            ;";
+
+            try {
+                
+                $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            } catch (Exception $e) {
+    
+                echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        
+            }
+        }
+
+    }  
+
+
 }
 
 $cuenta = new OrdenDeCompra();

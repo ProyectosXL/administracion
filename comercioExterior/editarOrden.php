@@ -79,10 +79,10 @@ $orden = listarPorOrdenCompra($ordenCompra);
                             }   
                             ?>
                                 <tr class="alert alert-primary" style="font-weight: bold;">
-                                    <td>TOTALES</td>
                                     <td></td>
                                     <td></td>
                                     <td></td>
+                                    <td>TOTAL</td>
                                     <td id="totalGastosDetalleR" value="0"></td>
                                     <td></td>
                                     <td></td>
