@@ -40,12 +40,21 @@ foreach ($dataDetalle as $value) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
     <title>Document</title>
 </head>
-<style>
-    body{font-size:12px }
-</style>
-<body>
 
-    <div class="container border border-secondary">
+    
+<style type="text/css" media="print">
+
+    body{font-size:12px }
+    
+    @page {
+        size: portrait;   /* auto is the initial value */
+        margin: 15px;  /* this affects the margin in the printer settings */
+    }
+
+</style>
+<body class="d-flex flex-column min-vh-100">
+
+    <div class="border border-secondary">
         <div class="row">
             <div class="col-3 border border-secondary" >
                 <div class="row ps-2" >PROVEEDOR</div>
@@ -142,17 +151,23 @@ foreach ($dataDetalle as $value) {
         <?php
             }
         ?>
-        <div class="row border-top border-dark">
-            <div class="col-3 mr-2 border-end border-dark text-center" style="font-size:10px">Total gastos costeables</div>
-            <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $totalDeGastos;?></div>
-            <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"></div>
-            <div class="col-2 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $importeEnPesos;?></div>
-            <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $sobreFob;?></div>
-            <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:10px"></div>
-        </div>
 
     </div>
 </body>
+
+<footer class="mt-auto mb-6">
+
+    <div class="row border border-dark">
+        <div class="col-3 mr-2 border-end border-dark text-center" style="font-size:10px">Total gastos costeables</div>
+        <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $totalDeGastos;?></div>
+        <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"></div>
+        <div class="col-2 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $importeEnPesos;?></div>
+        <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $sobreFob;?></div>
+        <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:10px"></div>
+    </div>
+    
+</footer>
+
 </html>
 <script>
        window.print();
