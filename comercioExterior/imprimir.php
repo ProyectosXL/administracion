@@ -138,6 +138,7 @@ foreach ($dataDetalle as $value) {
         </div>
 
         <?php 
+            $countRow = 0;
             foreach ($dataDetalle as $key => $value) {
         ?>
             <div class="row">
@@ -149,11 +150,14 @@ foreach ($dataDetalle as $value) {
                 <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['OBSERVACIONES']; ?></div>
             </div>
         <?php
+                $countRow++;
             }
+
+            $height = 70 - ($countRow * 1.5);
         ?>
 
         <div class="row ">
-            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height: 60vh;"></div>
+            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height: <?=$height;?>vh;"></div>
             <div class="col-1 border-end border-dark text-center"></div>
             <div class="col-1 border-end border-dark text-center"></div>
             <div class="col-2 border-end border-dark text-center"></div>
