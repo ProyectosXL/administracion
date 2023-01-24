@@ -57,19 +57,19 @@ foreach ($dataDetalle as $value) {
     <div class="">
         <div class="row">
             <div class="col-3 border border-secondary" >
-                <div class="row ps-2" >PROVEEDOR</div>
-                <div class="row ps-2">DESPACHO N°</div>
-                <div class="row ps-2">MATERIAL</div>
-                <div class="row ps-2">ORIGEN</div>
-                <div class="row ps-2">FECHA EMBARQUE</div>
-                <div class="row ps-2">FECHA ARRIBO</div>
-                <div class="row ps-2">FACTURA PROVEEDOR</div>
-                <div class="row ps-2">FECHA FACTURA</div>
-                <div class="row ps-2">ORDEN DE COMPRA</div>
-                <div class="row ps-2">FORMA DE PAGO</div>
-                <div class="row ps-2"><br></div>
-                <div class="row ps-2"><br></div> 
-                <div class="row ps-2">TC DEL DESPACHO</div>
+                <div class="row ps-3" >PROVEEDOR</div>
+                <div class="row ps-3">DESPACHO N°</div>
+                <div class="row ps-3">MATERIAL</div>
+                <div class="row ps-3">ORIGEN</div>
+                <div class="row ps-3">FECHA EMBARQUE</div>
+                <div class="row ps-3">FECHA ARRIBO</div>
+                <div class="row ps-3">FACTURA PROVEEDOR</div>
+                <div class="row ps-3">FECHA FACTURA</div>
+                <div class="row ps-3">ORDEN DE COMPRA</div>
+                <div class="row ps-3">FORMA DE PAGO</div>
+                <div class="row ps-3"><br></div>
+                <div class="row ps-3"><br></div> 
+                <div class="row ps-3">TC DEL DESPACHO</div>
            </div>
            <div class="col-5 border border-secondary" >
                <div class="row ps-2 " style=" white-space: pre;"><?=$dataEncabezado['PROVEEDOR'] ?></div>
@@ -100,18 +100,18 @@ foreach ($dataDetalle as $value) {
                 <div class="row">
                     <div class="col" style =" white-space: pre;">VALOR F.O.B</div>
                     <div class="col">U$S</div>
-                    <div class="col"><?= $dataEncabezado['VALOR_FOB_DOLAR']?></div>
+                    <div class="col pe-3"><?= $dataEncabezado['VALOR_FOB_DOLAR']?></div>
                 </div>
 
                 <div class="row">
                     <div class="col" style =" white-space: pre;">VALOR F.O.B </div>
                     <div class="col">$</div>
-                    <div class="col"><?= $dataEncabezado['VALOR_FOB_PESO']?></div>
+                    <div class="col pe-3"><?= $dataEncabezado['VALOR_FOB_PESO']?></div>
                 </div>
                 <div class="row">
                     <div class="col" style =" white-space: pre;">GASTOS </div>
                     <div class="col">  $</div>
-                    <div class="col"><?= $dataEncabezado['VALOR_FOB_PESO']?></div>
+                    <div class="col pe-3"><?=$totalDeGastos?></div>
                 </div>  
                 <div class="row"><br></div>
                 <div class="row"><br></div>
@@ -129,7 +129,7 @@ foreach ($dataDetalle as $value) {
         </div>
         <!-- TABLE -->
         <div class="row border-bottom border-dark">
-            <div class="col-3 mr-2 border-end border-dark">GASTOS</div>
+            <div class="col-3 mr-2 border-end border-dark text-center">GASTOS</div>
             <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px">IMPORTE U$S</div>
             <div class="col-1 mr-2 border-end border-dark text-center">TC</div>
             <div class="col-2 mr-2 border-end border-dark text-center" style="font-size:10px">IMPORTE $</div>
@@ -142,11 +142,11 @@ foreach ($dataDetalle as $value) {
             foreach ($dataDetalle as $key => $value) {
         ?>
             <div class="row">
-                <div class="col-3 mr-2 border-end border-dark text-center" style="font-size:12px"> <?= $value['GASTOS']; ?> </div>
-                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['IMPORTE_U$S']; ?></div>
-                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['TIPO_CAMBIO']; ?></div>
-                <div class="col-2 mr-2 border-end border-dark text-center" style="font-size:12px"><?= $value['IMPORTE_$']; ?></div>
-                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['PORCENTAJE']; ?>%</div>
+                <div class="col-3 mr-2 border-end border-dark text-left ps-3" style="font-size:12px"> <?= $value['GASTOS']; ?> </div>
+                <div class="col-1 mr-2 border-end border-dark" style="font-size:12px;text-align:right" ><?= $value['IMPORTE_U$S']; ?></div>
+                <div class="col-1 mr-2 border-end border-dark " style="font-size:12px;text-align:right" ><?= $value['TIPO_CAMBIO']; ?></div>
+                <div class="col-2 mr-2 border-end border-dark " style="font-size:12px;text-align:right"><?= $value['IMPORTE_$']; ?></div>
+                <div class="col-1 mr-2 border-end border-dark" style="font-size:12px;text-align:right" ><?= $value['PORCENTAJE']; ?>%</div>
                 <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['OBSERVACIONES']; ?></div>
             </div>
         <?php
