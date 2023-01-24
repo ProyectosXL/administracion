@@ -52,9 +52,9 @@ foreach ($dataDetalle as $value) {
     }
 
 </style>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 border border-secondary">
 
-    <div class="border border-secondary">
+    <div class="">
         <div class="row">
             <div class="col-3 border border-secondary" >
                 <div class="row ps-2" >PROVEEDOR</div>
@@ -87,7 +87,7 @@ foreach ($dataDetalle as $value) {
                 <div class="row ps-2"><?=$dataEncabezado['TIPO_CAMBIO'] ?></div>
                 <div class="row ps-2"><br></div>
            </div>
-           <div class="col-4 border border-secondary" >
+           <div class="col-4 border-bottom border-secondary" >
 
                 <div class="row">
                     <div class="col">Número BL</div>
@@ -141,16 +141,25 @@ foreach ($dataDetalle as $value) {
             foreach ($dataDetalle as $key => $value) {
         ?>
             <div class="row">
-                <div class="col-3 mr-2 border-end border-dark text-center" style="font-size:10px"> <?= $value['GASTOS']; ?> </div>
-                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px" ><?= $value['IMPORTE_U$S']; ?></div>
-                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px" ><?= $value['TIPO_CAMBIO']; ?></div>
-                <div class="col-2 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $value['IMPORTE_$']; ?></div>
-                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px" ><?= $value['PORCENTAJE']; ?>%</div>
-                <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:10px" ><?= $value['OBSERVACIONES']; ?></div>
+                <div class="col-3 mr-2 border-end border-dark text-center" style="font-size:12px"> <?= $value['GASTOS']; ?> </div>
+                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['IMPORTE_U$S']; ?></div>
+                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['TIPO_CAMBIO']; ?></div>
+                <div class="col-2 mr-2 border-end border-dark text-center" style="font-size:12px"><?= $value['IMPORTE_$']; ?></div>
+                <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['PORCENTAJE']; ?>%</div>
+                <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['OBSERVACIONES']; ?></div>
             </div>
         <?php
             }
         ?>
+
+        <div class="row ">
+            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height: 60vh;"></div>
+            <div class="col-1 border-end border-dark text-center"></div>
+            <div class="col-1 border-end border-dark text-center"></div>
+            <div class="col-2 border-end border-dark text-center"></div>
+            <div class="col-1 border-end border-dark text-center"></div>
+            <div class="col-4 border-end border-dark text-center"></div>
+        </div>
 
     </div>
 </body>
