@@ -47,7 +47,8 @@ function completarCampoProrrateo(dato) {
 
 function completarAuxiliar(dato) {
   let DESC_AUXILIAR = document.querySelector(".auxiliar");
-let SECTOR = document.querySelector(".sector");
+  let SECTOR = document.querySelector(".sector");
+  let NUM_SUCURSAL = document.querySelector(".suc");
 
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
@@ -55,6 +56,7 @@ let SECTOR = document.querySelector(".sector");
       let info = JSON.parse(conexion.responseText);
       DESC_AUXILIAR.textContent = info.DESC_AUXILIAR;
       SECTOR.textContent = info.SECTOR;
+      NUM_SUCURSAL.textContent = info.NUM_SUCURSAL;
     }
   };
   conexion.open("GET", "Class/centroCosto.php?codigo=" + dato, true);
