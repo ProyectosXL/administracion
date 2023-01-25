@@ -27,11 +27,11 @@ $gastos = new Gastos();
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
-function data_first_month_day() {
-    $month = date('m');
-    $year = date('Y');
-    return date('Y-m-d', mktime(0,0,0, $month, 1, $year));
-}
+// function data_first_month_day() {
+//     $month = date('m');
+//     $year = date('Y');
+//     return date('Y-m-d', mktime(0,0,0, $month, 1, $year));
+// }
 
 ?>
 
@@ -160,7 +160,7 @@ function data_first_month_day() {
                     <div class="contenedor">
                         <div class="col-">
                             <label>Desde:</label>
-                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= data_first_month_day() ?>">
+                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
                         </div>
 
                         <div class="ml-2">
