@@ -41,9 +41,26 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 </head>
 <body>
     
-
+        <div class="row">
+            <div class="progressbar-wrapper">
+                <ul class="progressbar">
+                    <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
+                    <li data-toggle="tooltip" data-placement="bottom" title="Control y proceso previo finalizado">Paso</li>
+                </ul>
+            </div>
+            <div>
+                <button class="btn btn-primary mt-3" id="btnEjecutar">Ejecutar <i class="bi bi-check2-square"></i></button>
+                <!-- spinner -->
+                <div id="boxLoading"></div>
+            </div>
+        </div>
     
-        <div class="alert alert-secondary">
+        <div class="alert alert-secondary">        
             <div class="row">
                 <div id="titlePrincipal" class="col-md-auto">
                     <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos</h3>
@@ -134,7 +151,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <table class="table table-striped table-bordered" id="myTable" style="width: 99%;" cellspacing="0" data-page-length="100">
         <thead class="thead-dark">
             <tr>
-                <th style="position: sticky; top: 0; z-index: 10; width: 200px;"class="col-1">FECHA</th>
+                <th style="position: sticky; top: 0; z-index: 10; width: 200px;"class="col-1">FECHA / PERIODO</th>
                 <th style="position: sticky; top: 0; z-index: 10;">AUXILIAR</th>
                 <th style="position: sticky; top: 0; z-index: 10;">SECTOR</th>
                 <th style="position: sticky; top: 0; z-index: 10;">COD. CUENTA</th>
@@ -163,7 +180,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 foreach($todosLosGastos as $valor => $key){
             ?>
             <tr>
-                <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
+                <td><?=  substr($key->FECHA->date, 0, 10).' / '.$key->PERIODO; ?></td>
                 <td><?=  $key->DESC_AUXILIAR ?></td>
                 <td><?=  $key->SECTOR ?></td>
                 <td><?=  $key->COD_CUENTA ?></td>
@@ -244,9 +261,21 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         );
     });
 
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+
+
+
 </script>
     
 </body>
 </html>
+
+<?php
+
+include('./articuloSinCn.php');
+
+?>
 
    

@@ -5,6 +5,7 @@ include 'Class/prorrateo.php';
 include 'Class/centroCosto.php';
 include 'Class/cuentaContable.php';
 include 'Class/gastos.php';
+include 'Class/articulos.php';
 
 $rubroContable = new RubroContable();
 $todosLosRubros = $rubroContable->traerRubrosContables();
@@ -23,6 +24,8 @@ $todasLasCuentasContables = $cuentaContable->traerCuentasContables();
 $todasLasCuentasContables = json_decode($todasLasCuentasContables);
 
 $gastos = new Gastos();
+
+$articulo = new Articulo();
 
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
@@ -51,9 +54,6 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     </link>
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-
-
 
 </head>
 

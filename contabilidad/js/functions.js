@@ -8,9 +8,11 @@ const checkAmortizado = document.querySelectorAll(".checkAmortizado");
 const inputAmortiza = document.querySelectorAll(".amortiza");
 const btnAmortizar = document.querySelector(".btn-danger");
 const btnProrratear = document.querySelector("#btnProrrateo");
+const btnEjecutar = document.querySelector("#btnEjecutar");
 
 btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
+btnEjecutar.addEventListener("click", ejecutarPasos);
 
 let conexion;
 
@@ -434,4 +436,69 @@ function prorratearGastos() {
           });
       }
     }); */
+}
+
+
+function ejecutarPasos() {
+   let desde = document.getElementsByName("desde")[0].value;
+   let hasta = document.getElementsByName("hasta")[0].value;
+  const swalWithBootstrapButtons = Swal.mixin({
+    customClass: {
+      confirmButton: "btn btn-success",
+      cancelButton: "btn btn-danger",
+    },
+    buttonsStyling: false,
+  });
+
+  swalWithBootstrapButtons
+    .fire({
+      title: "Desea ejecutar el proceso de control?",
+      text: "Ya no se podran deshacer los cambios!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ok, ejecutar!",
+      cancelButtonText: "No, cancelar!",
+      reverseButtons: true,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        /******************************* */
+        let paso1 = document.getElementById("paso1");
+        let spinner = document.getElementById("boxLoading");
+        spinner.className += " loading";
+ /*otro fetch*/
+
+        fetch("./Controller/ejecutarPaso1.php?desde=" + desde + "&hasta=" + hasta)
+          .then((respuesta) => respuesta.json())
+          .then((perfil) => {
+            if (perfil.resultado == 0) {
+              paso1.className += "active";
+              spinner.classList.remove('loading');
+              Swal.fire({
+                icon: "success",
+                title: "Control exitoso",
+                text: "Paso 1 realizado! No existen artículos sin costo de nacionalización",
+              });
+            }else{
+              spinner.classList.remove('loading');
+              swalWithBootstrapButtons.fire(
+                "Prorrateado!",
+                "Mostrar listado de articulos sin CN",
+                "success"
+              );
+              $('#modalCn').modal('show');
+            }
+          });
+        /******************************** */
+      } else if (
+        /* Read more about handling dismissals below */
+        result.dismiss === Swal.DismissReason.cancel
+      ) {
+        swalWithBootstrapButtons.fire(
+          "Cancelado",
+          "Los gastos no fueron prorrateados :(",
+          "error"
+        );
+      }
+    });
 }
