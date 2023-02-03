@@ -481,12 +481,12 @@ function ejecutarPasos() {
               });
             }else{
               spinner.classList.remove('loading');
-              swalWithBootstrapButtons.fire(
-                "Prorrateado!",
-                "Mostrar listado de articulos sin CN",
-                "success"
-              );
-              $('#modalCn').modal('show');
+              // swalWithBootstrapButtons.fire(
+              //   "Prorrateado!",
+              //   "Mostrar listado de articulos sin CN",
+              //   "success"
+              // );
+              $('#modalCn').modal('toggle');
             }
           });
         /******************************** */

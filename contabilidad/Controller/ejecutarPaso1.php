@@ -42,25 +42,25 @@ class ejecutarPasos
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-          /*   if($paso==2)
-            {
-                $sql=""
-            }
- */
             $sql = "DECLARE @ResultForPos int;
             EXEC @ResultForPos = RO_SP_ARTICULOS_SIN_COSTO_NAC ?, ?
             SELECT @ResultForPos as valor";
 
             $params = array($desde, $hasta);
             $stmt = sqlsrv_query($cid_central, $sql, $params);
-            $next_result = sqlsrv_next_result($stmt);
-            $next_result = sqlsrv_next_result($stmt);
-            $next_result = sqlsrv_next_result($stmt);
-            $salida['resultado']=sqlsrv_rows_affected($stmt);
-            /* echo "Rows affected: " . sqlsrv_rows_affected($stmt) . "<br />"; */
-            echo json_encode($salida);
+            $salida=array();
+           
+            do {
+                while ($row = sqlsrv_fetch_array($stmt)) {
+                   $salida[] = $row;
+                }
+             } while (sqlsrv_next_result($stmt)); 
+          
+             echo json_encode($salida);
+          
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
     }
+
 }

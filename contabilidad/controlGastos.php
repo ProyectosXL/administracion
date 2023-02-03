@@ -3,8 +3,10 @@
 include 'Class/gastos.php';
 include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
+include 'Class/articulos.php';
 
 $gastos = new Gastos();
+$articulo = new Articulo();
 $rubroContable = new RubroContable();
 $todosLosRubros = $rubroContable->traerRubrosContables();
 $todosLosRubros = json_decode($todosLosRubros);
@@ -39,6 +41,13 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <link rel="stylesheet" href="css/style.css"></link>
  
 </head>
+
+    <?php
+
+        $todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
+
+    ?>
+
 <body>
     
         <div class="row">
@@ -265,7 +274,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         $('[data-toggle="tooltip"]').tooltip()
     })
 
-
+    $('#myModal').modal('toggle')
 
 </script>
     
@@ -274,7 +283,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
 <?php
 
-include('./articuloSinCn.php');
+include('articuloSinCn.php');
 
 ?>
 
