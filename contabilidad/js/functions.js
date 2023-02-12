@@ -483,11 +483,19 @@ function ejecutarPasos() {
               });
             }else{
               spinner.classList.remove('loading');
+<<<<<<< HEAD
              /*  swalWithBootstrapButtons.fire(
                 "Prorrateado!",
                 "Mostrar listado de articulos sin CN",
                 "success"
               ); */
+=======
+              // swalWithBootstrapButtons.fire(
+              //   "Prorrateado!",
+              //   "Mostrar listado de articulos sin CN",
+              //   "success"
+              // );
+>>>>>>> 5c00953e05fc439f1c2393d3bdf3ce23e186e5ff
               $('#modalCn').modal('toggle');
             }
           });

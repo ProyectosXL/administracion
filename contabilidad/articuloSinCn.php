@@ -16,6 +16,7 @@
 
 <body>
 
+<<<<<<< HEAD
   <?php
 
   $todosLosArticulos = $articulo->traerArticulos();
@@ -30,6 +31,18 @@
           </button>
         </div>
         <div class="modal-body">
+=======
+<div class="modal fade" id="modalCn" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="exampleModalLabel"><i class="fa fa-edit" aria-hidden="true" style="font-size: 25px;"></i> Articulos sin costo de nacionalización</h4>
+        </button>
+      </div>
+      <div class="modal-body">
+      
+      <!-- Aca se debe mostrar la tabla que arroja el SP RO_SP_ARTICULOS_SIN_COSTO_NAC -->
+>>>>>>> 5c00953e05fc439f1c2393d3bdf3ce23e186e5ff
 
           <!-- Aca se debe mostrar la tabla que arroja el SP RO_SP_ARTICULOS_SIN_COSTO_NAC -->
 
