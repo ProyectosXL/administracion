@@ -54,7 +54,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 </ul>
             </div>
             <div>
-                <button class="btn btn-primary mt-3" id="btnEjecutar">Ejecutar <i class="bi bi-check2-square"></i></button>
+                <button class="btn btn-primary mt-3" id="btnEjecutar" data-toggle="modal" data-target="#modalCn">Ejecutar <i class="bi bi-check2-square"></i></button>
                 <!-- spinner -->
                 <div id="boxLoading"></div>
             </div>
@@ -268,14 +268,14 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
 
 </script>
-    
+<?php
+
+require('articuloSinCn.php');
+
+?>
+
 </body>
 </html>
 
-<?php
-
-include('./articuloSinCn.php');
-
-?>
 
    
