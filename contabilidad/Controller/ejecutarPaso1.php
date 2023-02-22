@@ -49,7 +49,14 @@ class ejecutarPasos
             $params = array($desde, $hasta);
             $stmt = sqlsrv_query($cid_central, $sql, $params);
             $salida=array();
+<<<<<<< HEAD
+            /* $next_result = sqlsrv_next_result($stmt);
+            $next_result = sqlsrv_next_result($stmt);
+            $next_result = sqlsrv_next_result($stmt); */
+            /* $salida['resultado']=sqlsrv_rows_affected($stmt); */
+=======
            
+>>>>>>> 5c00953e05fc439f1c2393d3bdf3ce23e186e5ff
             do {
                 while ($row = sqlsrv_fetch_array($stmt)) {
                    $salida[] = $row;
@@ -57,7 +64,12 @@ class ejecutarPasos
              } while (sqlsrv_next_result($stmt)); 
           
              echo json_encode($salida);
+<<<<<<< HEAD
+            /* echo "Rows affected: " . sqlsrv_rows_affected($stmt) . "<br />"; */
+            /* echo json_encode($salida); */
+=======
           
+>>>>>>> 5c00953e05fc439f1c2393d3bdf3ce23e186e5ff
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }

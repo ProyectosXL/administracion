@@ -73,8 +73,26 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
 
     <div class="alert alert-secondary">
         <div class="row">
+<<<<<<< HEAD
             <div id="titlePrincipal" class="col-md-auto">
                 <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos</h3>
+=======
+            <div class="progressbar-wrapper">
+                <ul class="progressbar">
+                    <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
+                    <li class="" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
+                    <li data-toggle="tooltip" data-placement="bottom" title="Control y proceso previo finalizado">Paso</li>
+                </ul>
+            </div>
+            <div>
+                <button class="btn btn-primary mt-3" id="btnEjecutar" data-toggle="modal" data-target="#modalCn">Ejecutar <i class="bi bi-check2-square"></i></button>
+                <!-- spinner -->
+                <div id="boxLoading"></div>
+>>>>>>> 81ea78a9eabd5b66b63fa9826042866426eb6e8d
             </div>
             <div class="form-row">
                 <form>
@@ -282,12 +300,30 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
         $('#myModal').modal('toggle')
     </script>
 
+<<<<<<< HEAD
 </body>
 
 </html>
 
+=======
+</script>
+>>>>>>> 81ea78a9eabd5b66b63fa9826042866426eb6e8d
 <?php
 
+<<<<<<< HEAD
+require('articuloSinCn.php');
+=======
 include('articuloSinCn.php');
+>>>>>>> 5c00953e05fc439f1c2393d3bdf3ce23e186e5ff
 
+<<<<<<< HEAD
 ?>
+=======
+?>
+
+</body>
+</html>
+
+
+   
+>>>>>>> 81ea78a9eabd5b66b63fa9826042866426eb6e8d
