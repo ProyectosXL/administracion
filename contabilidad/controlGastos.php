@@ -300,30 +300,9 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
         $('#myModal').modal('toggle')
     </script>
 
-<<<<<<< HEAD
-</body>
-
-</html>
-
-=======
 </script>
->>>>>>> 81ea78a9eabd5b66b63fa9826042866426eb6e8d
 <?php
 
-<<<<<<< HEAD
-require('articuloSinCn.php');
-=======
 include('articuloSinCn.php');
->>>>>>> 5c00953e05fc439f1c2393d3bdf3ce23e186e5ff
 
-<<<<<<< HEAD
 ?>
-=======
-?>
-
-</body>
-</html>
-
-
-   
->>>>>>> 81ea78a9eabd5b66b63fa9826042866426eb6e8d
