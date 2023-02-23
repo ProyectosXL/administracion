@@ -6,6 +6,13 @@
 class Ventas
 {
 
+    function __construct(){
+
+        require_once __DIR__.'/../../class/conexion.php';
+        $this->conn = new Conexion;
+
+    } 
+
     private function retornarArray($sqlEnviado)
     {
 
@@ -27,16 +34,37 @@ class Ventas
     }
 
 
-    public function traerVentas()
+    public function traerVentas($desde, $hasta)
     {
-        
-        $sql = "SELECT * FROM [LAKERBIS].LOCALES_LAKERS.DBO.SUCURSALES_LAKERS";
+        $cid = $this->conn->conectar('locales');
 
-        try{
-            $rows = $this->retornarArray($sql);
-            
-            $myJSON = json_encode($rows);
-            return $myJSON;
+        $sql = "SET DATEFORMAT YMD EXEC RO_RESUMEN_VENTA_SUCURSALES '2022-01-01', '2022-01-31'";
+
+        $stmt = sqlsrv_query($cid, $sql);
+
+
+        $v = [];
+
+        try {
+
+            $next_result = sqlsrv_next_result($stmt);
+
+            var_dump($next_result);
+
+            $num = 0;
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+                var_dump($num++); 
+                var_dump($row); 
+
+
+                $v[] = $row;
+
+            }
+
+            var_dump($v);
+    
+            return $v;
 
         } catch (\Throwable $th) {
 

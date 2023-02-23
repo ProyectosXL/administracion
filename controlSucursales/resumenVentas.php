@@ -52,7 +52,8 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
     <?php
     if (isset($_GET['desde'])) {
-        $todasLasVentas = $ventas->traerVentas($desde, $hasta);
+        $todasLasVentas = json_decode($ventas->traerVentas($desde, $hasta));
+        die();
     ?>
 
         <table class="table table-striped table-bordered display mt-2" id="tableDinamic" style="width: 99%;" data-page-length="100">
@@ -76,7 +77,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
             </thead>
             <tbody>
                 <?php
-                $todasLasVentas = json_decode($todasLasVentas);
+                
                 foreach ($todasLasVentas as $valor => $key) {
                 ?>
                     <tr>                        
