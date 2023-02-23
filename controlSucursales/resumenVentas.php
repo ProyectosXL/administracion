@@ -81,7 +81,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 foreach ($todasLasVentas as $valor => $key) {
                 ?>
                     <tr>                        
-                        <td><?= $key->NRO_SUCURSAL ?></td>
+                        <td><?= $key->COD_CLIENTE ?></td>
                         <td><?= $key->DESC_SUCURSAL ?></td>
                         <td><?= $key->VENTAS ?></td>
                         <td><?= $key->TARJETA ?></td>
