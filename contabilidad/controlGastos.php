@@ -52,25 +52,6 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
 
 <body>
 
-    <div class="row">
-        <div class="progressbar-wrapper">
-            <ul class="progressbar">
-                <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
-                <li data-toggle="tooltip" data-placement="bottom" title="Control y proceso previo finalizado">Paso</li>
-            </ul>
-        </div>
-        <div>
-            <button class="btn btn-primary mt-3" id="btnEjecutar">Ejecutar <i class="bi bi-check2-square"></i></button>
-            <!-- spinner -->
-            <div id="boxLoading"></div>
-        </div>
-    </div>
-
     <div class="alert alert-secondary">
         <div class="row">
             <div class="progressbar-wrapper">
