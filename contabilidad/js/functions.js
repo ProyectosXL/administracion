@@ -1,5 +1,6 @@
 window.addEventListener("DOMContentLoaded", iniciarEscuchaSelect); //1 - cuando se termina de carga toda la pagina, comienza a escuchar los eventos del dom
 
+let a;
 const selectRubro = document.querySelectorAll(".codRubro"); //2 - guardo en un array todos los check donde se va escuchar si se produjo un cambio
 const selectProrrateo = document.querySelectorAll(".codProrrateo");
 const checkExcluir = document.querySelectorAll(".checkExcluir");
@@ -471,6 +472,7 @@ function ejecutarPasos() {
         fetch("./Controller/ejecutarPaso1.php?desde=" + desde + "&hasta=" + hasta)
           .then((respuesta) => respuesta.json())
           .then((perfil) => {
+            a=perfil;
             if (perfil.resultado == 0) {
               paso1.className += "active";
               spinner.classList.remove('loading');
@@ -481,11 +483,19 @@ function ejecutarPasos() {
               });
             }else{
               spinner.classList.remove('loading');
+<<<<<<< HEAD
+             /*  swalWithBootstrapButtons.fire(
+                "Prorrateado!",
+                "Mostrar listado de articulos sin CN",
+                "success"
+              ); */
+=======
               // swalWithBootstrapButtons.fire(
               //   "Prorrateado!",
               //   "Mostrar listado de articulos sin CN",
               //   "success"
               // );
+>>>>>>> 5c00953e05fc439f1c2393d3bdf3ce23e186e5ff
               $('#modalCn').modal('toggle');
             }
           });
