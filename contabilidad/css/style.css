@@ -112,7 +112,7 @@ select, input{
 
 .btn:not(:disabled):not(.disabled) {
     cursor: pointer;
-    margin-left: -50px;
+    margin-left: 15px;
 }
 
 

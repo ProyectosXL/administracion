@@ -60,15 +60,13 @@ class ejecutarPasos
              } while (sqlsrv_next_result($stmt)); 
           
              echo json_encode($salida);
-<<<<<<< HEAD
-            /* echo "Rows affected: " . sqlsrv_rows_affected($stmt) . "<br />"; */
-            /* echo json_encode($salida); */
-=======
           
->>>>>>> 5c00953e05fc439f1c2393d3bdf3ce23e186e5ff
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
     }
 
 }
+
+
+

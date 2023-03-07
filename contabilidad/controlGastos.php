@@ -46,7 +46,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
 <?php
 
-$todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
+$todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 
 ?>
 
@@ -61,11 +61,11 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
                 <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
                 <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
                 <li class="" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
-                <li data-toggle="tooltip" data-placement="bottom" title="Control y proceso previo finalizado">Paso</li>
+                <li data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
             </ul>
         </div>
         <div>
-            <button class="btn btn-primary mt-3" id="btnEjecutar">Ejecutar <i class="bi bi-check2-square"></i></button>
+            <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar">Ejecutar <i class="bi bi-check2-square"></i></button>
             <!-- spinner -->
             <div id="boxLoading"></div>
         </div>

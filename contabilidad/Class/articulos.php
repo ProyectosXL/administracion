@@ -11,10 +11,10 @@ class Articulo
 
     } 
 
-    public function traerArticulosSinCostoNac($desde, $hasta)
+    public function traerArticulosSinCostoNac()
     {
 
-        $sql = "EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta'";
+        $sql = "SELECT * FROM RO_T_ARTICULOS_SIN_CN";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
 

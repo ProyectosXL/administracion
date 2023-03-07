@@ -18,7 +18,7 @@
 
   <?php
 
-  $todosLosArticulos = $articulo->traerArticulos();
+  $todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
 
   ?>
 
