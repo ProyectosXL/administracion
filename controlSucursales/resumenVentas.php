@@ -32,7 +32,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
        
         <div class="row">
             <div class="form-row">
-            <h4 class="ml-3 mt-4"><i class="bi bi-credit-card"></i>  Resumen de ventas por medio de pago <a style="color: #6c757d;"><?php if (isset($_GET['desde'])){ echo $desde ?> a <?php echo $hasta ;}?></a></h4>
+            <h4 class="ml-3 mt-4"><i class="bi bi-credit-card"></i>  Ventas por medio de pago <a style="color: #6c757d;"><?php if (isset($_GET['desde'])){ echo $desde ?> a <?php echo $hasta ;}?></a></h4>
                 <form action="">
                     <div class="contenedor">
                         <div class="col-">
@@ -46,6 +46,10 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         </div>
                         <button type="submit" name="submit" class="btn btn-primary" id="search">Buscar <i class="bi bi-search"></i></button>
                         <button type="submit" name="submit" class="btn btn-success" id="btnExport">Exportar <i class="bi bi-file-earmark-excel"></i></button>
+                        <div class="mt-2" id="busqRapida">
+                            <label id="textBusqueda">Busqueda rapida:</label>
+                            <input type="text" id="textBox" placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="form-control form-control-sm"></input>
+                        </div>
                         <!-- spinner -->
                         <div id="boxLoading"></div> 
                     </div>
@@ -61,9 +65,8 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
     ?>
 
-        <table class="table table-striped table-bordered display mt-2" id="table" data-page-length="100">
+        <table class="table table-striped table-bordered display mt-2" data-page-length="100">
             <thead class="thead-dark">
-                <tr>
                     <th class="col-">NRO. SUC</th>
                     <th style="width: 230px;">SUCURSAL</th>
                     <th class="col-">TARJETA</th>
@@ -78,11 +81,10 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     <th class="col-">EUROS</th>
                     <th class="col-" style="color: #28a745;">TOTAL VENTAS</th>
                     <!-- <th class="col-">TOTAL CONTADO</th> -->
-                </tr>
             </thead>
-            <tbody>
+
+            <tbody id="table">
                 <?php
-                
                 foreach ($todasLasVentas as $valor => $key) {
                 ?>
                     <tr>                        
@@ -101,15 +103,16 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <td><?= number_format($key->VENTAS, 2, '.', ',') ?></td>
                         <!-- <td><?= number_format($key->TOTAL_CONTADO, 2, '.', ',') ?></td> -->
                     </tr>
-            </tbody>
-        <?php
+                <?php
                 }
-        ?>
+                ?>
+            </tbody>
         </table>
     <?php
     }
     ?>
     
+    <script src="js/main.js" charset="utf-8"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
