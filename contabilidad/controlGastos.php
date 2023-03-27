@@ -189,7 +189,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <td><?=  $key->SECTOR ?></td>
                 <td><?=  $key->COD_CUENTA ?></td>
                 <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
-                <td><?=  number_format($key->SALDO, 2) ?></td>
+                <td><input type="text" value="<?=  number_format($key->SALDO, 2) ?>" onchange= "actualizarSaldo(this)" ></td>
                 <td><?=  $key->DESC_LEYENDA ?></td>
                 <td><?=  $key->T_COMP ?></td>
                 <td><?=  $key->RAZON_SOCIAL ?></td>

@@ -9,9 +9,7 @@ $sector= $_POST['sector'];
 
 $gastos = new Gastos();
 
-$gastos->updateGasto($id,$numSucursal,$codAuxiliar,$descAuxiliar,$sector);
-
-
+$gastos->updateGasto($id, $numSucursal, $codAuxiliar, $descAuxiliar, $sector);
 
 
 ?>

@@ -8,7 +8,7 @@ const checkAmortizado = document.querySelectorAll(".checkAmortizado");
 const inputAmortiza = document.querySelectorAll(".amortiza");
 const btnAmortizar = document.querySelector(".btn-danger");
 const btnProrratear = document.querySelector("#btnProrrateo");
-const selectCentroCosto = document.querySelector("#selectCentroCosto");
+
 btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
 
@@ -436,7 +436,7 @@ function prorratearGastos() {
     }); */
 }
 
-const cambiarCentroCosto=(e)=>{
+const cambiarCentroCosto= (e) => {
   let sector = e[e.selectedIndex].getAttribute("attr-sector");
   let numSucursal = e[e.selectedIndex].getAttribute("attr-numSucursal");
   let codAuxiliar = e[e.selectedIndex].getAttribute("attr-codAuxiliar");
@@ -460,5 +460,40 @@ const cambiarCentroCosto=(e)=>{
   })
 
   
+
+}
+
+const actualizarSaldo = (saldo) => {
+
+  let saldoParseado = parseNumber(parseFloat(saldo.value))
+  let nuevoSaldo = convertToNumber(a);
+  let id = saldo.parentElement.parentElement.childNodes[41].textContent;
+
+  saldo.value = saldoParseado
+  
+
+  $.ajax({
+    url: 'Controller/actualizarSaldo.php',
+    method: 'POST',
+    data:{
+      "id": id, 
+      "nuevoSaldo": nuevoSaldo,
+
+    },
+  })
+
+}
+
+
+const parseNumber = (value)=>{
+  return value.toLocaleString('de-DE', {
+      style: 'decimal',
+      });
+}
+
+const convertToNumber = (numero)=>{
+
+  let newNumero1 = numero.replaceAll(".", "");
+  return newNumero1.replace(",", ".");
 
 }
