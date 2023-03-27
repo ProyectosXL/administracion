@@ -8,7 +8,7 @@ const checkAmortizado = document.querySelectorAll(".checkAmortizado");
 const inputAmortiza = document.querySelectorAll(".amortiza");
 const btnAmortizar = document.querySelector(".btn-danger");
 const btnProrratear = document.querySelector("#btnProrrateo");
-
+const selectCentroCosto = document.querySelector("#selectCentroCosto");
 btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
 
@@ -434,4 +434,31 @@ function prorratearGastos() {
           });
       }
     }); */
+}
+
+const cambiarCentroCosto=(e)=>{
+  let sector = e[e.selectedIndex].getAttribute("attr-sector");
+  let numSucursal = e[e.selectedIndex].getAttribute("attr-numSucursal");
+  let codAuxiliar = e[e.selectedIndex].getAttribute("attr-codAuxiliar");
+  let descAuxiliar = e[e.selectedIndex].text;
+  let id = e.parentElement.parentElement.childNodes[41].textContent;
+  e.parentElement.parentElement.childNodes[5].textContent = sector
+  e.parentElement.parentElement.childNodes[39].textContent = numSucursal
+
+  $.ajax({
+    url: 'Controller/updateGasto.php',
+    method: 'POST',
+    data:{
+      "sector": sector, 
+      "numSucursal": numSucursal,
+      "codAuxiliar":codAuxiliar,
+      "descAuxiliar":descAuxiliar,
+      "id":id
+    },
+  })
+  .done(function(e) {
+  })
+
+  
+
 }

@@ -3,6 +3,13 @@
 include 'Class/gastos.php';
 include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
+include 'Class/centroCosto.php';
+
+$centroCostos = new CentroCosto();
+$centroCostos = $centroCostos->traerCentroCostos();
+
+$todosLosCentrosCosto = json_decode($centroCostos);
+
 
 $gastos = new Gastos();
 $rubroContable = new RubroContable();
@@ -164,7 +171,21 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
             ?>
             <tr>
                 <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
-                <td><?=  $key->DESC_AUXILIAR ?></td>
+                <td><select id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
+                <?php 
+                    foreach ($todosLosCentrosCosto as  $y => $centro) {
+                ?>
+                    <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>">
+                        <?php
+                            echo($centro->DESC_AUXILIAR);
+                            
+                        ?>
+                    
+                    </option>
+                <?php
+                    }
+                ?>
+                    </select></td>
                 <td><?=  $key->SECTOR ?></td>
                 <td><?=  $key->COD_CUENTA ?></td>
                 <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>

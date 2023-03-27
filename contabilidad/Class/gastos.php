@@ -88,4 +88,20 @@ class Gastos
         }
     }
 
+    public function updateGasto($id,$numSucursal,$codAuxiliar,$descAuxiliar,$sector){
+
+        $sql = "UPDATE RO_T_INTEGRAL_TANGO_2 SET NUM_SUCURSAL = '$numSucursal', COD_AUXILIAR = '$codAuxiliar', DESC_AUXILIAR = '$descAuxiliar', SECTOR = '$sector' WHERE ID = '$id'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+  
+        try {
+            sqlsrv_execute($stmt);
+      
+        } catch (Exception $e) {
+            print_r($e);
+        }
+
+
+    }
+
 }  
