@@ -470,9 +470,10 @@ function ejecutarPasos() {
  /*otro fetch*/
 
         fetch("./Controller/ejecutarPaso1.php?desde=" + desde + "&hasta=" + hasta)
-          .then((respuesta) => respuesta.json())
+          .then((respuesta) => respuesta.text())
           .then((perfil) => {
-            a=perfil;
+            console.log(perfil)
+           
             if (perfil.resultado == 0) {
               paso1.className += "active";
               spinner.classList.remove('loading');
@@ -482,6 +483,7 @@ function ejecutarPasos() {
                 text: "Paso 1 realizado! No existen artículos sin costo de nacionalización",
               });
             }else{
+              console.log("2")
               spinner.classList.remove('loading');
              /*  swalWithBootstrapButtons.fire(
                 "Prorrateado!",
