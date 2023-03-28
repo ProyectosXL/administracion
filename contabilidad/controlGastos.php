@@ -36,14 +36,11 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" type="text/css" href="select2/select2.min.css">
 
-    <script src="select2/select2.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
     </link>
 
 </head>
-
 <?php
 
 $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
@@ -202,7 +199,7 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
                         <td><?= $key->RAZON_SOCIAL ?></td>
                         <td><?= $key->N_COMP ?></td>
                         <td>
-                            <select class="codRubro" style="width: 3rem;">
+                            <select class="codRubro" >
                                 <option selected disabled><?= $key->COD_RUBRO ?></option>
                                 <?php
                                 foreach ($todosLosRubros as $valor => $value) {
@@ -267,13 +264,21 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
+    <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
 
+
+    
+    
+<script src="../comercioExterior/assets/select2/select2.min.js"></script>
     <script>
         $(document).ready(function() {
             $('#myTable').DataTable({
                 responsive: true,
             });
+
+            $('.codRubro').select2();
         });
+
 
         $(function() {
             $('[data-toggle="tooltip"]').tooltip()
