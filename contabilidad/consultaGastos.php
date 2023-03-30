@@ -17,7 +17,7 @@ $todosLosMetodos = $metodoProrrateo->traerMetodosProrrateo();
 $todosLosMetodos = json_decode($todosLosMetodos);
 
 $codRubro = isset($_GET['codRubro']) ? $_GET['codRubro'] : '%' ;
-$estado = isset($_GET['estado']) ?  $_GET['estado'] : '%';
+$codCuenta = isset($_GET['codCuenta']) ?  $_GET['codCuenta'] : '%';
 
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
@@ -25,14 +25,21 @@ $columna = isset($_GET['textBox']) ? $_GET['textBox'] : null;
 
 $cuenta = new CuentaContable ();
 $cuentas = $cuenta->traerCuentasContables();
-var_dump(json_decode($cuentas));
-die();
 
+$cuentas = json_decode($cuentas, true);;
 
+$data = [];
+
+foreach ($cuentas as $key => $value) {
+
+    $data[$key]['COD_CUENTA'] = $value['COD_CUENTA'];
+    $data[$key]['DESC_CUENTA'] = $value['DESC_CUENTA'];
+
+}
 
 
 $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
-$todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro,$columna);
+$todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$codCuenta);
 
 
 ?>
@@ -80,16 +87,14 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro,$colum
                             <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
                         </div>
                         <div id="estado">
-                            <label>Estado:</label>
-                            <select class="form-control form-control-sm estado" name="estado">
+                            <label>Codigo de Cuenta:</label>
+                            <select class="form-control form-control-sm codCuenta" name="codCuenta" style="width: 300px;">
+                            <option  value="%">Todos</option>
 
                                         <?php 
-                                            foreach ($cuentas as $cuenta ) {
-                                                echo($cuenta);
-                                                die;
+                                            foreach ($data as $cuenta ) {
                                       ?> 
-
-                                            <option value="c"></option>
+                                            <option  value="<?= $cuenta['COD_CUENTA'] ?>"><?= $cuenta['COD_CUENTA'] ?> - <?= $cuenta['DESC_CUENTA'] ?></option>
                                         <?php
                                             }
 
@@ -111,7 +116,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro,$colum
                         </div>
                         <div>                   
                             <label id="textBusqueda">Busqueda rapida:</label>
-                            <input type="text" id="textBox"  name="textBox" placeholder="Sobre cualquier campo..." class="form-control form-control-sm"></input>  
+                            <input type="text" id="textBox"  name="textBox" placeholder="Leyenda - Razon Social - Nro Cgiomp" class="form-control form-control-sm" style="width: 250px;"></input>  
                         </div>
                         <div>
                             <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
@@ -256,7 +261,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro,$colum
                 responsive: true,
             });
 
-            $('.estado').select2();
+            $('.codCuenta').select2();
         });
 
         $(function() {

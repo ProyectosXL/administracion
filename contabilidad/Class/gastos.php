@@ -16,10 +16,11 @@ class Gastos
 
       
 
-    public function traerGastos($desde, $hasta, $estado, $codRubro, $columna = null){
+    public function traerGastos($desde, $hasta, $estado, $codRubro, $columna = null,$codCuenta = null){
 
 
-        $queryColumna =" AND ( COD_CUENTA LIKE '%$columna%' OR DESC_LEYENDA  LIKE '%$columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%'  OR COD_RUBRO LIKE '%$columna%')";
+        $queryColumna =" AND ( DESC_LEYENDA  LIKE '%$columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%')";
+        $queryCodCuenta = "AND COD_CUENTA LIKE '$codCuenta'";
 
     if($estado == '0'){
 
@@ -53,6 +54,9 @@ class Gastos
     if($columna != null){
         $sql = $sql.$queryColumna;
     }   
+    if($codCuenta){
+        $sql = $sql.$queryCodCuenta;
+    }
 
         $stmt = sqlsrv_query( $this->cid_central, $sql );
     
