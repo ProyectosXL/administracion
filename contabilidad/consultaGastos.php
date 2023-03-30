@@ -25,6 +25,8 @@ $columna = isset($_GET['textBox']) ? $_GET['textBox'] : null;
 
 $cuenta = new CuentaContable ();
 $cuentas = $cuenta->traerCuentasContables();
+var_dump(json_decode($cuentas));
+die();
 
 
 
@@ -80,11 +82,18 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro,$colum
                         <div id="estado">
                             <label>Estado:</label>
                             <select class="form-control form-control-sm estado" name="estado">
-                                <option value="" selected>Todos</option>
-                                <option value="1">Amortizar</option>
-                                <option value="2">Excluidos</option>
-                                <option value="3">Pendiente asignar</option>
-                                <option value="0">Pendiente control</option>
+
+                                        <?php 
+                                            foreach ($cuentas as $cuenta ) {
+                                                echo($cuenta);
+                                                die;
+                                      ?> 
+
+                                            <option value="c"></option>
+                                        <?php
+                                            }
+
+                                        ?>
                             </select>
                         </div>
                         <div>
@@ -229,12 +238,25 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro,$colum
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
+    <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
+    <script src="../comercioExterior/assets/select2/select2.min.js"></script>
+ 
+
+
+
+
+
+
+
+
 
     <script>
         $(document).ready(function() {
             $('#myTable').DataTable({
                 responsive: true,
             });
+
+            $('.estado').select2();
         });
 
         $(function() {
