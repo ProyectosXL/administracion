@@ -173,21 +173,31 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
 
                 <td><select id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
-                <option selected><?=  $key->DESC_AUXILIAR ?></option>
-                <?php 
+                    <?php 
                     foreach ($todosLosCentrosCosto as  $y => $centro) {
-                ?>
-                    <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>">
-                        <?php
-                            echo($centro->DESC_AUXILIAR);
-                            
-                        ?>
-                    
-                    </option>
-                <?php
-                    }
-                ?>
-                    </select></td>
+                        
+                        if($key->DESC_AUXILIAR == $centro->DESC_AUXILIAR){   
+                    ?>
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>" selected>
+                                <?php
+                                    echo($centro->DESC_AUXILIAR);           
+                                ?>
+                            </option>
+                    <?php
+                        }else {
+                    ?>
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>">
+                                <?php
+                                    echo($centro->DESC_AUXILIAR);
+                                ?>
+                            </option>
+                    <?php
+                        }
+                            }
+                    ?>
+                    </select>
+                </td>
+
                 <td><?=  $key->SECTOR ?></td>
                 <td><?=  $key->COD_CUENTA ?></td>
                 <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
