@@ -102,7 +102,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                         </div>
                         <div>
                             <label for="Rubro">Rubro:</label>
-                            <select class="form-control form-control-sm" name="codRubro">
+                            <select class="form-control form-control-sm codRubro" name="codRubro">
                                 <option selected disabled>Todos</option>
                                 <?php
                                 foreach ($todosLosRubros as $valor => $value) {
@@ -261,6 +261,8 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
             });
 
             $('.codCuenta').select2();
+
+            $('.codRubro').select2();
         });
 
         $(function() {
