@@ -24,7 +24,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 $columna = isset($_GET['textBox']) ? $_GET['textBox'] : null;
 
 $cuenta = new CuentaContable ();
-$cuentas = $cuenta->traerCuentasContablesAll();
+$cuentas = $cuenta->traerCodCuentaAll();
 
 $cuentas = json_decode($cuentas, true);;
 

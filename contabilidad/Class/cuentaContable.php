@@ -57,7 +57,7 @@ class CuentaContable
     }
 
 
-    public function traerCuentasContablesAll(){
+    public function traerCodCuentaAll(){
  
 
         $sql = "SELECT COD_CUENTA, DESC_CUENTA FROM CUENTA ORDER BY DESC_CUENTA";
