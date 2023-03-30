@@ -4,6 +4,7 @@ include 'Class/gastos.php';
 include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
 include 'Class/articulos.php';
+include 'Class/cuentaContable.php';
 
 $gastos = new Gastos();
 $articulo = new Articulo();
@@ -22,9 +23,15 @@ $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 $columna = isset($_GET['textBox']) ? $_GET['textBox'] : null;
 
+$cuenta = new CuentaContable ();
+$cuentas = $cuenta->traerCuentasContables();
+
+
+
 
 $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro,$columna);
+
 
 ?>
 
