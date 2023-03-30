@@ -95,11 +95,11 @@ class Paso
              } while (sqlsrv_next_result($stmt)); 
              
             $data = [];
-            // var_dump (count($salida)-1);
+       
 
             for ($i=0; $i < (count($salida)-1) ; $i++) {
 
-                // var_dump($salida[$i]['COD_ARTICU']);
+              
                 $data[$i]['COD_ARTICU'] = $salida[$i]['COD_ARTICU'];
                 $data[$i]['RUBRO'] = $salida[$i]['RUBRO'];
  
@@ -184,8 +184,7 @@ class Paso
             $sql = "DECLARE @ResultForPos int;
             EXEC @ResultForPos = RO_SP_INSERTAR_MET_PRORRATEO_TODOS '$desde', '$hasta' ;
             SELECT @ResultForPos as valor";
-            var_dump($sql);
-            die();
+
             $stmt = sqlsrv_query($cid_central, $sql);
             $salida=array();
 
