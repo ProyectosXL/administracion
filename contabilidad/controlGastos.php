@@ -139,38 +139,6 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
                     <label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label>
                 </div>
             </div>
-            <!-- <div id="contCheck">
-                <label id="titleCheck">Excluir masivamente</label>
-                <div class="container " >
-                    <div class ="row">
-                        <div class="col">
-                            <div>
-                                <button class="btn btn-primary" onclick="checkExcluirAll(this);" >excluir</button>
-        
-                                <button class="btn btn-light" style ="background-color:white" onclick="uncheckExcluirAll(this);" >no excluir</button>
-                            </div>
-                        </div>
-                        
-                    </div>           
-             
-                </div>
-
-             
-            </div>
-            <div id="contCheck">
-                <label id="titleCheck">Controlar masivamente</label>
-                <div class="container " >   
-                    <div class ="row">
-                        <div class="col">
-                                <button class="btn btn-primary" onclick="checkControladoAll(this);">Controlar</button>
-                                <button class="btn btn-light" onclick="uncheckControladoAll(this);" >Quitar Control</button>
-                        </div>
-     
-                    </div>
-                    
-                </div>
-
-            </div> -->
         </div>
     </div>
 
