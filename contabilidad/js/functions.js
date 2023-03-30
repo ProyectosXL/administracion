@@ -483,8 +483,13 @@ function prorratearGastos() {
 
 
 function ejecutarPasos() {
-  // pasoActual = pasoActual + 1;
-  pasoActual = 2;
+
+  if(pasoActual == 7){
+    pasoActual = 0;
+  }
+
+  pasoActual = pasoActual + 1;
+  
 
   let pasosDirectos = [3,5,6,7]; 
 
@@ -532,7 +537,7 @@ function ejecutarPasos() {
               Swal.fire({
                 icon: "success",
                 title: "Control exitoso",
-                text: "Paso 1 realizado! No existen artículos sin costo de nacionalización",
+                text: `Paso ${pasoActual} realizado!`,
               });
 
             }else{
@@ -541,15 +546,24 @@ function ejecutarPasos() {
               spinner.classList.remove('loading');
 
               if(pasoActual == 1){
-                console.log("entra aca");
+          
                 $('#modalCn').modal('toggle');
 
               }
+
               if(pasoActual == 2){
 
-                rellenarModal(perfil);
+           
+                rellenarModal2(perfil);
                 
                 $('#modalPc').modal('toggle');      
+              }
+              if(pasoActual == 4){
+
+                  rellenarModal4(perfil);
+
+                  $('#modalVct').modal('toggle');
+  
               }
               
               pasoActual = pasoActual - 1;
@@ -575,6 +589,7 @@ const pintarPasos =(periodo)=>{
     )
     .then((respuesta) => respuesta.json())
     .then((data) => {
+
       let pasos = [];
 
       for (let i = 0; i < 7; i++) {
@@ -598,10 +613,10 @@ const pintarPasos =(periodo)=>{
 }
 
 
-const rellenarModal = (obj)=>{
+const rellenarModal2 = (obj)=>{
 
 
-  let tableModal =  document.querySelector("#tableModal");
+  let tableModal =  document.querySelector("#tableModalPc");
 
   for (let x = 0; x < obj.length; x++) {
 
@@ -615,6 +630,38 @@ const rellenarModal = (obj)=>{
     td2.appendChild(text2);
     tr.appendChild(td1);
     tr.appendChild(td2);
+    
+    tableModal.appendChild(tr);
+
+
+  }
+
+}
+const rellenarModal4 = (obj)=>{
+
+
+  let tableModal =  document.querySelector("#tableModalvCT");
+
+  for (let x = 0; x < obj.length; x++) {
+
+    const tr=document.createElement('tr');
+    const td1=document.createElement('td');
+    const td2=document.createElement('td');
+    const td3=document.createElement('td');
+    const td4=document.createElement('td');
+    const text1=document.createTextNode(obj[x]['NRO_SUCURS']);
+    const text2=document.createTextNode(obj[x]['IMP_VENTA']);
+    const text3=document.createTextNode(obj[x]['IMP_COBRANZA']);
+    const text4=document.createTextNode(obj[x]['DIFERENCIA']);
+
+    td1.appendChild(text1);
+    td2.appendChild(text2);
+    td3.appendChild(text3);
+    td4.appendChild(text4);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
     
     tableModal.appendChild(tr);
 

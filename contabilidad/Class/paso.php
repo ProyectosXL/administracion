@@ -65,6 +65,7 @@ class Paso
                 }
              } while (sqlsrv_next_result($stmt)); 
           
+
              echo json_encode($salida);
           
         } catch (Exception $e) {
@@ -84,6 +85,7 @@ class Paso
             EXEC @ResultForPos = RO_SP_ARTICULOS_SIN_PRECIO_COSTO '$desde', '$hasta';
             SELECT @ResultForPos as valor";
 
+
             $stmt = sqlsrv_query($cid_central, $sql);
 
             $salida=array();
@@ -93,20 +95,25 @@ class Paso
                    $salida[] = $row;
                 }
              } while (sqlsrv_next_result($stmt)); 
-             
-            $data = [];
-       
-
-            for ($i=0; $i < (count($salida)-1) ; $i++) {
-
-              
-                $data[$i]['COD_ARTICU'] = $salida[$i]['COD_ARTICU'];
-                $data[$i]['RUBRO'] = $salida[$i]['RUBRO'];
  
+            if(isset($salida[0]['NRO_SUCURS'])){
+                
+                $data = [];
+     
+                for ($i=0; $i < (count($salida)-1) ; $i++) {
+                
+                    array_push($data, array(
+                        'COD_ARTICU' => $salida[$i]['COD_ARTICU'],
+                        'RUBRO' => $salida[$i]['RUBRO']
+                    ));
+            
+                }
+                
+                echo json_encode($data);
+            }else{
+                echo json_encode($salida);
             }
-
-             echo json_encode($data);
-          
+        
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
@@ -131,8 +138,7 @@ class Paso
                     $salida[] = $row;
                 }
             } while (sqlsrv_next_result($stmt)); 
-            
-       
+
              echo json_encode($salida);
           
         } catch (Exception $e) {
@@ -155,17 +161,31 @@ class Paso
 
             $stmt = sqlsrv_query($cid_central, $sql);
             $salida=array();
-            /* $next_result = sqlsrv_next_result($stmt);
-            $next_result = sqlsrv_next_result($stmt);
-            $next_result = sqlsrv_next_result($stmt); */
-            /* $salida['resultado']=sqlsrv_rows_affected($stmt); */
+
             do {
                 while ($row = sqlsrv_fetch_array($stmt)) {
                    $salida[] = $row;
                 }
              } while (sqlsrv_next_result($stmt)); 
-          
-             echo json_encode($salida);
+                
+            if(isset($salida[0]['NRO_SUCURS'])){
+
+                $data = [];
+                
+                for ($i=0; $i < (count($salida)-1) ; $i++) {
+                    
+                    array_push($data, array(
+                        'NRO_SUCURS' => $salida[$i]['NRO_SUCURS'],
+                        'IMP_VENTA' => $salida[$i]['IMP_VENTA'],
+                        'IMP_COBRANZA' => $salida[$i]['IMP_COBRANZA'],
+                        'DIFERENCIA' => $salida[$i]['DIFERENCIA']
+                    ));
+                    
+                }    
+                echo json_encode($data);
+            } else {
+                echo json_encode($salida);
+            }
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";

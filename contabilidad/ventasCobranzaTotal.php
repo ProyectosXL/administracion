@@ -16,7 +16,7 @@
 
 <body>
 
-  <div class="modal fade" id="modalPc" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal fade" id="modalVct" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -30,11 +30,13 @@
           <div class="table-responsive" id="tableIndex">
             <table class="table table-hover table-condensed table-striped text-center">
               <thead class="thead-dark" style="font-size: small;">
-                <th scope="col" style="width: 5%">ARTICULO</th>
-                <th scope="col" style="width: 8%">RUBRO</th>
+                <th scope="col" style="width: 5%">NRO SUCURSAL</th>
+                <th scope="col" style="width: 8%">IMP VENTA</th>
+                <th scope="col" style="width: 8%">IMP COBRANZA</th>
+                <th scope="col" style="width: 8%">DIFERENCIA</th>
               </thead>
 
-              <tbody id=" " style="font-size: small;" >
+              <tbody id="tableModalvCT" style="font-size: small;" >
     
 
               </tbody>

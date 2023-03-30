@@ -320,6 +320,7 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 include('articuloSinCn.php');
 
 include('articuloSinPrecioCosto.php');
+include('ventasCobranzaTotal.php');
 
 
 ?>
