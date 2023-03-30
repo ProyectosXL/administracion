@@ -10,6 +10,15 @@ const inputAmortiza = document.querySelectorAll(".amortiza");
 const btnAmortizar = document.querySelector(".btn-danger");
 const btnProrratear = document.querySelector("#btnProrrateo");
 const btnEjecutar = document.querySelector("#btnEjecutar");
+let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
+let pasoActual = 0;
+
+let payloads =  {
+
+  "desde": document.getElementsByName("desde")[0].value,
+  "hasta": document.getElementsByName("hasta")[0].value,
+  
+}
 
 btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
@@ -18,6 +27,7 @@ btnEjecutar.addEventListener("click", ejecutarPasos);
 let conexion;
 
 function iniciarEscuchaSelect() {
+  pintarPasos(periodo);
   //3 - se llama a la funcion de paso 1
   selectRubro.forEach(
     (
@@ -328,19 +338,51 @@ function revisar() {
 }
 
 function checkControladoAll(source) {
-  var checkboxes = document.querySelectorAll(".checkControlado");
-  for (var i = 0; i < checkboxes.length; i++) {
-    if (checkboxes[i] != source) checkboxes[i].checked = source.checked;
+
+    var checkboxes = document.querySelectorAll(".checkControlado");
+
+    for (var i = 0; i < checkboxes.length; i++) {
+
+    if (checkboxes[i] != source) checkboxes[i].checked = true;
+
     guardarControlado(checkboxes[i]);
   }
+
 }
+
+function uncheckControladoAll(source) {
+
+  var checkboxes = document.querySelectorAll(".checkControlado");
+
+  for (var i = 0; i < checkboxes.length; i++) {
+
+  if (checkboxes[i] != source) checkboxes[i].checked = false;
+
+  guardarControlado(checkboxes[i]);
+}
+
+}
+
 
 function checkExcluirAll(source) {
   var checkboxes = document.querySelectorAll(".checkExcluir");
   for (var i = 0; i < checkboxes.length; i++) {
-    if (checkboxes[i] != source) checkboxes[i].checked = source.checked;
-    guardarExcluir(checkboxes[i]);
+    if (checkboxes[i] != source) checkboxes[i].checked = true;
+
+    guardarExcluir(checkboxes[i]); 
+    
   }
+
+}
+function uncheckExcluirAll(source) {
+  var checkboxes = document.querySelectorAll(".checkExcluir");
+  for (var i = 0; i < checkboxes.length; i++) {
+    if (checkboxes[i] != source) checkboxes[i].checked = false;
+
+    guardarExcluir(checkboxes[i]); 
+
+  }
+
 }
 
 function prorratearGastos() {
@@ -441,14 +483,19 @@ function prorratearGastos() {
 
 
 function ejecutarPasos() {
-   let desde = document.getElementsByName("desde")[0].value;
-   let hasta = document.getElementsByName("hasta")[0].value;
+  // pasoActual = pasoActual + 1;
+  pasoActual = 2;
+
+  let pasosDirectos = [3,5,6,7]; 
+
   const swalWithBootstrapButtons = Swal.mixin({
+
     customClass: {
       confirmButton: "btn btn-success",
       cancelButton: "btn btn-danger",
     },
     buttonsStyling: false,
+
   });
 
   swalWithBootstrapButtons
@@ -464,33 +511,48 @@ function ejecutarPasos() {
     .then((result) => {
       if (result.isConfirmed) {
         /******************************* */
-        let paso1 = document.getElementById("paso1");
+        let paso = document.getElementById("paso"+pasoActual);
         let spinner = document.getElementById("boxLoading");
         spinner.className += " loading";
  /*otro fetch*/
 
-        fetch("./Controller/ejecutarPaso1.php?desde=" + desde + "&hasta=" + hasta)
-          .then((respuesta) => respuesta.text())
-          .then((perfil) => {
-            console.log(perfil)
-           
-            if (perfil.resultado == 0) {
-              paso1.className += "active";
+        fetch("./Controller/ejecutarPasos.php?paso="+pasoActual,
+          {
+            method: 'POST',
+            body: JSON.stringify(payloads)
+          }
+        )
+        .then((respuesta) => respuesta.json())
+        .then((perfil) => {
+ 
+            if (perfil.resultado == 0 || pasosDirectos.includes(pasoActual) == true ) {
+
+              paso.className += "active";
               spinner.classList.remove('loading');
               Swal.fire({
                 icon: "success",
                 title: "Control exitoso",
                 text: "Paso 1 realizado! No existen artículos sin costo de nacionalización",
               });
+
             }else{
-              console.log("2")
+
+              
               spinner.classList.remove('loading');
-             /*  swalWithBootstrapButtons.fire(
-                "Prorrateado!",
-                "Mostrar listado de articulos sin CN",
-                "success"
-              ); */
-              $('#modalCn').modal('toggle');
+
+              if(pasoActual == 1){
+                console.log("entra aca");
+                $('#modalCn').modal('toggle');
+
+              }
+              if(pasoActual == 2){
+
+                rellenarModal(perfil);
+                
+                $('#modalPc').modal('toggle');      
+              }
+              
+              pasoActual = pasoActual - 1;
             }
           });
         /******************************** */
@@ -505,4 +567,58 @@ function ejecutarPasos() {
         );
       }
     });
+}
+
+const pintarPasos =(periodo)=>{
+
+    fetch("./Controller/consultarPasos.php?periodo="+periodo,
+    )
+    .then((respuesta) => respuesta.json())
+    .then((data) => {
+      let pasos = [];
+
+      for (let i = 0; i < 7; i++) {
+        pasos[i] = data[0]['PASO_'+(i+1)];
+      }
+    
+      pasos.forEach((element,x) => {
+    
+        if(element != null){
+        let paso = document.getElementById("paso"+(x+1));
+
+        pasoActual = x+1;
+
+        paso.className += "active";
+
+      }
+
+      });
+    })
+
+}
+
+
+const rellenarModal = (obj)=>{
+
+
+  let tableModal =  document.querySelector("#tableModal");
+
+  for (let x = 0; x < obj.length; x++) {
+
+    const tr=document.createElement('tr');
+    const td1=document.createElement('td');
+    const td2=document.createElement('td');
+    const text1=document.createTextNode(obj[x]['COD_ARTICU']);
+    const text2=document.createTextNode(obj[x]['RUBRO']);
+
+    td1.appendChild(text1);
+    td2.appendChild(text2);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    
+    tableModal.appendChild(tr);
+
+
+  }
+
 }

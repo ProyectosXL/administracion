@@ -18,6 +18,10 @@ $todosLosMetodos = json_decode($todosLosMetodos);
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
+$periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
+
+
+
 ?>
 
 <!DOCTYPE html>
@@ -54,14 +58,15 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 
     <div class="row">
         <div class="progressbar-wrapper">
+            <div hidden id="periodo" attr-periodo= "<?= $periodo ?>"></div>
             <ul class="progressbar">
                 <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
-                <li data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
+                <li class="" id="paso2"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
+                <li class="" id="paso3"  data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
+                <li class="" id="paso4"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
+                <li class="" id="paso5" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
+                <li class="" id="paso6" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
+                <li class="" id="paso7" data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
             </ul>
         </div>
         <div>
@@ -124,15 +129,36 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
                 <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnSend">Procesar <i class="bi bi-check2-square"></i></button>
             </div>
             <div id="contCheck">
-                <label id="titleCheck">Acciones masivas</label>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" onclick="checkExcluirAll(this);" value="" id="defaultCheck1">
-                    <label class="form-check-label" for="defaultCheck1">Excluir</label>
+                <label id="titleCheck">Excluir masivamente</label>
+                <div class="container " >
+                    <div class ="row">
+                        <div class="col">
+                            <div>
+                                <button class="btn btn-primary" onclick="checkExcluirAll(this);" >excluir</button>
+        
+                                <button class="btn btn-light" style ="background-color:white" onclick="uncheckExcluirAll(this);" >no excluir</button>
+                            </div>
+                        </div>
+                        
+                    </div>           
+             
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" onclick="checkControladoAll(this);" value="" id="defaultCheck2">
-                    <label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label>
+
+             
+            </div>
+            <div id="contCheck">
+                <label id="titleCheck">Controlar masivamente</label>
+                <div class="container " >   
+                    <div class ="row">
+                        <div class="col">
+                                <button class="btn btn-primary" onclick="checkControladoAll(this);">Controlar</button>
+                                <button class="btn btn-light" onclick="uncheckControladoAll(this);" >Quitar Control</button>
+                        </div>
+     
+                    </div>
+                    
                 </div>
+
             </div>
         </div>
     </div>
@@ -273,11 +299,14 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
             $('#myTable').DataTable({
                 responsive: true,
             });
+            
         });
 
         $(function() {
             $('[data-toggle="tooltip"]').tooltip()
         })
+
+
 
         $('#myModal').modal('toggle')
     </script>
@@ -289,5 +318,8 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 <?php
 
 include('articuloSinCn.php');
+
+include('articuloSinPrecioCosto.php');
+
 
 ?>
