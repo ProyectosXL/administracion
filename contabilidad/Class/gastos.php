@@ -108,7 +108,7 @@ class Gastos
 
         $sql = "UPDATE RO_T_INTEGRAL_TANGO_2 SET saldo = '$saldo' WHERE ID = '$id'";
 
-        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        $stmt = sqlsrv_prepare( $this->cid_central, $sql );
   
         try {
             sqlsrv_execute($stmt);

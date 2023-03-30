@@ -466,7 +466,8 @@ const cambiarCentroCosto= (e) => {
 const actualizarSaldo = (saldo) => {
 
   let saldoParseado = parseNumber(parseFloat(saldo.value))
-  let nuevoSaldo = convertToNumber(a);
+  let nuevoSaldo = convertToNumber(saldoParseado);
+
   let id = saldo.parentElement.parentElement.childNodes[41].textContent;
 
   saldo.value = saldoParseado
