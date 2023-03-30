@@ -89,8 +89,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                         <div id="estado">
                             <label>Codigo de Cuenta:</label>
                             <select class="form-control form-control-sm codCuenta" name="codCuenta" style="width: 300px;">
-                            <option  value="%">Todos</option>
-
+                            <option  value="%" selected>Todos</option>
                                         <?php 
                                             foreach ($data as $cuenta ) {
                                       ?> 
@@ -116,7 +115,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                         </div>
                         <div>                   
                             <label id="textBusqueda">Busqueda rapida:</label>
-                            <input type="text" id="textBox"  name="textBox" placeholder="Leyenda - Razon Social - Nro Cgiomp" class="form-control form-control-sm" style="width: 250px;"></input>  
+                            <input type="text" id="textBox"  name="textBox" placeholder="Leyenda - Razon Social - Nro Comp" class="form-control form-control-sm" style="width: 250px;"></input>  
                         </div>
                         <div>
                             <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
