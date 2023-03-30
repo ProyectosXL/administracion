@@ -129,6 +129,17 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
                 <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnSend">Procesar <i class="bi bi-check2-square"></i></button>
             </div>
             <div id="contCheck">
+                <label id="titleCheck">Acciones masivas</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" onclick="checkExcluirAll(this);" value="" id="defaultCheck1">
+                    <label class="form-check-label" for="defaultCheck1">Excluir</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" onclick="checkControladoAll(this);" value="" id="defaultCheck2">
+                    <label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label>
+                </div>
+            </div>
+            <!-- <div id="contCheck">
                 <label id="titleCheck">Excluir masivamente</label>
                 <div class="container " >
                     <div class ="row">
@@ -159,7 +170,7 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
                     
                 </div>
 
-            </div>
+            </div> -->
         </div>
     </div>
 
