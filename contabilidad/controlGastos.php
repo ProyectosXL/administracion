@@ -171,7 +171,9 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
             ?>
             <tr>
                 <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
+
                 <td><select id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
+                <option selected><?=  $key->COD_AUXILIAR ?></option>
                 <?php 
                     foreach ($todosLosCentrosCosto as  $y => $centro) {
                 ?>
