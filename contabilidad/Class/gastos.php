@@ -42,15 +42,17 @@ class Gastos
             $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL)";
 
     }else{
-            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL 
-                    AND COD_RUBRO LIKE '$codRubro'
-                        UNION ALL
-                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO 
-                    BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR)
-                    AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro'
-            ";
-    }
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL
+                    AND COD_RUBRO LIKE '$codRubro' AND ( DESC_LEYENDA LIKE '%columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%')AND COD_CUENTA LIKE '$codCuenta'
+                    UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
+                    AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
+                    AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro' 
+                ";
 
+
+
+
+    }
     if($columna != null){
         $sql = $sql.$queryColumna;
     }   
