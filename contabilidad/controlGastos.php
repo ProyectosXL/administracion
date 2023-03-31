@@ -172,7 +172,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
             <tr>
                 <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
 
-                <td><select id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
+                <td><select class="auxiliar" id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
                     <?php 
                     foreach ($todosLosCentrosCosto as  $y => $centro) {
                         
@@ -265,8 +265,11 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-    
 
+    <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
+    <script src="../comercioExterior/assets/select2/select2.min.js"></script>
+
+    
 <script>
 
     $(document).ready(function () {
@@ -275,6 +278,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         }
 
         );
+        $('.auxiliar').select2();
     });
 
 </script>
