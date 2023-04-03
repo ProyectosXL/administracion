@@ -64,9 +64,16 @@ class Paso
                    $salida[] = $row;
                 }
              } while (sqlsrv_next_result($stmt)); 
-          
 
-             echo json_encode($salida);
+            if(count($salida) > 1  && !isset($salida[0]['RESULTADO'])){
+              
+                echo json_encode($salida);
+
+            }else{
+
+            $salida['result'] = 0;
+            echo json_encode($salida);
+            }
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
@@ -86,6 +93,7 @@ class Paso
             SELECT @ResultForPos as valor";
 
 
+
             $stmt = sqlsrv_query($cid_central, $sql);
 
             $salida=array();
@@ -94,9 +102,9 @@ class Paso
                 while ($row = sqlsrv_fetch_array($stmt)) {
                    $salida[] = $row;
                 }
-             } while (sqlsrv_next_result($stmt)); 
+             } while (sqlsrv_next_result($stmt));
  
-            if(isset($salida[0]['NRO_SUCURS'])){
+            if(count($salida) > 1  && !isset($salida[0]['valor']) ){
                 
                 $data = [];
      
@@ -111,6 +119,7 @@ class Paso
                 
                 echo json_encode($data);
             }else{
+                $salida['result'] = 0;
                 echo json_encode($salida);
             }
         
@@ -168,7 +177,7 @@ class Paso
                 }
              } while (sqlsrv_next_result($stmt)); 
                 
-            if(isset($salida[0]['NRO_SUCURS'])){
+            if(count($salida) > 1  && !isset($salida[0]['valor'])){
 
                 $data = [];
                 
@@ -184,6 +193,7 @@ class Paso
                 }    
                 echo json_encode($data);
             } else {
+                $salida['result'] = 0;
                 echo json_encode($salida);
             }
           

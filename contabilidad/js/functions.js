@@ -489,7 +489,6 @@ function ejecutarPasos() {
   }
 
   pasoActual = pasoActual + 1;
-  
 
   let pasosDirectos = [3,5,6,7]; 
 
@@ -529,8 +528,9 @@ function ejecutarPasos() {
         )
         .then((respuesta) => respuesta.json())
         .then((perfil) => {
- 
-            if (perfil.resultado == 0 || pasosDirectos.includes(pasoActual) == true ) {
+            // console.log(perfil);
+
+            if (perfil.result == 0 || pasosDirectos.includes(pasoActual) == true ) {
 
               paso.className += "active";
               spinner.classList.remove('loading');
@@ -618,18 +618,21 @@ const rellenarModal2 = (obj)=>{
 
   let tableModal =  document.querySelector("#tableModalPc");
 
-  for (let x = 0; x < obj.length; x++) {
+  for (let x = 0; x < obj.length ; x++) {
 
-    const tr=document.createElement('tr');
-    const td1=document.createElement('td');
-    const td2=document.createElement('td');
-    const text1=document.createTextNode(obj[x]['COD_ARTICU']);
-    const text2=document.createTextNode(obj[x]['RUBRO']);
-
+    let tr=document.createElement('tr');
+    console.log(tr)
+    let td1=document.createElement('td');
+    let td2=document.createElement('td');
+    let text1=document.createTextNode(obj[x]['COD_ARTICU']);
+    let text2=document.createTextNode(obj[x]['RUBRO']);
+    
     td1.appendChild(text1);
     td2.appendChild(text2);
     tr.appendChild(td1);
     tr.appendChild(td2);
+    console.log(td1);
+    console.log(td2);
     
     tableModal.appendChild(tr);
 

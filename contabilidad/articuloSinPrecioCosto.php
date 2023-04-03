@@ -34,7 +34,7 @@
                 <th scope="col" style="width: 8%">RUBRO</th>
               </thead>
 
-              <tbody id=" " style="font-size: small;" >
+              <tbody id="tableModalPc" style="font-size: small;" >
     
 
               </tbody>
