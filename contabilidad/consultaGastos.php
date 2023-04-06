@@ -51,7 +51,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Gastos</title>
+    <title>Consulta Gastos</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
@@ -60,10 +60,8 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" type="text/css" href="select2/select2.min.css">
-
-    <script src="select2/select2.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     </link>
 
 </head>
@@ -151,10 +149,6 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                     <th style="position: sticky; top: 0; z-index: 10;">RUBRO CONTABLE</th>
                     <th style="position: sticky; top: 0; z-index: 10;">COD. PRORRATEO</th>
                     <th style="position: sticky; top: 0; z-index: 10;">DESC. PRORRATEO</th>
-                    <th style="position: sticky; top: 0; z-index: 10;" title="Colocar plazo de amortización">AMORT.</th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-x-square biHeader" data-toggle="tooltip" data-placement="bottom" title="Excluir gasto"></i></th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-check2-square biHeader" data-toggle="tooltip" data-placement="bottom" title="Gasto controlado"></i></th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-graph-up biHeader" data-toggle="tooltip" data-placement="bottom" title="Gasto amortizado"></i></th>
                     <th style="position: sticky; top: 0; z-index: 10;">MODULO</th>
                     <th style="position: sticky; top: 0; z-index: 10;">NRO. SUC.</th>
                     <th style="position: sticky; top: 0; z-index: 10;">ID</th>
@@ -177,7 +171,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                         <td><?= $key->RAZON_SOCIAL ?></td>
                         <td><?= $key->N_COMP ?></td>
                         <td>
-                            <select class="codRubroC" style="width: 3rem;">
+                            <select class="codRubro" style="width: 140px;">
                                 <option selected disabled><?= $key->COD_RUBRO ?></option>
                                 <?php
                                 foreach ($todosLosRubros as $valor => $value) {
@@ -202,21 +196,6 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                             </select>
                         </td>
                         <td><?= $key->DESC_PRORRATEO ?></td>
-                        <td><?php if ($key->AMORTIZADO == 1) { ?>
-                                <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?= $key->AMORTIZAR ?>" disabled>
-                            <?php } else { ?>
-                                <input class="amortiza" type="number" id="amortiza" min="1" name="inputNum" value="<?= $key->AMORTIZAR ?>">
-                            <?php } ?>
-                        </td>
-                        <td><input class="checkExcluir" type="checkbox" <?php if ($key->EXCLUIR == 1) {
-                                                                            echo 'checked';
-                                                                        } ?>></td>
-                        <td><input class="checkControlado" type="checkbox" <?php if ($key->CONTROLADO == 1) {
-                                                                                echo 'checked';
-                                                                            } ?>></td>
-                        <td><input class="checkAmortizado" type="checkbox" <?php if ($key->AMORTIZADO == 1) {
-                                                                                echo 'checked';
-                                                                            } ?> disabled></td>
                         <td><?= $key->MODULO ?></td>
                         <td><?= $key->NUM_SUCURSAL ?></td>
                         <td><?= $key->ID ?></td>
