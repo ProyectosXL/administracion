@@ -177,7 +177,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                         <td><?= $key->RAZON_SOCIAL ?></td>
                         <td><?= $key->N_COMP ?></td>
                         <td>
-                            <select class="codRubro" style="width: 3rem;">
+                            <select class="codRubroC" style="width: 3rem;">
                                 <option selected disabled><?= $key->COD_RUBRO ?></option>
                                 <?php
                                 foreach ($todosLosRubros as $valor => $value) {
@@ -190,7 +190,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                         </td>
                         <td><?= $key->RUBRO_CONTABLE ?></td>
                         <td>
-                            <select class="codProrrateo" style="width: 2.2rem;">
+                            <select class="codProrrateoC" style="width: 2.2rem;">
                                 <option selected disabled><?= $key->COD_PRORRATEO ?></option>
                                 <?php
                                 foreach ($todosLosMetodos as $valor => $value) {
@@ -233,6 +233,9 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
 
     <!-- <script src="js/functions.js"></script> -->
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="js/consultaGastos.js"></script>
+
     <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
     <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
