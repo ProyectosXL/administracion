@@ -171,7 +171,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
                         <td><?= $key->RAZON_SOCIAL ?></td>
                         <td><?= $key->N_COMP ?></td>
                         <td>
-                            <select class="codRubro" style="width: 140px;">
+                            <select class="codRubroC" style="width: 140px;">
                                 <option selected disabled><?= $key->COD_RUBRO ?></option>
                                 <?php
                                 foreach ($todosLosRubros as $valor => $value) {
@@ -210,7 +210,7 @@ $todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$
     }
     ?>
 
-    <!-- <script src="js/functions.js"></script> -->
+
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script src="js/consultaGastos.js"></script>

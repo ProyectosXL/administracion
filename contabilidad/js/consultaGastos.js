@@ -30,7 +30,7 @@ function completarCampoRubro(e) {
   // 5 - al evento change de un codRubro se llama a la funcion completarCampoRubro, e , es el evento con la información de cual elemnto del dom fue clickeado
   let Dato = e.target; // 6 - guardo el elemento del html donde se produjo el evento.
   /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let ID = Dato.parentElement.parentElement.children[20].textContent;
+  let ID = Dato.parentElement.parentElement.childNodes[33].textContent;
   let codRubro = Dato.value;
   let rubroDesc = Dato.parentElement.parentElement.children[11];
   conexion = new XMLHttpRequest();
@@ -47,7 +47,7 @@ function completarCampoRubro(e) {
 function completarCampoProrrateo(e) {
   let Dato = e.target;
   /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let ID = Dato.parentElement.parentElement.children[20].textContent;
+  let ID = Dato.parentElement.parentElement.childNodes[33].textContent;
   let codProrrateo = Dato.value;
   let prorrateoDesc = Dato.parentElement.parentElement.children[13];
   /* let txtDescProrrateo = e.target; */
