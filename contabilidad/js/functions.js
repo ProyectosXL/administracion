@@ -368,17 +368,24 @@ function prorratearGastos() {
     })
     .then((result) => {
       if (result.isConfirmed) {
+        let btn = document.getElementsByClassName(".btnProrrateo");
+        let spinner = document.getElementById("boxLoading");
+        spinner.className += " loading";
         /******************************* */
         fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
           .then((respuesta) => respuesta.json())
           .then((perfil) => {
             if (perfil.resultado == 0) {
+              btn.className += "active";
+              spinner.classList.remove('loading');
               Swal.fire({
                 icon: "error",
                 title: "Error",
                 text: "No hay gastos para prorratear!",
               });
             }else{
+              btn.className += "active";
+              spinner.classList.remove('loading');
               swalWithBootstrapButtons.fire(
                 "Prorrateado!",
                 "Los gastos fueron prorrateados",

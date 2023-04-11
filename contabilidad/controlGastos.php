@@ -120,7 +120,7 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
             </div>
             <div class="btn-group">
                 <button class="btn btn-danger mt-3" id="btnAmort">Amortizar <i class="bi bi-calendar2-week"></i></button>
-                <button class="btn btn-info mt-3" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
+                <button class="btn btn-info mt-3 btnProrrateo" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
                 <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnSend">Procesar <i class="bi bi-check2-square"></i></button>
             </div>
             <div id="contCheck">
@@ -269,6 +269,7 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 
 
     <script>
+
         $(document).ready(function() {
             $('#myTable').DataTable({
                 responsive: true,
