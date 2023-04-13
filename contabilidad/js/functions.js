@@ -535,7 +535,7 @@ function ejecutarPasos() {
       ) {
         swalWithBootstrapButtons.fire(
           "Cancelado",
-          "Los gastos no fueron prorrateados :(",
+          "El paso de control no fue ejecutado",
           "error"
         );
       }
