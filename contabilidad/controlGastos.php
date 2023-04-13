@@ -40,9 +40,9 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" type="text/css" href="select2/select2.min.css">
+    <!-- <link rel="stylesheet" type="text/css" href="select2/select2.min.css"> -->
 
-    <script src="select2/select2.min.js"></script>
+    <!-- <script src="select2/select2.min.js"></script> -->
     <link rel="stylesheet" href="css/style.css">
     </link>
 

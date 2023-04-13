@@ -550,6 +550,10 @@ const pintarPasos =(periodo)=>{
     .then((data) => {
 
       let pasos = [];
+      
+      if(data < 1){
+        return false
+      }
 
       for (let i = 0; i < 7; i++) {
         pasos[i] = data[0]['PASO_'+(i+1)];
