@@ -14,6 +14,7 @@ class Articulo
     public function traerArticulosSinCostoNac()
     {
 
+  
         $sql = "SELECT * FROM RO_T_ARTICULOS_SIN_CN";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
