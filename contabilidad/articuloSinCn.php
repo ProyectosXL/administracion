@@ -16,11 +16,9 @@
 
 <body>
 
-  <?php
-
-  $todosLosArticulos = $articulo->traerArticulosSinCostoNac($desde, $hasta);
-
-  ?>
+  <script>
+    console.log("ARTICULOS SIN COSTO DE NACIONALIZACION")
+  </script>
 
   <div class="modal fade" id="modalCn" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -40,21 +38,7 @@
                 <th scope="col" style="width: 8%">RUBRO</th>
               </thead>
 
-              <tbody id="table" style="font-size: small;">
-                <?php
-
-                $todosLosArticulos = json_decode($todosLosArticulos);
-                foreach ($todosLosArticulos as $valor => $value) {
-
-                ?>
-                  <tr>
-                    <td><?= $value->COD_ARTICU ?></td>
-                    <td><?= $value->RUBRO ?></td>
-                  </tr>
-
-                <?php
-                }
-                ?>
+              <tbody id="tableCn" style="font-size: small;">
 
               </tbody>
             </table>

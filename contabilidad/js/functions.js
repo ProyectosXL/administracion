@@ -441,44 +441,6 @@ function prorratearGastos() {
       }
     });
 
-  /******************************************************* */
-/*   fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
-    .then((respuesta) => respuesta.json())
-    .then((perfil) => {
-      if (perfil.resultado == 0) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "No hay gastos para prorratear!",
-        });
-      } else {
-        swalWithBootstrapButtons
-          .fire({
-            title: "Desea realizar el prorrateo?",
-            text: "Ya no se podran deshacer los cambios!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Ok, prorratear!",
-            cancelButtonText: "No, cancelar!",
-            reverseButtons: true,
-          })
-          .then((result) => {
-            if (result.isConfirmed) {
-              swalWithBootstrapButtons.fire(
-                "Prorrateado!",
-                "Los gastos fueron prorrateados",
-                "success"
-              );
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-              swalWithBootstrapButtons.fire(
-                "Cancelado",
-                "Los gastos no fueron prorrateados :(",
-                "error"
-              );
-            }
-          });
-      }
-    }); */
 }
 
 
@@ -489,6 +451,7 @@ function ejecutarPasos() {
   }
 
   pasoActual = pasoActual + 1;
+
 
   let pasosDirectos = [3,5,6,7]; 
 
@@ -528,9 +491,7 @@ function ejecutarPasos() {
         )
         .then((respuesta) => respuesta.json())
         .then((perfil) => {
-            // console.log(perfil);
-
-            if (perfil.result == 0 || pasosDirectos.includes(pasoActual) == true ) {
+            if (perfil.length == 0 || pasosDirectos.includes(pasoActual) == true ) {
 
               paso.className += "active";
               spinner.classList.remove('loading');
@@ -541,31 +502,29 @@ function ejecutarPasos() {
               });
 
             }else{
-
               
               spinner.classList.remove('loading');
 
-              if(pasoActual == 1){
-          
-                $('#modalCn').modal('toggle');
-
-              }
-
-              if(pasoActual == 2){
-
-           
-                rellenarModal2(perfil);
+              switch (pasoActual) {
+                case 1:
+                  rellenarModal1(perfil);
+                  $('#modalCn').modal('toggle');
+                  break;
                 
-                $('#modalPc').modal('toggle');      
-              }
-              if(pasoActual == 4){
+                case 2:
+                  rellenarModal2(perfil);
+                  $('#modalPc').modal('toggle');
+                  break;
 
+                case 4:
                   rellenarModal4(perfil);
-
                   $('#modalVct').modal('toggle');
-  
-              }
+                  break;
               
+                default:
+                  break;
+              }
+
               pasoActual = pasoActual - 1;
             }
           });
@@ -613,15 +572,16 @@ const pintarPasos =(periodo)=>{
 }
 
 
-const rellenarModal2 = (obj)=>{
+
+const rellenarModal1 = (obj)=>{
 
 
-  let tableModal =  document.querySelector("#tableModalPc");
+  let tableModal =  document.querySelector("#tableCn");
 
   for (let x = 0; x < obj.length ; x++) {
 
     let tr=document.createElement('tr');
-    console.log(tr)
+
     let td1=document.createElement('td');
     let td2=document.createElement('td');
     let text1=document.createTextNode(obj[x]['COD_ARTICU']);
@@ -631,8 +591,32 @@ const rellenarModal2 = (obj)=>{
     td2.appendChild(text2);
     tr.appendChild(td1);
     tr.appendChild(td2);
-    console.log(td1);
-    console.log(td2);
+    
+    tableModal.appendChild(tr);
+
+
+  }
+
+}
+
+const rellenarModal2 = (obj)=>{
+
+
+  let tableModal =  document.querySelector("#tableModalPc");
+
+  for (let x = 0; x < obj.length ; x++) {
+
+    let tr=document.createElement('tr');
+
+    let td1=document.createElement('td');
+    let td2=document.createElement('td');
+    let text1=document.createTextNode(obj[x]['COD_ARTICU']);
+    let text2=document.createTextNode(obj[x]['RUBRO']);
+    
+    td1.appendChild(text1);
+    td2.appendChild(text2);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
     
     tableModal.appendChild(tr);
 
@@ -652,10 +636,12 @@ const rellenarModal4 = (obj)=>{
     const td2=document.createElement('td');
     const td3=document.createElement('td');
     const td4=document.createElement('td');
-    const text1=document.createTextNode(obj[x]['NRO_SUCURS']);
-    const text2=document.createTextNode(obj[x]['IMP_VENTA']);
-    const text3=document.createTextNode(obj[x]['IMP_COBRANZA']);
-    const text4=document.createTextNode(obj[x]['DIFERENCIA']);
+
+
+    const text1=document.createTextNode(parseFloat(obj[x]['NRO_SUCURS']).toFixed(2));
+    const text2=document.createTextNode(parseFloat(obj[x]['IMP_VENTA']).toFixed(2));
+    const text3=document.createTextNode(parseFloat(obj[x]['IMP_COBRANZA']).toFixed(2));
+    const text4=document.createTextNode(parseFloat(obj[x]['DIFERENCIA']).toFixed(2));
 
     td1.appendChild(text1);
     td2.appendChild(text2);

@@ -52,33 +52,29 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "DECLARE @ResultForPos int;
-            EXEC @ResultForPos = RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta';
-            SELECT @ResultForPos as valor";
+            $sql = "EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta';";
+
+            ini_set('max_execution_time', 300);
 
             $stmt = sqlsrv_query($cid_central, $sql);
-            $salida=array();
 
-            do {
-                while ($row = sqlsrv_fetch_array($stmt)) {
-                   $salida[] = $row;
-                }
-             } while (sqlsrv_next_result($stmt)); 
+            $next_result = sqlsrv_next_result($stmt);
 
-            if(count($salida) > 1  && !isset($salida[0]['RESULTADO'])){
-              
-                echo json_encode($salida);
+            $v = [];
 
-            }else{
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
 
-            $salida['result'] = 0;
-            echo json_encode($salida);
+                $v[] = $row;
+
             }
+
+            return $v;
           
         } catch (Exception $e) {
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+            return 'Excepción capturada: '.$e->getMessage();
         }
     }
+
 
 
     public function ejecutarPaso2($desde, $hasta)
@@ -88,40 +84,24 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "DECLARE @ResultForPos int;
-            EXEC @ResultForPos = RO_SP_ARTICULOS_SIN_PRECIO_COSTO '$desde', '$hasta';
-            SELECT @ResultForPos as valor";
+            $sql = " EXEC RO_SP_ARTICULOS_SIN_PRECIO_COSTO '$desde', '$hasta';";
 
-
+            ini_set('max_execution_time', 300);
 
             $stmt = sqlsrv_query($cid_central, $sql);
 
-            $salida=array();
+            $next_result = sqlsrv_next_result($stmt);
 
-            do {
-                while ($row = sqlsrv_fetch_array($stmt)) {
-                   $salida[] = $row;
-                }
-             } while (sqlsrv_next_result($stmt));
- 
-            if(count($salida) > 1  && !isset($salida[0]['valor']) ){
-                
-                $data = [];
-     
-                for ($i=0; $i < (count($salida)-1) ; $i++) {
-                
-                    array_push($data, array(
-                        'COD_ARTICU' => $salida[$i]['COD_ARTICU'],
-                        'RUBRO' => $salida[$i]['RUBRO']
-                    ));
-            
-                }
-                
-                echo json_encode($data);
-            }else{
-                $salida['result'] = 0;
-                echo json_encode($salida);
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
             }
+
+            return $v;
+
         
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
@@ -131,24 +111,17 @@ class Paso
     public function ejecutarPaso3($desde, $hasta)
     {  
         try {
+
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "DECLARE @ResultForPos int;
-            EXEC @ResultForPos = RO_SP_RENTABILIDAD_BRUTA '$desde', '$hasta' ;
-            SELECT @ResultForPos as valor";
+            $sql = "EXEC RO_SP_RENTABILIDAD_BRUTA '$desde', '$hasta' ;";
 
             $stmt = sqlsrv_query($cid_central, $sql);
-            $salida=array();
 
-            do {
-                while ($row = sqlsrv_fetch_array($stmt)) {
-                    $salida[] = $row;
-                }
-            } while (sqlsrv_next_result($stmt)); 
+            return true;
 
-             echo json_encode($salida);
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
@@ -164,38 +137,23 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "DECLARE @ResultForPos int;
-            EXEC @ResultForPos = [LAKERBIS].LOCALES_LAKERS.DBO.RO_SP_VENTAS_VS_COBRANZA_TOTALES '$desde', '$hasta' ;
-            SELECT @ResultForPos as valor";
+            $sql = "EXEC [LAKERBIS].LOCALES_LAKERS.DBO.RO_SP_VENTAS_VS_COBRANZA_TOTALES '$desde', '$hasta' ;";
+
+            ini_set('max_execution_time', 300);
 
             $stmt = sqlsrv_query($cid_central, $sql);
-            $salida=array();
 
-            do {
-                while ($row = sqlsrv_fetch_array($stmt)) {
-                   $salida[] = $row;
-                }
-             } while (sqlsrv_next_result($stmt)); 
-                
-            if(count($salida) > 1  && !isset($salida[0]['valor'])){
+            $next_result = sqlsrv_next_result($stmt);
 
-                $data = [];
-                
-                for ($i=0; $i < (count($salida)-1) ; $i++) {
-                    
-                    array_push($data, array(
-                        'NRO_SUCURS' => $salida[$i]['NRO_SUCURS'],
-                        'IMP_VENTA' => $salida[$i]['IMP_VENTA'],
-                        'IMP_COBRANZA' => $salida[$i]['IMP_COBRANZA'],
-                        'DIFERENCIA' => $salida[$i]['DIFERENCIA']
-                    ));
-                    
-                }    
-                echo json_encode($data);
-            } else {
-                $salida['result'] = 0;
-                echo json_encode($salida);
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
             }
+
+            return $v;
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
@@ -211,21 +169,24 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "DECLARE @ResultForPos int;
-            EXEC @ResultForPos = RO_SP_INSERTAR_MET_PRORRATEO_TODOS '$desde', '$hasta' ;
-            SELECT @ResultForPos as valor";
+            $sql = "EXEC RO_SP_INSERTAR_MET_PRORRATEO_TODOS '$desde', '$hasta' ;";
+
+            ini_set('max_execution_time', 300);
 
             $stmt = sqlsrv_query($cid_central, $sql);
-            $salida=array();
 
-            do {
-                while ($row = sqlsrv_fetch_array($stmt)) {
-                   $salida[] = $row;
-                }
-             } while (sqlsrv_next_result($stmt)); 
-          
-             echo json_encode($salida);
-          
+            $next_result = sqlsrv_next_result($stmt);
+
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+       
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
@@ -239,20 +200,24 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "DECLARE @ResultForPos int;
-            EXEC @ResultForPos = RO_SP_INTEGRAL '$desde', '$hasta' ;
-            SELECT @ResultForPos as valor";
+            $sql = "EXEC RO_SP_INTEGRAL '$desde', '$hasta' ;";
+
+            ini_set('max_execution_time', 300);
 
             $stmt = sqlsrv_query($cid_central, $sql);
-            $salida=array();
 
-            do {
-                while ($row = sqlsrv_fetch_array($stmt)) {
-                   $salida[] = $row;
-                }
-             } while (sqlsrv_next_result($stmt)); 
-          
-             echo json_encode($salida);
+            $next_result = sqlsrv_next_result($stmt);
+
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
@@ -267,20 +232,23 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "DECLARE @ResultForPos int;
-            EXEC @ResultForPos = RO_SP_APLICAR_COEF_AJUSTE '$desde', '$hasta' ;
-            SELECT @ResultForPos as valor";
+            $sql = "EXEC RO_SP_APLICAR_COEF_AJUSTE '$desde', '$hasta' ;";
+
+            ini_set('max_execution_time', 300);
 
             $stmt = sqlsrv_query($cid_central, $sql);
-            $salida=array();
 
-            do {
-                while ($row = sqlsrv_fetch_array($stmt)) {
-                   $salida[] = $row;
-                }
-             } while (sqlsrv_next_result($stmt)); 
-          
-             echo json_encode($salida);
+            $next_result = sqlsrv_next_result($stmt);
+
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
