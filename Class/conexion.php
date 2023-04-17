@@ -15,6 +15,7 @@ class Conexion{
         $this->database_locales = $this->envVars['DATABASE_LOCALES'];
         $this->user = $this->envVars['USER'];
         $this->pass = $this->envVars['PASS'];
+        $this->pass_locales = $this->envVars['PASS_LOCALES'];
         $this->character = $this->envVars['CHARACTER'];
 
     }
@@ -36,10 +37,12 @@ class Conexion{
 
             $serverDB = $this->servidor($nameServer);
 
+            $pass = ($nameServer == 'locales') ? $this->pass_locales : $this->pass;
+
             $params = array( 
                 "Database" => $serverDB[1], 
                 "UID" => $this->user, 
-                "PWD" => $this->pass, 
+                "PWD" => $pass, 
                 "CharacterSet" => $this->character
             );
 

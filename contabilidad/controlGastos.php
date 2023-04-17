@@ -3,6 +3,7 @@
 include 'Class/gastos.php';
 include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
+
 include 'Class/centroCosto.php';
 
 $centroCostos = new CentroCosto();
@@ -10,23 +11,31 @@ $centroCostos = $centroCostos->traerCentroCostos();
 
 $todosLosCentrosCosto = json_decode($centroCostos);
 
+include 'Class/articulos.php';
+
 
 $gastos = new Gastos();
+$articulo = new Articulo();
 $rubroContable = new RubroContable();
 $todosLosRubros = $rubroContable->traerRubrosContables();
 $todosLosRubros = json_decode($todosLosRubros);
 
-$metodoProrrateo= new Prorrateo();
+$metodoProrrateo = new Prorrateo();
 $todosLosMetodos = $metodoProrrateo->traerMetodosProrrateo();
 $todosLosMetodos = json_decode($todosLosMetodos);
 
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
+$periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
+
+
+
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -40,152 +49,191 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" type="text/css" href="select2/select2.min.css">
+    <!-- <link rel="stylesheet" type="text/css" href="select2/select2.min.css"> -->
 
-    <script src="select2/select2.min.js"></script>
-    <link rel="stylesheet" href="css/style.css"></link>
- 
+    <!-- <script src="select2/select2.min.js"></script> -->
+    <link rel="stylesheet" href="css/style.css">
+    </link>
+
 </head>
+
+<?php
+
+// $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
+
+?>
+
 <body>
-    
 
-    
-        <div class="alert alert-secondary">
-            <div class="row">
-                <div id="titlePrincipal" class="col-md-auto">
-                    <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos</h3>
-                </div>
-                <div class="form-row">
-                    <form>
-                        <div class="contenedor">
-                            <div class="col-">
-                                <label>Desde:</label>
-                                <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
-                            </div>
-
-                            <div class="col-">
-                                <label>Hasta:</label>
-                                <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
-                            </div>
-                            <div id="estado">
-                                <label>Estado:</label>
-                                <select class="form-control form-control-sm estado" name="estado">
-                                    <option value="" selected>Todos</option>
-                                    <option value="1">Amortizar</option>
-                                    <option value="2">Excluidos</option>
-                                    <option value="3">Pendiente asignar</option>
-                                    <option value="0">Pendiente control</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="Rubro">Rubro:</label>
-                                <select class="form-control form-control-sm" name="codRubro">
-                                    <option selected disabled>Todos</option>
-                                    <?php           
-                                    foreach($todosLosRubros as $valor => $value){
-                                    ?>
-                                    <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO.'-'.$value->RUBRO_CONTABLE; ?></option>
-                                    <?php   
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                            <div>
-                                <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
-                            </div>
-                        </div>
-                            
-                    </form>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-danger mt-3" id="btnAmort">Amortizar <i class="bi bi-calendar2-week"></i></button>
-                    <button class="btn btn-info mt-3" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
-                    <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnSend">Procesar <i class="bi bi-check2-square"></i></button>
-                </div>
-                <div id="contCheck">
-                    <label id="titleCheck">Acciones masivas</label>  
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" onclick="checkExcluirAll(this);" value="" id="defaultCheck1">
-                        <label class="form-check-label" for="defaultCheck1">Excluir</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" onclick="checkControladoAll(this);" value="" id="defaultCheck2">
-                        <label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label>
-                    </div>
-                </div>
-            </div>     
+    <div class="row">
+        <div class="progressbar-wrapper">
+            <div hidden id="periodo" attr-periodo= "<?= $periodo ?>"></div>
+            <ul class="progressbar">
+                <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
+                <li class="" id="paso2"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
+                <li class="" id="paso3"  data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
+                <li class="" id="paso4"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
+                <li class="" id="paso5" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
+                <li class="" id="paso6" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
+                <li class="" id="paso7" data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
+            </ul>
         </div>
+        <div>
+            <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar">Ejecutar <i class="bi bi-check2-square"></i></button>
+            <!-- spinner -->
+            <div id="boxLoading"></div>
+        </div>
+    </div>
 
-        <?php
+    <div class="alert alert-secondary">
+        <div class="row">
+            <div id="titlePrincipal" class="col-md-auto">
+                <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos</h3>
+            </div>
+            <div class="form-row">
+                <form>
+                    <div class="contenedor">
+                        <div class="col-">
+                            <label>Desde:</label>
+                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
+                        </div>
 
-        if(isset($_GET['desde'])){
-        
-            if (isset($_GET['estado'])!= ''){
-                $estado = $_GET['estado'];}
-                else {
-                $estado = '%';
-                }
-            
-            if (isset($_GET['codRubro'])!= ''){
-                $codRubro = $_GET['codRubro'];}
-                else {
-                $codRubro = '%';
-                }
-        
-            $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro);
+                        <div class="col-">
+                            <label>Hasta:</label>
+                            <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
+                        </div>
+                        <div id="estado">
+                            <label>Estado:</label>
+                            <select class="form-control form-control-sm estado" name="estado">
+                                <option value="" selected>Todos</option>
+                                <option value="1">Amortizar</option>
+                                <option value="2">Excluidos</option>
+                                <option value="3">Pendiente asignar</option>
+                                <option value="0">Pendiente control</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="Rubro">Rubro:</label>
+                            <select class="form-control form-control-sm" name="codRubro">
+                                <option selected disabled>Todos</option>
+                                <?php
+                                foreach ($todosLosRubros as $valor => $value) {
+                                ?>
+                                    <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE; ?></option>
+                                <?php
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
+                        </div>
+                    </div>
 
-        ?>
+                </form>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-danger mt-3" id="btnAmort">Amortizar <i class="bi bi-calendar2-week"></i></button>
+                <button class="btn btn-info mt-3 btnProrrateo" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
+                <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnSend">Procesar <i class="bi bi-check2-square"></i></button>
+            </div>
+            <div id="contCheck">
+                <label id="titleCheck">Acciones masivas</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" onclick="checkExcluirAll(this);" value="" id="defaultCheck1">
+                    <label class="form-check-label" for="defaultCheck1">Excluir</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" onclick="checkControladoAll(this);" value="" id="defaultCheck2">
+                    <label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    
+    <?php
 
-    <table class="table table-striped table-bordered" id="myTable" style="width: 99%;" cellspacing="0" data-page-length="100">
-        <thead class="thead-dark">
-            <tr>
-                <th style="position: sticky; top: 0; z-index: 10; width: 200px;"class="col-1">FECHA</th>
-                <th style="position: sticky; top: 0; z-index: 10;">AUXILIAR</th>
-                <th style="position: sticky; top: 0; z-index: 10;">SECTOR</th>
-                <th style="position: sticky; top: 0; z-index: 10;">COD. CUENTA</th>
-                <th style="position: sticky; top: 0; z-index: 10;">DESC. CUENTA</th>
-                <th style="position: sticky; top: 0; z-index: 10;">SALDO</th>
-                <th style="position: sticky; top: 0; z-index: 10;">LEYENDA</th>
-                <th style="position: sticky; top: 0; z-index: 10;">TIPO COMP.</th>
-                <th style="position: sticky; top: 0; z-index: 10;">RAZON SOCIAL</th>
-                <th style="position: sticky; top: 0; z-index: 10;">NRO. COMP.</th>
-                <th style="position: sticky; top: 0; z-index: 10;">COD. RUBRO</th>
-                <th style="position: sticky; top: 0; z-index: 10;">RUBRO CONTABLE</th>
-                <th style="position: sticky; top: 0; z-index: 10;">COD. PRORRATEO</th>
-                <th style="position: sticky; top: 0; z-index: 10;">DESC. PRORRATEO</th>
-                <th style="position: sticky; top: 0; z-index: 10;" title="Colocar plazo de amortización">AMORT.</th>
-                <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-x-square biHeader" data-toggle="tooltip" data-placement="bottom" title="Excluir gasto"></i></th>
-                <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-check2-square biHeader" data-toggle="tooltip" data-placement="bottom" title="Gasto controlado"></i></th>
-                <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-graph-up biHeader" data-toggle="tooltip" data-placement="bottom" title="Gasto amortizado"></i></th>
-                <th style="position: sticky; top: 0; z-index: 10;">MODULO</th>
-                <th style="position: sticky; top: 0; z-index: 10;">NRO. SUC.</th>
-                <th style="position: sticky; top: 0; z-index: 10;">ID</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
+    if (isset($_GET['desde'])) {
+
+        if (isset($_GET['estado']) != '') {
+            $estado = $_GET['estado'];
+        } else {
+            $estado = '%';
+        }
+
+        if (isset($_GET['codRubro']) != '') {
+            $codRubro = $_GET['codRubro'];
+        } else {
+            $codRubro = '%';
+        }
+
+        $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro);
+
+    ?>
+
+
+
+        <table class="table table-striped table-bordered" id="myTable" style="width: 99%;" cellspacing="0" data-page-length="100">
+            <thead class="thead-dark">
+                <tr>
+                    <th style="position: sticky; top: 0; z-index: 10; width: 200px;" class="col-1">FECHA / PERIODO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">AUXILIAR</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">SECTOR</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">COD. CUENTA</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">DESC. CUENTA</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">SALDO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">LEYENDA</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">TIPO COMP.</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">RAZON SOCIAL</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">NRO. COMP.</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">COD. RUBRO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">RUBRO CONTABLE</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">COD. PRORRATEO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">DESC. PRORRATEO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" title="Colocar plazo de amortización">AMORT.</th>
+                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-x-square biHeader" data-toggle="tooltip" data-placement="bottom" title="Excluir gasto"></i></th>
+                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-check2-square biHeader" data-toggle="tooltip" data-placement="bottom" title="Gasto controlado"></i></th>
+                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-graph-up biHeader" data-toggle="tooltip" data-placement="bottom" title="Gasto amortizado"></i></th>
+                    <th style="position: sticky; top: 0; z-index: 10;">MODULO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">NRO. SUC.</th>
+                    <th style="position: sticky; top: 0; z-index: 10;">ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
                 $todosLosGastos = json_decode($todosLosGastos);
+
                 foreach($todosLosGastos as $valor => $key){
             ?>
             <tr>
                 <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
-                <td><select id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
-                <?php 
+
+                <td><select class="auxiliar" id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
+                    <?php 
                     foreach ($todosLosCentrosCosto as  $y => $centro) {
-                ?>
-                    <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>">
-                        <?php
-                            echo($centro->DESC_AUXILIAR);
-                            
-                        ?>
-                    
-                    </option>
-                <?php
-                    }
-                ?>
-                    </select></td>
+                        
+                        if($key->DESC_AUXILIAR == $centro->DESC_AUXILIAR){   
+                    ?>
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>" selected>
+                                <?php
+                                    echo($centro->DESC_AUXILIAR);           
+                                ?>
+                            </option>
+                    <?php
+                        }else {
+                    ?>
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>">
+                                <?php
+                                    echo($centro->DESC_AUXILIAR);
+                                ?>
+                            </option>
+                    <?php
+                        }
+                            }
+                    ?>
+                    </select>
+                </td>
+
                 <td><?=  $key->SECTOR ?></td>
                 <td><?=  $key->COD_CUENTA ?></td>
                 <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
@@ -236,8 +284,9 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
             <?php
                 }   
             ?>
+
             </tbody>
-    </table>
+        </table>
 
     <?php
     }
@@ -250,24 +299,42 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
-   
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-    
 
+
+    <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
+    <script src="../comercioExterior/assets/select2/select2.min.js"></script>
+
+    
 <script>
 
-    $(document).ready(function () {
-        $('#myTable').DataTable({
-            responsive:true,
-        }
+        $(document).ready(function() {
+            $('#myTable').DataTable({
+                responsive: true,
+            });
+            
+        });
 
-        );
-    });
+        $(function() {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
 
-</script>
-    
+        $('#myModal').modal('toggle')
+    </script>
+
+
 </body>
+
 </html>
 
-   
+<?php
+
+include('articuloSinCn.php');
+
+include('articuloSinPrecioCosto.php');
+include('ventasCobranzaTotal.php');
+
+
+?>
