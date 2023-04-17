@@ -666,6 +666,43 @@ const cambiarCentroCosto=(e)=>{
 
   
 
+}
+
+const actualizarSaldo = (saldo) => {
+
+  let saldoParseado = parseNumber(parseFloat(saldo.value))
+  let nuevoSaldo = convertToNumber(saldoParseado);
+
+  let id = saldo.parentElement.parentElement.childNodes[41].textContent;
+
+  saldo.value = saldoParseado
+  
+
+  $.ajax({
+    url: 'Controller/actualizarSaldo.php',
+    method: 'POST',
+    data:{
+      "id": id, 
+      "nuevoSaldo": nuevoSaldo,
+
+    },
+  })
+
+}
+
+
+const parseNumber = (value)=>{
+  return value.toLocaleString('de-DE', {
+      style: 'decimal',
+      });
+}
+
+const convertToNumber = (numero)=>{
+
+  let newNumero1 = numero.replaceAll(".", "");
+  return newNumero1.replace(",", ".");
+
+}
 const rellenarModal4 = (obj)=>{
 
 

@@ -237,7 +237,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
                 <td><?=  $key->SECTOR ?></td>
                 <td><?=  $key->COD_CUENTA ?></td>
                 <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
-                <td><?=  number_format($key->SALDO, 2) ?></td>
+                <td><input type="text" value="<?=  number_format($key->SALDO, 2) ?>" onchange= "actualizarSaldo(this)" ></td>
                 <td><?=  $key->DESC_LEYENDA ?></td>
                 <td><?=  $key->T_COMP ?></td>
                 <td><?=  $key->RAZON_SOCIAL ?></td>
