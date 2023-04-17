@@ -5,6 +5,7 @@ include 'Class/prorrateo.php';
 include 'Class/centroCosto.php';
 include 'Class/cuentaContable.php';
 include 'Class/gastos.php';
+include 'Class/articulos.php';
 
 $rubroContable = new RubroContable();
 $todosLosRubros = $rubroContable->traerRubrosContables();
@@ -24,14 +25,16 @@ $todasLasCuentasContables = json_decode($todasLasCuentasContables);
 
 $gastos = new Gastos();
 
+$articulo = new Articulo();
+
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
-function data_first_month_day() {
-    $month = date('m');
-    $year = date('Y');
-    return date('Y-m-d', mktime(0,0,0, $month, 1, $year));
-}
+// function data_first_month_day() {
+//     $month = date('m');
+//     $year = date('Y');
+//     return date('Y-m-d', mktime(0,0,0, $month, 1, $year));
+// }
 
 ?>
 
@@ -51,9 +54,6 @@ function data_first_month_day() {
     </link>
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-
-
 
 </head>
 
@@ -160,7 +160,7 @@ function data_first_month_day() {
                     <div class="contenedor">
                         <div class="col-">
                             <label>Desde:</label>
-                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= data_first_month_day() ?>">
+                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
                         </div>
 
                         <div class="ml-2">

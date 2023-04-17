@@ -1,5 +1,6 @@
 window.addEventListener("DOMContentLoaded", iniciarEscuchaSelect); //1 - cuando se termina de carga toda la pagina, comienza a escuchar los eventos del dom
 
+let a;
 const selectRubro = document.querySelectorAll(".codRubro"); //2 - guardo en un array todos los check donde se va escuchar si se produjo un cambio
 const selectProrrateo = document.querySelectorAll(".codProrrateo");
 const checkExcluir = document.querySelectorAll(".checkExcluir");
@@ -8,13 +9,29 @@ const checkAmortizado = document.querySelectorAll(".checkAmortizado");
 const inputAmortiza = document.querySelectorAll(".amortiza");
 const btnAmortizar = document.querySelector(".btn-danger");
 const btnProrratear = document.querySelector("#btnProrrateo");
+
 const selectCentroCosto = document.querySelector("#selectCentroCosto");
+
+const btnEjecutar = document.querySelector("#btnEjecutar");
+let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
+let pasoActual = 0;
+
+let payloads =  {
+
+  "desde": document.getElementsByName("desde")[0].value,
+  "hasta": document.getElementsByName("hasta")[0].value,
+  
+}
+
+
 btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
+btnEjecutar.addEventListener("click", ejecutarPasos);
 
 let conexion;
 
 function iniciarEscuchaSelect() {
+  pintarPasos(periodo);
   //3 - se llama a la funcion de paso 1
   selectRubro.forEach(
     (
@@ -325,19 +342,51 @@ function revisar() {
 }
 
 function checkControladoAll(source) {
-  var checkboxes = document.querySelectorAll(".checkControlado");
-  for (var i = 0; i < checkboxes.length; i++) {
-    if (checkboxes[i] != source) checkboxes[i].checked = source.checked;
+
+    var checkboxes = document.querySelectorAll(".checkControlado");
+
+    for (var i = 0; i < checkboxes.length; i++) {
+
+    if (checkboxes[i] != source) checkboxes[i].checked = true;
+
     guardarControlado(checkboxes[i]);
   }
+
 }
+
+function uncheckControladoAll(source) {
+
+  var checkboxes = document.querySelectorAll(".checkControlado");
+
+  for (var i = 0; i < checkboxes.length; i++) {
+
+  if (checkboxes[i] != source) checkboxes[i].checked = false;
+
+  guardarControlado(checkboxes[i]);
+}
+
+}
+
 
 function checkExcluirAll(source) {
   var checkboxes = document.querySelectorAll(".checkExcluir");
   for (var i = 0; i < checkboxes.length; i++) {
-    if (checkboxes[i] != source) checkboxes[i].checked = source.checked;
-    guardarExcluir(checkboxes[i]);
+    if (checkboxes[i] != source) checkboxes[i].checked = true;
+
+    guardarExcluir(checkboxes[i]); 
+    
   }
+
+}
+function uncheckExcluirAll(source) {
+  var checkboxes = document.querySelectorAll(".checkExcluir");
+  for (var i = 0; i < checkboxes.length; i++) {
+    if (checkboxes[i] != source) checkboxes[i].checked = false;
+
+    guardarExcluir(checkboxes[i]); 
+
+  }
+
 }
 
 function prorratearGastos() {
@@ -365,17 +414,24 @@ function prorratearGastos() {
     })
     .then((result) => {
       if (result.isConfirmed) {
+        let btn = document.getElementsByClassName(".btnProrrateo");
+        let spinner = document.getElementById("boxLoading");
+        spinner.className += " loading";
         /******************************* */
         fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
           .then((respuesta) => respuesta.json())
           .then((perfil) => {
             if (perfil.resultado == 0) {
+              btn.className += "active";
+              spinner.classList.remove('loading');
               Swal.fire({
                 icon: "error",
                 title: "Error",
                 text: "No hay gastos para prorratear!",
               });
             }else{
+              btn.className += "active";
+              spinner.classList.remove('loading');
               swalWithBootstrapButtons.fire(
                 "Prorrateado!",
                 "Los gastos fueron prorrateados",
@@ -396,45 +452,194 @@ function prorratearGastos() {
       }
     });
 
-  /******************************************************* */
-/*   fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
-    .then((respuesta) => respuesta.json())
-    .then((perfil) => {
-      if (perfil.resultado == 0) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "No hay gastos para prorratear!",
-        });
-      } else {
-        swalWithBootstrapButtons
-          .fire({
-            title: "Desea realizar el prorrateo?",
-            text: "Ya no se podran deshacer los cambios!",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Ok, prorratear!",
-            cancelButtonText: "No, cancelar!",
-            reverseButtons: true,
-          })
-          .then((result) => {
-            if (result.isConfirmed) {
-              swalWithBootstrapButtons.fire(
-                "Prorrateado!",
-                "Los gastos fueron prorrateados",
-                "success"
-              );
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-              swalWithBootstrapButtons.fire(
-                "Cancelado",
-                "Los gastos no fueron prorrateados :(",
-                "error"
-              );
+}
+
+
+function ejecutarPasos() {
+
+  if(pasoActual == 7){
+    pasoActual = 0;
+  }
+
+  pasoActual = pasoActual + 1;
+
+
+  let pasosDirectos = [3,5,6,7]; 
+
+  const swalWithBootstrapButtons = Swal.mixin({
+
+    customClass: {
+      confirmButton: "btn btn-success",
+      cancelButton: "btn btn-danger",
+    },
+    buttonsStyling: false,
+
+  });
+
+  swalWithBootstrapButtons
+    .fire({
+      title: "Desea ejecutar el proceso de control?",
+      text: "Ya no se podran deshacer los cambios!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ok, ejecutar!",
+      cancelButtonText: "No, cancelar!",
+      reverseButtons: true,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        /******************************* */
+        let paso = document.getElementById("paso"+pasoActual);
+        let spinner = document.getElementById("boxLoading");
+        spinner.className += " loading";
+ /*otro fetch*/
+
+        fetch("./Controller/ejecutarPasos.php?paso="+pasoActual,
+          {
+            method: 'POST',
+            body: JSON.stringify(payloads)
+          }
+        )
+        .then((respuesta) => respuesta.json())
+        .then((perfil) => {
+            if (perfil.length == 0 || pasosDirectos.includes(pasoActual) == true ) {
+
+              paso.className += "active";
+              spinner.classList.remove('loading');
+              Swal.fire({
+                icon: "success",
+                title: "Control exitoso",
+                text: `Paso ${pasoActual} realizado!`,
+              });
+
+            }else{
+              
+              spinner.classList.remove('loading');
+
+              switch (pasoActual) {
+                case 1:
+                  rellenarModal1(perfil);
+                  $('#modalCn').modal('toggle');
+                  break;
+                
+                case 2:
+                  rellenarModal2(perfil);
+                  $('#modalPc').modal('toggle');
+                  break;
+
+                case 4:
+                  rellenarModal4(perfil);
+                  $('#modalVct').modal('toggle');
+                  break;
+              
+                default:
+                  break;
+              }
+
+              pasoActual = pasoActual - 1;
             }
           });
+        /******************************** */
+      } else if (
+        /* Read more about handling dismissals below */
+        result.dismiss === Swal.DismissReason.cancel
+      ) {
+        swalWithBootstrapButtons.fire(
+          "Cancelado",
+          "El paso de control no fue ejecutado",
+          "error"
+        );
       }
-    }); */
+    });
 }
+
+const pintarPasos =(periodo)=>{
+
+    fetch("./Controller/consultarPasos.php?periodo="+periodo,
+    )
+    .then((respuesta) => respuesta.json())
+    .then((data) => {
+
+      let pasos = [];
+      
+      if(data < 1){
+        return false
+      }
+
+      for (let i = 0; i < 7; i++) {
+        pasos[i] = data[0]['PASO_'+(i+1)];
+      }
+    
+      pasos.forEach((element,x) => {
+    
+        if(element != null){
+        let paso = document.getElementById("paso"+(x+1));
+
+        pasoActual = x+1;
+
+        paso.className += "active";
+
+      }
+
+      });
+    })
+
+}
+
+
+
+const rellenarModal1 = (obj)=>{
+
+
+  let tableModal =  document.querySelector("#tableCn");
+
+  for (let x = 0; x < obj.length ; x++) {
+
+    let tr=document.createElement('tr');
+
+    let td1=document.createElement('td');
+    let td2=document.createElement('td');
+    let text1=document.createTextNode(obj[x]['COD_ARTICU']);
+    let text2=document.createTextNode(obj[x]['RUBRO']);
+    
+    td1.appendChild(text1);
+    td2.appendChild(text2);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    
+    tableModal.appendChild(tr);
+
+
+  }
+
+}
+
+const rellenarModal2 = (obj)=>{
+
+
+  let tableModal =  document.querySelector("#tableModalPc");
+
+  for (let x = 0; x < obj.length ; x++) {
+
+    let tr=document.createElement('tr');
+
+    let td1=document.createElement('td');
+    let td2=document.createElement('td');
+    let text1=document.createTextNode(obj[x]['COD_ARTICU']);
+    let text2=document.createTextNode(obj[x]['RUBRO']);
+    
+    td1.appendChild(text1);
+    td2.appendChild(text2);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    
+    tableModal.appendChild(tr);
+
+
+  }
+
+}
+
 
 const cambiarCentroCosto=(e)=>{
   let sector = e[e.selectedIndex].getAttribute("attr-sector");
@@ -460,5 +665,39 @@ const cambiarCentroCosto=(e)=>{
   })
 
   
+
+const rellenarModal4 = (obj)=>{
+
+
+  let tableModal =  document.querySelector("#tableModalvCT");
+
+  for (let x = 0; x < obj.length; x++) {
+
+    const tr=document.createElement('tr');
+    const td1=document.createElement('td');
+    const td2=document.createElement('td');
+    const td3=document.createElement('td');
+    const td4=document.createElement('td');
+
+
+    const text1=document.createTextNode(parseFloat(obj[x]['NRO_SUCURS']).toFixed(2));
+    const text2=document.createTextNode(parseFloat(obj[x]['IMP_VENTA']).toFixed(2));
+    const text3=document.createTextNode(parseFloat(obj[x]['IMP_COBRANZA']).toFixed(2));
+    const text4=document.createTextNode(parseFloat(obj[x]['DIFERENCIA']).toFixed(2));
+
+    td1.appendChild(text1);
+    td2.appendChild(text2);
+    td3.appendChild(text3);
+    td4.appendChild(text4);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    
+    tableModal.appendChild(tr);
+
+
+  }
+
 
 }
