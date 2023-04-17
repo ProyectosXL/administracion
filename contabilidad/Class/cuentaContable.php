@@ -55,9 +55,36 @@ class CuentaContable
 
 
     }
+
+
+    public function traerCodCuentaAll(){
+ 
+
+        $sql = "SELECT COD_CUENTA, DESC_CUENTA FROM CUENTA ORDER BY DESC_CUENTA";
+        
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+        try {
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            $myJSON = json_encode($rows);
+    
+            return $myJSON;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
 }
 
 if (isset($_GET['codigo'])) {
     $cuentaContable = new CuentaContable();
     $cuentaContable->traerDescripcion($_GET['codigo']);
 }
+

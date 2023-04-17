@@ -16,11 +16,15 @@ class Gastos
 
       
 
-    public function traerGastos($desde, $hasta, $estado, $codRubro){
+    public function traerGastos($desde, $hasta, $estado, $codRubro, $columna = null,$codCuenta = null){
+
+
+        $queryColumna =" AND ( DESC_LEYENDA  LIKE '%$columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%')";
+        $queryCodCuenta = "AND COD_CUENTA LIKE '$codCuenta'";
 
     if($estado == '0'){
 
-            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0  
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE  AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0  
                         UNION ALL
                     SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) AND PRORRATEADO IS NULL AND CONTROLADO = 0 AND EXCLUIR = 0";
     
@@ -38,14 +42,24 @@ class Gastos
             $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL)";
 
     }else{
-            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL 
-                    AND COD_RUBRO LIKE '$codRubro'
-                        UNION ALL
-                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO 
-                    BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR)
-                    AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro'
-            ";
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL
+                    AND COD_RUBRO LIKE '$codRubro' AND ( DESC_LEYENDA LIKE '%$columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%')AND COD_CUENTA LIKE '$codCuenta'
+                    UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
+                    AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
+                    AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro' 
+                ";
+
+
+
+
     }
+    if($columna != null){
+        $sql = $sql.$queryColumna;
+    }   
+    if($codCuenta){
+        $sql = $sql.$queryCodCuenta;
+    }
+
         $stmt = sqlsrv_query( $this->cid_central, $sql );
     
         try{
@@ -87,6 +101,38 @@ class Gastos
         } catch (\Throwable $th){
             print_r($th);
         }
+    }
+
+    public function updateGasto($id, $numSucursal, $codAuxiliar, $descAuxiliar, $sector){
+
+        $sql = "UPDATE RO_T_INTEGRAL_TANGO_2 SET NUM_SUCURSAL = '$numSucursal', COD_AUXILIAR = '$codAuxiliar', DESC_AUXILIAR = '$descAuxiliar', SECTOR = '$sector' WHERE ID = '$id'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+  
+        try {
+            sqlsrv_execute($stmt);
+      
+        } catch (Exception $e) {
+            print_r($e);
+        }
+
+
+    }
+
+    public function cambiarValorSaldo($id, $saldo){
+
+        $sql = "UPDATE RO_T_INTEGRAL_TANGO_2 SET saldo = '$saldo' WHERE ID = '$id'";
+
+        $stmt = sqlsrv_prepare( $this->cid_central, $sql );
+  
+        try {
+            sqlsrv_execute($stmt);
+      
+        } catch (Exception $e) {
+            print_r($e);
+        }
+        
+
     }
 
 }  

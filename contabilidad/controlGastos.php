@@ -3,7 +3,16 @@
 include 'Class/gastos.php';
 include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
+
+include 'Class/centroCosto.php';
+
+$centroCostos = new CentroCosto();
+$centroCostos = $centroCostos->traerCentroCostos();
+
+$todosLosCentrosCosto = json_decode($centroCostos);
+
 include 'Class/articulos.php';
+
 
 $gastos = new Gastos();
 $articulo = new Articulo();
@@ -17,6 +26,10 @@ $todosLosMetodos = json_decode($todosLosMetodos);
 
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
+
+$periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
+
+
 
 ?>
 
@@ -36,14 +49,16 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+    <!-- <link rel="stylesheet" type="text/css" href="select2/select2.min.css"> -->
 
+    <!-- <script src="select2/select2.min.js"></script> -->
     <link rel="stylesheet" href="css/style.css">
     </link>
 
 </head>
 <?php
 
-$todosLosArticulos = $articulo->traerArticulosSinCostoNac();
+// $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 
 ?>
 
@@ -51,14 +66,15 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 
     <div class="row">
         <div class="progressbar-wrapper">
+            <div hidden id="periodo" attr-periodo= "<?= $periodo ?>"></div>
             <ul class="progressbar">
                 <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
-                <li class="" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
-                <li data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
+                <li class="" id="paso2"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
+                <li class="" id="paso3"  data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
+                <li class="" id="paso4"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
+                <li class="" id="paso5" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
+                <li class="" id="paso6" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
+                <li class="" id="paso7" data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
             </ul>
         </div>
         <div>
@@ -117,7 +133,7 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
             </div>
             <div class="btn-group">
                 <button class="btn btn-danger mt-3" id="btnAmort">Amortizar <i class="bi bi-calendar2-week"></i></button>
-                <button class="btn btn-info mt-3" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
+                <button class="btn btn-info mt-3 btnProrrateo" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
                 <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnSend">Procesar <i class="bi bi-check2-square"></i></button>
             </div>
             <div id="contCheck">
@@ -185,67 +201,89 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
             <tbody>
                 <?php
                 $todosLosGastos = json_decode($todosLosGastos);
-                foreach ($todosLosGastos as $valor => $key) {
-                ?>
-                    <tr>
-                        <td><?= substr($key->FECHA->date, 0, 10) . ' / ' . $key->PERIODO; ?></td>
-                        <td><?= $key->DESC_AUXILIAR ?></td>
-                        <td><?= $key->SECTOR ?></td>
-                        <td><?= $key->COD_CUENTA ?></td>
-                        <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
-                        <td><?= number_format($key->SALDO, 2) ?></td>
-                        <td><?= $key->DESC_LEYENDA ?></td>
-                        <td><?= $key->T_COMP ?></td>
-                        <td><?= $key->RAZON_SOCIAL ?></td>
-                        <td><?= $key->N_COMP ?></td>
-                        <td>
-                            <select class="codRubro" >
-                                <option selected disabled><?= $key->COD_RUBRO ?></option>
+
+                foreach($todosLosGastos as $valor => $key){
+            ?>
+            <tr>
+                <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
+
+                <td><select class="auxiliar" id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
+                    <?php 
+                    foreach ($todosLosCentrosCosto as  $y => $centro) {
+                        
+                        if($key->DESC_AUXILIAR == $centro->DESC_AUXILIAR){   
+                    ?>
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>" selected>
                                 <?php
-                                foreach ($todosLosRubros as $valor => $value) {
+                                    echo($centro->DESC_AUXILIAR);           
                                 ?>
-                                    <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE; ?></option>
+                            </option>
+                    <?php
+                        }else {
+                    ?>
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>">
                                 <?php
-                                }
+                                    echo($centro->DESC_AUXILIAR);
                                 ?>
-                            </select>
-                        </td>
-                        <td><?= $key->RUBRO_CONTABLE ?></td>
-                        <td>
-                            <select class="codProrrateo" style="width: 2.2rem;">
-                                <option selected disabled><?= $key->COD_PRORRATEO ?></option>
-                                <?php
-                                foreach ($todosLosMetodos as $valor => $value) {
-                                ?>
-                                    <option value="<?= $value->COD_PRORRATEO; ?>"><?= $value->COD_PRORRATEO . '-' . $value->DESC_PRORRATEO; ?></option>
-                                <?php
-                                }
-                                ?>
-                            </select>
-                        </td>
-                        <td><?= $key->DESC_PRORRATEO ?></td>
-                        <td><?php if ($key->AMORTIZADO == 1) { ?>
-                                <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?= $key->AMORTIZAR ?>" disabled>
-                            <?php } else { ?>
-                                <input class="amortiza" type="number" id="amortiza" min="1" name="inputNum" value="<?= $key->AMORTIZAR ?>">
-                            <?php } ?>
-                        </td>
-                        <td><input class="checkExcluir" type="checkbox" <?php if ($key->EXCLUIR == 1) {
-                                                                            echo 'checked';
-                                                                        } ?>></td>
-                        <td><input class="checkControlado" type="checkbox" <?php if ($key->CONTROLADO == 1) {
-                                                                                echo 'checked';
-                                                                            } ?>></td>
-                        <td><input class="checkAmortizado" type="checkbox" <?php if ($key->AMORTIZADO == 1) {
-                                                                                echo 'checked';
-                                                                            } ?> disabled></td>
-                        <td><?= $key->MODULO ?></td>
-                        <td><?= $key->NUM_SUCURSAL ?></td>
-                        <td><?= $key->ID ?></td>
-                    </tr>
-                <?php
-                }
-                ?>
+                            </option>
+                    <?php
+                        }
+                            }
+                    ?>
+                    </select>
+                </td>
+
+                <td><?=  $key->SECTOR ?></td>
+                <td><?=  $key->COD_CUENTA ?></td>
+                <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
+                <td><input type="text" value="<?=  number_format($key->SALDO, 2) ?>" onchange= "actualizarSaldo(this)" ></td>
+                <td><?=  $key->DESC_LEYENDA ?></td>
+                <td><?=  $key->T_COMP ?></td>
+                <td><?=  $key->RAZON_SOCIAL ?></td>
+                <td><?=  $key->N_COMP ?></td>
+                <td>
+                    <select class="codRubro" style="width: 3rem;">
+                        <option selected disabled><?=  $key->COD_RUBRO ?></option>
+                        <?php           
+                        foreach($todosLosRubros as $valor => $value){
+                        ?>
+                        <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO.'-'.$value->RUBRO_CONTABLE; ?></option>
+                        <?php   
+                         }
+                        ?>
+                    </select>
+                </td>
+                <td><?=  $key->RUBRO_CONTABLE ?></td>
+                <td>
+                    <select class="codProrrateo" style="width: 2.2rem;">
+                        <option selected disabled><?=  $key->COD_PRORRATEO ?></option>
+                        <?php           
+                        foreach($todosLosMetodos as $valor => $value){
+                        ?>
+                        <option value="<?= $value->COD_PRORRATEO; ?>"><?= $value->COD_PRORRATEO.'-'.$value->DESC_PRORRATEO; ?></option>
+                        <?php   
+                         }
+                        ?>
+                    </select>
+                </td>
+                <td><?=  $key->DESC_PRORRATEO ?></td>
+                <td><?php if ($key->AMORTIZADO == 1){?>
+                    <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?=  $key->AMORTIZAR ?>" disabled>
+                <?php } else { ?> 
+                    <input class="amortiza" type="number" id="amortiza" min="1" name="inputNum" value="<?=  $key->AMORTIZAR ?>">
+                <?php } ?> 
+                </td>
+                <td><input class="checkExcluir" type="checkbox" <?php if ($key->EXCLUIR == 1) {echo 'checked';} ?>></td>
+                <td><input class="checkControlado" type="checkbox" <?php if ($key->CONTROLADO == 1) {echo 'checked';} ?>></td>
+                <td><input class="checkAmortizado" type="checkbox" <?php if ($key->AMORTIZADO == 1) {echo 'checked';} ?> disabled></td>
+                <td><?=  $key->MODULO ?></td>
+                <td><?=  $key->NUM_SUCURSAL ?></td>
+                <td><?=$key->ID?></td>
+            </tr>
+            <?php
+                }   
+            ?>
+
             </tbody>
         </table>
 
@@ -266,17 +304,19 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 
     <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
 
+    <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
+    <script src="../comercioExterior/assets/select2/select2.min.js"></script>
 
     
-    
-<script src="../comercioExterior/assets/select2/select2.min.js"></script>
-    <script>
+<script>
+
         $(document).ready(function() {
             $('#myTable').DataTable({
                 responsive: true,
             });
 
             $('.codRubro').select2();
+            
         });
 
 
@@ -287,6 +327,7 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
         $('#myModal').modal('toggle')
     </script>
 
+
 </body>
 
 </html>
@@ -294,5 +335,9 @@ $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 <?php
 
 include('articuloSinCn.php');
+
+include('articuloSinPrecioCosto.php');
+include('ventasCobranzaTotal.php');
+
 
 ?>

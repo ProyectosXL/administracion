@@ -225,7 +225,7 @@ selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")
             style: 'decimal',
             maximumFractionDigits: 2,
             minimumFractionDigits: 2
-            });;
+            });
     }
 
     
