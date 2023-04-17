@@ -3,7 +3,16 @@
 include 'Class/gastos.php';
 include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
+
+include 'Class/centroCosto.php';
+
+$centroCostos = new CentroCosto();
+$centroCostos = $centroCostos->traerCentroCostos();
+
+$todosLosCentrosCosto = json_decode($centroCostos);
+
 include 'Class/articulos.php';
+
 
 $gastos = new Gastos();
 $articulo = new Articulo();
@@ -193,67 +202,89 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
             <tbody>
                 <?php
                 $todosLosGastos = json_decode($todosLosGastos);
-                foreach ($todosLosGastos as $valor => $key) {
-                ?>
-                    <tr>
-                        <td><?= substr($key->FECHA->date, 0, 10) . ' / ' . $key->PERIODO; ?></td>
-                        <td><?= $key->DESC_AUXILIAR ?></td>
-                        <td><?= $key->SECTOR ?></td>
-                        <td><?= $key->COD_CUENTA ?></td>
-                        <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
-                        <td><?= number_format($key->SALDO, 2) ?></td>
-                        <td><?= $key->DESC_LEYENDA ?></td>
-                        <td><?= $key->T_COMP ?></td>
-                        <td><?= $key->RAZON_SOCIAL ?></td>
-                        <td><?= $key->N_COMP ?></td>
-                        <td>
-                            <select class="codRubro" style="width: 3rem;">
-                                <option selected disabled><?= $key->COD_RUBRO ?></option>
+
+                foreach($todosLosGastos as $valor => $key){
+            ?>
+            <tr>
+                <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
+
+                <td><select class="auxiliar" id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
+                    <?php 
+                    foreach ($todosLosCentrosCosto as  $y => $centro) {
+                        
+                        if($key->DESC_AUXILIAR == $centro->DESC_AUXILIAR){   
+                    ?>
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>" selected>
                                 <?php
-                                foreach ($todosLosRubros as $valor => $value) {
+                                    echo($centro->DESC_AUXILIAR);           
                                 ?>
-                                    <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE; ?></option>
+                            </option>
+                    <?php
+                        }else {
+                    ?>
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>">
                                 <?php
-                                }
+                                    echo($centro->DESC_AUXILIAR);
                                 ?>
-                            </select>
-                        </td>
-                        <td><?= $key->RUBRO_CONTABLE ?></td>
-                        <td>
-                            <select class="codProrrateo" style="width: 2.2rem;">
-                                <option selected disabled><?= $key->COD_PRORRATEO ?></option>
-                                <?php
-                                foreach ($todosLosMetodos as $valor => $value) {
-                                ?>
-                                    <option value="<?= $value->COD_PRORRATEO; ?>"><?= $value->COD_PRORRATEO . '-' . $value->DESC_PRORRATEO; ?></option>
-                                <?php
-                                }
-                                ?>
-                            </select>
-                        </td>
-                        <td><?= $key->DESC_PRORRATEO ?></td>
-                        <td><?php if ($key->AMORTIZADO == 1) { ?>
-                                <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?= $key->AMORTIZAR ?>" disabled>
-                            <?php } else { ?>
-                                <input class="amortiza" type="number" id="amortiza" min="1" name="inputNum" value="<?= $key->AMORTIZAR ?>">
-                            <?php } ?>
-                        </td>
-                        <td><input class="checkExcluir" type="checkbox" <?php if ($key->EXCLUIR == 1) {
-                                                                            echo 'checked';
-                                                                        } ?>></td>
-                        <td><input class="checkControlado" type="checkbox" <?php if ($key->CONTROLADO == 1) {
-                                                                                echo 'checked';
-                                                                            } ?>></td>
-                        <td><input class="checkAmortizado" type="checkbox" <?php if ($key->AMORTIZADO == 1) {
-                                                                                echo 'checked';
-                                                                            } ?> disabled></td>
-                        <td><?= $key->MODULO ?></td>
-                        <td><?= $key->NUM_SUCURSAL ?></td>
-                        <td><?= $key->ID ?></td>
-                    </tr>
-                <?php
-                }
-                ?>
+                            </option>
+                    <?php
+                        }
+                            }
+                    ?>
+                    </select>
+                </td>
+
+                <td><?=  $key->SECTOR ?></td>
+                <td><?=  $key->COD_CUENTA ?></td>
+                <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
+                <td><?=  number_format($key->SALDO, 2) ?></td>
+                <td><?=  $key->DESC_LEYENDA ?></td>
+                <td><?=  $key->T_COMP ?></td>
+                <td><?=  $key->RAZON_SOCIAL ?></td>
+                <td><?=  $key->N_COMP ?></td>
+                <td>
+                    <select class="codRubro" style="width: 3rem;">
+                        <option selected disabled><?=  $key->COD_RUBRO ?></option>
+                        <?php           
+                        foreach($todosLosRubros as $valor => $value){
+                        ?>
+                        <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO.'-'.$value->RUBRO_CONTABLE; ?></option>
+                        <?php   
+                         }
+                        ?>
+                    </select>
+                </td>
+                <td><?=  $key->RUBRO_CONTABLE ?></td>
+                <td>
+                    <select class="codProrrateo" style="width: 2.2rem;">
+                        <option selected disabled><?=  $key->COD_PRORRATEO ?></option>
+                        <?php           
+                        foreach($todosLosMetodos as $valor => $value){
+                        ?>
+                        <option value="<?= $value->COD_PRORRATEO; ?>"><?= $value->COD_PRORRATEO.'-'.$value->DESC_PRORRATEO; ?></option>
+                        <?php   
+                         }
+                        ?>
+                    </select>
+                </td>
+                <td><?=  $key->DESC_PRORRATEO ?></td>
+                <td><?php if ($key->AMORTIZADO == 1){?>
+                    <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?=  $key->AMORTIZAR ?>" disabled>
+                <?php } else { ?> 
+                    <input class="amortiza" type="number" id="amortiza" min="1" name="inputNum" value="<?=  $key->AMORTIZAR ?>">
+                <?php } ?> 
+                </td>
+                <td><input class="checkExcluir" type="checkbox" <?php if ($key->EXCLUIR == 1) {echo 'checked';} ?>></td>
+                <td><input class="checkControlado" type="checkbox" <?php if ($key->CONTROLADO == 1) {echo 'checked';} ?>></td>
+                <td><input class="checkAmortizado" type="checkbox" <?php if ($key->AMORTIZADO == 1) {echo 'checked';} ?> disabled></td>
+                <td><?=  $key->MODULO ?></td>
+                <td><?=  $key->NUM_SUCURSAL ?></td>
+                <td><?=$key->ID?></td>
+            </tr>
+            <?php
+                }   
+            ?>
+
             </tbody>
         </table>
 
@@ -273,7 +304,11 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
 
-    <script>
+    <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
+    <script src="../comercioExterior/assets/select2/select2.min.js"></script>
+
+    
+<script>
 
         $(document).ready(function() {
             $('#myTable').DataTable({
@@ -286,10 +321,9 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
             $('[data-toggle="tooltip"]').tooltip()
         })
 
-
-
         $('#myModal').modal('toggle')
     </script>
+
 
 </body>
 

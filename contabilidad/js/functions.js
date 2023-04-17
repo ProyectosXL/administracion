@@ -9,6 +9,9 @@ const checkAmortizado = document.querySelectorAll(".checkAmortizado");
 const inputAmortiza = document.querySelectorAll(".amortiza");
 const btnAmortizar = document.querySelector(".btn-danger");
 const btnProrratear = document.querySelector("#btnProrrateo");
+
+const selectCentroCosto = document.querySelector("#selectCentroCosto");
+
 const btnEjecutar = document.querySelector("#btnEjecutar");
 let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
 let pasoActual = 0;
@@ -19,6 +22,7 @@ let payloads =  {
   "hasta": document.getElementsByName("hasta")[0].value,
   
 }
+
 
 btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
@@ -635,6 +639,33 @@ const rellenarModal2 = (obj)=>{
   }
 
 }
+
+
+const cambiarCentroCosto=(e)=>{
+  let sector = e[e.selectedIndex].getAttribute("attr-sector");
+  let numSucursal = e[e.selectedIndex].getAttribute("attr-numSucursal");
+  let codAuxiliar = e[e.selectedIndex].getAttribute("attr-codAuxiliar");
+  let descAuxiliar = e[e.selectedIndex].text;
+  let id = e.parentElement.parentElement.childNodes[41].textContent;
+  e.parentElement.parentElement.childNodes[5].textContent = sector
+  e.parentElement.parentElement.childNodes[39].textContent = numSucursal
+
+  $.ajax({
+    url: 'Controller/updateGasto.php',
+    method: 'POST',
+    data:{
+      "sector": sector, 
+      "numSucursal": numSucursal,
+      "codAuxiliar":codAuxiliar,
+      "descAuxiliar":descAuxiliar,
+      "id":id
+    },
+  })
+  .done(function(e) {
+  })
+
+  
+
 const rellenarModal4 = (obj)=>{
 
 
@@ -667,5 +698,6 @@ const rellenarModal4 = (obj)=>{
 
 
   }
+
 
 }
