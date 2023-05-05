@@ -66,4 +66,54 @@ class Orden{
             }
     }
 
+    public function EjecutarSp ($nroOrden){
+
+        try {
+
+
+            $sql = "EXEC RO_SP_INSERTAR_COSTO_NACIONALIZACION '$nroOrden';";
+ 
+
+
+            ini_set('max_execution_time', 300);
+
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            $next_result = sqlsrv_next_result($stmt);
+
+            return true;
+          
+        } catch (Exception $e) {
+            return 'Excepción capturada: '.$e->getMessage();
+        }
+
+    }
+
+    public function updateCostoNacionalizacion($nroOrden){
+
+        
+        try {
+            $sql = "DELETE FROM  RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO  =  '$nroOrden';";
+
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+
+            $sql = "EXEC RO_SP_INSERTAR_COSTO_NACIONALIZACION '$nroOrden';";
+ 
+
+
+            ini_set('max_execution_time', 300);
+
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            $next_result = sqlsrv_next_result($stmt);
+
+            return true;
+          
+        } catch (Exception $e) {
+            return 'Excepción capturada: '.$e->getMessage();
+        }
+
+    }
+
 }

@@ -100,7 +100,7 @@ foreach ($dataDetalle as $value) {
                 <div class="row">
                     <div class="col" style =" white-space: pre;">VALOR F.O.B</div>
                     <div class="col">U$S</div>
-                    <div class="col pe-3"><?= $dataEncabezado['VALOR_FOB_DOLAR']?></div>
+                    <div class="col pe-3"><?= $totalDeGastos?></div>
                 </div>
 
                 <div class="row">
@@ -111,7 +111,7 @@ foreach ($dataDetalle as $value) {
                 <div class="row">
                     <div class="col" style =" white-space: pre;">GASTOS </div>
                     <div class="col">  $</div>
-                    <div class="col pe-3"><?=$totalDeGastos?></div>
+                    <div class="col pe-3"><?=$importeEnPesos?></div>
                 </div>  
                 <div class="row"><br></div>
                 <div class="row"><br></div>
@@ -157,7 +157,7 @@ foreach ($dataDetalle as $value) {
         ?>
 
         <div class="row ">
-            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height: <?=$height;?>vh;"></div>
+            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height: <?=$height-2;?>vh;"></div>
             <div class="col-1 border-end border-dark text-center"></div>
             <div class="col-1 border-end border-dark text-center"></div>
             <div class="col-2 border-end border-dark text-center"></div>
