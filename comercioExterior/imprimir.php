@@ -12,6 +12,10 @@ $importeEnPesos = "";
 $sobreFob = "";
 $tc = "";
 foreach ($dataDetalle as $value) {
+    
+    $porcentaje = ($value['IMPORTE_$'] / $dataEncabezado['VALOR_FOB_PESO']) * 100;
+    $porcentajeParseado = (number_format((float)$porcentaje, 2, '.', '')); 
+
     if($totalDeGastos == ""){
         $totalDeGastos = (float)$value['IMPORTE_U$S'];
     }else{
@@ -23,9 +27,10 @@ foreach ($dataDetalle as $value) {
         $importeEnPesos = $importeEnPesos + (float)$value['IMPORTE_$'];
     }
     if($sobreFob == ""){
-        $sobreFob = (float)$value['PORCENTAJE'];
+        
+        $sobreFob = $porcentajeParseado;
     }else{
-        $sobreFob = $sobreFob + (float)$value['PORCENTAJE'];
+        $sobreFob = $sobreFob + $porcentajeParseado;
     }
 }
 
