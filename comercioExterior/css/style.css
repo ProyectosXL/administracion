@@ -466,3 +466,9 @@
   .icon{
     font-size: x-large;
   }
+
+  #contCheck{
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 2rem;
+  }

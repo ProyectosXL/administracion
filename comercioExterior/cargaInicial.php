@@ -52,6 +52,16 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                 <div class="card-heading"></div>
                 <div class="card-body">
                     <h2 class="title"><i class="bi bi-folder-check"></i> Datos de cabecera - Costos de Nacionalizacion</h2>
+                    <div class="row">
+                        
+                    </div>
+                    <div class="row row-space">
+                                <div class="col-md-5">
+                                    <div id="contCheck">
+                                        <label for="texto" style="width:380px; font-weight: bold;">ORDEN DE COMPRA MANUAL</label><input class="check" onclick="" type="checkbox"/>
+                                    </div>    
+                                </div>
+                            </div>
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
