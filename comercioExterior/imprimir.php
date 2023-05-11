@@ -140,24 +140,38 @@ foreach ($dataDetalle as $value) {
         <?php 
             $countRow = 0;
             foreach ($dataDetalle as $key => $value) {
+
+                $porcentaje = ($value['IMPORTE_$'] / $dataEncabezado['VALOR_FOB_PESO']) * 100;
+                                    $porcentajeParseado = (number_format((float)$porcentaje, 2, '.', '')); 
         ?>
             <div class="row">
                 <div class="col-3 mr-2 border-end border-dark text-left ps-3" style="font-size:12px"> <?= $value['GASTOS']; ?> </div>
                 <div class="col-1 mr-2 border-end border-dark" style="font-size:12px;text-align:right" ><?= $value['IMPORTE_U$S']; ?></div>
                 <div class="col-1 mr-2 border-end border-dark " style="font-size:12px;text-align:right" ><?= $value['TIPO_CAMBIO']; ?></div>
                 <div class="col-2 mr-2 border-end border-dark " style="font-size:12px;text-align:right"><?= $value['IMPORTE_$']; ?></div>
-                <div class="col-1 mr-2 border-end border-dark" style="font-size:12px;text-align:right" ><?= $value['PORCENTAJE']; ?>%</div>
+                <div class="col-1 mr-2 border-end border-dark" style="font-size:12px;text-align:right" ><?= $porcentajeParseado ?>%</div>
                 <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['OBSERVACIONES']; ?></div>
             </div>
         <?php
                 $countRow++;
             }
+    
+            
+            $height = 730 - ($countRow * 20);
 
-            $height = 70 - ($countRow * 1.5);
+
+            if($countRow > 5){
+                $height += 10; 
+            }
+            if($countRow > 10){
+                $height += 15; 
+            }
+
+
         ?>
 
         <div class="row ">
-            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height: <?=$height-2;?>vh;"></div>
+            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height:<?= $height ?>px"></div>
             <div class="col-1 border-end border-dark text-center"></div>
             <div class="col-1 border-end border-dark text-center"></div>
             <div class="col-2 border-end border-dark text-center"></div>
