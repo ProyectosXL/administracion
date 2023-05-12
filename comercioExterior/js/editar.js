@@ -3,7 +3,7 @@ let btnAgregarDetalle = document.querySelector("#btnAgregarDetalle");
 btnUpdateDetalle.addEventListener("click",()=> {
     let arrayDatos = [];
     let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
-
+    let nroOrden = document.querySelector("#nroOrden").textContent;
    
     let table = document.querySelector("#table")
     let rows = table.querySelectorAll("tr:not(:last-child)")
@@ -32,6 +32,14 @@ btnUpdateDetalle.addEventListener("click",()=> {
       },
     })
     .done(function(e) {
+
+      $.ajax({
+        url: 'Controller/updateCostoNacionalizacion.php',
+        method: 'POST',
+        data:{
+          "nroOrdenDeCompra": nroOrden
+        },
+      });
 
       Swal.fire({
         title: 'Detalle guardado!',

@@ -12,6 +12,10 @@ $importeEnPesos = "";
 $sobreFob = "";
 $tc = "";
 foreach ($dataDetalle as $value) {
+    
+    $porcentaje = ($value['IMPORTE_$'] / $dataEncabezado['VALOR_FOB_PESO']) * 100;
+    $porcentajeParseado = (number_format((float)$porcentaje, 2, '.', '')); 
+
     if($totalDeGastos == ""){
         $totalDeGastos = (float)$value['IMPORTE_U$S'];
     }else{
@@ -23,9 +27,10 @@ foreach ($dataDetalle as $value) {
         $importeEnPesos = $importeEnPesos + (float)$value['IMPORTE_$'];
     }
     if($sobreFob == ""){
-        $sobreFob = (float)$value['PORCENTAJE'];
+        
+        $sobreFob = $porcentajeParseado;
     }else{
-        $sobreFob = $sobreFob + (float)$value['PORCENTAJE'];
+        $sobreFob = $sobreFob + $porcentajeParseado;
     }
 }
 
@@ -100,18 +105,18 @@ foreach ($dataDetalle as $value) {
                 <div class="row">
                     <div class="col" style =" white-space: pre;">VALOR F.O.B</div>
                     <div class="col">U$S</div>
-                    <div class="col pe-3"><?= $dataEncabezado['VALOR_FOB_DOLAR']?></div>
+                    <div class="col pe-3"><?php echo number_format($totalDeGastos, 2, ',', '.');?></div>
                 </div>
 
                 <div class="row">
                     <div class="col" style =" white-space: pre;">VALOR F.O.B </div>
                     <div class="col">$</div>
-                    <div class="col pe-3"><?= $dataEncabezado['VALOR_FOB_PESO']?></div>
+                    <div class="col pe-3"><?php  echo number_format($dataEncabezado['VALOR_FOB_PESO'], 2, ',', '.');?></div>
                 </div>
                 <div class="row">
                     <div class="col" style =" white-space: pre;">GASTOS </div>
                     <div class="col">  $</div>
-                    <div class="col pe-3"><?=$totalDeGastos?></div>
+                    <div class="col pe-3"><?php  echo number_format($importeEnPesos, 2, ',', '.');?></div>
                 </div>  
                 <div class="row"><br></div>
                 <div class="row"><br></div>
@@ -140,24 +145,38 @@ foreach ($dataDetalle as $value) {
         <?php 
             $countRow = 0;
             foreach ($dataDetalle as $key => $value) {
+
+                $porcentaje = ($value['IMPORTE_$'] / $dataEncabezado['VALOR_FOB_PESO']) * 100;
+                                    $porcentajeParseado = (number_format((float)$porcentaje, 2, ',', '')); 
         ?>
             <div class="row">
                 <div class="col-3 mr-2 border-end border-dark text-left ps-3" style="font-size:12px"> <?= $value['GASTOS']; ?> </div>
-                <div class="col-1 mr-2 border-end border-dark" style="font-size:12px;text-align:right" ><?= $value['IMPORTE_U$S']; ?></div>
-                <div class="col-1 mr-2 border-end border-dark " style="font-size:12px;text-align:right" ><?= $value['TIPO_CAMBIO']; ?></div>
-                <div class="col-2 mr-2 border-end border-dark " style="font-size:12px;text-align:right"><?= $value['IMPORTE_$']; ?></div>
-                <div class="col-1 mr-2 border-end border-dark" style="font-size:12px;text-align:right" ><?= $value['PORCENTAJE']; ?>%</div>
+                <div class="col-1 mr-2 border-end border-dark" style="font-size:11px;text-align:right" ><?php   echo number_format($value['IMPORTE_U$S'], 2, ',', '.'); ?></div>
+                <div class="col-1 mr-2 border-end border-dark " style="font-size:12px;text-align:right" ><?php echo number_format($value['TIPO_CAMBIO'], 2, ',', '');  ?></div>
+                <div class="col-2 mr-2 border-end border-dark " style="font-size:12px;text-align:right"><?php echo number_format($value['IMPORTE_$'], 2, ',', '.'); ?></div>
+                <div class="col-1 mr-2 border-end border-dark" style="font-size:12px;text-align:right" ><?= $porcentajeParseado ?>%</div>
                 <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:12px" ><?= $value['OBSERVACIONES']; ?></div>
             </div>
         <?php
                 $countRow++;
             }
+    
+            
+            $height = 730 - ($countRow * 20);
 
-            $height = 70 - ($countRow * 1.5);
+
+            if($countRow > 5){
+                $height += 10; 
+            }
+            if($countRow > 10){
+                $height += 15; 
+            }
+
+
         ?>
 
         <div class="row ">
-            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height: <?=$height;?>vh;"></div>
+            <div class="col-3 border-end border-dark text-center d-flex flex-column" style="height:<?= $height ?>px"></div>
             <div class="col-1 border-end border-dark text-center"></div>
             <div class="col-1 border-end border-dark text-center"></div>
             <div class="col-2 border-end border-dark text-center"></div>
@@ -172,10 +191,10 @@ foreach ($dataDetalle as $value) {
 
     <div class="row border border-dark">
         <div class="col-3 mr-2 border-end border-dark text-center" style="font-size:10px">Total gastos costeables</div>
-        <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $totalDeGastos;?></div>
+        <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"><?php echo number_format($totalDeGastos, 2, ',', '.');?></div>
         <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"></div>
-        <div class="col-2 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $importeEnPesos;?></div>
-        <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"><?= $sobreFob;?></div>
+        <div class="col-2 mr-2 border-end border-dark text-center" style="font-size:10px"><?php echo number_format($importeEnPesos, 2, ',', '.');?></div>
+        <div class="col-1 mr-2 border-end border-dark text-center" style="font-size:10px"><?php echo number_format($sobreFob, 2, ',', '.');?></div>
         <div class="col-4 mr-2 border-end border-dark text-center" style="font-size:10px"></div>
     </div>
     

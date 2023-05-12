@@ -106,6 +106,7 @@ if(document.querySelector("#btnSaveDetalle") != null){
     let rows = document.querySelectorAll("#id");
     let arrayDatos = [];
     let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
+    let nroOrdenDeCompra = document.querySelector("#nroOrdenCompra").textContent;
     rows.forEach((e , x) => {
 
     let rowsElement = e.parentElement;
@@ -120,6 +121,9 @@ if(document.querySelector("#btnSaveDetalle") != null){
 
     });
 
+
+
+
     $.ajax({
       url: 'Controller/OrdenDeCompraController.php',
       method: 'POST',
@@ -127,18 +131,35 @@ if(document.querySelector("#btnSaveDetalle") != null){
         "array": arrayDatos, 
         "idEncabezado": idEncabezado
       },
-    });
-    Swal.fire({
-      title: 'Detalle guardado!',
-      icon: 'success',
-      showDenyButton: true,
-      showCancelButton: false,
-      showConfirmButton: false,
-      denyButtonText: `Volver`,
-      })
-      .then((e) => {
-        window.location = "index.php"
-      })
+    }).then((e)=>{
+
+      $.ajax({
+          url: 'Controller/ejecutarSpCostoNacionalizacion.php',
+          method: 'POST',
+          data:{
+            "nroOrdenDeCompra": nroOrdenDeCompra
+          },
+        });
+
+        Swal.fire({
+          title: 'Detalle guardado!',
+          icon: 'success',
+          showDenyButton: true,
+          showCancelButton: false,
+          showConfirmButton: false,
+          denyButtonText: `Volver`,
+          })
+          .then((e) => {
+
+          
+
+            window.location = "index.php"
+          })
+   
+
+    })
+
+
 
 
   })

@@ -38,6 +38,7 @@ $orden = listarPorOrdenCompra($ordenCompra);
                     <div class="alert alert-primary">
                         <div class="row justify-content-md-center mb-2">
                             <div class="col-md-auto"><h3 class="mb-1" style="font-weight: bold;"><i class="bi bi-box-seam-fill"></i> <?= $_GET['proveedor'].'-'.$_GET['ordenDeCompra']?></h3></div>
+                            <div id="nroOrden" hidden><?= $_GET['ordenDeCompra'] ?></div>
                         </div>
                         <div class="row justify-content-md-center">
                             <div class="col-md-auto"><i class="bi bi-airplane-fill icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Nº Orden Proveedor</label><?= ' '.$_GET['codProveedor']?></h5></div>
@@ -64,6 +65,8 @@ $orden = listarPorOrdenCompra($ordenCompra);
 
                                 <?php
                                 foreach($orden as $valor => $key){
+                                    $porcentaje = ($key['IMPORTE_$'] / $_GET['valorFobPeso']) * 100;
+                                    $porcentajeParseado = (number_format((float)$porcentaje, 2, '.', '')); 
                                 ?>
                                 <tr>
                                     <td id="id" attr-value="<?=$key['ID']?>"><?=  ($valor+1)?></td>
@@ -71,7 +74,7 @@ $orden = listarPorOrdenCompra($ordenCompra);
                                     <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "<?=$key['IMPORTE_U$S']?>"></input></td>
                                     <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($key['TIPO_CAMBIO']) ? $key['TIPO_CAMBIO'] : "0" ?>"></input></td>
                                     <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly value="<?=$key['IMPORTE_$']?>"></input></td>
-                                    <td><input style="text-align:center"  value="<?= $key['PORCENTAJE']?>%" readonly></input></td>
+                                    <td><input style="text-align:center"  value="<?= $porcentajeParseado ?>%" readonly></input></td>
                                     <td><input><?=$key['OBSERVACIONES']?></input></td>
                                     <td><button type="button" class="btn btn-danger" onclick="borrarGasto(this)">X</button></td>
                                 </tr>
