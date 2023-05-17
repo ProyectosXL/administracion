@@ -52,6 +52,10 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                 <div class="card-heading"></div>
                 <div class="card-body">
                     <h2 class="title"><i class="bi bi-folder-check"></i> Datos de cabecera - Costos de Nacionalizacion</h2>
+
+                    <div class="row" style="margin-bottom:10px;margin-left:8px">
+                    Orden De Compra Manual <div class="col" id="checkOrden"><input type="checkbox" id="ordenManual" onchange="traerOrden()"></div>
+                    </div>
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
@@ -158,7 +162,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <!-- <input class="input--style-1 soloNum" type="text" placeholder="ORDEN DE COMPRA" id="ordenCompra"> -->
+                                        <input class="input--style-1 soloNum" type="text" placeholder="ORDEN DE COMPRA" id="inputOrdenCompra" hidden readonly>
                                         <select id="ordenCompra">
                                             <option disabled="disabled" selected="selected">ORDEN DE COMPRA</option>
                                         </select>
@@ -205,7 +209,35 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
 
 <script>
-
+    // console.log(ordenManual.checked);
+    const traerOrden = ()=>{
+        
+        let ordenManual = document.querySelector("#ordenManual");
+        let selectOrdenCompra = document.querySelector("#ordenCompra");
+        let inputOrdenCompra = document.querySelector("#inputOrdenCompra");
+        if(ordenManual.checked == true){
+            $.ajax({
+                url: 'Controller/traerOrdenManualController.php',
+                method: 'GET',
+                success : function(data) {
+                   
+                    selectOrdenCompra.hidden = true;
+                    inputOrdenCompra.hidden = false;
+                    
+                    let num = JSON.parse(data);
    
 
+                    let sumaOrden = 200000000 + num['nroOrden'];
+                    let orden = ` 0000${sumaOrden}`;
+
+                    inputOrdenCompra.value = orden;
+       
+
+                }
+            })
+        }else{
+                selectOrdenCompra.hidden = false;
+                inputOrdenCompra.hidden = true;
+        }
+    }
 </script>

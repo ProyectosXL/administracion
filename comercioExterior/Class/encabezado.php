@@ -17,9 +17,9 @@ class Encabezado
         $codProv = substr($datosDeCabezera['cod_proveedor'], 0, 6);
 
         $sql = "INSERT INTO RO_T_IMPORTACIONES_ENCABEZADO(FECHA_MOV, COD_PROVEE, PROVEEDOR, CONTENEDOR, DESPACHO, MATERIAL, ORIGEN, FECHA_EMB, FACTURA, FECHA_FACT, 
-            ORDEN_COMPRA, FORMA_PAGO, NUMERO_BL, TIPO_CAMBIO, VALOR_FOB_DOLAR, VALOR_FOB_PESO, FECHA_ARR, FECHA_DESP_ADU)
+            ORDEN_COMPRA, FORMA_PAGO, NUMERO_BL, TIPO_CAMBIO, VALOR_FOB_DOLAR, VALOR_FOB_PESO, FECHA_ARR, FECHA_DESP_ADU,OCM)
             VALUES (GETDATE(),'".$codProv."','".$datosDeCabezera['proveedor']."','".$datosDeCabezera['contenedor']."','".$datosDeCabezera['despacho']."','".$datosDeCabezera['material']."','".$datosDeCabezera['origen']."','".$datosDeCabezera['fechaEmbarque']."','".$datosDeCabezera['facturaProveedor']."','".$datosDeCabezera['fechaFactura']."',
-            '".$datosDeCabezera['ordenCompra']."','".$datosDeCabezera['formaPago']."','".$datosDeCabezera['numeroBl']."','".$datosDeCabezera['tipoCambio']."','".$datosDeCabezera['valorFobDolar']."','".$datosDeCabezera['valorFobPeso']."','".$datosDeCabezera['fechaArribo']."','".$datosDeCabezera['fechaDespacho']."')
+            '".$datosDeCabezera['ordenCompra']."','".$datosDeCabezera['formaPago']."','".$datosDeCabezera['numeroBl']."','".$datosDeCabezera['tipoCambio']."','".$datosDeCabezera['valorFobDolar']."','".$datosDeCabezera['valorFobPeso']."','".$datosDeCabezera['fechaArribo']."','".$datosDeCabezera['fechaDespacho']."' , '".$datosDeCabezera['ocm']."')
         ;";
 
         try {
@@ -44,5 +44,19 @@ class Encabezado
         }
 
     }  
+    public function traerOrdenManual (){
+        $sql = "SELECT MAX(cast (RIGHT(ORDEN_COMPRA,'8')as INT)+1 ) AS nroOrden FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE OCM = 1;";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+        $rows = array();
+
+        while( $v = sqlsrv_fetch_array( $stmt,SQLSRV_FETCH_ASSOC) ) {
+
+            $rows = $v;
+        }
+        return ($rows);
+
+    }
 
 }

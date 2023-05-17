@@ -21,6 +21,7 @@ $datosDeCabezera['valorFobDolar']= $_POST['valorFobDolar'];
 $datosDeCabezera['valorFobPeso']= $_POST['valorFobPeso'];
 $datosDeCabezera['fechaArribo']= $_POST['fechaArribo'];
 $datosDeCabezera['fechaDespacho']= $_POST['fechaDespacho'];
+$datosDeCabezera['ocm']= $_POST['ocm'];
 
 $result = $cid->insertarEncabezado($datosDeCabezera);
 echo ($result);
