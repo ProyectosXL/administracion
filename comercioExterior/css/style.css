@@ -467,8 +467,12 @@
     font-size: x-large;
   }
 
-  #contCheck{
-    display: inline-flex;
-    align-items: center;
-    margin-bottom: 2rem;
+  #labelCheck{
+    position: relative;
+    margin-left: 20px;
+  }
+  #checkOrden{
+    position: relative;
+    margin-right: 500px;
+
   }

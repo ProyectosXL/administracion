@@ -66,11 +66,15 @@ function guardarCabecera(){
     let proveedor = document.querySelector("#proveedor");
     let origen = document.querySelector("#origen");
     let ordenCompra = document.querySelector("#ordenCompra");
+    let ordenManual = document.querySelector("#ordenManual");
 
+    if(ordenManual.checked == false){
 
-    if (ordenCompra.selectedIndex == 0) {
-        ordenCompra.style.border="1px solid red";
-        b=1;
+        if (ordenCompra.selectedIndex == 0) {
+            ordenCompra.style.border="1px solid red";
+            b=1;
+        }
+        
     }
     
     if (origen.value == "") {
@@ -121,7 +125,14 @@ selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")
     var fechaEmbarque = document.getElementById('fechaEmbarque').value;
     var facturaProveedor = document.getElementById('facturaProveedor').value;
     var fechaFactura = document.getElementById('fechaFactura').value;
+    let ocm = 0;
+    if(ordenManual.checked == false){
     var ordenCompra = document.getElementById('ordenCompra').value;
+    }
+    else{
+    var ordenCompra = document.getElementById('inputOrdenCompra').value;
+    ocm = 1;
+    }
     var formaPago = document.getElementById('formaPago').value;
     var numeroBl = document.getElementById('numeroBl').value;
     var tipoCambio = document.getElementById('tipoCambio').value;
@@ -172,7 +183,8 @@ selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")
                 valorFobDolar: valorFobDolar.replace(/,/g, ""), 
                 valorFobPeso: valorFobPeso.replace(/,/g, ""), 
                 fechaArribo: fechaArribo, 
-                fechaDespacho: fechaDespacho
+                fechaDespacho: fechaDespacho,
+                ocm: ocm
             },
             success : function(data) {
                id = data;
