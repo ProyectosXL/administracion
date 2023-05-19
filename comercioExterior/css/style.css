@@ -466,6 +466,7 @@
   .icon{
     font-size: x-large;
   }
+
   #labelCheck{
     position: relative;
     margin-left: 20px;
@@ -473,4 +474,5 @@
   #checkOrden{
     position: relative;
     margin-right: 500px;
+
   }
