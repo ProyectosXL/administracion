@@ -28,7 +28,7 @@ class Proveedor
     public function traerProveedores()
     {
         
-        $sql = "SELECT COD_PROVEE, NOM_PROVEE FROM CPA01 WHERE COD_PROVEE LIKE 'Z%' ORDER BY 2 ASC";
+        $sql = "SELECT COD_PROVEE, NOM_PROVEE FROM CPA01 WHERE COD_PROVEE LIKE 'Z%' AND FECHA_INHA = '1800-01-01 00:00:00.000' ORDER BY 2 ASC";
 
         try{
             $rows = $this->retornarArray($sql);

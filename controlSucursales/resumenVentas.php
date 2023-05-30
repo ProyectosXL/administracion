@@ -74,6 +74,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     <th class="col-" style="color: #28a745;">TOTAL TARJETAS</th>
                     <th class="col-">MERCADO PAGO QR</th>
                     <th class="col-">MERCADO PAGO</th>
+                    <th class="col-">MODO QR</th>
                     <th class="col-">PROMO BANCO</th>
                     <th class="col-">EFECTIVO</th>
                     <th class="col-">BONUS SHOPPING</th>
@@ -95,6 +96,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <td><?= number_format($key->TOTAL_TARJETAS, 2, '.', ',') ?></td>
                         <td><?= number_format($key->MERCADO_PAGO_QR, 2, '.', ',') ?></td>
                         <td><?= number_format($key->MERCADO_PAGO, 2, '.', ',') ?></td>
+                        <td><?= number_format($key->MODO_QR, 2, '.', ',') ?></td>
                         <td><?= number_format($key->PROMO_BANCO, 2, '.', ',') ?></td>
                         <td><?= number_format($key->EFECTIVO, 2, '.', ',') ?></td>
                         <td><?= number_format($key->BONUS_SHOPPING, 2, '.', ',') ?></td>
