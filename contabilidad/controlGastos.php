@@ -1,6 +1,6 @@
 <?php
 
-include 'Class/gastos.php';
+include 'Class/gasto.php';
 include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
 
@@ -14,7 +14,7 @@ $todosLosCentrosCosto = json_decode($centroCostos);
 include 'Class/articulos.php';
 
 
-$gastos = new Gastos();
+$gastos = new Gasto();
 $articulo = new Articulo();
 $rubroContable = new RubroContable();
 $todosLosRubros = $rubroContable->traerRubrosContables();

@@ -1,7 +1,7 @@
 
 <?php
-require_once "../Class/gastos.php";
-$gastos = new Gastos();
+require_once "../Class/gasto.php";
+$gastos = new Gasto();
 
 $result = null;
 

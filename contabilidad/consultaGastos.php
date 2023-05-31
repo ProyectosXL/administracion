@@ -1,12 +1,12 @@
 <?php
 
-include 'Class/gastos.php';
+include 'Class/gasto.php';
 include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
 include 'Class/articulos.php';
 include 'Class/cuentaContable.php';
 
-$gastos = new Gastos();
+$gastos = new Gasto();
 $articulo = new Articulo();
 $rubroContable = new RubroContable();
 $todosLosRubros = $rubroContable->traerRubrosContables();

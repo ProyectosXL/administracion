@@ -3,7 +3,7 @@
 
 // $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
-class Gastos
+class Gasto
 {
 
     function __construct(){
@@ -112,6 +112,7 @@ class Gastos
         $sql = "SELECT * FROM RO_T_INTEGRAL_CUENTAS_2 WHERE FECHA BETWEEN '$desde' AND '$hasta'
         ";
 
+
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
         try{
@@ -183,6 +184,23 @@ class Gastos
         } catch (\Throwable $th){
             print_r($th);
         }
+    }
+
+    public function eliminarGasto($id){
+        
+        $sql="DELETE FROM  RO_T_INTEGRAL_CUENTAS_2 WHERE ID_CTA_2 = '$id'";
+        $sql2 = "DELETE FROM RO_T_INTEGRAL_TANGO_2 WHERE ID_CTA_2 = '$id'";
+
+        try {
+
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            $stmt2 = sqlsrv_query( $this->cid_central, $sql2 );
+            return true;
+            
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+       
     }
 
 }  

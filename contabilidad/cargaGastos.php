@@ -4,7 +4,7 @@ include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
 include 'Class/centroCosto.php';
 include 'Class/cuentaContable.php';
-include 'Class/gastos.php';
+include 'Class/gasto.php';
 include 'Class/articulos.php';
 
 $rubroContable = new RubroContable();
@@ -23,7 +23,7 @@ $cuentaContable = new CuentaContable();
 $todasLasCuentasContables = $cuentaContable->traerCuentasContables();
 $todasLasCuentasContables = json_decode($todasLasCuentasContables);
 
-$gastos = new Gastos();
+$gastos = new Gasto();
 
 $articulo = new Articulo();
 
@@ -198,6 +198,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     <th style="position: sticky; top: 0; z-index: 10;">DESC. PRORRATEO</th>
                     <th style="position: sticky; top: 0; z-index: 10;">NRO. SUC.</th>
                     <th style="position: sticky; top: 0; z-index: 10;" title="Colocar plazo de amortización">AMORTIZAR</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -223,6 +224,8 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <td><?= $key->DESC_PRORRATEO ?></td>
                         <td><?= $key->NUM_SUCURSAL ?></td>
                         <td><?= $key->AMORTIZAR ?></td>
+                        <td hidden><?= $key->ID_CTA_2?></td>
+                        <td><button class="btn btn-danger" onclick="eliminarGasto(this)"><i class="bi bi-trash btn-delete"></i></button></td>
                     </tr>
             </tbody>
         <?php
@@ -291,6 +294,20 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
                 }
             })
+    }
+    const eliminarGasto = (e) =>{
+        let id = e.parentElement.parentElement.childNodes[31].textContent;
+        $.ajax({
+                url: 'Controller/eliminarGasto.php',
+                method: 'POST',
+                data:{
+                    id:id
+                },
+                success : function(data) {
+                    window.location.reload();
+                }
+            })
+
     }
 </script>
 
