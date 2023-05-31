@@ -199,6 +199,9 @@ function guardarGasto() {
             suc: suc,
             amortizar: amortizar,
           },
+          success: function (data) {
+            console.log(data);
+          }
         });
         Swal.fire("Gasto cargado correctamente!", "", "success").then(
           function () {

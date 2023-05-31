@@ -23,19 +23,34 @@ try {
     $periodo = str_replace("0","",substr($fecha, 5, 2)).'-'.substr($fecha, 0, 4);
 
 
-    $sql = "INSERT INTO RO_T_INTEGRAL_CUENTAS_2 ([MODULO],[COD_AUXILIAR],[FECHA],[DESC_AUXILIAR],[SECTOR],[COD_CUENTA],[DESC_CUENTA],[SALDO],[DESC_LEYENDA],
+    $sql1 = "INSERT INTO RO_T_INTEGRAL_CUENTAS_2 ([MODULO],[COD_AUXILIAR],[FECHA],[DESC_AUXILIAR],[SECTOR],[COD_CUENTA],[DESC_CUENTA],[SALDO],[DESC_LEYENDA],
             [COD_RUBRO],[RUBRO_CONTABLE],[COD_PRORRATEO],[DESC_PRORRATEO],[NUM_SUCURSAL],[CONTROLADO],[AMORTIZAR],[FECHA_ALTA])
             VALUES ('CUENTAS2','$codCentro','$fecha','$auxiliar','$sector','$codCuenta','$cuenta',$importe,'$leyenda','$codRubro',
-            '$rubro','$codProrrateo','$descProrrateo','$suc',1,'$amortizar','$fechaAlta')
+            '$rubro','$codProrrateo','$descProrrateo','$suc',1,'$amortizar','$fechaAlta')";
+    
+    $stmt1 = sqlsrv_query($cid_central, $sql1);
+    sqlsrv_execute($stmt1);
 
-            INSERT INTO RO_T_INTEGRAL_TANGO_2 ([MODULO],[COD_AUXILIAR],[FECHA],[DESC_AUXILIAR],[SECTOR],[COD_CUENTA],[DESC_CUENTA],[SALDO],[DESC_LEYENDA],
+
+    $queryIdentity = "select @@identity";
+    $stmtIdentity = sqlsrv_query($cid_central, $queryIdentity);
+
+    $id = null;
+    
+    while ($v = sqlsrv_fetch_array($stmtIdentity)) {
+        $id = $v;
+    }
+
+    $idInsertado = $id[0];
+
+    $sql2 = "INSERT INTO RO_T_INTEGRAL_TANGO_2 ([MODULO],[COD_AUXILIAR],[FECHA],[DESC_AUXILIAR],[SECTOR],[COD_CUENTA],[DESC_CUENTA],[SALDO],[DESC_LEYENDA],
             [T_COMP],[RAZON_SOCIAL],[PROVEEDOR],[N_COMP],[IMPUTACIONES],[COD_RUBRO],[RUBRO_CONTABLE],[COD_PRORRATEO],[DESC_PRORRATEO],[NUM_SUCURSAL],[EXCLUIR],
-            [CONTROLADO],[AMORTIZAR],[AMORTIZADO],[PERIODO],[ID_AA],[PRORRATEADO])
+            [CONTROLADO],[AMORTIZAR],[AMORTIZADO],[PERIODO],[ID_AA],[PRORRATEADO], [ID_CTA_2])
             VALUES ('CUENTAS2','$codCentro','$fecha','$auxiliar','$sector','$codCuenta','$cuenta',$importe,'$leyenda',NULL,NULL,NULL,NULL,NULL,'$codRubro',
-            '$rubro','$codProrrateo','$descProrrateo','$suc',0,1,'$amortizar',NULL,NULL,NULL,NULL)
-    ";
-    $stmt = sqlsrv_query($cid_central, $sql);
-    sqlsrv_execute($stmt);
+            '$rubro','$codProrrateo','$descProrrateo','$suc',0,1,'$amortizar',NULL,NULL,NULL,NULL, $idInsertado)";
+    $stmt2 = sqlsrv_query($cid_central, $sql2);
+    sqlsrv_execute($stmt2);
+
 } catch (Exception $e) {
     echo 'Excepción capturada: ',  $e->getMessage(), "\n";
 }
