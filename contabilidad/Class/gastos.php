@@ -49,9 +49,6 @@ class Gastos
                     AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro' 
                 ";
 
-
-
-
     }
     if($columna != null){
         $sql = $sql.$queryColumna;
@@ -80,10 +77,41 @@ class Gastos
 
     }
 
+    public function traerGastosParaControl($desde, $hasta, $estado, $codRubro){
+
+        $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL
+        AND COD_RUBRO LIKE '$codRubro'
+        UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
+        AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
+        AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro' ";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+            
+        try{
+            
+            $rows = array();
+
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+
+            $myJSON = json_encode($rows);
+
+            return $myJSON;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+
+    }
+
     public function traerGastos2($desde, $hasta){
 
         $sql = "SELECT * FROM RO_T_INTEGRAL_CUENTAS_2 WHERE FECHA BETWEEN '$desde' AND '$hasta'
         ";
+
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
         try{
@@ -133,6 +161,28 @@ class Gastos
         }
         
 
+    }
+
+
+    public function traerCodRubro ($codCuenta,$sector){
+
+        $sql ="SELECT * from RO_T_RELACION_CUENTA_RUBRO_CONTABLE  where COD_CUENTA = '$codCuenta' AND SECTOR = '$sector'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+        try{
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }
     }
 
 }  
