@@ -71,7 +71,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <table class="table table-striped table-bordered display" id="tableDinamic" style="width: 99%;" data-page-length="100">
         <thead class="thead-dark">
             <tr>
-                <th></th>
+                <th style="position: sticky; top: 0; z-index: 10;"></th>
                 <th style="position: sticky; top: 0; z-index: 10; width: 100px;" class="col-1">FECHA</th>
                 <th style="position: sticky; top: 0; z-index: 10;">COD. AUXILIAR</th>
                 <th style="position: sticky; top: 0; z-index: 10;">AUXILIAR</th>
@@ -182,7 +182,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         <table class="table table-striped table-bordered display mt-2" id="tableDinamic" style="width: 99%;" data-page-length="100">
             <thead class="thead-dark">
                 <tr>
-                    <th></th>
+                    <th style="position: sticky; top: 0; z-index: 10;">ID</th>
                     <th style="position: sticky; top: 0; z-index: 10; width: 100px;" class="col-1">FECHA</th>
                     <th style="position: sticky; top: 0; z-index: 10;">COD. AUXILIAR</th>
                     <th style="position: sticky; top: 0; z-index: 10;">AUXILIAR</th>
@@ -197,6 +197,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     <th style="position: sticky; top: 0; z-index: 10;">DESC. PRORRATEO</th>
                     <th style="position: sticky; top: 0; z-index: 10;">NRO. SUC.</th>
                     <th style="position: sticky; top: 0; z-index: 10;" title="Colocar plazo de amortización">AMORTIZAR</th>
+                    <th style="position: sticky; top: 0; z-index: 10;"></th>
                 </tr>
             </thead>
             <tbody>
@@ -206,7 +207,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 ?>
                     <tr>
                     <tr>
-                        <td></td>
+                        <td><?= $key->ID_CTA_2 ?></td>
                         <td><?= substr($key->FECHA->date, 0, 10); ?></td>
                         <td><?= $key->COD_AUXILIAR ?></td>
                         <td><?= $key->DESC_AUXILIAR ?></td>
@@ -221,6 +222,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <td><?= $key->DESC_PRORRATEO ?></td>
                         <td><?= $key->NUM_SUCURSAL ?></td>
                         <td><?= $key->AMORTIZAR ?></td>
+                        <td><button class="btn btn-danger"><i class="bi bi-trash btn-delete"></i></button></td>
                     </tr>
             </tbody>
         <?php

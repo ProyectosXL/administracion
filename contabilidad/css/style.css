@@ -203,3 +203,8 @@ select, input{
     background: url('../images/g0R9.gif') 50% 50% no-repeat rgb(0, 0, 0);
     opacity: .8;
   }
+
+  .btn-delete
+  {
+    font-size: 1.1rem;
+  }
