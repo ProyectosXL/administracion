@@ -62,7 +62,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
 ?>
 
-<body>
+<body>  
 
     <div class="row">
         <div class="progressbar-wrapper">
@@ -93,13 +93,14 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
                 <form>
                     <div class="contenedor">
                         <div class="col-">
+                            
                             <label>Desde:</label>
-                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
+                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>" id="desde">
                         </div>
 
                         <div class="col-">
                             <label>Hasta:</label>
-                            <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
+                            <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>" id="hasta">
                         </div>
                         <div id="estado">
                             <label>Estado:</label>
@@ -287,6 +288,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
             </tbody>
         </table>
 
+
     <?php
     }
     ?>
@@ -306,6 +308,9 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
     <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
     <script src="../comercioExterior/assets/select2/select2.min.js"></script>
+    <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script> -->
+    <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
 
     
 <script>
@@ -325,6 +330,9 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
         })
 
         $('#myModal').modal('toggle')
+
+
+    
     </script>
 
 
@@ -338,6 +346,7 @@ include('articuloSinCn.php');
 
 include('articuloSinPrecioCosto.php');
 include('ventasCobranzaTotal.php');
+include('ventasBrutasPorSucursal.php');
 
 
 ?>

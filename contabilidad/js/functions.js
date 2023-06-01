@@ -453,7 +453,25 @@ function prorratearGastos() {
     });
 
 }
+const activarModalPaso3 = () => {
 
+  let desde = document.querySelector("#desde").value;
+  let hasta = document.querySelector("#hasta").value;
+
+  $.ajax({
+          url: 'Controller/rentabilidadBruta.php?accion=traerRentabilidad',
+          method: 'POST',
+          data:{
+              desde:desde,
+              hasta:hasta
+          },
+          success : function(data) {
+             rellenarModal5(data);
+          }
+      })
+
+  $('#modalVb').modal('toggle');
+}
 
 function ejecutarPasos() {
 
@@ -462,6 +480,7 @@ function ejecutarPasos() {
   }
 
   pasoActual = pasoActual + 1;
+
 
 
   let pasosDirectos = [3,5,6,7]; 
@@ -506,6 +525,9 @@ function ejecutarPasos() {
 
               paso.className += "active";
               spinner.classList.remove('loading');
+              if (pasoActual == 3){
+                activarModalPaso3();
+              }
               Swal.fire({
                 icon: "success",
                 title: "Control exitoso",
@@ -738,3 +760,102 @@ const rellenarModal4 = (obj)=>{
 
 
 }
+const rellenarModal5 = (obj)=>{
+
+
+  let tableModal =  document.querySelector("#tableVb");
+  let objeto = JSON.parse(obj);
+
+
+  objeto.forEach(element => {
+
+    const tr=document.createElement('tr');
+    const td1=document.createElement('td');
+    const td2=document.createElement('td');
+    const td3=document.createElement('td');
+    const td4=document.createElement('td');
+    const td5=document.createElement('td');
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "form-control";
+    input.value = "$"+parseNumber(parseInt(element['VENTA']));
+    input.setAttribute("value", parseNumber(parseInt(element['VENTA'])));
+    input.setAttribute("onchange", "actualizarValorVenta(this)");
+
+
+    const text1=document.createTextNode(element['NRO_SUCURS']);
+    const text2=document.createTextNode(element['SUCURSAL']);
+    // const text3=document.createTextNode(element['VENTA']);
+    const text4=document.createTextNode(element['OBSERVACION_MOD']);
+    const text5=document.createTextNode(element['ID']);
+
+    td1.appendChild(text1);
+    td2.appendChild(text2);
+    td3.appendChild(input);
+    td4.appendChild(text4);
+    td5.appendChild(text5);
+
+    td5.hidden = true;
+    
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    tr.appendChild(td5);
+
+    tableModal.appendChild(tr);
+
+  });
+
+
+}
+const actualizarValorVenta = (e)=>{
+
+  let id = e.parentElement.parentElement.childNodes[4].textContent;
+  let nuevoValor = e.value.replace(/[$.]/g, "");
+
+  
+  e.setAttribute("value", parseNumber(parseInt(nuevoValor)));
+  e.value = "$"+parseNumber(parseInt(nuevoValor));
+  
+  $.ajax({
+    url: 'Controller/rentabilidadBruta.php?accion=actualizarValor',
+    method: 'POST',
+    data:{
+      id:id,
+      nuevoValor:nuevoValor
+    },
+    success : function(data) {
+      console.log(data)
+    }
+
+})
+  
+}
+
+const marcarControlado = ()=>{
+
+  let desde = document.querySelector("#desde").value;
+  let hasta = document.querySelector("#hasta").value;
+
+  $.ajax({
+          url: 'Controller/rentabilidadBruta.php?accion=controlarRentabilidad',
+          method: 'POST',
+          data:{
+              desde:desde,
+              hasta:hasta
+          },
+          success : function(data) {
+            Swal.fire({
+              icon: "success",
+              title: "Control exitoso",
+              text: `Rentabilidad controlada!`,
+            });
+
+          }
+      })
+  
+
+}
+

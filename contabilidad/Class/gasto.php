@@ -187,7 +187,7 @@ class Gasto
     }
 
     public function eliminarGasto($id){
-        
+
         $sql="DELETE FROM  RO_T_INTEGRAL_CUENTAS_2 WHERE ID_CTA_2 = '$id'";
         $sql2 = "DELETE FROM RO_T_INTEGRAL_TANGO_2 WHERE ID_CTA_2 = '$id'";
 
@@ -201,6 +201,55 @@ class Gasto
             throw $th;
         }
        
+    }
+
+    public function traerRentabilidadBruta ($desde, $hasta){
+        $sql = "SELECT * FROM RO_T_RENTABILIDAD_BRUTA WHERE FECHA BETWEEN '$desde' AND '$hasta'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        try{
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
+    }
+    public function actualizarValor ($id, $nuevoValor){
+
+        $sql = "UPDATE RO_T_RENTABILIDAD_BRUTA  SET VENTA = '$nuevoValor' WHERE ID = $id";
+
+        try{
+
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            return true;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
+    }
+
+    public function marcarRentabilidadControlada ($desde, $hasta){
+
+        $sql = "UPDATE RO_T_RENTABILIDAD_BRUTA  SET CONTROLADO = '1' WHERE FECHA BETWEEN '2023-01-01' AND '2023-02-28'";
+
+        try{
+
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            return true;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
     }
 
 }  
