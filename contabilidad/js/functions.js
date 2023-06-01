@@ -20,6 +20,7 @@ let payloads =  {
 
   "desde": document.getElementsByName("desde")[0].value,
   "hasta": document.getElementsByName("hasta")[0].value,
+  "periodo": document.querySelector("#periodo").getAttribute("attr-periodo")
   
 }
 
@@ -474,17 +475,23 @@ const activarModalPaso3 = () => {
 }
 
 function ejecutarPasos() {
+  
 
   if(pasoActual == 7){
-    pasoActual = 0;
+    Swal.fire({
+      icon: "success",
+      title: "Control exitoso",
+      text: `Todos Los Pasos Se Realizaron Correctamente`,
+    });
+    return 1;
   }
 
   pasoActual = pasoActual + 1;
 
-
-
   let pasosDirectos = [3,5,6,7]; 
 
+
+ 
   const swalWithBootstrapButtons = Swal.mixin({
 
     customClass: {
@@ -510,7 +517,7 @@ function ejecutarPasos() {
         /******************************* */
         let paso = document.getElementById("paso"+pasoActual);
         let spinner = document.getElementById("boxLoading");
-        spinner.className += " loading";
+        spinner.className += " loading";      
  /*otro fetch*/
 
         fetch("./Controller/ejecutarPasos.php?paso="+pasoActual,
@@ -523,8 +530,19 @@ function ejecutarPasos() {
         .then((perfil) => {
             if (perfil.length == 0 || pasosDirectos.includes(pasoActual) == true ) {
 
-              paso.className += "active";
               spinner.classList.remove('loading');
+              
+              if (pasoActual == 7){
+                if(perfil.length == 0){
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se encuentra cargado el coeficiente de ajuste!'
+                  })
+                  return 1
+                }
+                
+              }
               if (pasoActual == 3){
                 activarModalPaso3();
               }
@@ -533,7 +551,8 @@ function ejecutarPasos() {
                 title: "Control exitoso",
                 text: `Paso ${pasoActual} realizado!`,
               });
-
+              paso.className += "active";
+              
             }else{
               
               spinner.classList.remove('loading');

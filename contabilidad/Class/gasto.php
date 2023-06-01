@@ -252,4 +252,25 @@ class Gasto
 
     }
 
+    public function validarCoeficiente($periodo) {
+        $sql = "SELECT * FROM RO_T_COEFICIENTES_AJUSTE WHERE PERIODO = '$periodo'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        try{
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
+
+    }
+
 }  
