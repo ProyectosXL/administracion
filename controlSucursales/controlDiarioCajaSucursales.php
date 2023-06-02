@@ -177,8 +177,8 @@
                                                     <?php
                                                         }else{
                                                     ?>
-                                                            <td style="text-align:center"><input type="text" style="text-align:center" onchange="calcularDiferencias(this)" value="<?= isset($value['IMPORTE_FISICO']) ? $value['IMPORTE_FISICO'] : 0 ?>"></td>
-                                                            <td style="text-align:center"><?PHP  echo  ((isset($value['IMPORTE_FISICO']) ? intval($value['IMPORTE_FISICO']) : 0) - (isset($value['IMPORTE']) ? intval($value['IMPORTE']) : 0) ) ; ?></td>
+                                                            <td style="text-align:center"><input type="text" style="text-align:center" onchange="calcularDiferencias(this)" value="$<?= isset($value['IMPORTE_FISICO']) ? number_format($value['IMPORTE_FISICO'], 0, ',', '.') : 0 ?>"></td>
+                                                            <td style="text-align:center"><?php  echo  ((isset($value['IMPORTE_FISICO']) ? intval($value['IMPORTE_FISICO']) : 0) - (isset($value['IMPORTE']) ? intval($value['IMPORTE']) : 0) ) ; ?></td>
                                                             <td style="text-align:center"><input type="text" style="text-align:center;width:299px" value ="<?= isset($value['OBSERVACIONES']) ? $value['OBSERVACIONES'] : "" ?>"></td>
                                                     <?php 
                                                         }
