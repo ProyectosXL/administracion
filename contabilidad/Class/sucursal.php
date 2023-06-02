@@ -81,9 +81,9 @@ class Sucursal
 
     }
 
-    public function actualizarValor ($id,$importeControl,$verificado = null){
+    public function actualizarValor ($id,$importeControl,$verificado = null,$observaciones = null){
 
-        $sql = " UPDATE [LAKERBIS].LOCALES_LAKERS.DBO.RO_T_VENTA_DIARIA_SUCURSALES SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado WHERE ID = $id";
+        $sql = " UPDATE [LAKERBIS].LOCALES_LAKERS.DBO.RO_T_VENTA_DIARIA_SUCURSALES SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
 
         try{
             

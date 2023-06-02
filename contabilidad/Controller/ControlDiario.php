@@ -8,7 +8,7 @@ $data = $_POST['data'];
 
 foreach ($data as $key => $value) {
 
-   $sucursal->actualizarValor($value['id'], $value['importeControl'],$_GET['verificado']);
+   $sucursal->actualizarValor($value['id'], $value['importeControl'],$_GET['verificado'],$value['observaciones']);
 
 }
 

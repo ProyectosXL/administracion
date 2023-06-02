@@ -30,14 +30,20 @@
 
                 $importe['IMPORTE'] = $value['IMPORTE_$_SISTEMA'];
                 $importe['ID_VENTA'] = $value['ID'];
+                $importe['IMPORTE_FISICO'] = $value['IMPORTE_$_FISICO'];
+                $importe['OBSERVACIONES'] = $value['OBSERVACIONES'];
   
           
             }
  
         }
     }
-    
-
+    $localVerificado = 0;
+    foreach ($verificados as $verificado) {
+        if($verificado['nro_sucursal'] == $selectSucursal[0] && $verificado['STATUS'] == 1){
+            $localVerificado = 1;
+        }
+    }
 ?>
 
 <!DOCTYPE html>
@@ -129,6 +135,8 @@
                                                 if($value['NRO_SUCURSAL'] == $verificado['nro_sucursal']){
                                                     if($verificado['STATUS'] == 1){
                                                         echo "<td><i class='bi bi-check2-square'></i></td>";
+                                                    }else{
+                                                        echo "<td></td>";
                                                     }
                                                 }
                                             }
@@ -160,9 +168,21 @@
                                                 <tr>
                                                     <td value="<?= $value['ID_MP'] ?>"><?= $value['MEDIO_PAGO'] ?></td>
                                                     <td style="text-align:center" id="sistema" attr-idSistema="<?= isset($value['ID_VENTA']) ? $value['ID_VENTA'] : 0  ?>">$<?= isset($value['IMPORTE']) ? (number_format($value['IMPORTE'], 0, ',', '.'))  : 0 ?></td>
-                                                    <td style="text-align:center"><input type="text" style="text-align:center" onchange="calcularDiferencias(this)"></td>
-                                                    <td style="text-align:center"></td>
-                                                    <td style="text-align:center"><input type="text" style="text-align:center;width:299px"></td>
+                                                    <?php 
+                                                        if($localVerificado == 1) {
+                                                    ?>
+                                                            <td style="text-align:center">$<?= isset($value['IMPORTE_FISICO']) ? (number_format($value['IMPORTE_FISICO'], 0, ',', '.')) : 0  ?></td>
+                                                            <td style="text-align:center"><?php echo  ((isset($value['IMPORTE_FISICO']) ? intval($value['IMPORTE_FISICO']) : 0) - (isset($value['IMPORTE']) ? intval($value['IMPORTE']) : 0) ) ; ?></td>
+                                                            <td style="text-align:center"><?php echo  (isset($value['OBSERVACIONES']) ? $value['OBSERVACIONES'] : "") ; ?></td>
+                                                    <?php
+                                                        }else{
+                                                    ?>
+                                                            <td style="text-align:center"><input type="text" style="text-align:center" onchange="calcularDiferencias(this)"></td>
+                                                            <td style="text-align:center"></td>
+                                                            <td style="text-align:center"><input type="text" style="text-align:center;width:299px"></td>
+                                                    <?php 
+                                                        }
+                                                    ?>
                                                 </tr>
                                             <?php
                                                 }
