@@ -205,7 +205,8 @@ function guardarGasto() {
         });
         Swal.fire("Gasto cargado correctamente!", "", "success").then(
           function () {
-            window.history.back();
+            // window.history.back();
+            window.location.reload();
           }
         );
       } else if (result.isDenied) {

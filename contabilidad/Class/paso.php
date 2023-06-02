@@ -248,7 +248,7 @@ class Paso
 
             }
 
-            return $v;
+            return true;
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";

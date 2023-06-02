@@ -288,7 +288,11 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         // console.log(data[0].COD_RUBRO);
                         codRubro = data[0].COD_RUBRO;
                     }
-                    
+                
+                    if(codRubro != 0){
+                        completarCampoRubro(codRubro);
+
+                    }
                     $('#codRubro').val(codRubro);
                     $('#codRubro').select2().trigger('change');
 

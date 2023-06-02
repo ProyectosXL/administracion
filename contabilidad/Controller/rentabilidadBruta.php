@@ -42,8 +42,10 @@ function actualizarValor(){
 
     $id = $_POST['id'];
     $nuevoValor = $_POST['nuevoValor'];
-    
-    $result = $gasto -> actualizarValor($id, $nuevoValor);
+    $observacion = $_POST['observacion'];
+
+
+    $result = $gasto->actualizarValor($id, $nuevoValor, $observacion);
     
     echo json_encode($result);
 

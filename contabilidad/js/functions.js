@@ -533,7 +533,8 @@ function ejecutarPasos() {
               spinner.classList.remove('loading');
               
               if (pasoActual == 7){
-                if(perfil.length == 0){
+       
+                if(perfil == false){
                   Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -610,17 +611,17 @@ const pintarPasos =(periodo)=>{
       for (let i = 0; i < 7; i++) {
         pasos[i] = data[0]['PASO_'+(i+1)];
       }
-    
       pasos.forEach((element,x) => {
-    
-        if(element != null){
+        
+        if(element != null && element != 0){
+
         let paso = document.getElementById("paso"+(x+1));
 
         pasoActual = x+1;
 
         paso.className += "active";
 
-      }
+        }
 
       });
     })
@@ -798,21 +799,31 @@ const rellenarModal5 = (obj)=>{
     var input = document.createElement("input");
     input.type = "text";
     input.className = "form-control";
+    input.id="inputVenta";
     input.value = "$"+parseNumber(parseInt(element['VENTA']));
     input.setAttribute("value", parseNumber(parseInt(element['VENTA'])));
-    input.setAttribute("onchange", "actualizarValorVenta(this)");
+    input.setAttribute("onchange", "actualizarValor(this)");
+
+
+    let inputObservacion = document.createElement("input");
+    inputObservacion.type = "text";
+    inputObservacion.className = "form-control";
+    inputObservacion.id="inputObservacion";
+    inputObservacion.value = element['OBSERVACION_MOD'];
+    inputObservacion.setAttribute("onchange", "actualizarValor(this)");
+
 
 
     const text1=document.createTextNode(element['NRO_SUCURS']);
     const text2=document.createTextNode(element['SUCURSAL']);
     // const text3=document.createTextNode(element['VENTA']);
-    const text4=document.createTextNode(element['OBSERVACION_MOD']);
+    // const text4=document.createTextNode(element['OBSERVACION_MOD']);
     const text5=document.createTextNode(element['ID']);
 
     td1.appendChild(text1);
     td2.appendChild(text2);
     td3.appendChild(input);
-    td4.appendChild(text4);
+    td4.appendChild(inputObservacion);
     td5.appendChild(text5);
 
     td5.hidden = true;
@@ -829,21 +840,23 @@ const rellenarModal5 = (obj)=>{
 
 
 }
-const actualizarValorVenta = (e)=>{
+const actualizarValor = (e)=>{
 
   let id = e.parentElement.parentElement.childNodes[4].textContent;
-  let nuevoValor = e.value.replace(/[$.]/g, "");
-
+  let observacion = e.parentElement.parentElement.childNodes[3].childNodes[0].value;
+  let inputVenta = e.parentElement.parentElement.childNodes[2].childNodes[0];
+  let nuevoValor = inputVenta.value.replace(/[$.]/g, "");
   
-  e.setAttribute("value", parseNumber(parseInt(nuevoValor)));
-  e.value = "$"+parseNumber(parseInt(nuevoValor));
+  inputVenta.setAttribute("value", parseNumber(parseInt(nuevoValor)));
+  inputVenta.value = "$"+parseNumber(parseInt(nuevoValor));
   
   $.ajax({
     url: 'Controller/rentabilidadBruta.php?accion=actualizarValor',
     method: 'POST',
     data:{
       id:id,
-      nuevoValor:nuevoValor
+      nuevoValor:nuevoValor,
+      observacion:observacion
     },
     success : function(data) {
       console.log(data)

@@ -38,16 +38,84 @@
 
 $("#btnExport").click(function() {
 
-  $('input[type=number]').each(function(){
-      this.setAttribute('value',$(this).val());
+  let inputs = document.querySelectorAll('#inputVenta');
+
+  inputs.forEach(element => {
+
+    let valor = element.value
+    let td = element.parentElement; 
+    td.innerHTML = "";
+    td.id="tdVenta";
+    const text=document.createTextNode(valor);
+
+    td.appendChild(text);
+
+
   });
-  
+
+  let inputsObservacion = document.querySelectorAll('#inputObservacion');
+
+  inputsObservacion.forEach(element => {
+
+    let valor = element.value
+    let td = element.parentElement; 
+    td.innerHTML = "";
+    td.id="tdObservacion";
+    const text=document.createTextNode(valor);
+
+    td.appendChild(text);
+
+
+  });
+
   $("#tablaVentasBrutas").table2excel({
       // exclude CSS class
       exclude: ".noExl",
       name: "Worksheet Name",
       filename: "VentasBrutas", //do not include extension
       fileext: ".xls", // file extension
+  });
+
+
+  let tdVenta = document.querySelectorAll('#tdVenta');
+
+  tdVenta.forEach(element => {
+
+    let valor = element.textContent;
+    let td = element; 
+    td.innerHTML = "";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "form-control";
+    input.id="inputVenta";
+    input.value = valor,
+    input.setAttribute("onchange", "actualizarValor(this)");
+
+
+    td.appendChild(input);
+
+    
+    
+  });
+  
+  let tdObservacion = document.querySelectorAll('#tdObservacion');
+
+  tdObservacion.forEach(element => {
+
+    let valor = element.textContent;
+    let td = element; 
+    td.innerHTML = "";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "form-control";
+    input.id="inputObservacion";
+    input.value = valor,
+    input.setAttribute("onchange", "actualizarValor(this)");
+
+
+    td.appendChild(input)
   });
   });
 

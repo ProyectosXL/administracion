@@ -24,7 +24,7 @@ if($paso == 7){
 
     if(count($result) == 0){
 
-        echo json_encode($result);
+        echo json_encode(false);
         
         die();
     }

@@ -222,9 +222,10 @@ class Gasto
         }        
 
     }
-    public function actualizarValor ($id, $nuevoValor){
+    public function actualizarValor ($id, $nuevoValor, $observacion){
 
-        $sql = "UPDATE RO_T_RENTABILIDAD_BRUTA  SET VENTA = '$nuevoValor' WHERE ID = $id";
+        $sql = "UPDATE RO_T_RENTABILIDAD_BRUTA  SET VENTA = '$nuevoValor' ,OBSERVACION_MOD = '$observacion', FECHA_MOD = GETDATE() WHERE ID = $id";
+
 
         try{
 
