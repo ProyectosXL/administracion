@@ -163,7 +163,7 @@
                             <tbody>
                             <?php 
                                                 foreach ($todosLosMediosDePago as $key => $value) {
-
+                                 
                                             ?>
                                                 <tr>
                                                     <td value="<?= $value['ID_MP'] ?>"><?= $value['MEDIO_PAGO'] ?></td>
@@ -177,9 +177,9 @@
                                                     <?php
                                                         }else{
                                                     ?>
-                                                            <td style="text-align:center"><input type="text" style="text-align:center" onchange="calcularDiferencias(this)"></td>
-                                                            <td style="text-align:center"></td>
-                                                            <td style="text-align:center"><input type="text" style="text-align:center;width:299px"></td>
+                                                            <td style="text-align:center"><input type="text" style="text-align:center" onchange="calcularDiferencias(this)" value="<?= isset($value['IMPORTE_FISICO']) ? $value['IMPORTE_FISICO'] : 0 ?>"></td>
+                                                            <td style="text-align:center"><?PHP  echo  ((isset($value['IMPORTE_FISICO']) ? intval($value['IMPORTE_FISICO']) : 0) - (isset($value['IMPORTE']) ? intval($value['IMPORTE']) : 0) ) ; ?></td>
+                                                            <td style="text-align:center"><input type="text" style="text-align:center;width:299px" value ="<?= isset($value['OBSERVACIONES']) ? $value['OBSERVACIONES'] : "" ?>"></td>
                                                     <?php 
                                                         }
                                                     ?>
