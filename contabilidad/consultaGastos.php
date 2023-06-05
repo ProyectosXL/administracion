@@ -39,7 +39,7 @@ foreach ($cuentas as $key => $value) {
 
 
 $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
-$todosLosGastos = $gastos->traerGastos($desde, $hasta, "%", $codRubro,$columna,$codCuenta);
+$todosLosGastos = $gastos->traerGastosConsulta($desde, $hasta, $codRubro, $columna, $codCuenta);
 
 
 ?>
