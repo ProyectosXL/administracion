@@ -1,12 +1,12 @@
 <?php
 
-include '../Class/gastos.php';
+include '../Class/gasto.php';
 
 $id= $_POST['id'];
 
 $nuevoSaldo= $_POST['nuevoSaldo'];
 
-$gastos = new Gastos();
+$gastos = new Gasto();
 
 $gastos->cambiarValorSaldo($id, $nuevoSaldo);
 

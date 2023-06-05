@@ -17,10 +17,14 @@ const btnEjecutar = document.querySelector("#btnEjecutar");
 let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
 let pasoActual = 0;
 
-let payloads = {
-  desde: document.getElementsByName("desde")[0].value,
-  hasta: document.getElementsByName("hasta")[0].value,
-};
+let payloads =  {
+
+  "desde": document.getElementsByName("desde")[0].value,
+  "hasta": document.getElementsByName("hasta")[0].value,
+  "periodo": document.querySelector("#periodo").getAttribute("attr-periodo")
+  
+}
+
 
 btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
@@ -444,16 +448,44 @@ function prorratearGastos() {
       }
     });
 }
+const activarModalPaso3 = () => {
+
+  let desde = document.querySelector("#desde").value;
+  let hasta = document.querySelector("#hasta").value;
+
+  $.ajax({
+          url: 'Controller/rentabilidadBruta.php?accion=traerRentabilidad',
+          method: 'POST',
+          data:{
+              desde:desde,
+              hasta:hasta
+          },
+          success : function(data) {
+             rellenarModal5(data);
+          }
+      })
+
+  $('#modalVb').modal('toggle');
+}
 
 function ejecutarPasos() {
-  if (pasoActual == 7) {
-    pasoActual = 0;
+  
+
+  if(pasoActual == 7){
+    Swal.fire({
+      icon: "success",
+      title: "Control exitoso",
+      text: `Todos Los Pasos Se Realizaron Correctamente`,
+    });
+    return 1;
   }
 
   pasoActual = pasoActual + 1;
 
   let pasosDirectos = [3, 5, 6, 7];
 
+
+ 
   const swalWithBootstrapButtons = Swal.mixin({
     customClass: {
       confirmButton: "btn btn-success",
@@ -477,28 +509,46 @@ function ejecutarPasos() {
         /******************************* */
         let paso = document.getElementById("paso" + pasoActual);
         let spinner = document.getElementById("boxLoading");
-        spinner.className += " loading";
-        /*otro fetch*/
+        spinner.className += " loading";      
+ /*otro fetch*/
 
-        fetch("./Controller/ejecutarPasos.php?paso=" + pasoActual, {
-          method: "POST",
-          body: JSON.stringify(payloads),
-        })
-          .then((respuesta) => respuesta.json())
-          .then((perfil) => {
-            if (
-              perfil.length == 0 ||
-              pasosDirectos.includes(pasoActual) == true
-            ) {
-              paso.className += "active";
-              spinner.classList.remove("loading");
+        fetch("./Controller/ejecutarPasos.php?paso="+pasoActual,
+          {
+            method: 'POST',
+            body: JSON.stringify(payloads)
+          }
+        )
+        .then((respuesta) => respuesta.json())
+        .then((perfil) => {
+            if (perfil.length == 0 || pasosDirectos.includes(pasoActual) == true ) {
+
+              spinner.classList.remove('loading');
+              
+              if (pasoActual == 7){
+       
+                if(perfil == false){
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se encuentra cargado el coeficiente de ajuste!'
+                  })
+                  return 1
+                }
+                
+              }
+              if (pasoActual == 3){
+                activarModalPaso3();
+              }
               Swal.fire({
                 icon: "success",
                 title: "Control exitoso",
                 text: `Paso ${pasoActual} realizado!`,
               });
-            } else {
-              spinner.classList.remove("loading");
+              paso.className += "active";
+              
+            }else{
+              
+              spinner.classList.remove('loading');
 
               switch (pasoActual) {
                 case 1:
@@ -548,16 +598,18 @@ const pintarPasos = (periodo) => {
       }
 
       for (let i = 0; i < 7; i++) {
-        pasos[i] = data[0]["PASO_" + (i + 1)];
+        pasos[i] = data[0]['PASO_'+(i+1)];
       }
+      pasos.forEach((element,x) => {
+        
+        if(element != null && element != 0){
 
-      pasos.forEach((element, x) => {
-        if (element != null) {
-          let paso = document.getElementById("paso" + (x + 1));
+        let paso = document.getElementById("paso"+(x+1));
 
-          pasoActual = x + 1;
+        pasoActual = x+1;
 
-          paso.className += "active";
+        paso.className += "active";
+
         }
       });
     });
@@ -732,3 +784,115 @@ function procesar() {
     }
   });
 }
+const rellenarModal5 = (obj)=>{
+
+
+  let tableModal =  document.querySelector("#tableVb");
+  let objeto = JSON.parse(obj);
+
+
+  objeto.forEach(element => {
+
+    const tr=document.createElement('tr');
+    const td1=document.createElement('td');
+    const td2=document.createElement('td');
+    const td3=document.createElement('td');
+    const td4=document.createElement('td');
+    const td5=document.createElement('td');
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "form-control";
+    input.id="inputVenta";
+    input.value = "$"+parseNumber(parseInt(element['VENTA']));
+    input.setAttribute("value", parseNumber(parseInt(element['VENTA'])));
+    input.setAttribute("onchange", "actualizarValor(this)");
+
+
+    let inputObservacion = document.createElement("input");
+    inputObservacion.type = "text";
+    inputObservacion.className = "form-control";
+    inputObservacion.id="inputObservacion";
+    inputObservacion.value = element['OBSERVACION_MOD'];
+    inputObservacion.setAttribute("onchange", "actualizarValor(this)");
+
+
+
+    const text1=document.createTextNode(element['NRO_SUCURS']);
+    const text2=document.createTextNode(element['SUCURSAL']);
+    // const text3=document.createTextNode(element['VENTA']);
+    // const text4=document.createTextNode(element['OBSERVACION_MOD']);
+    const text5=document.createTextNode(element['ID']);
+
+    td1.appendChild(text1);
+    td2.appendChild(text2);
+    td3.appendChild(input);
+    td4.appendChild(inputObservacion);
+    td5.appendChild(text5);
+
+    td5.hidden = true;
+    
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+    tr.appendChild(td4);
+    tr.appendChild(td5);
+
+    tableModal.appendChild(tr);
+
+  });
+
+
+}
+const actualizarValor = (e)=>{
+
+  let id = e.parentElement.parentElement.childNodes[4].textContent;
+  let observacion = e.parentElement.parentElement.childNodes[3].childNodes[0].value;
+  let inputVenta = e.parentElement.parentElement.childNodes[2].childNodes[0];
+  let nuevoValor = inputVenta.value.replace(/[$.]/g, "");
+  
+  inputVenta.setAttribute("value", parseNumber(parseInt(nuevoValor)));
+  inputVenta.value = "$"+parseNumber(parseInt(nuevoValor));
+  
+  $.ajax({
+    url: 'Controller/rentabilidadBruta.php?accion=actualizarValor',
+    method: 'POST',
+    data:{
+      id:id,
+      nuevoValor:nuevoValor,
+      observacion:observacion
+    },
+    success : function(data) {
+      console.log(data)
+    }
+
+})
+  
+}
+
+const marcarControlado = ()=>{
+
+  let desde = document.querySelector("#desde").value;
+  let hasta = document.querySelector("#hasta").value;
+  let periodo  =  document.querySelector("#periodo").getAttribute("attr-periodo");
+  $.ajax({
+          url: 'Controller/rentabilidadBruta.php?accion=controlarRentabilidad',
+          method: 'POST',
+          data:{
+              desde:desde,
+              hasta:hasta,
+              periodo:periodo
+          },
+          success : function(data) {
+            Swal.fire({
+              icon: "success",
+              title: "Control exitoso",
+              text: `Rentabilidad controlada!`,
+            });
+
+          }
+      })
+  
+
+}
+

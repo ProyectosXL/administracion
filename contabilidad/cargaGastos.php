@@ -4,7 +4,7 @@ include 'Class/rubroContable.php';
 include 'Class/prorrateo.php';
 include 'Class/centroCosto.php';
 include 'Class/cuentaContable.php';
-include 'Class/gastos.php';
+include 'Class/gasto.php';
 include 'Class/articulos.php';
 
 $rubroContable = new RubroContable();
@@ -23,7 +23,7 @@ $cuentaContable = new CuentaContable();
 $todasLasCuentasContables = $cuentaContable->traerCuentasContables();
 $todasLasCuentasContables = json_decode($todasLasCuentasContables);
 
-$gastos = new Gastos();
+$gastos = new Gasto();
 
 $articulo = new Articulo();
 
@@ -35,6 +35,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 //     $year = date('Y');
 //     return date('Y-m-d', mktime(0,0,0, $month, 1, $year));
 // }
+// $todosLosCodRubro = $gastos->traerCodRubro();
 
 ?>
 
@@ -106,7 +107,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
             <td class="auxiliar"></td>
             <td class="sector"></td>
             <td>
-                <select class="codCuenta" style="width: 210px;">
+                <select class="codCuenta" style="width: 210px;" onchange="seleccionarCodRubro(this)">
                     <option selected disabled></option>
                     <?php
                     foreach ($todasLasCuentasContables as $valor => $value) {
@@ -121,12 +122,12 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
             <td><input class="importe" type="number" style="width: 110px;"></input></td>
             <td><input class="leyenda" type="text"></input></td>
             <td>
-                <select class="codRubro" style="width: 140px;" class="mi-selector">
+                <select class="codRubro" style="width: 140px;" class="mi-selector" id="codRubro">
                     <option selected disabled></option>
                     <?php
                     foreach ($todosLosRubros as $valor => $value) {
                     ?>
-                        <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE; ?></option>
+                        <option value="<?= $value->COD_RUBRO; ?>" ><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE; ?></option>
                     <?php
                     }
                     ?>
@@ -197,13 +198,14 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     <th style="position: sticky; top: 0; z-index: 10;">DESC. PRORRATEO</th>
                     <th style="position: sticky; top: 0; z-index: 10;">NRO. SUC.</th>
                     <th style="position: sticky; top: 0; z-index: 10;" title="Colocar plazo de amortización">AMORTIZAR</th>
-                    <th style="position: sticky; top: 0; z-index: 10;"></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 <?php
                 $todosLosGastos = json_decode($todosLosGastos);
                 foreach ($todosLosGastos as $valor => $key) {
+
                 ?>
                     <tr>
                     <tr>
@@ -222,7 +224,8 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <td><?= $key->DESC_PRORRATEO ?></td>
                         <td><?= $key->NUM_SUCURSAL ?></td>
                         <td><?= $key->AMORTIZAR ?></td>
-                        <td><button class="btn btn-danger"><i class="bi bi-trash btn-delete"></i></button></td>
+                        <td hidden><?= $key->ID_CTA_2?></td>
+                        <td><button class="btn btn-danger" onclick="eliminarGasto(this)"><i class="bi bi-trash btn-delete"></i></button></td>
                     </tr>
             </tbody>
         <?php
@@ -255,11 +258,61 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         $('.codCuenta').select2();
     });
     $(document).ready(function() {
-        $('.codRubro').select2();
+        $('#codRubro').select2();
     });
     $(document).ready(function() {
         $('.codProrrateo').select2();
     });
+
+   
+
+    // Set selected 
+    
+
+
+    const seleccionarCodRubro = (e) => {
+
+        let codCuenta = e.parentElement.parentElement.childNodes[10].childNodes[1].value
+        let sector = e.parentElement.parentElement.childNodes[8].textContent
+
+        $.ajax({
+                url: 'Controller/consultarCodRubro.php?codCuenta=' + codCuenta + '&sector=' + sector,
+                method: 'GET',
+                success : function(data) {
+                    let codRubro = 0
+                    data = JSON.parse(data)
+
+
+                    
+                    if (data != 0){
+                        // console.log(data[0].COD_RUBRO);
+                        codRubro = data[0].COD_RUBRO;
+                    }
+                
+                    if(codRubro != 0){
+                        completarCampoRubro(codRubro);
+
+                    }
+                    $('#codRubro').val(codRubro);
+                    $('#codRubro').select2().trigger('change');
+
+                }
+            })
+    }
+    const eliminarGasto = (e) =>{
+        let id = e.parentElement.parentElement.childNodes[31].textContent;
+        $.ajax({
+                url: 'Controller/eliminarGasto.php',
+                method: 'POST',
+                data:{
+                    id:id
+                },
+                success : function(data) {
+                    window.location.reload();
+                }
+            })
+
+    }
 </script>
 
 </html>

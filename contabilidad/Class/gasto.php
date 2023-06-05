@@ -3,7 +3,7 @@
 
 // $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
-class Gastos
+class Gasto
 {
 
     function __construct(){
@@ -52,9 +52,6 @@ class Gastos
                     --ORDER BY ID
                 ";
 
-
-
-
     }
     if($columna != null){
         $sql = $sql.$queryColumna;
@@ -83,10 +80,42 @@ class Gastos
 
     }
 
+    public function traerGastosParaControl($desde, $hasta, $estado, $codRubro){
+
+        $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL
+        AND COD_RUBRO LIKE '$codRubro'
+        UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
+        AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
+        AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro' ";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+            
+        try{
+            
+            $rows = array();
+
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+
+            $myJSON = json_encode($rows);
+
+            return $myJSON;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+
+    }
+
     public function traerGastos2($desde, $hasta){
 
         $sql = "SELECT * FROM RO_T_INTEGRAL_CUENTAS_2 WHERE FECHA BETWEEN '$desde' AND '$hasta'
         ";
+
+
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
         try{
@@ -135,6 +164,116 @@ class Gastos
             print_r($e);
         }
         
+
+    }
+
+
+    public function traerCodRubro ($codCuenta,$sector){
+
+        $sql ="SELECT * from RO_T_RELACION_CUENTA_RUBRO_CONTABLE  where COD_CUENTA = '$codCuenta' AND SECTOR = '$sector'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+        try{
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+    }
+
+    public function eliminarGasto($id){
+
+        $sql="DELETE FROM  RO_T_INTEGRAL_CUENTAS_2 WHERE ID_CTA_2 = '$id'";
+        $sql2 = "DELETE FROM RO_T_INTEGRAL_TANGO_2 WHERE ID_CTA_2 = '$id'";
+
+        try {
+
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            $stmt2 = sqlsrv_query( $this->cid_central, $sql2 );
+            return true;
+            
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+       
+    }
+
+    public function traerRentabilidadBruta ($desde, $hasta){
+        $sql = "SELECT * FROM RO_T_RENTABILIDAD_BRUTA WHERE FECHA BETWEEN '$desde' AND '$hasta'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        try{
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
+    }
+    public function actualizarValor ($id, $nuevoValor, $observacion){
+
+        $sql = "UPDATE RO_T_RENTABILIDAD_BRUTA  SET VENTA = '$nuevoValor' ,OBSERVACION_MOD = '$observacion', FECHA_MOD = GETDATE() WHERE ID = $id";
+
+
+        try{
+
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            return true;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
+    }
+
+    public function marcarRentabilidadControlada ($desde, $hasta){
+
+        $sql = "UPDATE RO_T_RENTABILIDAD_BRUTA  SET CONTROLADO = '1' WHERE FECHA BETWEEN '2023-01-01' AND '2023-02-28'";
+
+        try{
+
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            return true;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
+    }
+
+    public function validarCoeficiente($periodo) {
+        $sql = "SELECT * FROM RO_T_COEFICIENTES_AJUSTE WHERE PERIODO = '$periodo'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        try{
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
 
     }
 
