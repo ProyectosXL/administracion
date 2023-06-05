@@ -1,9 +1,5 @@
 <?php
     require_once "Class/sucursal.php";
-    
-    $selectSucursal = isset($_GET['selectSucursal']) ?  $_GET['selectSucursal'] : '2-UNICENTER';
-        
-    $selectSucursal = explode("-",$selectSucursal);
 
  
     if(isset($_GET['fecha']) &&$_GET['fecha'] != "" ){
@@ -11,6 +7,7 @@
     }else{
         $fecha = date("Y-m");
     }
+
     $periodo = str_replace("0","",substr($fecha, 5, 2)).'-'.substr($fecha, 0, 4);
     $fechaComoEntero = strtotime($fecha);
     $mes = date("m", $fechaComoEntero);
@@ -26,15 +23,14 @@
     $sucursal = new Sucursal();
     $controlMensual = $sucursal->traerControlMensual($desde,$hasta);
 
-    // $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
+
     $todosLosLocales= $sucursal->traerLocales();
     $newArray = [];
 
     foreach ($controlMensual as $key => $control) {
-        // var_dump($control['FECHA']->format("Y-m-d"));
+
         $newArray[$key]['FECHA'] = $control['FECHA']->format("Y-m-d") ;
-        // var_dump($key);
-        // die();
+
         $count = 0;
         foreach ($control as $ke => $val) {
             if($count == 0){
@@ -42,49 +38,9 @@
                 continue;
             }
             $newArray[$key]['nro_sucursal'][$ke] = $val;
-            $count++;
-            // var_dump($ke);
-            // foreach ($todosLosLocales as $k => $value) {
-            //     if($value['NRO_SUCURSAL'] == $ke){
-
-            //     }
-                
-                
-            // }
-            # code...
         }
-        # code...
+
     }
-    // var_dump($newArray);
-    // die();
-
-    // $todosLosImportes= $sucursal->traerImportesTotales($selectSucursal[0],$fecha);
-
-    // $verificados = $sucursal->traerVerificados($fecha);
-
-    // foreach ($todosLosImportes as $key => $value) {
-        
-    //     foreach ($todosLosMediosDePago as &$importe) {
-
-    //         if($value['MEDIO_PAGO'] == str_replace("_"," ",$importe['MEDIO_PAGO'])){
-    
-
-    //             $importe['IMPORTE'] = $value['IMPORTE_$_SISTEMA'];
-    //             $importe['ID_VENTA'] = $value['ID'];
-    //             $importe['IMPORTE_FISICO'] = $value['IMPORTE_$_FISICO'];
-    //             $importe['OBSERVACIONES'] = $value['OBSERVACIONES'];
-  
-          
-    //         }
- 
-    //     }
-    // }
-    // $localVerificado = 0;
-    // foreach ($verificados as $verificado) {
-    //     if($verificado['nro_sucursal'] == $selectSucursal[0] && $verificado['STATUS'] == 1){
-    //         $localVerificado = 1;
-    //     }
-    // }
 ?>
 
 <!DOCTYPE html>
@@ -125,28 +81,14 @@
                             <div class="row" style="margin-top:10px">
 
                                 <div class="col-2" style="margin-left:50px">Fecha: <input type="month" style="width:150px; height:45px" id='fecha' name="fecha" value="<?php echo $fecha; ?>"></div>
-                                <div class="col-3">Sucursal :  
-
-                                    <select name="selectSucursal" id="selectSucursal" style="width:150px; height:45px">
-
-                                    <?php 
-                                        foreach ($todosLosLocales as $key => $value) {
-                                    ?>
-                                            <option value="<?php echo ($value['NRO_SUCURSAL']."-".$value['DESC_SUCURSAL']   ) ?>" <?php if ($selectSucursal[0] == $value['NRO_SUCURSAL']){ echo "selected";} ?> ><?= $value['DESC_SUCURSAL'] ?></option>
-
-                                    <?php 
-                                        } 
-                                    ?>
-            
-                                    </select>
-
+                                <div class="col-3">
                                     <button class="btn btn-primary btn-submit" value="" style="height:45px;margin-left:2px;position:relative;margin-bottom:8px">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                 </div>
                             
                                 <div class="col" style="margin-left:80px">
                                     <h4>
-                                        <button class="btn btn-primary" id="btnGuardar" style=" height:45px" onclick="guardar()"><i class="fa fa-file-excel-o"></i> Guardar<i class="bi bi-file-earmark-excel"></i></button>
-                                        <button class="btn btn-success btn_exportar" id="btnControlar" style=" height:45px"  onclick="controlar()"> Controlar<i class="bi bi-check2-square"></i></button>
+                                        <!-- <button class="btn btn-primary" id="btnGuardar" style=" height:45px" onclick="guardar()"><i class="fa fa-file-excel-o"></i> Guardar<i class="bi bi-file-earmark-excel"></i></button>
+                                        <button class="btn btn-success btn_exportar" id="btnControlar" style=" height:45px"  onclick="controlar()"> Controlar<i class="bi bi-check2-square"></i></button> -->
                                     </h4>
                                 </div>
 
@@ -193,26 +135,6 @@
 
                             </tbody>
                         </table>
-                        <!-- <table class="table table-striped table-bordered" id="myTable" style="width: 80%;" cellspacing="0" data-page-length="100">
-                            <thead class="thead-dark">
-                                <tr id="tutorial">
-                                    <th style="position: sticky; top: 0; z-index: 10;text-align:center">MEDIO DE PAGO</th>
-                                    <th style="position: sticky; top: 0; z-index: 10;text-align:center"  >$ SISTEMA </th>
-                                    <th style="position: sticky; top: 0; z-index: 10;text-align:center"  id="ultimoCierre">$ CONTROL </th>
-
-                                  
-                                    <th style="position: sticky; top: 0; z-index: 10;text-align:center">DIFERENCIA</th>
-                                    <th style="position: sticky; top: 0; z-index: 10;text-align:center">OBSERVACIONES</th>
-
-                                </tr>
-                            </thead>
-                            <tbody>
-       
-                                       
-                                        
-                            </tbody>
-            
-                        </table> -->
                     </div>
                 </div>
             </div>
