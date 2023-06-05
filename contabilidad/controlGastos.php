@@ -71,7 +71,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
                 <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
                 <li class="" id="paso2"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
                 <li class="" id="paso3"  data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
-                <li class="" id="paso4"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza">Paso</li>
+                <li class="" id="paso4"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza (sucursales)">Paso</li>
                 <li class="" id="paso5" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
                 <li class="" id="paso6" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
                 <li class="" id="paso7" data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
@@ -135,7 +135,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
             <div class="btn-group">
                 <button class="btn btn-danger mt-3" id="btnAmort">Amortizar <i class="bi bi-calendar2-week"></i></button>
                 <button class="btn btn-info mt-3 btnProrrateo" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
-                <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnSend">Procesar <i class="bi bi-check2-square"></i></button>
+                <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnProcesar">Procesar <i class="bi bi-check2-square"></i></button>
             </div>
             <div id="contCheck">
                 <label id="titleCheck">Acciones masivas</label>
