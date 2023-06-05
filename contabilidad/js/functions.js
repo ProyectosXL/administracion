@@ -870,13 +870,14 @@ const marcarControlado = ()=>{
 
   let desde = document.querySelector("#desde").value;
   let hasta = document.querySelector("#hasta").value;
-
+  let periodo  =  document.querySelector("#periodo").getAttribute("attr-periodo");
   $.ajax({
           url: 'Controller/rentabilidadBruta.php?accion=controlarRentabilidad',
           method: 'POST',
           data:{
               desde:desde,
-              hasta:hasta
+              hasta:hasta,
+              periodo:periodo
           },
           success : function(data) {
             Swal.fire({
