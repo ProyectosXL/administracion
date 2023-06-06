@@ -1,4 +1,3 @@
-
 <?php
 
 class Sucursal
@@ -118,7 +117,30 @@ class Sucursal
             print_r($th);
         }
     }
+    public function traerControlMensual ($desde,$hasta){
+
+        try {
+
+            $sql = "EXEC [LAKERBIS].LOCALES_LAKERS.DBO.RO_SP_CONTROL_MENSUAL_VENTA_SUCURSALES '$desde', '$hasta' ;";
+
+
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+
+
+    }
 
 }
-
-
