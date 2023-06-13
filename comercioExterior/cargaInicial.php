@@ -164,7 +164,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                             <div class="row row-space">
                                 <div class="col-md-5">
                                     <div class="input-group">
-                                        <input class="input--style-1 soloNum" type="text" placeholder="ORDEN DE COMPRA" id="inputOrdenCompra" hidden readonly>
+                                        <input class="" type="text" placeholder="ORDEN DE COMPRA" id="inputOrdenCompra" hidden readonly>
                                         <select id="ordenCompra">
                                             <option disabled="disabled" selected="selected">ORDEN DE COMPRA</option>
                                         </select>
