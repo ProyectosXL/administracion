@@ -14,10 +14,6 @@
     $descConcepto = explode("-", $conceptoFiltrado)[1];
     $porcentajePorSucursal = $alquiler->traerPorcentajeSucursal($idConcepto);
 
-
-   
-    // var_dump($conceptos);
-
     ?>
 
     <!DOCTYPE html>

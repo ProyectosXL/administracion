@@ -74,14 +74,14 @@ const insertarDetalle = () => {
                 values += `('${periodo}','${idSucursal}','${infoSucursal[0]}','${valor}','${idConcepto}'),`;
 
             }
-            
+
         });
 
     });
     values = values.substring(0, values.length - 1);
 
     $.ajax({
-        url: 'Controller/InsertarDetalleController.php',   
+        url: 'Controller/AlquilerController.php?accion=insertarDetalle',   
         method: 'POST',
         data: {
             values: values
@@ -110,7 +110,7 @@ const actualizarDetalle = (div) => {
     }
     
     $.ajax({
-        url: 'Controller/ActualizarDetalleController.php',   
+        url: 'Controller/AlquilerController.php?accion=actualizarDetalle',   
         method: 'POST',
         data: {
             periodo:  periodo,

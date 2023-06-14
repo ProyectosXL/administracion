@@ -1,6 +1,7 @@
 <?php
     require_once "Class/Alquiler.php";
-    
+    require_once "Controller/AlquilerController.php";
+
     $alquiler = new Alquiler();
 
     $mes = isset($_GET['mes']) ? $_GET['mes'] : date('m',  strtotime( date("Y-m-d")));
@@ -9,14 +10,20 @@
     $fechaParaMostrar = $mes."/".$anio;
     $currentYear = date('Y',  strtotime( date("Y-m-d")));
     $yearDif = $currentYear - 2023;
-    $periodo = $anio."-".$mes;
-    
+    $fecha = $anio."-".$mes;
+
+    $periodo = (int)$mes."-".$anio;
+
     $result = $alquiler->conteoDetalle($periodo);
+
+    $todosLosLocales = traerLocales();
+    $conceptos = traerConceptos();
+
     
     if($result['CONTEO'] > 0){
-        include_once "Controller/traerDetalleAlquiler.php";
+        $newArray = traerDetalleAlquiler($periodo);
     }else{
-        include_once "Controller/CargaAlquilerController.php";
+        $newArray = cargarAlquieres($fecha,$periodo);
     }
     
 ?>
@@ -68,7 +75,7 @@
                                                 }
                                             ?>
 
-                                            <option value="<?=$i?>"><?=$i?></option>
+                                            <option value="<?=$i?>" <?php if($mes == $i ) echo "selected"?>><?=$i?></option>
 
                                             <?php
                                                 }
@@ -76,6 +83,8 @@
                                         </select>
                                         año:
                                         <select name="anio" id="selectAnio">
+                                        <option value="2022">2022</option>
+
                                             <?php 
                                                 for ($i=0; $i <= $yearDif ; $i++) { 
                                                     $y = 2023 + $i;
@@ -173,7 +182,7 @@ $(document).ready(function() {
     if(<?= $result['CONTEO'] ?> == 0){
         insertarDetalle();
     }
-    
+
 });
 
 </script>
