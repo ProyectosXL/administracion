@@ -92,7 +92,7 @@
                                                 for ($i=0; $i <= $yearDif ; $i++) { 
                                                     $y = 2023 + $i;
                                             ?>
-                                            <option value="<?=$y?>"><?=$y?></option>
+                                            <option value="<?=$y?>" <?php if($anio == $y ) echo "selected"?>><?=$y?></option>
                                             <?php
                                                 }
                                             ?>
