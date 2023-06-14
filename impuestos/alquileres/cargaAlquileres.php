@@ -14,6 +14,8 @@
 
     $periodo = (int)$mes."-".$anio;
 
+    $userName = $_GET['userName'];
+ 
     $result = $alquiler->conteoDetalle($periodo);
 
     $todosLosLocales = traerLocales();
@@ -65,6 +67,7 @@
                             <form action="#" method="get" style="margin-bottom:20px">
                                 <div class="row" style="margin-top:10px">
                                     <div class="col-4" style="margin-left:50px">
+                                    <div hidden ><input type="text" id="userName" name="userName" value="<?= $userName ?>"></div>
                                     <div hidden id="periodo"><?= isset($periodo) ? $periodo : "" ?></div>
                                         mes:
                                         <select name="mes" id="selectMes">

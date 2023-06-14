@@ -43,17 +43,18 @@ function actualizarDetalle () {
     $sucursal = $_POST['sucursal'];
     $concepto = $_POST['concepto'];
     $importe = $_POST['importe'];
+    $userName = $_POST['userName'];
     
     
-    $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe);
+    $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, $userName);
     
     if($concepto == 8) {
      
         $importe9 = $_POST['importe9'];
         $importe13 = $_POST['importe13'];
     
-        $alquiler->actualizarDetalle($periodo, $sucursal, 9, $importe9);
-        $alquiler->actualizarDetalle($periodo, $sucursal, 13, $importe13);
+        $alquiler->actualizarDetalle($periodo, $sucursal, 9, $importe9, $userName);
+        $alquiler->actualizarDetalle($periodo, $sucursal, 13, $importe13, $userName);
     
     }
     

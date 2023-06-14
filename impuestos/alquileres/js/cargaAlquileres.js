@@ -100,7 +100,7 @@ const actualizarDetalle = (div) => {
     let concepto = div.id.split("-")[1];
     
     let importe = div.value.replace(/[$.]/g, "");
-
+    let userName = document.querySelector("#userName").value;
     let importe9 = 0;
     let importe13 = 0;
 
@@ -118,7 +118,8 @@ const actualizarDetalle = (div) => {
             concepto: concepto,
             importe:  importe,
             importe9: importe9,
-            importe13: importe13
+            importe13: importe13,
+            userName: userName
         },
         success : function(data) {
                 console.log(data);

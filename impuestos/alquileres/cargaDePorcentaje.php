@@ -7,7 +7,7 @@
 
     $conceptos = $alquiler->traerConceptosPorcentaje();
     $locales = $sucursal->traerLocales();
-
+    
     $conceptoFiltrado = isset($_GET['conceptos']) ? $_GET['conceptos'] : "6-Porc. S/ventas brutas";
 
     $idConcepto = explode("-", $conceptoFiltrado)[0];

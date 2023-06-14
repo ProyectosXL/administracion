@@ -238,9 +238,9 @@ class Alquiler
         }
 
     }
-    public function actualizarDetalle($periodo, $idSucursal, $idConcepto, $importe )
+    public function actualizarDetalle($periodo, $idSucursal, $idConcepto, $importe, $userName )
     {
-        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe' WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$idSucursal' AND ID_CA = '$idConcepto'";
+        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe', USUARIO = '$userName', FECHA_MODIF = GETDATE() WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$idSucursal' AND ID_CA = '$idConcepto'";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
        
