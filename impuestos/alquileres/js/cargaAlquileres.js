@@ -7,7 +7,7 @@ const totalizar = (div = null) => {
         
         let result = 0;
         idConceptos.forEach(e => {
-            let concepto =e.textContent;
+            let concepto = e.textContent;
 
             if(e.textContent == 9 || e.textContent == 13 ) {
 

@@ -47,7 +47,8 @@ function actualizarDetalle () {
     
     
     $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, $userName);
-    
+
+    // SI EL CONCEPTO ES EL 8 SE REALIZA LA ACTUALIZACION DE LOS CONCEPTOS 9 Y 13 YA QUE SE CALCULAN EN FUNCION DE ESTE
     if($concepto == 8) {
      
         $importe9 = $_POST['importe9'];
@@ -219,5 +220,99 @@ function traerConceptos () {
     $conceptos = $alquiler->traerConceptos();
 
     return $conceptos;
+}
+
+function consultarMesesDetalle ($periodoPasado, $periodo){
+    
+    require_once "Class/Alquiler.php";
+    require_once "../../controlSucursales/Class/sucursal.php";
+
+    $alquiler = new Alquiler();
+    $sucursal = new Sucursal();
+
+    $conceptos = $alquiler->traerConceptos();
+    $detalles = $alquiler->consultarMesesDetalle($periodoPasado, $periodo);
+    
+    $locales = $sucursal->traerLocales();
+
+    $newArray = [];
+    $periodoActual = "";
+    $sucursalActual = "";
+    foreach ($conceptos as $concepto) {
+
+        $newArray[$concepto['ID_CA']] = [] ;
+        $total = 0;
+        foreach ($detalles as $key => $detalle) {
+
+            if($detalle['ID_CA'] == $concepto['ID_CA']){
+
+                if($detalle['PERIODO'] != $periodoActual){
+                    $total = 0;
+                }
+
+                $newArray[$concepto['ID_CA']][$detalle['PERIODO']] = [];
+    
+                $total += (int)$detalle['IMPORTE'];
+                $newArray[$concepto['ID_CA']][$detalle['PERIODO']]['TOTAL'] = "";
+                $newArray[$concepto['ID_CA']][$detalle['PERIODO']]['TOTAL'] = $total;
+ 
+                $periodoActual = $detalle['PERIODO'];
+
+            }
+
+        }
+
+ 
+
+    }
+
+
+    return $newArray;
+
+}
+
+function traerArrayPeriodo (){
+    $fechaActual = date('Y-m-d'); // Obtiene la fecha actual en el formato "Año-Mes-Día"
+    $fechaHaceUnAnio = date('Y-m-d', strtotime('-1 year', strtotime($fechaActual)));
+
+    $hoy = new DateTime($fechaActual);
+    $haceUnAnio = new DateTime($fechaHaceUnAnio);
+
+    $fecha = $hoy;
+
+    $interval = $hoy->diff($haceUnAnio);
+    $interval = $interval->format('%a');
+
+    $dates = [];
+
+    for($i = $interval; $i > 0; $i--){
+
+    $fecha = $fecha->sub(new DateInterval('P1D'));
+    $periodo = substr($fecha->format('Y-m-d'), 0, 7);
+
+    if(!in_array($periodo, $dates)){
+        $dates[] = $periodo;
+    }
+    }
+    foreach ($dates as $key => &$value) {
+        $valor = explode("-", $value);
+        $value = (int)$valor[1]."-".$valor[0];
+        
+    }
+
+    return ($dates);
+}
+
+function traerDetalleHaceUnAño ($periodoPasado, $now){
+    
+    require_once "Class/Alquiler.php";
+    require_once "../../controlSucursales/Class/sucursal.php";
+
+    $alquiler = new Alquiler();
+    $sucursal = new Sucursal();
+
+    $detalles = $alquiler->consultarMesesDetalle ($periodoPasado, $now);
+
+    return $detalles;
 }
 ?>

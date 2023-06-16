@@ -261,7 +261,40 @@ class Alquiler
 
     }
 
+    function consultarMesesDetalle ($periodoPasado, $periodo){
+        
+        $sql = "SELECT C.ID_CA,C.NRO_SUCURS,C.DESC_SUCURS,C.IMPORTE,C.PERIODO FROM (
+            SELECT *,REVERSE(REPLACE(b.CAMPO,'-','') ) P from (
+                SELECT *,
+                     (CASE 
+                        WHEN A.PERIODO  NOT LIKE '__-%' THEN REPLACE(A.PERIODO, '-', '0-')
+                        WHEN A.PERIODO LIKE '10-%' THEN REPLACE(A.PERIODO, '10-', '01-')
+                        ELSE A.PERIODO
+                    END) CAMPO 
+                FROM RO_T_DETALLE_ALQUILERES  A ) 
+            b) 
+        C where C.P BETWEEN '$periodoPasado' AND '$periodo' ;";
 
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+       
+        try{
+            
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+   
+    
+            return $rows;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    
+    
+    }
 
 }
 
