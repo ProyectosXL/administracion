@@ -130,8 +130,13 @@
                                                     <td style="text-align:center" id="concepto"><?= $value['CONCEPTO']?> </td>
                                                     <?php   
                                                         foreach ($newArray as $k => $val) {
+
+                                                            // solo lectura inputs automaticos
+                                                            // $readOn = [6,7,9,13,14,15,16,17];
+
                                                     ?>
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="$<?php echo number_format($val[$value['CONCEPTO']], 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)'></td>
+                                                            <!-- <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="$<?php echo number_format($val[$value['CONCEPTO']], 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?>></td> -->
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="$<?php echo number_format($val[$value['CONCEPTO']], 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' ></td>
                                                     <?php 
                                                         }
                                                     ?>
