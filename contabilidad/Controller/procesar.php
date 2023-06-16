@@ -18,7 +18,7 @@ class Procesar
             $cid_central = $cid->conectar('central');
 
           /*   $result=[]; */
-            $sql = "EXEC RO_SP_PROCESAR_DATAWAREHOUSE_IE_2 ?,?";
+            $sql = "EXEC RO_SP_PROCESAR_DATAWAREHOUSE_IE ?,?";
 
             $params = array($desde, $hasta);
             $stmt = sqlsrv_query($cid_central, $sql, $params);
