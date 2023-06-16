@@ -243,7 +243,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
                 <td><?=  $key->RAZON_SOCIAL ?></td>
                 <td><?=  $key->N_COMP ?></td>
                 <td>
-                    <select class="codRubro" style="width: 3rem;" onchange="completarCampoRubro(this)">
+                    <select class="codRubro" style="width: 8rem;" onchange="completarCampoRubro(this)">
                         <option selected disabled><?=  $key->COD_RUBRO ?></option>
                         <?php           
                         foreach($todosLosRubros as $valor => $value){
