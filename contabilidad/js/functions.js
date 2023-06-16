@@ -190,11 +190,9 @@ function guardarControlado(datoMasivo = 0, e) {
 
 function completarCampoRubro(e) {
   // 5 - al evento change de un codRubro se llama a la funcion completarCampoRubro, e , es el evento con la información de cual elemnto del dom fue clickeado
-  let Dato = e.target; // 6 - guardo el elemento del html donde se produjo el evento.
-  /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let ID = Dato.parentElement.parentElement.children[20].textContent;
-  let codRubro = Dato.value;
-  let rubroDesc = Dato.parentElement.parentElement.children[11];
+  let ID = e.parentElement.parentElement.children[20].textContent;
+  let codRubro = e.value;
+  let rubroDesc = e.parentElement.parentElement.children[11];
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
@@ -202,7 +200,7 @@ function completarCampoRubro(e) {
       guardarCambiosRubro(ID, codRubro, rubroDesc.textContent);
     }
   };
-  conexion.open("GET", "Class/rubroContable.php?codigo=" + Dato.value, true);
+  conexion.open("GET", "Class/rubroContable.php?codigo=" + e.value, true);
   conexion.send();
 }
 
