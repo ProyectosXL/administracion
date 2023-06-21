@@ -76,7 +76,7 @@
                                             <option value="<?= $value['NRO_SUCURSAL'] ?>"><?= $value['DESC_SUCURSAL'] ?></option>
                                         <?php } ;?>
                                     </select>
-                                    <button class="btn btn-success" style="width:110px;position:relative;bottom:3px;height:40px" onclick="agregar()">Agregar <i class="bi bi-plus-square"></i></button>
+                                    <button class="btn btn-success" type="button" style="width:110px;position:relative;bottom:3px;height:40px" onclick="agregar()">Agregar <i class="bi bi-plus-square"></i></button>
                                 </div>
                             </div>
                         </form>
@@ -87,6 +87,7 @@
                                         <th scope="col" style="width: 6%">SUCURSAL</th>
                                         <th scope="col" style="width: 15%">NOMBRE</th>
                                         <th scope="col" style="width: 8%">PORCENTAJE</th>
+                                        <th scope="col" style="width: 8%"></th>
 
                                     </thead>
 
@@ -97,6 +98,7 @@
                                                 <td><?= $value['NRO_SUCURS'] ?></td>
                                                 <td><?= $value['DESC_SUCURS'] ?></td>
                                                 <td><input type="text" value="<?= $value['PORCENTAJE'] ?>" style="width:50px;height:30px;text-align:center" onchange="actualizarPorcentaje(this)"></td>
+                                                <td><input type="button" class="btn btn-danger" value="X" onclick="eliminarPorcentaje(this)"></td>
                                             </tr>
                                         <?php } ?>
                                     </tbody>

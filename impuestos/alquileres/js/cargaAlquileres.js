@@ -17,6 +17,29 @@ const totalizar = (div = null) => {
 
             }
 
+            if(e.textContent == 16 || e.textContent == 17 ) {
+
+                let valorId9 = document.querySelector(`#input-9-${s.textContent}`).value.replace(/[$.]/g, "");
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
+
+                inputActual.value ="$"+ parseNumber( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9) );
+                if(inputActual.value.replace(/[$.]/g, "") > 0) {
+                    actualizarDetalle(document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`));
+                }
+            }
+
+            if(e.textContent == 6 || e.textContent == 7 ) {
+
+                let valorId8 = document.querySelector(`#input-8-${s.textContent}`).value.replace(/[$.]/g, "");
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
+
+                inputActual.value ="$"+ parseNumber( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId8) );
+                if(inputActual.value.replace(/[$.]/g, "") > 0) {
+                    actualizarDetalle(document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`));
+                }
+
+            }
+
             result = parseInt(result) +  parseInt( document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, ""));  
         });
 
@@ -43,6 +66,9 @@ const parseNumber = (number) => {
         minimumFractionDigits: 0
     });
 
+    if(newNumber < 0){
+        return 0;
+    }
     return newNumber;
 
 }
@@ -104,11 +130,14 @@ const actualizarDetalle = (div) => {
     let importe9 = 0;
     let importe13 = 0;
 
+
     if(concepto == 8){
+
         importe9 = document.querySelector(`#input-9-${sucursal}`).value.replace(/[$.]/g, "");
         importe13 = document.querySelector(`#input-13-${sucursal}`).value.replace(/[$.]/g, "");
+
     }
-    
+
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=actualizarDetalle',   
         method: 'POST',
@@ -125,5 +154,34 @@ const actualizarDetalle = (div) => {
                 console.log(data);
         }
     });
+
+}
+
+const actualizarCargaAutomatica = () => {
+
+    let tabla =document.querySelector("#tablaAlquileres");
+
+    let inputs = tabla.querySelectorAll("input");
+
+    let periodo = document.querySelector("#periodo").textContent;
+
+    inputs.forEach((e,x)=> {
+
+        let data = e.id.split("-");
+        let idConcepto = data[1];
+        let valor = e.value.replace(/[$.]/g, "");
+        valor = parseFloat(valor).toFixed(2);
+
+        if(['6','7','9','13','14','15','16','17'].includes(idConcepto)) {
+
+            if(valor > 0){
+                actualizarDetalle(e);
+            }
+
+        }
+        
+
+    });
+
 
 }

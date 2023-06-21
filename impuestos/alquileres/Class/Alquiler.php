@@ -62,7 +62,7 @@ class Alquiler
     {
 
   
-        $sql = "SELECT * FROM RO_T_PORC_CONCEPTOS_ALQUILERES WHERE ID_CA = '$concepto' ";
+        $sql = "SELECT * FROM RO_T_PORC_CONCEPTOS_ALQUILERES WHERE ID_CA = '$concepto' ORDER BY NRO_SUCURS DESC";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
 
@@ -92,7 +92,9 @@ class Alquiler
 
         try{
         $stmt = sqlsrv_query($this->cid_central, $sql);
-        return true;
+        $rowsAffected = sqlsrv_rows_affected($stmt);
+
+        return $rowsAffected;
         
         } catch (\Throwable $th){
             print_r($th);
@@ -106,6 +108,20 @@ class Alquiler
         $stmt = sqlsrv_query($this->cid_central, $sql);
         return true;
         
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+    public function eliminarPorcentaje($id)
+    {
+        $sql = "DELETE FROM RO_T_PORC_CONCEPTOS_ALQUILERES WHERE ID_PA = '$id'";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            return true;
+            
         } catch (\Throwable $th){
             print_r($th);
         }

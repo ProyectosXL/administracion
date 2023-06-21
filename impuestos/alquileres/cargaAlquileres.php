@@ -21,13 +21,18 @@
     $todosLosLocales = traerLocales();
     $conceptos = traerConceptos();
 
+
+    $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
+    
+    $rentabilidadNeta = $alquiler->traerRentabilidadNeta($fecha);
+    $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo); 
     
     if($result['CONTEO'] > 0){
-        $newArray = traerDetalleAlquiler($periodo);
+        $newArray = traerDetalleAlquiler($fecha,$periodo);
     }else{
         $newArray = cargarAlquieres($fecha,$periodo);
     }
-    
+
 ?>
 
 <!DOCTYPE html>
@@ -130,13 +135,45 @@
                                                     <td style="text-align:center" id="concepto"><?= $value['CONCEPTO']?> </td>
                                                     <?php   
                                                         foreach ($newArray as $k => $val) {
-
+                                                            $porcentajeDelLocal = 0;
+                                                            $rentabilidadDelConcepto = 0;
+                                                            
                                                             // solo lectura inputs automaticos
-                                                            // $readOn = [6,7,9,13,14,15,16,17];
+                                                            $readOn = [6,7,9,13,14,15,16,17];   
 
-                                                    ?>
-                                                            <!-- <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="$<?php echo number_format($val[$value['CONCEPTO']], 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?>></td> -->
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="$<?php echo number_format($val[$value['CONCEPTO']], 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' ></td>
+                                                            foreach ($traerPorcentajes as $porcentaje) {
+  
+                                                                if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $k){
+                                                                    
+                                                                   $porcentajeDelLocal = $porcentaje['PORCENTAJE'];
+                                                                    
+                                                               }
+                                           
+                                                            }
+
+                                                            if(in_array($value['ID_CA'], ["6", "15","16"])){
+
+                                                                foreach ($rentabilidadBruta as $rentabilidad) {
+                                                                    if($rentabilidad['NRO_SUCURSAL'] == $k){
+                                                                        $rentabilidadDelConcepto = $rentabilidad['IMPORTE'];
+                                                                    }
+                                                                }
+
+                                                            }
+
+                                                            if(in_array($value['ID_CA'], ["7", "14","17"])){
+
+                                                                foreach ($rentabilidadNeta as $rentabilidad) {
+                                                                    if($rentabilidad['NRO_SUCURS'] == $k){
+                                                                        $rentabilidadDelConcepto = $rentabilidad['VENTA'];
+                                                                    }
+                                                                }
+
+                                                            }
+
+                                                    ?>  
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="$<?php echo number_format($val[$value['CONCEPTO']], 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?>  data-toggle="tooltip" data-placement="top" title="PORCENTAJE : <?=   $porcentajeDelLocal ?> % - VALOR DE RENTABILIDAD: $<?php echo number_format($rentabilidadDelConcepto, 0, ',', '.') ?>"></td>
+
                                                     <?php 
                                                         }
                                                     ?>
@@ -189,6 +226,8 @@ $(document).ready(function() {
 
     if(<?= $result['CONTEO'] ?> == 0){
         insertarDetalle();
+    }else{
+        actualizarCargaAutomatica();
     }
 
 });

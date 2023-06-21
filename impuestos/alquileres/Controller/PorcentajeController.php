@@ -9,6 +9,10 @@ switch ($_GET['accion']) {
     case 'insertarPorcentaje':
         insertarPorcentaje ();
         break;
+
+    case 'eliminarPorcentaje':
+        eliminarPorcentaje ();
+        break;
     
     default:
         break;
@@ -43,6 +47,20 @@ function insertarPorcentaje () {
     $result = $alquiler->insertarPorcentaje($idConcepto, $idLocal, $descLocal);
     echo ($result);
     
+    
+}
+function eliminarPorcentaje () {
+
+    require_once '../Class/Alquiler.php';
+
+    $alquiler = new Alquiler();
+    
+    $idPorcentaje = $_POST['id'];
+    
+    
+    $result = $alquiler->eliminarPorcentaje($idPorcentaje);
+
+    echo ($result);
     
 }
 

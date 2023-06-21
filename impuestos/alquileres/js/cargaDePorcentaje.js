@@ -15,12 +15,26 @@ const agregar = () => {
             descLocal: descLocal
         },
         success : function(data) {
-            
+           
             if (data == 1) {
-                alert("Se ha agregado el porcentaje correctamente");
-                location.reload();
+       
+                Swal.fire({
+                    title: 'Sucursal Agregada!',
+                    icon: 'success',
+                    confirmButtonText: `Ok`,
+                    })
+                    .then((e) => {
+                        location.reload()
+                    })
+
             } else {
-                alert("Ha ocurrido un error");
+                Swal.fire({
+                    title: 'La Sucursal Ya Existe!',
+                    icon: 'error',
+                    confirmButtonText: `Ok`,
+                    })
+                    .then((e) => {
+                    })
             }  
         }
     });
@@ -42,6 +56,24 @@ const actualizarPorcentaje = (fila) => {
         },
         success : function(data) {
                 console.log(data);
+        }
+    });
+}
+
+
+const eliminarPorcentaje = (fila) => {
+
+    let todosLosTd = fila.parentElement.parentElement.querySelectorAll("td");
+    let id = todosLosTd[0].textContent;
+
+    $.ajax({
+        url: 'Controller/PorcentajeController.php?accion=eliminarPorcentaje',   
+        method: 'POST',
+        data: {
+            id: id,
+        },
+        success : function(data) {
+            location.reload()
         }
     });
 }

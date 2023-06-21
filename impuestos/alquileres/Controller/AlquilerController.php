@@ -53,11 +53,14 @@ function actualizarDetalle () {
      
         $importe9 = $_POST['importe9'];
         $importe13 = $_POST['importe13'];
+
     
         $alquiler->actualizarDetalle($periodo, $sucursal, 9, $importe9, $userName);
         $alquiler->actualizarDetalle($periodo, $sucursal, 13, $importe13, $userName);
+
     
     }
+    
     
     return true;
       
@@ -148,7 +151,7 @@ function cargarAlquieres ($fecha, $periodo) {
 
 }
 
-function traerDetalleAlquiler ($periodo) {
+function traerDetalleAlquiler ($fecha,$periodo) {
 
     require_once "Class/Alquiler.php";
     require_once "../../controlSucursales/Class/sucursal.php";
@@ -162,40 +165,84 @@ function traerDetalleAlquiler ($periodo) {
     $conceptos = $alquiler->traerConceptos();
     $todosLosLocales= $sucursal->traerLocales();
 
+    $rentabilidadNeta = $alquiler->traerRentabilidadNeta($fecha);
+    $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo); 
+
+
     $detalle = $alquiler->traerDetalle($periodo);
 
     $newArray = [];
 
     
     foreach ($todosLosLocales as $k => $v) {
-        
+
         $newArray[$v['NRO_SUCURSAL']] = [];
 
         foreach ($conceptos as $key => $value) {  
-            
+            $total = 0;
+
             $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = 0;
 
-            if(in_array($value['ID_CA'], ["9", "13"])) {
+            if($value['carga_manual'] != 1){
 
-                foreach ($traerPorcentajes as $porcentaje ) {
+                if( in_array($value['ID_CA'], ["9", "13"]) ) {
 
-                    if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-                        $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $porcentaje['PORCENTAJE'];
+                    foreach ($traerPorcentajes as $porcentaje ) {
+
+                        if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                            $total = $porcentaje['PORCENTAJE'];
+                        }
+
+                    }
+                }
+
+                if( in_array($value['ID_CA'], ["6", "15", "16"]) ) {
+
+                    foreach ($rentabilidadBruta as $rentabilidad) {
+
+                        if($rentabilidad['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']) {
+                            foreach ($traerPorcentajes as  $porcentaje) {
+                                if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
+                                    $total = ( ( $rentabilidad['IMPORTE'] * $porcentaje['PORCENTAJE'] ) / 100 ) ;
+                                }
+                            }   
+                        }
+
                     }
 
                 }
 
+                if( in_array($value['ID_CA'], ["7", "14", "17"]) ) {
+
+                    foreach ($rentabilidadNeta  as $rentabilidad) {
+
+                        if($rentabilidad['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                            foreach ($traerPorcentajes as  $porcentaje) {
+                                
+                                if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
+                                    $total = $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] / 100;
+                                }
+                            }   
+
+                        }
+
+                    }
+                }
+
+                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $total;  
+
             }else{
-        
+
                 foreach ($detalle as $det) {
 
                     if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
                         $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = (int)$det['IMPORTE'];
                     }
-                    
+
                 }  
             }
-    
+
         }
     }
     return $newArray;
