@@ -39,10 +39,12 @@ const totalizar = (div = null) => {
                 }
 
             }
+            $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
+            $valorSumar = $valorSumar.replace(/ /g,'');
 
-            result = parseInt(result) +  parseInt( document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, ""));  
+            result = parseInt(result) +  parseInt($valorSumar);  
         });
-
+        
         document.querySelector("#total-"+s.textContent).textContent = "$"+parseNumber(result);
 
     });
@@ -50,13 +52,25 @@ const totalizar = (div = null) => {
     if(div != null) {
 
         actualizarDetalle(div);
-        div.value = "$"+parseNumber(div.value.replace(/[$.]/g, ""))
+
+        value = div.value.replace(/[$.]/g, "");
+        value = parseInt(value.replace(/ /g,''));
+
+
+        if(value < 0){
+            console.log(parseNumber(value))
+            div.value = "- $"+(parseNumber((value * -1),true)  )
+            
+        }else{
+
+            div.value = "$"+parseNumber(value)
+        }
 
     }
 
 }
 
-const parseNumber = (number) => {
+const parseNumber = (number,realValue = null) => {
 
     number = parseInt(number);
 
@@ -65,9 +79,12 @@ const parseNumber = (number) => {
         maximumFractionDigits: 0,
         minimumFractionDigits: 0
     });
+    if(realValue != true){
 
-    if(newNumber < 0){
-        return 0;
+        if(newNumber < 0){
+            return 0;
+        }
+        
     }
     return newNumber;
 
