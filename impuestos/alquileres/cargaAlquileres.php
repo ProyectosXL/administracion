@@ -175,7 +175,7 @@
                                                                 $valor = $valor * -1;
                                                             }
                                                     ?>  
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?>  data-toggle="tooltip" data-placement="top" title="PORCENTAJE : <?=   $porcentajeDelLocal ?> % - VALOR DE RENTABILIDAD: $<?php echo number_format($rentabilidadDelConcepto, 0, ',', '.') ?>"></td>
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?>></td>
 
                                                     <?php 
                                                         }
