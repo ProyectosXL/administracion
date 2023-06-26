@@ -19,6 +19,11 @@
     <!DOCTYPE html>
     <html lang="en">
 
+    <style>
+
+
+
+    </style>
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -49,36 +54,51 @@
                         <div id="username" hidden><?= $_SESSION['username'] ?></div>
                         <div class="row" style="margin-left:50px">
 
-                            <h3><i class="bi bi-archive-fill" style="margin-right:20px;font-size:50px"></i>Gestion de Conceptos - <?= $descConcepto ?></h3>
+                            <h3><i class="bi bi-archive-fill" style="margin-right: 20px; font-size: 50px"></i>Gestion de Conceptos - <?= $descConcepto ?></h3>
                         </div>
                         <form action="">
-                            <div class="row" style="margin-left:50px; margin-top: 1rem; margin-bottom: 1rem;">
-                                
-                                <div class="col-3" id="cliente" attr-cliente="<?= $cliente?>">
-                                    <label >Conceptos:</label>
-                                    <select name="conceptos" id="conceptos" style="width:200px;height:40px">
-                                        <?php 
-                                        foreach ($conceptos as  $value) {
-                            
-                                        ?>
-                                            <option value="<?= $value['ID_CA'] ?>-<?= $value['CONCEPTO'] ?>" <?php  if($idConcepto == $value['ID_CA']){ echo "selected"; }?>><?= $value['CONCEPTO'] ?></option>
-                                        <?php } ;?>
-                                    </select>
-                                    <button class="btn btn-primary submit" style="width:100px;position:relative;bottom:3px;height:40px">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                        <div class="container-fluid" style="margin-left: 0px;">
+
+                            <div class="row" style="width:1300px; margin-left: 60px">
+                                <div clas="col" style="width:550px;">
+                                    <div class="row">
+                                        <div style="text-align:left;margin-right:5px">Conceptos:</div>
+                                        <div style="margin-right:5px">
+                                            <select name="conceptos" id="conceptos" style="height:40px">
+                                                <?php 
+                                                foreach ($conceptos as  $value) {
+
+                                                ?>
+                                                    <option value="<?= $value['ID_CA'] ?>-<?= $value['CONCEPTO'] ?>" <?php  if($idConcepto == $value['ID_CA']){ echo "selected"; }?>><?= $value['CONCEPTO'] ?></option>
+                                                <?php } ;?>
+                                            </select>
+                                        </div>
+                                        <div >
+                                            <button class="btn btn-primary submit"style="height:40px">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-3"  >
-                                    <label >Sucursal:</label>
-                                    <select name="locales" id="locales" style="width:200px;height:40px">
-                                        <?php 
-                                        foreach ($locales as  $value) {
-                            
-                                        ?>
-                                            <option value="<?= $value['NRO_SUCURSAL'] ?>"><?= $value['DESC_SUCURSAL'] ?></option>
-                                        <?php } ;?>
-                                    </select>
-                                    <button class="btn btn-success" type="button" style="width:110px;position:relative;bottom:3px;height:40px" onclick="agregar()">Agregar <i class="bi bi-plus-square"></i></button>
+                                <div class="col-4" style="width:550px;">
+                                    <div class="row" >
+                                        <div  style="text-align:left;margin-right:5px">Sucursal:</div>
+                                        <div  style="margin-right:5px">
+                                                <select name="locales" id="locales"  class="form-select form-select-lg mb-3"  style="height:40px">
+                                                    <?php 
+                                                    foreach ($locales as  $value) {
+                                                    ?>
+                                                        <option value="<?= $value['NRO_SUCURSAL'] ?>"><?= $value['DESC_SUCURSAL'] ?></option>
+                                                    <?php } ;?>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-success" type="button" style="width:110px;height:40px" onclick="agregar()">Agregar <i class="bi bi-plus-square"></i></button>
+
+                                        </div>
+                                    </div>
                                 </div>
+
                             </div>
+                        </div>
                         </form>
                         <div class="row" style="margin-left:65px;margin-top:20px">
                             <div class="table-responsive" id="tableIndex">
