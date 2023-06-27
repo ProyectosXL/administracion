@@ -273,5 +273,54 @@ class Gasto
 
 
     }
+    
+    public function traerRelacionCuentaRubroContable() {
+        $sql = "SELECT a.*,b.COD_CUENTA,b.DESC_CUENTA,c.RUBRO_CONTABLE from RO_T_RELACION_CUENTA_RUBRO_CONTABLE a
+        INNER JOIN CUENTA b ON b.COD_CUENTA = a.COD_CUENTA
+        INNER JOIN RO_T_RUBROS_CONTABLES c ON c.COD_RUBRO = a.COD_RUBRO
+        ORDER BY a.ID DESC";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        try{
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
+
+    }
+
+    public function insertarRelacionCuentaRubroContable ($codCuenta, $sector, $codRubro, $codProrrateo) {
+
+        $sql = "INSERT INTO RO_T_RELACION_CUENTA_RUBRO_CONTABLE(COD_CUENTA, SECTOR, COD_RUBRO, COD_PRORRATEO)
+        SELECT '$codCuenta', '$sector', '$codRubro', '$codProrrateo'
+        WHERE NOT EXISTS(SELECT 1 FROM RO_T_RELACION_CUENTA_RUBRO_CONTABLE WHERE COD_CUENTA = '$codCuenta' AND SECTOR = '$sector')";
+
+        try{
+
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            $rowsAffected = sqlsrv_rows_affected($stmt);
+
+            return $rowsAffected;
+
+        }catch (\Throwable $th){
+
+            print_r($th);
+
+        }
+
+
+    }
+
+
+
 
 }  
