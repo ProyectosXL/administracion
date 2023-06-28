@@ -626,7 +626,7 @@ const pintarPasos =(periodo)=>{
 
         pasoActual = x+1;
 
-        paso.className += "active";
+        paso.className = "active";
 
         }
 
@@ -765,20 +765,36 @@ const rellenarModal4 = (obj)=>{
     const td3=document.createElement('td');
     const td4=document.createElement('td');
 
+    const td5=document.createElement('td');
+
+    var input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "form-control";
+    input.id="checkModal4";
+
+
 
     const text1=document.createTextNode(parseFloat(obj[x]['NRO_SUCURS']).toFixed(2));
     const text2=document.createTextNode(parseFloat(obj[x]['IMP_VENTA']).toFixed(2));
     const text3=document.createTextNode(parseFloat(obj[x]['IMP_COBRANZA']).toFixed(2));
     const text4=document.createTextNode(parseFloat(obj[x]['DIFERENCIA']).toFixed(2));
 
+    if(parseFloat(obj[x]['DIFERENCIA']) == 0){
+      input.checked = true;
+      input.setAttribute("onclick", "return false");
+    }
+
     td1.appendChild(text1);
     td2.appendChild(text2);
     td3.appendChild(text3);
     td4.appendChild(text4);
+    td5.appendChild(input);
+
     tr.appendChild(td1);
     tr.appendChild(td2);
     tr.appendChild(td3);
     tr.appendChild(td4);
+    tr.appendChild(td5);
     
     tableModal.appendChild(tr);
 
@@ -919,7 +935,7 @@ const insertarCoeficienteAjuste = () => {
       });
 
     }
-})
+  })
 
 }
 
@@ -933,4 +949,60 @@ const exportModal = (table) =>{
     });
 
 }
+const aceptarDiferenciasModal4 = () =>{
+  
+  let allCheck = document.querySelectorAll("#checkModal4");
+  let diferencias = false;
+  for (let i = 0; i < allCheck.length; i++) {
 
+    const element = allCheck[i];
+
+    if(element.checked == false){
+      
+      Swal.fire({
+        icon: "error",
+        title: "Diferencias",
+        text: `Debe aceptar Todas Las Diferencias!`,
+      });
+      diferencias = true;
+      break;
+
+    }
+    
+  }
+
+  if(diferencias == false){
+
+    marcarPasoControlado("4");
+
+    $('#modalVct').modal('hide');
+    
+  }
+
+}
+
+
+const marcarPasoControlado = (paso) => {
+ 
+    let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
+    $.ajax({
+      url: 'Controller/marcarPasoControlado.php',
+      method: 'POST',
+      data:{
+        periodo:periodo,
+        paso:paso
+      },
+      success : function(data) {
+        Swal.fire({
+          icon: "success",
+          title: "Se guardo correctamente",
+          text: `Paso Ejecutado!`,
+        }).then(function () {
+          location.reload();
+          // pintarPasos(periodo);
+        });
+  
+      }
+    })
+    
+}
