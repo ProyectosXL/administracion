@@ -641,6 +641,7 @@ const rellenarModal1 = (obj)=>{
 
 
   let tableModal =  document.querySelector("#tableCn");
+  tableModal.innerHTML = "";
 
   for (let x = 0; x < obj.length ; x++) {
 
@@ -667,6 +668,7 @@ const rellenarModal2 = (obj)=>{
 
 
   let tableModal =  document.querySelector("#tableModalPc");
+  tableModal.innerHTML = "";
 
   for (let x = 0; x < obj.length ; x++) {
 
@@ -757,6 +759,8 @@ const rellenarModal4 = (obj)=>{
 
   let tableModal =  document.querySelector("#tableModalvCT");
 
+  tableModal.innerHTML = "";
+
   for (let x = 0; x < obj.length; x++) {
 
     const tr=document.createElement('tr');
@@ -807,6 +811,7 @@ const rellenarModal5 = (obj)=>{
 
 
   let tableModal =  document.querySelector("#tableVb");
+  tableModal.innerHTML = "";
   let objeto = JSON.parse(obj);
 
 
@@ -998,8 +1003,8 @@ const marcarPasoControlado = (paso) => {
           title: "Se guardo correctamente",
           text: `Paso Ejecutado!`,
         }).then(function () {
-          location.reload();
-          // pintarPasos(periodo);
+          // location.reload();
+          pintarPasos(periodo);
         });
   
       }
