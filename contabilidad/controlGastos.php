@@ -293,6 +293,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
     }
     ?>
 
+
     <script src="js/functions.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
@@ -322,7 +323,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
             $('.codRubro').select2();
 
-            document.querySelector(".estado").selectedIndex = <?= $_GET['estado'] ? $_GET['estado'] : "" ?>
+            document.querySelector(".estado").selectedIndex = "<?= $_GET['estado'] ? $_GET['estado'] : "" ?>"
             
         });
 
