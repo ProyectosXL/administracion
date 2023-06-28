@@ -539,8 +539,15 @@ function ejecutarPasos() {
                     icon: 'error',
                     title: 'Error',
                     text: 'No se encuentra cargado el coeficiente de ajuste!'
-                  })
-                  return 1
+                  }).then(function () {
+
+                    let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
+                    document.querySelector("#ca-periodo").value = periodo;
+                    $('#modalCA').modal('toggle');
+
+                  });
+                  pasoActual = pasoActual - 1;
+                  return 1;
                 }
                 
               }
@@ -889,6 +896,41 @@ const marcarControlado = ()=>{
           }
       })
   
+
+}
+
+const insertarCoeficienteAjuste = () => {
+
+  let coeficiente = document.querySelector("#ca-valor").value;
+  let periodo = document.querySelector("#ca-periodo").value;
+
+  $.ajax({
+    url: 'Controller/coeficientesAjusteController.php',
+    method: 'POST',
+    data:{
+      periodo:periodo,
+      coeficiente:coeficiente
+    },
+    success : function(data) {
+      Swal.fire({
+        icon: "success",
+        title: "Se guardo correctamente",
+        text: `Coeficiente insertado!`,
+      });
+
+    }
+})
+
+}
+
+const exportModal = (table) =>{
+    $(`#${table}`).table2excel({
+        // exclude CSS class
+        exclude: ".noE  xl",
+        name: "excel Document ",
+        filename: "Excel", //do not include extension
+        fileext: ".xlsx" // file extension
+    });
 
 }
 
