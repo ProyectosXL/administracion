@@ -161,7 +161,7 @@
                                     </table>
                                 </div>
                             </div>
-                            <div class="col-1" style="margin-top:55px;padding-left:1px"><button class="btn btn-success" onclick="agregar()"><i class="bi bi-plus-square-fill"></i></button></div>    
+                            <div class="col-1" style="margin-top:55px;padding-left:1px"><button class="btn btn-success"  title="Agregar" data-toggle="tooltip" data-placement="bottom"  onclick="agregar()"><i class="bi bi-plus-square"></i></button></div>    
                         </div>
                         <div class="row" style="margin-left:65px;margin-top:20px">
                             <div class="col-10">
@@ -229,4 +229,11 @@
     $('.sector').select2();
     $('.codRubro').select2();
     $('.codProrrateo').select2();
+
+    $(function() {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+
+        $('#myModal').modal('toggle')
+
     </script>
