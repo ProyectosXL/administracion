@@ -3,26 +3,25 @@
 
     $categoria = new Categoria();
     $rubros = $categoria->traerRubros();
+
+    $datosRubro = (isset($_GET['rubros'])) ? $_GET['rubros'] : "A-ACCESORIOS" ;
+
+    $siglaRubro = explode("-", $datosRubro)[0];
+    $descRubro = explode("-", $datosRubro)[1];
+
+    $data = $categoria->traerVistaRubroCategoriaCodificacion($siglaRubro);
+    $ultimo = count($data) - 1;
+    $ultimoCodigo = 0;
+
+    if($ultimo > 0){
+        $ultimoCodigo = $data[$ultimo]['CATEGORIA'];
+    }
+    
+        
     ?>
 
     <!DOCTYPE html>
     <html lang="en">
-        <style>
-                .table-wrapper {
-            width: 110%;
-            height: 610px; 
-            overflow: auto;
-            overflow-x:hidden;
-            }
-
-            .table-wrapper table thead {
-            position: -webkit-sticky; 
-            position: sticky;
-            top: 0;
-            left: 0;
-            }
-
-        </style>
 
     <head>
         <meta charset="UTF-8">
@@ -37,7 +36,7 @@
 
         <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-
+        <link rel="stylesheet" href="css/gestionCategoriaProductos.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         
 
@@ -55,21 +54,27 @@
                         <div id="username" hidden><?= $_SESSION['username'] ?></div>
 
                         <div class="row" style="margin-left:80px">
-                            <h3><i class="bi bi-wrench-adjustable" style="margin-right:10px;font-size:50px"></i>Gestión Categoría Productos - Rubro Contable</h3>
+                            <h3><i class="bi bi-wrench-adjustable" style="margin-right:10px;font-size:50px"></i>Gestión Categoría Productos - <?= $descRubro ?></h3>
                         </div>
-                        <div  class="row" style="margin-left:80px">
-                            <select name="rubros" id="rubros" style="width: 130px;margin-right:10px" >
-                                <?php 
-                                    foreach ($rubros as $key => $value) {
-                                        echo "<option value=".$value['COD_RUBRO'].">".$value['DESC_RUBRO']."</option>";
-                                    }
-                                
-                                ?>
+                        <form action="">
+                            <div  class="row" style="margin-left:80px">
+                                <select name="rubros" id="rubros" style="width: 130px;margin-right:10px" >
 
-                            </select>
-                            <button type="submit" name="filter" class="btn btn-primary" style="width: 6rem;">Filtrar <i class="bi bi-search"></i></button>
-                        </div>
+                                    <?php 
+                                        foreach ($rubros as $key => $value) {
+                                           
+                                   
+                                    
+                                    ?>
+                                        <option value="<?= $value['SIGLA'] ?>-<?= $value['DESC_RUBRO'] ?>" <?php if( $descRubro == $value['DESC_RUBRO']){ echo "selected" ; }?> ><?= $value['DESC_RUBRO'] ?></option>
+                                    <?php 
+                                         }
+                                    ?>
 
+                                </select>
+                                <button type="submit" class="btn btn-primary" style="width: 6rem;">Filtrar <i class="bi bi-search"></i></button>
+                            </div>
+                        </form>
                         <div class="row" style="margin-left:65px;margin-top:20px">
                             <div class="col-5" style="padding-right:10px">
                             
@@ -83,11 +88,13 @@
                                         </thead>
 
                                         <tbody id="tableVb" style="font-size: small;">
+                                            <td id="codCategoria"><?= ($ultimoCodigo + 1) ?></td>
+                                            <td ><input type="text" style="width:100%;height:30px" id="descCategoria"></td>
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
-                            <div class="col-1" style="margin-top:55px;padding-left:1px"><button class="btn btn-success"  title="Agregar" data-toggle="tooltip" data-placement="bottom"  onclick="agregar()"><i class="bi bi-plus-square"></i></button></div>    
+                            <div class="col-1" style="margin-top:55px;padding-left:1px"><button class="btn btn-success"  title="Agregar" data-toggle="tooltip" data-placement="bottom"  onclick="agregar('<?= $siglaRubro ?>')"><i class="bi bi-plus-square"></i></button></div>    
                         </div>
 
                         <div class="row" style="margin-left:65px;margin-top:20px">
@@ -100,11 +107,25 @@
                                             <th scope="col" style="width: 15%">DESC. RUBRO</th>
                                             <th scope="col" style="width: 8%">CATEGORIA</th>
                                             <th scope="col" style="width: 8%">DESC. CATEGORIA</th>
+                                            <th scope="col" style="width: 8%"></th>
+                                            
 
                                         </thead>
 
                                         <tbody id="tableVb" style="font-size: small;">
-                           
+                                            <?php 
+                                                foreach ($data as $key => $value) {
+                                            ?>
+                                                    <tr>
+                                                        <td><?= $value['RUBRO'] ?></td>
+                                                        <td><?= $value['DESC_RUBRO'] ?></td>
+                                                        <td><?= $value['CATEGORIA'] ?></td>
+                                                        <td><?= $value['DESC_CATEGORIA'] ?></td>
+                                                        <td><button class="btn btn-warning" onclick="editar(this)"><i class="bi bi-pencil-square"></i></button></td>
+                                                    </tr>
+                                            <?php    
+                                                }
+                                            ?>
                                         </tbody>
                                     </table>
                                 </div>
@@ -125,7 +146,7 @@
         
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-        <script src="js/gestionRelacionesCuenta.js"></script>
+        <script src="js/gestionCategoriaProductos.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     </body>
@@ -133,18 +154,13 @@
     </html>
     <script>    
 
-
-    $('.codCuenta').select2();
-    $('.sector').select2();
-    $('.codRubro').select2();
-    $('.codProrrateo').select2();
     $(document).ready( function () {
         $('#tableData').DataTable({
             "bInfo": false,
             "aaSorting": false,
             'columnDefs': [
                 {
-                    "targets": "_all", // your case first column
+                    "targets": "_all", 
                     "className": "text-center",
                     "sortable": false,
              
@@ -157,10 +173,9 @@
             },
         });
     } );
+
     $(function() {
             $('[data-toggle="tooltip"]').tooltip()
         })
-
-        $('#myModal').modal('toggle')
 
     </script>
