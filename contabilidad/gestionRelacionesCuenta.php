@@ -230,7 +230,6 @@
     $('.codProrrateo').select2();
     $(document).ready( function () {
         $('#tableData').DataTable({
-            "paging": false,
             "bInfo": false,
             "aaSorting": false,
             'columnDefs': [
