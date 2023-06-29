@@ -9,6 +9,7 @@ const checkAmortizado = document.querySelectorAll(".checkAmortizado");
 const inputAmortiza = document.querySelectorAll(".amortiza");
 const btnAmortizar = document.querySelector(".btn-danger");
 const btnProrratear = document.querySelector("#btnProrrateo");
+const btnProcesar = document.querySelector("#btnProcesar");
 
 const selectCentroCosto = document.querySelector("#selectCentroCosto");
 
@@ -28,6 +29,7 @@ let payloads =  {
 btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
 btnEjecutar.addEventListener("click", ejecutarPasos);
+btnProcesar.addEventListener("click", procesar);
 
 let conexion;
 
@@ -190,11 +192,9 @@ function guardarControlado(datoMasivo = 0, e) {
 
 function completarCampoRubro(e) {
   // 5 - al evento change de un codRubro se llama a la funcion completarCampoRubro, e , es el evento con la información de cual elemnto del dom fue clickeado
-  let Dato = e.target; // 6 - guardo el elemento del html donde se produjo el evento.
-  /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let ID = Dato.parentElement.parentElement.children[20].textContent;
-  let codRubro = Dato.value;
-  let rubroDesc = Dato.parentElement.parentElement.children[11];
+  let ID = e.parentElement.parentElement.children[20].textContent;
+  let codRubro = e.value;
+  let rubroDesc = e.parentElement.parentElement.children[11];
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
@@ -202,7 +202,7 @@ function completarCampoRubro(e) {
       guardarCambiosRubro(ID, codRubro, rubroDesc.textContent);
     }
   };
-  conexion.open("GET", "Class/rubroContable.php?codigo=" + Dato.value, true);
+  conexion.open("GET", "Class/rubroContable.php?codigo=" + e.value, true);
   conexion.send();
 }
 
@@ -325,16 +325,20 @@ function ejecutarQuery() {
 function revisar() {
   let b = 0;
   let inputAmortizaSelect = document.querySelectorAll(".amortiza");
-  inputAmortizaSelect.forEach((ele) => {
-    let checkControlado =
-      ele.parentElement.parentElement.children[16].children[0].checked; //guarda el valor del check del campo amortiza de la fila correspondiente
-    if (
-      (ele.value == "" && checkAmortizado == true) ||
-      checkControlado == false
-    ) {
-      b = 1;
-    }
-  });
+  if (inputAmortizaSelect.length > 0) {
+    inputAmortizaSelect.forEach((ele) => {
+      let checkControlado =
+        ele.parentElement.parentElement.children[16].children[0].checked; //guarda el valor del check del campo amortiza de la fila correspondiente
+      if (
+        (ele.value == "" && checkAmortizado == true) ||
+        checkControlado == false
+      ) {
+        b = 1;
+      }
+    });
+  } else {
+    return 1;
+  }
   if (b == 1) {
     return 1;
   } else {
@@ -343,51 +347,40 @@ function revisar() {
 }
 
 function checkControladoAll(source) {
+  var checkboxes = document.querySelectorAll(".checkControlado");
 
-    var checkboxes = document.querySelectorAll(".checkControlado");
-
-    for (var i = 0; i < checkboxes.length; i++) {
-
+  for (var i = 0; i < checkboxes.length; i++) {
     if (checkboxes[i] != source) checkboxes[i].checked = true;
 
     guardarControlado(checkboxes[i]);
   }
-
 }
 
 function uncheckControladoAll(source) {
-
   var checkboxes = document.querySelectorAll(".checkControlado");
 
   for (var i = 0; i < checkboxes.length; i++) {
+    if (checkboxes[i] != source) checkboxes[i].checked = false;
 
-  if (checkboxes[i] != source) checkboxes[i].checked = false;
-
-  guardarControlado(checkboxes[i]);
+    guardarControlado(checkboxes[i]);
+  }
 }
-
-}
-
 
 function checkExcluirAll(source) {
   var checkboxes = document.querySelectorAll(".checkExcluir");
   for (var i = 0; i < checkboxes.length; i++) {
     if (checkboxes[i] != source) checkboxes[i].checked = true;
 
-    guardarExcluir(checkboxes[i]); 
-    
+    guardarExcluir(checkboxes[i]);
   }
-
 }
 function uncheckExcluirAll(source) {
   var checkboxes = document.querySelectorAll(".checkExcluir");
   for (var i = 0; i < checkboxes.length; i++) {
     if (checkboxes[i] != source) checkboxes[i].checked = false;
 
-    guardarExcluir(checkboxes[i]); 
-
+    guardarExcluir(checkboxes[i]);
   }
-
 }
 
 function prorratearGastos() {
@@ -424,15 +417,15 @@ function prorratearGastos() {
           .then((perfil) => {
             if (perfil.resultado == 0) {
               btn.className += "active";
-              spinner.classList.remove('loading');
+              spinner.classList.remove("loading");
               Swal.fire({
                 icon: "error",
                 title: "Error",
                 text: "No hay gastos para prorratear!",
               });
-            }else{
+            } else {
               btn.className += "active";
-              spinner.classList.remove('loading');
+              spinner.classList.remove("loading");
               swalWithBootstrapButtons.fire(
                 "Prorrateado!",
                 "Los gastos fueron prorrateados",
@@ -452,7 +445,6 @@ function prorratearGastos() {
         );
       }
     });
-
 }
 const activarModalPaso3 = () => {
 
@@ -488,18 +480,16 @@ function ejecutarPasos() {
 
   pasoActual = pasoActual + 1;
 
-  let pasosDirectos = [3,5,6,7]; 
+  let pasosDirectos = [3, 5, 6, 7];
 
 
  
   const swalWithBootstrapButtons = Swal.mixin({
-
     customClass: {
       confirmButton: "btn btn-success",
       cancelButton: "btn btn-danger",
     },
     buttonsStyling: false,
-
   });
 
   swalWithBootstrapButtons
@@ -515,7 +505,7 @@ function ejecutarPasos() {
     .then((result) => {
       if (result.isConfirmed) {
         /******************************* */
-        let paso = document.getElementById("paso"+pasoActual);
+        let paso = document.getElementById("paso" + pasoActual);
         let spinner = document.getElementById("boxLoading");
         spinner.className += " loading";      
  /*otro fetch*/
@@ -568,19 +558,19 @@ function ejecutarPasos() {
               switch (pasoActual) {
                 case 1:
                   rellenarModal1(perfil);
-                  $('#modalCn').modal('toggle');
+                  $("#modalCn").modal("toggle");
                   break;
-                
+
                 case 2:
                   rellenarModal2(perfil);
-                  $('#modalPc').modal('toggle');
+                  $("#modalPc").modal("toggle");
                   break;
 
                 case 4:
                   rellenarModal4(perfil);
-                  $('#modalVct').modal('toggle');
+                  $("#modalVct").modal("toggle");
                   break;
-              
+
                 default:
                   break;
               }
@@ -602,17 +592,14 @@ function ejecutarPasos() {
     });
 }
 
-const pintarPasos =(periodo)=>{
-
-    fetch("./Controller/consultarPasos.php?periodo="+periodo,
-    )
+const pintarPasos = (periodo) => {
+  fetch("./Controller/consultarPasos.php?periodo=" + periodo)
     .then((respuesta) => respuesta.json())
     .then((data) => {
-
       let pasos = [];
-      
-      if(data < 1){
-        return false
+
+      if (data < 1) {
+        return false;
       }
 
       for (let i = 0; i < 7; i++) {
@@ -629,13 +616,9 @@ const pintarPasos =(periodo)=>{
         paso.className = "active";
 
         }
-
       });
-    })
-
-}
-
-
+    });
+};
 
 const rellenarModal1 = (obj)=>{
 
@@ -656,108 +639,89 @@ const rellenarModal1 = (obj)=>{
     td2.appendChild(text2);
     tr.appendChild(td1);
     tr.appendChild(td2);
-    
+
     tableModal.appendChild(tr);
-
-
   }
+};
 
-}
+const rellenarModal2 = (obj) => {
 
-const rellenarModal2 = (obj)=>{
+    let tableModal =  document.querySelector("#tableModalPc");
+    tableModal.innerHTML = "";
 
+    for (let x = 0; x < obj.length ; x++) {
 
-  let tableModal =  document.querySelector("#tableModalPc");
-  tableModal.innerHTML = "";
+      let tr=document.createElement('tr');
 
-  for (let x = 0; x < obj.length ; x++) {
+      let td1=document.createElement('td');
+      let td2=document.createElement('td');
+      let text1=document.createTextNode(obj[x]['COD_ARTICU']);
+      let text2=document.createTextNode(obj[x]['RUBRO']);
+      
+      td1.appendChild(text1);
+      td2.appendChild(text2);
+      tr.appendChild(td1);
+      tr.appendChild(td2);
 
-    let tr=document.createElement('tr');
+      tableModal.appendChild(tr);
 
-    let td1=document.createElement('td');
-    let td2=document.createElement('td');
-    let text1=document.createTextNode(obj[x]['COD_ARTICU']);
-    let text2=document.createTextNode(obj[x]['RUBRO']);
-    
-    td1.appendChild(text1);
-    td2.appendChild(text2);
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    
-    tableModal.appendChild(tr);
+    }
+};
 
+const cambiarCentroCosto = (e) => {
 
-  }
-
-}
-
-
-const cambiarCentroCosto=(e)=>{
   let sector = e[e.selectedIndex].getAttribute("attr-sector");
   let numSucursal = e[e.selectedIndex].getAttribute("attr-numSucursal");
   let codAuxiliar = e[e.selectedIndex].getAttribute("attr-codAuxiliar");
   let descAuxiliar = e[e.selectedIndex].text;
   let id = e.parentElement.parentElement.childNodes[41].textContent;
-  e.parentElement.parentElement.childNodes[5].textContent = sector
-  e.parentElement.parentElement.childNodes[39].textContent = numSucursal
+  e.parentElement.parentElement.childNodes[5].textContent = sector;
+  e.parentElement.parentElement.childNodes[39].textContent = numSucursal;
 
   $.ajax({
-    url: 'Controller/updateGasto.php',
-    method: 'POST',
-    data:{
-      "sector": sector, 
-      "numSucursal": numSucursal,
-      "codAuxiliar":codAuxiliar,
-      "descAuxiliar":descAuxiliar,
-      "id":id
+    url: "Controller/updateGasto.php",
+    method: "POST",
+    data: {
+      sector: sector,
+      numSucursal: numSucursal,
+      codAuxiliar: codAuxiliar,
+      descAuxiliar: descAuxiliar,
+      id: id,
     },
-  })
-  .done(function(e) {
-  })
+  }).done(function (e) {});
 
-  
-
-}
+};
 
 const actualizarSaldo = (saldo) => {
-
-  let saldoParseado = parseNumber(parseFloat(saldo.value))
+  let saldoParseado = parseNumber(parseFloat(saldo.value));
   let nuevoSaldo = convertToNumber(saldoParseado);
 
   let id = saldo.parentElement.parentElement.childNodes[41].textContent;
 
-  saldo.value = saldoParseado
-  
+  saldo.value = saldoParseado;
 
   $.ajax({
-    url: 'Controller/actualizarSaldo.php',
-    method: 'POST',
-    data:{
-      "id": id, 
-      "nuevoSaldo": nuevoSaldo,
-
+    url: "Controller/actualizarSaldo.php",
+    method: "POST",
+    data: {
+      id: id,
+      nuevoSaldo: nuevoSaldo,
     },
-  })
+  });
+};
 
-}
+const parseNumber = (value) => {
+  return value.toLocaleString("de-DE", {
+    style: "decimal",
+  });
+};
 
-
-const parseNumber = (value)=>{
-  return value.toLocaleString('de-DE', {
-      style: 'decimal',
-      });
-}
-
-const convertToNumber = (numero)=>{
-
+const convertToNumber = (numero) => {
   let newNumero1 = numero.replaceAll(".", "");
   return newNumero1.replace(",", ".");
-
-}
-const rellenarModal4 = (obj)=>{
-
-
-  let tableModal =  document.querySelector("#tableModalvCT");
+};
+const rellenarModal4 = (obj) => {
+  let tableModal = document.querySelector("#tableModalvCT");
 
   tableModal.innerHTML = "";
 
@@ -801,12 +765,53 @@ const rellenarModal4 = (obj)=>{
     tr.appendChild(td5);
     
     tableModal.appendChild(tr);
-
-
   }
+};
 
+function procesar() {
+  let desde = document.getElementsByName("desde")[0].value;
+  let hasta = document.getElementsByName("hasta")[0].value;
+  Swal.fire({
+    title: "Desea ejecutar el proceso ?",
+    text: "Ya no se podran deshacer los cambios!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Ok, ejecutar!",
+    cancelButtonText: "No, cancelar!",
+    reverseButtons: true,
+  }).then((result) => {
+    if (result.isConfirmed) {
+      /******************************* */
+      let spinner = document.getElementById("boxLoading");
+      spinner.className += " loading";
+      /*otro fetch*/
 
+      fetch("./Controller/procesar.php?desde=" + desde + "&hasta=" + hasta, {
+        method: "GET",
+      })
+        .then((respuesta) => respuesta.json())
+        .then((mensaje) => {
+          console.log(mensaje);
+          if (perfil.length == 0) {
+            spinner.classList.remove("loading");
+            Swal.fire({
+              icon: "success",
+              title: "",
+              text: "El proceso finalizó correctamente",
+            });
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "Atención",
+              text: `${mensaje.resultado}`,
+            });
+          }
+        });
+      /******************************** */
+    }
+  });
 }
+
 const rellenarModal5 = (obj)=>{
 
 

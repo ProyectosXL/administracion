@@ -72,7 +72,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <table class="table table-striped table-bordered display" id="tableDinamic" style="width: 99%;" data-page-length="100">
         <thead class="thead-dark">
             <tr>
-                <th></th>
+                <th style="position: sticky; top: 0; z-index: 10;"></th>
                 <th style="position: sticky; top: 0; z-index: 10; width: 100px;" class="col-1">FECHA</th>
                 <th style="position: sticky; top: 0; z-index: 10;">COD. AUXILIAR</th>
                 <th style="position: sticky; top: 0; z-index: 10;">AUXILIAR</th>
@@ -183,7 +183,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         <table class="table table-striped table-bordered display mt-2" id="tableDinamic" style="width: 99%;" data-page-length="100">
             <thead class="thead-dark">
                 <tr>
-                    <th></th>
+                    <th style="position: sticky; top: 0; z-index: 10;">ID</th>
                     <th style="position: sticky; top: 0; z-index: 10; width: 100px;" class="col-1">FECHA</th>
                     <th style="position: sticky; top: 0; z-index: 10;">COD. AUXILIAR</th>
                     <th style="position: sticky; top: 0; z-index: 10;">AUXILIAR</th>
@@ -209,7 +209,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 ?>
                     <tr>
                     <tr>
-                        <td></td>
+                        <td><?= $key->ID_CTA_2 ?></td>
                         <td><?= substr($key->FECHA->date, 0, 10); ?></td>
                         <td><?= $key->COD_AUXILIAR ?></td>
                         <td><?= $key->DESC_AUXILIAR ?></td>

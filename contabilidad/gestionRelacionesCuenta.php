@@ -34,12 +34,13 @@
         <style>
                 .table-wrapper {
             width: 110%;
-            height: 700px; /* Altura de ejemplo */
+            height: 630px; 
             overflow: auto;
+            overflow-x:hidden;
             }
 
             .table-wrapper table thead {
-            position: -webkit-sticky; /* Safari... */
+            position: -webkit-sticky; 
             position: sticky;
             top: 0;
             left: 0;
@@ -102,7 +103,7 @@
                                             <td style="width:100px">
 
                                                 <select class="codCuenta" name="codCuenta" id="codCuenta" style="width:100px; height:35px; text-align:center" onchange="traerDescCuenta(this)" >
-
+                                                    <option disabled="disabled" selected></option>
                                                     <?php 
                                                     foreach ($codigosDeCuenta as $key => $value) {
                                                         echo "<option value='".$value->COD_CUENTA."' attr-desc-cuenta='".$value->DESC_CUENTA."'>".$value->COD_CUENTA."</option>";
@@ -117,7 +118,7 @@
 
                                             <td>
                                                 <select class="sector" name="sector" id="sector" style="width:170px; height:35px; text-align:center" >
-
+                                                    <option disabled="disabled" selected></option>
                                                     <?php 
                                                         foreach ($centroCostos as $key => $value) {
                                                             echo "<option value='".$value['SECTOR']."'>".$value['SECTOR']."</option>";
@@ -129,7 +130,7 @@
 
                                             <td>
                                                 <select  class="codRubro" name="codRubro" id="codRubro" style="width:80px; height:35px; text-align:center" onchange="traerDescRubro(this)" >
-
+                                                    <option disabled="disabled" selected></option>
                                                     <?php 
                                                         foreach ($todosLosRubros as $key => $value) {
 
@@ -146,6 +147,7 @@
                                             <td>
 
                                                 <select class="codProrrateo" name="codProrrateo" id="codProrrateo" style="width:80px; height:35px; text-align:center" onchange="traerDescProrrateo(this)">
+                                                        <option disabled="disabled" selected></option>
                                                         <?php 
                                                             foreach ($arrayMetodosProrrateo as $key => $value) {
                                                                 echo "<option value='".$value->COD_PRORRATEO."' attr-desc-prorrateo='".$value->DESC_PRORRATEO."'>".$value->COD_PRORRATEO."</option>";
@@ -161,13 +163,13 @@
                                     </table>
                                 </div>
                             </div>
-                            <div class="col-1" style="margin-top:55px;padding-left:1px"><button class="btn btn-success" onclick="agregar()"><i class="bi bi-plus-square-fill"></i></button></div>    
+                            <div class="col-1" style="margin-top:55px;padding-left:1px"><button class="btn btn-success"  title="Agregar" data-toggle="tooltip" data-placement="bottom"  onclick="agregar()"><i class="bi bi-plus-square"></i></button></div>    
                         </div>
                         <div class="row" style="margin-left:65px;margin-top:20px">
                             <div class="col-10">
                             
                                 <div class="table-wrapper" id="tableIndex">
-                                    <table class="table table-hover table-condensed table-striped text-center"  cellspacing="0" data-page-length="100">
+                                    <table id="tableData" class="table table-hover table-condensed table-striped text-center"  cellspacing="0" data-page-length="100">
                                         <thead class="thead-dark" style="font-size: small;">
                                             <th scope="col" style="width: 6%">COD. CUENTA</th>
                                             <th scope="col" style="width: 15%">DESC. CUENTA</th>
@@ -220,13 +222,35 @@
 
     </html>
     <script>    
-    document.readdy = traerDescCuenta(document.querySelector("#codCuenta"));
-    document.readdy = traerDescRubro(document.querySelector("#codRubro"));
-    document.readdy = traerDescProrrateo(document.querySelector("#codProrrateo"));
 
 
     $('.codCuenta').select2();
     $('.sector').select2();
     $('.codRubro').select2();
     $('.codProrrateo').select2();
+    $(document).ready( function () {
+        $('#tableData').DataTable({
+            "bInfo": false,
+            "aaSorting": false,
+            'columnDefs': [
+                {
+                    "targets": "_all", // your case first column
+                    "className": "text-center",
+                    "sortable": false,
+             
+                },
+            ],
+            "oLanguage": {
+
+                "sSearch": "Busqueda rapida sobre cualquier campo :"
+
+            },
+        });
+    } );
+    $(function() {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+
+        $('#myModal').modal('toggle')
+
     </script>

@@ -28,7 +28,7 @@
           <!-- Aca se debe mostrar la tabla que arroja el SP RO_SP_ARTICULOS_SIN_COSTO_NAC -->
 
           <div class="table-responsive" id="tableIndex">
-            <table class="table table-hover table-condensed table-striped text-center">
+            <table class="table table-hover table-condensed table-striped text-center" id="tableModalVentasCobranzaTotal">
               <thead class="thead-dark" style="font-size: small;">
                 <th scope="col" style="width: 5%">NRO SUCURSAL</th>
                 <th scope="col" style="width: 8%">IMP VENTA</th>

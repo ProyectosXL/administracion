@@ -16,7 +16,7 @@
     
     $desde = $anio."-".$mes."-01";
     $hasta = $anio."-".$mes."-".date('t', $first_day);
-
+    
     
     
     
@@ -97,7 +97,7 @@
 
                         <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle">Control Por Sucursal</i></strong></div>
                         
-                        <table class="table " id="my-table">
+                        <table class="table table-bordered" id="my-table" style="text-align: center;">
                             <thead class="thead-dark">
                                 <tr> 
                                     <th>FECHA</th>   
@@ -110,7 +110,7 @@
                                     ?>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody style="justify-content: center; align-items: center;">
                                 <?php 
                                     foreach ($newArray as $key => $value) {
                          
@@ -122,7 +122,7 @@
                                                     foreach ($todosLosLocales as $x => $v) {
                                                         if( $v['NRO_SUCURSAL'] == $k){
                                             ?>
-                                                            <td><?= ($val != null) ? "<i class='bi bi-check2-square'></i>" : "null" ?></td>
+                                                            <td><?= ($val != null) ? "<i class='bi bi-check-circle-fill' style='color: #28a745;'></i>" : "" ?></td>
                                             <?php
                                                         }
                                                     }

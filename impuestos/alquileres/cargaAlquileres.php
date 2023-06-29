@@ -227,6 +227,10 @@ document.ready = totalizar();
 
 $(document).ready(function() {
 
+    $(function() {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+
     if(<?= $result['CONTEO'] ?> == 0){
         insertarDetalle();
     }else{

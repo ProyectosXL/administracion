@@ -1,7 +1,4 @@
-
 <?php
-
-// $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
 class Gasto
 {
@@ -16,11 +13,7 @@ class Gasto
 
       
 
-    public function traerGastos($desde, $hasta, $estado, $codRubro, $columna = null,$codCuenta = null){
-
-
-        $queryColumna =" AND ( DESC_LEYENDA  LIKE '%$columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%')";
-        $queryCodCuenta = "AND COD_CUENTA LIKE '$codCuenta'";
+    public function traerGastos($desde, $hasta, $estado, $codRubro){
 
     if($estado == '0'){
 
@@ -42,19 +35,16 @@ class Gasto
             $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL)";
 
     }else{
+
             $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL
-                    AND COD_RUBRO LIKE '$codRubro' AND ( DESC_LEYENDA LIKE '%$columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%')AND COD_CUENTA LIKE '$codCuenta'
+                    AND COD_RUBRO LIKE '$codRubro'
                     UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
                     AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
-                    AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro' 
+                    --AND PRORRATEADO IS NULL 
+                    AND COD_RUBRO LIKE '$codRubro' 
+                    --ORDER BY ID
                 ";
 
-    }
-    if($columna != null){
-        $sql = $sql.$queryColumna;
-    }   
-    if($codCuenta){
-        $sql = $sql.$queryCodCuenta;
     }
 
         $stmt = sqlsrv_query( $this->cid_central, $sql );
@@ -77,14 +67,16 @@ class Gasto
 
     }
 
-    public function traerGastosParaControl($desde, $hasta, $estado, $codRubro){
+    public function traerGastosConsulta($desde, $hasta, $codRubro, $columna, $codCuenta){
 
-        $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL
-        AND COD_RUBRO LIKE '$codRubro'
-        UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
-        AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
-        AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro' ";
-
+        $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' --AND PRORRATEADO IS NULL
+             AND COD_RUBRO LIKE '$codRubro' AND ( DESC_LEYENDA LIKE '%$columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%')AND COD_CUENTA LIKE '$codCuenta'
+                UNION ALL 
+             SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
+             AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
+             AND PRORRATEADO IS NULL AND COD_RUBRO LIKE '$codRubro'  AND ( DESC_LEYENDA  LIKE '%$columna%' OR RAZON_SOCIAL LIKE '%$columna%' OR N_COMP LIKE '%$columna%')
+             AND COD_CUENTA LIKE '$codCuenta'
+        ";
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
             
