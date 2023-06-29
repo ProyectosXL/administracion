@@ -778,7 +778,7 @@ const rellenarModal4 = (obj)=>{
 
 
 
-    const text1=document.createTextNode(parseFloat(obj[x]['NRO_SUCURS']).toFixed(2));
+    const text1=document.createTextNode(parseInt(obj[x]['NRO_SUCURS']));
     const text2=document.createTextNode(parseFloat(obj[x]['IMP_VENTA']).toFixed(2));
     const text3=document.createTextNode(parseFloat(obj[x]['IMP_COBRANZA']).toFixed(2));
     const text4=document.createTextNode(parseFloat(obj[x]['DIFERENCIA']).toFixed(2));
