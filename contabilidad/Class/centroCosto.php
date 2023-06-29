@@ -37,6 +37,29 @@ class CentroCosto
 
     }
 
+    public function traerSectoresCentroCostos() {
+
+        $sql = " SELECT DISTINCT(SECTOR) SECTOR FROM RO_T_CENTRO_DE_COSTOS ";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        try{
+            
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+
+            print_r($th);
+
+        }
+
+    }
+
     function traerDescripcion($codigo)
     {
         $sql = "SELECT TOP 1 DESC_AUXILIAR, SECTOR, NUM_SUCURSAL FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = '$codigo'";
