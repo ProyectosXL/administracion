@@ -34,6 +34,7 @@
                 <th scope="col" style="width: 8%">IMP VENTA</th>
                 <th scope="col" style="width: 8%">IMP COBRANZA</th>
                 <th scope="col" style="width: 8%">DIFERENCIA</th>
+                <th scope="col" style="width: 5%"></th>
               </thead>
 
               <tbody id="tableModalvCT" style="font-size: small;" >
@@ -43,8 +44,9 @@
             </table>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-success btn_exportar" id="btnExportCn" onclick ="exportModal('tableModalVentasCobranzaTotal')"> Exportar<i class="bi bi-file-earmark-excel"></i></button>
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            <button class="btn btn-success btn_exportar" id="btnExportCn" onclick ="exportModal('tableModalvCT')"> Exportar<i class="bi bi-file-earmark-excel"></i></button>
+            <button class="btn btn-danger" id="btnAceptarDiferencias" onclick="aceptarDiferenciasModal4()" > Aceptar con Diferencias <i class="bi bi-exclamation-triangle-fill"></i></button>
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Cerrar</button>
           </div>
         </div>
       </div>

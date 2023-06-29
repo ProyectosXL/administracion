@@ -64,7 +64,7 @@ function controlarRentabilidad(){
     $periodo = $_POST['periodo'];
 
     $result = $gasto -> marcarRentabilidadControlada($desde, $hasta);
-    $paso->marcarControlPaso3($periodo);
+    $paso->marcarPasoEjecutado("3",$periodo);
     echo json_encode($result);
 
 }

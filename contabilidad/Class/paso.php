@@ -255,15 +255,14 @@ class Paso
         }
     }
 
-    public function marcarControlPaso3($periodo)
-    {  
+    public function marcarPasoEjecutado ($paso_ejecutado, $periodo) {
         try {
 
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "UPDATE RO_T_CONTROL_INFORME_ECONOMICO SET PASO_3 = 1 WHERE PERIODO = '$periodo' ";
+            $sql ="UPDATE RO_T_CONTROL_INFORME_ECONOMICO SET PASO_".$paso_ejecutado." = 1 WHERE PERIODO = '$periodo'";
 
             $stmt = sqlsrv_query($cid_central, $sql);
 
@@ -273,6 +272,7 @@ class Paso
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
+        
     }
 
 

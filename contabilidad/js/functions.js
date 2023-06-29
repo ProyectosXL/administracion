@@ -613,24 +613,28 @@ const pintarPasos = (periodo) => {
 
         pasoActual = x+1;
 
-        paso.className += "active";
+        paso.className = "active";
 
         }
       });
     });
 };
 
-const rellenarModal1 = (obj) => {
-  let tableModal = document.querySelector("#tableCn");
+const rellenarModal1 = (obj)=>{
 
-  for (let x = 0; x < obj.length; x++) {
-    let tr = document.createElement("tr");
 
-    let td1 = document.createElement("td");
-    let td2 = document.createElement("td");
-    let text1 = document.createTextNode(obj[x]["COD_ARTICU"]);
-    let text2 = document.createTextNode(obj[x]["RUBRO"]);
+  let tableModal =  document.querySelector("#tableCn");
+  tableModal.innerHTML = "";
 
+  for (let x = 0; x < obj.length ; x++) {
+
+    let tr=document.createElement('tr');
+
+    let td1=document.createElement('td');
+    let td2=document.createElement('td');
+    let text1=document.createTextNode(obj[x]['COD_ARTICU']);
+    let text2=document.createTextNode(obj[x]['RUBRO']);
+    
     td1.appendChild(text1);
     td2.appendChild(text2);
     tr.appendChild(td1);
@@ -641,26 +645,31 @@ const rellenarModal1 = (obj) => {
 };
 
 const rellenarModal2 = (obj) => {
-  let tableModal = document.querySelector("#tableModalPc");
 
-  for (let x = 0; x < obj.length; x++) {
-    let tr = document.createElement("tr");
+    let tableModal =  document.querySelector("#tableModalPc");
+    tableModal.innerHTML = "";
 
-    let td1 = document.createElement("td");
-    let td2 = document.createElement("td");
-    let text1 = document.createTextNode(obj[x]["COD_ARTICU"]);
-    let text2 = document.createTextNode(obj[x]["RUBRO"]);
+    for (let x = 0; x < obj.length ; x++) {
 
-    td1.appendChild(text1);
-    td2.appendChild(text2);
-    tr.appendChild(td1);
-    tr.appendChild(td2);
+      let tr=document.createElement('tr');
 
-    tableModal.appendChild(tr);
-  }
+      let td1=document.createElement('td');
+      let td2=document.createElement('td');
+      let text1=document.createTextNode(obj[x]['COD_ARTICU']);
+      let text2=document.createTextNode(obj[x]['RUBRO']);
+      
+      td1.appendChild(text1);
+      td2.appendChild(text2);
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+
+      tableModal.appendChild(tr);
+
+    }
 };
 
 const cambiarCentroCosto = (e) => {
+
   let sector = e[e.selectedIndex].getAttribute("attr-sector");
   let numSucursal = e[e.selectedIndex].getAttribute("attr-numSucursal");
   let codAuxiliar = e[e.selectedIndex].getAttribute("attr-codAuxiliar");
@@ -680,6 +689,7 @@ const cambiarCentroCosto = (e) => {
       id: id,
     },
   }).done(function (e) {});
+
 };
 
 const actualizarSaldo = (saldo) => {
@@ -713,35 +723,47 @@ const convertToNumber = (numero) => {
 const rellenarModal4 = (obj) => {
   let tableModal = document.querySelector("#tableModalvCT");
 
-  for (let x = 0; x < obj.length; x++) {
-    const tr = document.createElement("tr");
-    const td1 = document.createElement("td");
-    const td2 = document.createElement("td");
-    const td3 = document.createElement("td");
-    const td4 = document.createElement("td");
+  tableModal.innerHTML = "";
 
-    const text1 = document.createTextNode(
-      parseFloat(obj[x]["NRO_SUCURS"]).toFixed(2)
-    );
-    const text2 = document.createTextNode(
-      parseFloat(obj[x]["IMP_VENTA"]).toFixed(2)
-    );
-    const text3 = document.createTextNode(
-      parseFloat(obj[x]["IMP_COBRANZA"]).toFixed(2)
-    );
-    const text4 = document.createTextNode(
-      parseFloat(obj[x]["DIFERENCIA"]).toFixed(2)
-    );
+  for (let x = 0; x < obj.length; x++) {
+
+    const tr=document.createElement('tr');
+    const td1=document.createElement('td');
+    const td2=document.createElement('td');
+    const td3=document.createElement('td');
+    const td4=document.createElement('td');
+
+    const td5=document.createElement('td');
+
+    var input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "form-control";
+    input.id="checkModal4";
+
+
+
+    const text1=document.createTextNode(parseInt(obj[x]['NRO_SUCURS']));
+    const text2=document.createTextNode(parseFloat(obj[x]['IMP_VENTA']).toFixed(2));
+    const text3=document.createTextNode(parseFloat(obj[x]['IMP_COBRANZA']).toFixed(2));
+    const text4=document.createTextNode(parseFloat(obj[x]['DIFERENCIA']).toFixed(2));
+
+    if(parseFloat(obj[x]['DIFERENCIA']) == 0){
+      input.checked = true;
+      input.setAttribute("onclick", "return false");
+    }
 
     td1.appendChild(text1);
     td2.appendChild(text2);
     td3.appendChild(text3);
     td4.appendChild(text4);
+    td5.appendChild(input);
+
     tr.appendChild(td1);
     tr.appendChild(td2);
     tr.appendChild(td3);
     tr.appendChild(td4);
-
+    tr.appendChild(td5);
+    
     tableModal.appendChild(tr);
   }
 };
@@ -789,10 +811,12 @@ function procesar() {
     }
   });
 }
+
 const rellenarModal5 = (obj)=>{
 
 
   let tableModal =  document.querySelector("#tableVb");
+  tableModal.innerHTML = "";
   let objeto = JSON.parse(obj);
 
 
@@ -921,7 +945,7 @@ const insertarCoeficienteAjuste = () => {
       });
 
     }
-})
+  })
 
 }
 
@@ -935,4 +959,60 @@ const exportModal = (table) =>{
     });
 
 }
+const aceptarDiferenciasModal4 = () =>{
+  
+  let allCheck = document.querySelectorAll("#checkModal4");
+  let diferencias = false;
+  for (let i = 0; i < allCheck.length; i++) {
 
+    const element = allCheck[i];
+
+    if(element.checked == false){
+      
+      Swal.fire({
+        icon: "error",
+        title: "Diferencias",
+        text: `Debe aceptar Todas Las Diferencias!`,
+      });
+      diferencias = true;
+      break;
+
+    }
+    
+  }
+
+  if(diferencias == false){
+
+    marcarPasoControlado("4");
+
+    $('#modalVct').modal('hide');
+    
+  }
+
+}
+
+
+const marcarPasoControlado = (paso) => {
+ 
+    let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
+    $.ajax({
+      url: 'Controller/marcarPasoControlado.php',
+      method: 'POST',
+      data:{
+        periodo:periodo,
+        paso:paso
+      },
+      success : function(data) {
+        Swal.fire({
+          icon: "success",
+          title: "Se guardo correctamente",
+          text: `Paso Ejecutado!`,
+        }).then(function () {
+          // location.reload();
+          pintarPasos(periodo);
+        });
+  
+      }
+    })
+    
+}
