@@ -266,6 +266,22 @@ class Gasto
 
     }
     
+    public function insertarCoeficiente($periodo,$valor) {
+
+        $sql = "INSERT INTO RO_T_COEFICIENTES_AJUSTE (PERIODO, COEFICIENTE) values('$periodo', $valor)";    
+
+
+        try{
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            return true;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+
+
+    }
+    
     public function traerRelacionCuentaRubroContable() {
         $sql = "SELECT a.*,b.COD_CUENTA,b.DESC_CUENTA,c.RUBRO_CONTABLE from RO_T_RELACION_CUENTA_RUBRO_CONTABLE a
         INNER JOIN CUENTA b ON b.COD_CUENTA = a.COD_CUENTA

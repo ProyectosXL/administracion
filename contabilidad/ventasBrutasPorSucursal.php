@@ -24,7 +24,7 @@
             </table>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-success btn_exportar" id="btnExport" style=" height:45px" > Exportar<i class="bi bi-file-earmark-excel"></i></button>
+            <button class="btn btn-success btn_exportar" id="btnExport" > Exportar<i class="bi bi-file-earmark-excel"></i></button>
             <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="marcarControlado()">Confirmar <i class="bi bi-check2-square"></i></button>
 
           </div>

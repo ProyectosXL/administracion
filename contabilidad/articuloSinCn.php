@@ -28,7 +28,7 @@
           <!-- Aca se debe mostrar la tabla que arroja el SP RO_SP_ARTICULOS_SIN_COSTO_NAC -->
 
           <div class="table-responsive" id="tableIndex">
-            <table class="table table-hover table-condensed table-striped text-center">
+            <table class="table table-hover table-condensed table-striped text-center" id="tableScn">
               <thead class="thead-dark" style="font-size: small;">
                 <th scope="col" style="width: 5%">ARTICULO</th>
                 <th scope="col" style="width: 8%">RUBRO</th>
@@ -40,6 +40,7 @@
             </table>
           </div>
           <div class="modal-footer">
+            <button class="btn btn-success btn_exportar" id="btnExportCn" onclick ="exportModal('tableScn')"> Exportar<i class="bi bi-file-earmark-excel"></i></button>
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
           </div>
         </div>
