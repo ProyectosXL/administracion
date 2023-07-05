@@ -57,8 +57,22 @@
             </link>
 
         </head>
-
-        <body>
+<style>
+    #thConcepto {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 0;
+        z-index: 2;
+    }
+    #concepto{
+        position: -webkit-sticky;
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: #ccc;
+    }
+</style>
+        <body style="width:2800px">
 
             <div class="alert alert-secondary">
                 <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
@@ -113,8 +127,8 @@
                                 <table class="table table-striped table-bordered table-sm table-hover" id="tablaAlquileres" style="font-size :12px;" >
                                     <thead class="thead-dark">
                                         <tr>
-                                            <th style="text-align:center;width:30px">ID</th>
-                                            <th style="text-align:center;width:100px"  >CONCEPTOS </th>
+                                            <th style="text-align:center;width:30px" id="thIdConcepto">ID</th>
+                                            <th style="text-align:center;width:100px" id="thConcepto"  >CONCEPTOS </th>
                                             <?php 
                                                 foreach ($todosLosLocales as $key => $value) {    
                                             ?>
@@ -132,7 +146,7 @@
                                         ?>
                                                 <tr>
                                                     <td style="text-align:center" id="idConcepto"><?= $value['ID_CA']?> </td>
-                                                    <td style="text-align:center" id="concepto"><?= $value['CONCEPTO']?> </td>
+                                                    <td style="text-align:center" id="concepto"><strong><?= $value['CONCEPTO']?></strong> </td>
                                                     <?php   
                                                         foreach ($newArray as $k => $val) {
                                                             $porcentajeDelLocal = 0;
@@ -175,7 +189,7 @@
                                                                 $valor = $valor * -1;
                                                             }
                                                     ?>  
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm' id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?>></td>
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?>></td>
 
                                                     <?php 
                                                         }
@@ -187,8 +201,8 @@
                                         ?>
 
                                         <tr>
-                                        <td>Total</td>
-                                        <td></td>
+                                            <td></td>
+                                            <td id="concepto"><h5 style="font-size:15px" >Total</h5></td>
                                         <?php
                                             foreach ($todosLosLocales as $local) {
                                         ?>
