@@ -32,8 +32,12 @@ const totalizar = (div = null) => {
 
                 let valorId8 = document.querySelector(`#input-8-${s.textContent}`).value.replace(/[$.]/g, "");
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
+                let calculo =  parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId8) ;
 
-                inputActual.value ="$"+ parseNumber( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId8) );
+                if(calculo < 0) {
+                    calculo = 0;
+                }
+                inputActual.value ="$"+ parseNumber( calculo); 
                 if(inputActual.value.replace(/[$.]/g, "") > 0) {
                     actualizarDetalle(document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`));
                 }
@@ -58,7 +62,7 @@ const totalizar = (div = null) => {
 
 
         if(value < 0){
-            console.log(parseNumber(value))
+            // console.log(parseNumber(value))
             div.value = "- $"+(parseNumber((value * -1),true)  )
             
         }else{
@@ -130,7 +134,7 @@ const insertarDetalle = () => {
             values: values
         },
         success : function(data) {
-                console.log(data);
+                // console.log(data);
         }
     });
 
@@ -168,7 +172,7 @@ const actualizarDetalle = (div) => {
             userName: userName
         },
         success : function(data) {
-                console.log(data);
+                // console.log(data);
         }
     });
 
