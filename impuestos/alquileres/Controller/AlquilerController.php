@@ -135,7 +135,7 @@ function cargarAlquieres ($fecha, $periodo) {
 
                                             if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
 
-                                                $total = $newArray[$v['NRO_SUCURSAL']]["7"] * $porcentaje['PORCENTAJE'] / 100;
+                                                $total = $newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] * $porcentaje['PORCENTAJE'] / 100;
         
                                             }
                                         }
@@ -233,7 +233,7 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
                                     if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
 
-                                        $total = $newArray[$v['NRO_SUCURSAL']]["7"] * $porcentaje['PORCENTAJE'] / 100;
+                                        $total = $newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] * $porcentaje['PORCENTAJE'] / 100;
 
                                     }
                                 }
