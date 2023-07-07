@@ -119,8 +119,8 @@
                                         </select>
                                         <button class="btn btn-primary btn-submit" value="" style="height:45px;margin-left:2px;position:relative;margin-bottom:8px">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                     </div>
-
-                                 </div>
+                                    <input type="button" class="btn btn-success" value="Procesar" style="margin-left:200px;height:45px" onclick="procesar()"></input>
+                                </div>
                             </form>
 
                             <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle">Control Por Sucursal</i></strong></div>

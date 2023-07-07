@@ -277,7 +277,8 @@ class Alquiler
 
     }
 
-    function consultarMesesDetalle ($periodoPasado, $periodo){
+    function consultarMesesDetalle ($periodoPasado, $periodo)
+    {
         
         $sql = "SELECT C.ID_CA,C.NRO_SUCURS,C.DESC_SUCURS,C.IMPORTE,C.PERIODO FROM (
             SELECT *,REVERSE(REPLACE(b.CAMPO,'-','') ) P from (
@@ -312,6 +313,28 @@ class Alquiler
     
     }
 
+    function execSpAlquileres ($periodo) 
+    {
+        $sql = " EXEC RO_SP_INTEGRAL_ALQUILERES '$periodo';";
+
+        try {
+
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+            
+
+            return (count($rows));
+            
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+    }
 }
 
 
