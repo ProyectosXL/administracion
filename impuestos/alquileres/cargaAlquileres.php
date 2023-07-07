@@ -53,25 +53,11 @@
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
 
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <link rel="stylesheet" href="Css/cargaAlquileres.css">
 
             </link>
 
         </head>
-<style>
-    #thConcepto {
-        position: -webkit-sticky;
-        position: sticky;
-        left: 0;
-        z-index: 2;
-    }
-    #concepto{
-        position: -webkit-sticky;
-        position: sticky;
-        left: 0;
-        z-index: 2;
-        background: #ccc;
-    }
-</style>
         <body style="width:2800px">
 
             <div class="alert alert-secondary">
@@ -119,7 +105,10 @@
                                         </select>
                                         <button class="btn btn-primary btn-submit" value="" style="height:45px;margin-left:2px;position:relative;margin-bottom:8px">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                     </div>
-                                    <input type="button" class="btn btn-success" value="Procesar" style="margin-left:200px;height:45px" onclick="procesar()"></input>
+                                    <div class="btn-with-icon">
+                                        <input type="button" class="btn btn-success" value="Procesar " style="margin-left: 200px; height: 45px;width:110px" onclick="procesar()"/>
+                                        <span class="bi bi-check-circle-fill" style="color:white"></span>
+                                    </div>
                                 </div>
                             </form>
 

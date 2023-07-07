@@ -1,0 +1,25 @@
+#thConcepto {
+    position: -webkit-sticky;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+#concepto{
+    position: -webkit-sticky;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #ccc;
+}
+
+
+.btn-with-icon {
+position: relative;
+}
+
+.btn-with-icon span {
+position: absolute;
+top: 45%;
+right: 8px; /* Ajusta el espaciado del icono según tus necesidades */
+transform: translateY(-50%);
+}
