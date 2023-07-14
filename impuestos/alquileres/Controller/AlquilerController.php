@@ -215,11 +215,9 @@ function traerDetalleAlquiler ($fecha,$periodo) {
                             foreach ($traerPorcentajes as  $porcentaje) {
                                 
                                 if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
-
                                     $total = $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] / 100;
 
                                     if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
-
                                         // $total = ($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] - $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) * $porcentaje['PORCENTAJE'] / 100;
                                         $total = $porcentaje['PORCENTAJE'] ;
                                     }
