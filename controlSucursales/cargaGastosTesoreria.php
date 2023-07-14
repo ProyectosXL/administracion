@@ -24,9 +24,9 @@ $primerDia = date('Y-m-01', strtotime($periodoRerverse));
 // Obtener el último día del mes
 $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
+$data = $sucursal->traerGastosTesoreria($primerDia, $ultimoDia);
 
-var_dump($ultimoDia);
-
+$keys = array_keys($data[0]);
 
 //
   
@@ -65,7 +65,7 @@ var_dump($ultimoDia);
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Control Egresos de Caja Sucursales</h6></div>
+                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Control Egresos de Caja Sucursales</h6></div>
                     <div class="card card-1">
                         
                         <div class="row" style="margin-left:50px">
@@ -119,25 +119,54 @@ var_dump($ultimoDia);
 
                         </form>
             
-                        <table class="table table-striped table-bordered" id="myTable" style="width: 100%;" cellspacing="0" data-page-length="100">
+                        <table class="table table-striped table-bordered table-sm table-hover" id="myTable" style="width: 100%;height:100px" cellspacing="0" data-page-length="100">
                             <thead class="thead-dark" style="">
                                 <tr style="text-align:center">
 
                                     <th > NRO.SUCURSAL</th>
                                     <th > DESC_SUCURSAL </th>
-                                    <th >  </th>
-                                    <th >  </th>
-                                    <th >  </th>
-                                    <th >  </th>
-                                    <th >  </th>
-                                    <th >  </th>
-                                    <th >  </th>
-                                    <th >  </th>
+                                    <?php 
+                                        foreach ($keys as $key => $value) {
+                                            if($key > 1)
+                                            echo "<th style='text-align:center'>".$value."</th>";
+                                        }
+                                    ?>
+                                  
+                           
 
                                 </tr>
                             </thead>
                             <tbody>
                             
+                                <?php 
+                                    foreach ($todosLosLocales as $key => $value) {
+                                            echo "<tr>";
+                                            echo "<td style='text-align:center'>".$value['NRO_SUCURSAL']."</td>";
+                                            echo "<td style='text-align:center'>".$value['DESC_SUCURSAL']."</td>";
+                                            
+                                            foreach ($keys as $v) {
+                                                foreach ($data as $k => $dataK) {
+                                                    
+                                                }
+                                            //     if($value['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']){
+                                            //         foreach ($keys as $x => $k) {
+                                            //             if($x > 1){
+                                            //                 if($v[$k]>0){
+
+                                            //                     echo "<td style='text-align:center'>".$v[$k]."</td>";
+                                            //                 }else{
+                                            //                     echo "<td style='text-align:center'>0</td>";
+                                            //                 }
+                                            //             }
+                                            //         }
+                                            //     }
+                                            }
+                                            echo "</tr>";
+
+                                    }
+                                ?>
+                                <td></td>
+               
                             </tbody>
             
                         </table>
@@ -159,4 +188,4 @@ var_dump($ultimoDia);
 
 </html>
 <script src="js/jquery.table2excel.js"></script>
-<script src="js/controlEgresos.js"></script>
+

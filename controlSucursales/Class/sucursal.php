@@ -216,5 +216,29 @@ class Sucursal
 
     }
    
+    public function traerGastosTesoreria ($desde,$hasta) {
+
+        $sql = "EXEC RO_SP_CARGA_GASTOS_CAJA_SUCURSALES '$desde', '$hasta'";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            $v = [];
+            sqlsrv_next_result($stmt);
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+
+    }
+   
 
 }
