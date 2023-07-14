@@ -1,32 +1,35 @@
 <?php
     require_once "Class/sucursal.php";
-    $selectSucursal = isset($_GET['selectSucursal']) ?  $_GET['selectSucursal'] : '2-UNICENTER';
-        
-    $selectSucursal = explode("-",$selectSucursal);
 
- 
-    if(isset($_GET['desde']) && $_GET['desde'] != "" ){
-        $desde = $_GET['desde'];
-    }else{
-        $desde = null;
-    }
 
-    if(isset($_GET['hasta']) && $_GET['hasta'] != "" ){
-        $hasta = $_GET['hasta'];
-    }else{
-        $hasta = null;
-    }
 
-    $sucursal = new Sucursal();
-    $todosLosLocales= $sucursal->traerLocales();
+$sucursal = new Sucursal();
+$todosLosLocales= $sucursal->traerLocales();
 
-    $data = null;
+$mes = isset($_GET['mes']) ? $_GET['mes'] : date('m',  strtotime( date("Y-m-d")));
+$anio = isset($_GET['anio']) ? $_GET['anio'] : date('Y',  strtotime( date("Y-m-d")));
 
-    if($desde != null && $hasta != null){
-        
-        $data = $sucursal->traerGastosCajaSucursales($desde,$hasta,$selectSucursal[0]);
-    
-    }
+$fechaParaMostrar = $mes."/".$anio;
+
+$currentYear = date('Y',  strtotime( date("Y-m-d")));
+
+$yearDif = $currentYear - 2023;
+
+$periodo = (int)$mes."-".$anio;
+
+$periodoRerverse = $anio."-".$mes;
+
+$primerDia = date('Y-m-01', strtotime($periodoRerverse));
+
+// Obtener el último día del mes
+$ultimoDia = date('Y-m-t', strtotime($primerDia));
+
+
+var_dump($ultimoDia);
+
+
+//
+  
 
 ?>
 
@@ -66,7 +69,7 @@
                     <div class="card card-1">
                         
                         <div class="row" style="margin-left:50px">
-                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:50px"></i>Control Egresos de Caja - <?= $selectSucursal[1] ?></strong></h3>
+                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:50px"></i>Control Egresos de Caja - <?= $fechaParaMostrar ?></strong></h3>
                         </div>
 
                         <form action="#" method="get" style="margin-bottom:20px">
@@ -74,25 +77,35 @@
                             <div class="row" style="margin-top:10px">
 
                                 <div  style="margin-left:70px;width:120px">Mes:  
-                                    <select name="mes" id="mes"  style="width:70px; height:45px; text-align:center">
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                        <option value="6">6</option>
-                                        <option value="7">7</option>
-                                        <option value="8">8</option>
-                                        <option value="9">9</option>
-                                        <option value="10">10</option>
-                                        <option value="11">11</option>
-                                        <option value="12">12</option>   
+                                    <select name="mes" id="selectMes"  style="width:70px; height:45px; text-align:center">
+                                        <?php 
+                                            for ($i=1; $i <= 12 ; $i++) { 
+                                                if(strlen($i) == 1){
+                                                    $i = "0".$i;
+                                                }
+                                        ?>
+
+                                        <option value="<?=$i?>" <?php if($mes == $i ) echo "selected"?>><?=$i?></option>
+
+                                        <?php
+                                            }
+                                        ?>
                                     </select>
                                 </div>
                                 
                                 <div  style="margin-right:5px">Año: 
-                                <select name="anio" id="anio" style="width:70px; height:45px; text-align:center">
-                                    <option value="2023">2023</option>
+                                <select name="anio" id="selectAnio"  style="width:70px; height:45px; text-align:center">
+                                        <option value="2022">2022</option>
+
+                                            <?php 
+                                                for ($i=0; $i <= $yearDif ; $i++) { 
+                                                    $y = 2023 + $i;
+                                            ?>
+                                            <option value="<?=$y?>" <?php if($anio == $y ) echo "selected"?>><?=$y?></option>
+                                            <?php
+                                                }
+                                            ?>
+
                                 </select>
 
                                 </div>
@@ -110,42 +123,21 @@
                             <thead class="thead-dark" style="">
                                 <tr style="text-align:center">
 
-                                    <th > FECHA </th>
                                     <th > NRO.SUCURSAL</th>
-                                    <th > TIPO COMP. </th>
-                                    <th > COMPROBANTE </th>
-                                    <th > COD.CUENTA </th>
-                                    <th > CUENTA </th>
-                                    <th > MONTO </th>
-                                    <th > LEYENDA </th>
-                                    <th > FACTURA </th>
-                                    <th > CONTROL </th>
+                                    <th > DESC_SUCURSAL </th>
+                                    <th >  </th>
+                                    <th >  </th>
+                                    <th >  </th>
+                                    <th >  </th>
+                                    <th >  </th>
+                                    <th >  </th>
+                                    <th >  </th>
+                                    <th >  </th>
 
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php 
-                                if($data != null){
-                                    foreach ($data as $key => $gasto) {
-                                ?>
-            
-                                        <tr>
-                                            <td style='text-align:center' ><?= $gasto['FECHA']->format("Y-m-d") ?></td>
-                                            <td style='text-align:center' ><?= $gasto['NRO_SUCURS'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['COD_COMP'] ?></td>
-                                            <td style='text-align:center'   data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['COD_CTA'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['DESC_CUENTA'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['MONTO'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['LEYENDA'] ?></td>
-                                            <td style='text-align:center' ><input type='checkbox' class='form-check-input' id="checkFactura" onchange='checkFatura(this)'  <?= ($gasto['FACTURA'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
-                                            <td style='text-align:center' ><input type='checkbox' class='form-check-input' id="checkControl" onchange='checkControl(this)' <?= ($gasto['CONTROL'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
-                                        </tr>
-                                        
-                                <?php 
-                                    }
-                                }
-                                ?>   
+                            
                             </tbody>
             
                         </table>
