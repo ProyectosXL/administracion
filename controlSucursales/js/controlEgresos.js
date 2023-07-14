@@ -37,7 +37,7 @@ const checkFatura = (div) => {
     let nroComprobante = allTd[3].textContent;
     let codCuenta = allTd[4].textContent;
     let descripcionCuenta = allTd[5].textContent;
-    let monto = allTd[6].textContent;
+    let monto = allTd[6].textContent.replace(/[$.]/g, "");
     let leyenda = allTd[7].textContent;
     let factura = 0;
     if(allTd[8].querySelector("input").checked == true){ 
@@ -80,7 +80,7 @@ const checkControl = (div) => {
     let nroComprobante = allTd[3].textContent;
     let codCuenta = allTd[4].textContent;
     let descripcionCuenta = allTd[5].textContent;
-    let monto = allTd[6].textContent;
+    let monto = allTd[6].textContent.replace(/[$.]/g, "");;
     let leyenda = allTd[7].textContent;
     let factura = 0;
     if(allTd[8].querySelector("input").checked == true){ 

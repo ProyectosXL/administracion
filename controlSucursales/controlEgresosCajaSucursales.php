@@ -132,7 +132,7 @@
                                             <td style='text-align:center'   data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
                                             <td style='text-align:center' ><?= $gasto['COD_CTA'] ?></td>
                                             <td style='text-align:center' ><?= $gasto['DESC_CUENTA'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['MONTO'] ?></td>
+                                            <td style='text-align:center' >$<?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
                                             <td style='text-align:center' ><?= $gasto['LEYENDA'] ?></td>
                                             <td style='text-align:center' ><input type='checkbox' class='form-check-input' id="checkFactura" onchange='checkFatura(this)'  <?= ($gasto['FACTURA'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
                                             <td style='text-align:center' ><input type='checkbox' class='form-check-input' id="checkControl" onchange='checkControl(this)' <?= ($gasto['CONTROL'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
