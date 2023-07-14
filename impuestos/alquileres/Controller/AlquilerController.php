@@ -44,22 +44,9 @@ function actualizarDetalle () {
     $concepto = $_POST['concepto'];
     $importe = $_POST['importe'];
     $userName = $_POST['userName'];
-    
-    
+
+
     $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, $userName);
-
-    // SI EL CONCEPTO ES EL 8 SE REALIZA LA ACTUALIZACION DE LOS CONCEPTOS 9 Y 13 YA QUE SE CALCULAN EN FUNCION DE ESTE
-    if($concepto == 8) {
-     
-        $importe9 = $_POST['importe9'];
-        $importe13 = $_POST['importe13'];
-
-    
-        $alquiler->actualizarDetalle($periodo, $sucursal, 9, $importe9, $userName);
-        $alquiler->actualizarDetalle($periodo, $sucursal, 13, $importe13, $userName);
-
-    
-    }
     
     
     return true;
@@ -233,8 +220,8 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
                                     if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
 
-                                        $total = ($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] - $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) * $porcentaje['PORCENTAJE'] / 100;
-
+                                        // $total = ($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] - $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) * $porcentaje['PORCENTAJE'] / 100;
+                                        $total = $porcentaje['PORCENTAJE'] ;
                                     }
                                 }
                             }   
@@ -251,14 +238,22 @@ function traerDetalleAlquiler ($fecha,$periodo) {
                 foreach ($detalle as $det) {
 
                     if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
-                        $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = (int)$det['IMPORTE'];
+
+                        
+                        $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $det['IMPORTE_PARSE'];
+
+                        break;
+                
+      
                     }
 
                 }  
             }
 
         }
+   
     }
+
     return $newArray;
 }
 
