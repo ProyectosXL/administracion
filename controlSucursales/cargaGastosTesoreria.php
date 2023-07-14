@@ -21,14 +21,13 @@ $periodoRerverse = $anio."-".$mes;
 
 $primerDia = date('Y-m-01', strtotime($periodoRerverse));
 
-// Obtener el último día del mes
+
 $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
-$data = $sucursal->traerGastosTesoreria($primerDia, $ultimoDia);
+$gastosTesoreria = $sucursal->traerGastosTesoreria($primerDia, $ultimoDia);
 
-$keys = array_keys($data[0]);
+$keys = array_keys($gastosTesoreria[0]);
 
-//
   
 
 ?>
@@ -40,7 +39,7 @@ $keys = array_keys($data[0]);
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Control Egresos de Caja Sucursales</title>
+        <title>Carga Gastos Tesoreria</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
@@ -65,11 +64,11 @@ $keys = array_keys($data[0]);
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Control Egresos de Caja Sucursales</h6></div>
+                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Carga Gastos Tesoreria</h6></div>
                     <div class="card card-1">
-                        
+                        <div id="periodo" hidden><?= $periodo ?></div>
                         <div class="row" style="margin-left:50px">
-                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:50px"></i>Control Egresos de Caja - <?= $fechaParaMostrar ?></strong></h3>
+                            <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:50px"></i>Carga Gastos Tesoreria - <?= $fechaParaMostrar ?></strong></h3>
                         </div>
 
                         <form action="#" method="get" style="margin-bottom:20px">
@@ -119,18 +118,19 @@ $keys = array_keys($data[0]);
 
                         </form>
             
-                        <table class="table table-striped table-bordered table-sm table-hover" id="myTable" style="width: 100%;height:100px" cellspacing="0" data-page-length="100">
+                        <table class="table table-striped table-bordered table-sm table-hover" id="tablaGastosTesoreria" style="width: 100%;height:100px" cellspacing="0" data-page-length="100">
                             <thead class="thead-dark" style="">
                                 <tr style="text-align:center">
 
-                                    <th > NRO.SUCURSAL</th>
-                                    <th > DESC_SUCURSAL </th>
+                                    <th style="text-align:center;width:5%" > NRO.SUCURSAL</th>
+                                    <th  style="text-align:center;width:20%" > DESC_SUCURSAL </th>
                                     <?php 
                                         foreach ($keys as $key => $value) {
                                             if($key > 1)
-                                            echo "<th style='text-align:center'>".$value."</th>";
+                                            echo "<th style='text-align:center;width:10%'>".$value."</th>";
                                         }
                                     ?>
+                                    <th style="text-align:center;width:5%">CARGADO</th>
                                   
                            
 
@@ -143,27 +143,27 @@ $keys = array_keys($data[0]);
                                             echo "<tr>";
                                             echo "<td style='text-align:center'>".$value['NRO_SUCURSAL']."</td>";
                                             echo "<td style='text-align:center'>".$value['DESC_SUCURSAL']."</td>";
-                                            
-                                            foreach ($keys as $v) {
-                                                foreach ($data as $k => $dataK) {
-                                                    
+
+                                            foreach ($keys as $x => $k) {
+                                                if($x > 1){
+                                                    $total = 0;
+                                                    foreach ($gastosTesoreria as $key => $gasto) {
+                                                        if($gasto['NRO_SUCURSAL'] == $value['NRO_SUCURSAL']){
+                                                            $total += $gasto[$k];
+                                                        }
+                                                    }
+                                                    echo "<td style='text-align:center'>".$total."</td>";
                                                 }
-                                            //     if($value['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']){
-                                            //         foreach ($keys as $x => $k) {
-                                            //             if($x > 1){
-                                            //                 if($v[$k]>0){
-
-                                            //                     echo "<td style='text-align:center'>".$v[$k]."</td>";
-                                            //                 }else{
-                                            //                     echo "<td style='text-align:center'>0</td>";
-                                            //                 }
-                                            //             }
-                                            //         }
-                                            //     }
+                            
                                             }
-                                            echo "</tr>";
 
+                                            echo "<td style='text-align:center;'><input type='checkbox' onchange='checkControl(this)' id='checkControl'></td>";
+                                            echo "</tr>";
+                                            
                                     }
+                                      
+
+                                    
                                 ?>
                                 <td></td>
                
@@ -187,5 +187,6 @@ $keys = array_keys($data[0]);
     </body>
 
 </html>
-<script src="js/jquery.table2excel.js"></script>
+
+<script src="js/gastosTesoreria.js"></script>
 
