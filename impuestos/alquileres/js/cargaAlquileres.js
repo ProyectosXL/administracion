@@ -64,6 +64,7 @@ const totalizar = (div = null) => {
 
         if(div.id.split("-")[1] == 8) {
         
+            actualizarDetalle(document.querySelector(`#input-6-${sucursalActual}`));
             actualizarDetalle(document.querySelector(`#input-7-${sucursalActual}`));
             actualizarDetalle(document.querySelector(`#input-9-${sucursalActual}`));
             actualizarDetalle(document.querySelector(`#input-13-${sucursalActual}`));
