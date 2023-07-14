@@ -28,8 +28,11 @@
     $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo); 
     
     if($result['CONTEO'] > 0){
+ 
         $newArray = traerDetalleAlquiler($fecha,$periodo);
     }else{
+
+
         $newArray = cargarAlquieres($fecha,$periodo);
     }
 
@@ -149,6 +152,7 @@
                                                     <td style="text-align:center" id="concepto"><strong><?= $value['CONCEPTO']?></strong> </td>
                                                     <?php   
                                                         foreach ($newArray as $k => $val) {
+
                                                             $porcentajeDelLocal = 0;
                                                             $rentabilidadDelConcepto = 0;
                                                             
@@ -184,7 +188,8 @@
                                                                 }
 
                                                             }
-                                                            $valor =$val[$value['CONCEPTO']];
+
+                                                            $valor = $val[$value['CONCEPTO']];
                                                             if($valor < 0){
                                                                 $valor = $valor * -1;
                                                             }

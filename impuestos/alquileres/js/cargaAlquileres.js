@@ -8,7 +8,16 @@ const totalizar = (div = null) => {
         let result = 0;
         idConceptos.forEach(e => {
             let concepto = e.textContent;
+            // console.log(pets.includes('cat'));
+            if(e.textContent == 14 && ["2","16","60","79","81"].includes(s.textContent)) {
+                
+                let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
+                let valorId7 = document.querySelector(`#input-7-${s.textContent}`).value.replace(/[$.]/g, "");
 
+                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId7) * parseInt(porcentaje)) / 100);
+                
+            }
+            
             if(e.textContent == 9 || e.textContent == 13 ) {
 
                 let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
@@ -23,9 +32,7 @@ const totalizar = (div = null) => {
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
 
                 inputActual.value ="$"+ parseNumber( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9) );
-                if(inputActual.value.replace(/[$.]/g, "") > 0) {
-                    actualizarDetalle(document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`));
-                }
+
             }
 
             if(e.textContent == 6 || e.textContent == 7 ) {
@@ -38,9 +45,6 @@ const totalizar = (div = null) => {
                     calculo = 0;
                 }
                 inputActual.value ="$"+ parseNumber( calculo); 
-                if(inputActual.value.replace(/[$.]/g, "") > 0) {
-                    actualizarDetalle(document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`));
-                }
 
             }
             $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
@@ -55,14 +59,28 @@ const totalizar = (div = null) => {
 
     if(div != null) {
 
+    let sucursalActual = div.id.split("-")[2];
+
         actualizarDetalle(div);
+
+        if(div.id.split("-")[1] == 8) {
+        
+            actualizarDetalle(document.querySelector(`#input-6-${sucursalActual}`));
+            actualizarDetalle(document.querySelector(`#input-7-${sucursalActual}`));
+            actualizarDetalle(document.querySelector(`#input-9-${sucursalActual}`));
+            actualizarDetalle(document.querySelector(`#input-13-${sucursalActual}`));
+            actualizarDetalle(document.querySelector(`#input-16-${sucursalActual}`));
+            actualizarDetalle(document.querySelector(`#input-17-${sucursalActual}`));
+            actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`));
+            
+        }
 
         value = div.value.replace(/[$.]/g, "");
         value = parseInt(value.replace(/ /g,''));
 
 
         if(value < 0){
-            // console.log(parseNumber(value))
+
             div.value = "- $"+(parseNumber((value * -1),true)  )
             
         }else{
@@ -151,13 +169,6 @@ const actualizarDetalle = (div) => {
     let importe9 = 0;
     let importe13 = 0;
 
-
-    if(concepto == 8){
-
-        importe9 = document.querySelector(`#input-9-${sucursal}`).value.replace(/[$.]/g, "");
-        importe13 = document.querySelector(`#input-13-${sucursal}`).value.replace(/[$.]/g, "");
-
-    }
 
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=actualizarDetalle',   
