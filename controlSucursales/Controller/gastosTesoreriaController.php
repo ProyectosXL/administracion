@@ -17,11 +17,11 @@ function marcarControlado (){
 
     $nroSucursal = $_POST['nroSucursal'];
     $periodo = $_POST['periodo'];
-
-
+    $data = json_encode($_POST['data']);
+    
     $sucursal = new Sucursal();
 
-    $sucursal->controlarGastosTesoreria($periodo, $nroSucursal);
+    $sucursal->controlarGastosTesoreria( $nroSucursal, $data, $periodo );
 
 
 }

@@ -252,16 +252,40 @@ class Sucursal
 
     }
 
-    public function controlarGastosTesoreria ($desde,$hasta) 
+    public function controlarGastosTesoreria ( $nroSucursal, $data, $periodo ) 
     {
 
-        $sql = "";
+        $sql = "INSERT INTO SJ_CONTROL_GASTOS_TESORERIA (NRO_SUCURSAL,DATA,CHECKEADO,PERIODO) VALUES ($nroSucursal,'$data','1','$periodo')";
 
         try{
             
             $stmt = sqlsrv_query($this->cid_central, $sql);
             return true;
 
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+
+    }
+    public function traerGastosTesoreriaCheckeados ( $periodo ) 
+    {
+
+        $sql = "SELECT NRO_SUCURSAL FROM  SJ_CONTROL_GASTOS_TESORERIA WHERE PERIODO = '$periodo'";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            $v = [];
+  
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";

@@ -1,5 +1,5 @@
 <?php
-    require_once "Class/sucursal.php";
+require_once "Class/sucursal.php";
 
 
 
@@ -26,7 +26,19 @@ $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
 $gastosTesoreria = $sucursal->traerGastosTesoreria($primerDia, $ultimoDia);
 
-$keys = array_keys($gastosTesoreria[0]);
+$checkeados = $sucursal->traerGastosTesoreriaCheckeados($periodo);
+$arraySucursalesCheckeadas = [];
+foreach ($checkeados as $x => $checkeado) {
+    $arraySucursalesCheckeadas[$x] = $checkeado['NRO_SUCURSAL'];
+
+}
+$keys = [];
+if(count($gastosTesoreria) > 0){
+
+    $keys = array_keys($gastosTesoreria[0]);
+
+}
+
 
   
 
@@ -139,31 +151,39 @@ $keys = array_keys($gastosTesoreria[0]);
                             <tbody>
                             
                                 <?php 
+                                if(count($keys) > 0){
+
+                                
                                     foreach ($todosLosLocales as $key => $value) {
-                                            echo "<tr>";
-                                            echo "<td style='text-align:center'>".$value['NRO_SUCURSAL']."</td>";
-                                            echo "<td style='text-align:center'>".$value['DESC_SUCURSAL']."</td>";
 
-                                            foreach ($keys as $x => $k) {
-                                                if($x > 1){
-                                                    $total = 0;
-                                                    foreach ($gastosTesoreria as $key => $gasto) {
-                                                        if($gasto['NRO_SUCURSAL'] == $value['NRO_SUCURSAL']){
-                                                            $total += $gasto[$k];
+                                            ?>
+                                            <tr>
+                                                <td style='text-align:center'><?= $value['NRO_SUCURSAL'] ?></td>
+                                                <td style='text-align:center'><?= $value['DESC_SUCURSAL'] ?></td>
+                                            <?php
+
+                                                foreach ($keys as $x => $k) {
+                                                    if($x > 1){
+                                                        $total = 0;
+                                                        foreach ($gastosTesoreria as $key => $gasto) {
+                                                            if($gasto['NRO_SUCURSAL'] == $value['NRO_SUCURSAL']){
+                                                                $total += $gasto[$k];
+                                                            }
                                                         }
+                                            ?>
+                                                            <td style='text-align:center'>$<?=(number_format($total, 0, ',', '.')) ?></td>
+                                            <?php
                                                     }
-                                                    echo "<td style='text-align:center'>".$total."</td>";
+                                
                                                 }
-                            
-                                            }
-
-                                            echo "<td style='text-align:center;'><input type='checkbox' onchange='checkControl(this)' id='checkControl'></td>";
-                                            echo "</tr>";
-                                            
+                                            ?>
+                                                <td style='text-align:center;'><input type='checkbox' onchange='checkControl(this)' id='checkControl' <?= (in_array($value['NRO_SUCURSAL'], $arraySucursalesCheckeadas)) ? "checked='true' ; disabled='true'" : "" ?>></td>
+                                           </tr>
+                                            <?php
                                     }
                                       
 
-                                    
+                                }
                                 ?>
                                 <td></td>
                
