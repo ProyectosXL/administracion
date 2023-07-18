@@ -147,4 +147,78 @@ class Sucursal
 
     }
 
+    public function traerGastosCajaSucursales ($desde, $hasta, $sucursal){
+
+        try {
+
+            $sql = "SELECT a.*,b.FACTURA,b.CONTROL FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES a
+            left join RO_T_GASTOS_CAJA_SUCURSALES b on  REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '')  collate Latin1_General_BIN 
+            WHERE a.FECHA BETWEEN '$desde' AND '$hasta'  AND a.NRO_SUCURS = $sucursal ORDER BY FECHA DESC; ";
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+
+
+    }
+
+    public function marcarFacturado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control) {
+
+        $sql = "IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = $nroComprobante)
+        BEGIN
+            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET FACTURA = $factura WHERE N_COMP  = $nroComprobante
+        END
+        ELSE
+        BEGIN
+            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL) VALUES ('$fecha',$nroSucursal,'$tipoComprobante','$nroComprobante','$codCuenta','$descripcionCuenta',$monto,'$leyenda',$factura,$control)
+        END";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+       
+            return $stmt;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+
+    public function marcarControlado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control) {
+
+        $sql = "IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = $nroComprobante)
+        BEGIN
+            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = $control ,FECHA_CONTROL = GETDATE() WHERE N_COMP  = $nroComprobante
+        END
+        ELSE
+        BEGIN
+            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, FECHA_CONTROL, USUARIO) VALUES ('$fecha',$nroSucursal,'$tipoComprobante','$nroComprobante','$codCuenta','$descripcionCuenta',$monto,'$leyenda',$factura,$control,GETDATE(),'')
+        END";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+       
+            return $stmt;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+   
+
 }
