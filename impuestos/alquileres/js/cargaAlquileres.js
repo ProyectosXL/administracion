@@ -14,7 +14,7 @@ const totalizar = (div = null) => {
                 let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
                 let valorId7 = document.querySelector(`#input-7-${s.textContent}`).value.replace(/[$.]/g, "");
 
-                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId7) * parseInt(porcentaje)) / 100);
+                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId7) * parseFloat(porcentaje)) / 100);
                 
             }
             
@@ -22,7 +22,7 @@ const totalizar = (div = null) => {
 
                 let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
                 let valorId8 = document.querySelector(`#input-8-${s.textContent}`).value.replace(/[$.]/g, "");
-                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId8) * parseInt(porcentaje)) / 100);
+                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId8) * parseFloat(porcentaje)) / 100);
 
             }
 
