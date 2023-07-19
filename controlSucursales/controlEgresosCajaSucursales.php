@@ -15,7 +15,7 @@
     if(isset($_GET['hasta']) && $_GET['hasta'] != "" ){
         $hasta = $_GET['hasta'];
     }else{
-        $hasta = $fecha_actual;
+        $hasta = date("Y-m-d",strtotime($fecha_actual."- 1 day"));
     }
 
     $sucursal = new Sucursal();
