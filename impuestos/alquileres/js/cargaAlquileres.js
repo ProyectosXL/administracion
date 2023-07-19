@@ -14,7 +14,7 @@ const totalizar = (div = null) => {
                 let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
                 let valorId7 = document.querySelector(`#input-7-${s.textContent}`).value.replace(/[$.]/g, "");
 
-                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId7) * parseInt(porcentaje)) / 100);
+                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId7) * parseFloat(porcentaje)) / 100);
                 
             }
             
@@ -22,7 +22,7 @@ const totalizar = (div = null) => {
 
                 let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
                 let valorId8 = document.querySelector(`#input-8-${s.textContent}`).value.replace(/[$.]/g, "");
-                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId8) * parseInt(porcentaje)) / 100);
+                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId8) * parseFloat(porcentaje)) / 100);
 
             }
 
@@ -216,4 +216,68 @@ const actualizarCargaAutomatica = () => {
     });
 
 
+}
+
+
+const procesar = () => {
+
+    let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
+    let periodo = document.querySelector("#periodo").textContent;
+    let error = false;
+
+    for (let i = 0; i < allTd.length; i++) {
+
+        if(i >= 2){
+
+            let element = allTd[i];
+
+            let value = element.textContent.replace(/[$.]/g, "");
+
+       
+            if(value == 0){
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Atención',
+                    text: 'Complete los gastos de todas las sucursales!'
+                })
+                error = true;
+                break;
+
+            }
+
+
+        }
+    };
+
+    if(error == false){ 
+        $.ajax({
+            url: 'Controller/AlquilerController.php?accion=procesar',
+            method: 'POST',
+            data: {
+                periodo: periodo
+            },
+            success : function(data) {
+                if(data = 1){
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'El período ya se encuentra procesado!'
+                        })
+                }else{
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Procesado',
+                        text: 'Se ha procesado correctamente!'
+                    }).then((result) => {
+                        // location.reload();
+                    })
+                    
+                }
+                
+
+            }
+        });
+    }
 }
