@@ -12,6 +12,10 @@ switch ($accion) {
         actualizarDetalle(); 
         break;
 
+    case 'procesar':
+        execSpAlquileres(); 
+        break;
+
     default:
       
         break;
@@ -276,7 +280,7 @@ function traerConceptos () {
     return $conceptos;
 }
 
-function consultarMesesDetalle ($periodoPasado, $periodo){
+function consultarMesesDetalle ($periodoPasado, $periodo) {
     
     require_once "Class/Alquiler.php";
     require_once "../../controlSucursales/Class/sucursal.php";
@@ -325,7 +329,7 @@ function consultarMesesDetalle ($periodoPasado, $periodo){
 
 }
 
-function traerArrayPeriodo (){
+function traerArrayPeriodo () {
     $fechaActual = date('Y-m-d'); // Obtiene la fecha actual en el formato "Año-Mes-Día"
     $fechaHaceUnAnio = date('Y-m-d', strtotime('-1 year', strtotime($fechaActual)));
 
@@ -357,7 +361,7 @@ function traerArrayPeriodo (){
     return ($dates);
 }
 
-function traerDetalleHaceUnAño ($periodoPasado, $now){
+function traerDetalleHaceUnAño ($periodoPasado, $now) {
     
     require_once "Class/Alquiler.php";
     require_once "../../controlSucursales/Class/sucursal.php";
@@ -368,5 +372,19 @@ function traerDetalleHaceUnAño ($periodoPasado, $now){
     $detalles = $alquiler->consultarMesesDetalle ($periodoPasado, $now);
 
     return $detalles;
+}
+
+
+function execSpAlquileres () {
+
+    require_once "../Class/Alquiler.php";
+    $alquiler = new Alquiler();
+
+    $periodo = $_POST['periodo'];
+
+    $detalles = $alquiler->execSpAlquileres($periodo);
+
+    return $detalles;
+
 }
 ?>
