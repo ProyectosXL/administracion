@@ -212,7 +212,7 @@ class Alquiler
 
     public function traerDetalle($periodo)
     {
-        $sql = "SELECT * FROM RO_T_DETALLE_ALQUILERES WHERE PERIODO LIKE '%$periodo%'";
+        $sql = "SELECT *, CAST(IMPORTE AS FLOAT) IMPORTE_PARSE FROM RO_T_DETALLE_ALQUILERES WHERE PERIODO LIKE '%$periodo%'";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
        
