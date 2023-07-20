@@ -64,14 +64,22 @@ function completarAuxiliar(dato) {
 }
 function completarCuenta(dato) {
   let descCuenta = document.querySelector(".cuenta");
-  conexion = new XMLHttpRequest();
-  conexion.onreadystatechange = () => {
-    if (conexion.readyState == 4 && conexion.status == 200) {
-      descCuenta.textContent = conexion.responseText;
-    }
-  };
-  conexion.open("GET", "Class/cuentaContable.php?codigo=" + dato, true);
-  conexion.send();
+  // conexion = new XMLHttpRequest();
+  // conexion.onreadystatechange = () => {
+  //   if (conexion.readyState == 4 && conexion.status == 200) {
+  //     descCuenta.textContent = conexion.responseText;
+  //   }
+  // };
+  // conexion.open("GET", "Class/cuentaContable.php?codigo=" + dato, true);
+  // conexion.send();
+  $.ajax({
+    url: "Class/cuentaContable.php?codigo="+dato,
+    method: "GET",
+    success: function (data) {
+      descCuenta.textContent = data;
+    },
+  })
+  
 }
 
 
