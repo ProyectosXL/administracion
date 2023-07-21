@@ -258,7 +258,7 @@ const procesar = () => {
                 periodo: periodo
             },
             success : function(data) {
-                if(data = 1){
+                if(data == 1){
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
