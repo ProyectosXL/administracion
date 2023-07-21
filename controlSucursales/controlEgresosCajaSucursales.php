@@ -4,17 +4,18 @@
         
     $selectSucursal = explode("-",$selectSucursal);
 
+    $fecha_actual = date("Y-m-d");
  
     if(isset($_GET['desde']) && $_GET['desde'] != "" ){
         $desde = $_GET['desde'];
     }else{
-        $desde = null;
+        $desde = date("Y-m-d",strtotime($fecha_actual."- 1 week"));
     }
 
     if(isset($_GET['hasta']) && $_GET['hasta'] != "" ){
         $hasta = $_GET['hasta'];
     }else{
-        $hasta = null;
+        $hasta = date("Y-m-d",strtotime($fecha_actual."- 1 day"));
     }
 
     $sucursal = new Sucursal();
