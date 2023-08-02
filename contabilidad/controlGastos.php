@@ -68,13 +68,13 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
         <div class="progressbar-wrapper">
             <div hidden id="periodo" attr-periodo= "<?= $periodo ?>"></div>
             <ul class="progressbar" >
-                <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
-                <li class="" id="paso2"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
-                <li class="" id="paso3"  data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
-                <li class="" id="paso4"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza (sucursales)">Paso</li>
-                <li class="" id="paso5" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
-                <li class="" id="paso6" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
-                <li class="" id="paso7" data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
+                <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
+                <li class="" id="paso2"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza (sucursales)">Paso</li>
+                <li class="" id="paso3"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
+                <li class="" id="paso4"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
+                <li class="" id="paso5" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar el costo de mercadería vendida">Paso</li>
+                <li class="" id="paso6" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
+                <li class="" id="paso7" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
                 <li class="" id="paso8" data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
             </ul>
         </div>
