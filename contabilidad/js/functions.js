@@ -609,7 +609,7 @@ const pintarPasos = (periodo) => {
         return false;
       }
 
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 8; i++) {
         pasos[i] = data[0]['PASO_'+(i+1)];
       }
       pasos.forEach((element,x) => {

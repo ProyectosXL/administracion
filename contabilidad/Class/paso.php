@@ -51,7 +51,7 @@ class Paso
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
-;
+            
             $sql = "EXEC RO_SP_VENTAS_BRUTAS '$desde', '$hasta'";
 
             $stmt = sqlsrv_query($cid_central, $sql);
