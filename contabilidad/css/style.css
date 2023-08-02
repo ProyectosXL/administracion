@@ -126,7 +126,7 @@ select, input{
 
 .progressbar li {
     list-style-type: none;
-    width: 14%;
+    width: 12%;
     float: left;
     font-size: 12px;
     position: relative;

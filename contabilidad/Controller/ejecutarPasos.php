@@ -15,7 +15,7 @@ $result = null;
 
 
 
-if($paso == 7){
+if($paso == 8){
 
     require_once "../Class/gasto.php";
     $gasto = new Gasto();

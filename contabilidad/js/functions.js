@@ -446,7 +446,7 @@ function prorratearGastos() {
       }
     });
 }
-const activarModalPaso3 = () => {
+const activarModalPaso1 = () => {
 
   let desde = document.querySelector("#desde").value;
   let hasta = document.querySelector("#hasta").value;
@@ -469,7 +469,7 @@ const activarModalPaso3 = () => {
 function ejecutarPasos() {
   
 
-  if(pasoActual == 7){
+  if(pasoActual == 8){
     Swal.fire({
       icon: "success",
       title: "Control exitoso",
@@ -479,8 +479,10 @@ function ejecutarPasos() {
   }
 
   pasoActual = pasoActual + 1;
+  pasoActual = 3;
+  console.log(pasoActual)
 
-  let pasosDirectos = [3, 5, 6, 7];
+  let pasosDirectos = [1, 5, 6, 7,8];
 
 
  
@@ -517,12 +519,12 @@ function ejecutarPasos() {
           }
         )
         .then((respuesta) => respuesta.json())
-        .then((perfil) => {
+        .then((perfil) => { 
             if (perfil.length == 0 || pasosDirectos.includes(pasoActual) == true ) {
 
               spinner.classList.remove('loading');
               
-              if (pasoActual == 7){
+              if (pasoActual == 8){
        
                 if(perfil == false){
                   Swal.fire({
@@ -541,9 +543,13 @@ function ejecutarPasos() {
                 }
                 
               }
-              if (pasoActual == 3){
-                activarModalPaso3();
+
+              if (pasoActual == 1){
+
+                activarModalPaso1();
+                
               }
+
               Swal.fire({
                 icon: "success",
                 title: "Control exitoso",
@@ -556,19 +562,21 @@ function ejecutarPasos() {
               spinner.classList.remove('loading');
 
               switch (pasoActual) {
-                case 1:
-                  rellenarModal1(perfil);
-                  $("#modalCn").modal("toggle");
-                  break;
 
                 case 2:
                   rellenarModal2(perfil);
-                  $("#modalPc").modal("toggle");
+                  $("#modalVct").modal("toggle");
                   break;
+
+                case 3:
+                  rellenarModal3(perfil);
+                  $("#modalCn").modal("toggle");
+                  break;
+
 
                 case 4:
                   rellenarModal4(perfil);
-                  $("#modalVct").modal("toggle");
+                  $("#modalPc").modal("toggle");
                   break;
 
                 default:
@@ -620,7 +628,7 @@ const pintarPasos = (periodo) => {
     });
 };
 
-const rellenarModal1 = (obj)=>{
+const rellenarModal3 = (obj)=>{
 
 
   let tableModal =  document.querySelector("#tableCn");
@@ -644,7 +652,7 @@ const rellenarModal1 = (obj)=>{
   }
 };
 
-const rellenarModal2 = (obj) => {
+const rellenarModal4 = (obj) => {
 
     let tableModal =  document.querySelector("#tableModalPc");
     tableModal.innerHTML = "";
@@ -720,7 +728,7 @@ const convertToNumber = (numero) => {
   let newNumero1 = numero.replaceAll(".", "");
   return newNumero1.replace(",", ".");
 };
-const rellenarModal4 = (obj) => {
+const rellenarModal2 = (obj) => {
   let tableModal = document.querySelector("#tableModalvCT");
 
   tableModal.innerHTML = "";
