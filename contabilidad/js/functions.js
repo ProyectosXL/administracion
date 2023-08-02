@@ -479,8 +479,7 @@ function ejecutarPasos() {
   }
 
   pasoActual = pasoActual + 1;
-  pasoActual = 3;
-  console.log(pasoActual)
+
 
   let pasosDirectos = [1, 5, 6, 7,8];
 

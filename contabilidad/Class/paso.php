@@ -54,20 +54,7 @@ class Paso
 ;
             $sql = "EXEC RO_SP_VENTAS_BRUTAS '$desde', '$hasta'";
 
-
-            // ini_set('max_execution_time', 300);
-
             $stmt = sqlsrv_query($cid_central, $sql);
-
-            // $next_result = sqlsrv_next_result($stmt);
-
-            // $v = [];
-
-            // while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
-
-            //     $v[] = $row;
-
-            // }
 
             return true;
           
