@@ -745,14 +745,30 @@ const rellenarModal2 = (obj) => {
     var input = document.createElement("input");
     input.type = "checkbox";
     input.className = "form-control";
-    input.id="checkModal4";
+    input.id="checkModal2";
 
+    let number3 = obj[x]['IMP_COBRANZA'].toLocaleString('de-De', {
+      style: 'decimal',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    });
+    
+    let number2 = obj[x]['IMP_VENTA'].toLocaleString('de-De', {
+      style: 'decimal',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    });
 
+    dif = obj[x]['DIFERENCIA'].toLocaleString('de-De', {
+      style: 'decimal',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    });
 
     const text1=document.createTextNode(parseInt(obj[x]['NRO_SUCURS']));
-    const text2=document.createTextNode(parseFloat(obj[x]['IMP_VENTA']).toFixed(2));
-    const text3=document.createTextNode(parseFloat(obj[x]['IMP_COBRANZA']).toFixed(2));
-    const text4=document.createTextNode(parseFloat(obj[x]['DIFERENCIA']).toFixed(2));
+    const text2=document.createTextNode("$"+ number2);
+    const text3=document.createTextNode("$"+ number3);
+    const text4=document.createTextNode("$"+ dif);
 
     if(parseFloat(obj[x]['DIFERENCIA']) == 0){
       input.checked = true;
@@ -966,9 +982,9 @@ const exportModal = (table) =>{
     });
 
 }
-const aceptarDiferenciasModal4 = () =>{
+const aceptarDiferenciasModal2 = () =>{
   
-  let allCheck = document.querySelectorAll("#checkModal4");
+  let allCheck = document.querySelectorAll("#checkModal2");
   let diferencias = false;
   for (let i = 0; i < allCheck.length; i++) {
 
@@ -990,7 +1006,7 @@ const aceptarDiferenciasModal4 = () =>{
 
   if(diferencias == false){
 
-    marcarPasoControlado("4");
+    marcarPasoControlado("2");
 
     $('#modalVct').modal('hide');
     

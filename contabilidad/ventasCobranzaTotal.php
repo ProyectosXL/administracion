@@ -45,7 +45,7 @@
           </div>
           <div class="modal-footer">
             <button class="btn btn-success btn_exportar" id="btnExportCn" onclick ="exportModal('tableModalvCT')"> Exportar<i class="bi bi-file-earmark-excel"></i></button>
-            <button class="btn btn-danger" id="btnAceptarDiferencias" onclick="aceptarDiferenciasModal4()" > Aceptar con Diferencias <i class="bi bi-exclamation-triangle-fill"></i></button>
+            <button class="btn btn-danger" id="btnAceptarDiferencias" onclick="aceptarDiferenciasModal2()" > Aceptar con Diferencias <i class="bi bi-exclamation-triangle-fill"></i></button>
             <button type="button" class="btn btn-primary" data-dismiss="modal">Cerrar</button>
           </div>
         </div>
