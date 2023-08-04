@@ -106,4 +106,23 @@ class Ventas
 
     }
 
+    public function confirmarVentaVsCobranza($nroSucursal ,$nroComprobante)
+    {
+        $cid_central = $this->cid->conectar('central');    
+
+        $sql = "UPDATE [LAKERBIS].LOCALES_LAKERS.DBO.CTA29 SET CONCILIADO = 1 WHERE NRO_SUCURS = '$nroSucursal' AND N_COMP = '$nroComprobante'";
+var_dump($sql);
+die();
+        try{
+            
+            $stmt = sqlsrv_query($cid_central, $sql);
+    
+            return true;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+
 }

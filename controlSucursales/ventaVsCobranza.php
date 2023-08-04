@@ -75,6 +75,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     <th class="col-">VENTA $</th>
                     <th class="col-">COBRANZA $</th>
                     <th class="col-" style="color: #28a745;">DIFERENCIA $</th>
+                    <th class="col-"></th>
             </thead>
 
             <tbody id="table">
@@ -90,6 +91,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <td><?= number_format($key->IMP_VENTA, 0, '', '.') ?></td>
                         <td><?= number_format($key->IMP_COBRANZA, 0, '', '.') ?></td>
                         <td><?= number_format($key->DIFERENCIA, 0, '', '.') ?></td>
+                        <td style="text-align:center"><input type="checkbox" onchange="confirmarVentaVsCobranza(this)"></td>
                     </tr>
                 <?php
                 }
