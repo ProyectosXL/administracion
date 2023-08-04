@@ -4,9 +4,11 @@ include '../Class/paso.php';
 
 $periodo= $_POST['periodo'];
 $paso = $_POST['paso'];
+$desde = $_POST['desde'];
+$hasta = $_POST['hasta'];
 
 $pasos = new Paso();
 
-$result = $pasos->marcarPasoEjecutado($paso, $periodo);
+$result = $pasos->aceptarConDiferencias($paso, $periodo, $desde, $hasta);
 
 ?>
