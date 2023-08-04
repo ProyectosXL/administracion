@@ -24,6 +24,11 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/style.css">
 
+    <style>
+        #inputText {
+            line-height: 1.2; /* Ajusta el valor para controlar el espacio entre líneas */
+        }
+    </style>
 </head>
 
 <body>
@@ -75,7 +80,8 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     <th class="col-">VENTA $</th>
                     <th class="col-">COBRANZA $</th>
                     <th class="col-" style="color: #28a745;">DIFERENCIA $</th>
-                    <th class="col-"></th>
+                    <th class="col-" style="text-align:center">EXCLUIR</th>
+                    <th class="col-" style="text-align:center">OBSERVACIONES</th>
             </thead>
 
             <tbody id="table">
@@ -92,6 +98,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                         <td><?= number_format($key->IMP_COBRANZA, 0, '', '.') ?></td>
                         <td><?= number_format($key->DIFERENCIA, 0, '', '.') ?></td>
                         <td style="text-align:center"><input type="checkbox" onchange="confirmarVentaVsCobranza(this)"></td>
+                        <td style="text-align:center"><textarea name="" id="inputText" cols="30" rows="2" oninput="checkLineBreak()" ></textarea></td>
                     </tr>
                 <?php
                 }
@@ -133,7 +140,25 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         });
 
     });
+    var lineBreakAdded = false;
 
+    function checkLineBreak() {
+        
+        var maxLength = 26; // Cambia este valor por la cantidad de caracteres deseados
+        var input = document.getElementById("inputText");
+
+        let text = input.value;
+
+        
+        if (input.value.length >= maxLength && !lineBreakAdded) {
+            input.value = input.value.replace(new RegExp('(.{' + maxLength + '})', 'g'), '$1\n');
+            lineBreakAdded = true;
+        }
+
+        if (input.value.length < maxLength) {
+            lineBreakAdded = false;
+        }
+    }
 </script>
 
 </html>
