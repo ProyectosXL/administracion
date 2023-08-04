@@ -1,6 +1,5 @@
 <?php
 
-
 class Paso
 {
 
@@ -15,12 +14,7 @@ class Paso
 
             $stmt = sqlsrv_query($cid_central, $sql);
             sqlsrv_execute($stmt);
-        }
-
-        /*  print_r($stmt); */
-        /* sqlsrv_execute($stmt); */
-        /*  $dato = sqlsrv_fetch_array($stmt);
-            var_dump($dato); */ catch (Exception $e) {
+        }  catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
     }
@@ -134,14 +128,16 @@ class Paso
         try {
 
             require_once __DIR__.'/../../class/conexion.php';
+            
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
 
-            $sql = "EXEC [LAKERBIS].LOCALES_LAKERS.DBO.RO_SP_VENTAS_VS_COBRANZA_TOTALES '$desde', '$hasta' ;";
+            $cid_conexion = ($cid->env == 'DEV') ? $cid->conectar('central') : $cid->conectar('locales');
+
+            $sql = "EXEC ".$cid->prefix."RO_SP_VENTAS_VS_COBRANZA_TOTALES '$desde', '$hasta' ;";
 
             ini_set('max_execution_time', 300);
 
-            $stmt = sqlsrv_query($cid_central, $sql);
+            $stmt = sqlsrv_query($cid_conexion, $sql);
 
             $next_result = sqlsrv_next_result($stmt);
 
