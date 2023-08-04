@@ -45,7 +45,7 @@ function myFunction() {
       },
 
       success: function (response) {
-        // location.reload();
+        location.reload();
       }
     });
 
