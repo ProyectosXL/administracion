@@ -51,24 +51,12 @@ class Paso
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
-
-            $sql = "EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta';";
-
-            ini_set('max_execution_time', 300);
+            
+            $sql = "EXEC RO_SP_VENTAS_BRUTAS '$desde', '$hasta'";
 
             $stmt = sqlsrv_query($cid_central, $sql);
 
-            $next_result = sqlsrv_next_result($stmt);
-
-            $v = [];
-
-            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
-
-                $v[] = $row;
-
-            }
-
-            return $v;
+            return true;
           
         } catch (Exception $e) {
             return 'Excepción capturada: '.$e->getMessage();
@@ -78,58 +66,6 @@ class Paso
 
 
     public function ejecutarPaso2($desde, $hasta)
-    {  
-        try {
-            require_once __DIR__.'/../../class/conexion.php';
-            $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
-
-            $sql = " EXEC RO_SP_ARTICULOS_SIN_PRECIO_COSTO '$desde', '$hasta';";
-
-            ini_set('max_execution_time', 300);
-
-            $stmt = sqlsrv_query($cid_central, $sql);
-
-            $next_result = sqlsrv_next_result($stmt);
-
-            $v = [];
-
-            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
-
-                $v[] = $row;
-
-            }
-
-            return $v;
-
-        
-        } catch (Exception $e) {
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
-        }
-    }
-
-    public function ejecutarPaso3($desde, $hasta)
-    {  
-        try {
-
-            require_once __DIR__.'/../../class/conexion.php';
-            $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
-
-            $sql = "EXEC RO_SP_RENTABILIDAD_BRUTA '$desde', '$hasta' ;";
-
-            $stmt = sqlsrv_query($cid_central, $sql);
-
-            return true;
-
-          
-        } catch (Exception $e) {
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
-        }
-    }
-
-
-    public function ejecutarPaso4($desde, $hasta)
     {  
         try {
 
@@ -161,6 +97,69 @@ class Paso
     }
 
 
+    public function ejecutarPaso3($desde, $hasta)
+    {  
+        try {
+
+            require_once __DIR__.'/../../class/conexion.php';
+            $cid = new Conexion();
+            $cid_central = $cid->conectar('central');
+
+            $sql = "EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta' ;";
+
+            $stmt = sqlsrv_query($cid_central, $sql);
+
+            $next_result = sqlsrv_next_result($stmt);
+
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+    }
+
+
+  
+    public function ejecutarPaso4($desde, $hasta)
+    {  
+        try {
+            require_once __DIR__.'/../../class/conexion.php';
+            $cid = new Conexion();
+            $cid_central = $cid->conectar('central');
+
+            $sql = " EXEC RO_SP_ARTICULOS_SIN_PRECIO_COSTO '$desde', '$hasta';";
+
+            ini_set('max_execution_time', 300);
+
+            $stmt = sqlsrv_query($cid_central, $sql);
+
+            $next_result = sqlsrv_next_result($stmt);
+
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+
+        
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+    }
+
+
     public function ejecutarPaso5($desde, $hasta)
     {  
         try {
@@ -169,7 +168,7 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "EXEC RO_SP_INSERTAR_MET_PRORRATEO_TODOS '$desde', '$hasta' ;";
+            $sql = "EXEC RO_SP_RENTABILIDAD_BRUTA '$desde', '$hasta' ;";
 
             ini_set('max_execution_time', 300);
 
@@ -200,7 +199,7 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql = "EXEC RO_SP_INTEGRAL '$desde', '$hasta' ;";
+            $sql = "EXEC RO_SP_INSERTAR_MET_PRORRATEO_TODOS '$desde', '$hasta' ;";
 
             ini_set('max_execution_time', 300);
 
@@ -232,6 +231,37 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
+            $sql = "EXEC RO_SP_INTEGRAL '$desde', '$hasta' ;";
+
+            ini_set('max_execution_time', 300);
+
+            $stmt = sqlsrv_query($cid_central, $sql);
+
+            $next_result = sqlsrv_next_result($stmt);
+
+            $v = [];
+
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return true;
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+    }
+    
+    public function ejecutarPaso8($desde, $hasta)
+    {  
+        try {
+
+            require_once __DIR__.'/../../class/conexion.php';
+            $cid = new Conexion();
+            $cid_central = $cid->conectar('central');
+
             $sql = "EXEC RO_SP_APLICAR_COEF_AJUSTE '$desde', '$hasta' ;";
 
             ini_set('max_execution_time', 300);
@@ -254,6 +284,7 @@ class Paso
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
     }
+
 
     public function marcarPasoEjecutado ($paso_ejecutado, $periodo) {
         try {

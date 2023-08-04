@@ -446,7 +446,7 @@ function prorratearGastos() {
       }
     });
 }
-const activarModalPaso3 = () => {
+const activarModalPaso1 = () => {
 
   let desde = document.querySelector("#desde").value;
   let hasta = document.querySelector("#hasta").value;
@@ -469,7 +469,7 @@ const activarModalPaso3 = () => {
 function ejecutarPasos() {
   
 
-  if(pasoActual == 7){
+  if(pasoActual == 8){
     Swal.fire({
       icon: "success",
       title: "Control exitoso",
@@ -480,7 +480,8 @@ function ejecutarPasos() {
 
   pasoActual = pasoActual + 1;
 
-  let pasosDirectos = [3, 5, 6, 7];
+
+  let pasosDirectos = [1, 5, 6, 7,8];
 
 
  
@@ -517,12 +518,12 @@ function ejecutarPasos() {
           }
         )
         .then((respuesta) => respuesta.json())
-        .then((perfil) => {
+        .then((perfil) => { 
             if (perfil.length == 0 || pasosDirectos.includes(pasoActual) == true ) {
 
               spinner.classList.remove('loading');
               
-              if (pasoActual == 7){
+              if (pasoActual == 8){
        
                 if(perfil == false){
                   Swal.fire({
@@ -541,9 +542,13 @@ function ejecutarPasos() {
                 }
                 
               }
-              if (pasoActual == 3){
-                activarModalPaso3();
+
+              if (pasoActual == 1){
+
+                activarModalPaso1();
+                
               }
+
               Swal.fire({
                 icon: "success",
                 title: "Control exitoso",
@@ -556,19 +561,21 @@ function ejecutarPasos() {
               spinner.classList.remove('loading');
 
               switch (pasoActual) {
-                case 1:
-                  rellenarModal1(perfil);
-                  $("#modalCn").modal("toggle");
-                  break;
 
                 case 2:
                   rellenarModal2(perfil);
-                  $("#modalPc").modal("toggle");
+                  $("#modalVct").modal("toggle");
                   break;
+
+                case 3:
+                  rellenarModal3(perfil);
+                  $("#modalCn").modal("toggle");
+                  break;
+
 
                 case 4:
                   rellenarModal4(perfil);
-                  $("#modalVct").modal("toggle");
+                  $("#modalPc").modal("toggle");
                   break;
 
                 default:
@@ -602,7 +609,7 @@ const pintarPasos = (periodo) => {
         return false;
       }
 
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 8; i++) {
         pasos[i] = data[0]['PASO_'+(i+1)];
       }
       pasos.forEach((element,x) => {
@@ -620,7 +627,7 @@ const pintarPasos = (periodo) => {
     });
 };
 
-const rellenarModal1 = (obj)=>{
+const rellenarModal3 = (obj)=>{
 
 
   let tableModal =  document.querySelector("#tableCn");
@@ -644,7 +651,7 @@ const rellenarModal1 = (obj)=>{
   }
 };
 
-const rellenarModal2 = (obj) => {
+const rellenarModal4 = (obj) => {
 
     let tableModal =  document.querySelector("#tableModalPc");
     tableModal.innerHTML = "";
@@ -720,7 +727,7 @@ const convertToNumber = (numero) => {
   let newNumero1 = numero.replaceAll(".", "");
   return newNumero1.replace(",", ".");
 };
-const rellenarModal4 = (obj) => {
+const rellenarModal2 = (obj) => {
   let tableModal = document.querySelector("#tableModalvCT");
 
   tableModal.innerHTML = "";
@@ -738,14 +745,30 @@ const rellenarModal4 = (obj) => {
     var input = document.createElement("input");
     input.type = "checkbox";
     input.className = "form-control";
-    input.id="checkModal4";
+    input.id="checkModal2";
 
+    let number3 = obj[x]['IMP_COBRANZA'].toLocaleString('de-De', {
+      style: 'decimal',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    });
+    
+    let number2 = obj[x]['IMP_VENTA'].toLocaleString('de-De', {
+      style: 'decimal',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    });
 
+    dif = obj[x]['DIFERENCIA'].toLocaleString('de-De', {
+      style: 'decimal',
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    });
 
     const text1=document.createTextNode(parseInt(obj[x]['NRO_SUCURS']));
-    const text2=document.createTextNode(parseFloat(obj[x]['IMP_VENTA']).toFixed(2));
-    const text3=document.createTextNode(parseFloat(obj[x]['IMP_COBRANZA']).toFixed(2));
-    const text4=document.createTextNode(parseFloat(obj[x]['DIFERENCIA']).toFixed(2));
+    const text2=document.createTextNode("$"+ number2);
+    const text3=document.createTextNode("$"+ number3);
+    const text4=document.createTextNode("$"+ dif);
 
     if(parseFloat(obj[x]['DIFERENCIA']) == 0){
       input.checked = true;
@@ -959,9 +982,9 @@ const exportModal = (table) =>{
     });
 
 }
-const aceptarDiferenciasModal4 = () =>{
+const aceptarDiferenciasModal2 = () =>{
   
-  let allCheck = document.querySelectorAll("#checkModal4");
+  let allCheck = document.querySelectorAll("#checkModal2");
   let diferencias = false;
   for (let i = 0; i < allCheck.length; i++) {
 
@@ -983,7 +1006,7 @@ const aceptarDiferenciasModal4 = () =>{
 
   if(diferencias == false){
 
-    marcarPasoControlado("4");
+    marcarPasoControlado("2");
 
     $('#modalVct').modal('hide');
     

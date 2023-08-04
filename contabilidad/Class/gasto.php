@@ -196,7 +196,7 @@ class Gasto
     }
 
     public function traerRentabilidadBruta ($desde, $hasta){
-        $sql = "SELECT * FROM RO_T_RENTABILIDAD_BRUTA WHERE FECHA BETWEEN '$desde' AND '$hasta'";
+        $sql = "SELECT * FROM RO_T_RENTABILIDAD_BRUTA WHERE FECHA BETWEEN '$desde' AND '$hasta' ORDER BY NRO_SUCURS";
 
         $stmt = sqlsrv_query( $this->cid_central, $sql );
         try{
