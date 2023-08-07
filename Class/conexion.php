@@ -2,6 +2,7 @@
 <?php
 
 class Conexion{
+    
     function __construct(){
 
         require_once(__DIR__.'/classEnv.php');
@@ -17,6 +18,8 @@ class Conexion{
         $this->pass = $this->envVars['PASS'];
         $this->pass_locales = $this->envVars['PASS_LOCALES'];
         $this->character = $this->envVars['CHARACTER'];
+        $this->env = $this->envVars['ENV'];
+        $this->prefix = ($this->env == 'DEV') ? '[LAKERBIS].locales_lakers.dbo.' : '';
 
     }
 
@@ -57,12 +60,22 @@ class Conexion{
 
     private function buscarLocal($nameLocal){
 
-        $sql = "select * from [LAKERBIS].locales_lakers.dbo.sucursales_lakers where cod_client = '$nameLocal'";
+        $prefix = ($this->env == 'DEV') ? '[LAKERBIS].locales_lakers.dbo.' : '';
+
+        if($this->env == 'DEV'){
+            $database = $this->database_central;
+            $pass = $this->pass;
+        } else {
+            $database = $this->database_locales;
+            $pass = $this->pass_locales;
+        }
+
+        $sql = "select * from ".$prefix."sucursales_lakers where cod_client = '$nameLocal'";
 
         $params = array( 
-            "Database" => $this->database_central, 
+            "Database" => $database, 
             "UID" => $this->user, 
-            "PWD" => $this->pass, 
+            "PWD" => $pass, 
             "CharacterSet" => $this->character
         );
 
@@ -71,8 +84,6 @@ class Conexion{
         $stmt = sqlsrv_query($cid, $sql);
 
         try {
-
-            // $next_result = sqlsrv_next_result($stmt);
 
             while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
 

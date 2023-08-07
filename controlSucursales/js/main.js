@@ -26,4 +26,29 @@ function myFunction() {
       }
     }
   }
+
+
+  const confirmarVentaVsCobranza = (e) => {
+    
+    e.disabled = true;
+    console.log();
+
+    let nroSucursal = e.parentElement.parentElement.querySelectorAll("td")[1].textContent;
+    let nroComprobante = e.parentElement.parentElement.querySelectorAll("td")[4].textContent;
+
+    $.ajax({
+      url: "Controller/VentaVsCobranzaController.php?accion=confirmarVentaVsCobranza",
+      type: "POST",
+      data: {
+        nroSucursal:nroSucursal,
+        nroComprobante:nroComprobante
+      },
+
+      success: function (response) {
+        location.reload();
+      }
+    });
+
+
+  }
   
