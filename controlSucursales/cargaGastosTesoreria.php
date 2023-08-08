@@ -79,16 +79,17 @@ if(count($gastosTesoreria) > 0){
                 <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Carga Gastos Tesoreria</h6></div>
                     <div class="card card-1">
                         <div id="periodo" hidden><?= $periodo ?></div>
-                        <div class="row" style="margin-left:50px">
-                            <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:50px"></i>Carga Gastos Tesoreria - <?= $fechaParaMostrar ?></strong></h3>
+                        <div class="row" style="margin-left:50px; margin-top:10px">
+                            <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga Gastos Tesoreria - <?= $fechaParaMostrar ?></strong></h3>
                         </div>
 
-                        <form action="#" method="get" style="margin-bottom:20px">
-
+                        <form action="#" method="get" style="margin-bottom:20px" class="form-inline">
+                        <div class="container" style="margin: 0 50px;">
                             <div class="row" style="margin-top:10px">
-
-                                <div  style="margin-left:70px;width:120px">Mes:  
-                                    <select name="mes" id="selectMes"  style="width:70px; height:45px; text-align:center">
+                            
+                                <div class="form-group">
+                                <label>Mes:</label>  
+                                    <select name="mes" id="selectMes" class="form-control ml-2">
                                         <?php 
                                             for ($i=1; $i <= 12 ; $i++) { 
                                                 if(strlen($i) == 1){
@@ -104,8 +105,9 @@ if(count($gastosTesoreria) > 0){
                                     </select>
                                 </div>
                                 
-                                <div  style="margin-right:5px">Año: 
-                                <select name="anio" id="selectAnio"  style="width:70px; height:45px; text-align:center">
+                                <div  class="form-group ml-2"> 
+                                <label>Año:</label> 
+                                <select name="anio" id="selectAnio"  class="form-control ml-2">
                                         <option value="2022">2022</option>
 
                                             <?php 
@@ -120,14 +122,9 @@ if(count($gastosTesoreria) > 0){
                                 </select>
 
                                 </div>
-
-
-                                <div>   
-                                    <button class="btn btn-primary btn-submit" value="" style="height:45px;margin-left:5px;width:100px">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                </div>
-
+                                    <button class="btn btn-primary btn-submit ml-2" value="">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                             </div>
-
+                        </div>                                    
                         </form>
             
                         <table class="table table-striped table-bordered table-sm table-hover" id="tablaGastosTesoreria" style="width: 100%;height:100px" cellspacing="0" data-page-length="100">
