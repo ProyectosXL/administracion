@@ -44,7 +44,7 @@ class Sucursal
     public function traerImportesTotales($nroSucursal, $fecha)
     {
 
-        $sql = "SELECT * FROM  ".$cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES where nro_sucursal = '$nroSucursal' and FECHA = '$fecha';";
+        $sql = "SELECT * FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES where nro_sucursal = '$nroSucursal' and FECHA = '$fecha';";
 
         $stmt = sqlsrv_query($this->cid_locales, $sql);
 
@@ -94,7 +94,7 @@ class Sucursal
     public function actualizarValor ($id, $importeControl, $verificado = null, $observaciones = null)
     {
 
-        $sql = "UPDATE ".$cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
+        $sql = "UPDATE ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
 
         try{
             
@@ -112,7 +112,7 @@ class Sucursal
     {
 
         $sql = "SELECT nro_sucursal ,MIN(VERIFICADO) AS STATUS
-        FROM  ".$cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES
+        FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES
         WHERE FECHA = '$fecha' GROUP BY NRO_SUCURSAL ";
    
         $stmt = sqlsrv_query($this->cid_locales, $sql);
@@ -137,7 +137,7 @@ class Sucursal
 
         try {
 
-            $sql = "EXEC ".$cid->prefix."RO_SP_CONTROL_MENSUAL_VENTA_SUCURSALES '$desde', '$hasta' ;";
+            $sql = "EXEC ".$this->cid->prefix."RO_SP_CONTROL_MENSUAL_VENTA_SUCURSALES '$desde', '$hasta' ;";
 
 
             $stmt = sqlsrv_query($this->cid_locales, $sql);
