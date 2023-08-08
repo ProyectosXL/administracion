@@ -318,7 +318,7 @@ class Paso
 
             $stmt = sqlsrv_query($cid_central, $sql);
 
-            $sql2="EXEC [LAKERBIS].[LOCALES_LAKERS].DBO.RO_SP_RESUMEN_VENTA_SUCURSALES_POR_TIPO_PAGO_NUEVO $desde, $hasta";
+            $sql2="EXEC [LAKERBIS].[LOCALES_LAKERS].DBO.RO_SP_RESUMEN_VENTA_SUCURSALES_POR_TIPO_PAGO_NUEVO '$desde', '$hasta'";
 
             $stmt = sqlsrv_query($cid_central, $sql2);
 
