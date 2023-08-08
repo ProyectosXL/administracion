@@ -171,7 +171,7 @@ class Sucursal
             ORDER BY FECHA ASC; 
             ";
             
-            $stmt = sqlsrv_query($this->cid_locales, $sql);
+            $stmt = sqlsrv_query($this->cid_central, $sql);
 
             $v = [];
 
