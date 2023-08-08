@@ -164,9 +164,12 @@ class Sucursal
 
         try {
 
-            $sql = "SELECT a.*,b.FACTURA,b.CONTROL FROM ".$this->cid->prefix."RO_V_GASTOS_CAJA_SUCURSALES a
+            $sql = "SELECT a.*,b.FACTURA, b.CONTROL 
+            FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES a
             left join RO_T_GASTOS_CAJA_SUCURSALES b on  REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '')  collate Latin1_General_BIN 
-            WHERE a.FECHA BETWEEN '$desde' AND '$hasta'  AND a.NRO_SUCURS = $sucursal ORDER BY FECHA ASC; ";
+            WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = $sucursal 
+            ORDER BY FECHA ASC; 
+            ";
             
             $stmt = sqlsrv_query($this->cid_locales, $sql);
 

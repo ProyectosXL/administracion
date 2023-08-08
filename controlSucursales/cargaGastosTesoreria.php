@@ -1,8 +1,6 @@
 <?php
 require_once "Class/sucursal.php";
 
-
-
 $sucursal = new Sucursal();
 $todosLosLocales= $sucursal->traerLocales();
 
@@ -21,7 +19,6 @@ $periodoRerverse = $anio."-".$mes;
 
 $primerDia = date('Y-m-01', strtotime($periodoRerverse));
 
-
 $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
 $gastosTesoreria = $sucursal->traerGastosTesoreria($primerDia, $ultimoDia);
@@ -38,9 +35,6 @@ if(count($gastosTesoreria) > 0){
     $keys = array_keys($gastosTesoreria[0]);
 
 }
-
-
-  
 
 ?>
 
@@ -160,32 +154,33 @@ if(count($gastosTesoreria) > 0){
                                             <tr>
                                                 <td style='text-align:center'><?= $value['NRO_SUCURSAL'] ?></td>
                                                 <td style='text-align:center'><?= $value['DESC_SUCURSAL'] ?></td>
-                                            <?php
 
-                                                foreach ($keys as $x => $k) {
-                                                    if($x > 1){
-                                                        $total = 0;
-                                                        foreach ($gastosTesoreria as $key => $gasto) {
-                                                            if($gasto['NRO_SUCURSAL'] == $value['NRO_SUCURSAL']){
-                                                                $total += $gasto[$k];
+                                                <?php
+
+                                                    foreach ($keys as $x => $k) {
+
+                                                        if($x > 1){
+                                                            $total = 0;
+                                                            foreach ($gastosTesoreria as $key => $gasto) {
+                                                                if($gasto['NRO_SUCURSAL'] == $value['NRO_SUCURSAL']){
+                                                                    $total += $gasto[$k];
+                                                                }
                                                             }
+                                                ?>
+                                                        <td style='text-align:center'>$<?=(number_format($total, 0, ',', '.')) ?></td>
+                                                <?php
                                                         }
-                                            ?>
-                                                            <td style='text-align:center'>$<?=(number_format($total, 0, ',', '.')) ?></td>
-                                            <?php
+                                    
                                                     }
-                                
-                                                }
-                                            ?>
+                                                ?>
+
                                                 <td style='text-align:center;'><input type='checkbox' onchange='checkControl(this)' id='checkControl' <?= (in_array($value['NRO_SUCURSAL'], $arraySucursalesCheckeadas)) ? "checked='true' ; disabled='true'" : "" ?>></td>
-                                           </tr>
-                                            <?php
+                                            </tr>
+                                    <?php
                                     }
-                                      
 
                                 }
                                 ?>
-                                <td></td>
                
                             </tbody>
             
@@ -194,6 +189,7 @@ if(count($gastosTesoreria) > 0){
                 </div>
             </div>
         </div>
+
         <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
         <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
