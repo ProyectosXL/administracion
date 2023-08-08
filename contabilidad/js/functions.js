@@ -1006,7 +1006,7 @@ const aceptarDiferenciasModal2 = () =>{
 
   if(diferencias == false){
 
-    marcarPasoControlado("2");
+    marcarPasoControladoConDiferencias("2");
 
     $('#modalVct').modal('hide');
     
@@ -1015,7 +1015,10 @@ const aceptarDiferenciasModal2 = () =>{
 }
 
 
-const marcarPasoControlado = (paso) => {
+const marcarPasoControladoConDiferencias = (paso) => {
+  
+    let desde = document.querySelector("#desde").value;
+    let hasta = document.querySelector("#hasta").value;
  
     let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
     $.ajax({
@@ -1023,7 +1026,9 @@ const marcarPasoControlado = (paso) => {
       method: 'POST',
       data:{
         periodo:periodo,
-        paso:paso
+        paso:paso,
+        desde:desde,
+        hasta:hasta
       },
       success : function(data) {
         Swal.fire({
