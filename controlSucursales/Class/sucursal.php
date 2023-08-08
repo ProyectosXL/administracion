@@ -2,15 +2,19 @@
 
 class Sucursal
 {
+    private $cid;
+    private $cid_central;
+    private $cid_locales;
+
     
     function __construct()
     {
 
         require_once __DIR__.'/../../class/conexion.php';
-        $cid = new Conexion();
+        $this->cid = new Conexion();
 
-        $this->cid_central = $cid->conectar('central');
-        $this->cid_locales =($cid->env == 'DEV') ? $cid->conectar('central') : $cid->conectar('locales');
+        $this->cid_central = $this->cid->conectar('central');
+        $this->cid_locales =($this->cid->env == 'DEV') ? $this->cid->conectar('central') : $this->cid->conectar('locales');
 
     } 
 
@@ -160,7 +164,7 @@ class Sucursal
 
         try {
 
-            $sql = "SELECT a.*,b.FACTURA,b.CONTROL FROM ".$cid->prefix."RO_V_GASTOS_CAJA_SUCURSALES a
+            $sql = "SELECT a.*,b.FACTURA,b.CONTROL FROM ".$this->cid->prefix."RO_V_GASTOS_CAJA_SUCURSALES a
             left join RO_T_GASTOS_CAJA_SUCURSALES b on  REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '')  collate Latin1_General_BIN 
             WHERE a.FECHA BETWEEN '$desde' AND '$hasta'  AND a.NRO_SUCURS = $sucursal ORDER BY FECHA ASC; ";
             
