@@ -20,10 +20,10 @@
 
     $todosLosLocales = traerLocales();
     $conceptos = traerConceptos();
-
+    $estado = $alquiler->traerEstado($periodo);
 
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
-    
+    $detalle = $alquiler->traerDetalle($periodo);
     $rentabilidadNeta = $alquiler->traerRentabilidadNeta($fecha);
     $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo); 
     
@@ -112,6 +112,16 @@
                                         <input type="button" class="btn btn-success" value="Procesar " style="margin-left: 200px; height: 45px;width:110px" onclick="procesar()"/>
                                         <span class="bi bi-check-circle-fill" style="color:white"></span>
                                     </div>
+                                    <div class="btn-with-icon">
+                                        <?php 
+                                        if($estado == 1){
+                                            echo '<input type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-left: 20px; height: 45px;width:170px" onclick="abrirPeriodo()"/>';
+                                        }else{
+                                            echo '<input type="button" class="btn btn-danger" value="Cerrar Periodo" style="margin-left: 20px; height: 45px;width:170px" onclick="cerrarPeriodo()"/>';
+                                        }
+                                        ?>
+                                        <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
+                                    </div>
                                 </div>
                             </form>
 
@@ -151,8 +161,22 @@
                                                             foreach ($traerPorcentajes as $porcentaje) {
   
                                                                 if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $k){
+                                                                    if($estado == 1){
+                                                                        foreach ($detalle as $key => $det) {
+
+                                                                            if($det['NRO_SUCURS'] == $k && $det['ID_CA'] == $value['ID_CA']){
+
+                                                                                $porcentajeDelLocal = $det['PORCENTAJE_APLICADO'];
+
+                                                                            }
+                                                                           
+                                                                        }
+                                                                    }else{
+
+                                                                        $porcentajeDelLocal = $porcentaje['PORCENTAJE'];
+
+                                                                    }
                                                                     
-                                                                   $porcentajeDelLocal = $porcentaje['PORCENTAJE'];
                                                                     
                                                                }
                                            
@@ -183,7 +207,7 @@
                                                                 $valor = $valor * -1;
                                                             }
                                                     ?>  
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?>></td>
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
 
                                                     <?php 
                                                         }
@@ -231,7 +255,7 @@
     </html>
 <script>
 
-document.ready = totalizar();
+document.ready = comprobarEstado(<?= $estado ?>);
 
 $(document).ready(function() {
 
@@ -242,7 +266,7 @@ $(document).ready(function() {
     if(<?= $result['CONTEO'] ?> == 0){
         insertarDetalle();
     }else{
-        actualizarCargaAutomatica();
+        actualizarCargaAutomatica(<?= $estado ?>);
     }
 
 });

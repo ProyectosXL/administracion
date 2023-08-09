@@ -16,6 +16,14 @@ switch ($accion) {
         execSpAlquileres(); 
         break;
 
+    case 'cerrarPeriodo':
+        cerrarPeriodo(); 
+        break;
+
+    case 'abrirPeriodo':
+        abrirPeriodo(); 
+        break;
+
     default:
       
         break;
@@ -48,9 +56,10 @@ function actualizarDetalle () {
     $concepto = $_POST['concepto'];
     $importe = $_POST['importe'];
     $userName = $_POST['userName'];
+    $porcentaje = $_POST['porcentaje'];
 
 
-    $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, $userName);
+    $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, $userName, $porcentaje);
     
     
     return true;
@@ -168,74 +177,14 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
 
     $detalle = $alquiler->traerDetalle($periodo);
-
+    $estado = $alquiler->traerEstado($periodo);
+ 
     $newArray = [];
 
-    
-    foreach ($todosLosLocales as $k => $v) {
+    if($estado == 1){
+        foreach ($todosLosLocales as $k => $v) {
 
-        $newArray[$v['NRO_SUCURSAL']] = [];
-
-        foreach ($conceptos as $key => $value) {  
-            $total = 0;
-
-            $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = 0;
-
-            if($value['carga_manual'] != 1){
-
-                if( in_array($value['ID_CA'], ["9", "13"]) ) {
-
-                    foreach ($traerPorcentajes as $porcentaje ) {
-
-                        if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-                            $total = $porcentaje['PORCENTAJE'];
-                        }
-
-                    }
-                }
-
-                if( in_array($value['ID_CA'], ["6", "15", "16"]) ) {
-
-                    foreach ($rentabilidadBruta as $rentabilidad) {
-
-                        if($rentabilidad['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']) {
-                            foreach ($traerPorcentajes as  $porcentaje) {
-                                if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
-                                    $total = ( ( $rentabilidad['IMPORTE'] * $porcentaje['PORCENTAJE'] ) / 100 ) ;
-                                }
-                            }   
-                        }
-
-                    }
-
-                }
-
-                if( in_array($value['ID_CA'], ["7", "14", "17"]) ) {
-
-                    foreach ($rentabilidadNeta  as $rentabilidad) {
-
-                        if($rentabilidad['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-
-                            foreach ($traerPorcentajes as  $porcentaje) {
-                                
-                                if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
-                                    $total = $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] / 100;
-
-                                    if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
-                                        // $total = ($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] - $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) * $porcentaje['PORCENTAJE'] / 100;
-                                        $total = $porcentaje['PORCENTAJE'] ;
-                                    }
-                                }
-                            }   
-
-                        }
-
-                    }
-                }
-
-                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $total;  
-
-            }else{
+            foreach ($conceptos as $key => $value) {  
 
                 foreach ($detalle as $det) {
 
@@ -246,15 +195,105 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
                         break;
                 
-      
+    
                     }
 
                 }  
-            }
 
+            }
         }
-   
+
+
+
+    }else{
+
+        
+        
+        foreach ($todosLosLocales as $k => $v) {
+
+            $newArray[$v['NRO_SUCURSAL']] = [];
+
+            foreach ($conceptos as $key => $value) {  
+                $total = 0;
+
+                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = 0;
+
+                if($value['carga_manual'] != 1){
+
+                    if( in_array($value['ID_CA'], ["9", "13"]) ) {
+
+                        foreach ($traerPorcentajes as $porcentaje ) {
+
+                            if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                                $total = $porcentaje['PORCENTAJE'];
+                            }
+
+                        }
+                    }
+
+                    if( in_array($value['ID_CA'], ["6", "15", "16"]) ) {
+
+                        foreach ($rentabilidadBruta as $rentabilidad) {
+
+                            if($rentabilidad['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']) {
+                                foreach ($traerPorcentajes as  $porcentaje) {
+                                    if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
+                                        $total = ( ( $rentabilidad['IMPORTE'] * $porcentaje['PORCENTAJE'] ) / 100 ) ;
+                                    }
+                                }   
+                            }
+
+                        }
+
+                    }
+
+                    if( in_array($value['ID_CA'], ["7", "14", "17"]) ) {
+
+                        foreach ($rentabilidadNeta  as $rentabilidad) {
+
+                            if($rentabilidad['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                foreach ($traerPorcentajes as  $porcentaje) {
+                                    
+                                    if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
+                                        $total = $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] / 100;
+
+                                        if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
+                                            // $total = ($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] - $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) * $porcentaje['PORCENTAJE'] / 100;
+                                            $total = $porcentaje['PORCENTAJE'] ;
+                                        }
+                                    }
+                                }   
+
+                            }
+
+                        }
+                    }
+
+                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $total;  
+
+                }else{
+
+                    foreach ($detalle as $det) {
+
+                        if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
+
+                            
+                            $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $det['IMPORTE_PARSE'];
+
+                            break;
+                    
+        
+                        }
+
+                    }  
+                }
+
+            }
+    
+        }
     }
+
 
     return $newArray;
 }
@@ -385,6 +424,38 @@ function execSpAlquileres () {
     $detalles = $alquiler->execSpAlquileres($periodo);
 
     return $detalles;
+
+}
+
+
+
+function cerrarPeriodo () {
+
+    require_once "../Class/Alquiler.php";
+
+    $alquiler = new Alquiler();
+
+    $periodo = $_POST['periodo'];
+
+    $result = $alquiler->cerrarPeriodo($periodo);
+
+    return $result;
+
+
+}
+
+function abrirPeriodo () {
+
+    require_once "../Class/Alquiler.php";
+
+    $alquiler = new Alquiler();
+
+    $periodo = $_POST['periodo'];
+
+    $result = $alquiler->abrirPeriodo($periodo);
+
+    return $result;
+
 
 }
 ?>
