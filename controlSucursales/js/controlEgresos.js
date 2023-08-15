@@ -19,15 +19,14 @@ $(document).ready( function () {
         "oLanguage": {
     
             "sSearch": "Busqueda rapida:",
-            "sSearchPlaceholder" : "Sobre cualquier campo"
-            
+            "sSearchPlaceholder": "Sobre cualquier campo"
     
         },
     });
 
 })
     
-const checkFatura = (div) => {
+const checkFactura = (div) => {
 
     comprobarChecks();
     allTd = div.parentElement.parentElement.querySelectorAll("td");
