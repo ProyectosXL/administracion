@@ -164,7 +164,7 @@ class Sucursal
 
         try {
 
-            $sql = "SELECT a.*,b.FACTURA, b.CONTROL 
+            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO
             FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES a
             left join RO_T_GASTOS_CAJA_SUCURSALES b on  REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '')  collate Latin1_General_BIN 
             WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = $sucursal 
@@ -241,6 +241,32 @@ class Sucursal
         }
 
     }
+
+    public function marcarRecibido ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto) 
+    {
+
+        $sql = "
+        IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = $nroComprobante)
+        BEGIN
+            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET RECIBIDO = 1,FECHA_RECIBIDO = '$fecha'  WHERE N_COMP  = $nroComprobante
+        END
+        ELSE
+        BEGIN
+            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, FECHA_RECIBIDO, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, RECIBIDO) VALUES ('$fecha',GETDATE(),$nroSucursal,'$tipoComprobante','$nroComprobante','$codCuenta','$descripcionCuenta','$monto','1')
+        END
+        ";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+       
+            return true;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
    
     public function traerGastosTesoreria ($desde, $hasta) 
     {
@@ -288,6 +314,42 @@ class Sucursal
     {
 
         $sql = "SELECT NRO_SUCURSAL FROM  SJ_CONTROL_GASTOS_TESORERIA WHERE PERIODO = '$periodo'";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            $v = [];
+  
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+
+    }
+   
+    public function traerDatosControlRecepcion ($desde, $hasta, $estado) 
+    {   
+
+        $sql = "SELECT A.*, B.RECIBIDO 
+        FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
+        LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
+            ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN 
+            AND B.RECIBIDO LIKE '%$estado%'
+        WHERE COD_CTA = '100100' 
+            AND A.FECHA BETWEEN '$desde' AND '$hasta'";
+        if($estado == "0"){
+
+            $sql = $sql."AND (B.RECIBIDO IS NULL)";
+        }
+
 
         try{
             

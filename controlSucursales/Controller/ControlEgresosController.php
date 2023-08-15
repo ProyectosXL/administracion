@@ -10,6 +10,10 @@ switch ($accion) {
     case 'checkControl':
         marcarControlado();
         break;
+
+    case 'marcarRecibido':
+        marcarRecibido();
+        break;
     
     default:
         # code...
@@ -53,6 +57,24 @@ function marcarControlado (){
 
     $sucursal->marcarControlado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
 
+
+}
+
+function marcarRecibido (){
+
+    $fecha = $_POST['fecha'];
+    $nroSucursal = $_POST['nroSucursal'];
+    $tipoComprobante = $_POST['tipoComprobante'];
+    $nroComprobante = $_POST['nroComprobante'];
+    $codCuenta = $_POST['codCuenta'];
+    $descripcionCuenta = $_POST['descripcionCuenta'];
+    $monto = $_POST['monto'];
+
+    $sucursal = new Sucursal();
+
+    $result = $sucursal->marcarRecibido($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto);
+    
+    echo $result;
 
 }
 ?>

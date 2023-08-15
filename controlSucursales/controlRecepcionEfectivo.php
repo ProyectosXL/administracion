@@ -1,11 +1,11 @@
 <?php
     require_once "Class/sucursal.php";
-    $selectSucursal = isset($_GET['selectSucursal']) ?  $_GET['selectSucursal'] : '2-UNICENTER';
-        
-    $selectSucursal = explode("-",$selectSucursal);
+
 
     $fecha_actual = date("Y-m-d");
- 
+    $estado = (isset($_GET['selectEstado']) && $_GET['selectEstado'] != "") ? $_GET['selectEstado'] : "%";
+
+    
     if(isset($_GET['desde']) && $_GET['desde'] != "" ){
         $desde = $_GET['desde'];
     }else{
@@ -19,15 +19,11 @@
     }
 
     $sucursal = new Sucursal();
-    $todosLosLocales= $sucursal->traerLocales();
 
-    $data = null;
 
-    if($desde != null && $hasta != null){
-        
-        $data = $sucursal->traerGastosCajaSucursales($desde,$hasta,$selectSucursal[0]);
-    
-    }
+    $data = $sucursal->traerDatosControlRecepcion($desde, $hasta, $estado);
+    $locales = $sucursal->traerLocales();
+
 
 ?>
 
@@ -38,7 +34,7 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Control Egresos de Caja Sucursales</title>
+        <title>Control recepción efectivo de sucursales</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
@@ -51,11 +47,6 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         
         </link>
-        <style>
-            #myTable_filter input[type="search"] {
-                margin-right:20px;
-            }
-        </style>
 
     </head>
 
@@ -63,11 +54,11 @@
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Control Egresos de Caja Sucursales</h6></div>
+                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Control recepción efectivo de sucursales</h6></div>
                     <div class="card card-1">
                         
                         <div class="row" style="margin-left:50px">
-                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:50px"></i>Control Egresos de Caja - <?= $selectSucursal[1] ?></strong></h3>
+                            <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:50px"></i>Control recepción efectivo de sucursales</strong></h3>
                         </div>
 
                         <form action="#" method="get" style="margin-bottom:20px">
@@ -78,21 +69,11 @@
                                 
                                 <div  style="margin-right:20px">Hasta: <input type="date" style="width:150px; height:45px" id='hasta' name="hasta" value="<?php echo $hasta; ?>"></div>
                                 
-                                <div >Sucursal :  
-
-                                    <select name="selectSucursal" id="selectSucursal" style="width:150px; height:45px">
-
-                                    <?php 
-                                        foreach ($todosLosLocales as $key => $value) {
-                                    ?>
-                                            <option value="<?php echo ($value['NRO_SUCURSAL']."-".$value['DESC_SUCURSAL']   ) ?>" <?php if ($selectSucursal[0] == $value['NRO_SUCURSAL']){ echo "selected";} ?> ><?= $value['DESC_SUCURSAL'] ?></option>
-
-                                    <?php 
-                                        } 
-                                    ?>
-            
+                                <div style="margin-right:20px">Estado :
+                                    <select name="selectEstado" id="selectEstado" style="width:150px; height:45px" >
+                                        <option value="%" <?= ($estado == "%") ? "selected" : "" ?>>Todos</option>
+                                        <option value="0" <?= ($estado == "0") ? "selected" : "" ?>>Pendiente</option>
                                     </select>
-
                                 </div>
 
                                 <div>   
@@ -109,53 +90,55 @@
 
                                     <th > FECHA </th>
                                     <th > NRO.SUCURSAL</th>
+                                    <th > DESC.SUCURSAL</th>
                                     <th > TIPO COMP. </th>
                                     <th > COMPROBANTE </th>
                                     <th > COD.CUENTA </th>
                                     <th > CUENTA </th>
                                     <th > MONTO </th>
-                                    <th > LEYENDA </th>
                                     <th > RECIBIDO </th>
-                                    <th > FACTURA </th>
-                                    <th > CONTROL </th>
 
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php 
+                            <?php 
                                 if($data != null){
                                     foreach ($data as $key => $gasto) {
-                                        $fecha = ( $gasto['FECHA_RECIBIDO'] != null ) ? $gasto['FECHA_RECIBIDO']->format("Y-m-d") : "";
-                                        $fechaRecibido = "";
-                                        if($gasto['RECIBIDO'] == 1){
-                                            $fechaRecibido = "data-toggle='tooltip' data-placement='top' title='FECHA RECIBIDO: $fecha'";
+                                        
+                                        $sucursal = "";
+                                        foreach ($locales as $key => $local) {
+                                            if ($gasto['NRO_SUCURS'] == $local['NRO_SUCURSAL']) {
+                                                $sucursal = $local['DESC_SUCURSAL'];
+                                            }
                                         }
                                 ?>
             
                                         <tr>
-                                            <td style='text-align:center' ><?= $gasto['FECHA']->format("Y-m-d") ?></td>
+
+                                            <td style='text-align:center' ><?= $gasto['FECHA']->format("d/m/Y") ?></td>
                                             <td style='text-align:center' ><?= $gasto['NRO_SUCURS'] ?></td>
+                                            <td style='text-align:center' ><?= $sucursal ?></td>
                                             <td style='text-align:center' ><?= $gasto['COD_COMP'] ?></td>
                                             <td style='text-align:center'   data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
                                             <td style='text-align:center' ><?= $gasto['COD_CTA'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['DESC_CUENTA'] ?></td>
-                                            <td style='text-align:center' >$<?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
-                                            <td style='text-align:center' ><?= $gasto['LEYENDA'] ?></td>
-                                            <td style='text-align:center' <?= $fechaRecibido ?> >
-                                                <?php 
-                                                    if($gasto['RECIBIDO'] == 1){
-                                                        echo "<i class='bi bi-check-circle-fill' style='color:green;font-size:30px'></i>";
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td style='text-align:center' ><input type='checkbox' class='form-check-input' id="checkFactura" onchange='checkFatura(this)'  <?= ($gasto['FACTURA'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
-                                            <td style='text-align:center' ><input type='checkbox' class='form-check-input' id="checkControl" onchange='checkControl(this)' <?= ($gasto['CONTROL'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
+                                            <td style='text-align:center' ><?= $gasto['DESC_CUENTA'] ?></td>                                         
+                                            <td style='text-align:center' ><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>     
+                                            <?php 
+                                                if($gasto['RECIBIDO'] == 1){
+                                                   
+                                                    echo "<td style='text-align:center'><i class='bi bi-check-circle-fill' style='color:green;font-size:27px;margin-right:15%' ></i></td>";
+                                                }else{
+                                                    echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarRecibido(this)'></td>";
+                                                }   
+                                            ?>                                    
+
                                         </tr>
                                         
                                 <?php 
                                     }
                                 }
                                 ?>   
+                
                             </tbody>
             
                         </table>
@@ -177,4 +160,4 @@
 
 </html>
 <script src="js/jquery.table2excel.js"></script>
-<script src="js/controlEgresos.js"></script>
+<script src="js/controlRecepcion.js"></script>
