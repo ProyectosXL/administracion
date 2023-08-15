@@ -125,7 +125,7 @@
                                 <?php 
                                 if($data != null){
                                     foreach ($data as $key => $gasto) {
-                            
+                                        $fecha = ( $gasto['FECHA_RECIBIDO'] != null ) ? $gasto['FECHA_RECIBIDO']->format("Y-m-d") : "";
                                 ?>
             
                                         <tr>
@@ -137,7 +137,7 @@
                                             <td style='text-align:center' ><?= $gasto['DESC_CUENTA'] ?></td>
                                             <td style='text-align:center' >$<?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
                                             <td style='text-align:center' ><?= $gasto['LEYENDA'] ?></td>
-                                            <td style='text-align:center' >
+                                            <td style='text-align:center' data-toggle='tooltip' data-placement='top' title='FECHA RECIBIDO:<?php echo $fecha?>' >
                                                 <?php 
                                                     if($gasto['RECIBIDO'] == 1){
                                                         echo "<i class='bi bi-check-circle-fill' style='color:green;font-size:30px'></i>";

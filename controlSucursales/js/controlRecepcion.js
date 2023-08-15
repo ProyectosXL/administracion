@@ -3,13 +3,13 @@ const marcarRecibido = (e) => {
  
     let nroSucursal = e.parentElement.parentElement.querySelectorAll("td")[1].textContent;
     let fecha = e.parentElement.parentElement.querySelectorAll("td")[0].textContent;
-    let tipoComprobante = e.parentElement.parentElement.querySelectorAll("td")[2].textContent;
-    let nroComprobante = e.parentElement.parentElement.querySelectorAll("td")[3].textContent;
-    let codCuenta = e.parentElement.parentElement.querySelectorAll("td")[4].textContent;
-    let descripcionCuenta = e.parentElement.parentElement.querySelectorAll("td")[5].textContent;
-    let monto = e.parentElement.parentElement.querySelectorAll("td")[6].textContent.replace(/[$.]/g, "");
+    let tipoComprobante = e.parentElement.parentElement.querySelectorAll("td")[3].textContent;
+    let nroComprobante = e.parentElement.parentElement.querySelectorAll("td")[4].textContent;
+    let codCuenta = e.parentElement.parentElement.querySelectorAll("td")[5].textContent;
+    let descripcionCuenta = e.parentElement.parentElement.querySelectorAll("td")[6].textContent;
+    let monto = e.parentElement.parentElement.querySelectorAll("td")[7].textContent.replace(/[$.]/g, "");
 
-    e.parentElement.parentElement.querySelectorAll("td")[7].innerHTML = `<div class ="btn btn-success" style="margin-right:20px"><i class="bi bi-check2-square"></i><div>`;
+    e.parentElement.parentElement.querySelectorAll("td")[8].innerHTML = `<i class='bi bi-check-circle-fill' style='color:green;font-size:27px;margin-right:15%'></i>`;
 
     $.ajax({
         type: "POST",

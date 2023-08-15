@@ -22,6 +22,7 @@
 
 
     $data = $sucursal->traerDatosControlRecepcion($desde, $hasta, $estado);
+    $locales = $sucursal->traerLocales();
 
 
 ?>
@@ -89,6 +90,7 @@
 
                                     <th > FECHA </th>
                                     <th > NRO.SUCURSAL</th>
+                                    <th > DESC.SUCURSAL</th>
                                     <th > TIPO COMP. </th>
                                     <th > COMPROBANTE </th>
                                     <th > COD.CUENTA </th>
@@ -102,12 +104,20 @@
                             <?php 
                                 if($data != null){
                                     foreach ($data as $key => $gasto) {
+                                        
+                                        $sucursal = "";
+                                        foreach ($locales as $key => $local) {
+                                            if ($gasto['NRO_SUCURS'] == $local['NRO_SUCURSAL']) {
+                                                $sucursal = $local['DESC_SUCURSAL'];
+                                            }
+                                        }
                                 ?>
             
                                         <tr>
 
                                             <td style='text-align:center' ><?= $gasto['FECHA']->format("d/m/Y") ?></td>
                                             <td style='text-align:center' ><?= $gasto['NRO_SUCURS'] ?></td>
+                                            <td style='text-align:center' ><?= $sucursal ?></td>
                                             <td style='text-align:center' ><?= $gasto['COD_COMP'] ?></td>
                                             <td style='text-align:center'   data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
                                             <td style='text-align:center' ><?= $gasto['COD_CTA'] ?></td>
@@ -115,7 +125,8 @@
                                             <td style='text-align:center' ><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>     
                                             <?php 
                                                 if($gasto['RECIBIDO'] == 1){
-                                                    echo "<td style='text-align:center'><div class ='btn btn-success' style='margin-right:20px'><i class='bi bi-check2-square'></i><div></td>";
+                                                   
+                                                    echo "<td style='text-align:center'><i class='bi bi-check-circle-fill' style='color:green;font-size:27px;margin-right:15%' ></i></td>";
                                                 }else{
                                                     echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarRecibido(this)'></td>";
                                                 }   
