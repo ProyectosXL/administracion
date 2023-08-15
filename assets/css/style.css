@@ -57,3 +57,8 @@ a{
 #td_myTable{
     text-align:center;
 }
+
+.pagination{
+    margin-right: 3px !important;
+    margin-bottom: 3px !important;
+}
