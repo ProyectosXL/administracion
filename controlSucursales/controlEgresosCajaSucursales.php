@@ -40,16 +40,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Control Egresos de Caja Sucursales</title>
 
+        <!-- INCLUDE CSS FILES -->
         <?php
             require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
         ?>
         
         </link>
-        <style>
-            #myTable_filter input[type="search"] {
-                margin-right:20px;
-            }
-        </style>
 
     </head>
 
@@ -68,9 +64,9 @@
 
                             <div class="row" style="margin-top:10px">
 
-                                <div  style="margin-left:70px;width:250px">Desde: <input type="date" style="width:170px; height:40px" id='desde' name="desde" value="<?php echo $desde; ?>"></div>
+                                <div style="margin-left:70px;width:250px">Desde: <input type="date" style="width:170px; height:40px" id='desde' name="desde" value="<?php echo $desde; ?>"></div>
                                 
-                                <div  style="margin-right:20px">Hasta: <input type="date" style="width:150px; height:45px" id='hasta' name="hasta" value="<?php echo $hasta; ?>"></div>
+                                <div style="margin-right:20px">Hasta: <input type="date" style="width:150px; height:45px" id='hasta' name="hasta" value="<?php echo $hasta; ?>"></div>
                                 
                                 <div >Sucursal :  
 
@@ -90,15 +86,15 @@
                                 </div>
 
                                 <div>   
-                                    <button class="btn btn-primary btn-submit" value="" style="height:45px;margin-left:5px;width:100px">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                                    <button class="btn btn-primary btn-submit" id="btnSubmit" value="" >filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                 </div>
 
                             </div>
 
                         </form>
             
-                        <table class="table table-striped table-bordered" id="myTable" style="width: 100%;" cellspacing="0" data-page-length="100">
-                            <thead class="thead-dark" style="">
+                        <table class="table table-striped table-bordered" id="myTable" cellspacing="0" data-page-length="100">
+                            <thead class="thead-dark" >
                                 <tr style="text-align:center">
 
                                     <th > FECHA </th>
@@ -127,23 +123,23 @@
                                 ?>
             
                                         <tr>
-                                            <td style='text-align:center' ><?= $gasto['FECHA']->format("Y-m-d") ?></td>
-                                            <td style='text-align:center' ><?= $gasto['NRO_SUCURS'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['COD_COMP'] ?></td>
-                                            <td style='text-align:center'   data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['COD_CTA'] ?></td>
-                                            <td style='text-align:center' ><?= $gasto['DESC_CUENTA'] ?></td>
-                                            <td style='text-align:center' >$<?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
-                                            <td style='text-align:center' ><?= $gasto['LEYENDA'] ?></td>
-                                            <td style='text-align:center' <?= $fechaRecibido ?> >
+                                            <td id="td_myTable" ><?= $gasto['FECHA']->format("Y-m-d") ?></td>
+                                            <td id="td_myTable" ><?= $gasto['NRO_SUCURS'] ?></td>
+                                            <td id="td_myTable" ><?= $gasto['COD_COMP'] ?></td>
+                                            <td id="td_myTable"   data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
+                                            <td id="td_myTable" ><?= $gasto['COD_CTA'] ?></td>
+                                            <td id="td_myTable" ><?= $gasto['DESC_CUENTA'] ?></td>
+                                            <td id="td_myTable" >$<?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
+                                            <td id="td_myTable" ><?= $gasto['LEYENDA'] ?></td>
+                                            <td id="td_myTable" <?= $fechaRecibido ?> >
                                                 <?php 
                                                     if($gasto['RECIBIDO'] == 1){
                                                         echo "<i class='bi bi-check-circle-fill' style='color:green;font-size:30px'></i>";
                                                     }
                                                 ?>
                                             </td>
-                                            <td style='text-align:center' ><input type='checkbox' class='form-check-input' id="checkFactura" onchange='checkFactura(this)'  <?= ($gasto['FACTURA'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
-                                            <td style='text-align:center' ><input type='checkbox' class='form-check-input' id="checkControl" onchange='checkControl(this)' <?= ($gasto['CONTROL'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
+                                            <td id="td_myTable" ><input type='checkbox' class='form-check-input' id="checkFactura" onchange='checkFactura(this)'  <?= ($gasto['FACTURA'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
+                                            <td id="td_myTable" ><input type='checkbox' class='form-check-input' id="checkControl" onchange='checkControl(this)' <?= ($gasto['CONTROL'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
                                         </tr>
                                         
                                 <?php 
@@ -157,18 +153,12 @@
                 </div>
             </div>
         </div>
-        <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-        <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
-        <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
     </body>
 
 </html>
-<script src="js/jquery.table2excel.js"></script>
-<script src="js/controlEgresos.js"></script>
+
+<!-- INCLUDE JS FILES -->
+<?php
+    require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
+?>

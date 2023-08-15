@@ -1,4 +1,6 @@
 $(document).ready( function () {
+
+    console.log("controlEgresos.js");
     
     $(function() {
         $('[data-toggle="tooltip"]').tooltip()

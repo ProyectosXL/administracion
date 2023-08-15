@@ -1,5 +1,4 @@
-
-.table {
+.myTable {
     margin-left: 1rem;
     font-size: 0.8em;
     width: 98%;
@@ -24,6 +23,13 @@
     margin-left: 1rem;
 }
 
+#btnSubmit{
+    height:45px;
+    margin-left: 15%;
+    width:100px;
+    margin-top: 0px;
+}
+
 a{
     color: gray;
 }
@@ -38,8 +44,16 @@ a{
     background: url('../../contabilidad/images/g0R9.gif') 50% 50% no-repeat rgb(0, 0, 0);
     background-size: 25%;
     opacity: .8;
-  }
+}
 
 #busqRapida{
     margin-left: 2rem;
+}
+
+#myTable_filter input[type="search"] {
+    margin-right:20px;
+}
+
+#td_myTable{
+    text-align:center;
 }
