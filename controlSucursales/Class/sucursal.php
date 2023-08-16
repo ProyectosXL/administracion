@@ -164,9 +164,10 @@ class Sucursal
 
         try {
 
-            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO
+            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO, (case when c.FECHA_GUARDADO is not null then 1 else 0 end) guardado
             FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES a
             left join RO_T_GASTOS_CAJA_SUCURSALES b on  REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '')  collate Latin1_General_BIN 
+            left join SJ_EGRESOS_DE_CAJA_GUARDADO c on a.n_comp = c.n_comp COLLATE Latin1_General_BIN
             WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = $sucursal 
             ORDER BY FECHA ASC; 
             ";

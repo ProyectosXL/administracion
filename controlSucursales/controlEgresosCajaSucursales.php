@@ -92,6 +92,9 @@
                             </div>
 
                         </form>
+                        
+                        <div id="carruselImagenes" class="modal fade" tabindex="-1" aria-hidden="true" style="margin-left:10%;max-width:80%"></div>
+
             
                         <table class="table table-striped table-bordered" id="myTable" cellspacing="0" data-page-length="100">
                             <thead class="thead-dark" >
@@ -105,6 +108,7 @@
                                     <th > CUENTA </th>
                                     <th > MONTO </th>
                                     <th > LEYENDA </th>
+                                    <th > VER </th>
                                     <th > RECIBIDO </th>
                                     <th > FACTURA </th>
                                     <th > CONTROL </th>
@@ -131,6 +135,16 @@
                                             <td id="td_myTable" ><?= $gasto['DESC_CUENTA'] ?></td>
                                             <td id="td_myTable" >$<?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
                                             <td id="td_myTable" ><?= $gasto['LEYENDA'] ?></td>
+
+                                            <td id="td_myTable" >
+                                                <?php if($gasto['guardado'] == 1) { ?>
+
+                                                <button class="btn btn-warning" style="margin-left:5px; padding:.3rem .5rem;"  onclick="mostrarImagen(this)">
+                                                    <i class="bi bi-eye" style="color:white"></i>
+                                                </button>
+
+                                                <?php } ?>
+                                            </td>
                                             <td id="td_myTable" <?= $fechaRecibido ?> >
                                                 <?php 
                                                     if($gasto['RECIBIDO'] == 1){
