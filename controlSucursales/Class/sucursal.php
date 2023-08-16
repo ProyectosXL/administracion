@@ -274,7 +274,7 @@ class Sucursal
     {
 
         $sql = "EXEC RO_SP_CARGA_GASTOS_CAJA_SUCURSALES '$desde', '$hasta'";
-
+        
         try{
             
             $stmt = sqlsrv_query($this->cid_central, $sql);
