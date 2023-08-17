@@ -546,7 +546,7 @@ function ejecutarPasos() {
               if (pasoActual == 1){
 
                 activarModalPaso1();
-                
+                return 1
               }
 
               Swal.fire({
@@ -941,7 +941,7 @@ const marcarControlado = ()=>{
               title: "Control exitoso",
               text: `Rentabilidad controlada!`,
             });
-
+            document.querySelector("#paso1").className = 'active';
           }
       })
   
