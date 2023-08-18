@@ -16,5 +16,10 @@ function listarPorOrdenCompra($id){
     $orden = $ordenes->traerPorOrdenCompra($id);
     return ( $orden);
 }
+function listarPorFecha($desde, $hasta){
+    $ordenes = new Orden();
+    $orden = $ordenes->traerOrdenPorFecha($desde, $hasta);
+    return ( $orden);
+}
 
 ?>
