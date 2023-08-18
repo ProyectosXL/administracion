@@ -133,7 +133,20 @@
                                             <td id="td_myTable"   data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
                                             <td id="td_myTable" ><?= $gasto['COD_CTA'] ?></td>
                                             <td id="td_myTable" ><?= $gasto['DESC_CUENTA'] ?></td>
-                                            <td id="td_myTable" >$<?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
+                                            <?php 
+                                                if($gasto['MONTO'] < 0){
+
+                                                    $monto = $gasto['MONTO'] * -1;
+                                                    $valor = "- $". number_format($monto, 0, '.','.');
+                                                    echo "<td style='text-align:center'>$valor</td>";
+
+                                                }else{
+
+                                                    $valor = "$". number_format($gasto['MONTO'], 0, '.','.');
+                                                    echo "<td style='text-align:center'>$valor</td>";
+
+                                                }
+                                            ?>
                                             <td id="td_myTable" ><?= $gasto['LEYENDA'] ?></td>
 
                                             <td id="td_myTable" >
