@@ -90,14 +90,14 @@ function contarFotosEnCarpeta() {
     $root = $_SERVER["DOCUMENT_ROOT"];
 
     $targetDir = $root.'/Imagenes/egresosCaja/';
-    
+ 
     if(isset($_POST['arrayNcomp'])){
 
         $arrayArticulos = $_POST['arrayNcomp'];
 
     }
 
-
+ 
     if(isset($arrayArticulos)){
         
         $contadorFotos = 0;
@@ -137,7 +137,8 @@ function contarFotosEnCarpeta() {
         $fileName = $nComp;
         $contadorFotos = 0;
         $datosDeLosArchivos = [];
-        $datosDeLosArchivos['cantidad'] = 0;
+        $datosDeLosArchivos['cantidad'] = 0; 
+
         // Abre el directorio
         if ($gestor = opendir($targetDir)) {
             // Recorre los archivos en el directorio
@@ -145,7 +146,10 @@ function contarFotosEnCarpeta() {
                 // Ignora las carpetas "." y ".."
                 if ($archivo != "." && $archivo != "..") {
 
+                    $fileName = str_replace(' ', '', $fileName);
+
                     if (stripos(pathinfo($archivo, PATHINFO_FILENAME), $fileName) !== false) {
+                        
                         // $contadorFotos++;
                         $datosDeLosArchivos['cantidad'] ++;
 

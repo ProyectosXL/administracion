@@ -141,6 +141,7 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
 
     
     let carouselElement = document.querySelector('#carruselImagenes'); 
+    
   
     carouselElement.innerHTML = ''; 
 
@@ -150,7 +151,6 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
       type: "POST",
       data: {
         nComp:nComp
-     
 
       },
 
