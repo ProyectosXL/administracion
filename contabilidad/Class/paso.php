@@ -289,7 +289,7 @@ class Paso
             $cid = new Conexion();
             $cid_central = $cid->conectar('central');
 
-            $sql ="UPDATE RO_T_CONTROL_INFORME_ECONOMICO SET PASO_".$paso_ejecutado." = 1 WHERE PERIODO = '$periodo'";
+            $sql ="INSERT INTO RO_T_CONTROL_INFORME_ECONOMICO (PERIODO,PASO_1) VALUES ('$periodo','1')";
 
             $stmt = sqlsrv_query($cid_central, $sql);
 
