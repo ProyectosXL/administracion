@@ -161,10 +161,10 @@ class Sucursal
 
     public function traerGastosCajaSucursales ($desde, $hasta, $sucursal)
     {
-
+        
         try {
 
-            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO, (case when c.FECHA_GUARDADO is not null then 1 else 0 end) guardado
+            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO
             FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES a
             left join RO_T_GASTOS_CAJA_SUCURSALES b on  REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '')  collate Latin1_General_BIN  
             AND A.NRO_SUCURS = B.NRO_SUCURSAL 
@@ -173,6 +173,7 @@ class Sucursal
             WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = $sucursal 
             ORDER BY FECHA ASC; 
             ";
+            var_dump($sql);
             
             $stmt = sqlsrv_query($this->cid_central, $sql);
 
