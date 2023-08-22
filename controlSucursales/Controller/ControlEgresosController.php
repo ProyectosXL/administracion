@@ -15,6 +15,10 @@ switch ($accion) {
         marcarRecibido();
         break;
     
+    case 'contarImagenes':
+        contarFotosEnCarpeta();
+        break;
+    
     default:
         # code...
         break;
@@ -40,6 +44,7 @@ function marcarFacturado (){
 
 
 }
+
 function marcarControlado (){
 
     $fecha = $_POST['fecha'];
@@ -76,5 +81,92 @@ function marcarRecibido (){
     
     echo $result;
 
+}
+
+function contarFotosEnCarpeta() {
+    
+    $nComp = (isset($_POST['nComp'])) ? $_POST['nComp'] : "";
+    
+    $root = $_SERVER["DOCUMENT_ROOT"];
+
+    $targetDir = $root.'/Imagenes/egresosCaja/';
+ 
+    if(isset($_POST['arrayNcomp'])){
+
+        $arrayArticulos = $_POST['arrayNcomp'];
+
+    }
+
+ 
+    if(isset($arrayArticulos)){
+        
+        $contadorFotos = 0;
+        $datosDeLosArchivos = [];
+        $datosDeLosArchivos['cantidad'] = 0;
+        foreach ($arrayArticulos as $key => $codigo) {
+            $fileName = $codigo;
+            // Abre el directorio
+            if ($gestor = opendir($targetDir)) {
+                // Recorre los archivos en el directorio
+                while (($archivo = readdir($gestor)) !== false) {
+                    // Ignora las carpetas "." y ".."
+                    if ($archivo != "." && $archivo != "..") {
+        
+                        if (stripos(pathinfo($archivo, PATHINFO_FILENAME), $fileName) !== false) {
+                            // $contadorFotos++;
+                            $datosDeLosArchivos['cantidad'] ++;
+        
+                            $datosDeLosArchivos['nombre'][] = $codigo;
+        
+                            // array_push($nombreArchivo, pathinfo($archivo, PATHINFO_FILENAME));
+                        } 
+         
+                     
+                    }
+                }
+        
+                // Cierra el directorio
+                closedir($gestor);
+            }
+
+        }
+
+    }else{
+
+    
+        $fileName = $nComp;
+        $contadorFotos = 0;
+        $datosDeLosArchivos = [];
+        $datosDeLosArchivos['cantidad'] = 0; 
+
+        // Abre el directorio
+        if ($gestor = opendir($targetDir)) {
+            // Recorre los archivos en el directorio
+            while (($archivo = readdir($gestor)) !== false) {
+                // Ignora las carpetas "." y ".."
+                if ($archivo != "." && $archivo != "..") {
+
+                    $fileName = str_replace(' ', '', $fileName);
+
+                    if (stripos(pathinfo($archivo, PATHINFO_FILENAME), $fileName) !== false) {
+                        
+                        // $contadorFotos++;
+                        $datosDeLosArchivos['cantidad'] ++;
+
+                        $datosDeLosArchivos['nombre'][] = pathinfo($archivo, PATHINFO_FILENAME);
+
+                        // array_push($nombreArchivo, pathinfo($archivo, PATHINFO_FILENAME));
+                    } 
+    
+                
+                }
+            }
+
+            // Cierra el directorio
+            closedir($gestor);
+        }
+    }
+
+    echo json_encode($datosDeLosArchivos);
 }
 ?>
