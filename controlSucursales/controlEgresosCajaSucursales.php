@@ -19,7 +19,7 @@
     }
 
     $sucursal = new Sucursal();
-    $todosLosLocales= $sucursal->traerLocales();
+    $todosLosLocales= $sucursal->traerLocales(true);
 
     $data = null;
 
@@ -189,3 +189,12 @@
 <?php
     require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
 ?>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $("#selectSucursal").select2();
+    document.querySelector(".select2-selection.select2-selection--single").style.height = "44px"
+    document.querySelector("#select2-selectSucursal-container").style.marginTop = "8px"
+
+
+</script>

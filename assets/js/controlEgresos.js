@@ -170,7 +170,8 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
           
           let modalContent = document.createElement('div');
           modalContent.className = 'modal-dialog modal-dialog-centered';
-
+          modalContent.style = 'max-width: 100%;';
+          
           let modalBody = document.createElement('div');
           modalBody.className = 'modal-content';
 
