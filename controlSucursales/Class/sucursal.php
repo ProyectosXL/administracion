@@ -173,7 +173,7 @@ class Sucursal
             WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = $sucursal 
             ORDER BY FECHA ASC; 
             ";
-            var_dump($sql);
+       
             
             $stmt = sqlsrv_query($this->cid_central, $sql);
 
