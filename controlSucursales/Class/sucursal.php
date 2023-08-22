@@ -64,13 +64,24 @@ class Sucursal
 
 
     }
-    public function traerLocales()
+    public function traerLocales($orderByName = null)
     {
 
         $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1
                     UNION ALL
-                SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE NRO_SUCURSAL = '16'
-                ORDER BY NRO_SUCURSAL";
+                SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE NRO_SUCURSAL = '16'";
+
+        if($orderByName == true){
+
+            $sql = $sql."ORDER BY DESC_SUCURSAL";
+
+        }else{
+
+            $sql = $sql."ORDER BY NRO_SUCURSAL"; 
+            
+        }                
+
+                
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
 
