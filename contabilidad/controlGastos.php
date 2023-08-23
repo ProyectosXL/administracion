@@ -12,6 +12,8 @@ $centroCostos = $centroCostos->traerCentroCostos();
 $todosLosCentrosCosto = json_decode($centroCostos);
 
 include 'Class/articulos.php';
+include 'Class/cuentaContable.php';
+
 
 
 $gastos = new Gasto();
@@ -29,7 +31,19 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
 $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
+$cuenta = new CuentaContable ();
+$cuentas = $cuenta->traerCodCuentaAll();
+$codCuenta = (isset($_GET['codCuenta'])) ? $_GET['codCuenta'] : '%';
+$cuentas = json_decode($cuentas, true);;
 
+$data = [];
+
+foreach ($cuentas as $key => $value) {
+
+    $data[$key]['COD_CUENTA'] = $value['COD_CUENTA'];
+    $data[$key]['DESC_CUENTA'] = $value['DESC_CUENTA'];
+
+}
 
 ?>
 
@@ -126,6 +140,22 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
                                 ?>
                             </select>
                         </div>
+
+                        <div >
+                            <label>Codigo de Cuenta:</label>
+                            <select class="form-control form-control-sm codCuenta" name="codCuenta" style="width: 180px;">
+                            <option  value="%" selected>Todos</option>
+                                        <?php 
+                                            foreach ($data as $cuenta ) {
+                                      ?> 
+                                            <option  value="<?= $cuenta['COD_CUENTA'] ?>"><?= $cuenta['COD_CUENTA'] ?> - <?= $cuenta['DESC_CUENTA'] ?></option>
+                                        <?php
+                                            }
+
+                                        ?>
+                            </select>
+                        </div>
+                        
                         <div>
                             <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
                         </div>
@@ -168,7 +198,7 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
             $codRubro = '%';
         }
 
-        $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro);
+        $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta);
 
     ?>
 
@@ -324,10 +354,11 @@ $periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
 
             $('.codRubro').select2();
 
-            document.querySelector(".estado").selectedIndex = "<?= $_GET['estado'] ? $_GET['estado'] : "" ?>"
+            document.querySelector(".estado").selectedIndex = "<?= (isset($_GET['estado'])) ? $_GET['estado'] : "" ?>"
             
         });
-
+        
+        $('.codCuenta').select2();
 
         $(function() {
             $('[data-toggle="tooltip"]').tooltip()

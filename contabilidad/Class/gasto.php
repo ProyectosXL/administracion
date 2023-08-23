@@ -13,26 +13,29 @@ class Gasto
 
       
 
-    public function traerGastos($desde, $hasta, $estado, $codRubro){
+    public function traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta = null){
 
     if($estado == '0'){
 
             $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE  AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0  
                         UNION ALL
-                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) AND PRORRATEADO IS NULL AND CONTROLADO = 0 AND EXCLUIR = 0";
+                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) AND PRORRATEADO IS NULL AND CONTROLADO = 0 AND EXCLUIR = 0 AND COD_CUENTA LIKE '$codCuenta'" ;
     
     }elseif($estado == '1'){
 
             $sql="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' 
                   AND PRORRATEADO IS NULL AND CONTROLADO IS NOT NULL AND EXCLUIR = 0 AND AMORTIZAR > 0 AND AMORTIZADO IS NULL
+                  AND COD_CUENTA LIKE '$codCuenta'
             ";
     }elseif($estado == '2'){
 
-            $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 1";
+            $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 1
+             AND COD_CUENTA LIKE '$codCuenta'";
 
     }elseif($estado == '3'){
 
-            $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL)";
+            $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL)
+             AND COD_CUENTA LIKE '$codCuenta'";
 
     }else{
 
@@ -42,6 +45,7 @@ class Gasto
                     AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
                     --AND PRORRATEADO IS NULL 
                     AND COD_RUBRO LIKE '$codRubro' 
+                    AND COD_CUENTA LIKE '$codCuenta'
                     --ORDER BY ID
                 ";
 
