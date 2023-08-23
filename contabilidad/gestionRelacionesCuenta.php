@@ -46,6 +46,10 @@
             left: 0;
             }
 
+            .select2-container .select2-results__option {
+                font-size: 12px; /* Cambia el tamaño de fuente de las opciones */
+            }
+
         </style>
 
     <head>
@@ -94,7 +98,7 @@
                                             <th  style="width:10%">COD. RUBRO</th>
                                             <th  style="width:30%">RUBRO CONTABLE </th>
                                             <th  style="width:10%">COD. PRORRATEO</th>
-                                            <th  style="width:10%">DESC. PRORRATEO </th>
+                                            <th  style="width:20%">DESC. PRORRATEO </th>
 
                                         </thead>
 
@@ -129,12 +133,12 @@
                                             </td>
 
                                             <td>
-                                                <select  class="codRubro" name="codRubro" id="codRubro" style="width:80px; height:35px; text-align:center" onchange="traerDescRubro(this)" >
+                                                <select  class="codRubro" name="codRubro" id="codRubro" style="width:200px; height:35px; text-align:center;font-size:12px" onchange="traerDescRubro(this)" >
                                                     <option disabled="disabled" selected></option>
                                                     <?php 
                                                         foreach ($todosLosRubros as $key => $value) {
 
-                                                            echo "<option value='".$value->COD_RUBRO."' attr-desc-rubro='".$value->RUBRO_CONTABLE."'>".$value->COD_RUBRO."</option>";
+                                                            echo "<option value='".$value->COD_RUBRO."' attr-desc-rubro='".$value->RUBRO_CONTABLE."' style='font-size:12px'>".$value->COD_RUBRO."-".$value->RUBRO_CONTABLE."</option>";
                                                            
                                                         }
                                                     
@@ -146,11 +150,11 @@
                                             <td id="rubroContable"></td>
                                             <td>
 
-                                                <select class="codProrrateo" name="codProrrateo" id="codProrrateo" style="width:80px; height:35px; text-align:center" onchange="traerDescProrrateo(this)">
+                                                <select class="codProrrateo" name="codProrrateo" id="codProrrateo" style="width:180px; height:35px; text-align:center" onchange="traerDescProrrateo(this)">
                                                         <option disabled="disabled" selected></option>
                                                         <?php 
                                                             foreach ($arrayMetodosProrrateo as $key => $value) {
-                                                                echo "<option value='".$value->COD_PRORRATEO."' attr-desc-prorrateo='".$value->DESC_PRORRATEO."'>".$value->COD_PRORRATEO."</option>";
+                                                                echo "<option value='".$value->COD_PRORRATEO."' attr-desc-prorrateo='".$value->DESC_PRORRATEO."'>".$value->COD_PRORRATEO.'-'.$value->DESC_PRORRATEO."</option>";
                                                             }
                                                         ?>
                                                 </select>
