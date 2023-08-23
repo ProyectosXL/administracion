@@ -156,7 +156,8 @@ function myFunction() {
   input = document.getElementById("textBox");
   filter = input.value.toUpperCase();
   table = document.querySelector("#tableDinamic")
-  tr = table.getElementsByTagName("tr");
+  tr = table.querySelectorAll("tbody tr");
+
 
   //tr = document.getElementById('tr');
 
