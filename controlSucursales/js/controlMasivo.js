@@ -143,13 +143,42 @@ const controlar = () => {
     });
 
     if(error == true){
+
         Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se puede controlar si alguna diferencia es mayor a 0',
-        });
-        return;
-    };
+            icon: 'warning',
+            title: 'Desea realizar el control con diferencias?',
+            showDenyButton: true,
+            confirmButtonText: 'Confirmar',
+            denyButtonText: 'Cancelar',
+            }).then((result) => {
+            /* Read more about isConfirmed, isDenied below */
+            if (result.isConfirmed) {
+
+                confirmarControl(data);
+               
+
+            } else if (result.isDenied) {
+
+                Swal.fire('El control fue cancelado', '', 'info')
+                return 1 ;
+
+            }
+        })
+
+    }else{
+
+        confirmarControl(data);
+       
+    }
+ 
+   
+
+
+
+}
+
+const confirmarControl = (data) => {
+
     $.ajax({
         url: 'Controller/ControlDiario.php?verificado=1',
         type: 'POST',
@@ -158,22 +187,101 @@ const controlar = () => {
         },
         success: function (response) {
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Controlado',
-                text: 'Se controló correctamente',
-
-            }).then (() => {
+            Swal.fire('Controlado!', '', 'success').then (() => {
                 location.reload();
-            }
-            );
+            });
 
 
         }
     });
 
-
-
 }
+
+
+$("#btnExport").click(function() {
+
+    let inputs = document.querySelectorAll('#valorFisico');
+
+    inputs.forEach(element => {
+
+    let valor = element.value
+    let td = element.parentElement; 
+    td.innerHTML = "";
+    td.id="tdValorFisico";
+    const text=document.createTextNode(valor);
+
+    td.appendChild(text);
+
+
+    });
+
+    let inputsObservacion = document.querySelectorAll('#observacion');
+
+    inputsObservacion.forEach(element => {
+
+    let valor = element.value
+    let td = element.parentElement; 
+    td.innerHTML = "";
+    td.id="tdObservacion";
+    const text=document.createTextNode(valor);
+
+    td.appendChild(text);
+
+
+    });
+
+    $("#tablaControl").table2excel({
+
+        // exclude CSS class
+        exclude: ".noE  xl",
+        name: "Control Masivo de Cobranza",
+        filename: "Control Masivo de Cobranza", //do not include extension
+        fileext: ".xlsx" // file extension
+        
+    });
+
+
+    let tdValorFisico = document.querySelectorAll('#tdValorFisico');
+
+    tdValorFisico.forEach(element => {
+
+    let valor = element.textContent;
+    let td = element; 
+    td.innerHTML = "";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.id="valorFisico";
+    input.value = valor,
+    input.style.textAlign = "center";
+    input.style.width = "100%";
+
+    input.setAttribute("onchange", "calcularDiferecias(this)");
+
+
+    td.appendChild(input);
+
+
+
+    });
+
+    let tdObservacion = document.querySelectorAll('#tdObservacion');
+
+    tdObservacion.forEach(element => {
+
+    let valor = element.textContent;
+    let td = element; 
+    td.innerHTML = "";
+
+    var input = document.createElement("input");
+    input.type = "text";
+    input.id="observacion";
+    input.value = valor,
+    input.style.textAlign = "center";
+    input.style.width = "100%";
+
+    td.appendChild(input)
+    });
+});
 
 document.ready = calcularTotales ();
