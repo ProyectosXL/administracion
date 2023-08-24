@@ -72,10 +72,13 @@ form{
 }
 
 .btn-group{
-    position: relative;
-    margin-left: 23rem;
+    margin-left: 25rem;
     height: 55px;
     margin-top: 1em;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    font-size: 11px;
 }
 
 #btnaddrow{
