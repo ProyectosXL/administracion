@@ -129,7 +129,7 @@ foreach ($cuentas as $key => $value) {
                         </div>
                         <div>
                             <label for="Rubro">Rubro:</label>
-                            <select class="form-control form-control-sm" name="codRubro">
+                            <select class="form-control form-control-sm codRubro" name="codRubro" >
                                 <option selected disabled>Todos</option>
                                 <?php
                                 foreach ($todosLosRubros as $valor => $value) {
