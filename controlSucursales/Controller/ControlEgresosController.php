@@ -6,9 +6,17 @@ switch ($accion) {
     case 'checkFactura':
         marcarFacturado();
         break;
+
+    case 'uncheckFactura':
+        uncheckFactura();
+        break;
     
     case 'checkControl':
         marcarControlado();
+        break;
+
+    case 'uncheckControl':
+        uncheckControl();
         break;
 
     case 'marcarRecibido':
@@ -45,6 +53,23 @@ function marcarFacturado (){
 
 }
 
+function uncheckFactura (){
+
+  
+    $nroSucursal = $_POST['nro_sucursal'];
+    $tipoComprobante = $_POST['tipoComprobante'];
+    $nroComprobante = $_POST['nroComprobante'];
+    $codCuenta = $_POST['codCuenta'];
+    $monto = $_POST['monto'];
+ 
+
+    $sucursal = new Sucursal();
+
+    $sucursal->uncheckFactura($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto);
+
+
+}
+
 function marcarControlado (){
 
     $fecha = $_POST['fecha'];
@@ -63,6 +88,20 @@ function marcarControlado (){
     $sucursal->marcarControlado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
 
 
+}
+
+function uncheckControl (){
+
+    $nroSucursal = $_POST['nro_sucursal'];
+    $tipoComprobante = $_POST['tipoComprobante'];
+    $nroComprobante = $_POST['nroComprobante'];
+    $codCuenta = $_POST['codCuenta'];
+    $monto = $_POST['monto'];
+ 
+
+    $sucursal = new Sucursal();
+
+    $sucursal->uncheckControl($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto);
 }
 
 function marcarRecibido (){

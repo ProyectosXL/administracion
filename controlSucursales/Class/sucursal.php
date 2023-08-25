@@ -233,6 +233,28 @@ class Sucursal
 
     }
 
+    public function uncheckFactura ($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto)
+    {
+
+        $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET FACTURA = 0 
+        WHERE N_COMP  = '$nroComprobante' 
+        AND NRO_SUCURSAL = '$nroSucursal' 
+        AND TIPO_COMP = '$tipoComprobante' 
+        AND COD_CUENTA = '$codCuenta' 
+        AND MONTO = $monto";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+       
+            return true;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+
     public function marcarControlado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control) 
     {
 
@@ -258,6 +280,26 @@ class Sucursal
             print_r($th);
         }
 
+    }
+
+    public function uncheckControl ($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto) {
+            
+            $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = 0
+            WHERE N_COMP  = '$nroComprobante' 
+            AND NRO_SUCURSAL = '$nroSucursal' 
+            AND TIPO_COMP = '$tipoComprobante' 
+            AND COD_CUENTA = '$codCuenta' 
+            AND MONTO = $monto";
+    
+            try{
+                
+                $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+                return true;
+            
+            } catch (\Throwable $th){
+                print_r($th);
+            }
     }
 
     public function marcarRecibido ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto) 
