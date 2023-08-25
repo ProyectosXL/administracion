@@ -148,7 +148,7 @@ foreach ($cuentas as $key => $value) {
                                         <?php 
                                             foreach ($data as $cuenta ) {
                                       ?> 
-                                            <option  value="<?= $cuenta['COD_CUENTA'] ?>"><?= $cuenta['COD_CUENTA'] ?> - <?= $cuenta['DESC_CUENTA'] ?></option>
+                                            <option  value="<?= $cuenta['COD_CUENTA'] ?>" <?= ($codCuenta == $cuenta['COD_CUENTA']) ? "selected" : "" ?>><?= $cuenta['COD_CUENTA'] ?> - <?= $cuenta['DESC_CUENTA'] ?></option>
                                         <?php
                                             }
 
