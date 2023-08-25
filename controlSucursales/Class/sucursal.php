@@ -359,7 +359,7 @@ class Sucursal
         $sql = "SELECT A.*, B.RECIBIDO 
         FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
-            ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN 
+            ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL  
             AND B.RECIBIDO LIKE '%$estado%'
         WHERE COD_CTA = '100100' 
             AND A.FECHA BETWEEN '$desde' AND '$hasta'";
