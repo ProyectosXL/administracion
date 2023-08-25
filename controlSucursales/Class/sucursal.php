@@ -170,12 +170,12 @@ class Sucursal
 
     }
 
-    public function traerGastosCajaSucursales ($desde, $hasta, $sucursal)
+    public function traerGastosCajaSucursales ($desde, $hasta, $sucursal, $facturado = null)
     {
         
         try {
 
-            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO, 
+            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO,b.CONTABILIZADA,
             (case when c.FECHA_GUARDADO is not null then 1 else 0 end) guardado
             FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES a 
             left join RO_T_GASTOS_CAJA_SUCURSALES b on REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '') collate Latin1_General_BIN 
@@ -183,8 +183,15 @@ class Sucursal
             AND A.COD_CTA = B.COD_CUENTA 
             left join SJ_EGRESOS_DE_CAJA_GUARDADO c on a.N_COMP = c.N_COMP collate Latin1_General_BIN
             WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = $sucursal 
-            ORDER BY FECHA ASC;
-            ";
+            "
+            ;
+            if($facturado == true){
+
+                $sql = $sql."AND b.FACTURA = 1";
+                
+            }
+
+            $sql = $sql."ORDER BY FECHA ASC;";
        
             
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -389,5 +396,25 @@ class Sucursal
 
     }
    
+    public function contabilizar ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto, $contabilizado) 
+    {
+        $sql ="UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTABILIZADA = '$contabilizado'
+        WHERE FECHA = '$fecha' 
+        AND N_COMP = '$nroComprobante' 
+        AND NRO_SUCURSAL = '$nroSucursal' 
+        AND TIPO_COMP = '$tipoComprobante'
+        AND COD_CUENTA = '$codCuenta' 
+        AND MONTO = $monto";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            return true;
+
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+    }
 
 }
