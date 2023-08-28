@@ -1,26 +1,27 @@
 <?php
 require_once "../Class/sucursal.php";
 $accion = $_GET['accion'];
+$sucursal = new Sucursal();
 
 switch ($accion) {
     case 'checkFactura':
-        marcarFacturado();
+        marcarFacturado($sucursal);
         break;
 
     case 'uncheckFactura':
-        uncheckFactura();
+        uncheckFactura($sucursal);
         break;
     
     case 'checkControl':
-        marcarControlado();
+        marcarControlado($sucursal);
         break;
 
     case 'uncheckControl':
-        uncheckControl();
+        uncheckControl($sucursal);
         break;
 
     case 'marcarRecibido':
-        marcarRecibido();
+        marcarRecibido($sucursal);
         break;
     
     case 'contarImagenes':
@@ -33,7 +34,7 @@ switch ($accion) {
 }
 
 
-function marcarFacturado (){
+function marcarFacturado ($sucursal) {
 
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nro_sucursal'];
@@ -46,14 +47,12 @@ function marcarFacturado (){
     $factura = $_POST['factura'];
     $control = $_POST['control'];    
 
-    $sucursal = new Sucursal();
-
     $sucursal->marcarFacturado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
 
 
 }
 
-function uncheckFactura (){
+function uncheckFactura ($sucursal) {
 
   
     $nroSucursal = $_POST['nro_sucursal'];
@@ -63,14 +62,12 @@ function uncheckFactura (){
     $monto = $_POST['monto'];
  
 
-    $sucursal = new Sucursal();
-
     $sucursal->uncheckFactura($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto);
 
 
 }
 
-function marcarControlado (){
+function marcarControlado ($sucursal){
 
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nro_sucursal'];
@@ -83,14 +80,12 @@ function marcarControlado (){
     $factura = $_POST['factura'];
     $control = $_POST['control'];    
 
-    $sucursal = new Sucursal();
-
     $sucursal->marcarControlado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
 
 
 }
 
-function uncheckControl (){
+function uncheckControl ($sucursal){
 
     $nroSucursal = $_POST['nro_sucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -99,12 +94,10 @@ function uncheckControl (){
     $monto = $_POST['monto'];
  
 
-    $sucursal = new Sucursal();
-
     $sucursal->uncheckControl($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto);
 }
 
-function marcarRecibido (){
+function marcarRecibido ($sucursal){
 
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nroSucursal'];
@@ -114,7 +107,7 @@ function marcarRecibido (){
     $descripcionCuenta = $_POST['descripcionCuenta'];
     $monto = $_POST['monto'];
 
-    $sucursal = new Sucursal();
+
 
     $result = $sucursal->marcarRecibido($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto);
     
