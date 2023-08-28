@@ -135,7 +135,7 @@ if(count($gastosTesoreria) > 0){
                                             echo "<th style='text-align:center;width:10%'>".$value."</th>";
                                         }
                                     ?>
-                                    <th style="text-align:center;width:5%">CARGADO</th>
+                                    <th style="text-align:center;width:5%" class="noExport">CARGADO</th>
                                   
                            
 
@@ -173,7 +173,7 @@ if(count($gastosTesoreria) > 0){
                                                     }
                                                 ?>
 
-                                                <td style='text-align:center;'><input type='checkbox' onchange='checkControl(this)' id='checkControl' <?= (in_array($value['NRO_SUCURSAL'], $arraySucursalesCheckeadas)) ? "checked='true' ; disabled='true'" : "" ?>></td>
+                                                <td style='text-align:center;'><input type='checkbox' class="noExport" onchange='checkControl(this)' id='checkControl' <?= (in_array($value['NRO_SUCURSAL'], $arraySucursalesCheckeadas)) ? "checked='true' ; disabled='true'" : "" ?>></td>
                                             </tr>
                                     <?php
                                     }
@@ -228,7 +228,7 @@ if(count($gastosTesoreria) > 0){
 
         $("#tablaGastosTesoreria").table2excel({
             // exclude CSS class
-            exclude: ".noE  xl",
+            exclude: ".noExport",
             name: "excel Document ",
             filename: "Excel", //do not include extension
             fileext: ".xlsx" // file extension
