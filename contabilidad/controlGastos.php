@@ -45,6 +45,7 @@ foreach ($cuentas as $key => $value) {
 
 }
 
+
 ?>
 
 <!DOCTYPE html>
@@ -119,12 +120,21 @@ foreach ($cuentas as $key => $value) {
                         </div>
                         <div id="estado">
                             <label>Estado:</label>
-                            <select class="form-control form-control-sm estado" name="estado">
-                                <option value="" selected>Todos</option>
-                                <option value="1">Amortizar</option>
-                                <option value="2">Excluidos</option>
-                                <option value="3">Pendiente asignar</option>
-                                <option value="0">Pendiente control</option>
+                            <select class="form-control form-control-sm estado" name="selectEstado" id="selectEstado">
+                                <option value="%" <?= (isset($_GET['selectEstado']) &&  $_GET['selectEstado'] == '%') ? "selected" : "" ?>>Todos</option>
+                                <option value="1" <?= (isset($_GET['selectEstado']) &&  $_GET['selectEstado'] == '1') ? "selected" : "" ?>>Amortizar</option>
+                                <option value="2" <?= (isset($_GET['selectEstado']) &&  $_GET['selectEstado'] == '2') ? "selected" : "" ?>>Excluidos</option>
+                                <option value="3" <?= (isset($_GET['selectEstado']) &&  $_GET['selectEstado'] == '3') ? "selected" : "" ?>>Pendiente asignar</option>
+                                <option value="0" 
+                                <?php
+                                    if (isset($_GET['selectEstado'])){
+                                        if($_GET['selectEstado'] == '0') {
+                                            echo "selected";
+                                        }
+                                    } else{
+                                        echo "selected";
+                                    }
+                                ?> >Pendiente control</option>
                             </select>
                         </div>
                         <div>
@@ -183,15 +193,16 @@ foreach ($cuentas as $key => $value) {
     </div>
 
     <?php
-
+    
     if (isset($_GET['desde'])) {
+        
+        if (isset($_GET['selectEstado']) != '') {
+            $estado = $_GET['selectEstado'];
 
-        if (isset($_GET['estado']) != '') {
-            $estado = $_GET['estado'];
         } else {
-            $estado = '%';
+            $estado = '0';
         }
-
+        
         if (isset($_GET['codRubro']) != '') {
             $codRubro = $_GET['codRubro'];
         } else {
@@ -354,7 +365,7 @@ foreach ($cuentas as $key => $value) {
 
             $('.codRubro').select2();
 
-            document.querySelector(".estado").selectedIndex = "<?= (isset($_GET['estado'])) ? $_GET['estado'] : "4" ?>"
+
             
         });
         
