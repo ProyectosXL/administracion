@@ -38,60 +38,70 @@
         <?php
             require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
         ?>
+    <style>
 
+    #tablaControlRecepcion_wrapper{
+        width: 80%;
+        margin-left: 2rem;
+    }
+
+    .dataTables_length label{
+    margin-left: -30rem;
+    }
+
+    .dataTables_filter label {
+    margin-right: -22rem;
+    }
+
+    </style>
+  
     </head>
 
     <body>
 
         <div class="alert alert-secondary">
-            <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
+            <div class="page-wrapper bg-secondary p-b-100 pt-2">
                 <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Control recepción efectivo de sucursales</h6></div>
                     <div class="card card-1">
                         
-                        <div class="row" style="margin-left:50px">
-                            <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:50px"></i>Control recepción efectivo de sucursales</strong></h3>
+                        <div class="row" style="margin-left:40px">
+                            <h4><strong><i class="bi bi-cash" style="margin-right:20px;font-size:40px"></i>Control recepción efectivo de sucursales</strong></h4>
                         </div>
 
-                        <form action="#" method="get" style="margin-bottom:20px">
+                        <form action="#">
 
-                            <div class="row" style="margin-top:10px">
+                            <div class="form-inline">
 
-                                <div  style="margin-left:70px;width:250px">Desde: <input type="date" style="width:170px; height:40px" id='desde' name="desde" value="<?php echo $desde; ?>"></div>
-                                
-                                <div  style="margin-right:20px">Hasta: <input type="date" style="width:150px; height:45px" id='hasta' name="hasta" value="<?php echo $hasta; ?>"></div>
-                                
-                                <div style="margin-right:20px">Estado :
+                                <div class="row" style="margin-top:10px; margin-bottom: 1rem; margin-left:35px">
+                                    <div style="margin-left:10px">Desde : <input type="date" class="form-control form-control-sm" id="desde" name="desde" value="<?=  $desde ?>"></div>
+                                    <div style="margin-left:30px">Hasta: <input type="date" class="form-control form-control-sm" id="hasta"  name="hasta" value="<?=  $hasta ?>"></div>
+                                    <div style="margin-left:30px">Estado: 
 
-                                    <select name="selectEstado" id="selectEstado" style="width:150px; height:45px" >
+                                        <select class="form-control form-control-sm" name="selectEstado" id="selectEstado">
 
-                                        <option value="%" <?= ($estado == "%") ? "selected" : "" ?>>Todos</option>
-                                        <option value="0" <?= ($estado == "0") ? "selected" : "" ?>>Pendiente</option>
+                                            <option value="%" <?= ($estado == "%") ? "selected" : "" ?>>Todos</option>
+                                            <option value="0" <?= ($estado == "0") ? "selected" : "" ?>>Pendiente</option>
 
-                                    </select>
-                                    
+                                        </select>
+                                     
+                                        <button class="btn btn-primary btn-submit" style="margin-top: -0.25em; margin-right: 5rem; height: 35px" id="btnFiltrarControlRecepcion">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                 </div>
-
-                                <div>   
-                                    <button class="btn btn-primary btn-submit" id="btnFiltrarControlRecepcion">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                </div>
-
                             </div>
-
                         </form>
             
-                        <table class="table table-striped table-bordered" id="tablaControlRecepcion" cellspacing="0" data-page-length="100">
+                        <table class="table table-striped table-bordered table-sm table-hover" id="tablaControlRecepcion" cellspacing="0" data-page-length="100" style="height:100px; font-size:13px;">
                             <thead class="thead-dark" style="">
-                                <tr style="text-align:center">
+                                <tr>
 
-                                    <th > FECHA </th>
-                                    <th > NRO.SUCURSAL</th>
-                                    <th > DESC.SUCURSAL</th>
-                                    <th > TIPO COMP. </th>
-                                    <th > COMPROBANTE </th>
-                                    <th > COD.CUENTA </th>
-                                    <th > CUENTA </th>
-                                    <th > MONTO </th>
-                                    <th > RECIBIDO </th>
+                                    <th style="text-align:center;width:10%" > FECHA </th>
+                                    <th style="text-align:center;width:10%" > NRO.SUCURSAL</th>
+                                    <th style="text-align:center;width:10%" > DESC.SUCURSAL</th>
+                                    <th style="text-align:center;width:10%" > TIPO COMP. </th>
+                                    <th style="text-align:center;width:10%" > COMPROBANTE </th>
+                                    <th style="text-align:center;width:10%" > COD.CUENTA </th>
+                                    <th style="text-align:center;width:20%" > CUENTA </th>
+                                    <th style="text-align:center;width:10%" > MONTO </th>
+                                    <th style="text-align:center;width:10%" > RECIBIDO </th>
 
                                 </tr>
                             </thead>
@@ -121,7 +131,7 @@
                                             <?php 
                                                 if($gasto['RECIBIDO'] == 1){
                                                    
-                                                    echo "<td style='text-align:center'><i class='bi bi-check-circle-fill' style='color:green;font-size:27px;margin-right:15%' ></i></td>";
+                                                    echo "<td style='text-align:center'><i class='bi bi-check-circle-fill' style='color:green;font-size:20px;' ></i></td>";
                                                 }else{
                                                     echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarRecibido(this)'></td>";
                                                 }   
@@ -151,3 +161,38 @@
 </html>
 
 <script src="js/controlRecepcion.js"></script>
+
+<script>
+  $('#tablaControlRecepcion').DataTable({
+        "bLengthChange": true,
+        "language": {
+                    "lengthMenu": "mostrar _MENU_ registros",
+                    "info":           "Mostrando registros del _START_ al _END_ de un total de  _TOTAL_ registros",
+                    "paginate": {
+                        "next":       "Siguiente",
+                        "previous":   "Anterior"
+                    },
+
+        },
+    
+        
+        "bInfo": true,
+        "aaSorting": false,
+        'columnDefs': [
+            {
+                "targets": "_all", 
+                "className": "text-center",
+                "sortable": false,
+         
+            },
+        ],
+        "oLanguage": {
+    
+            "sSearch": "Busqueda rapida:",
+            "sSearchPlaceholder" : "Sobre cualquier campo"
+            
+    
+        },
+    });
+
+</script>

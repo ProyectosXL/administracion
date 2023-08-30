@@ -59,3 +59,66 @@ const comprobarChecks = () => {
     });
 
 }
+
+
+const calcularTotales = () => {
+    let allTr = document.querySelectorAll("tbody td");
+    let objetoTotales = {};
+
+    allTr.forEach(element => {
+   
+        if(element.id.split('-')[0] == "td"){
+            let total = element.textContent.replace(/[$.]/g, "");
+            
+            let key = element.id.split('-')[1];
+
+    
+       
+            if (!objetoTotales[key]) {
+                objetoTotales[key] = parseInt(total);
+            } else {
+                objetoTotales[key] += parseInt(total);
+            }
+        }
+
+    });
+    let arrayTotales = [];
+    
+    for (const clave in objetoTotales) {
+        if (objetoTotales.hasOwnProperty(clave)) {
+            const valor = objetoTotales[clave];
+            arrayTotales.push({ clave, valor });
+        }
+    }
+  
+    arrayTotales.forEach((total,x) => {
+
+        
+        document.querySelector(`#total${total.clave}`).textContent = "$" + parseNumber(total.valor);
+    });
+   
+}
+
+const parseNumber = (number) => {
+    number = parseInt(number);
+
+    newNumber = number.toLocaleString('de-De', {
+        style: 'decimal',
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0
+    });
+
+    return newNumber;
+}
+
+const checkMasivo = () => {
+
+
+    document.querySelectorAll("#checkControl").forEach(element => {
+        element.checked = true;
+        checkControl(element);
+
+    });
+
+}
+

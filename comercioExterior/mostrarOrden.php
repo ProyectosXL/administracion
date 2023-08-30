@@ -1,12 +1,12 @@
 <?php
 
 require_once __DIR__ ."./Controller/listarOrden.php";
-$listaDeOrdenes = listar();
 
 $fecha_actual = date("Y-m-d");
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d",strtotime($fecha_actual."- 1 month"));
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : $fecha_actual;
 
+$listaDeOrdenes = listarPorFecha($desde, $hasta);
 ?>
 
 <!DOCTYPE html>
@@ -151,10 +151,14 @@ const imprimir=(id)=>{
 
 function myFunction() {
   var input, filter, table, tr, td, td2, i, txtValue;
+
+  
   input = document.getElementById("textBox");
   filter = input.value.toUpperCase();
-  table = document.getElementById("table");
-  tr = table.getElementsByTagName("tr");
+  table = document.querySelector("#tableDinamic")
+  tr = table.querySelectorAll("tbody tr");
+
+
   //tr = document.getElementById('tr');
 
   for (i = 0; i < tr.length; i++) {

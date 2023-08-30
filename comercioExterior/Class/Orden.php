@@ -65,6 +65,27 @@ class Orden{
     
             }
     }
+    public function traerOrdenPorFecha($desde, $hasta) {
+
+        $sql = "SELECT ID,FECHA_MOV,COD_PROVEE,PROVEEDOR,DESPACHO,ORDEN_COMPRA,VALOR_FOB_PESO FROM RO_T_IMPORTACIONES_ENCABEZADO  WHERE FECHA_MOV BETWEEN '$desde' AND '$hasta' ;";
+        
+        try{
+            $stmt = sqlsrv_query( $this->cid_central, $sql );
+    
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+            return ($rows);
+            
+    
+            } catch (\Throwable $th) {
+    
+            print_r($th);
+    
+            }
+    }
 
     public function EjecutarSp ($nroOrden){
 

@@ -28,7 +28,7 @@ $(document).ready( function () {
     
 const checkFactura = (div) => {
 
-    comprobarChecks();
+
     allTd = div.parentElement.parentElement.querySelectorAll("td");
     let fecha = allTd[0].textContent;
     let nro_sucursal = allTd[1].textContent;
@@ -48,10 +48,19 @@ const checkFactura = (div) => {
         control = 1;
 
     }
+    let accion = ""
+    if(div.checked == true){
 
+        accion = "checkFactura";
+
+    }else{
+
+        accion = "uncheckFactura";
+
+    }
     $.ajax({
         type: "POST",
-        url: "Controller/ControlEgresosController.php?accion=checkFactura",
+        url: "Controller/ControlEgresosController.php?accion="+accion,
         data: {
             fecha: fecha,
             nro_sucursal: nro_sucursal,
@@ -69,9 +78,10 @@ const checkFactura = (div) => {
     });
 
 }
+
 const checkControl = (div) => {
  
-    comprobarChecks();
+
     allTd = div.parentElement.parentElement.querySelectorAll("td");
     let fecha = allTd[0].textContent;
     let nro_sucursal = allTd[1].textContent;
@@ -92,9 +102,19 @@ const checkControl = (div) => {
 
     }
 
+    if(div.checked == true){
+
+        accion = "checkControl";
+
+    }else{
+
+        accion = "uncheckControl";
+
+    }
+
     $.ajax({
         type: "POST",
-        url: "Controller/ControlEgresosController.php?accion=checkControl",
+        url: "Controller/ControlEgresosController.php?accion="+accion,
         data: {
             fecha: fecha,
             nro_sucursal: nro_sucursal,
@@ -113,23 +133,23 @@ const checkControl = (div) => {
 
 }
 
-const comprobarChecks = () => {
+// const comprobarChecks = () => {
 
-    let allFactura = document.querySelectorAll("#checkFactura");
-    allFactura.forEach(element => {
-        if(element.checked){
-            element.disabled = true;
-        }
-    });
+//     let allFactura = document.querySelectorAll("#checkFactura");
+//     allFactura.forEach(element => {
+//         if(element.checked){
+//             element.disabled = true;
+//         }
+//     });
 
-    let allControl = document.querySelectorAll("#checkControl");
-    allControl.forEach(element => {
-        if(element.checked){
-            element.disabled = true;
-        }
-    });
+//     let allControl = document.querySelectorAll("#checkControl");
+//     allControl.forEach(element => {
+//         if(element.checked){
+//             element.disabled = true;
+//         }
+//     });
 
-}
+// }
 
 
 const mostrarImagen = (divImagen, startIndex = 0) => {

@@ -2,6 +2,7 @@
     session_start();
 require_once "Class/sucursal.php";
 
+
 if(isset($_GET['mes']) &&$_GET['mes'] != "" ){
     $mes = $_GET['mes'];
 }else{
@@ -18,12 +19,14 @@ $dataSucursal = (isset($_GET['sucursal'])) ?  explode("-", $_GET['sucursal']) : 
 $medioPagoSelected = (isset($_GET['medioPago'])) ? explode("-", $_GET['medioPago'])  : "MODO_QR";
 
 
+
 $currentYear = date('Y',  strtotime( date("Y-m-d")));
 $yearDif = $currentYear - 2023;
 
 $sucursal = new Sucursal();
 $todosLosLocales= $sucursal->traerLocales(true);
 $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
+
 
 $periodoRerverse = $anio."-".$mes;
 
@@ -34,6 +37,7 @@ $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
 $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $primerDia, $ultimoDia,str_replace("_", " ", $medioPagoSelected[1]));
 
+
 ?>
 
 <!DOCTYPE html>
@@ -43,7 +47,9 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
         <title>Control masivo de cobranza</title>
+
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
         <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css"> -->
@@ -91,12 +97,16 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
+
                 <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Control Masivo de Cobranza</h6></div>
+
                     <div class="card card-1">
                         <div id="periodo" hidden><?= $periodo ?></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
                         
+
                             <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:40px"></i>Control Masivo de Cobranza- <?= $dataSucursal[1] ?>( <?= $medioPagoSelected[1] ?>)</strong></h3>
+
 
                         </div>
                         <form action="#">
@@ -108,6 +118,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                
                                         ?>
                                     <div style="margin-left:90px" >Mes: 
+
 
                                     <select name="mes" id="mes" style="width:2.5rem; height:2.5rem">
                                         <?php 
@@ -122,6 +133,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                         <?php
                                             }
                                         ?>
+
                                     </select>
 
                                     </div>
@@ -132,7 +144,9 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                             for ($i=0; $i <= $yearDif ; $i++) { 
                                                 $y = 2023 + $i;
                                         ?>
+
                                             <option value="<?=$y?>" <?php if($anio == $y ) echo "selected"?>><?=$y?></option>
+
                                             
                                         <?php
                                             }
@@ -147,7 +161,9 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                             foreach ($todosLosLocales as $key => $local) {
 
                                         ?>
+
                                                 <option value="<?= $local['NRO_SUCURSAL'] ?>-<?= $local['DESC_SUCURSAL'] ?>" <?= ($dataSucursal[0] == $local['NRO_SUCURSAL']) ? "selected" : "" ?>><?= $local['DESC_SUCURSAL'] ?></option>
+
 
                                         <?php
                                             }
@@ -160,7 +176,9 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                         <?php 
                                             foreach ($todosLosMediosDePago as $key => $medioPago) {
                                         ?>
+
                                                 <option value="<?= $medioPago['ID_MP'] ?>-<?= $medioPago['MEDIO_PAGO'] ?>" <?= ($medioPagoSelected[0] == $medioPago['ID_MP']) ? "selected" : "" ?>><?= $medioPago['MEDIO_PAGO'] ?></option>
+
 
                                         <?php
                                             }
@@ -170,15 +188,18 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     </div>
 
                                     <button class="btn btn-primary btn-submit" style="height:35px;margin-left:20px;width:110px" onclick= "">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+
                                     <button class="btn btn-primary btn-secondary" type="button" style="height:35px;margin-left:20%;width:110px" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
                                     <button class="btn btn-primary btn-primary" type="button" style="height:35px;margin-left:20px;width:120px" onclick= "controlar()">Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
                                     <button name="btnExport" type="button" class="btn btn-success" id="btnExport"  style="height:35px;margin-left:20px;width:120px">Exportar <i class="bi bi-file-earmark-excel"></i></button>
+
 
                                 </div>
 
                             </div>
                         </form>
             
+
                         <table class="table table-striped table-bordered table-sm table-hover" id="tablaControl" style="width: 95%; height:100px; margin-left:50px" cellspacing="0" data-page-length="100">
                             <thead class="thead-dark" style="">
                                 <tr>
@@ -186,11 +207,13 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     <th style="text-align:center;width: 3%;" >$ SISTEMA</th>
                                     <th style="text-align:center;width: 3%;" >$ CONTROL</th>
                                     <th style="text-align:center;width: 5%;">DIFERENCIA</th>
+
                                     <th style="text-align:center;width: 15%;" >OBSERVACIONES</th>
                                     
                                 </tr>
                             </thead>
                             <tbody>
+
                                             
                             <?php 
                                 foreach ($todosLosImportes as $key => $importe) {
@@ -232,6 +255,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
 
                                 </tr>
                             </tfoot>
+
             
                         </table>
                     </div>
@@ -248,14 +272,50 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
         <!-- <script src="assets/select2/select2.min.js"></script> -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
         <!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script> -->
+
         <script src="js/controlMasivo.js"></script>
         <script src="https://cdn.datatables.net/fixedheader/3.1.9/js/dataTables.fixedHeader.min.js"></script>
         <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
 
     </body>
 
 </html>
 <script>
+
+    $('#tablaArticulos').DataTable({
+        "bLengthChange": true,
+        "language": {
+                    "lengthMenu": "mostrar _MENU_ registros",
+                    "info":           "Mostrando registros del _START_ al _END_ de un total de  _TOTAL_ registros",
+                    "paginate": {
+                        "next":       "Siguiente",
+                        "previous":   "Anterior"
+                    },
+
+        },
+    
+        
+        "bInfo": true,
+        "aaSorting": false,
+        'columnDefs': [
+            {
+                "targets": "_all", 
+                "className": "text-center",
+                "sortable": false,
+         
+            },
+        ],
+        "oLanguage": {
+    
+            "sSearch": "Busqueda rapida:",
+            "sSearchPlaceholder" : "Sobre cualquier campo"
+            
+    
+        },
+    });
+
+
 </script>
 
 <!-- <script src="js/gastosTesoreria.js"></script> -->

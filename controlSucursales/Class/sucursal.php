@@ -261,6 +261,28 @@ class Sucursal
 
     }
 
+    public function uncheckFactura ($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto)
+    {
+
+        $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET FACTURA = 0 
+        WHERE N_COMP  = '$nroComprobante' 
+        AND NRO_SUCURSAL = '$nroSucursal' 
+        AND TIPO_COMP = '$tipoComprobante' 
+        AND COD_CUENTA = '$codCuenta' 
+        AND MONTO = $monto";
+
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+       
+            return true;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+
     public function marcarControlado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control) 
     {
 
@@ -286,6 +308,26 @@ class Sucursal
             print_r($th);
         }
 
+    }
+
+    public function uncheckControl ($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto) {
+            
+            $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = 0
+            WHERE N_COMP  = '$nroComprobante' 
+            AND NRO_SUCURSAL = '$nroSucursal' 
+            AND TIPO_COMP = '$tipoComprobante' 
+            AND COD_CUENTA = '$codCuenta' 
+            AND MONTO = $monto";
+    
+            try{
+                
+                $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+                return true;
+            
+            } catch (\Throwable $th){
+                print_r($th);
+            }
     }
 
     public function marcarRecibido ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto) 
@@ -387,7 +429,7 @@ class Sucursal
         $sql = "SELECT A.*, B.RECIBIDO 
         FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
-            ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN 
+            ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL  
             AND B.RECIBIDO LIKE '%$estado%'
         WHERE COD_CTA = '100100' 
             AND A.FECHA BETWEEN '$desde' AND '$hasta'";
