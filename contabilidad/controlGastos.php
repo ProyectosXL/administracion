@@ -243,7 +243,7 @@ foreach ($cuentas as $key => $value) {
                     <?php 
                     foreach ($todosLosCentrosCosto as  $y => $centro) {
                         
-                        if($key->DESC_AUXILIAR == $centro->DESC_AUXILIAR){   
+                        if($key->COD_AUXILIAR == $centro->COD_AUXILIAR){   
                     ?>
                             <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>" selected>
                                 <?php

@@ -165,8 +165,8 @@
                                                     }
                                                 ?>
                                             </td>
-                                            <td id="td_myTable" ><input type='checkbox' class='form-check-input' id="checkFactura" onchange='checkFactura(this)'  <?= ($gasto['FACTURA'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
-                                            <td id="td_myTable" ><input type='checkbox' class='form-check-input' id="checkControl" onchange='checkControl(this)' <?= ($gasto['CONTROL'] == 1) ? "checked=true disabled=true" : "" ?> ></td>
+                                            <td id="td_myTable" ><input type='checkbox' class='form-check-input' id="checkFactura" onchange='checkFactura(this)'  <?= ($gasto['FACTURA'] == 1) ? "checked=true " : "" ?> ></td>
+                                            <td id="td_myTable" ><input type='checkbox' class='form-check-input' id="checkControl" onchange='checkControl(this)' <?= ($gasto['CONTROL'] == 1) ? "checked=true " : "" ?> ></td>
                                         </tr>
                                         
                                 <?php 

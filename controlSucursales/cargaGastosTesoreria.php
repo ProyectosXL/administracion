@@ -117,6 +117,8 @@ if(count($gastosTesoreria) > 0){
 
                                 </div>
                                     <button class="btn btn-primary btn-submit ml-2" value="">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                                    <button class="btn btn-success btn_exportar" id="btnExport" style="margin-left:40%"> Exportar<i class="bi bi-file-earmark-excel"></i></button>
+                                    <button class="btn btn-secondary  ml-2" type="button" onclick="checkMasivo()" id="checkAll">Check All</button>
                             </div>
                         </div>                                    
                         </form>
@@ -133,7 +135,7 @@ if(count($gastosTesoreria) > 0){
                                             echo "<th style='text-align:center;width:10%'>".$value."</th>";
                                         }
                                     ?>
-                                    <th style="text-align:center;width:5%">CARGADO</th>
+                                    <th style="text-align:center;width:5%" class="noExport">CARGADO</th>
                                   
                            
 
@@ -164,14 +166,14 @@ if(count($gastosTesoreria) > 0){
                                                                 }
                                                             }
                                                 ?>
-                                                        <td style='text-align:center'>$<?=(number_format($total, 0, ',', '.')) ?></td>
+                                                        <td style='text-align:center' id="td-<?= $k ?>">$<?=(number_format($total, 0, ',', '.')) ?></td>
                                                 <?php
                                                         }
                                     
                                                     }
                                                 ?>
 
-                                                <td style='text-align:center;'><input type='checkbox' onchange='checkControl(this)' id='checkControl' <?= (in_array($value['NRO_SUCURSAL'], $arraySucursalesCheckeadas)) ? "checked='true' ; disabled='true'" : "" ?>></td>
+                                                <td style='text-align:center;'><input type='checkbox' class="noExport" onchange='checkControl(this)' id='checkControl' <?= (in_array($value['NRO_SUCURSAL'], $arraySucursalesCheckeadas)) ? "checked='true' ; disabled='true'" : "" ?>></td>
                                             </tr>
                                     <?php
                                     }
@@ -180,6 +182,20 @@ if(count($gastosTesoreria) > 0){
                                 ?>
                
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>Total</td>
+                                    <td></td>
+                                    <?php 
+                                        foreach ($keys as $key => $value) {
+                                            if($key > 1)
+                              
+                                            echo "<td style='text-align:center;width:10%' id='total". $value."'></td>";
+                                        }
+                                    ?>
+
+                                </tr>
+                            </tfoot>
             
                         </table>
                     </div>
@@ -196,10 +212,28 @@ if(count($gastosTesoreria) > 0){
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+        <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
 
     </body>
 
 </html>
 
 <script src="js/gastosTesoreria.js"></script>
+<script>
+    document.ready = calcularTotales();
+
+
+     $("#btnExport").click(function() {
+        console.log("paso")
+
+        $("#tablaGastosTesoreria").table2excel({
+            // exclude CSS class
+            exclude: ".noExport",
+            name: "excel Document ",
+            filename: "Excel", //do not include extension
+            fileext: ".xlsx" // file extension
+        });
+    })
+    
+</script>
 

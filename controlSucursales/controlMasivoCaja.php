@@ -2,16 +2,23 @@
     session_start();
 require_once "Class/sucursal.php";
 
-if(isset($_GET['desde']) &&$_GET['desde'] != "" ){
-    $desde = $_GET['desde'];
+
+if(isset($_GET['mes']) &&$_GET['mes'] != "" ){
+    $mes = $_GET['mes'];
 }else{
-    $desde = date("Y-m-d");
+    $mes = date("m");
 }
-if(isset($_GET['hasta']) &&$_GET['hasta'] != "" ){
-    $hasta = $_GET['hasta'];
+if(isset($_GET['anio']) &&$_GET['anio'] != "" ){
+    $anio = $_GET['anio'];
 }else{
-    $hasta = date('Y-m-d',strtotime("+1 days"));
+    $anio = "2023";
 }
+
+$dataSucursal = (isset($_GET['sucursal'])) ?  explode("-", $_GET['sucursal']) : ['2','UNICENTER'];
+
+$medioPagoSelected = (isset($_GET['medioPago'])) ? explode("-", $_GET['medioPago'])  : "MODO_QR";
+
+
 
 $currentYear = date('Y',  strtotime( date("Y-m-d")));
 $yearDif = $currentYear - 2023;
@@ -19,6 +26,18 @@ $yearDif = $currentYear - 2023;
 $sucursal = new Sucursal();
 $todosLosLocales= $sucursal->traerLocales(true);
 $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
+
+
+$periodoRerverse = $anio."-".$mes;
+
+$primerDia = date('Y-m-01', strtotime($periodoRerverse));
+
+$ultimoDia = date('Y-m-t', strtotime($primerDia));
+
+
+$todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $primerDia, $ultimoDia,str_replace("_", " ", $medioPagoSelected[1]));
+
+
 ?>
 
 <!DOCTYPE html>
@@ -28,7 +47,9 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Control masivo de caja</title>
+
+        <title>Control masivo de cobranza</title>
+
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
         <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css"> -->
@@ -76,12 +97,16 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Control Masivo Caja Sucursales</h6></div>
+
+                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Control Masivo de Cobranza</h6></div>
+
                     <div class="card card-1">
                         <div id="periodo" hidden><?= $periodo ?></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
                         
-                            <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:40px"></i>Control Masivo Caja Sucursales</strong></h3>
+
+                            <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:40px"></i>Control Masivo de Cobranza- <?= $dataSucursal[1] ?>( <?= $medioPagoSelected[1] ?>)</strong></h3>
+
 
                         </div>
                         <form action="#">
@@ -93,19 +118,22 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
                                
                                         ?>
                                     <div style="margin-left:90px" >Mes: 
-                                    <select name="mes" id="mes" style="width:2rem; height:2.5rem">
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                        <option value="6">6</option>
-                                        <option value="7">7</option>
-                                        <option value="8">8</option>
-                                        <option value="9">9</option>
-                                        <option value="10">10</option>
-                                        <option value="11">11</option>
-                                        <option value="12">12</option>
+
+
+                                    <select name="mes" id="mes" style="width:2.5rem; height:2.5rem">
+                                        <?php 
+                                            for ($i=1; $i <= 12 ; $i++) { 
+                                                if(strlen($i) == 1){
+                                                    $i = "0".$i;
+                                                }
+                                        ?>
+
+                                        <option value="<?=$i?>" <?php if($mes == $i ) echo "selected"?>><?=$i?></option>
+
+                                        <?php
+                                            }
+                                        ?>
+
                                     </select>
 
                                     </div>
@@ -116,7 +144,9 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
                                             for ($i=0; $i <= $yearDif ; $i++) { 
                                                 $y = 2023 + $i;
                                         ?>
-                                            <option value="<?=$y?>"><?=$y?></option>
+
+                                            <option value="<?=$y?>" <?php if($anio == $y ) echo "selected"?>><?=$y?></option>
+
                                             
                                         <?php
                                             }
@@ -131,7 +161,9 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
                                             foreach ($todosLosLocales as $key => $local) {
 
                                         ?>
-                                                <option value="<?= $local['NRO_SUCURSAL'] ?>" ><?= $local['DESC_SUCURSAL'] ?></option>
+
+                                                <option value="<?= $local['NRO_SUCURSAL'] ?>-<?= $local['DESC_SUCURSAL'] ?>" <?= ($dataSucursal[0] == $local['NRO_SUCURSAL']) ? "selected" : "" ?>><?= $local['DESC_SUCURSAL'] ?></option>
+
 
                                         <?php
                                             }
@@ -144,7 +176,9 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
                                         <?php 
                                             foreach ($todosLosMediosDePago as $key => $medioPago) {
                                         ?>
-                                                <option value="<?= $medioPago['COD_CUENTA'] ?>" ><?= $medioPago['DESC_CUENTA'] ?></option>
+
+                                                <option value="<?= $medioPago['ID_MP'] ?>-<?= $medioPago['MEDIO_PAGO'] ?>" <?= ($medioPagoSelected[0] == $medioPago['ID_MP']) ? "selected" : "" ?>><?= $medioPago['MEDIO_PAGO'] ?></option>
+
 
                                         <?php
                                             }
@@ -154,34 +188,74 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
                                     </div>
 
                                     <button class="btn btn-primary btn-submit" style="height:35px;margin-left:20px;width:110px" onclick= "">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                    <button class="btn btn-primary btn-secondary" style="height:35px;margin-left:20%;width:110px" onclick= "">Guardar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                    <button class="btn btn-primary btn-success" style="height:35px;margin-left:20px;width:110px" onclick= "">Controlar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                    
 
-                                    <!-- <div style="margin-left:50%;">   
-                                        <button class="btn btn-success" type="button" style="height:35px;width:110px" onclick="guardar()">Guardar <i class="bi bi-save" style=""></i></button>
-                                    </div> -->
+                                    <button class="btn btn-primary btn-secondary" type="button" style="height:35px;margin-left:20%;width:110px" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
+                                    <button class="btn btn-primary btn-primary" type="button" style="height:35px;margin-left:20px;width:120px" onclick= "controlar()">Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
+                                    <button name="btnExport" type="button" class="btn btn-success" id="btnExport"  style="height:35px;margin-left:20px;width:120px">Exportar <i class="bi bi-file-earmark-excel"></i></button>
+
 
                                 </div>
 
                             </div>
                         </form>
             
-                        <table class="table table-striped table-bordered table-sm table-hover" id="tablaArticulos" style="width: 95%; height:100px; margin-left:50px" cellspacing="0" data-page-length="100">
+
+                        <table class="table table-striped table-bordered table-sm table-hover" id="tablaControl" style="width: 95%; height:100px; margin-left:50px" cellspacing="0" data-page-length="100">
                             <thead class="thead-dark" style="">
                                 <tr>
-                                    <th style="text-align:center;width: 5%;" >FECHA</th>
-                                    <th style="text-align:center;width: 5%;" >$ SISTEMA</th>
-                                    <th style="text-align:center;width: 7%;" >$ CONTROL</th>
-                                    <th style="text-align:center;width: 7%;">DIFERENCIA</th>
+                                    <th style="text-align:center;width: 3%;" >FECHA</th>
+                                    <th style="text-align:center;width: 3%;" >$ SISTEMA</th>
+                                    <th style="text-align:center;width: 3%;" >$ CONTROL</th>
+                                    <th style="text-align:center;width: 5%;">DIFERENCIA</th>
+
                                     <th style="text-align:center;width: 15%;" >OBSERVACIONES</th>
                                     
                                 </tr>
                             </thead>
                             <tbody>
-                    
+
+                                            
+                            <?php 
+                                foreach ($todosLosImportes as $key => $importe) {
+                           
+                            ?>
+                            
+                                    <tr>
+                                        <td style="text-align:center"><?= $importe['FECHA']->format("Y-m-d") ?></td>
+                                        <?php  
+                                            
+                                            $valorEnSistema = ($importe['IMPORTE_$_SISTEMA'] != null) ? $importe['IMPORTE_$_SISTEMA'] : 0;
+                                          
+                                            if ($valorEnSistema < 0){
+
+                                                echo "<td style='text-align:center' id='valorSistema'>- $".number_format($valorEnSistema*-1, 0, ',', '.')."</td>";
+                                            }else{
+                                                echo "<td style='text-align:center' id='valorSistema'>$".number_format($valorEnSistema, 0, ',', '.')."</td>";
+                                            }
+                                        ?>
+                                        <!-- <td style="text-align:center"><?= number_format($importe, 0, ',', '.') ?></td> -->
+                                        <td style="text-align:center"><input type="text" value="$0" style="text-align:center;width:100%" onchange="calcularDiferecias(this)" id="valorFisico"></td>
+                                        <td style="text-align:center" id="diferencias">0</td>
+                                        <td style="text-align:center"><input type="text" style="width:100%" value="<?= $importe['OBSERVACIONES'] ?>" id="observacion"></td>
+                                        <td style="text-align:center" hidden ><?= $importe['ID'] ?></td>
+                                        
+                                    </tr>
+                            <?php
+                                }
+                            ?>
                                         
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>total</td>
+                                    <td id="totalEnSistema"  style="text-align:center"></td>
+                                    <td id="totalFisico"     style="text-align:center"></td>
+                                    <td id="totalDiferencia" style="text-align:center"></td>
+                                    <td></td>
+
+                                </tr>
+                            </tfoot>
+
             
                         </table>
                     </div>
@@ -198,13 +272,17 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
         <!-- <script src="assets/select2/select2.min.js"></script> -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
         <!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script> -->
-        <script src="js/egresoCaja.js"></script>
+
+        <script src="js/controlMasivo.js"></script>
         <script src="https://cdn.datatables.net/fixedheader/3.1.9/js/dataTables.fixedHeader.min.js"></script>
+        <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
 
     </body>
 
 </html>
 <script>
+
     $('#tablaArticulos').DataTable({
         "bLengthChange": true,
         "language": {
@@ -236,6 +314,7 @@ $todosLosMediosDePago = $sucursal->traerTodosLosMediosDePago();
     
         },
     });
+
 
 </script>
 
