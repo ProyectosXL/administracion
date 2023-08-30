@@ -64,6 +64,34 @@ class Sucursal
 
 
     }
+
+    public function traerImportesTotalesPorPeriodo ($nroSucursal, $desde, $hasta, $medioDePago  )
+    {
+
+        $sql = "SELECT * FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES where nro_sucursal = '$nroSucursal' 
+        AND FECHA BETWEEN '$desde' AND '$hasta' 
+        AND MEDIO_PAGO = '$medioDePago' 
+        AND VERIFICADO = '0' ;";
+
+        $stmt = sqlsrv_query($this->cid_locales, $sql);
+
+        try{
+            
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+
+    }
+
     public function traerLocales($orderByName = null)
     {
 
