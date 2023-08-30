@@ -354,7 +354,7 @@ foreach ($cuentas as $key => $value) {
 
             $('.codRubro').select2();
 
-            document.querySelector(".estado").selectedIndex = "<?= (isset($_GET['estado'])) ? $_GET['estado'] : "" ?>"
+            document.querySelector(".estado").selectedIndex = "<?= (isset($_GET['estado'])) ? $_GET['estado'] : "4" ?>"
             
         });
         
