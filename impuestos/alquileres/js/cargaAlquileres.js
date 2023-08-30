@@ -252,6 +252,19 @@ const procesar = () => {
     let periodo = document.querySelector("#periodo").textContent;
     let error = false;
 
+    let estado = document.querySelector("#estado").textContent;
+
+    if ( estado == 1 ) {
+   
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'El período ya se encuentra cerrado!'
+        })
+        return false;
+    }
+
+
     for (let i = 0; i < allTd.length; i++) {
 
         if(i >= 2){
@@ -285,12 +298,15 @@ const procesar = () => {
                 periodo: periodo
             },
             success : function(data) {
+
                 if(data == 1){
+
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
                         text: 'El período ya se encuentra procesado!'
-                        })
+                    })
+              
                 }else{
 
                     Swal.fire({

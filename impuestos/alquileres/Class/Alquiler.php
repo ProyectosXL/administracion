@@ -316,19 +316,30 @@ class Alquiler
     function execSpAlquileres ($periodo) 
     {
         $sql = " EXEC RO_SP_INTEGRAL_ALQUILERES '$periodo';";
-
+ 
         try {
 
             $stmt = sqlsrv_query($this->cid_central, $sql);
-            
+
             $rows = array();
     
             while ($v = sqlsrv_fetch_array($stmt)) {
                 $rows[] = $v;
             }
-            
+            if(isset($rows[0][0])){
 
-            return (count($rows));
+                if($rows[0][0] == 'ERROR') {
+                    
+                    echo 1;
+                    
+                }
+
+            } else {
+                
+                echo 0;
+
+            }
+           
             
         } catch (\Throwable $th) {
             throw $th;

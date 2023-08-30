@@ -115,8 +115,10 @@
                                     <div class="btn-with-icon">
                                         <?php 
                                         if($estado == 1){
+                                            echo '<div  id="estado" hidden>1</div>';
                                             echo '<input type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-left: 20px; height: 45px;width:170px" onclick="abrirPeriodo()"/>';
                                         }else{
+                                            echo '<div  id="estado" hidden>0</div>';
                                             echo '<input type="button" class="btn btn-danger" value="Cerrar Periodo" style="margin-left: 20px; height: 45px;width:170px" onclick="cerrarPeriodo()"/>';
                                         }
                                         ?>
