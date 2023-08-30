@@ -28,13 +28,23 @@ switch ($accion) {
         contarFotosEnCarpeta();
         break;
     
+    case 'checkContabilizar':
+        contabilizar(1);
+        break;
+    
+    case 'uncheckContabilizar':
+        contabilizar(0);
+        break;
+    
     default:
         # code...
         break;
 }
 
 
+
 function marcarFacturado ($sucursal) {
+
 
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nro_sucursal'];
@@ -51,6 +61,7 @@ function marcarFacturado ($sucursal) {
 
 
 }
+
 
 function uncheckFactura ($sucursal) {
 
@@ -69,6 +80,7 @@ function uncheckFactura ($sucursal) {
 
 function marcarControlado ($sucursal){
 
+
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nro_sucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -85,6 +97,7 @@ function marcarControlado ($sucursal){
 
 }
 
+
 function uncheckControl ($sucursal){
 
     $nroSucursal = $_POST['nro_sucursal'];
@@ -98,6 +111,7 @@ function uncheckControl ($sucursal){
 }
 
 function marcarRecibido ($sucursal){
+
 
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nroSucursal'];
@@ -201,4 +215,22 @@ function contarFotosEnCarpeta() {
 
     echo json_encode($datosDeLosArchivos);
 }
+
+function contabilizar ($contabilizado) {
+    
+    $fecha = $_POST['fecha'];
+    $nroSucursal = $_POST['nro_sucursal'];
+    $tipoComprobante = $_POST['tipoComprobante'];
+    $nroComprobante = $_POST['nroComprobante'];
+    $codCuenta = $_POST['codCuenta'];
+    $monto = $_POST['monto'];
+
+    $sucursal = new Sucursal();
+
+    $result = $sucursal->contabilizar($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto,$contabilizado);
+    
+    echo $result;
+
+}
+
 ?>
