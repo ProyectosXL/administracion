@@ -1,5 +1,21 @@
-const totalizar = (div = null) => {
+const comprobarEstado = (estado) =>{
 
+    if(estado == 1){
+
+        document.querySelectorAll("input").forEach(e => {
+
+            e.readOnly = true;
+            
+        })
+
+    }else{
+
+        totalizar();
+
+    }
+}
+const totalizar = (div = null) => {
+ 
     let idConceptos = document.querySelectorAll("#idConcepto");
     let sucursales = document.querySelectorAll("#sucursal");
 
@@ -163,7 +179,9 @@ const actualizarDetalle = (div) => {
     let periodo = document.querySelector("#periodo").textContent;
     let sucursal = div.id.split("-")[2];
     let concepto = div.id.split("-")[1];
-    
+
+    let porcentaje = div.getAttribute("attr-porcentaje");
+
     let importe = div.value.replace(/[$.]/g, "");
     let userName = document.querySelector("#userName").value;
     let importe9 = 0;
@@ -180,7 +198,8 @@ const actualizarDetalle = (div) => {
             importe:  importe,
             importe9: importe9,
             importe13: importe13,
-            userName: userName
+            userName: userName,
+            porcentaje: porcentaje
         },
         success : function(data) {
                 // console.log(data);
@@ -189,7 +208,15 @@ const actualizarDetalle = (div) => {
 
 }
 
-const actualizarCargaAutomatica = () => {
+const actualizarCargaAutomatica = (cerrado = 0) => {
+
+    if(cerrado == 1){
+        document.querySelectorAll("input").forEach(e => {
+            // e.disabled = true;
+        })
+        return false;
+
+    }
 
     let tabla =document.querySelector("#tablaAlquileres");
 
@@ -225,6 +252,19 @@ const procesar = () => {
     let periodo = document.querySelector("#periodo").textContent;
     let error = false;
 
+    let estado = document.querySelector("#estado").textContent;
+
+    if ( estado == 1 ) {
+   
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'El período ya se encuentra cerrado!'
+        })
+        return false;
+    }
+
+
     for (let i = 0; i < allTd.length; i++) {
 
         if(i >= 2){
@@ -258,12 +298,15 @@ const procesar = () => {
                 periodo: periodo
             },
             success : function(data) {
+
                 if(data == 1){
+
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
                         text: 'El período ya se encuentra procesado!'
-                        })
+                    })
+              
                 }else{
 
                     Swal.fire({
@@ -280,4 +323,75 @@ const procesar = () => {
             }
         });
     }
+}
+
+const cerrarPeriodo = () => {
+
+    let periodo = document.querySelector("#periodo").textContent;
+
+    $.ajax({
+
+        url: 'Controller/AlquilerController.php?accion=cerrarPeriodo',
+        method: 'POST',
+        data: {
+            periodo: periodo
+        },
+        success : function(data) {
+            if(data == 1){
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El período ya se encuentra cerrado!'
+                    })
+            }else{
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cerrado',
+                    text: 'Se ha cerrado correctamente!'
+                }).then((result) => {
+                    location.reload();
+                })
+                
+            }
+            
+
+        }
+
+    });
+}
+const abrirPeriodo = () => {
+
+    let periodo = document.querySelector("#periodo").textContent;
+
+    $.ajax({
+
+        url: 'Controller/AlquilerController.php?accion=abrirPeriodo',
+        method: 'POST',
+        data: {
+            periodo: periodo
+        },
+        success : function(data) {
+            if(data == 1){
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'El período ya se encuentra abierto!'
+                    })
+            }else{
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Abierto',
+                    text: 'Se ha abierto correctamente El periodo!'
+                }).then((result) => {
+                    location.reload();
+                })
+                
+            }
+            
+
+        }
+
+    });
 }

@@ -20,10 +20,10 @@
 
     $todosLosLocales = traerLocales();
     $conceptos = traerConceptos();
-
+    $estado = $alquiler->traerEstado($periodo);
 
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
-    
+    $detalle = $alquiler->traerDetalle($periodo);
     $rentabilidadNeta = $alquiler->traerRentabilidadNeta($fecha);
     $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo); 
     
@@ -61,53 +61,65 @@
                         <div class="card card-1">
 
                             <div class="row" style="margin-left:50px">
-                                <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:50px"></i>Alquileres - <?= $fechaParaMostrar ?></strong></h3>
+                                <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Alquileres - <?= $fechaParaMostrar ?></strong></h3>
                             </div>
 
-                            <form action="#" method="get" style="margin-bottom:20px">
-                                <div class="row" style="margin-top:10px">
-                                    <div class="col-4" style="margin-left:50px">
+                            <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
+                                <div style="margin-top:10px">
                                     <div hidden ><input type="text" id="userName" name="userName" value="<?= $userName ?>"></div>
                                     <div hidden id="periodo"><?= isset($periodo) ? $periodo : "" ?></div>
-                                        mes:
-                                        <select name="mes" id="selectMes">
-                                            <?php 
-                                                for ($i=1; $i <= 12 ; $i++) { 
-                                                    if(strlen($i) == 1){
-                                                        $i = "0".$i;
-                                                }
-                                            ?>
+                                        <div class="form-group" style="margin-left:50px">
+                                            <label for="email">Mes: </label>
+                                            <select class="form-control ml-2" style="width: 5rem;" name="mes" id="selectMes">
+                                                <?php 
+                                                    for ($i=1; $i <= 12 ; $i++) { 
+                                                        if(strlen($i) == 1){
+                                                            $i = "0".$i;
+                                                    }
+                                                ?>
 
-                                            <option value="<?=$i?>" <?php if($mes == $i ) echo "selected"?>><?=$i?></option>
+                                                <option value="<?=$i?>" <?php if($mes == $i ) echo "selected"?>><?=$i?></option>
 
-                                            <?php
-                                                }
-                                            ?>
-                                        </select>
-                                        año:
-                                        <select name="anio" id="selectAnio">
-                                        <option value="2022">2022</option>
+                                                <?php
+                                                    }
+                                                ?>
+                                            </select>
+                                            <label class="ml-2" for="email">Año: </label>
+                                            <select class="form-control ml-2" style="width: 5rem;" name="anio" id="selectAnio">
+                                            <option value="2022">2022</option>
 
-                                            <?php 
-                                                for ($i=0; $i <= $yearDif ; $i++) { 
-                                                    $y = 2023 + $i;
-                                            ?>
-                                            <option value="<?=$y?>" <?php if($anio == $y ) echo "selected"?>><?=$y?></option>
-                                            <?php
-                                                }
-                                            ?>
+                                                <?php 
+                                                    for ($i=0; $i <= $yearDif ; $i++) { 
+                                                        $y = 2023 + $i;
+                                                ?>
+                                                <option value="<?=$y?>" <?php if($anio == $y ) echo "selected"?>><?=$y?></option>
+                                                <?php
+                                                    }
+                                                ?>
 
-                                        </select>
-                                        <button class="btn btn-primary btn-submit" value="" style="height:45px;margin-left:2px;position:relative;margin-bottom:8px">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                                            </select>
+                                        
+                                            <button class="btn btn-primary btn-submit ml-2">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                                        </div>
                                     </div>
                                     <div class="btn-with-icon">
-                                        <input type="button" class="btn btn-success" value="Procesar " style="margin-left: 200px; height: 45px;width:110px" onclick="procesar()"/>
-                                        <span class="bi bi-check-circle-fill" style="color:white"></span>
+                                        <button style="margin-left:20rem; margin-top:0.5rem;" type="button" class="btn btn-success" onclick="procesar()">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
                                     </div>
-                                </div>
+                                    <div class="btn-with-icon">
+                                        <?php 
+                                        if($estado == 1){
+                                            echo '<div  id="estado" hidden>1</div>';
+                                            echo '<button type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-left: 20px; margin-top:0.5rem;" onclick="abrirPeriodo()">Abrir Periodo <i class="bi bi-unlock"></i></button>';
+                                        }else{
+                                            echo '<div  id="estado" hidden>0</div>';
+                                            echo '<button type="button" class="btn btn-danger" value="Cerrar Periodo" style="margin-left: 20px; margin-top:0.5rem;" onclick="cerrarPeriodo()">Cerrar Periodo <i class="bi bi-lock"></i></button>';
+                                        }
+                                        ?>
+                                        <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
+                                    </div>
                             </form>
 
-                            <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle">Control Por Sucursal</i></strong></div>
+                            <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle"> Control Por Sucursal</i></strong></div>
                                 <table class="table table-striped table-bordered table-sm table-hover" id="tablaAlquileres" style="font-size :12px;" >
                                     <thead class="thead-dark">
                                         <tr>
@@ -143,8 +155,22 @@
                                                             foreach ($traerPorcentajes as $porcentaje) {
   
                                                                 if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $k){
+                                                                    if($estado == 1){
+                                                                        foreach ($detalle as $key => $det) {
+
+                                                                            if($det['NRO_SUCURS'] == $k && $det['ID_CA'] == $value['ID_CA']){
+
+                                                                                $porcentajeDelLocal = $det['PORCENTAJE_APLICADO'];
+
+                                                                            }
+                                                                           
+                                                                        }
+                                                                    }else{
+
+                                                                        $porcentajeDelLocal = $porcentaje['PORCENTAJE'];
+
+                                                                    }
                                                                     
-                                                                   $porcentajeDelLocal = $porcentaje['PORCENTAJE'];
                                                                     
                                                                }
                                            
@@ -175,7 +201,7 @@
                                                                 $valor = $valor * -1;
                                                             }
                                                     ?>  
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?>></td>
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
 
                                                     <?php 
                                                         }
@@ -219,7 +245,7 @@
     </html>
 <script>
 
-document.ready = totalizar();
+document.ready = comprobarEstado(<?= $estado ?>);
 
 $(document).ready(function() {
 
@@ -230,7 +256,7 @@ $(document).ready(function() {
     if(<?= $result['CONTEO'] ?> == 0){
         insertarDetalle();
     }else{
-        actualizarCargaAutomatica();
+        actualizarCargaAutomatica(<?= $estado ?>);
     }
 
 });

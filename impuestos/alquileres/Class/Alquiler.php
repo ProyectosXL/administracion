@@ -254,9 +254,9 @@ class Alquiler
         }
 
     }
-    public function actualizarDetalle($periodo, $idSucursal, $idConcepto, $importe, $userName )
+    public function actualizarDetalle($periodo, $idSucursal, $idConcepto, $importe, $userName, $porcentaje )
     {
-        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe', USUARIO = '$userName', FECHA_MODIF = GETDATE() WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$idSucursal' AND ID_CA = '$idConcepto'";
+        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe', USUARIO = '$userName', FECHA_MODIF = GETDATE(), PORCENTAJE_APLICADO = '$porcentaje' WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$idSucursal' AND ID_CA = '$idConcepto'";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
        
@@ -316,19 +316,90 @@ class Alquiler
     function execSpAlquileres ($periodo) 
     {
         $sql = " EXEC RO_SP_INTEGRAL_ALQUILERES '$periodo';";
-
+ 
         try {
 
             $stmt = sqlsrv_query($this->cid_central, $sql);
-            
+
             $rows = array();
     
             while ($v = sqlsrv_fetch_array($stmt)) {
                 $rows[] = $v;
             }
-            
+            if(isset($rows[0][0])){
 
-            return (count($rows));
+                if($rows[0][0] == 'ERROR') {
+                    
+                    echo 1;
+                    
+                }
+
+            } else {
+                
+                echo 0;
+
+            }
+           
+            
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+    }
+
+    function cerrarPeriodo ($periodo) 
+    {
+        $sql = "INSERT INTO RO_T_DETALLE_ALQUILERES_ESTADO (PERIODO, ESTADO)
+        SELECT '$periodo', 1
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM RO_T_DETALLE_ALQUILERES_ESTADO
+            WHERE PERIODO = '$periodo'
+        );";
+
+        try {
+
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            return true;
+            
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+    }
+
+    function abrirPeriodo ($periodo) 
+    {
+        $sql = "DELETE FROM RO_T_DETALLE_ALQUILERES_ESTADO WHERE PERIODO = '$periodo';";
+
+        try {
+
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            return true;
+            
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+    }
+    
+    function traerEstado ($periodo) 
+    {
+        $sql = "SELECT 1
+        FROM RO_T_DETALLE_ALQUILERES_ESTADO
+        WHERE PERIODO = '$periodo';";
+        try {
+
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            if (sqlsrv_has_rows($stmt)) {
+
+                return 1;
+
+            } else {
+
+               return 0;
+
+            }
             
         } catch (\Throwable $th) {
             throw $th;
