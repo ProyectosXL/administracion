@@ -67,7 +67,10 @@ class Orden{
     }
     public function traerOrdenPorFecha($desde, $hasta) {
 
-        $sql = "SELECT ID,FECHA_MOV,COD_PROVEE,PROVEEDOR,DESPACHO,ORDEN_COMPRA,VALOR_FOB_PESO FROM RO_T_IMPORTACIONES_ENCABEZADO  WHERE FECHA_MOV BETWEEN '$desde' AND '$hasta' ;";
+        $sql = "SELECT ID, FECHA_MOV, A.FECHA_DESP_ADU,  CONTENEDOR, COD_PROVEE, PROVEEDOR, DESPACHO, A.ORDEN_COMPRA, VALOR_FOB_PESO, (COSTO_NAC*100) COSTO_NAC FROM RO_T_IMPORTACIONES_ENCABEZADO A
+                LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
+                WHERE FECHA_MOV BETWEEN '$desde' AND '$hasta' 
+                ORDER BY FECHA_MOV DESC;";
         
         try{
             $stmt = sqlsrv_query( $this->cid_central, $sql );

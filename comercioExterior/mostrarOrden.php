@@ -20,24 +20,16 @@ $listaDeOrdenes = listarPorFecha($desde, $hasta);
     <!-- Title Page-->
     <title>Costos Importacion</title>
 
-    <!-- Librerias Bootstrap -->
-    <!-- CSS only -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
-    <!-- JavaScript Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8" crossorigin="anonymous"></script>
-                        <!------------------------------------------------------------>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
-    <!-- Icons font CSS-->
-    <link href="assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-    <link href="assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
-    <!-- Font special for pages-->
-    <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    <!-- Vendor CSS-->
-    <link href="assets/select2/select2.min.css" rel="stylesheet" media="all">
-    <link href="assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+        <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css"> -->
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" class="rel">
+        <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.dataTables.min.css" class="rel">
+
+        <!-- Bootstrap Icons -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
     <!-- Main CSS-->
@@ -53,49 +45,34 @@ $listaDeOrdenes = listarPorFecha($desde, $hasta);
                 <div class="card-body">
                     <h2 class="title"><i class="bi bi-folder-check"></i> Seleccion de despachos de importacion</h2>
 
-                    <div >
-
-                <div class="row" >
-
-                    <div class="form-row mb-3">
-                        
-                        <form action="">
-                            <div class="contenedor">
-                                <div class="col-">
-                                    <label>Desde:</label>
-                                    <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>">
-                                </div>
-
-                                <div class="ml-2">
-                                    <label>Hasta:</label>
-                                    <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>">
-                                </div>
-                                <div class="form-row mt-auto">
-                                    <button type="submit" name="filter" class="btn btn-primary" style="width: 6rem;">Filtrar <i class="bi bi-search"></i></button>
-                                </div>
-                                <div id="contBusqRapida">
-                                    <label id="textBusqueda" style="position:relative; margin-left: 65vh; width: 150px">Busqueda rapida:</label>
-                                    <input type="text" id="textBox"  placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="form-control form-control-sm" style="margin-left: 65vh; width: 300px"></input>  
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                
-               
-            </div>     
-        </div>
+                    <form class="form-inline"  action="#">
+                        <label for="email">Desde :</label>
+                        <input type="date" class="form-control form-control-sm ml-1" id="desde" name="desde" value="<?=  $desde ?>">
+                        <label for="email" class="ml-2" >Hasta :</label>
+                        <input type="date" class="form-control form-control-sm ml-1" id="hasta"  name="hasta" value="<?=  $hasta ?>">
+                                
+                        <button type="submit" name="filter" class="btn btn-primary">Filtrar <i class="bi bi-search"></i></button>
+                               
+                        <div class="mb-3">
+                            <label id="textBusqueda" style="position:relative; margin-left: 119vh; width: 150px">Busqueda rapida:</label>
+                            <input type="text" id="textBox"  placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="form-control form-control-sm" style="margin-left: 120vh; width: 300px"></input>  
+                        </div>
+                    </form>
         
         <table class="table table-striped table-bordered display" id="tableDinamic" style="width: 80%; font-size: 11.5px" data-page-length="100">
                 
         <thead class="table-dark">
             <tr>
-                <th style="position: sticky; top: 0; z-index: 10; width: 100px;"class="col-1">FECHA DESP.</th>
-                <th style="position: sticky; top: 0; z-index: 10;">DESPACHO N°</th>
-                <th style="position: sticky; top: 0; z-index: 10;">PROVEEDOR</th>
-                <th style="position: sticky; top: 0; z-index: 10;">N° ORDEN PROV.</th>
-                <th style="position: sticky; top: 0; z-index: 10;">N° ORD.DE COMPRA</th>
-                <th style="position: sticky; top: 0; z-index: 10; width: 1.5rem;"></th>
-                <th style="position: sticky; top: 0; z-index: 10; width: 1.5rem;"></th>
+                <th style="position: sticky; top: 0; z-index: 10; width: 100px; background: #343a40">FECHA INGRESO</th>
+                <th style="position: sticky; top: 0; z-index: 10; width: 100px; background: #343a40">FECHA DESP.</th>
+                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">CONTENEDOR</th>
+                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">DESPACHO N°</th>
+                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">PROVEEDOR</th>
+                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">N° ORDEN PROV.</th>
+                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">N° ORD.DE COMPRA</th>
+                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">COSTO NAC.</th>
+                <th style="position: sticky; top: 0; z-index: 10; background: #343a40; width: 1.5rem;"></th>
+                <th style="position: sticky; top: 0; z-index: 10; background: #343a40; width: 1.5rem;"></th>
             </tr>
         </thead>
         <tbody>
@@ -104,11 +81,14 @@ $listaDeOrdenes = listarPorFecha($desde, $hasta);
                 $newDate = $orden['FECHA_MOV']->format('d/m/Y'); // Format - Date
             ?>
                 <td id="fecha2"><?= $newDate ?></td>
+                <td><?= $orden['FECHA_DESP_ADU']->format('d/m/Y');?></td>
+                <td><?= $orden['CONTENEDOR']?></td>
                 <td><?= $orden['DESPACHO']?></td>
                 <td ><?= $orden['PROVEEDOR']?></td>
                 <td ><?= $orden['COD_PROVEE']?></td>
                 <td><?= $orden['ORDEN_COMPRA']?></td>
-                <td><button class="btn btn-sm btn-success" title="Editar" onclick="verDetalle('<?= $orden['ID']?>','<?= $orden['PROVEEDOR']?>','<?= $orden['ORDEN_COMPRA']?>','<?= $orden['COD_PROVEE']?>','<?= $orden['VALOR_FOB_PESO']?>')"><i class="fa fa-edit" style="font-size: 20px;"></td>
+                <td><?= number_format($orden['COSTO_NAC'], 2).' %'?></td>
+                <td><button class="btn btn-sm btn-success" title="Editar" onclick="verDetalle('<?= $orden['ID']?>','<?= $orden['PROVEEDOR']?>','<?= $orden['ORDEN_COMPRA']?>','<?= $orden['COD_PROVEE']?>','<?= $orden['VALOR_FOB_PESO']?>')"><i class="fa fa-edit" style="font-size: 23px;"></td>
                 <td><button class="btn btn-sm btn-warning" title="Descargar" onclick="imprimir('<?=$orden['ID']?>')"><i class="bi bi-download" style="font-size: 18px; color: white;" aria-hidden="true"></td>
 
             </tr>
@@ -117,7 +97,6 @@ $listaDeOrdenes = listarPorFecha($desde, $hasta);
             ?>
             </tbody>
     </table>
-    <input type="button" id="btnaddrow" class="btn-primary" value="+" onclick="guardarGasto()">
                 </div>
             </div>
         </div>

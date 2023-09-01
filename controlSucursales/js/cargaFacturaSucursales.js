@@ -100,6 +100,8 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
 
           }
           
+          
+
           let modalContent = document.createElement('div');
           modalContent.className = 'modal-dialog modal-dialog-centered';
           modalContent.style = 'max-width: 100%;';
@@ -129,6 +131,18 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
           
     
           });
+
+          let closeButton = document.createElement('button');
+          closeButton.type = 'button';
+          closeButton.className = 'close';
+          closeButton.setAttribute('data-dismiss', 'modal');
+          closeButton.setAttribute('aria-label', 'Close');
+          closeButton.innerHTML = '<span aria-hidden="true" title="Cerrar" style="font-size:50px; margin-right: 0.5rem; color: red;">&times;</span>';
+      
+          // Agregar el botón de cierre al encabezado del modal
+          let modalHeader = document.createElement('div');
+          modalHeader.appendChild(closeButton);
+          modalBody.appendChild(modalHeader);
 
           carousel.appendChild(carouselInner);
           modalBody.appendChild(carousel);

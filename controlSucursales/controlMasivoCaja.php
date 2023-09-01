@@ -50,6 +50,11 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
 
         <title>Control masivo de cobranza</title>
 
+        <!-- INCLUDE CSS FILES -->
+        <?php
+            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+        ?>
+
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
         <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css"> -->
@@ -102,14 +107,14 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
 
                     <div class="card card-1">
                         <div id="periodo" hidden><?= $periodo ?></div>
-                        <div class="row" style="margin-left:50px; margin-top:30px">
+                        <div class="row" style="margin-left:50px; margin-top:20px">
                         
 
-                            <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:40px"></i>Control Masivo de Cobranza- <?= $dataSucursal[1] ?>( <?= $medioPagoSelected[1] ?>)</strong></h3>
+                            <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:40px"></i>Control Masivo de Cobranza - <?= $dataSucursal[1] ?>( <?= $medioPagoSelected[1] ?>)</strong></h3>
 
 
                         </div>
-                        <form action="#">
+                        <form class="form-inline" action="#">
                           
                             <div style="margin-bottom:20px">
 
@@ -117,10 +122,10 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                         <?php
                                
                                         ?>
-                                    <div style="margin-left:90px" >Mes: 
+                                    <div style="margin-left:90px" >Mes : 
 
 
-                                    <select name="mes" id="mes" style="width:2.5rem; height:2.5rem">
+                                    <select name="mes" id="mes" class="form-control">
                                         <?php 
                                             for ($i=1; $i <= 12 ; $i++) { 
                                                 if(strlen($i) == 1){
@@ -138,7 +143,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
 
                                     </div>
                                     <div style="margin-left:30px">Año : 
-                                    <select name="anio" id="selectAño"  style="width:8rem; height:2.5rem">
+                                    <select name="anio" id="selectAño" class="form-control">
                                         <option value="2022">2022</option>
                                         <?php 
                                             for ($i=0; $i <= $yearDif ; $i++) { 
@@ -156,7 +161,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     </div>
 
                                     <div style="margin-left:30px">Sucursal : 
-                                    <select name="sucursal" id="sucursal" style="width:10rem; height:2.5rem;">
+                                    <select name="sucursal" id="sucursal" class="form-control">
                                         <?php   
                                             foreach ($todosLosLocales as $key => $local) {
 
@@ -172,7 +177,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     </select>
                                     </div>
                                     <div style="margin-left:30px">Medio pago : 
-                                    <select name="medioPago" id="medioPago" style="width:10rem; height:2.5rem;">
+                                    <select name="medioPago" id="medioPago" class="form-control">
                                         <?php 
                                             foreach ($todosLosMediosDePago as $key => $medioPago) {
                                         ?>
@@ -187,12 +192,12 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     </select>
                                     </div>
 
-                                    <button class="btn btn-primary btn-submit" style="height:35px;margin-left:20px;width:110px" onclick= "">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-
-                                    <button class="btn btn-primary btn-secondary" type="button" style="height:35px;margin-left:20%;width:110px" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
-                                    <button class="btn btn-primary btn-primary" type="button" style="height:35px;margin-left:20px;width:120px" onclick= "controlar()">Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
-                                    <button name="btnExport" type="button" class="btn btn-success" id="btnExport"  style="height:35px;margin-left:20px;width:120px">Exportar <i class="bi bi-file-earmark-excel"></i></button>
-
+                                    <button class="btn btn-primary btn-submit ml-2" onclick= "">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                                    <div style="margin-left:10rem;">
+                                        <button class="btn btn-primary btn-secondary" type="button" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
+                                        <button class="btn btn-primary btn-primary ml-2" type="button" onclick= "controlar()">Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
+                                        <button name="btnExport" type="button" class="btn btn-success  ml-2" id="btnExport" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
+                                    </div>
 
                                 </div>
 

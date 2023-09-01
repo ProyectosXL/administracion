@@ -66,22 +66,19 @@
                 <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Control Diario Sucursales</h6></div>
                     <div class="card card-1">
                         
-                        <div class="row" style="margin-left:50px">
-                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:50px"></i>Control Mensual Caja Sucursales - Periodo : <?= $periodo ?></strong></h3>
+                        <div class="row" style="margin-left:50px; margin-top:20px;">
+                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:40px"></i>Control Mensual Caja Sucursales - Periodo : <?= $periodo ?></strong></h3>
                         </div>
 
-                        <form action="#" method="get" style="margin-bottom:20px">
-                            <div class="row" style="margin-top:10px">
+                        <form class="form-inline" action="#" method="get" style="margin-bottom:20px; margin-top:10px;">
+                            
 
-                                <div class="col-2" style="margin-left:50px">Fecha: <input type="month" style="width:150px; height:45px" id='fecha' name="fecha" value="<?php echo $fecha; ?>"></div>
-                                <div class="col-3">
-                                    <button class="btn btn-primary btn-submit" value="" style="height:45px;margin-left:2px;position:relative;margin-bottom:8px">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                </div>
-    
-                            </div>
+                                <div style="margin-left:50px">Periodo : <input type="month" class="form-control" id='fecha' name="fecha" value="<?php echo $fecha; ?>"></div>
+                                <button class="btn btn-primary btn-submit ml-3" value="">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                            
                         </form>
 
-                        <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle">Control Por Sucursal</i></strong></div>
+                        <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle"> Control Por Sucursal</i></strong></div>
                         
                         <table class="table table-bordered" id="tablaControlMensual" style="text-align: center;">
                             <thead class="thead-dark">

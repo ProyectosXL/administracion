@@ -56,21 +56,20 @@
                 <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Carga Factura Sucursales</h6></div>
                     <div class="card card-1">
                         
-                        <div class="row" style="margin-left:50px">
-                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:50px"></i>Carga Factura Sucursales- <?= $selectSucursal[1] ?></strong></h3>
+                        <div class="row" style="margin-left:50px; margin-top:20px">
+                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:40px;"></i>Carga Factura Sucursales- <?= $selectSucursal[1] ?></strong></h3>
                         </div>
 
-                        <form action="#" method="get" style="margin-bottom:20px">
+                        <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
 
                             <div class="row" style="margin-top:10px">
 
-                                <div style="margin-left:70px;width:250px">Desde: <input type="date" style="width:170px; height:40px" id='desde' name="desde" value="<?php echo $desde; ?>"></div>
+                                <div style="margin-left:90px">Desde : <input type="date" class="form-control" id="desde" name="desde" value="<?=  $desde ?>"></div>
+                                <div style="margin-left:30px">Hasta : <input type="date" class="form-control" id="hasta"  name="hasta" value="<?=  $hasta ?>"></div>
                                 
-                                <div style="margin-right:20px">Hasta: <input type="date" style="width:150px; height:45px" id='hasta' name="hasta" value="<?php echo $hasta; ?>"></div>
-                                
-                                <div >Sucursal :  
+                                <div style="margin-left:30px">Sucursal :  
 
-                                    <select name="selectSucursal" id="selectSucursal" style="width:150px; height:45px">
+                                    <select name="selectSucursal" id="selectSucursal" class="form-control">
 
                                     <?php 
                                         foreach ($todosLosLocales as $key => $value) {
@@ -93,7 +92,7 @@
 
                         </form>
                         
-                        <div id="carruselImagenes" class="modal fade" tabindex="-1" aria-hidden="true" style="margin-left:10%;max-width:80%"></div>
+                        <div id="carruselImagenes" class="modal fade" tabindex="-1" aria-hidden="true" style="margin-left:10%;max-width:70%"></div>
 
             
                         <table class="table table-striped table-bordered" id="myTable" cellspacing="0" data-page-length="100">
