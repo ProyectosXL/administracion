@@ -16,6 +16,14 @@ switch ($accion) {
         execSpAlquileres(); 
         break;
 
+    case 'verificarProcesado':
+        verificarProcesado(); 
+        break;
+
+    case 'checkCierrePeriodoAnt':
+        checkCierrePeriodoAnt(); 
+        break;
+
     case 'cerrarPeriodo':
         cerrarPeriodo(); 
         break;
@@ -429,6 +437,21 @@ function execSpAlquileres () {
 
 
 
+function verificarProcesado () {
+
+    require_once "../Class/Alquiler.php";
+
+    $alquiler = new Alquiler();
+
+    $fecha = $_POST['fecha'];
+
+    $result = $alquiler->verificarProcesado($fecha);
+
+    echo json_encode($result);
+
+
+}
+
 function cerrarPeriodo () {
 
     require_once "../Class/Alquiler.php";
@@ -455,6 +478,21 @@ function abrirPeriodo () {
     $result = $alquiler->abrirPeriodo($periodo);
 
     return $result;
+
+
+}
+
+function checkCierrePeriodoAnt () {
+
+    require_once "../Class/Alquiler.php";
+
+    $alquiler = new Alquiler();
+
+    $mesAnterior = $_POST['mesAnterior'];
+
+    $result = $alquiler->checkCierrePeriodoAnt($mesAnterior);
+
+    echo json_encode($result);
 
 
 }
