@@ -93,7 +93,7 @@
 
                         </form>
                         
-                        <div id="carruselImagenes" class="modal fade" tabindex="-1" aria-hidden="true" style="margin-left:10%;max-width:80%"></div>
+                        <div id="carruselImagenes" class="modal fade" tabindex="-1" aria-hidden="true" style="margin-left:10%;max-width:70%"></div>
 
             
                         <table class="table table-striped table-bordered" id="myTable" cellspacing="0" data-page-length="100">
