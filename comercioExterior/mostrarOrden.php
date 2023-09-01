@@ -34,7 +34,7 @@ $listaDeOrdenes = listarPorFecha($desde, $hasta);
     <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
     <!-- Main CSS-->
     <link href="./../contabilidad/css/style.css" rel="stylesheet" media="all">
-    
+    <link href="css/mostrarOrden.css" rel="stylesheet" media="all">
 </head>
 
 <body>
@@ -52,11 +52,8 @@ $listaDeOrdenes = listarPorFecha($desde, $hasta);
                         <input type="date" class="form-control form-control-sm ml-1" id="hasta"  name="hasta" value="<?=  $hasta ?>">
                                 
                         <button type="submit" name="filter" class="btn btn-primary">Filtrar <i class="bi bi-search"></i></button>
-                               
-                        <div class="mb-3">
-                            <label id="textBusqueda" style="position:relative; margin-left: 119vh; width: 150px">Busqueda rapida:</label>
-                            <input type="text" id="textBox"  placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="form-control form-control-sm" style="margin-left: 120vh; width: 300px"></input>  
-                        </div>
+                        <button name="btnExport" type="button" class="btn btn-success" id="btnExport" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
+
                     </form>
         
         <table class="table table-striped table-bordered display" id="tableDinamic" style="width: 80%; font-size: 11.5px" data-page-length="100">
@@ -111,52 +108,15 @@ $listaDeOrdenes = listarPorFecha($desde, $hasta);
     <script src="assets/datepicker/moment.min.js"></script>
     <script src="assets/datepicker/daterangepicker.js"></script>
     <!-- <script src="js/index.js"></script> -->
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.1.9/js/dataTables.fixedHeader.min.js"></script>
+    <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+    <script src="js/mostrarOrden.js"></script>
 
 </body>
 
 </html>
 
 
-<script>
-
-const verDetalle = (id,prov,orden,codProv,valorFobPeso)=>{
-    window.location = "editarOrden.php?idEncabezado="+id+"&proveedor="+prov+"&ordenDeCompra="+orden+"&codProveedor="+codProv+"&valorFobPeso="+valorFobPeso;
-}
-const imprimir=(id)=>{
-    window.location = "imprimir.php?idEncabezado="+id
-}
-
-//Búsqueda rápida table//
-
-function myFunction() {
-  var input, filter, table, tr, td, td2, i, txtValue;
-
-  
-  input = document.getElementById("textBox");
-  filter = input.value.toUpperCase();
-  table = document.querySelector("#tableDinamic")
-  tr = table.querySelectorAll("tbody tr");
-
-
-  //tr = document.getElementById('tr');
-
-  for (i = 0; i < tr.length; i++) {
-    visible = false;
-    /* Obtenemos todas las celdas de la fila, no sólo la primera */
-    td = tr[i].getElementsByTagName("td");
-
-    for (j = 0; j < td.length; j++) {
-      if (td[j] && td[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
-        visible = true;
-      } 
-    }
-    if (visible === true) {
-      tr[i].style.display = "";
-    } else {
-      tr[i].style.display = "none";
-    }
-  }
-}
-
-
-</script>
