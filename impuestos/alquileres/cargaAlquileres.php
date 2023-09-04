@@ -1,8 +1,10 @@
 <?php
     require_once "Class/Alquiler.php";
+    require_once "Class/Periodo.php";
     require_once "Controller/AlquilerController.php";
 
     $alquiler = new Alquiler();
+    $periodoClass = new Periodo();
 
     $mes = isset($_GET['mes']) ? $_GET['mes'] : date('m',  strtotime( date("Y-m-d")));
     $anio = isset($_GET['anio']) ? $_GET['anio'] : date('Y',  strtotime( date("Y-m-d")));
@@ -13,6 +15,12 @@
     $fecha = $anio."-".$mes;
 
     $periodo = (int)$mes."-".$anio;
+
+    
+    $mesAnterior = $periodoClass->hacerPeriodo($fecha, 1);
+
+    $ultimaFechaDelMes = $periodoClass->desHacerPeriodo($periodo);
+    
 
     $userName = $_GET['userName'];
  
@@ -66,8 +74,12 @@
 
                             <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
                                 <div style="margin-top:10px">
+
                                     <div hidden ><input type="text" id="userName" name="userName" value="<?= $userName ?>"></div>
                                     <div hidden id="periodo"><?= isset($periodo) ? $periodo : "" ?></div>
+                                    <div hidden id="ultimaFechaDelMes"><?= isset($ultimaFechaDelMes) ? $ultimaFechaDelMes : "" ?></div>
+                                    <div hidden id="mesAnterior"><?= isset($mesAnterior) ? $mesAnterior : "" ?></div>
+
                                         <div class="form-group" style="margin-left:50px">
                                             <label for="email">Mes: </label>
                                             <select class="form-control ml-2" style="width: 5rem;" name="mes" id="selectMes">

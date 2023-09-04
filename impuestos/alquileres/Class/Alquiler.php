@@ -347,6 +347,36 @@ class Alquiler
 
     }
 
+    function verificarProcesado ($fecha) 
+    {
+        $sql = "SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM RO_T_INTEGRAL_TANGO_2
+            WHERE MODULO = 'ALQUILERES'
+            AND FECHA = '$fecha'
+        ) THEN 1
+        ELSE 0
+        END AS RegistroExiste;";
+        
+        try{
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+                    
+            $rows = array();
+
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+
+
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+
     function cerrarPeriodo ($periodo) 
     {
         $sql = "INSERT INTO RO_T_DETALLE_ALQUILERES_ESTADO (PERIODO, ESTADO)
@@ -379,6 +409,35 @@ class Alquiler
             
         } catch (\Throwable $th) {
             throw $th;
+        }
+
+    }
+
+    function checkCierrePeriodoAnt ($mesAnterior) 
+    {
+        $sql = "SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM RO_T_DETALLE_ALQUILERES_ESTADO  
+            WHERE PERIODO = '$mesAnterior'
+        ) THEN 1
+        ELSE 0
+        END AS RegistroExiste;";
+        
+        try{
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+                    
+            $rows = array();
+
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+
+
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
         }
 
     }

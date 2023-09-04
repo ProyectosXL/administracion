@@ -7,6 +7,28 @@ const comprobarEstado = (estado) =>{
             e.readOnly = true;
             
         })
+        let idConceptos = document.querySelectorAll("#idConcepto");
+        let sucursales = document.querySelectorAll("#sucursal");
+    
+        sucursales.forEach(s => {
+            
+            let result = 0;
+
+            idConceptos.forEach(e => {
+                let concepto = e.textContent;
+                console.log(concepto);
+                console.log(s.textContent);
+                console.log(document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`));
+                $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
+                $valorSumar = $valorSumar.replace(/ /g,'');
+    
+                result = parseInt(result) +  parseInt($valorSumar);  
+
+            
+            })
+
+            document.querySelector("#total-"+s.textContent).textContent = "$"+parseNumber(result);
+        });
 
     }else{
 
@@ -259,7 +281,7 @@ const procesar = () => {
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'El período ya se encuentra cerrado!'
+            text: 'El período ya se encuentra procesado!'
         })
         return false;
     }
@@ -328,38 +350,90 @@ const procesar = () => {
 const cerrarPeriodo = () => {
 
     let periodo = document.querySelector("#periodo").textContent;
+    let ultimaFechaDelMes = document.querySelector("#ultimaFechaDelMes").textContent;
 
+    mesAnterior = document.querySelector("#mesAnterior").textContent;
+    
     $.ajax({
-
-        url: 'Controller/AlquilerController.php?accion=cerrarPeriodo',
+        url : 'Controller/AlquilerController.php?accion=checkCierrePeriodoAnt',
         method: 'POST',
         data: {
-            periodo: periodo
+            mesAnterior: mesAnterior
         },
-        success : function(data) {
-            if(data == 1){
+        success : function(response) {
+          response = JSON.parse(response)
+             if(response[0]['RegistroExiste'] == 0){
+
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'El período ya se encuentra cerrado!'
-                    })
+                    icon: 'warning',
+                    title: 'Atención',
+                    text: 'Debe cerrar los periodos anteriores!'
+                })
+                return 1
+                
             }else{
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Cerrado',
-                    text: 'Se ha cerrado correctamente!'
-                }).then((result) => {
-                    location.reload();
-                })
+                $.ajax({
+                    url : 'Controller/AlquilerController.php?accion=verificarProcesado',
+                    method: 'POST',
+                    data: {
+                        fecha: ultimaFechaDelMes
+                    },
+                    success : function(response) {  
+                        response = JSON.parse(response);
                 
-            }
+                        if(response[0]['RegistroExiste'] == 1){
             
-
+                            $.ajax({
+            
+                                url: 'Controller/AlquilerController.php?accion=cerrarPeriodo',
+                                method: 'POST',
+                                data: {
+                                    periodo: periodo
+                                },
+                                success : function(data) {
+                                    if(data == 1){
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Error',
+                                            text: 'El período ya se encuentra cerrado!'
+                                            })
+                                    }else{
+            
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Cerrado',
+                                            text: 'Se ha cerrado correctamente!'
+                                        }).then((result) => {
+                                            location.reload();
+                                        })
+                                        
+                                    }
+                                    
+            
+                                }
+            
+                            });
+            
+                        }else{
+            
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Atención',
+                                text: 'Primero debe procesar el período!'
+                            })
+                            return 1
+                        }
+                    }
+                });
+            }
         }
 
     });
+
+    return 1
 }
+
 const abrirPeriodo = () => {
 
     let periodo = document.querySelector("#periodo").textContent;
@@ -394,4 +468,9 @@ const abrirPeriodo = () => {
         }
 
     });
+}
+
+const checkCierrePeriodoAnt = () => {
+
+  
 }
