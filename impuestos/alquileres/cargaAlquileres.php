@@ -115,7 +115,7 @@
                                         </div>
                                     </div>
                                     <div class="btn-with-icon">
-                                        <button style="margin-left:20rem; margin-top:0.5rem;" type="button" class="btn btn-success" onclick="procesar()">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
+                                        <button style="margin-left:8rem; margin-top:0.5rem;" type="button" class="btn btn-success" onclick="procesar()">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
                                     </div>
                                     <div class="btn-with-icon">
                                         <?php 
@@ -129,6 +129,20 @@
                                         ?>
                                         <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
                                     </div>
+                                    <div style="margin-left:2rem">
+                                        eliminar Sucursal:
+                                        <select class="form-control ml-6 mt-2" id="selectOcultarSucursal" >
+                                            <?php 
+                                                foreach ($todosLosLocales as $key => $local) {
+                                                    echo '<option value="'.$local['NRO_SUCURSAL'].'">'.$local['DESC_SUCURSAL'].'-'.$local['NRO_SUCURSAL'].'</option>';
+                                                }
+                                            ?>
+                                        </select>
+                                        <button class="btn btn-warning mt-2" onclick="ocultarSucursal()">eliminar</button>
+                                    </div>
+                                    <div>
+                          
+                                    </div>
                             </form>
 
                             <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle"> Control Por Sucursal</i></strong></div>
@@ -140,7 +154,7 @@
                                             <?php 
                                                 foreach ($todosLosLocales as $key => $value) {    
                                             ?>
-                                                <th style="text-align:center;width:50px" id="sucursal" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?></th>
+                                                <th style="text-align:center;width:50px" id="sucursal"  class = "suc<?= $value['NRO_SUCURSAL']?>" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?></th>
                                             <?php
                                                 }
                                             ?>
@@ -157,6 +171,7 @@
                                                     <td style="text-align:center" id="concepto"><strong><?= $value['CONCEPTO']?></strong> </td>
                                                     <?php   
                                                         foreach ($newArray as $k => $val) {
+
 
                                                             $porcentajeDelLocal = 0;
                                                             $rentabilidadDelConcepto = 0;
@@ -212,8 +227,9 @@
                                                             if($valor < 0){
                                                                 $valor = $valor * -1;
                                                             }
+                                                
                                                     ?>  
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3'><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
 
                                                     <?php 
                                                         }
@@ -230,7 +246,7 @@
                                         <?php
                                             foreach ($todosLosLocales as $local) {
                                         ?>
-                                                <td id="total-<?= $local['NRO_SUCURSAL'] ?>"></td>
+                                                <td id="total-<?= $local['NRO_SUCURSAL'] ?>" class="suc<?= $local['NRO_SUCURSAL'] ?>"></td>
                                         <?php
                                             }
                                         ?>
