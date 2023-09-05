@@ -465,6 +465,55 @@ class Alquiler
         }
 
     }
+    function traerSucursalesOcultas ($periodo) {
+
+        $sql = "SELECT * FROM SJ_ALQUILERES_OCULTOS_POR_PERIODO WHERE PERIODO = '$periodo';";
+
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            if ($stmt === false) {
+                throw new \Exception("Error en la consulta SQL: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $rows = array();
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+            return $rows;
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+    }
+
+    function ocultarSucursal ($periodo, $sucursal) {
+
+        
+        $sql = "IF EXISTS (SELECT 1 FROM SJ_ALQUILERES_OCULTOS_POR_PERIODO WHERE PERIODO = '$periodo')
+        BEGIN
+            -- El período existe, realizar una actualización (UPDATE)
+            UPDATE SJ_ALQUILERES_OCULTOS_POR_PERIODO
+            SET JSON_LOCALES = '$sucursal'
+            WHERE PERIODO = '$periodo';
+        END
+        ELSE
+        BEGIN
+            -- El período no existe, realizar una inserción (INSERT)
+            INSERT INTO SJ_ALQUILERES_OCULTOS_POR_PERIODO (PERIODO, JSON_LOCALES)
+            VALUES ('$periodo', '$sucursal');
+        END";
+
+   
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+           
+            return true;
+
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+
+    }
 }
 
 

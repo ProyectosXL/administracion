@@ -470,11 +470,25 @@ const abrirPeriodo = () => {
 const ocultarSucursal = () => {
 
     let sucursal = document.querySelector("#selectOcultarSucursal").value
+    let periodo = document.querySelector("#periodo").textContent;
+    
+    $.ajax({
 
-    document.querySelectorAll(".suc"+sucursal).forEach(element => {
-        element.remove()
-   });
+        url : 'Controller/AlquilerController.php?accion=ocultarSucursal',
+        method: 'POST',
+        data: {
+            sucursal: sucursal,
+            periodo: periodo
+        },
+        success : function(response) {
 
+            document.querySelectorAll(".suc"+sucursal).forEach(element => {
+                element.remove()
+        });
+        
+        }
+
+    })
 
    
 }
