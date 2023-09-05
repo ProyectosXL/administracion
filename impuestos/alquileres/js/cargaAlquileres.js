@@ -16,9 +16,6 @@ const comprobarEstado = (estado) =>{
 
             idConceptos.forEach(e => {
                 let concepto = e.textContent;
-                console.log(concepto);
-                console.log(s.textContent);
-                console.log(document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`));
                 $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
                 $valorSumar = $valorSumar.replace(/ /g,'');
     
@@ -470,7 +467,14 @@ const abrirPeriodo = () => {
     });
 }
 
-const checkCierrePeriodoAnt = () => {
+const ocultarSucursal = () => {
 
-  
+    let sucursal = document.querySelector("#selectOcultarSucursal").value
+
+    document.querySelectorAll(".suc"+sucursal).forEach(element => {
+        element.remove()
+   });
+
+
+   
 }
