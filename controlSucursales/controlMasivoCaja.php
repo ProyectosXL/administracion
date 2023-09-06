@@ -239,7 +239,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                             }
                                         ?>
                                         <!-- <td style="text-align:center"><?= number_format($importe, 0, ',', '.') ?></td> -->
-                                        <td style="text-align:center"><input type="text" style="text-align:center;width:100%" onchange="calcularDiferecias(this)" id="valorFisico" value="<?= $importe['IMPORTE_$_FISICO'] ?>"></td>
+                                        <td style="text-align:center"><input type="text" style="text-align:center;width:100%" onchange="calcularDiferecias(this)" id="valorFisico" value="$<?= number_format($importe['IMPORTE_$_FISICO'], 0, ',', '.') ?>"></td>
                                         <td style="text-align:center" id="diferencias">0</td>
                                         <td style="text-align:center"><input type="text" style="width:100%" value="<?= $importe['OBSERVACIONES'] ?>" id="observacion"></td>
                                         <td style="text-align:center" hidden ><?= $importe['ID'] ?></td>

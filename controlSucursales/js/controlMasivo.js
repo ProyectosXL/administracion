@@ -66,6 +66,7 @@ const parseNumber = (number) => {
 }
 
 const calcularDiferecias = (div) => {
+    div.value = div.value.replace(/[$.]/g, "");
 
     if (div.value < 0) {
         div.value = 0;
