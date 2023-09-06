@@ -122,7 +122,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                         <?php
                                
                                         ?>
-                                    <div style="margin-left:90px" >Mes : 
+                                    <div style="margin-left:4rem" >Mes : 
 
 
                                     <select name="mes" id="mes" class="form-control">
@@ -142,7 +142,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     </select>
 
                                     </div>
-                                    <div style="margin-left:30px">Año : 
+                                    <div style="margin-left:1rem">Año : 
                                     <select name="anio" id="selectAño" class="form-control">
                                         <option value="2022">2022</option>
                                         <?php 
@@ -160,7 +160,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     </select>
                                     </div>
 
-                                    <div style="margin-left:30px">Sucursal : 
+                                    <div style="margin-left:1rem">Sucursal : 
                                     <select name="sucursal" id="sucursal" class="form-control">
                                         <?php   
                                             foreach ($todosLosLocales as $key => $local) {
@@ -176,7 +176,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                         
                                     </select>
                                     </div>
-                                    <div style="margin-left:30px">Medio pago : 
+                                    <div style="margin-left:1rem">Medio pago : 
                                     <select name="medioPago" id="medioPago" class="form-control">
                                         <?php 
                                             foreach ($todosLosMediosDePago as $key => $medioPago) {
@@ -193,7 +193,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     </div>
 
                                     <button class="btn btn-primary btn-submit ml-2" onclick= "">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                    <div style="margin-left:10rem;">
+                                    <div style="margin-left:2rem;">
                                         <button class="btn btn-primary btn-secondary" type="button" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
                                         <button class="btn btn-primary btn-primary ml-2" type="button" onclick= "controlar()">Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
                                         <button name="btnExport" type="button" class="btn btn-success  ml-2" id="btnExport" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
