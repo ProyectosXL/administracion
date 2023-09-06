@@ -70,7 +70,8 @@ class Sucursal
 
         $sql = "SELECT * FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES where nro_sucursal = '$nroSucursal' 
         AND FECHA BETWEEN '$desde' AND '$hasta' 
-        AND MEDIO_PAGO = '$medioDePago' ";
+        AND MEDIO_PAGO = '$medioDePago' 
+        ORDER BY FECHA";
         // AND VERIFICADO = '0' ;";
 
         $stmt = sqlsrv_query($this->cid_locales, $sql);
