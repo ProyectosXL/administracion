@@ -50,7 +50,7 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Control Diario Caja Sucursales</title>
+        <title>Control Mensual de Cobranza</title>
         <?php
             require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
         ?>
@@ -63,11 +63,11 @@
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Control Diario Sucursales</h6></div>
+                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Control Mensual de Cobranza</h6></div>
                     <div class="card card-1">
                         
                         <div class="row" style="margin-left:50px; margin-top:20px;">
-                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:40px"></i>Control Mensual Caja Sucursales - Periodo : <?= $periodo ?></strong></h3>
+                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:40px"></i>Control Mensual de Cobranza - Periodo : <?= $periodo ?></strong></h3>
                         </div>
 
                         <form class="form-inline" action="#" method="get" style="margin-bottom:20px; margin-top:10px;">
