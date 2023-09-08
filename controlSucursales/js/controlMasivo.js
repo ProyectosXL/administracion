@@ -124,10 +124,13 @@ const controlar = () => {
     let allTr = document.querySelectorAll('tbody tr');
     let data = [];
     let error = false;
+    let inputsCargados = true;
     allTr.forEach((tr) => {
         let id = tr.querySelectorAll('td')[5].textContent;
         let importeControl = tr.querySelectorAll('td')[2].querySelector('input').value.replace(/[$.]/g, "");
         let observaciones = tr.querySelectorAll('td')[4].querySelector('input').value;
+
+        if(importeControl == "" || importeControl == 0 )inputsCargados = false;
 
         if(tr.querySelectorAll('td')[3].textContent.replace(/[$.]/g, "") != 0){
             console.log(tr.querySelectorAll('td')[3].textContent.replace(/[$.]/g, ""));
@@ -143,6 +146,17 @@ const controlar = () => {
      
     });
 
+    if(inputsCargados == false){
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'Hay valores sin cargar',
+            text: 'Por favor complete todos los valores',
+        })
+        return 1;
+
+    }
+    
     if(error == true){
 
         Swal.fire({
