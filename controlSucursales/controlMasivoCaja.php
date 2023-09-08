@@ -37,6 +37,16 @@ $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
 $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $primerDia, $ultimoDia,str_replace("_", " ", $medioPagoSelected[1]));
 
+$verificado = true;
+
+foreach ($todosLosImportes as $key => $value) {
+
+        if($value['VERIFICADO'] == 0){
+            $verificado = false;
+        }
+
+}
+
 
 ?>
 
@@ -195,7 +205,7 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                     <button class="btn btn-primary btn-submit ml-2" onclick= "">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                     <div style="margin-left:2rem;">
                                         <button class="btn btn-primary btn-secondary" type="button" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
-                                        <button class="btn btn-primary btn-primary ml-2" type="button" onclick= "controlar()">Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
+                                        <button class="btn btn-primary btn-primary ml-2" type="button" onclick= "controlar()" <?= ($verificado == true) ? "hidden" : "" ?>>Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
                                         <button name="btnExport" type="button" class="btn btn-success  ml-2" id="btnExport" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
                                     </div>
 
@@ -239,9 +249,9 @@ $todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $
                                             }
                                         ?>
                                         <!-- <td style="text-align:center"><?= number_format($importe, 0, ',', '.') ?></td> -->
-                                        <td style="text-align:center"><input type="text" style="text-align:center;width:100%" onchange="calcularDiferecias(this)" id="valorFisico" value="$<?= number_format($importe['IMPORTE_$_FISICO'], 0, ',', '.') ?>"></td>
+                                        <td style="text-align:center"><input type="text" style="text-align:center;width:100%" onchange="calcularDiferecias(this)" id="valorFisico" value="$<?= number_format($importe['IMPORTE_$_FISICO'], 0, ',', '.') ?>" <?= ($importe['VERIFICADO'] == 1) ? "disabled" : "" ?>></td>
                                         <td style="text-align:center" id="diferencias">0</td>
-                                        <td style="text-align:center"><input type="text" style="width:100%" value="<?= $importe['OBSERVACIONES'] ?>" id="observacion"></td>
+                                        <td style="text-align:center"><input type="text" style="width:100%" value="<?= $importe['OBSERVACIONES'] ?>" id="observacion" <?= ($importe['VERIFICADO'] == 1) ? "disabled" : "" ?>></td>
                                         <td style="text-align:center" hidden ><?= $importe['ID'] ?></td>
                                         
                                     </tr>
