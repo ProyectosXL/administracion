@@ -51,6 +51,7 @@
         $sucursalesOcultasArray = explode(',', $arraySucursalesOcultas['sucursales']);
     }
 
+   
 
 ?>
 
@@ -244,6 +245,12 @@
                                                             if($valor < 0){
                                                                 $valor = $valor * -1;
                                                             }
+
+                                                            
+                                                            if (in_array($k, $sucursalesOcultasArray)) {
+                                                    
+                                                                continue;
+                                                            } 
                                                 
                                                     ?>  
                                                             <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
