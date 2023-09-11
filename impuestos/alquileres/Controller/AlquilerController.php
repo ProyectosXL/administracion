@@ -32,6 +32,10 @@ switch ($accion) {
         abrirPeriodo(); 
         break;
 
+    case 'ocultarSucursal':
+        ocultarSucursal(); 
+        break;
+
     default:
       
         break;
@@ -186,11 +190,25 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
     $detalle = $alquiler->traerDetalle($periodo);
     $estado = $alquiler->traerEstado($periodo);
+
+    
+    $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
+    $arraySucursalesOcultas = [];
+    $sucursalesOcultasArray = [];
+    if(count($sucursalesOcultas) > 0){
+        $arraySucursalesOcultas = json_decode($sucursalesOcultas[0]['JSON_LOCALES'],true);
+        $sucursalesOcultasArray = explode(',', $arraySucursalesOcultas['sucursales']);
+    }
  
     $newArray = [];
 
     if($estado == 1){
         foreach ($todosLosLocales as $k => $v) {
+
+            if (in_array($v['NRO_SUCURSAL'], $sucursalesOcultasArray)) {
+                                               
+                continue;
+            }
 
             foreach ($conceptos as $key => $value) {  
 
@@ -491,6 +509,57 @@ function checkCierrePeriodoAnt () {
     $mesAnterior = $_POST['mesAnterior'];
 
     $result = $alquiler->checkCierrePeriodoAnt($mesAnterior);
+
+    echo json_encode($result);
+
+
+}
+
+function ocultarSucursal () {
+
+    require_once "../Class/Alquiler.php";
+
+    $alquiler = new Alquiler();
+
+    $sucursal = $_POST['sucursal'];
+    $periodo = $_POST['periodo'];
+
+    $result = $alquiler->traerSucursalesOcultas($periodo);
+
+    if(count($result) > 0){
+
+        $arraySucursales = json_decode($result[0]['JSON_LOCALES'], true);
+
+        if ($arraySucursales !== null) {
+          
+            $nuevosValores = [$sucursal]; 
+        
+            if (isset($arraySucursales['sucursales'])) {
+    
+                $valoresExistente = explode(',', $arraySucursales['sucursales']);
+          
+                $nuevosValores = array_filter($nuevosValores, function ($valor) use ($valoresExistente) {
+                    return !in_array($valor, $valoresExistente);
+                });
+
+                $nuevosValores = array_merge($valoresExistente, $nuevosValores);
+            }
+
+            $arraySucursales['sucursales'] = implode(',', $nuevosValores);
+        
+        }
+            
+  
+        $result = $alquiler->ocultarSucursal($periodo, json_encode($arraySucursales));
+    }else{
+
+        $jsonSucursal = [
+            "sucursales" => $sucursal
+        ];
+
+        $jsonSucursal = json_encode($jsonSucursal);
+        $result = $alquiler->ocultarSucursal($periodo, $jsonSucursal);
+    }
 
     echo json_encode($result);
 

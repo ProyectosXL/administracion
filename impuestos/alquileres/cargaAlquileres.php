@@ -43,6 +43,15 @@
 
         $newArray = cargarAlquieres($fecha,$periodo);
     }
+    $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
+    $arraySucursalesOcultas = [];
+    $sucursalesOcultasArray = [];
+    if(count($sucursalesOcultas) > 0){
+        $arraySucursalesOcultas = json_decode($sucursalesOcultas[0]['JSON_LOCALES'],true);
+        $sucursalesOcultasArray = explode(',', $arraySucursalesOcultas['sucursales']);
+    }
+
+   
 
 ?>
 
@@ -134,6 +143,10 @@
                                         <select class="form-control ml-6 mt-2" id="selectOcultarSucursal" >
                                             <?php 
                                                 foreach ($todosLosLocales as $key => $local) {
+                                                    if (in_array($local['NRO_SUCURSAL'], $sucursalesOcultasArray)) {
+                                               
+                                                        continue;
+                                                    }
                                                     echo '<option value="'.$local['NRO_SUCURSAL'].'">'.$local['DESC_SUCURSAL'].'-'.$local['NRO_SUCURSAL'].'</option>';
                                                 }
                                             ?>
@@ -152,7 +165,12 @@
                                             <th style="text-align:center;width:30px" id="thIdConcepto">ID</th>
                                             <th style="text-align:center;width:100px" id="thConcepto"  >CONCEPTOS </th>
                                             <?php 
-                                                foreach ($todosLosLocales as $key => $value) {    
+                                                foreach ($todosLosLocales as $key => $value) {   
+
+                                                    if (in_array($value['NRO_SUCURSAL'], $sucursalesOcultasArray)) {
+                                               
+                                                        continue;
+                                                    } 
                                             ?>
                                                 <th style="text-align:center;width:50px" id="sucursal"  class = "suc<?= $value['NRO_SUCURSAL']?>" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?></th>
                                             <?php
@@ -227,6 +245,12 @@
                                                             if($valor < 0){
                                                                 $valor = $valor * -1;
                                                             }
+
+                                                            
+                                                            if (in_array($k, $sucursalesOcultasArray)) {
+                                                    
+                                                                continue;
+                                                            } 
                                                 
                                                     ?>  
                                                             <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
@@ -245,6 +269,12 @@
                                             <td id="concepto"><h5 style="font-size:15px" >Total</h5></td>
                                         <?php
                                             foreach ($todosLosLocales as $local) {
+
+                                                if (in_array($local['NRO_SUCURSAL'], $sucursalesOcultasArray)) {
+                                               
+                                                    continue;
+                                                }
+                                                
                                         ?>
                                                 <td id="total-<?= $local['NRO_SUCURSAL'] ?>" class="suc<?= $local['NRO_SUCURSAL'] ?>"></td>
                                         <?php
