@@ -14,9 +14,7 @@ class Gastos
 
     public function traerGastos(){
 
-       
-
-        $sql = "SELECT * FROM RO_T_MAESTRO_GASTOS_NACIONALIZACION";
+        $sql = " SELECT * FROM RO_T_MAESTRO_GASTOS_NACIONALIZACION ORDER BY ORDEN ";
 
         try{
             $stmt = sqlsrv_query( $this->cid_central, $sql );
