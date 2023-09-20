@@ -45,7 +45,6 @@ const totalizar = (div = null) => {
         let result = 0;
         idConceptos.forEach(e => {
             let concepto = e.textContent;
-            // console.log(pets.includes('cat'));
             if(e.textContent == 14 && ["2","16","60","79","81"].includes(s.textContent)) {
                 
                 let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
@@ -96,7 +95,7 @@ const totalizar = (div = null) => {
                 }
 
             }
-            
+
             $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
             $valorSumar = $valorSumar.replace(/ /g,'');
 
