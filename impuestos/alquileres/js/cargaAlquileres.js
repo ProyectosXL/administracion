@@ -1,3 +1,5 @@
+
+
 const comprobarEstado = (estado) =>{
 
     if(estado == 1){
@@ -82,6 +84,19 @@ const totalizar = (div = null) => {
                 inputActual.value ="$"+ parseNumber( calculo); 
 
             }
+
+            if(e.textContent == 4 || e.textContent == 5  || e.textContent == 18 ) {
+
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
+
+                let value = inputActual.value.replace(/[$.]/g, "")
+            
+                if(value != ""  && value != "0" ) {
+                    inputActual.disabled = true;
+                }
+
+            }
+            
             $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
             $valorSumar = $valorSumar.replace(/ /g,'');
 

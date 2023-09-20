@@ -36,6 +36,10 @@ switch ($accion) {
         ocultarSucursal(); 
         break;
 
+    case 'guardarContratoAlquiler':
+        guardarContratoAlquiler(); 
+        break;
+
     default:
       
         break;
@@ -88,6 +92,16 @@ function cargarAlquieres ($fecha, $periodo) {
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
     $conceptos = $alquiler->traerConceptos();
+
+    $inputStringWithDay = $fecha . "-01";
+
+    // Convertir el string a un objeto DateTime
+    $date = new DateTime($inputStringWithDay);
+
+    // Formatear la fecha en el formato deseado "YYYY-MM-dd"
+    $formattedDate = $date->format('Y-m-d');
+    $contratoAlquiler = $alquiler->traerContratoAlquiler($formattedDate);
+
     $todosLosLocales= $sucursal->traerLocales();
 
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
@@ -159,6 +173,17 @@ function cargarAlquieres ($fecha, $periodo) {
                         }
     
 
+                }
+                
+                if( in_array($value['ID_CA'], ["4", "5", "18"]) ) {
+
+                    foreach ($contratoAlquiler as  $contrato) {
+                        if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                            $total = $contrato['IMPORTE'];
+                        }
+
+                    }
+                 
                 }
 
                 $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $total;      
@@ -564,5 +589,49 @@ function ocultarSucursal () {
     echo json_encode($result);
 
 
+}
+
+function guardarContratoAlquiler () {
+    
+        require_once "../Class/Alquiler.php";
+    
+        $alquiler = new Alquiler();
+    
+        $desde = $_POST['desde'];
+        $hasta = $_POST['hasta'];
+        $idSucursal = $_POST['idSucursal'];
+        $descSucursal = $_POST['descSucursal'];
+        $valorLlave = $_POST['valorLlave'];
+        $comisiones = $_POST['comisiones'];
+        $lanzamiento = $_POST['lanzamiento'];
+    
+        $result = [];
+
+        if($valorLlave != ""){
+
+            $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, "4", $valorLlave, $desde, $hasta);
+
+        }
+        if ($comisiones != "") {
+
+            $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, "5", $comisiones, $desde, $hasta);
+
+        }
+        if ($lanzamiento != "") {
+
+            $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, "18", $lanzamiento, $desde, $hasta);
+
+        }
+
+        if(in_array(true, $result)){
+
+            echo true;
+
+        }else{
+                
+            echo false;
+
+        }  
+        
 }
 ?>
