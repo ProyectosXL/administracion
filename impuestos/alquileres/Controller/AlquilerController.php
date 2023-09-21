@@ -93,14 +93,15 @@ function cargarAlquieres ($fecha, $periodo) {
     $sucursal = new Sucursal();
     $conceptos = $alquiler->traerConceptos();
 
-    $inputStringWithDay = $fecha . "-01";
+    // $inputStringWithDay = $fecha . "-01";
 
-    // Convertir el string a un objeto DateTime
-    $date = new DateTime($inputStringWithDay);
+    // // Convertir el string a un objeto DateTime
+    // $date = new DateTime($inputStringWithDay);
 
-    // Formatear la fecha en el formato deseado "YYYY-MM-dd"
-    $formattedDate = $date->format('Y-m-d');
-    $contratoAlquiler = $alquiler->traerContratoAlquiler($formattedDate);
+    // // Formatear la fecha en el formato deseado "YYYY-MM-dd"
+    // $formattedDate = $date->format('Y-m-d');
+
+    $contratoAlquiler = $alquiler->traerContratoAlquiler($fecha);
 
     $todosLosLocales= $sucursal->traerLocales();
 
@@ -222,15 +223,17 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
     $inputStringWithDay = $fecha . "-01";
 
-    // Convertir el string a un objeto DateTime
-    $date = new DateTime($inputStringWithDay);
+    // // Convertir el string a un objeto DateTime
+    // $date = new DateTime($inputStringWithDay);
 
-    // Formatear la fecha en el formato deseado "YYYY-MM-dd"
-    $formattedDate = $date->format('Y-m-d');
+    // // Formatear la fecha en el formato deseado "YYYY-MM-dd"
+    // $formattedDate = $date->format('Y-m-d');
 
-    $detalle = $alquiler->traerDetalle($periodo);
-    $estado = $alquiler->traerEstado($periodo);
-    $contratoAlquiler = $alquiler->traerContratoAlquiler($formattedDate);
+    // $detalle = $alquiler->traerDetalle($periodo);
+    // $estado = $alquiler->traerEstado($periodo);
+    $contratoAlquiler = $alquiler->traerContratoAlquiler($fecha);
+    var_dump($fecha);
+    die();
 
     
     $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
@@ -660,15 +663,7 @@ function guardarContratoAlquiler () {
 
         }
 
-        if(in_array(true, $result)){
-
-            echo true;
-
-        }else{
-                
-            echo false;
-
-        }  
+        echo true;
         
 }
 ?>

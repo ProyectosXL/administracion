@@ -517,18 +517,21 @@ class Alquiler
 
     function guardarContratoAlquiler($sucursal, $descSucursal, $idValor, $valor, $desde, $hasta) {
 
-        $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, VIG_DESDE, VIG_HASTA)
-                     SELECT GETDATE(), '$sucursal', '$descSucursal', '$idValor', '$valor', '$desde', '$hasta'
-                     WHERE NOT EXISTS (
-                         SELECT 1
-                         FROM RO_T_CONTRATOS_ALQUILERES
-                         WHERE (
-                             (VIG_DESDE <= '$desde' AND VIG_HASTA >= '$hasta')
-                             OR ('$desde' <= VIG_DESDE AND '$hasta' >= VIG_HASTA)
-                         ) 
-                         AND ID_CA = '$idValor'
-                         AND NRO_SUCURS = '$sucursal'
-                     );";
+        // $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, VIG_DESDE, VIG_HASTA)
+        //              SELECT GETDATE(), '$sucursal', '$descSucursal', '$idValor', '$valor', '$desde', '$hasta'
+        //              WHERE NOT EXISTS (
+        //                  SELECT 1
+        //                  FROM RO_T_CONTRATOS_ALQUILERES
+        //                  WHERE (
+        //                      (VIG_DESDE <= '$desde' AND VIG_HASTA >= '$hasta')
+        //                      OR ('$desde' <= VIG_DESDE AND '$hasta' >= VIG_HASTA)
+        //                  ) 
+        //                  AND ID_CA = '$idValor'
+        //                  AND NRO_SUCURS = '$sucursal'
+        //              );";
+
+        $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES  (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, VIG_DESDE, VIG_HASTA) 
+        VALUES (GETDATE(), '$sucursal', '$descSucursal', '$idValor', '$valor', '$desde', '$hasta')";
     
         try {
         

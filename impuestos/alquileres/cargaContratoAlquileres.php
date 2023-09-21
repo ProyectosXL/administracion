@@ -69,9 +69,7 @@
                                                 ?>
                                             </select>
                                         </div>
-                                        <div >
-                                            <button class="btn btn-primary submit"style="height:40px">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                        </div>
+                             
                                     </div>
                                 </div>
                                 <div class="col-4" style="width:550px;">
