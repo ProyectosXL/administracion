@@ -515,7 +515,7 @@ class Alquiler
 
     }
 
-    function guardarContratoAlquiler($sucursal, $descSucursal, $idValor, $valor, $desde, $hasta) {
+    function guardarContratoAlquiler($sucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta) {
 
         // $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, VIG_DESDE, VIG_HASTA)
         //              SELECT GETDATE(), '$sucursal', '$descSucursal', '$idValor', '$valor', '$desde', '$hasta'
@@ -530,9 +530,9 @@ class Alquiler
         //                  AND NRO_SUCURS = '$sucursal'
         //              );";
 
-        $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES  (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, VIG_DESDE, VIG_HASTA) 
-        VALUES (GETDATE(), '$sucursal', '$descSucursal', '$idValor', '$valor', '$desde', '$hasta')";
-    
+        $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES  (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, ID_CA_2, IMPORTE_2, ID_CA_3, IMPORTE_3, VIG_DESDE, VIG_HASTA) 
+        VALUES (GETDATE(), '$sucursal', '$descSucursal', '4', '$valorLlave', '5', '$comisiones', '18', '$lanzamiento',  '$desde', '$hasta')";
+
         try {
         
             $stmt = sqlsrv_query($this->cid_central, $sqlLlave);

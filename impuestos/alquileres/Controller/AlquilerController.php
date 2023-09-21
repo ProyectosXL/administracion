@@ -646,23 +646,8 @@ function guardarContratoAlquiler () {
         $lanzamiento = $_POST['lanzamiento'];
     
         $result = [];
-
-        if($valorLlave != ""){
-
-            $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, "4", $valorLlave, $desde, $hasta);
-
-        }
-        if ($comisiones != "") {
-
-            $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, "5", $comisiones, $desde, $hasta);
-
-        }
-        if ($lanzamiento != "") {
-
-            $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, "18", $lanzamiento, $desde, $hasta);
-
-        }
-
+        $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta);
+        
         echo true;
         
 }
