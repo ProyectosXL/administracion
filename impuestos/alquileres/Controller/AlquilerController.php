@@ -178,20 +178,37 @@ function cargarAlquieres ($fecha, $periodo) {
                 
                 if( in_array($value['ID_CA'], ["4", "5", "18"]) ) {
 
-                    foreach ($contratoAlquiler as  $contrato) {
-                        if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                     foreach ($contratoAlquiler as  $contrato) {
 
                             $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
                             $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
 
                             $diferenciaDeFechas = $vigDesde->diff($vigHasta);
-
                             $mesesDiferencia = $diferenciaDeFechas->y * 12 + $diferenciaDeFechas->m;
+                            if($mesesDiferencia == 0){
+                                $mesesDiferencia = 1;
+                            }
 
-                            $total = ($contrato['IMPORTE'] / $mesesDiferencia);
+                            if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $total = ($contrato['IMPORTE'] / $mesesDiferencia);
+
+                            }
+
+                            if($contrato['ID_CA_2'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $$total = ($contrato['IMPORTE_2'] / $mesesDiferencia);
+
+                            }
+
+                            if($contrato['ID_CA_3'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $$total  = ($contrato['IMPORTE_3'] / $mesesDiferencia);
+
+                            }
+
+    
                         }
-
-                    }
                  
                 }
 
@@ -223,17 +240,9 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
     $inputStringWithDay = $fecha . "-01";
 
-    // // Convertir el string a un objeto DateTime
-    // $date = new DateTime($inputStringWithDay);
-
-    // // Formatear la fecha en el formato deseado "YYYY-MM-dd"
-    // $formattedDate = $date->format('Y-m-d');
-
-    // $detalle = $alquiler->traerDetalle($periodo);
-    // $estado = $alquiler->traerEstado($periodo);
+    $detalle = $alquiler->traerDetalle($periodo);
+    $estado = $alquiler->traerEstado($periodo);
     $contratoAlquiler = $alquiler->traerContratoAlquiler($fecha);
-    var_dump($fecha);
-    die();
 
     
     $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
@@ -348,18 +357,34 @@ function traerDetalleAlquiler ($fecha,$periodo) {
                     if( in_array($value['ID_CA'], ["4", "5", "18"]) ) {
 
                         foreach ($contratoAlquiler as  $contrato) {
+
+                            $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
+                            $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
+
+                            $diferenciaDeFechas = $vigDesde->diff($vigHasta);
+                            $mesesDiferencia = $diferenciaDeFechas->y * 12 + $diferenciaDeFechas->m;
+                            if($mesesDiferencia == 0){
+                                $mesesDiferencia = 1;
+                            }
+                            
                             if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-
-                                $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
-                                $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
-
-                                $diferenciaDeFechas = $vigDesde->diff($vigHasta);
-    
-                                $mesesDiferencia = $diferenciaDeFechas->y * 12 + $diferenciaDeFechas->m;
 
                                 $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE'] / $mesesDiferencia);
 
                             }
+
+                            if($contrato['ID_CA_2'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE_2'] / $mesesDiferencia);
+
+                            }
+
+                            if($contrato['ID_CA_3'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE_3'] / $mesesDiferencia);
+
+                            }
+
     
                         }
                         continue;

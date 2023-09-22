@@ -551,9 +551,16 @@ class Alquiler
 
     function traerContratoAlquiler ($fecha) {
 
-        $sql = "SELECT * FROM RO_T_CONTRATOS_ALQUILERES 
-                WHERE VIG_DESDE <= '$fecha' AND VIG_HASTA >= '$fecha'";
-
+        $sql = "DECLARE @periodo VARCHAR(7) = '$fecha'
+        
+        SELECT TOP 1 *
+        FROM RO_T_CONTRATOS_ALQUILERES
+        WHERE CONVERT(VARCHAR(7), VIG_DESDE, 120) <= @periodo
+        AND CONVERT(VARCHAR(7), VIG_HASTA, 120) >= @periodo
+        ORDER BY ID DESC;
+        ";
+  
+ 
         try {
         
             $stmt = sqlsrv_query($this->cid_central, $sql);
