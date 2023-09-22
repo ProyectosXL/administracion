@@ -549,18 +549,23 @@ class Alquiler
         }
     }
 
-    function traerContratoAlquiler ($fecha) {
+    function traerContratoAlquiler ($fecha = null) {
+        if($fecha != null ){
 
-        $sql = "DECLARE @periodo VARCHAR(7) = '$fecha'
-        
-        SELECT TOP 1 *
-        FROM RO_T_CONTRATOS_ALQUILERES
-        WHERE CONVERT(VARCHAR(7), VIG_DESDE, 120) <= @periodo
-        AND CONVERT(VARCHAR(7), VIG_HASTA, 120) >= @periodo
-        ORDER BY ID DESC;
-        ";
+            $sql = "DECLARE @periodo VARCHAR(7) = '$fecha'
+            
+            SELECT TOP 1 *
+            FROM RO_T_CONTRATOS_ALQUILERES
+            WHERE CONVERT(VARCHAR(7), VIG_DESDE, 120) <= @periodo
+            AND CONVERT(VARCHAR(7), VIG_HASTA, 120) >= @periodo
+            ORDER BY ID DESC;
+            ";
   
- 
+        }else{
+            $sql = "SELECT *
+            FROM RO_T_CONTRATOS_ALQUILERES";
+        }
+        
         try {
         
             $stmt = sqlsrv_query($this->cid_central, $sql);
