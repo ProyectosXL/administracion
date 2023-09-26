@@ -40,6 +40,14 @@ switch ($accion) {
         guardarContratoAlquiler(); 
         break;
 
+    case 'aplicarAjuste':
+        aplicarAjuste(); 
+        break;
+
+    case 'comprobarAjuste':
+        comprobarAjuste(); 
+        break;
+
     default:
       
         break;
@@ -366,8 +374,9 @@ function traerDetalleAlquiler ($fecha,$periodo) {
                             if($mesesDiferencia == 0){
                                 $mesesDiferencia = 1;
                             }
-                            
                             if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                                // var_dump($contratoAlquiler);
+                                // var_dump($v['NRO_SUCURSAL']);
 
                                 $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE'] / $mesesDiferencia);
 
@@ -387,14 +396,19 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
     
                         }
-                        continue;
+                   
                     }
 
                     foreach ($detalle as $det) {
 
                         if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
 
-                            
+                            if( in_array($det['ID_CA'], ["4", "5", "18"]) ) {
+                                if($det['AJUSTADO'] != "1"){
+                                    continue;
+                                }
+                            }
+
                             $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $det['IMPORTE_PARSE'];
 
                             break;
@@ -671,9 +685,63 @@ function guardarContratoAlquiler () {
         $lanzamiento = $_POST['lanzamiento'];
     
         $result = [];
+   
+
         $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta);
         
         echo true;
         
+}
+
+function aplicarAjuste () {
+
+    require_once "../Class/Alquiler.php";
+    
+    $alquiler = new Alquiler();
+    
+    $data = $_POST['arrayData'];  
+
+    $periodo = $_POST['periodo'];
+
+    $coeficiente = $alquiler->traerCoeficiente($periodo);
+
+
+    foreach ($data as $key => $value) {
+
+        foreach ($value as $detalle) {
+
+            $importe = $detalle['value']* $coeficiente;
+            $alquiler->aplicarAjuste($key, $detalle['concepto'],$importe, $periodo);
+    
+        }
+          
+    }
+
+    return true;
+}
+
+function comprobarAjuste () {
+
+    require_once "../Class/Alquiler.php";
+    
+    $alquiler = new Alquiler();
+    
+    $data = $_POST['arrayData'];  
+
+    $periodo = $_POST['periodo'];
+    $error = 0;
+
+    foreach ($data as $key => $value) {
+
+        foreach ($value as $detalle) {
+            $result = $alquiler->comprobarAjuste($key, $detalle['concepto'], $periodo);
+            if($result == 0){
+                $error = 1;
+            }
+        }
+    }
+
+    echo ($error);
+
 }
 ?>

@@ -281,81 +281,130 @@ const actualizarCargaAutomatica = (cerrado = 0) => {
 
 const procesar = () => {
 
-    let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
     let periodo = document.querySelector("#periodo").textContent;
-    let error = false;
 
-    let estado = document.querySelector("#estado").textContent;
-
-    if ( estado == 1 ) {
-   
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'El período ya se encuentra procesado!'
-        })
-        return false;
-    }
+    let sucursales = document.querySelectorAll("#sucursal");
+    let newArray = {};
 
 
-    for (let i = 0; i < allTd.length; i++) {
+    sucursales.forEach((sucursal) => {
+        const sucursalName = sucursal.textContent;
+        newArray[sucursalName] = [];
 
-        if(i >= 2){
+        ["4", "5", "18"].forEach((concepto) => {
+            const div = document.querySelector(`#input-${concepto}-${sucursalName}`);
+            const valor = div.value.replace(/[$.]/g, "").trim();
 
-            let element = allTd[i];
+            if (valor > 0 && div.disabled) {
+                newArray[sucursalName].push({
+                    concepto: concepto,
+                    value: valor,
+                });
+            }
+        });
+    });
 
-            let value = element.textContent.replace(/[$.]/g, "");
+    $.ajax({
 
-       
-            if(value == 0){
+        url: 'Controller/AlquilerController.php?accion=comprobarAjuste',
+        method: 'POST',
+        data: {
+            arrayData: newArray,
+            periodo: periodo
+        },
+        success : function(data) {
+
+            if(data == 1){
 
                 Swal.fire({
                     icon: 'warning',
                     title: 'Atención',
-                    text: 'Complete los gastos de todas las sucursales!'
+                    text: 'Debe aplicar el ajuste antes de procesar!'
                 })
-                error = true;
-                break;
+                
+            }else{
 
-            }
+                let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
+                let error = false;
+                let periodo = document.querySelector("#periodo").textContent;        
+                let estado = document.querySelector("#estado").textContent;
 
-
-        }
-    };
-
-    if(error == false){ 
-        $.ajax({
-            url: 'Controller/AlquilerController.php?accion=procesar',
-            method: 'POST',
-            data: {
-                periodo: periodo
-            },
-            success : function(data) {
-
-                if(data == 1){
-
+                if ( estado == 1 ) {
+            
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
                         text: 'El período ya se encuentra procesado!'
                     })
-              
-                }else{
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Procesado',
-                        text: 'Se ha procesado correctamente!'
-                    }).then((result) => {
-                        // location.reload();
-                    })
-                    
+                    return false;
                 }
+
+
+                for (let i = 0; i < allTd.length; i++) {
+
+                    if(i >= 2){
+
+                        let element = allTd[i];
+
+                        let value = element.textContent.replace(/[$.]/g, "");
+
                 
+                        if(value == 0){
+
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Atención',
+                                text: 'Complete los gastos de todas las sucursales!'
+                            })
+                            error = true;
+                            break;
+
+                        }
+
+
+                    }
+                };
+
+                if(error == false){ 
+                    $.ajax({
+                        url: 'Controller/AlquilerController.php?accion=procesar',
+                        method: 'POST',
+                        data: {
+                            periodo: periodo
+                        },
+                        success : function(data) {
+
+                            if(data == 1){
+
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'El período ya se encuentra procesado!'
+                                })
+                        
+                            }else{
+
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Procesado',
+                                    text: 'Se ha procesado correctamente!'
+                                }).then((result) => {
+                                    // location.reload();
+                                })
+                                
+                            }
+                            
+
+                        }
+                    });
+                }
+
 
             }
-        });
-    }
+        }
+    })
+
+
 }
 
 const cerrarPeriodo = () => {
@@ -506,3 +555,47 @@ const ocultarSucursal = () => {
 
    
 }
+
+const AplicarAjuste = () => {
+    let sucursales = document.querySelectorAll("#sucursal");
+    let newArray = {};
+    let periodo = document.querySelector("#periodo").textContent;
+   
+
+    sucursales.forEach((sucursal) => {
+        const sucursalName = sucursal.textContent;
+        newArray[sucursalName] = [];
+
+        ["4", "5", "18"].forEach((concepto) => {
+            const div = document.querySelector(`#input-${concepto}-${sucursalName}`);
+            const valor = div.value.replace(/[$.]/g, "").trim();
+
+            if (valor > 0 && div.disabled) {
+                newArray[sucursalName].push({
+                    concepto: concepto,
+                    value: valor,
+                });
+            }
+        });
+    });
+
+
+    // Aquí puedes realizar tu solicitud AJAX con el newArray como datos
+    $.ajax({
+        url: 'Controller/AlquilerController.php?accion=aplicarAjuste',
+        method: 'POST',
+        data: {
+            arrayData: newArray,
+            periodo: periodo
+        },
+        success: function (response) {
+           Swal.fire({
+                icon: 'success',
+                title: 'Ajuste aplicado correctamente!',
+                showConfirmButton: false,
+                timer: 1500
+            })
+            // location.reload();
+        }
+    });
+};
