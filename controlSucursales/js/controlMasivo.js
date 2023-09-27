@@ -139,7 +139,11 @@ const calcularDiferecias = (div) => {
                 title: 'El valor debe ser negativo',
                 text: 'Por favor ingrese un valor negativo',
             })
+            document.querySelector('#controlar').disabled = true;
             return 1
+        }else{
+
+            document.querySelector('#controlar').disabled = false;
         }
 
     }
