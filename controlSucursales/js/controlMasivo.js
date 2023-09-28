@@ -215,7 +215,7 @@ const guardar = () => {
 
 
 }
-document.querySelector("#controlar").addEventListener('click', controlar);
+
 
 function controlar () {
  
@@ -289,7 +289,7 @@ function controlar () {
 
 
 }
-
+document.querySelector("#controlar").addEventListener('click', controlar);
 const confirmarControl = (data) => {
 
     $.ajax({
