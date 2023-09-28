@@ -133,7 +133,7 @@ const calcularDiferecias = (div) => {
     if(medioPago == "PROMO BANCO"){
         
         valorFisico = valorFisico.replace(/[$.]/g, "");
-        if(!valorFisico.includes("-")){
+        if(!valorFisico.includes("-") && valorFisico != 0){
             Swal.fire({
                 icon: 'warning',
                 title: 'El valor debe ser negativo',
@@ -216,6 +216,7 @@ const guardar = () => {
 
 }
 
+
 const controlar = () => {
 
     let allTr = document.querySelectorAll('tbody tr');
@@ -288,6 +289,8 @@ const controlar = () => {
 
 
 }
+
+document.querySelector("#controlar").addEventListener('click', controlar);
 
 const confirmarControl = (data) => {
 

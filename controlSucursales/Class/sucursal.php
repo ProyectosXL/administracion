@@ -133,6 +133,7 @@ class Sucursal
 
     public function actualizarValor ($id, $importeControl, $verificado = null, $observaciones = null)
     {
+        $importeControl = str_replace(' ', '', $importeControl);
 
         $sql = "UPDATE ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
 
