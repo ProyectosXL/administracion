@@ -233,7 +233,9 @@ foreach ($todosLosImportes as $key => $value) {
                                             
                             <?php 
                                 foreach ($todosLosImportes as $key => $importe) {
-                           
+                                    if(in_array($medioPagoSelected[0], ['5','6','7','9'])){
+                                        $importe['IMPORTE_$_FISICO'] = $importe['IMPORTE_$_SISTEMA'] ;
+                                    }
                             ?>
                             
                                     <tr>
@@ -249,7 +251,7 @@ foreach ($todosLosImportes as $key => $value) {
                                                 echo "<td style='text-align:center' id='valorSistema'>$".number_format($valorEnSistema, 0, ',', '.')."</td>";
                                             }
                                         ?>
-                                        <td style="text-align:center"></td>
+                                        <td style="text-align:center">$<?= number_format($importe['COTIZACION_TC'], 0, ',', '.') ?></td>
                                         <td style="text-align:center"><input type="text" style="text-align:center;width:100%" onchange="calcularDiferecias(this)" id="valorFisico" value="$<?= number_format($importe['IMPORTE_$_FISICO'], 0, ',', '.') ?>" <?= ($importe['VERIFICADO'] == 1) ? "disabled" : "" ?>></td>
                                         <td style="text-align:center" id="diferencias">0</td>
                                         <td style="text-align:center"><input type="text" style="width:100%" value="<?= $importe['OBSERVACIONES'] ?>" id="observacion" <?= ($importe['VERIFICADO'] == 1) ? "disabled" : "" ?>></td>
