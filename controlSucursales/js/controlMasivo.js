@@ -59,7 +59,7 @@ const calcularTotales  = () => {
     let totalDiferencia = 0;
     tdDiferencia.forEach((td) => {
             
-            let valorFisico = td.parentElement.querySelectorAll("td")[2].querySelector("input").value.replace(/[$.]/g, "");
+            let valorFisico = td.parentElement.querySelectorAll("td")[3].querySelector("input").value.replace(/[$.]/g, "");
             let valorSistema = td.parentElement.querySelectorAll("td")[1].textContent.replace(/[$.]/g, "");
     
             if(valorSistema.includes("-")){
@@ -168,11 +168,11 @@ const calcularDiferecias = (div) => {
     if(valorSistema - parseInt(valorFisico) < 0){
         
         let total = (valorSistema - parseInt(valorFisico)) * -1;
-        div.parentElement.parentElement.querySelectorAll("td")[3].textContent= "- $" + parseNumber(total);
+        div.parentElement.parentElement.querySelectorAll("td")[4].textContent= "- $" + parseNumber(total);
 
     }else{
 
-        div.parentElement.parentElement.querySelectorAll("td")[3].textContent = "$" + parseNumber(valorSistema - parseInt(valorFisico));
+        div.parentElement.parentElement.querySelectorAll("td")[4].textContent = "$" + parseNumber(valorSistema - parseInt(valorFisico));
     }
 
     calcularTotales();
@@ -183,9 +183,9 @@ const guardar = () => {
     let allTr = document.querySelectorAll('tbody tr');
     let data = [];
     allTr.forEach((tr) => {
-        let id = tr.querySelectorAll('td')[5].textContent;
-        let importeControl = tr.querySelectorAll('td')[2].querySelector('input').value.replace(/[$.]/g, "");
-        let observaciones = tr.querySelectorAll('td')[4].querySelector('input').value;
+        let id = tr.querySelectorAll('td')[6].textContent;
+        let importeControl = tr.querySelectorAll('td')[3].querySelector('input').value.replace(/[$.]/g, "");
+        let observaciones = tr.querySelectorAll('td')[5].querySelector('input').value;
 
         data.push({
             id,
@@ -223,14 +223,14 @@ const controlar = () => {
     let error = false;
     let inputsCargados = true;
     allTr.forEach((tr) => {
-        let id = tr.querySelectorAll('td')[5].textContent;
-        let importeControl = tr.querySelectorAll('td')[2].querySelector('input').value.replace(/[$.]/g, "");
-        let observaciones = tr.querySelectorAll('td')[4].querySelector('input').value;
+        let id = tr.querySelectorAll('td')[6].textContent;
+        let importeControl = tr.querySelectorAll('td')[3].querySelector('input').value.replace(/[$.]/g, "");
+        let observaciones = tr.querySelectorAll('td')[5].querySelector('input').value;
 
         if(importeControl == "" || importeControl == 0 )inputsCargados = false;
 
-        if(tr.querySelectorAll('td')[3].textContent.replace(/[$.]/g, "") != 0){
-            console.log(tr.querySelectorAll('td')[3].textContent.replace(/[$.]/g, ""));
+        if(tr.querySelectorAll('td')[4].textContent.replace(/[$.]/g, "") != 0){
+            console.log(tr.querySelectorAll('td')[4].textContent.replace(/[$.]/g, ""));
             error = true;
         }
 
