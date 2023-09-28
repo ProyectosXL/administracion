@@ -290,6 +290,7 @@ function controlar () {
 
 }
 document.querySelector("#controlar").addEventListener('click', controlar);
+
 const confirmarControl = (data) => {
 
     $.ajax({
