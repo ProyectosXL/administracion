@@ -580,7 +580,7 @@ const AplicarAjuste = () => {
     });
 
 
-    // Aquí puedes realizar tu solicitud AJAX con el newArray como datos
+
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=aplicarAjuste',
         method: 'POST',
