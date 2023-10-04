@@ -106,8 +106,12 @@ $contratos = $alquiler->traerContratoAlquiler();
                                     $hoy = new DateTime(date("Y-m-d")); // Segunda fecha
                                      
                             
-                                    $diferenciaDeFechas = $vigDesde->diff($vigHasta);
-                                    $mesesDiferencia = $diferenciaDeFechas->y * 12 + $diferenciaDeFechas->m;
+
+                                    $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
+
+                                    // Calcula la diferencia en meses
+                                    $mesesDiferencia = ($diferenciaDeDias / 365) * 12;
+
                                     if($mesesDiferencia == 0){
                                         $mesesDiferencia = 1;
                                     }
@@ -121,7 +125,7 @@ $contratos = $alquiler->traerContratoAlquiler();
                                     <td style="text-align:center">$<?= number_format($contrato['IMPORTE'], 0, ',', '.') ?></td>
                                     <td style="text-align:center">$<?= number_format($contrato['IMPORTE_2'], 0, ',', '.') ?></td>
                                     <td style="text-align:center">$<?= number_format($contrato['IMPORTE_3'], 0, ',', '.') ?></td>
-                                    <td style="text-align:center"><?= $mesesDiferencia?></td>
+                                    <td style="text-align:center"><?= (int)$mesesDiferencia?></td>
                                     <?php 
                                     
                                     if ($hoy > $vigHasta) {
