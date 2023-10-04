@@ -221,6 +221,7 @@ foreach ($todosLosImportes as $key => $value) {
                                     <th style="text-align:center;width: 3%;" >FECHA</th>
                                     <th style="text-align:center;width: 3%;" >$ SISTEMA</th>
                                     <th style="text-align:center;width: 3%;" >COTIZACION TC</th>
+                                    <th style="text-align:center;width: 3%;" >TOTAL PESOS</th>
                                     <th style="text-align:center;width: 3%;" >$ CONTROL</th>
                                     <th style="text-align:center;width: 5%;">DIFERENCIA</th>
 
@@ -235,6 +236,10 @@ foreach ($todosLosImportes as $key => $value) {
                                 foreach ($todosLosImportes as $key => $importe) {
                                     if(in_array($medioPagoSelected[0], ['5','6','7','9'])){
                                         $importe['IMPORTE_$_FISICO'] = $importe['IMPORTE_$_SISTEMA'] ;
+                                    }
+                                    $totalEnPesos = $importe['IMPORTE_$_SISTEMA'] * $importe['COTIZACION_TC'];
+                                    if($totalEnPesos == "-0"){
+                                        $totalEnPesos = 0;
                                     }
                             ?>
                             
@@ -252,6 +257,7 @@ foreach ($todosLosImportes as $key => $value) {
                                             }
                                         ?>
                                         <td style="text-align:center">$<?= number_format($importe['COTIZACION_TC'], 0, ',', '.') ?></td>
+                                        <td style="text-align:center">$<?=  number_format($totalEnPesos, 0, ',', '.')  ?></td>
                                         <td style="text-align:center"><input type="text" style="text-align:center;width:100%" onchange="calcularDiferecias(this)" id="valorFisico" value="$<?= number_format($importe['IMPORTE_$_FISICO'], 0, ',', '.') ?>" <?= ($importe['VERIFICADO'] == 1) ? "disabled" : "" ?>></td>
                                         <td style="text-align:center" id="diferencias">0</td>
                                         <td style="text-align:center"><input type="text" style="width:100%" value="<?= $importe['OBSERVACIONES'] ?>" id="observacion" <?= ($importe['VERIFICADO'] == 1) ? "disabled" : "" ?>></td>
@@ -267,6 +273,7 @@ foreach ($todosLosImportes as $key => $value) {
                                 <tr>
                                     <td>total</td>
                                     <td id="totalEnSistema"  style="text-align:center"></td>
+                                    <td></td>
                                     <td></td>
                                     <td id="totalFisico"     style="text-align:center"></td>
                                     <td id="totalDiferencia" style="text-align:center"></td>
