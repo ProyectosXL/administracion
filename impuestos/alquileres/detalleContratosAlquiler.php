@@ -53,11 +53,11 @@ $contratos = $alquiler->traerContratoAlquiler();
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Seleccion de Solicitud</h6></div>
+                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Detalle contratos de alquiler</h6></div>
                     <div class="card card-1">
                         <div id="periodo" hidden><?= $periodo ?></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
-                            <h3><strong><i class="bi bi-key" style="margin-right:20px;font-size:40px"></i>Detalle contratos alquileres </strong></h3>
+                            <h3><strong><i class="bi bi-key" style="margin-right:20px;font-size:40px"></i>Detalle contratos de alquiler </strong></h3>
                         </div>
                         <form action="#">
 
