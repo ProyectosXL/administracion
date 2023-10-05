@@ -705,19 +705,26 @@ function aplicarAjuste () {
 
     $coeficiente = $alquiler->traerCoeficiente($periodo);
 
+    if($coeficiente == 0){
+      
+        echo 0;
+        die();
+
+    }
+
 
     foreach ($data as $key => $value) {
 
         foreach ($value as $detalle) {
 
-            $importe = $detalle['value']* $coeficiente;
+            $importe = $detalle['value'] * $coeficiente;
             $alquiler->aplicarAjuste($key, $detalle['concepto'],$importe, $periodo);
     
         }
           
     }
 
-    return true;
+    echo 1;
 }
 
 function comprobarAjuste () {

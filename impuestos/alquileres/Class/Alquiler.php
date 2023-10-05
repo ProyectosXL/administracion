@@ -591,19 +591,20 @@ class Alquiler
 
     public function traerCoeficiente ($periodo ) {
 
-        $sql="SELECT COEFICIENTE FROM RO_T_COEFICIENTES_AJUSTE  WHERE PERIODO = '2-2023'";
-
+        $sql="SELECT COEFICIENTE FROM RO_T_COEFICIENTES_AJUSTE  WHERE PERIODO = '$periodo'";
+ 
 
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
         
             if (sqlsrv_fetch($stmt) === true) {
-                // Obtén el valor del campo 'COEFICIENTE'
+      
                 $coeficiente = sqlsrv_get_field($stmt, 0);
                 return $coeficiente;
             } else{
-                return 1;
+                return 0;
             }
+
         } catch (\Throwable $th) {
             throw $th; 
         }

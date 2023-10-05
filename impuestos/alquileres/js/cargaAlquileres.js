@@ -579,7 +579,7 @@ const AplicarAjuste = () => {
         });
     });
 
-
+  
 
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=aplicarAjuste',
@@ -589,12 +589,24 @@ const AplicarAjuste = () => {
             periodo: periodo
         },
         success: function (response) {
-           Swal.fire({
-                icon: 'success',
-                title: 'Ajuste aplicado correctamente!',
-                showConfirmButton: false,
-                timer: 1500
-            })
+         
+            if(response != 1){
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error...',
+                    text: 'El coeficiente correspondiente al período no se encuentra cargado!'
+                })
+                
+            }else{
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Ajuste aplicado correctamente!',
+                    showConfirmButton: false,
+                    timer: 1500
+                })
+            }
             // location.reload();
         }
     });
