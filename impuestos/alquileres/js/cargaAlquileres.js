@@ -1,3 +1,5 @@
+
+
 const comprobarEstado = (estado) =>{
 
     if(estado == 1){
@@ -43,7 +45,6 @@ const totalizar = (div = null) => {
         let result = 0;
         idConceptos.forEach(e => {
             let concepto = e.textContent;
-            // console.log(pets.includes('cat'));
             if(e.textContent == 14 && ["2","16","60","79","81"].includes(s.textContent)) {
                 
                 let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
@@ -82,6 +83,19 @@ const totalizar = (div = null) => {
                 inputActual.value ="$"+ parseNumber( calculo); 
 
             }
+
+            if(e.textContent == 4 || e.textContent == 5  || e.textContent == 18 ) {
+
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
+
+                let value = inputActual.value.replace(/[$.]/g, "")
+            
+                if(value != ""  && value != "0" ) {
+                    inputActual.disabled = true;
+                }
+
+            }
+
             $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
             $valorSumar = $valorSumar.replace(/ /g,'');
 
