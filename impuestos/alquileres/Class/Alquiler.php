@@ -549,18 +549,23 @@ class Alquiler
         }
     }
 
-    function traerContratoAlquiler ($fecha) {
+    function traerContratoAlquiler ($fecha = null) {
+        if($fecha != null ){
 
-        $sql = "DECLARE @periodo VARCHAR(7) = '$fecha'
-        
-        SELECT TOP 1 *
-        FROM RO_T_CONTRATOS_ALQUILERES
-        WHERE CONVERT(VARCHAR(7), VIG_DESDE, 120) <= @periodo
-        AND CONVERT(VARCHAR(7), VIG_HASTA, 120) >= @periodo
-        ORDER BY ID DESC;
-        ";
+            $sql = "DECLARE @periodo VARCHAR(7) = '$fecha'
+            
+            SELECT TOP 1 *
+            FROM RO_T_CONTRATOS_ALQUILERES
+            WHERE CONVERT(VARCHAR(7), VIG_DESDE, 120) <= @periodo
+            AND CONVERT(VARCHAR(7), VIG_HASTA, 120) >= @periodo
+            ORDER BY ID DESC;
+            ";
   
- 
+        }else{
+            $sql = "SELECT *
+            FROM RO_T_CONTRATOS_ALQUILERES";
+        }
+        
         try {
         
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -577,6 +582,69 @@ class Alquiler
         }
     }
     
+    function traerContratoVigente(){
+
+        $sql="
+        DECLARE @fecha_actual DATE = GETDATE(); -- Obtiene la fecha actual
+        
+        WITH CTE AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER(PARTITION BY NRO_SUCURS ORDER BY ID DESC) AS rn
+            FROM RO_T_CONTRATOS_ALQUILERES
+            WHERE VIG_DESDE <= @fecha_actual
+              AND VIG_HASTA >= @fecha_actual
+        )
+        
+        SELECT * FROM CTE WHERE rn IN (1)";
+
+        try {
+        
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+    
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+        } catch (\Throwable $th) {
+            throw $th; 
+        }
+
+    }
+
+    function traerContratoAnterior () {
+
+        $sql=" DECLARE @fecha_actual DATE = GETDATE(); -- Obtiene la fecha actual
+
+        WITH CTE AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER(PARTITION BY NRO_SUCURS ORDER BY ABS(DATEDIFF(DAY, VIG_HASTA, @fecha_actual))) AS rn
+            FROM RO_T_CONTRATOS_ALQUILERES
+            WHERE VIG_HASTA <= @fecha_actual
+        )
+        
+        SELECT * FROM CTE WHERE rn IN (1); ";
+
+        try {
+        
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+    
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+        } catch (\Throwable $th) {
+            throw $th; 
+        }
+
+    }
 }
 
 
