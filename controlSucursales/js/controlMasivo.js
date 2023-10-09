@@ -10,8 +10,9 @@ const calcularTotales  = () => {
         let valor = td.textContent.replace(/[$.]/g, "");
 
         if (valor.includes("-")) {
-
+            
             totalEnSistema -= parseInt(valor.replace(/-/g, ""))
+          
 
         } else {
 
@@ -21,18 +22,38 @@ const calcularTotales  = () => {
         
     
     });
-    document.querySelector('#totalEnSistema').textContent ="$" + parseNumber(totalEnSistema);
+    if(totalEnSistema < 0){
+        totalEnSistema = totalEnSistema * -1;
+        document.querySelector('#totalEnSistema').textContent ="- $"+parseNumber(totalEnSistema);
+    }else{
+
+        document.querySelector('#totalEnSistema').textContent ="$" + parseNumber(totalEnSistema);
+    }
 
     let totalFisico = 0;
     tdMontoFisico.forEach((td) => {
 
         let valor = td.value.replace(/[$.]/g, "");
 
+        if(valor.includes("-")){
+
+            valor = valor.replace(/-/g, "") * -1;
+          
+        }
+
         totalFisico += parseInt(valor)
+        
         
     
     });
-    document.querySelector('#totalFisico').textContent ="$" + parseNumber(totalFisico);
+    if(totalFisico < 0){
+        totalFisico = totalFisico * -1;
+        document.querySelector('#totalFisico').textContent ="- $"+parseNumber(totalFisico);
+    }else{
+
+        document.querySelector('#totalFisico').textContent ="$" + parseNumber(totalFisico);
+    }
+
 
     let tdDiferencia = document.querySelectorAll('#diferencias');
     let totalDiferencia = 0;
@@ -40,15 +61,53 @@ const calcularTotales  = () => {
             
             let valorFisico = td.parentElement.querySelectorAll("td")[2].querySelector("input").value.replace(/[$.]/g, "");
             let valorSistema = td.parentElement.querySelectorAll("td")[1].textContent.replace(/[$.]/g, "");
-            td.textContent = "$" + parseNumber(valorSistema - valorFisico); 
+    
+            if(valorSistema.includes("-")){
+                
+                valorSistema = valorSistema.replace(/-/g, "") * -1;
+
+                if(valorFisico.includes("-")){
+
+                    valorFisico = valorFisico.replace(/-/g, "") * -1;
+
+                }
+                if(valorSistema - valorFisico < 0){
+                    let numero = (parseInt(valorSistema) - valorFisico)
+                    numero = numero * -1;
+             
+                    td.textContent = "- $" + parseNumber(numero);
+                }else{
+                    td.textContent = "$" + parseNumber(valorSistema - valorFisico); 
+
+                }
+
+
+            }else{
+                td.textContent = "$" + parseNumber(valorSistema - valorFisico); 
+
+            }
 
             let valor = td.textContent.replace(/[$.]/g, "");
     
+            if(valor.includes("-")){
+
+                valor = valor.replace(/-/g, "") * -1;
+              
+            }
+
             totalDiferencia += parseInt(valor)
             
         
     });
-    document.querySelector('#totalDiferencia').textContent ="$" + parseNumber(totalDiferencia);
+
+    if(totalDiferencia < 0){
+
+        totalDiferencia = totalDiferencia * -1;
+        document.querySelector('#totalDiferencia').textContent ="- $"+parseNumber(totalDiferencia);
+    }else{
+        document.querySelector('#totalDiferencia').textContent ="$" + parseNumber(totalDiferencia);
+
+    }
 
 }
 
@@ -66,17 +125,55 @@ const parseNumber = (number) => {
 }
 
 const calcularDiferecias = (div) => {
+
+    let datos = document.querySelector('#medioPago').value
+    let medioPago = datos.split("-")[1];
+    let valorFisico = div.value;
+
+    if(medioPago == "PROMO BANCO"){
+        
+        valorFisico = valorFisico.replace(/[$.]/g, "");
+        if(!valorFisico.includes("-") && valorFisico != 0){
+            Swal.fire({
+                icon: 'warning',
+                title: 'El valor debe ser negativo',
+                text: 'Por favor ingrese un valor negativo',
+            })
+            document.querySelector('#controlar').disabled = true;
+            return 1
+        }else{
+
+            document.querySelector('#controlar').disabled = false;
+        }
+
+    }
     div.value = div.value.replace(/[$.]/g, "");
 
-    if (div.value < 0) {
-        div.value = 0;
+
+    if(div.value < 0){
+        div.value = div.value * -1;
+        div.value = "- $" +parseNumber(div.value);
+
+    }else{
+
+        div.value = "$" +parseNumber(div.value);
+    }
+    let valorSistema = div.parentElement.parentElement.querySelectorAll("td")[1].textContent.replace(/[$.]/g, "");
+    
+    
+    if(valorSistema.includes("-")){
+        valorSistema = valorSistema.replace(/-/g, "") * -1;
     }
 
-    div.value = "$" +parseNumber(div.value);
+    if(valorSistema - parseInt(valorFisico) < 0){
+        
+        let total = (valorSistema - parseInt(valorFisico)) * -1;
+        div.parentElement.parentElement.querySelectorAll("td")[3].textContent= "- $" + parseNumber(total);
 
-    let valorFisico = div.value.replace(/[$.]/g, "");
-    let valorSistema = div.parentElement.parentElement.querySelectorAll("td")[1].textContent.replace(/[$.]/g, "");
-    div.parentElement.parentElement.querySelectorAll("td")[3].textContent = "$" + parseNumber(valorSistema - valorFisico);
+    }else{
+
+        div.parentElement.parentElement.querySelectorAll("td")[3].textContent = "$" + parseNumber(valorSistema - parseInt(valorFisico));
+    }
 
     calcularTotales();
 }
@@ -119,8 +216,9 @@ const guardar = () => {
 
 }
 
-const controlar = () => {
 
+function controlar () {
+ 
     let allTr = document.querySelectorAll('tbody tr');
     let data = [];
     let error = false;
@@ -191,6 +289,7 @@ const controlar = () => {
 
 
 }
+document.querySelector("#controlar").addEventListener('click', controlar);
 
 const confirmarControl = (data) => {
 
