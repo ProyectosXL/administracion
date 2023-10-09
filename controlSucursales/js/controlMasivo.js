@@ -217,8 +217,10 @@ const guardar = () => {
 }
 
 
+
 const controlar = () => {
 
+ 
     let allTr = document.querySelectorAll('tbody tr');
     let data = [];
     let error = false;
@@ -289,6 +291,7 @@ const controlar = () => {
 
 
 }
+document.querySelector("#controlar").addEventListener('click', controlar);
 
 document.querySelector("#controlar").addEventListener('click', controlar);
 

@@ -125,6 +125,7 @@
                                     </div>
                                     <div class="btn-with-icon">
                                         <button style="margin-left:8rem; margin-top:0.5rem;" type="button" class="btn btn-success" onclick="procesar()">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
+                                        <button style="margin-left:8rem; margin-top:0.5rem;" type="button" class="btn btn-info" onclick="AplicarAjuste()">Aplicar Ajuste <i class="bi bi-check-circle" style="color:white"></i></button>
                                     </div>
                                     <div class="btn-with-icon">
                                         <?php 

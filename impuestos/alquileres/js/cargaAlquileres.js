@@ -1,3 +1,5 @@
+
+
 const comprobarEstado = (estado) =>{
 
     if(estado == 1){
@@ -43,7 +45,6 @@ const totalizar = (div = null) => {
         let result = 0;
         idConceptos.forEach(e => {
             let concepto = e.textContent;
-            // console.log(pets.includes('cat'));
             if(e.textContent == 14 && ["2","16","60","79","81"].includes(s.textContent)) {
                 
                 let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
@@ -82,6 +83,19 @@ const totalizar = (div = null) => {
                 inputActual.value ="$"+ parseNumber( calculo); 
 
             }
+
+            if(e.textContent == 4 || e.textContent == 5  || e.textContent == 18 ) {
+
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
+
+                let value = inputActual.value.replace(/[$.]/g, "")
+            
+                if(value != ""  && value != "0" ) {
+                    inputActual.disabled = true;
+                }
+
+            }
+
             $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
             $valorSumar = $valorSumar.replace(/ /g,'');
 
@@ -267,81 +281,130 @@ const actualizarCargaAutomatica = (cerrado = 0) => {
 
 const procesar = () => {
 
-    let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
     let periodo = document.querySelector("#periodo").textContent;
-    let error = false;
 
-    let estado = document.querySelector("#estado").textContent;
-
-    if ( estado == 1 ) {
-   
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'El período ya se encuentra procesado!'
-        })
-        return false;
-    }
+    let sucursales = document.querySelectorAll("#sucursal");
+    let newArray = {};
 
 
-    for (let i = 0; i < allTd.length; i++) {
+    sucursales.forEach((sucursal) => {
+        const sucursalName = sucursal.textContent;
+        newArray[sucursalName] = [];
 
-        if(i >= 2){
+        ["4", "5", "18"].forEach((concepto) => {
+            const div = document.querySelector(`#input-${concepto}-${sucursalName}`);
+            const valor = div.value.replace(/[$.]/g, "").trim();
 
-            let element = allTd[i];
+            if (valor > 0 && div.disabled) {
+                newArray[sucursalName].push({
+                    concepto: concepto,
+                    value: valor,
+                });
+            }
+        });
+    });
 
-            let value = element.textContent.replace(/[$.]/g, "");
+    $.ajax({
 
-       
-            if(value == 0){
+        url: 'Controller/AlquilerController.php?accion=comprobarAjuste',
+        method: 'POST',
+        data: {
+            arrayData: newArray,
+            periodo: periodo
+        },
+        success : function(data) {
+
+            if(data == 1){
 
                 Swal.fire({
                     icon: 'warning',
                     title: 'Atención',
-                    text: 'Complete los gastos de todas las sucursales!'
+                    text: 'Debe aplicar el ajuste antes de procesar!'
                 })
-                error = true;
-                break;
+                
+            }else{
 
-            }
+                let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
+                let error = false;
+                let periodo = document.querySelector("#periodo").textContent;        
+                let estado = document.querySelector("#estado").textContent;
 
-
-        }
-    };
-
-    if(error == false){ 
-        $.ajax({
-            url: 'Controller/AlquilerController.php?accion=procesar',
-            method: 'POST',
-            data: {
-                periodo: periodo
-            },
-            success : function(data) {
-
-                if(data == 1){
-
+                if ( estado == 1 ) {
+            
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
                         text: 'El período ya se encuentra procesado!'
                     })
-              
-                }else{
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Procesado',
-                        text: 'Se ha procesado correctamente!'
-                    }).then((result) => {
-                        // location.reload();
-                    })
-                    
+                    return false;
                 }
+
+
+                for (let i = 0; i < allTd.length; i++) {
+
+                    if(i >= 2){
+
+                        let element = allTd[i];
+
+                        let value = element.textContent.replace(/[$.]/g, "");
+
                 
+                        if(value == 0){
+
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Atención',
+                                text: 'Complete los gastos de todas las sucursales!'
+                            })
+                            error = true;
+                            break;
+
+                        }
+
+
+                    }
+                };
+
+                if(error == false){ 
+                    $.ajax({
+                        url: 'Controller/AlquilerController.php?accion=procesar',
+                        method: 'POST',
+                        data: {
+                            periodo: periodo
+                        },
+                        success : function(data) {
+
+                            if(data == 1){
+
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'El período ya se encuentra procesado!'
+                                })
+                        
+                            }else{
+
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Procesado',
+                                    text: 'Se ha procesado correctamente!'
+                                }).then((result) => {
+                                    // location.reload();
+                                })
+                                
+                            }
+                            
+
+                        }
+                    });
+                }
+
 
             }
-        });
-    }
+        }
+    })
+
+
 }
 
 const cerrarPeriodo = () => {
@@ -492,3 +555,59 @@ const ocultarSucursal = () => {
 
    
 }
+
+const AplicarAjuste = () => {
+    let sucursales = document.querySelectorAll("#sucursal");
+    let newArray = {};
+    let periodo = document.querySelector("#periodo").textContent;
+   
+
+    sucursales.forEach((sucursal) => {
+        const sucursalName = sucursal.textContent;
+        newArray[sucursalName] = [];
+
+        ["4", "5", "18"].forEach((concepto) => {
+            const div = document.querySelector(`#input-${concepto}-${sucursalName}`);
+            const valor = div.value.replace(/[$.]/g, "").trim();
+
+            if (valor > 0 && div.disabled) {
+                newArray[sucursalName].push({
+                    concepto: concepto,
+                    value: valor,
+                });
+            }
+        });
+    });
+
+  
+
+    $.ajax({
+        url: 'Controller/AlquilerController.php?accion=aplicarAjuste',
+        method: 'POST',
+        data: {
+            arrayData: newArray,
+            periodo: periodo
+        },
+        success: function (response) {
+         
+            if(response != 1){
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error...',
+                    text: 'El coeficiente correspondiente al período no se encuentra cargado!'
+                })
+                
+            }else{
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Ajuste aplicado correctamente!',
+                    showConfirmButton: false,
+                    timer: 1500
+                })
+            }
+            // location.reload();
+        }
+    });
+};

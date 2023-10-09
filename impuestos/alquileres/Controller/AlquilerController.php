@@ -36,6 +36,18 @@ switch ($accion) {
         ocultarSucursal(); 
         break;
 
+    case 'guardarContratoAlquiler':
+        guardarContratoAlquiler(); 
+        break;
+
+    case 'aplicarAjuste':
+        aplicarAjuste(); 
+        break;
+
+    case 'comprobarAjuste':
+        comprobarAjuste(); 
+        break;
+
     default:
       
         break;
@@ -88,6 +100,17 @@ function cargarAlquieres ($fecha, $periodo) {
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
     $conceptos = $alquiler->traerConceptos();
+
+    // $inputStringWithDay = $fecha . "-01";
+
+    // // Convertir el string a un objeto DateTime
+    // $date = new DateTime($inputStringWithDay);
+
+    // // Formatear la fecha en el formato deseado "YYYY-MM-dd"
+    // $formattedDate = $date->format('Y-m-d');
+
+    $contratoAlquiler = $alquiler->traerContratoAlquiler($fecha);
+
     $todosLosLocales= $sucursal->traerLocales();
 
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
@@ -160,6 +183,42 @@ function cargarAlquieres ($fecha, $periodo) {
     
 
                 }
+                
+                if( in_array($value['ID_CA'], ["4", "5", "18"]) ) {
+
+                     foreach ($contratoAlquiler as  $contrato) {
+
+                            $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
+                            $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
+
+                            $diferenciaDeFechas = $vigDesde->diff($vigHasta);
+                            $mesesDiferencia = $diferenciaDeFechas->y * 12 + $diferenciaDeFechas->m;
+                            if($mesesDiferencia == 0){
+                                $mesesDiferencia = 1;
+                            }
+
+                            if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $total = ($contrato['IMPORTE'] / $mesesDiferencia);
+
+                            }
+
+                            if($contrato['ID_CA_2'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $$total = ($contrato['IMPORTE_2'] / $mesesDiferencia);
+
+                            }
+
+                            if($contrato['ID_CA_3'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $$total  = ($contrato['IMPORTE_3'] / $mesesDiferencia);
+
+                            }
+
+    
+                        }
+                 
+                }
 
                 $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $total;      
             
@@ -187,9 +246,11 @@ function traerDetalleAlquiler ($fecha,$periodo) {
     $rentabilidadNeta = $alquiler->traerRentabilidadNeta($fecha);
     $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo); 
 
+    $inputStringWithDay = $fecha . "-01";
 
     $detalle = $alquiler->traerDetalle($periodo);
     $estado = $alquiler->traerEstado($periodo);
+    $contratoAlquiler = $alquiler->traerContratoAlquiler($fecha);
 
     
     $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
@@ -299,12 +360,55 @@ function traerDetalleAlquiler ($fecha,$periodo) {
                     $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $total;  
 
                 }else{
+                    
+
+                    if( in_array($value['ID_CA'], ["4", "5", "18"]) ) {
+
+                        foreach ($contratoAlquiler as  $contrato) {
+
+                            $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
+                            $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
+
+                            $diferenciaDeFechas = $vigDesde->diff($vigHasta);
+                            $mesesDiferencia = $diferenciaDeFechas->y * 12 + $diferenciaDeFechas->m;
+                            if($mesesDiferencia == 0){
+                                $mesesDiferencia = 1;
+                            }
+                            if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                                // var_dump($contratoAlquiler);
+                                // var_dump($v['NRO_SUCURSAL']);
+
+                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE'] / $mesesDiferencia);
+
+                            }
+
+                            if($contrato['ID_CA_2'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE_2'] / $mesesDiferencia);
+
+                            }
+
+                            if($contrato['ID_CA_3'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+
+                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE_3'] / $mesesDiferencia);
+
+                            }
+
+    
+                        }
+                   
+                    }
 
                     foreach ($detalle as $det) {
 
                         if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
 
-                            
+                            if( in_array($det['ID_CA'], ["4", "5", "18"]) ) {
+                                if($det['AJUSTADO'] != "1"){
+                                    continue;
+                                }
+                            }
+
                             $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $det['IMPORTE_PARSE'];
 
                             break;
@@ -563,6 +667,88 @@ function ocultarSucursal () {
 
     echo json_encode($result);
 
+
+}
+
+function guardarContratoAlquiler () {
+    
+        require_once "../Class/Alquiler.php";
+    
+        $alquiler = new Alquiler();
+    
+        $desde = $_POST['desde'];
+        $hasta = $_POST['hasta'];
+        $idSucursal = $_POST['idSucursal'];
+        $descSucursal = $_POST['descSucursal'];
+        $valorLlave = $_POST['valorLlave'];
+        $comisiones = $_POST['comisiones'];
+        $lanzamiento = $_POST['lanzamiento'];
+    
+        $result = [];
+   
+
+        $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta);
+        
+        echo true;
+        
+}
+
+function aplicarAjuste () {
+
+    require_once "../Class/Alquiler.php";
+    
+    $alquiler = new Alquiler();
+    
+    $data = $_POST['arrayData'];  
+
+    $periodo = $_POST['periodo'];
+
+    $coeficiente = $alquiler->traerCoeficiente($periodo);
+
+    if($coeficiente == 0){
+      
+        echo 0;
+        die();
+
+    }
+
+
+    foreach ($data as $key => $value) {
+
+        foreach ($value as $detalle) {
+
+            $importe = $detalle['value'] * $coeficiente;
+            $alquiler->aplicarAjuste($key, $detalle['concepto'],$importe, $periodo);
+    
+        }
+          
+    }
+
+    echo 1;
+}
+
+function comprobarAjuste () {
+
+    require_once "../Class/Alquiler.php";
+    
+    $alquiler = new Alquiler();
+    
+    $data = $_POST['arrayData'];  
+
+    $periodo = $_POST['periodo'];
+    $error = 0;
+
+    foreach ($data as $key => $value) {
+
+        foreach ($value as $detalle) {
+            $result = $alquiler->comprobarAjuste($key, $detalle['concepto'], $periodo);
+            if($result == 0){
+                $error = 1;
+            }
+        }
+    }
+
+    echo ($error);
 
 }
 ?>

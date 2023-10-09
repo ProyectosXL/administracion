@@ -514,6 +514,199 @@ class Alquiler
         }
 
     }
+
+    function guardarContratoAlquiler($sucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta) {
+
+        // $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, VIG_DESDE, VIG_HASTA)
+        //              SELECT GETDATE(), '$sucursal', '$descSucursal', '$idValor', '$valor', '$desde', '$hasta'
+        //              WHERE NOT EXISTS (
+        //                  SELECT 1
+        //                  FROM RO_T_CONTRATOS_ALQUILERES
+        //                  WHERE (
+        //                      (VIG_DESDE <= '$desde' AND VIG_HASTA >= '$hasta')
+        //                      OR ('$desde' <= VIG_DESDE AND '$hasta' >= VIG_HASTA)
+        //                  ) 
+        //                  AND ID_CA = '$idValor'
+        //                  AND NRO_SUCURS = '$sucursal'
+        //              );";
+
+        $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES  (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, ID_CA_2, IMPORTE_2, ID_CA_3, IMPORTE_3, VIG_DESDE, VIG_HASTA) 
+        VALUES (GETDATE(), '$sucursal', '$descSucursal', '4', '$valorLlave', '5', '$comisiones', '18', '$lanzamiento',  '$desde', '$hasta')";
+
+        try {
+        
+            $stmt = sqlsrv_query($this->cid_central, $sqlLlave);
+    
+            $rowCount = sqlsrv_rows_affected($stmt);
+    
+            if ($rowCount > 0) {
+                return true;
+            } else {
+                return false; 
+            }
+        } catch (\Throwable $th) {
+            throw $th; 
+        }
+    }
+
+    function traerContratoAlquiler ($fecha = null) {
+
+        if($fecha != null ){
+
+            $sql = "
+            DECLARE @periodo VARCHAR(7) = '$fecha';
+            
+            WITH CTE AS (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER(PARTITION BY NRO_SUCURS ORDER BY ID DESC) AS rn
+                FROM RO_T_CONTRATOS_ALQUILERES
+                WHERE CONVERT(VARCHAR(7), VIG_DESDE, 120) <= @periodo
+                  AND CONVERT(VARCHAR(7), VIG_HASTA, 120) >= @periodo
+            )
+            
+            SELECT * FROM CTE WHERE rn = 1;
+            ";
+  
+        }else{
+            $sql = "SELECT *
+            FROM RO_T_CONTRATOS_ALQUILERES";
+        }
+
+        try {
+        
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+    
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+        } catch (\Throwable $th) {
+            throw $th; 
+        }
+    }
+
+    public function traerCoeficiente ($periodo ) {
+
+        $sql="SELECT COEFICIENTE FROM RO_T_COEFICIENTES_AJUSTE  WHERE PERIODO = '$periodo'";
+ 
+
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+            if (sqlsrv_fetch($stmt) === true) {
+      
+                $coeficiente = sqlsrv_get_field($stmt, 0);
+                return $coeficiente;
+            } else{
+                return 0;
+            }
+
+        } catch (\Throwable $th) {
+            throw $th; 
+        }
+    }
+
+    public function aplicarAjuste ($nroSucursal, $concepto,$importe, $periodo ) {
+
+        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe', FECHA_MODIF = GETDATE() ,FECHA_AJUSTE = GETDATE(), AJUSTADO = 1 WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$nroSucursal' AND ID_CA = '$concepto'";
+
+        try{
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            return true;
+            
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+
+    public function comprobarAjuste ($nroSucursal, $concepto, $periodo) {
+
+        $sql = "SELECT AJUSTADO FROM RO_T_DETALLE_ALQUILERES WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$nroSucursal' AND ID_CA = '$concepto'";
+
+        try{
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            if (sqlsrv_fetch($stmt) === true) {
+                $ajustado = sqlsrv_get_field($stmt, 0);
+                return $ajustado;
+            } else{
+                return 0;
+            }
+            
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+    }
+
+    
+    
+    function traerContratoVigente(){
+
+        $sql="
+        DECLARE @fecha_actual DATE = GETDATE(); -- Obtiene la fecha actual
+        
+        WITH CTE AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER(PARTITION BY NRO_SUCURS ORDER BY ID DESC) AS rn
+            FROM RO_T_CONTRATOS_ALQUILERES
+            WHERE VIG_DESDE <= @fecha_actual
+              AND VIG_HASTA >= @fecha_actual
+        )
+        
+        SELECT * FROM CTE WHERE rn IN (1)";
+
+        try {
+        
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+    
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+        } catch (\Throwable $th) {
+            throw $th; 
+        }
+
+    }
+
+    function traerContratoAnterior () {
+
+        $sql=" DECLARE @fecha_actual DATE = GETDATE(); -- Obtiene la fecha actual
+
+        WITH CTE AS (
+            SELECT
+                *,
+                ROW_NUMBER() OVER(PARTITION BY NRO_SUCURS ORDER BY ABS(DATEDIFF(DAY, VIG_HASTA, @fecha_actual))) AS rn
+            FROM RO_T_CONTRATOS_ALQUILERES
+            WHERE VIG_HASTA <= @fecha_actual
+        )
+        
+        SELECT * FROM CTE WHERE rn IN (1); ";
+
+        try {
+        
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+    
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+        } catch (\Throwable $th) {
+            throw $th; 
+        }
+
+    }
 }
 
 
