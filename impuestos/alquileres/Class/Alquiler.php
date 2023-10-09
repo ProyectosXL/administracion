@@ -550,22 +550,29 @@ class Alquiler
     }
 
     function traerContratoAlquiler ($fecha = null) {
+
         if($fecha != null ){
 
-            $sql = "DECLARE @periodo VARCHAR(7) = '$fecha'
+            $sql = "
+            DECLARE @periodo VARCHAR(7) = '$fecha';
             
-            SELECT TOP 1 *
-            FROM RO_T_CONTRATOS_ALQUILERES
-            WHERE CONVERT(VARCHAR(7), VIG_DESDE, 120) <= @periodo
-            AND CONVERT(VARCHAR(7), VIG_HASTA, 120) >= @periodo
-            ORDER BY ID DESC;
+            WITH CTE AS (
+                SELECT
+                    *,
+                    ROW_NUMBER() OVER(PARTITION BY NRO_SUCURS ORDER BY ID DESC) AS rn
+                FROM RO_T_CONTRATOS_ALQUILERES
+                WHERE CONVERT(VARCHAR(7), VIG_DESDE, 120) <= @periodo
+                  AND CONVERT(VARCHAR(7), VIG_HASTA, 120) >= @periodo
+            )
+            
+            SELECT * FROM CTE WHERE rn = 1;
             ";
   
         }else{
             $sql = "SELECT *
             FROM RO_T_CONTRATOS_ALQUILERES";
         }
-        
+
         try {
         
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -581,6 +588,61 @@ class Alquiler
             throw $th; 
         }
     }
+
+    public function traerCoeficiente ($periodo ) {
+
+        $sql="SELECT COEFICIENTE FROM RO_T_COEFICIENTES_AJUSTE  WHERE PERIODO = '$periodo'";
+ 
+
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+            if (sqlsrv_fetch($stmt) === true) {
+      
+                $coeficiente = sqlsrv_get_field($stmt, 0);
+                return $coeficiente;
+            } else{
+                return 0;
+            }
+
+        } catch (\Throwable $th) {
+            throw $th; 
+        }
+    }
+
+    public function aplicarAjuste ($nroSucursal, $concepto,$importe, $periodo ) {
+
+        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe', FECHA_MODIF = GETDATE() ,FECHA_AJUSTE = GETDATE(), AJUSTADO = 1 WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$nroSucursal' AND ID_CA = '$concepto'";
+
+        try{
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            return true;
+            
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+
+    }
+
+    public function comprobarAjuste ($nroSucursal, $concepto, $periodo) {
+
+        $sql = "SELECT AJUSTADO FROM RO_T_DETALLE_ALQUILERES WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$nroSucursal' AND ID_CA = '$concepto'";
+
+        try{
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            if (sqlsrv_fetch($stmt) === true) {
+                $ajustado = sqlsrv_get_field($stmt, 0);
+                return $ajustado;
+            } else{
+                return 0;
+            }
+            
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+    }
+
+    
     
     function traerContratoVigente(){
 
