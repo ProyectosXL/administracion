@@ -122,7 +122,7 @@ if($estado == 0){
                                     $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
 
                                     // Calcula la diferencia en meses
-                                    $mesesDiferencia = ($diferenciaDeDias / 365) * 12;
+                                    $mesesDiferencia = round(($diferenciaDeDias / 365) * 12);
 
                                     if($mesesDiferencia == 0){
                                         $mesesDiferencia = 1;
