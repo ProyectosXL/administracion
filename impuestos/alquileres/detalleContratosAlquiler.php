@@ -14,7 +14,6 @@ if($estado == 0){
 
 }
 
-
 ?>
 
 <!DOCTYPE html>
@@ -34,9 +33,13 @@ if($estado == 0){
         <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        
-        </link>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></link>
+
+        <!-- INCLUDES CSS -->
+        <?php
+            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+        ?>
+
         <style>
             input[type='search'] {
                 margin-right:45px

@@ -18,38 +18,31 @@
 
     <!DOCTYPE html>
     <html lang="en">
-
-    <style>
-
-
-
-    </style>
-    <head>
+       <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Gestion de Conceptos</title>
+        <title>Carga Contratos Alquiler</title>
         
         <!-- INCLUDES CSS -->
         <?php
             require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
         ?>
         
-
-        </link>
-
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+        
     </head>
 
     <body>
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Gestion de Conceptos</h6></div>
+                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Carga Contratos Alquiler</h6></div>
                     <div class="card card-1">
                         <div id="username" hidden><?= $_SESSION['username'] ?></div>
                         <div class="row" style="margin-left:50px">
 
-                            <h3><i class="bi bi-archive-fill" style="margin-right: 20px; font-size: 50px"></i>Gestion de Conceptos - <?= $descConcepto ?></h3>
+                            <h3><i class="bi bi-key" style="margin-right: 20px; font-size: 40px"></i>Carga Contratos Alquiler</h3>
                         </div>
                         <form action="">
                         <div class="container-fluid" style="margin-left: 0px;">
@@ -118,7 +111,7 @@
                         </div>
                         <div class="row" style="margin-left:65px;margin-top:1%;width:500px">
                             <div class="col"></div>
-                            <div class="col"><button class="btn btn-success" onclick="guardar()"style="margin-left:35px">Guardar</button></div>
+                            <div class="col"><button class="btn btn-success mb-4" onclick="guardar()"style="margin-left:35px">Guardar <i class="bi bi-floppy"></i></button></div>
                         </div>
                     </div>
                 </div>
