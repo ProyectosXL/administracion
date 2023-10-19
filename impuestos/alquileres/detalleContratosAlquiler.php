@@ -2,8 +2,17 @@
 
 require_once "Class/Alquiler.php";
 $alquiler = new Alquiler();
-$contratos = $alquiler->traerContratoAlquiler();
+$estado = (isset($_GET['estado'])) ? $_GET['estado'] : 0;
 
+if($estado == 0){
+
+    $contratos = $alquiler->traerContratoVigente();
+
+}else{
+
+    $contratos = $alquiler->traerContratoAnterior();
+
+}
 
 ?>
 
@@ -24,9 +33,13 @@ $contratos = $alquiler->traerContratoAlquiler();
         <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        
-        </link>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></link>
+
+        <!-- INCLUDES CSS -->
+        <?php
+            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+        ?>
+
         <style>
             input[type='search'] {
                 margin-right:45px
@@ -53,7 +66,9 @@ $contratos = $alquiler->traerContratoAlquiler();
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
+
                 <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Detalle contratos de alquiler</h6></div>
+
                     <div class="card card-1">
                         <div id="periodo" hidden><?= $periodo ?></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
@@ -68,8 +83,8 @@ $contratos = $alquiler->traerContratoAlquiler();
                                     <div style="margin-left:60px">Estado: 
                                         <select name="estado" id="estado" class="form-control form-control-l">
 
-                                            <option value="%">VIGENTE</option>
-                                            <option value="1">ANTERIOR</option>                                      
+                                            <option value="0" <?= ($estado == "0") ? "selected" : "" ?>>VIGENTE</option>
+                                            <option value="1" <?= ($estado == "1") ? "selected" : "" ?>>ANTERIOR</option>                                      
                                     
                                         </select>
                                     </div>
@@ -88,13 +103,13 @@ $contratos = $alquiler->traerContratoAlquiler();
                                 <tr>
                                     <th style="text-align:center;width:10%" >NRO. SUCURSAL</th>
                                     <th style="text-align:center;width:10%" >SUCURSAL</th>
-                                    <th style="text-align:center;width:5%" >DESDE</th>
-                                    <th style="text-align:center;width:5%">HASTA</th>
-                                    <th style="text-align:center;width:20%" >VALOR LLAVE</th>
-                                    <th style="text-align:center;width:20%" >COMISIONES</th>
+                                    <th style="text-align:center;width:10%" >DESDE</th>
+                                    <th style="text-align:center;width:10%">HASTA</th>
+                                    <th style="text-align:center;width:15%" >VALOR LLAVE</th>
+                                    <th style="text-align:center;width:15%" >COMISIONES</th>
                                     <th style="text-align:center;width:20%" >FPC LANZAMIENTO</th>
                                     <th style="text-align:center;width:10%" >MESES</th>
-                                    <th style="text-align:center;width:10%" ></th>
+                                    <th style="text-align:center;width:15%" ></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -110,7 +125,7 @@ $contratos = $alquiler->traerContratoAlquiler();
                                     $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
 
                                     // Calcula la diferencia en meses
-                                    $mesesDiferencia = ($diferenciaDeDias / 365) * 12;
+                                    $mesesDiferencia = round(($diferenciaDeDias / 365) * 12);
 
                                     if($mesesDiferencia == 0){
                                         $mesesDiferencia = 1;

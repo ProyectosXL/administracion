@@ -188,11 +188,17 @@ function cargarAlquieres ($fecha, $periodo) {
 
                      foreach ($contratoAlquiler as  $contrato) {
 
+        
+
                             $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
                             $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
+                             
 
-                            $diferenciaDeFechas = $vigDesde->diff($vigHasta);
-                            $mesesDiferencia = $diferenciaDeFechas->y * 12 + $diferenciaDeFechas->m;
+                            $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
+
+                            // Calcula la diferencia en meses
+                            $mesesDiferencia = round(($diferenciaDeDias / 365) * 12);
+
                             if($mesesDiferencia == 0){
                                 $mesesDiferencia = 1;
                             }
@@ -368,12 +374,19 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
                             $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
                             $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
+                            $hoy = new DateTime(date("Y-m-d")); // Segunda fecha
+                             
+                    
 
-                            $diferenciaDeFechas = $vigDesde->diff($vigHasta);
-                            $mesesDiferencia = $diferenciaDeFechas->y * 12 + $diferenciaDeFechas->m;
+                            $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
+
+                            // Calcula la diferencia en meses
+                            $mesesDiferencia = round(($diferenciaDeDias / 365) * 12);
+
                             if($mesesDiferencia == 0){
                                 $mesesDiferencia = 1;
                             }
+          
                             if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
                                 // var_dump($contratoAlquiler);
                                 // var_dump($v['NRO_SUCURSAL']);
