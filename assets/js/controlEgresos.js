@@ -159,6 +159,9 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
   
     let nComp = divImagen.parentElement.parentElement.querySelectorAll("td")[3].textContent;
 
+    let codCuenta = divImagen.parentElement.parentElement.querySelectorAll("td")[4].textContent;
+
+    let nroSucursal = document.querySelector("#selectSucursal").value.split("-")[0];
     
     let carouselElement = document.querySelector('#carruselImagenes'); 
     
@@ -170,7 +173,9 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
       url: "Controller/ControlEgresosController.php?accion=contarImagenes",
       type: "POST",
       data: {
-        nComp:nComp
+        nComp:nComp,
+        nroSucursal:nroSucursal,
+        codCuenta:codCuenta
 
       },
 

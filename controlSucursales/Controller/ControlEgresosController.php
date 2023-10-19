@@ -132,7 +132,8 @@ function marcarRecibido ($sucursal){
 function contarFotosEnCarpeta() {
     
     $nComp = (isset($_POST['nComp'])) ? $_POST['nComp'] : "";
-    
+    $nroSucursal = $_POST['nroSucursal'];
+    $codCuenta = (isset ($_POST['codCuenta'])) ? $_POST['codCuenta'] : "";
     $root = $_SERVER["DOCUMENT_ROOT"];
 
     $targetDir = $root.'/Imagenes/egresosCaja/';
@@ -180,7 +181,7 @@ function contarFotosEnCarpeta() {
     }else{
 
     
-        $fileName = $nComp;
+        $fileName = $nComp.$nroSucursal.$codCuenta;
         $contadorFotos = 0;
         $datosDeLosArchivos = [];
         $datosDeLosArchivos['cantidad'] = 0; 
