@@ -46,6 +46,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <!-- spinner -->
                 <div id="boxLoading"></div>     
     </form>
+    </div>
            
     <?php
 
