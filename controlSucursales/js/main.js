@@ -52,3 +52,109 @@ function myFunction() {
 
   }
   
+
+  const calcularTotales = () => {
+
+
+    let totalTarjeta = 0;
+    let totalCuentaDni = 0
+    let totalTarjetas = 0;
+    let totalMercadoPagoQr = 0
+    let totalMercadoPago = 0;
+    let totalModoQr = 0;
+    let totalPromoBanco = 0;
+    let totalEfectivo = 0;
+    let totalBonusShopping = 0;
+    let totalDolares = 0;
+    let totalEuros = 0;
+    let totalVentas = 0;
+
+    /* TARJETAS */
+    document.querySelectorAll("#tdTarjeta").forEach(total => {
+      totalTarjeta += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalTarjeta").textContent = "$" + parseNumber(totalTarjeta);
+
+    /* CUENTA DNI */
+    document.querySelectorAll("#tdCuentaDni").forEach(total => {
+      totalCuentaDni += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalCuentaDni").textContent = "$" + parseNumber(totalCuentaDni);
+
+    /* TOTAL TARJETAS */
+    document.querySelectorAll("#tdTotalTarjetas").forEach(total => {
+      totalTarjetas += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalTarjetas").textContent = "$" + parseNumber(totalTarjetas);
+
+    /* MERCADO PAGO QR */
+    document.querySelectorAll("#tdMercadoPagoQr").forEach(total => {
+      totalMercadoPagoQr += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalMercadoPagoQr").textContent = "$" + parseNumber(totalMercadoPagoQr);
+
+    /* MERCADO PAGO */
+    document.querySelectorAll("#tdMercadoPago").forEach(total => {
+      totalMercadoPago += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalMercadoPago").textContent = "$" + parseNumber(totalMercadoPago);
+
+    /* MODO QR */
+    document.querySelectorAll("#tdModoQr").forEach(total => {
+      totalModoQr += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalModoQr").textContent = "$" + parseNumber(totalModoQr);
+
+    /* PROMO BANCO */
+    document.querySelectorAll("#tdPromoBanco").forEach(total => {
+      totalPromoBanco += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalPromoBanco").textContent = "$" + parseNumber(totalPromoBanco);
+
+    /* EFECTIVO */
+    document.querySelectorAll("#tdEfectivo").forEach(total => {
+      totalEfectivo += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalEfectivo").textContent = "$" + parseNumber(totalEfectivo);
+
+    /* BONUS SHOPPING */
+    document.querySelectorAll("#tdBonusShopping").forEach(total => {
+      totalBonusShopping += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalBonusShopping").textContent = "$" + parseNumber(totalBonusShopping);
+
+    /* DOLARES */
+    document.querySelectorAll("#tdDolares").forEach(total => {
+      totalDolares += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalDolares").textContent = "$" + parseNumber(totalDolares);
+
+    /* EUROS */
+    document.querySelectorAll("#tdEuros").forEach(total => {
+      totalEuros += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalEuros").textContent = "$" + parseNumber(totalEuros);
+
+    /* TOTAL VENTAS */
+    document.querySelectorAll("#tdTotalVentas").forEach(total => {
+      totalVentas += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    });
+    document.querySelector("#totalVentas").textContent = "$" + parseNumber(totalVentas);
+
+  }
+
+
+
+
+
+  const parseNumber = (number) => {
+
+    let newNumber = number.toLocaleString('de-De', {
+        style: 'decimal',
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2
+    });
+
+    console.log(newNumber)
+    return newNumber;
+}
