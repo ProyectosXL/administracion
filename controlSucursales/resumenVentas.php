@@ -54,7 +54,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
     ?>
 
-        <table class="table table-striped table-bordered display mt-2" data-page-length="100">
+        <table class="table table-striped table-bordered display mt-2" data-page-length="100" id="tableVentas">
             <thead class="thead-dark">
                     <th class="col-">NRO. SUC</th>
                     <th style="width: 230px;">SUCURSAL</th>
@@ -80,23 +80,40 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                     <tr>                        
                         <td><?= $key->NRO_SUCURSAL ?></td>
                         <td><?= $key->DESC_SUCURSAL ?></td>
-                        <td><?= number_format($key->TARJETA, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->CUENTA_DNI, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->TOTAL_TARJETAS, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->MERCADO_PAGO_QR, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->MERCADO_PAGO, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->MODO_QR, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->PROMO_BANCO, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->EFECTIVO, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->BONUS_SHOPPING, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->DOLARES, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->EUROS, 2, '.', ',') ?></td>
-                        <td><?= number_format($key->VENTAS, 2, '.', ',') ?></td>
+                        <td id = "tdTarjeta">$<?= number_format($key->TARJETA, 2, '.', ',') ?></td>
+                        <td id = "tdCuentaDni">$<?= number_format($key->CUENTA_DNI, 2, '.', ',') ?></td>
+                        <td id = "tdTotalTarjetas">$<?= number_format($key->TOTAL_TARJETAS, 2, '.', ',') ?></td>
+                        <td id = "tdMercadoPagoQr">$<?= number_format($key->MERCADO_PAGO_QR, 2, '.', ',') ?></td>
+                        <td id = "tdMercadoPago">$<?= number_format($key->MERCADO_PAGO, 2, '.', ',') ?></td>
+                        <td id = "tdModoQr">$<?= number_format($key->MODO_QR, 2, '.', ',') ?></td>
+                        <td id = "tdPromoBanco">$<?= number_format($key->PROMO_BANCO, 2, '.', ',') ?></td>
+                        <td id = "tdEfectivo">$<?= number_format($key->EFECTIVO, 2, '.', ',') ?></td>
+                        <td id = "tdBonusShopping">$<?= number_format($key->BONUS_SHOPPING, 2, '.', ',') ?></td>
+                        <td id = "tdDolares">$<?= number_format($key->DOLARES, 2, '.', ',') ?></td>
+                        <td id = "tdEuros">$<?= number_format($key->EUROS, 2, '.', ',') ?></td>
+                        <td id = "tdTotalVentas">$<?= number_format($key->VENTAS, 2, '.', ',') ?></td>
                         <!-- <td><?= number_format($key->TOTAL_CONTADO, 2, '.', ',') ?></td> -->
                     </tr>
                 <?php
                 }
                 ?>
+                <tr>
+                    <td>TOTAL FILAS</td>
+                    <td></td>
+                    <td id = "totalTarjeta"></td>
+                    <td id = "totalCuentaDni"></td>
+                    <td id = "totalTarjetas"></td>
+                    <td id = "totalMercadoPagoQr"></td>
+                    <td id = "totalMercadoPago"></td>
+                    <td id = "totalModoQr"></td>
+                    <td id = "totalPromoBanco"></td>
+                    <td id = "totalEfectivo"></td>
+                    <td id = "totalBonusShopping"></td>
+                    <td id = "totalDolares"></td>
+                    <td id = "totalEuros"></td>
+                    <td id = "totalVentas"></td>
+                </tr>
+                
             </tbody>
         </table>
     <?php
@@ -123,8 +140,9 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     })
 
     $(document).ready(() => {
+        calcularTotales();
         $("#btnExport").click(function() {
-            $("#table").table2excel({
+            $("#tableVentas").table2excel({
                 // exclude CSS class
                 exclude: ".noE  xl",
                 name: "Ventas por medio de pago",
@@ -134,6 +152,7 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         });
 
     });
+
 
 </script>
 
