@@ -814,18 +814,9 @@ function procesar() {
       })
         .then((respuesta) => respuesta.json())
         .then((mensaje) => {
-          console.log(mensaje[0]);
-          if(mensaje[0].RESULTADO == 1){
-            spinner.classList.remove("loading");
-            Swal.fire({
-              icon: "error",
-              title: "Error",
-              text: 'Hay registros pendientes de controlar y/o prorratear'
-            })
-            return 1;
-          }
+  
 
-          if (perfil.length == 0) {
+          if (mensaje.length == 0) {
             spinner.classList.remove("loading");
             Swal.fire({
               icon: "success",
@@ -833,6 +824,17 @@ function procesar() {
               text: "El proceso finalizó correctamente",
             });
           } else {
+
+            if(mensaje[0].RESULTADO == 1){
+              spinner.classList.remove("loading");
+              Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: 'Hay registros pendientes de controlar y/o prorratear'
+              })
+              return 1;
+            }
+
             Swal.fire({
               icon: "error",
               title: "Atención",

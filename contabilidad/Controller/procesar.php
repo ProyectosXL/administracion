@@ -25,6 +25,7 @@ class Procesar
            /*  $next_result = sqlsrv_next_result($stmt); */
             /*  $next_result = sqlsrv_next_result($stmt);
             $next_result = sqlsrv_next_result($stmt); */
+            $result = [];
             do{
                 while($row=sqlsrv_fetch_array($stmt))
                 {
@@ -34,6 +35,7 @@ class Procesar
 
             /* $salida['resultado'] = sqlsrv_rows_affected($stmt); */
             /* echo "Rows affected: " . sqlsrv_rows_affected($stmt) . "<br />"; */
+
             echo json_encode($result);
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
