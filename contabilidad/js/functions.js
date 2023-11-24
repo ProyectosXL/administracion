@@ -824,22 +824,26 @@ function procesar() {
               text: "El proceso finalizó correctamente",
             });
           } else {
-
+            
+            spinner.classList.remove("loading");
             if(mensaje[0].RESULTADO == 1){
-              spinner.classList.remove("loading");
               Swal.fire({
                 icon: "error",
                 title: "Error",
                 text: 'Hay registros pendientes de controlar y/o prorratear'
               })
               return 1;
+
+            }else{
+
+              Swal.fire({
+                icon: "error",
+                title: "Atención",
+                text: `El periodo ya fue procesado`,
+              });
+              return 1
             }
 
-            Swal.fire({
-              icon: "error",
-              title: "Atención",
-              text: `${mensaje.resultado}`,
-            });
           }
         });
       /******************************** */
