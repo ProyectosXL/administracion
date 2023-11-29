@@ -282,6 +282,52 @@ function guardarCambiosProrrateo(ID, codProrrateo, prorrateoDesc) {
 function amortizarGastos() {
   let desde = document.getElementsByName("desde")[0].value;
   let hasta = document.getElementsByName("hasta")[0].value;
+
+  $('#myTable').DataTable().destroy();
+  let allTd = document.querySelector("tbody").querySelectorAll("tr")
+
+  error = false 
+  errorControl = false
+  allTd.forEach(element => {
+
+    if(element.children[15].querySelector("input").checked == false && (element.children[10].querySelector("select").value == '' || 
+    element.children[12].querySelector("select").value == '') && element.children[17].querySelector("input").checked == false){
+      error = true
+    }
+
+    if(element.children[16].querySelector("input").checked == false ){
+      errorControl = true
+    }
+
+  });
+  $('#myTable').DataTable({
+    responsive: true,
+  });
+
+  if (error == true){
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Aún hay registros pendientes de asignar",
+    });
+
+    return 1
+  }
+
+  if (errorControl == true){
+      
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Aún hay registros pendientes de controlar",
+    });
+
+    return 1
+  }
+
+
+
   conexion = new XMLHttpRequest();
   conexion.open(
     "POST",
@@ -388,6 +434,51 @@ function prorratearGastos() {
 
   let desde = document.getElementsByName("desde")[0].value;
   let hasta = document.getElementsByName("hasta")[0].value;
+
+  $('#myTable').DataTable().destroy();
+  let allTd = document.querySelector("tbody").querySelectorAll("tr")
+
+  error = false 
+  errorControl = false
+  allTd.forEach(element => {
+
+    if(element.children[15].querySelector("input").checked == false && (element.children[10].querySelector("select").value == '' || 
+    element.children[12].querySelector("select").value == '') && element.children[17].querySelector("input").checked == false){
+      error = true
+    }
+
+    if(element.children[16].querySelector("input").checked == false ){
+      errorControl = true
+    }
+
+  });
+  $('#myTable').DataTable({
+    responsive: true,
+  });
+
+  if (error == true){
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Aún hay registros pendientes de asignar",
+    });
+
+    return 1
+  }
+
+  if (errorControl == true){
+      
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Aún hay registros pendientes de controlar",
+    });
+
+    return 1
+  }
+
+
   const swalWithBootstrapButtons = Swal.mixin({
     customClass: {
       confirmButton: "btn btn-success",
