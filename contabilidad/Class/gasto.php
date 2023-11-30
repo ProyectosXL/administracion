@@ -333,7 +333,116 @@ class Gasto
 
     }
 
+    public function validarPendienteDeAsignar ($desde, $hasta) {
+       
+       $sql = "SELECT 
+        CASE 
+            WHEN COUNT(*) > 0 THEN 'true'
+            ELSE 'false'
+        END AS hay_registros_pendientes
+        FROM RO_T_INTEGRAL_TANGO_2
+        WHERE FECHA BETWEEN '$desde' AND '$hasta'
+        AND EXCLUIR = 0 
+        AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL AND AMORTIZADO IS NULL) 
+        AND COD_CUENTA LIKE '%'";
+  
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+        
+        // Manejar el resultado
+        if ($stmt === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+
+        // Obtener el valor
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        $hayRegistrosPendientes = $row['hay_registros_pendientes'];
+
+        return $hayRegistrosPendientes;
+
+    }
+
+    public function validarPendienteControl ($desde, $hasta) {
+       
+       $sql = " SELECT 
+       CASE 
+           WHEN EXISTS (
+               SELECT 1
+               FROM RO_T_INTEGRAL_TANGO_2
+               WHERE 
+                   AMORTIZADO IS NULL AND
+                   FECHA BETWEEN '$desde' AND '$hasta' AND
+                   PRORRATEADO IS NULL AND
+                   (CONTROLADO = 0 OR CONTROLADO IS NULL) AND
+                   EXCLUIR = 0 AND
+                   COD_CUENTA LIKE '%'
+           )
+           OR EXISTS (
+               SELECT 1
+               FROM RO_T_INTEGRAL_TANGO_2
+               WHERE 
+                   AMORTIZADO = 1 AND
+                   AMORTIZAR IS NULL AND
+                   PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) AND
+                   PRORRATEADO IS NULL AND
+                   CONTROLADO = 0 AND
+                   EXCLUIR = 0 AND
+                   COD_CUENTA LIKE '%'
+           )
+           THEN 'true'
+           ELSE 'false'
+        END AS Resultado;
+        ";
+  
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+        
+        // Manejar el resultado
+        if ($stmt === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+
+        // Obtener el valor
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        $hayRegistrosPendientes = $row['Resultado'];
+
+        return $hayRegistrosPendientes;
+
+    }
 
 
+    function validarPendienteAmortizar ($desde, $hasta) {
+
+        $sql="SELECT 
+        CASE 
+            WHEN COUNT(*) > 0 THEN 'true'
+            ELSE 'false'
+        END AS hay_registros_pendientes
+        FROM RO_T_INTEGRAL_TANGO_2 
+        WHERE AMORTIZADO IS NULL 
+        AND FECHA BETWEEN '$desde' AND '$hasta' 
+        AND PRORRATEADO IS NULL 
+        AND CONTROLADO IS NOT NULL 
+        AND EXCLUIR = 0 
+        AND AMORTIZAR > 0 
+        AND AMORTIZADO IS NULL 
+        AND COD_CUENTA LIKE '%'";
+
+        
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+                
+        // Manejar el resultado
+        if ($stmt === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+
+        // Obtener el valor
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        $hayRegistrosPendientes = $row['hay_registros_pendientes'];
+
+        return $hayRegistrosPendientes;
+
+    }
 
 }  

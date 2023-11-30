@@ -8,7 +8,8 @@ include 'Class/centroCosto.php';
 
 $centroCostos = new CentroCosto();
 $centroCostos = $centroCostos->traerCentroCostos();
-
+$currentYear = date('Y',  strtotime( date("Y-m-d")));
+$yearDif = $currentYear - 2023;
 $todosLosCentrosCosto = json_decode($centroCostos);
 
 include 'Class/articulos.php';
@@ -26,10 +27,24 @@ $metodoProrrateo = new Prorrateo();
 $todosLosMetodos = $metodoProrrateo->traerMetodosProrrateo();
 $todosLosMetodos = json_decode($todosLosMetodos);
 
-$desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
-$hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
+$anio = isset($_GET['anio']) ? $_GET['anio'] : date("Y");
+$mes = isset($_GET['mes']) ? $_GET['mes'] : date("m");
 
-$periodo = str_replace("0","",substr($hasta, 5, 2)).'-'.substr($hasta, 0, 4);
+$periodo = (int)$mes.'-'.$anio;
+
+// Divide el periodo en mes y año
+list($mes, $anio) = explode('-', $periodo);
+
+// Obtén la fecha del primer día del mes
+$fechaInicio = date("Y-m-d", strtotime("$anio-$mes-01"));
+
+// Obtén la fecha del último día del mes
+$fechaFin = date("Y-m-d", strtotime("last day of $anio-$mes"));
+
+$desde = $fechaInicio;
+$hasta = $fechaFin;
+
+
 
 $cuenta = new CuentaContable ();
 $cuentas = $cuenta->traerCodCuentaAll();
@@ -108,15 +123,51 @@ foreach ($cuentas as $key => $value) {
             <div class="form-row">
                 <form>
                     <div class="contenedor">
-                        <div class="col-">
+                        <div class="col-" hidden>
                             
                             <label>Desde:</label>
                             <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>" id="desde">
                         </div>
 
-                        <div class="col-">
+                        <div class="col-" hidden>
                             <label>Hasta:</label>
                             <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>" id="hasta">
+                        </div>
+                        <div  class="col-">
+                        <label > Mes :</label> 
+                        <select name="mes" id="mes" style="width:80px">
+                        
+                            <option value="01" <?php if($mes == '01'){echo 'selected'; }?> >01</option>
+                            <option value="02" <?php if($mes == '02'){echo 'selected'; }?> >02</option>
+                            <option value="03" <?php if($mes == '03'){echo 'selected'; }?> >03</option>
+                            <option value="04" <?php if($mes == '04'){echo 'selected'; }?> >04</option>
+                            <option value="05" <?php if($mes == '05'){echo 'selected'; }?> >05</option>
+                            <option value="06" <?php if($mes == '06'){echo 'selected'; }?> >06</option>
+                            <option value="07" <?php if($mes == '07'){echo 'selected'; }?> >07</option>
+                            <option value="08" <?php if($mes == '08'){echo 'selected'; }?> >08</option>
+                            <option value="09" <?php if($mes == '09'){echo 'selected'; }?> >09</option>
+                            <option value="10" <?php if($mes == '10'){echo 'selected'; }?> >10</option>
+                            <option value="11" <?php if($mes == '11'){echo 'selected'; }?> >11</option>
+                            <option value="12" <?php if($mes == '12'){echo 'selected'; }?> >12</option>
+                        
+                        </select>
+                        </div>
+                        <div  class="col-">
+                        <label > Año :</label> 
+                        <select name="anio" id="selectAño" style="width:120px">
+                            
+                            <option value="2022">2022</option>
+                            <?php 
+                                for ($i=0; $i <= $yearDif ; $i++) { 
+                                    $y = 2023 + $i;
+                            ?>
+                                <option value="<?=$y?>" <?= ($anio == $y) ? 'selected' : '' ?>><?=$y?></option>
+                            
+                            <?php
+                                }
+                            ?>
+
+                        </select>
                         </div>
                         <div id="estado">
                             <label>Estado:</label>
