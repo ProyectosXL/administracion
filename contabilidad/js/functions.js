@@ -280,62 +280,99 @@ function guardarCambiosProrrateo(ID, codProrrateo, prorrateoDesc) {
 
 //Amortiza los gastos que tienen seteado el campo amortiza//
 function amortizarGastos() {
+
   let desde = document.getElementsByName("desde")[0].value;
   let hasta = document.getElementsByName("hasta")[0].value;
-
+  let spinner = document.getElementById("boxLoading");
+  spinner.className += " loading";
   $('#myTable').DataTable().destroy();
   let allTd = document.querySelector("tbody").querySelectorAll("tr")
 
-  error = false 
-  errorControl = false
-  allTd.forEach(element => {
-
-    if(element.children[15].querySelector("input").checked == false && (element.children[10].querySelector("select").value == '' || 
-    element.children[12].querySelector("select").value == '') && element.children[17].querySelector("input").checked == false){
-      error = true
-    }
-
-    if(element.children[16].querySelector("input").checked == false ){
-      errorControl = true
-    }
-
-  });
+  
   $('#myTable').DataTable({
     responsive: true,
   });
 
-  if (error == true){
+  let paso8 = document.querySelector("#paso8");
 
+  if(!(paso8.className == "active")){
+    spinner.classList.remove('loading');
     Swal.fire({
       icon: "error",
       title: "Error",
-      text: "Aún hay registros pendientes de asignar",
+      text: "Complete todos los pasos de control antes de continuar!",
     });
 
-    return 1
-  }
+    return 1;
 
-  if (errorControl == true){
-      
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "Aún hay registros pendientes de controlar",
-    });
-
-    return 1
   }
 
 
+  $.ajax({
+    url: 'Controller/controlGastosController.php?accion=validarPendienteDeAsignar',
+    method: 'POST',
+    data: {
+      desde: desde,
+      hasta: hasta
+    },
+    success: function (data) {
 
-  conexion = new XMLHttpRequest();
-  conexion.open(
-    "POST",
-    "./Controller/amortizar.php?estado=1&desde=" + desde + "&hasta=" + hasta,
-    true
-  ); // no se envia fecha inicio y fin
-  conexion.onreadystatechange = ejecutarQuery;
-  conexion.send();
+      data = data.trim()
+    
+
+      if(data == 'false'){
+
+        $.ajax({
+          url: 'Controller/controlGastosController.php?accion=validarPendienteControl',
+          method: 'POST',
+          data: {
+            desde: desde,
+            hasta: hasta
+          },
+          success: function (data) {
+
+            data = data.trim()
+            spinner.classList.remove('loading');
+
+            if(data == 'false'){
+
+              conexion = new XMLHttpRequest();
+              conexion.open(
+                "POST",
+                "./Controller/amortizar.php?estado=1&desde=" + desde + "&hasta=" + hasta,
+                true
+              ); // no se envia fecha inicio y fin
+              conexion.onreadystatechange = ejecutarQuery;
+              conexion.send();
+
+            }else{
+
+              spinner.classList.remove('loading');
+
+              Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Aún hay registros pendientes de controlar",
+              });
+
+            }
+          }
+        })
+      }else{
+
+        spinner.classList.remove('loading');
+
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Aún hay registros pendientes de asignar",
+        });
+
+      }
+    }
+
+  });
+  
 }
 
 function ejecutarQuery() {
@@ -431,111 +468,175 @@ function uncheckExcluirAll(source) {
 
 function prorratearGastos() {
   /*  $nombre = document.querySelector("#nombre"), */
+  let spinner = document.getElementById("boxLoading");
+  spinner.className += " loading";
 
   let desde = document.getElementsByName("desde")[0].value;
   let hasta = document.getElementsByName("hasta")[0].value;
 
+
   $('#myTable').DataTable().destroy();
   let allTd = document.querySelector("tbody").querySelectorAll("tr")
 
-  error = false 
-  errorControl = false
-  allTd.forEach(element => {
-
-    if(element.children[15].querySelector("input").checked == false && (element.children[10].querySelector("select").value == '' || 
-    element.children[12].querySelector("select").value == '') && element.children[17].querySelector("input").checked == false){
-      error = true
-    }
-
-    if(element.children[16].querySelector("input").checked == false ){
-      errorControl = true
-    }
-
-  });
-  $('#myTable').DataTable({
-    responsive: true,
-  });
-
-  if (error == true){
-
+  if(!(paso8.className == "active")){
+    spinner.classList.remove('loading');
     Swal.fire({
       icon: "error",
       title: "Error",
-      text: "Aún hay registros pendientes de asignar",
+      text: "Complete todos los pasos de control antes de continuar!",
     });
-
-    return 1
+    return 1;
+    
   }
 
-  if (errorControl == true){
-      
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "Aún hay registros pendientes de controlar",
-    });
-
-    return 1
-  }
-
-
-  const swalWithBootstrapButtons = Swal.mixin({
-    customClass: {
-      confirmButton: "btn btn-success",
-      cancelButton: "btn btn-danger",
+  $.ajax({
+    url: 'Controller/controlGastosController.php?accion=validarPendienteDeAsignar',
+    method: 'POST',
+    data: {
+      desde: desde,
+      hasta: hasta
     },
-    buttonsStyling: false,
-  });
+    success: function (data) {
+      data = data.trim()
+    
 
-  swalWithBootstrapButtons
-    .fire({
-      title: "Desea realizar el prorrateo?",
-      text: "Ya no se podran deshacer los cambios!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Ok, prorratear!",
-      cancelButtonText: "No, cancelar!",
-      reverseButtons: true,
-    })
-    .then((result) => {
-      if (result.isConfirmed) {
-        let btn = document.getElementsByClassName(".btnProrrateo");
-        let spinner = document.getElementById("boxLoading");
-        spinner.className += " loading";
-        /******************************* */
-        fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
-          .then((respuesta) => respuesta.json())
-          .then((perfil) => {
-            if (perfil.resultado == 0) {
-              btn.className += "active";
-              spinner.classList.remove("loading");
+      if(data == 'false'){
+
+        $.ajax({
+          url: 'Controller/controlGastosController.php?accion=validarPendienteControl',
+          method: 'POST',
+          data: {
+            desde: desde,
+            hasta: hasta
+          },
+          success: function (data) {
+            data = data.trim()
+            
+
+            if(data == 'false'){
+              
+              $.ajax({
+                url: 'Controller/controlGastosController.php?accion=validarPendienteAmortizar',
+                method: 'POST',
+                data: {
+                  desde: desde,
+                  hasta: hasta
+                },
+                success: function (data) {
+
+                  data = data.trim()
+                  spinner.classList.remove('loading');
+
+                  if(data == 'false'){
+                    
+                     $('#myTable').DataTable({
+                      responsive: true,
+                    });
+
+                    const swalWithBootstrapButtons = Swal.mixin({
+                      customClass: {
+                        confirmButton: "btn btn-success",
+                        cancelButton: "btn btn-danger",
+                      },
+                      buttonsStyling: false,
+                    });
+
+                      swalWithBootstrapButtons
+                      .fire({
+                        title: "Desea realizar el prorrateo?",
+                        text: "Ya no se podran deshacer los cambios!",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonText: "Ok, prorratear!",
+                        cancelButtonText: "No, cancelar!",
+                        reverseButtons: true,
+                      })
+                      .then((result) => {
+                        if (result.isConfirmed) {
+                          let btn = document.getElementsByClassName(".btnProrrateo");
+                          let spinner = document.getElementById("boxLoading");
+                          spinner.className += " loading";
+                          /******************************* */
+                          fetch("./Controller/prorratear.php?desde=" + desde + "&hasta=" + hasta)
+                            .then((respuesta) => respuesta.json())
+                            .then((perfil) => {
+                              if (perfil.resultado == 0) {
+                                btn.className += "active";
+                                spinner.classList.remove("loading");
+                                Swal.fire({
+                                  icon: "error",
+                                  title: "Error",
+                                  text: "No hay gastos para prorratear!",
+                                });
+                              } else {
+                                btn.className += "active";
+                                spinner.classList.remove("loading");
+                                swalWithBootstrapButtons.fire(
+                                  "Prorrateado!",
+                                  "Los gastos fueron prorrateados",
+                                  "success"
+                                );
+                              }
+                            });
+                          /******************************** */
+                        } else if (
+                          /* Read more about handling dismissals below */
+                          result.dismiss === Swal.DismissReason.cancel
+                        ) {
+                          swalWithBootstrapButtons.fire(
+                            "Cancelado",
+                            "Los gastos no fueron prorrateados :(",
+                            "error"
+                          );
+                        }
+                      });
+
+                  }else{
+
+                    Swal.fire({
+                      icon: "error",
+                      title: "Error",
+                      text: "Aún hay registros pendientes de amortizar",
+                    });
+                    
+                  }
+
+                }
+              })
+             
+
+            }else{
+              
+              spinner.classList.remove('loading');
+
               Swal.fire({
                 icon: "error",
                 title: "Error",
-                text: "No hay gastos para prorratear!",
+                text: "Aún hay registros pendientes de controlar",
               });
-            } else {
-              btn.className += "active";
-              spinner.classList.remove("loading");
-              swalWithBootstrapButtons.fire(
-                "Prorrateado!",
-                "Los gastos fueron prorrateados",
-                "success"
-              );
+
             }
-          });
-        /******************************** */
-      } else if (
-        /* Read more about handling dismissals below */
-        result.dismiss === Swal.DismissReason.cancel
-      ) {
-        swalWithBootstrapButtons.fire(
-          "Cancelado",
-          "Los gastos no fueron prorrateados :(",
-          "error"
-        );
+          }
+        })
+
+      }else{
+
+        spinner.classList.remove('loading');
+
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Aún hay registros pendientes de asignar",
+        });
+    
       }
-    });
+    },
+    error: function (error) {
+      reject(error);
+    }
+  });
+
+
 }
 const activarModalPaso1 = () => {
 
@@ -1151,3 +1252,4 @@ const marcarPasoControladoConDiferencias = (paso) => {
     })
     
 }
+
