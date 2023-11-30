@@ -227,7 +227,8 @@ foreach ($cuentas as $key => $value) {
             <div class="btn-group">
                 <button class="btn btn-danger mt-3" id="btnAmort">Amortizar <i class="bi bi-calendar2-week"></i></button>
                 <button class="btn btn-info mt-3 btnProrrateo" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
-                <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnProcesar">Procesar <i class="bi bi-check2-square"></i></button>
+                <button class="btn btn-secondary mt-3" style="margin-left: 0;" id="btnProcesar">Procesar <i class="bi bi-check2-square"></i></button>
+                <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnProcesar">Resumen IE <i class="bi bi-file-earmark-excel"></i></button>
             </div>
             <div id="contCheck">
                 <label id="titleCheck">Acciones masivas</label>
