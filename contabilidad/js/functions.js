@@ -1253,3 +1253,88 @@ const marcarPasoControladoConDiferencias = (paso) => {
     
 }
 
+
+const resumen = () => {
+  
+  let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
+
+  $.ajax({
+    url: 'Controller/controlGastosController.php?accion=existeResumen',
+    method: 'POST',
+    data:{
+      periodo:periodo
+    },
+    success : function(data) {
+      
+      data = data.trim();
+
+      if(data == 'true'){
+
+        $.ajax({
+          url: 'Controller/controlGastosController.php?accion=resumen',
+          method: 'POST',
+          data:{
+            periodo:periodo
+          },
+          success : function(data) {
+            console.log(data)
+            
+            data = JSON.parse(data);
+
+            let tableModal =  document.querySelector("#resumenBody");
+            tableModal.innerHTML = "";
+
+
+            data.forEach(element => {
+
+              const tr=document.createElement('tr');
+              const td1=document.createElement('td');
+              const td2=document.createElement('td');
+              const td3=document.createElement('td');
+              const td4=document.createElement('td');
+              const td5=document.createElement('td');
+              const td6=document.createElement('td');
+
+              const text1=document.createTextNode(element['PERIODO']);
+              const text2=document.createTextNode(element['NRO_SUCURSAL']);
+              const text3=document.createTextNode(element['DESC_SUCURSAL']);
+              const text4=document.createTextNode(element['COD_RUBRO']);
+              const text5=document.createTextNode(element['RUBRO_CONTABLE']);
+              const text6=document.createTextNode(element['IMPORTE']);
+
+              td1.appendChild(text1);
+              td2.appendChild(text2);
+              td3.appendChild(text3);
+              td4.appendChild(text4);
+              td5.appendChild(text5);
+              td6.appendChild(text6);
+
+              
+              tr.appendChild(td1);
+              tr.appendChild(td2);
+              tr.appendChild(td3);
+              tr.appendChild(td4);
+              tr.appendChild(td5);
+              tr.appendChild(td6);
+
+              tableModal.appendChild(tr);
+            })
+            exportModal("tablaResumen");
+          }
+          
+        })
+
+      }else{
+
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: `No se encuentra cargado el resumen!`,
+        });
+        
+      }
+
+    }
+  
+  });
+}

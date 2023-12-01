@@ -445,4 +445,49 @@ class Gasto
 
     }
 
+    function existeResumen ($periodo){
+
+        $sql = "SELECT 
+        CASE 
+            WHEN EXISTS (
+                SELECT 1 FROM RO_T_RESUMEN_FINAL_IE WHERE PERIODO = '$periodo' AND COD_RUBRO NOT IN ('1.1.','1.2.','1.6.','1.8.')
+            ) THEN 'true'
+            ELSE 'false'
+        END AS resultado;";
+
+        $result = sqlsrv_query($this->cid_central, $sql);
+
+        if ($result === false) {
+        die(print_r(sqlsrv_errors(), true));
+        }
+      
+       
+        $row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC);
+        $respuesta = $row['resultado'];
+
+        return $respuesta;
+                    
+    }
+
+    function traerResumen ($periodo ) {
+
+        $sql = "SELECT PERIODO, NRO_SUCURSAL, DESC_SUCURSAL, COD_RUBRO, RUBRO_CONTABLE, IMPORTE FROM RO_T_RESUMEN_FINAL_IE
+        WHERE PERIODO = '$periodo'";
+
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+        try{
+
+            $rows = array();
+    
+            while( $v = sqlsrv_fetch_array( $stmt) ) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+
+        } catch (\Throwable $th){
+            print_r($th);
+        }        
+    }
 }  
