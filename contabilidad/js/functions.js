@@ -1,5 +1,5 @@
 window.addEventListener("DOMContentLoaded", iniciarEscuchaSelect); //1 - cuando se termina de carga toda la pagina, comienza a escuchar los eventos del dom
-
+ 
 let a;
 const selectRubro = document.querySelectorAll(".codRubro"); //2 - guardo en un array todos los check donde se va escuchar si se produjo un cambio
 const selectProrrateo = document.querySelectorAll(".codProrrateo");
@@ -1265,7 +1265,7 @@ const resumen = () => {
       periodo:periodo
     },
     success : function(data) {
-      
+
       data = data.trim();
 
       if(data == 'true'){
@@ -1277,7 +1277,7 @@ const resumen = () => {
             periodo:periodo
           },
           success : function(data) {
-            console.log(data)
+        
             
             data = JSON.parse(data);
 
