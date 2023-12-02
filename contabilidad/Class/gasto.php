@@ -471,7 +471,7 @@ class Gasto
 
     function traerResumen ($periodo ) {
 
-        $sql = "SELECT PERIODO, NRO_SUCURSAL, DESC_SUCURSAL, COD_RUBRO, RUBRO_CONTABLE, IMPORTE FROM RO_T_RESUMEN_FINAL_IE
+        $sql = "SELECT PERIODO, NRO_SUCURSAL, DESC_SUCURSAL, COD_RUBRO, RUBRO_CONTABLE, CAST(IMPORTE AS DECIMAL(15,2)) IMPORTE FROM RO_T_RESUMEN_FINAL_IE
         WHERE PERIODO = '$periodo'";
 
         $stmt = sqlsrv_query( $this->cid_central, $sql );
