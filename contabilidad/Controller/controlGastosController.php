@@ -16,6 +16,15 @@ switch ($accion) {
         validarPendienteAmortizar();
         break;
     
+    case 'existeResumen':
+        existeResumen();
+        break;
+    
+    
+    case 'resumen':
+        resumen();
+        break;
+    
     default:
         # code...
         break;
@@ -60,5 +69,33 @@ function validarPendienteAmortizar() {
     echo $result;
 
 }
+
+function existeResumen() {
+
+    $gasto = new Gasto();
+
+    $periodo = $_POST['periodo'];
+
+
+    $result = $gasto->existeResumen($periodo); 
+
+    echo $result;
+
+}
+
+function resumen() {
+
+    $gasto = new Gasto();
+
+    $periodo = $_POST['periodo'];
+
+
+    $result = $gasto->traerResumen($periodo); 
+
+    echo json_encode($result);
+
+}
+
+
 
  ?>
