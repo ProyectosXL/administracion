@@ -212,7 +212,7 @@ class Sucursal
             AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA 
             AND A.COD_CTA = B.COD_CUENTA 
 
-            left join SJ_EGRESOS_DE_CAJA_GUARDADO c on a.N_COMP = c.N_COMP collate Latin1_General_BIN
+            left join SJ_EGRESOS_DE_CAJA_GUARDADO c on a.N_COMP = c.N_COMP collate Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURSAL AND A.COD_CTA = C.COD_CTA 
             and c.NRO_SUCURSAL = '$sucursal'
             WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = $sucursal 
             "
