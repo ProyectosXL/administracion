@@ -285,6 +285,7 @@ function amortizarGastos() {
   let hasta = document.getElementsByName("hasta")[0].value;
   let spinner = document.getElementById("boxLoading");
   spinner.className += " loading";
+  
   $('#myTable').DataTable().destroy();
   let allTd = document.querySelector("tbody").querySelectorAll("tr")
 
@@ -336,15 +337,43 @@ function amortizarGastos() {
 
             if(data == 'false'){
 
-              conexion = new XMLHttpRequest();
-              conexion.open(
-                "POST",
-                "./Controller/amortizar.php?estado=1&desde=" + desde + "&hasta=" + hasta,
-                true
-              ); // no se envia fecha inicio y fin
-              conexion.onreadystatechange = ejecutarQuery;
-              conexion.send();
+              $.ajax({
+                url: 'Controller/controlGastosController.php?accion=validarPendienteAmortizar',
+                method: 'POST',
+                data: {
+                  desde: desde,
+                  hasta: hasta
+                },
+                success: function (data) {
+                  data = data.trim()
+                  spinner.classList.remove('loading');
 
+                  if(data == 'false'){
+
+                    Swal.fire({
+                      icon: "error",
+                      title: "Error",
+                      text: "No existen registros para amortizar",
+                    });
+
+                  }else{
+
+                    conexion = new XMLHttpRequest();
+                    conexion.open(
+                      "POST",
+                      "./Controller/amortizar.php?estado=1&desde=" + desde + "&hasta=" + hasta,
+                      true
+                    ); // no se envia fecha inicio y fin
+                    conexion.onreadystatechange = ejecutarQuery;
+                    conexion.send();
+
+      
+                  }
+
+                }
+              })
+
+           
             }else{
 
               spinner.classList.remove('loading');
