@@ -419,14 +419,16 @@ class Gasto
             ELSE 'false'
         END AS hay_registros_pendientes
         FROM RO_T_INTEGRAL_TANGO_2 
-        WHERE AMORTIZADO IS NULL 
+        WHERE FECHA BETWEEN '$desde' AND '$hasta' AND AMORTIZAR IS NOT NULL AND AMORTIZAR <> 0 AND AMORTIZADO IS NULL";
+
+        /* WHERE AMORTIZADO IS NULL 
         AND FECHA BETWEEN '$desde' AND '$hasta' 
         AND PRORRATEADO IS NULL 
         AND CONTROLADO IS NOT NULL 
         AND EXCLUIR = 0 
         AND AMORTIZAR > 0 
         AND AMORTIZADO IS NULL 
-        AND COD_CUENTA LIKE '%'";
+        AND COD_CUENTA LIKE '%'"; */
 
         
         $stmt = sqlsrv_query( $this->cid_central, $sql );
@@ -444,6 +446,7 @@ class Gasto
         return $hayRegistrosPendientes;
 
     }
+    
 
     function existeResumen ($periodo){
 
