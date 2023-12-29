@@ -134,25 +134,24 @@
                                             echo '<button type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-left: 20px; margin-top:0.5rem;" onclick="abrirPeriodo()">Abrir Periodo <i class="bi bi-unlock"></i></button>';
                                         }else{
                                             echo '<div  id="estado" hidden>0</div>';
-                                            echo '<button type="button" class="btn btn-danger" value="Cerrar Periodo" style="margin-left: 20px; margin-top:0.5rem;" onclick="cerrarPeriodo()">Cerrar Periodo <i class="bi bi-lock"></i></button>';
+                                            echo '<button type="button" class="btn btn-secondary" value="Cerrar Periodo" style="margin-left: 20px; margin-top:0.5rem;" onclick="cerrarPeriodo()">Cerrar Periodo <i class="bi bi-lock"></i></button>';
                                         }
                                         ?>
                                         <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
                                     </div>
                                     <div style="margin-left:2rem">
-                                        eliminar Sucursal:
-                                        <select class="form-control ml-6 mt-2" id="selectOcultarSucursal" >
+                                        <select class="form-control ml-6 mt-2" id="selectOcultarSucursal">
+                                            <option value="" disabled selected>Selecciona una sucursal</option>
                                             <?php 
                                                 foreach ($todosLosLocales as $key => $local) {
                                                     if (in_array($local['NRO_SUCURSAL'], $sucursalesOcultasArray)) {
-                                               
                                                         continue;
                                                     }
-                                                    echo '<option value="'.$local['NRO_SUCURSAL'].'">'.$local['DESC_SUCURSAL'].'-'.$local['NRO_SUCURSAL'].'</option>';
+                                                    echo '<option value="'.$local['NRO_SUCURSAL'].'">'.$local['DESC_SUCURSAL'].' ('.$local['NRO_SUCURSAL'].')</option>';
                                                 }
                                             ?>
                                         </select>
-                                        <button class="btn btn-warning mt-2" onclick="ocultarSucursal()">eliminar</button>
+                                        <button class="btn btn-danger mt-2" onclick="ocultarSucursal()">Eliminar <i class="bi bi-trash"></i></button>
                                     </div>
                                     <div>
                           
