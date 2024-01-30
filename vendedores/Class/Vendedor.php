@@ -155,6 +155,10 @@ class Vendedor
     
     public function localConexion($num_suc){
     
+        require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
+        $cid = new Conexion();
+        $cid_central = $cid->conectar('tangoBis');
+
         $sql_buscar_local = "SELECT TOP 1 * FROM ACTOR WHERE NUMERO_ACTOR = $num_suc";
     
         $query_buscar_local = sqlsrv_prepare($cid_tangonet_bis_1, $sql_buscar_local);
@@ -180,5 +184,5 @@ class Vendedor
     }
 }    
 
-$conexion_tangonet_bis_1 = array( "Database"=>"TangoNet_Bis_1", "UID"=>"sa", "PWD"=>"Axoft");
-$cid_tangonet_bis_1 = sqlsrv_connect($servidor_lakerbis, $conexion_tangonet_bis_1);
+// $conexion_tangonet_bis_1 = array( "Database"=>"TangoNet_Bis_1", "UID"=>"sa", "PWD"=>"Axoft");
+// $cid_tangonet_bis_1 = sqlsrv_connect($servidor_lakerbis, $conexion_tangonet_bis_1);
