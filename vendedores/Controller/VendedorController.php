@@ -29,6 +29,14 @@
             editarGrupo($vendedor);
             break;
         
+        case 'altaVendedores':
+            altaVendedores($vendedor);
+            break;
+        
+        case 'bajaVendedores':
+            bajaVendedores($vendedor);
+            break;
+        
         default:
             # code...
             break;
@@ -99,5 +107,77 @@
 
         
         echo $result;
+    }
+
+    function altaVendedores ($vendedor) {
+
+        $sucursalesPorHabilitar = $_POST['sucursalesPorHabilitar'];
+        $vendedoresPorHabilitar = $_POST['vendedoresPorHabilitar'];
+        $respuestaPorLocal = [];
+
+        foreach ($sucursalesPorHabilitar as $key => $sucursal) {
+
+            $conexion = $vendedor->localConexion($sucursal);
+
+            if($conexion == true) {
+
+                foreach ($vendedoresPorHabilitar as $key => $vendedorHabilitar) {
+    
+                   $codVendedor = $vendedorHabilitar[0];
+                   $nombre  = $vendedorHabilitar[1];
+    
+                   $result = $vendedor->habilitarVendedorPorSucursal($codVendedor, $nombre);
+    
+                }
+
+                $respuestaPorLocal[] = [$sucursal, 'ok'];
+
+            }else{
+
+                $respuestaPorLocal[] = [$sucursal, 'error'];
+
+            }
+
+
+
+        }
+
+        echo json_encode($respuestaPorLocal);
+    }
+
+    function bajaVendedores ($vendedor) {
+
+        $sucursalesPorHabilitar = $_POST['sucursalesPorHabilitar'];
+        $vendedoresPorHabilitar = $_POST['vendedoresPorHabilitar'];
+        $respuestaPorLocal = [];
+
+        foreach ($sucursalesPorHabilitar as $key => $sucursal) {
+
+            $conexion = $vendedor->localConexion($sucursal);
+
+            if($conexion == true) {
+
+                foreach ($vendedoresPorHabilitar as $key => $vendedorHabilitar) {
+    
+                   $codVendedor = $vendedorHabilitar[0];
+                   $nombre  = $vendedorHabilitar[1];
+    
+                   $result = $vendedor->inhabilitarVendedorPorSucursal($codVendedor, $nombre);
+    
+                }
+
+                $respuestaPorLocal[] = [$sucursal, 'ok'];
+
+            }else{
+
+                $respuestaPorLocal[] = [$sucursal, 'error'];
+
+            }
+
+
+
+        }
+
+        echo json_encode($respuestaPorLocal);
     }
 ?>

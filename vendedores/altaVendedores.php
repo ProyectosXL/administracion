@@ -84,8 +84,14 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                                            
                                             <?php 
                                                 foreach ($grupos as  $grupo) {
+                                                    $locales = $vendedor->traerLocalesPorGrupo($grupo['NOMBRE']);
+                                                    $stringLocales = '';
+                                                    foreach ($locales as $key => $local) {
+                                                        $stringLocales .= $local['NRO_SUCURSAL'].',';
+                                                    }
 
-                                                    echo '<option value="'.$grupo['ID'].'">'.$grupo['NOMBRE'].'</option>';
+
+                                                    echo '<option value="'.$grupo['NOMBRE'].'?'.$stringLocales.'" >'.$grupo['NOMBRE'].'</option>';
                                                 }
                                             ?>
 
@@ -171,7 +177,9 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
 
     <?php 
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/assets/js/js.php';
+        require_once 'modal.php';
     ?>
+
             <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
         <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     </body>
@@ -202,7 +210,7 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
 
             },
         });
-        $("#tablaClientes_filter").append('<button class="btn btn-success btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="habilitar()"> Habilitar <i class="bi bi-plus-circle-fill"></i></button><button class="btn btn-danger btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="inhabilitar()"> Inhabilitar <i class="bi bi-dash-circle-fill"></i></button>');
+        $("#tablaClientes_filter").append(`<button class="btn btn-success btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="habilitar('altaVendedores')"> Habilitar <i class="bi bi-plus-circle-fill"></i></button><button class="btn btn-danger btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="habilitar('bajaVendedores')"> Inhabilitar <i class="bi bi-dash-circle-fill"></i></button>`);
         
         $('.dataTables_filter input[type="search"]').css(
             {'height':'40px'}

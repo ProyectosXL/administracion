@@ -90,16 +90,140 @@ const exportTable = () =>{
     const cambiarEntorno = () =>{}
 
 
-    const habilitar = () =>{
+    const habilitar = (accion) =>{
+
         let selectGrupo = $('#selectGrupo').val();
         let selectSucursal = $('#selectSucursal').val();
-        if(opcionesSeleccionadas.length == 0){
+        let sucursalesPorHabilitar = [];
+        let vendedoresPorHabilitar = [];
+
+        let allTr = document.querySelector("#tableVb").querySelectorAll("tr")
+
+        allTr.forEach(function(tr) {
+
+            if(tr.querySelectorAll("td")[2].querySelector("input").checked == true){
+
+                vendedoresPorHabilitar.push([tr.querySelector("td").textContent, tr.querySelectorAll("td")[1].textContent])
+                
+            }
+
+        })
+
+        if(selectSucursal.length == 0){
+            selectGrupo.forEach(function(opcion) {
+
+                let partes = opcion.split('?');
+                partes = partes[1].slice(0, -1);
+                let sucursales = partes.split(',')
+
+                sucursales.forEach(element => {
+
+                    if(!sucursalesPorHabilitar.includes(element)){
+                        
+                        sucursalesPorHabilitar.push(element)
+
+                    }
+
+                });
+
+            });
+
+        }else{
             selectSucursal.forEach(function(opcion) {
-                console.log('Opción:', opcion);
+                if(!sucursalesPorHabilitar.includes(opcion)){
+                        
+                    sucursalesPorHabilitar.push(opcion)
+
+
+                }
             });
         }
+        if(vendedoresPorHabilitar.length == 0) {
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atención!',
+                text: 'Debe seleccionar al menos un vendedor'
+            })
+            return 1
+
+        }
+
+        if(sucursalesPorHabilitar.length == 0){
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atención!',
+                text: 'Debe seleccionar al menos un local'
+            })
+
+            return 1
+
+        }
         
+        $.ajax({
+            type: "POST",
+            url: "Controller/VendedorController.php?accion="+accion,
+            data: {
+                sucursalesPorHabilitar: sucursalesPorHabilitar,
+                vendedoresPorHabilitar: vendedoresPorHabilitar,
+            },
+            success: function (response) {
+                let tabla = document.querySelector("#tableVendedoresBody")
+                tabla.innerHTML = '';
+                response = JSON.parse(response)
+                let allOptions = document.querySelector("#selectSucursal").querySelectorAll("option")
+                let arrayParaMostrar = [];
+
+                response.forEach(element => {
+                    let  observacion = '';
+                    let  icono = '';
+
+                    if(accion == 'altaVendedores'){
+
+                         observacion =( element[1] == 'ok') ? "Alta exitosa" : "Sin conexion";
+                         icono  =( element[1] == 'ok') ? '<i class="bi bi-check-circle" style="color:green"></i>' : '<i class="bi bi-x-circle" style="color:red"></i>';
+
+                    }else{
+                        
+                         observacion =( element[1] == 'ok') ? "Baja exitosa" : "Sin conexion";
+                         icono  =( element[1] == 'ok') ? '<i class="bi bi-check-circle" style="color:green"></i>' : '<i class="bi bi-x-circle" style="color:red"></i>';
+
+                    }
+
+
+                    allOptions.forEach(sucursal => {
+                        if(sucursal.value == element[0] ){
+                            arrayParaMostrar.push([sucursal.textContent, observacion, icono])
+                        }    
+
+                    });
+                    
+                    
+                });
+            
+
+                arrayParaMostrar.forEach(element => {
+                    let row = document.createElement("tr")
+
+                    let textHtml =  `
+                    <td>${element[0]}</td>
+                    <td>${element[1]}</td>
+                    <td>${element[2]}</td>`;
+
+                    row.innerHTML = textHtml;
+                    tabla.appendChild(row)
+
+                });
+                $("#modalTemporadas").modal("toggle")
+                setTimeout(() => {
+                    location.reload()
+                }, '5000');
+            }
+        })
+
     }
+
     const inhabilitar = () =>{
 
         console.log("inhabilitar")

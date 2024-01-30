@@ -155,34 +155,93 @@ class Vendedor
     
     public function localConexion($num_suc){
     
+        session_start();
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
         $cid = new Conexion();
-        $cid_central = $cid->conectar('tangoBis');
+        $cidTango = $cid->conectar('tangoBis');
 
         $sql_buscar_local = "SELECT TOP 1 * FROM ACTOR WHERE NUMERO_ACTOR = $num_suc";
     
-        $query_buscar_local = sqlsrv_prepare($cid_tangonet_bis_1, $sql_buscar_local);
-    
-        sqlsrv_execute($query_buscar_local);
-    
+      
+        $stmt = sqlsrv_query( $cidTango, $sql_buscar_local );
+
+        
+        if( $stmt === false ) {
+            die( print_r( sqlsrv_errors(), true));
+        }
+
         $datos = array();
     
-        while($v=sqlsrv_fetch_array($query_buscar_local)){
+        while($v=sqlsrv_fetch_array($stmt)){
     
-            $datos = array
-            (
-    
-                "SERVIDOR" => $v['SERVIDOR_ACTOR'],
-                "Database" => $v['BASE_ACTOR'],
-                "NOMBRE" => $v['NOMBRE_ACTOR'],
-                "MAIL" => $v['MAIL_ACTOR']
-    
-            );
-    
+            $_SESSION['conexion_dns'] = $v['SERVIDOR_ACTOR'];
+            $_SESSION['base_nombre'] = $v['BASE_ACTOR'];
     
         }
+        return true;
+    }
+
+    public function habilitarVendedorPorSucursal($cod, $nombre){
+
+        require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
+
+        $cid = new Conexion();
+
+        $cidLocal = $cid->conectar('');
+
+
+        $sqlInsertaVended = 
+        "
+        IF NOT EXISTS (SELECT * FROM GVA23 WHERE COD_VENDED = '".$cod."')
+        BEGIN
+            INSERT INTO GVA23 (COD_VENDED, NOMBRE_VEN, PORC_COMIS, INHABILITA, TIPO_DOC, COD_GVA23)
+            VALUES('".$cod."', '".$nombre."', 1, 0, 99, '".$cod."')
+        END
+        ELSE 
+        BEGIN
+            UPDATE GVA23 SET INHABILITA = 0 WHERE COD_VENDED = '".$cod."'
+        END
+        ";
+
+        
+        $stmt = sqlsrv_query( $cidLocal, $sqlInsertaVended );
+
+        if( $stmt === false ) {
+            die( print_r( sqlsrv_errors(), true));
+        }
+
+        return true;
+
+
+    }
+
+    public function inhabilitarVendedorPorSucursal($cod, $nombre){
+
+        require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
+
+        $cid = new Conexion();
+
+        $cidLocal = $cid->conectar('');
+
+
+        $sqlInsertaVended = 
+        "
+        IF EXISTS (SELECT * FROM GVA23 WHERE COD_VENDED = '".$cod."')
+        BEGIN
+            UPDATE GVA23 SET INHABILITA = 1 WHERE COD_VENDED = '".$cod."'
+        END
+
+        ";
+
+        
+        $stmt = sqlsrv_query( $cidLocal, $sqlInsertaVended );
+
+        if( $stmt === false ) {
+            die( print_r( sqlsrv_errors(), true));
+        }
+
+        return true;
+
+
     }
 }    
-
-// $conexion_tangonet_bis_1 = array( "Database"=>"TangoNet_Bis_1", "UID"=>"sa", "PWD"=>"Axoft");
-// $cid_tangonet_bis_1 = sqlsrv_connect($servidor_lakerbis, $conexion_tangonet_bis_1);
