@@ -32,7 +32,7 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Segmentacion De Clientes</title>
+        <title>Alta vendedores</title>
         <?php 
             require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/assets/css/css.php';
         ?>
@@ -210,7 +210,7 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
 
             },
         });
-        $("#tablaClientes_filter").append(`<button class="btn btn-success btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="habilitar('altaVendedores')"> Habilitar <i class="bi bi-plus-circle-fill"></i></button><button class="btn btn-danger btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="habilitar('bajaVendedores')"> Inhabilitar <i class="bi bi-dash-circle-fill"></i></button>`);
+        $("#tablaClientes_filter").append(`<button class="btn btn-success btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="ejecutarAccion('altaVendedores')"> Habilitar <i class="bi bi-plus-circle-fill"></i></button><button class="btn btn-danger btn_exportar" style="margin-bottom:4px;margin-left:10px;height:40px;margin-right:5px" onclick ="ejecutarAccion('bajaVendedores')"> Inhabilitar <i class="bi bi-dash-circle-fill"></i></button>`);
         
         $('.dataTables_filter input[type="search"]').css(
             {'height':'40px'}
@@ -228,6 +228,10 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
         document.querySelector(".toggle-off").style.fontSize="0"
 
         document.querySelector(".toggle.btn.btn-primary").style.marginRight="22%"
+        document.querySelector("#tablaClientes_filter").parentElement.classList.remove("col-md-6")
+
+        document.querySelector("#tablaClientes_filter").parentElement.classList.add("col-md-8")
+        
         
     } );
 

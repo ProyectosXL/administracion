@@ -90,12 +90,12 @@ const exportTable = () =>{
     const cambiarEntorno = () =>{}
 
 
-    const habilitar = (accion) =>{
+    const ejecutarAccion = (accion) =>{
 
         let selectGrupo = $('#selectGrupo').val();
         let selectSucursal = $('#selectSucursal').val();
-        let sucursalesPorHabilitar = [];
-        let vendedoresPorHabilitar = [];
+        let listadoDeSucursales = [];
+        let lsitadoDeVendedores = [];
 
         let allTr = document.querySelector("#tableVb").querySelectorAll("tr")
 
@@ -103,7 +103,7 @@ const exportTable = () =>{
 
             if(tr.querySelectorAll("td")[2].querySelector("input").checked == true){
 
-                vendedoresPorHabilitar.push([tr.querySelector("td").textContent, tr.querySelectorAll("td")[1].textContent])
+                lsitadoDeVendedores.push([tr.querySelector("td").textContent, tr.querySelectorAll("td")[1].textContent])
                 
             }
 
@@ -118,9 +118,9 @@ const exportTable = () =>{
 
                 sucursales.forEach(element => {
 
-                    if(!sucursalesPorHabilitar.includes(element)){
+                    if(!listadoDeSucursales.includes(element)){
                         
-                        sucursalesPorHabilitar.push(element)
+                        listadoDeSucursales.push(element)
 
                     }
 
@@ -130,15 +130,15 @@ const exportTable = () =>{
 
         }else{
             selectSucursal.forEach(function(opcion) {
-                if(!sucursalesPorHabilitar.includes(opcion)){
+                if(!listadoDeSucursales.includes(opcion)){
                         
-                    sucursalesPorHabilitar.push(opcion)
+                    listadoDeSucursales.push(opcion)
 
 
                 }
             });
         }
-        if(vendedoresPorHabilitar.length == 0) {
+        if(lsitadoDeVendedores.length == 0) {
 
             Swal.fire({
                 icon: 'warning',
@@ -149,7 +149,7 @@ const exportTable = () =>{
 
         }
 
-        if(sucursalesPorHabilitar.length == 0){
+        if(listadoDeSucursales.length == 0){
 
             Swal.fire({
                 icon: 'warning',
@@ -165,8 +165,8 @@ const exportTable = () =>{
             type: "POST",
             url: "Controller/VendedorController.php?accion="+accion,
             data: {
-                sucursalesPorHabilitar: sucursalesPorHabilitar,
-                vendedoresPorHabilitar: vendedoresPorHabilitar,
+                sucursalesPorHabilitar: listadoDeSucursales,
+                vendedoresPorHabilitar: lsitadoDeVendedores,
             },
             success: function (response) {
                 let tabla = document.querySelector("#tableVendedoresBody")
