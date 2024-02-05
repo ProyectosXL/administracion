@@ -1,5 +1,5 @@
 <?php
-    $nombreGrupo = $_GET['nombreGrupo']
+    $nombreGrupo = $_GET['nombreGrupo'];
 
 ?>
 

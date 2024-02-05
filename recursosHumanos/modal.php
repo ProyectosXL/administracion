@@ -15,6 +15,7 @@
         #tableTemporadaContainer {
             max-height: 400px; /* Establece la altura máxima */
             width: 100%;
+            overflow-y: auto;  /* Agrega desplazamiento vertical */
         }
 </style>
 
@@ -34,7 +35,7 @@
                     <div class="modal-body" id="modalVendedores">
                         <div class="row">
                             <div class="col-12">     <div id="tableTemporadaContainer">
-                            <table class="table table-hover table-condensed table-striped text-center" id="tableTemporada">
+                            <table class="table table-hover table-condensed table-striped text-center" style="" id="tableTemporada">
                                 <thead class="thead-dark">
                                     <tr>
                                         <th>SUCURSAL</th>
@@ -62,6 +63,9 @@
 </body>    
 <script>
       $(document).ready(function () {
+        $('#modalTemporadas').on('hidden.bs.modal', function () {
+            location.reload();
+        });
       })
      
    

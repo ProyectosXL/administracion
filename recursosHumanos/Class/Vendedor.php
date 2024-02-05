@@ -37,7 +37,7 @@ class Vendedor
 
         $sql = " 
         
-        SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS WHERE CANAL IN ('PROPIOS','FRANQUICIAS') 
+        SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS WHERE CANAL IN ('PROPIOS') 
         AND NRO_SUC_MADRE IS NULL AND HABILITADO = 1
         ";
 
@@ -155,7 +155,6 @@ class Vendedor
     
     public function localConexion($num_suc){
     
-        session_start();
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
         $cid = new Conexion();
         $cidTango = $cid->conectar('tangoBis');
@@ -203,7 +202,6 @@ class Vendedor
         END
         ";
 
-        
         $stmt = sqlsrv_query( $cidLocal, $sqlInsertaVended );
 
         if( $stmt === false ) {

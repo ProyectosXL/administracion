@@ -92,6 +92,7 @@ const exportTable = () =>{
 
     const ejecutarAccion = (accion) =>{
 
+        document.querySelector("#boxLoading").classList.add("loading")
         let selectGrupo = $('#selectGrupo').val();
         let selectSucursal = $('#selectSucursal').val();
         let listadoDeSucursales = [];
@@ -174,6 +175,7 @@ const exportTable = () =>{
                 response = JSON.parse(response)
                 let allOptions = document.querySelector("#selectSucursal").querySelectorAll("option")
                 let arrayParaMostrar = [];
+                document.querySelector("#boxLoading").classList.remove("loading")
 
                 response.forEach(element => {
                     let  observacion = '';
@@ -217,7 +219,7 @@ const exportTable = () =>{
                 });
                 $("#modalTemporadas").modal("toggle")
                 setTimeout(() => {
-                    location.reload()
+                    // location.reload()
                 }, '5000');
             }
         })

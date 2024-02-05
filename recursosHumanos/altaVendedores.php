@@ -59,6 +59,18 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
             height: 60px;
             width: 60px;
         }
+
+        .loading {
+            position: fixed;
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: url('../assets/images/g0R9.gif') 50% 50% no-repeat rgb(0, 0, 0);
+            background-size: 25%;
+            opacity: .8;
+        }
         
         </style>
         
