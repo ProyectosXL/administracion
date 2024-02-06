@@ -199,7 +199,7 @@ selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")
                 denyButtonText: `Cargar detalle`,
                 })
          .then(function () {
-            window.location = "detalleCostos.php?ordenCompra="+ordenCompra+'&proveedor='+proveedor+'&valorFobPeso='+valorFobPeso+'&contenedor='+contenedor+'&tipoCambio='+tipoCambio+'&idEncabezado='+id;
+            // window.location = "detalleCostos.php?ordenCompra="+ordenCompra+'&proveedor='+proveedor+'&valorFobPeso='+valorFobPeso+'&contenedor='+contenedor+'&tipoCambio='+tipoCambio+'&idEncabezado='+id;
         });
      } else if (result.isDenied) {
          Swal.fire('El despacho no fue guardado', '', 'info')

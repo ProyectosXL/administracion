@@ -34,13 +34,21 @@ foreach ($files as $file) {
 $folderPath = __DIR__ ;
 $files = scandir($folderPath);
 
+
+$archivoActual = str_replace('.php', '.css', basename($_SERVER['PHP_SELF']));
+
 foreach ($files as $file) {
     if ($file === '.' || $file === '..') {
         continue;
     }
     // VALIDA QUE SEAN ARCHIVOS CSS
     if (pathinfo($file, PATHINFO_EXTENSION) === 'css') {
-        echo '<link rel="stylesheet" href='.BASE_URL.'/assets/css/'.$file.'>';
+
+        if($file == $archivoActual){
+
+            echo '<link rel="stylesheet" href='.BASE_URL.'/assets/css/'.$file.'>';
+            
+        }
     }
 }
 

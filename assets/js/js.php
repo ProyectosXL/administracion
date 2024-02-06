@@ -26,13 +26,20 @@ foreach ($files as $file) {
 $folderPath = __DIR__ ;
 $files = scandir($folderPath);
 
+$archivoActual = str_replace('.php', '.js', basename($_SERVER['PHP_SELF']));
+
 foreach ($files as $file) {
     if ($file === '.' || $file === '..') {
         continue;
     }
     // VALIDA QUE SEAN ARCHIVOS JS
     if (pathinfo($file, PATHINFO_EXTENSION) === 'js') {
-        echo '<script src="'.BASE_URL.'/assets/js/'.$file.'"></script>';
+
+        if($file == $archivoActual){
+
+            echo '<script src="'.BASE_URL.'/assets/js/'.$file.'"></script>';
+            
+        }
     }
 }
 

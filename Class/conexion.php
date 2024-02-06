@@ -14,6 +14,7 @@ class Conexion{
         $this->database_central = $this->envVars['DATABASE_CENTRAL'];
         $this->host_locales = $this->envVars['HOST_LOCALES'];
         $this->database_locales = $this->envVars['DATABASE_LOCALES'];
+        $this->database_tangobis = $this->envVars['DATABASE_TANGOBIS'];
         $this->user = $this->envVars['USER'];
         $this->pass = $this->envVars['PASS'];
         $this->pass_locales = $this->envVars['PASS_LOCALES'];
@@ -29,6 +30,8 @@ class Conexion{
             return array($this->host_central, $this->database_central);
         }elseif($nameServer == 'locales'){
             return array($this->host_locales, $this->database_locales);
+        }elseif($nameServer == 'tangoBis'){
+            return array($this->host_locales, $this->database_tangobis);
         }else{
             return array($_SESSION['conexion_dns'], $_SESSION['base_nombre']);
         }
@@ -40,8 +43,15 @@ class Conexion{
 
             $serverDB = $this->servidor($nameServer);
 
-            $pass = ($nameServer == 'locales') ? $this->pass_locales : $this->pass;
+            $pass = $this->pass;
+            // $pass = ($nameServer == 'locales') ? $this->pass_locales : $this->pass;
 
+            if($nameServer == 'locales' || $nameServer == 'tangoBis'){
+
+                $pass = $this->pass_locales;
+                
+            }
+            
             $params = array( 
                 "Database" => $serverDB[1], 
                 "UID" => $this->user, 
