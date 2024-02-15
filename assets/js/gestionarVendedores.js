@@ -4,6 +4,7 @@ const traerVendedores = (div) => {
 
     let trVendedor = document.querySelectorAll("#trVendedor")
 
+
     trVendedor.forEach(vendedor => {
 
         vendedor.querySelectorAll("td")[2].querySelector("input").checked = false
@@ -45,3 +46,20 @@ const traerVendedores = (div) => {
   
 
 }
+
+const marcarTodos = (check) => {
+
+    let trVendedor = document.querySelectorAll("#trVendedor")
+
+    trVendedor.forEach(vendedor => {
+
+        if(check.checked == true){
+
+            vendedor.querySelectorAll("td")[2].querySelector("input").checked = true
+        }else{
+            vendedor.querySelectorAll("td")[2].querySelector("input").checked = false
+
+        }
+    })
+
+} 
