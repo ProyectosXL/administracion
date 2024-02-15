@@ -89,9 +89,6 @@ const exportTable = () =>{
 
     const cambiarEntorno = (t) =>{
 
-        // let spinner = document.querySelector("#boxLoading");
-  
-        // spinner.classList.add("loading");
 
         let entorno = 'central';
     

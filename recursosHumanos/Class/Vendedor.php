@@ -35,7 +35,7 @@ class Vendedor
 
     }
 
-    public function traertSucursales(){
+    public function traerSucursales(){
 
         $db = 'central';
 
@@ -173,7 +173,7 @@ class Vendedor
         $cidTango = $cid->conectar('tangoBis');
 
         $sql_buscar_local = "SELECT TOP 1 * FROM ACTOR WHERE NUMERO_ACTOR = $num_suc";
-    
+  
       
         $stmt = sqlsrv_query( $cidTango, $sql_buscar_local );
 

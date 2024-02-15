@@ -7,7 +7,7 @@ session_start();
 $vendedor = new Vendedor();
 
 $grupos = $vendedor->traerGrupos();
-$sucursales = $vendedor->traertSucursales();
+$sucursales = $vendedor->traerSucursales();
 $vendedores = $vendedor->traerVendedores();
 
 
@@ -158,15 +158,7 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                                                     <tbody id="tableVb" style="font-size: small;">
                                                         <?php 
                                                             foreach ($vendedores as $key => $vendedor) {
-                                           
-                                                                // $dataArray = (array) $value;
-                                                                // $cantidad = 0;
-
-                                                                // foreach ($dataArray['ARTICULOS'] as $v) {
-                                                                //     $cantidad += $v['CANTIDAD'];
-                                                                // } 
-
-                                                            
+                                
                                                                 echo '<tr>';
                                                                     echo '<td>'.$vendedor['COD_VENDED'].'</td>';
                                                                     echo '<td>'.$vendedor['NOMBRE_VEN'].'</td>';

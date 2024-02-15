@@ -41,6 +41,11 @@
             cambiarEntorno();
             break;
         
+        
+        case 'traerVendedoresPorSucursal':
+            traerVendedoresPorSucursal($vendedor);
+            break;
+        
         default:
             # code...
             break;
@@ -50,7 +55,7 @@
 
     function traerSucursales($vendedor){
  
-        $result = $vendedor->traertSucursales();
+        $result = $vendedor->traerSucursales();
         $result = json_encode($result);
 
         echo $result;
@@ -193,5 +198,22 @@
         $_SESSION['entorno'] = $entorno;
 
         echo 'ok';
+    }
+
+    function traerVendedoresPorSucursal ($vendedor){
+
+        $sucursal = $_POST['sucursal'];
+
+        $conexion = $vendedor->localConexion($sucursal);
+
+        
+        if($conexion == true) {
+                
+            $result = $vendedor->traerVendedores();
+
+            var_dump($result);
+        }
+
+
     }
 ?>
