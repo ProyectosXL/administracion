@@ -87,7 +87,30 @@ const exportTable = () =>{
 
     }
 
-    const cambiarEntorno = () =>{}
+    const cambiarEntorno = (t) =>{
+
+        // let spinner = document.querySelector("#boxLoading");
+  
+        // spinner.classList.add("loading");
+
+        let entorno = 'central';
+    
+        if(t.getAttribute("data-off") == "ARG" ){
+            entorno = 'central';
+        }else{
+            entorno = 'uy';
+        }
+
+
+        $.ajax({
+        url: "Controller/vendedorController.php?accion=cambiarEntorno",
+        method: "POST",
+        data : {entorno: entorno},
+        success: function (data) {
+            location.reload();
+        }
+        });
+    }
 
 
     const ejecutarAccion = (accion) =>{

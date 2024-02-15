@@ -17,11 +17,13 @@ class Vendedor
     } 
 
 
-    private function retornarArray($sqlEnviado){
+    private function retornarArray($sqlEnviado, $db = 'central'){
 
         $sql = $sqlEnviado;
 
-        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        $cid_central = $this->cid->conectar($db);
+
+        $stmt = sqlsrv_query( $cid_central, $sql );
 
         $rows = array();
 
@@ -35,13 +37,21 @@ class Vendedor
 
     public function traertSucursales(){
 
+        $db = 'central';
+
         $sql = " 
         
         SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS WHERE CANAL IN ('PROPIOS') 
         AND NRO_SUC_MADRE IS NULL AND HABILITADO = 1
         ";
 
-        $rows = $this->retornarArray($sql);
+        if(isset($_SESSION['entorno'] ) && $_SESSION['entorno'] == 'uy'){
+
+            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM SUCURSALES_LAKERS WHERE CANAL = 'EXTERIOR'";
+            $db = 'locales';
+        }
+
+        $rows = $this->retornarArray($sql, $db);
 
         return $rows;
 
@@ -91,7 +101,10 @@ class Vendedor
         $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23
         WHERE INHABILITA = 0";
 
-        $rows = $this->retornarArray($sql);
+        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : 'central';
+
+
+        $rows = $this->retornarArray($sql, $db);
 
         return $rows;
         
@@ -185,9 +198,14 @@ class Vendedor
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
 
         $cid = new Conexion();
+        
+        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
+        
+        if($db == 'central'){
+            $db = '';
+        }
 
-        $cidLocal = $cid->conectar('');
-
+        $cidLocal = $cid->conectar($db);
 
         $sqlInsertaVended = 
         "
@@ -219,7 +237,13 @@ class Vendedor
 
         $cid = new Conexion();
 
-        $cidLocal = $cid->conectar('');
+        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
+        
+        if($db == 'central'){
+            $db = '';
+        }
+
+        $cidLocal = $cid->conectar($db);
 
 
         $sqlInsertaVended = 

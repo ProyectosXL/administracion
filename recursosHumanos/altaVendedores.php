@@ -2,6 +2,7 @@
 
 require_once 'Class/Vendedor.php';
 
+session_start();
 
 $vendedor = new Vendedor();
 
@@ -16,6 +17,8 @@ if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
     $checked = '';
 }
     
+
+
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
 $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
 $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';

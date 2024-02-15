@@ -37,6 +37,10 @@
             bajaVendedores($vendedor);
             break;
         
+        case 'cambiarEntorno':
+            cambiarEntorno();
+            break;
+        
         default:
             # code...
             break;
@@ -179,5 +183,15 @@
         }
 
         echo json_encode($respuestaPorLocal);
+    }
+
+    function cambiarEntorno () {
+        session_start();
+
+        $entorno = $_POST['entorno'];
+
+        $_SESSION['entorno'] = $entorno;
+
+        echo 'ok';
     }
 ?>

@@ -56,10 +56,12 @@ class DotEnv
             'DATABASE_CENTRAL' => getenv('DATABASE_CENTRAL'),
             'DATABASE_LOCALES' => getenv('DATABASE_LOCALES'),
             'DATABASE_TANGOBIS' => getenv('DATABASE_TANGOBIS'),
+            'DATABASE_UY' => getenv('DATABASE_UY'),
             'USER' => getenv('USER'),
             'PASS' => getenv('PASS'),
             'PASS_LOCALES' => getenv('PASS_LOCALES'),
             'CHARACTER' => getenv('CHARACTER'),
+
             'ENV' => getenv('ENV'),
 
         );
