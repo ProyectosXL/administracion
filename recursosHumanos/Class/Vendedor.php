@@ -109,6 +109,27 @@ class Vendedor
         return $rows;
         
     }
+    public function traerVendedoresPorSucursal () {
+        
+        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23
+        WHERE INHABILITA = 0";
+
+        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
+
+        $cid = $this->cid->conectar($db);
+
+        $stmt = sqlsrv_query( $cid, $sql );
+
+        $rows = array();
+
+        while( $v = sqlsrv_fetch_array( $stmt) ) {
+            $rows[] = $v;
+        }
+
+        return $rows;  
+
+       
+    }
 
     public function borrarGrupo ($grupo) {
 

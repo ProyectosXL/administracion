@@ -2,6 +2,13 @@ const traerVendedores = (div) => {
 
     let sucursal = div.value;
 
+    let trVendedor = document.querySelectorAll("#trVendedor")
+
+    trVendedor.forEach(vendedor => {
+
+        vendedor.querySelectorAll("td")[2].querySelector("input").checked = false
+    })
+
     $.ajax({
         type: "POST",
         url: "Controller/VendedorController.php?accion=traerVendedoresPorSucursal",
@@ -9,15 +16,29 @@ const traerVendedores = (div) => {
             sucursal: sucursal
         },
         success: function (response) {
-            // let select = document.querySelector("#selectVendedor")
-            // select.innerHTML = '';
-            // response = JSON.parse(response)
-            // response.forEach(element => {
-            //     let option = document.createElement("option")
-            //     option.value = element[0]
-            //     option.textContent = element[1]
-            //     select.appendChild(option)
-            // });
+            
+            if(response == false){
+                Swal.fire({
+                    icon: "error",
+                    title: "Local sin conexion",
+                    confirmButtonText: "Cerrar",
+                })
+            }else{
+                data = JSON.parse(response)
+
+                trVendedor.forEach(vendedor => {
+                    
+                    data.forEach(element => {
+                   
+                        if(vendedor.querySelector("td").textContent == element['COD_VENDED']){
+                            vendedor.querySelectorAll("td")[2].querySelector("input").checked = true;
+                        }   
+                            
+                    });
+
+                });
+            }
+  
         }
     });
 

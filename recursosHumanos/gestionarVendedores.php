@@ -135,7 +135,7 @@
                                             
                                             
                                         ?>
-                                        <tr>
+                                        <tr id="trVendedor">
                                             <td><?= $vendedor['COD_VENDED'] ?></td>
                                             <td><?= $vendedor['NOMBRE_VEN'] ?></td>
                                             <td><input type="checkbox"></td>

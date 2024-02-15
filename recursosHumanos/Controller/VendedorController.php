@@ -209,9 +209,14 @@
         
         if($conexion == true) {
                 
-            $result = $vendedor->traerVendedores();
+            $result = $vendedor->traerVendedoresPorSucursal();
 
-            var_dump($result);
+            echo json_encode($result);
+            
+        }else{
+
+            echo false;
+
         }
 
 
