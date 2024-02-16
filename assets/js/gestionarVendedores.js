@@ -63,3 +63,28 @@ const marcarTodos = (check) => {
     })
 
 } 
+
+
+const cambiarEntorno = (t) =>{
+
+
+    let entorno = 'central';
+
+    if(t.getAttribute("data-off") == "ARG" ){
+        entorno = 'central';
+    }else{
+        entorno = 'uy';
+    }
+
+    console.log(entorno)
+
+    $.ajax({
+    url: "Controller/vendedorController.php?accion=cambiarEntorno",
+    method: "POST",
+    data : {entorno: entorno},
+    success: function (data) {
+        location.reload();
+    }
+    });
+}
+

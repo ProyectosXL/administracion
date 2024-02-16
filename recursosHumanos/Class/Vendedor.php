@@ -190,6 +190,25 @@ class Vendedor
     public function localConexion($num_suc){
     
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
+
+        if($num_suc == 201){
+            
+            $_SESSION['conexion_dns'] = 'DESKTOP-K8EK5EV\AXSQLEXPRESS';
+            $_SESSION['base_nombre'] = 'XL__NUEVOCENTRO';
+
+            return true;
+            die();
+        }
+
+        if($num_suc == 202){
+            
+            $_SESSION['conexion_dns'] = 'DESKTOP-L6VOQPJ\AXSQLEXPRESS_1';
+            $_SESSION['base_nombre'] = 'TRES_CRUCES';
+
+            return true;
+            die();
+        }
+
         $cid = new Conexion();
         $cidTango = $cid->conectar('tangoBis');
 
@@ -211,6 +230,7 @@ class Vendedor
             $_SESSION['base_nombre'] = $v['BASE_ACTOR'];
     
         }
+     
         return true;
     }
 

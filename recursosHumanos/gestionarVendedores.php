@@ -1,9 +1,10 @@
 <?php 
+    session_start();
    require_once 'Class/Vendedor.php';
    $vendedor = new Vendedor();
    $sucursales = $vendedor->traerSucursales();
    $vendedores = $vendedor->traerVendedores();
-
+ 
     
     if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
         $checked = 'checked';
