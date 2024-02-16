@@ -46,6 +46,10 @@
             traerVendedoresPorSucursal($vendedor);
             break;
         
+        case 'guardarGestionVendedores':
+            guardarGestionVendedores($vendedor);
+            break;
+        
         default:
             # code...
             break;
@@ -220,5 +224,20 @@
         }
 
 
+    }
+
+
+    function guardarGestionVendedores($vendedor) {
+
+        $stringParaSqlHabilita = $_POST['stringParaSqlHabilita'];
+        $stringParaSqlDeshabilita = $_POST['stringParaSqlDeshabilita'];
+        $sucursal = $_POST['sucursal'];
+
+
+        $conexion = $vendedor->localConexion($sucursal);
+
+        $result = $vendedor->guardarGestionVendedores($stringParaSqlHabilita, $stringParaSqlDeshabilita);
+
+        return $result;
     }
 ?>

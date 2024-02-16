@@ -6,6 +6,7 @@ class Vendedor
     private $cid;
     private $cid_central;
 
+
     
     function __construct()
     {
@@ -13,6 +14,7 @@ class Vendedor
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
         $this->cid = new Conexion();
         $this->cid_central = $this->cid->conectar('central');
+      
 
     } 
 
@@ -232,6 +234,24 @@ class Vendedor
         }
      
         return true;
+    }
+
+    public function guardarGestionVendedores($stringHabilita, $stringDeshabilita){
+
+        $cid = new Conexion();
+        $cid_local = $cid->conectar('');
+
+        $sql = "UPDATE GVA23 
+        SET INHABILITA = CASE 
+                            WHEN COD_VENDED IN $stringHabilita THEN 0
+                            WHEN COD_VENDED IN $stringDeshabilita THEN 1
+                         END";
+                         var_dump($sql);
+         
+        $stmt = sqlsrv_query( $cid_local, $sql );
+
+        return true;
+
     }
 
     public function habilitarVendedorPorSucursal($cod, $nombre){

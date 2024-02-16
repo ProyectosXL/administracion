@@ -1,6 +1,9 @@
 const traerVendedores = (div) => {
 
     let sucursal = div.value;
+ 
+    document.querySelector("#spanSucursal").textContent = $('#selectSucursal option:selected').attr('attr-name');
+    $('#tablaVendedores').DataTable().destroy();
 
     let trVendedor = document.querySelectorAll("#trVendedor")
 
@@ -9,6 +12,7 @@ const traerVendedores = (div) => {
 
         vendedor.querySelectorAll("td")[2].querySelector("input").checked = false
     })
+    
 
     $.ajax({
         type: "POST",
@@ -39,7 +43,7 @@ const traerVendedores = (div) => {
 
                 });
             }
-  
+            activarDatatable();
         }
     });
 
@@ -48,6 +52,8 @@ const traerVendedores = (div) => {
 }
 
 const marcarTodos = (check) => {
+
+    $('#tablaVendedores').DataTable().destroy();
 
     let trVendedor = document.querySelectorAll("#trVendedor")
 
@@ -61,6 +67,8 @@ const marcarTodos = (check) => {
 
         }
     })
+    
+    activarDatatable();
 
 } 
 
@@ -88,3 +96,93 @@ const cambiarEntorno = (t) =>{
     });
 }
 
+
+const guardar = () => {
+
+    $('#tablaVendedores').DataTable().destroy();
+
+    let stringParaSqlHabilita = "(";
+    let stringParaSqlDeshabilita = "(";
+    let sucursal = document.querySelector("#selectSucursal").value
+   
+    if(sucursal == "0"){
+        
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atención!',
+            text: 'Debe seleccionar una sucursal'
+        })
+        return 1
+    }
+
+    let trVendedor = document.querySelectorAll("#trVendedor")
+
+    trVendedor.forEach(element => {
+        
+        if(element.querySelectorAll("td")[2].querySelector("input").checked == true){
+
+            stringParaSqlHabilita += "'" + element.querySelector("td").textContent + "',"
+            
+        }else{
+            stringParaSqlDeshabilita += "'"+ element.querySelector("td").textContent + "',"
+        }
+    });
+
+    stringParaSqlHabilita = (stringParaSqlHabilita.length > 1) ?  stringParaSqlHabilita.slice(0, -1) + ")" : "('')"
+    
+    stringParaSqlDeshabilita = (stringParaSqlDeshabilita.length > 1) ? stringParaSqlDeshabilita.slice(0, -1) + ")" : "('')";
+
+   
+    $.ajax({
+        url: "Controller/vendedorController.php?accion=guardarGestionVendedores",
+        method: "POST",
+        data : {
+            sucursal: sucursal,
+            stringParaSqlHabilita: stringParaSqlHabilita,
+            stringParaSqlDeshabilita: stringParaSqlDeshabilita
+        },
+        success: function (data) {
+            
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Completado!',
+                text: 'Se han guardado correctamente los cambios '
+            }).then((result) => {
+                location.reload();
+            })
+        }
+        });
+    
+}
+
+
+const activarDatatable = () =>{
+
+    $('#tablaVendedores').DataTable({
+        "bLengthChange": false,
+        
+        "bInfo": false,
+        "aaSorting": false,
+        'columnDefs': [
+            {
+                "targets": "_all", 
+                "className": "text-center",
+                "sortable": false,
+         
+            },
+        ],
+        "oLanguage": {
+
+            "sSearch": "",
+            "sSearchPlaceholder" : "Sobre cualquier campo"
+            
+
+        },
+    });
+
+    let filtro = document.querySelector(".dataTables_filter")
+    let nuevoLugar = document.querySelector("#colBusquedaRapida")
+    nuevoLugar.appendChild(filtro)
+    document.querySelectorAll("#tablaVendedores_filter")[1].remove();
+}

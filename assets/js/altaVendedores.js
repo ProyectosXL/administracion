@@ -160,6 +160,8 @@ const exportTable = () =>{
             });
         }
         if(lsitadoDeVendedores.length == 0) {
+            
+            document.querySelector("#boxLoading").classList.remove("loading")
 
             Swal.fire({
                 icon: 'warning',
@@ -171,6 +173,8 @@ const exportTable = () =>{
         }
 
         if(listadoDeSucursales.length == 0){
+
+            document.querySelector("#boxLoading").classList.remove("loading")
 
             Swal.fire({
                 icon: 'warning',

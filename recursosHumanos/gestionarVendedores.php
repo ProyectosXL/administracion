@@ -78,7 +78,7 @@
                         <div id="periodo" hidden></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
                         <div class="col-10">
-                                <h3 ><strong><img src="../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"> Gestion vendedores por sucursal -  </strong></h3>
+                                <h3 ><strong><img src="../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"> Gestion vendedores por sucursal -  <span id="spanSucursal"></span></strong></h3>
                         </div>
                         <div class="col-2" style="">
 
@@ -102,7 +102,7 @@
 
                                     ?>
 
-                                            <option value="<?= $value['NRO_SUCURSAL'] ?>"><?= $value['DESC_SUCURSAL'] ?></option>
+                                            <option value="<?= $value['NRO_SUCURSAL'] ?>" attr-name="<?= $value['DESC_SUCURSAL'] ?>" ><?= $value['DESC_SUCURSAL'] ?></option>
                                     <?php
                                         }
                                     ?>
@@ -111,12 +111,12 @@
 
                           
                         </div>
-                        <div class="inline-container" style="margin-left:50px;width: 60%; display: inline-block;">
+                        <div class="inline-container" style="margin-left:50px;width: 60%; display: inline-block;margin-bottom:2%">
                                 <div id="" style="display: inline-block;margin-left:60%">
                                         <input type="checkbox" onchange="marcarTodos(this)" style="width: 16px;height: 16px;"> Todos
                                 </div>
                                 <div id="" style="display: inline-block;margin-left:10%">
-                                        <button class="btn btn-primary" value="guardar">Guardar <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-floppy" viewBox="0 0 16 16"><path d="M11 2H9v3h2z"/><path d="M1.5 0h11.586a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13A1.5 1.5 0 0 1 1.5 0M1 1.5v13a.5.5 0 0 0 .5.5H2v-4.5A1.5 1.5 0 0 1 3.5 9h9a1.5 1.5 0 0 1 1.5 1.5V15h.5a.5.5 0 0 0 .5-.5V2.914a.5.5 0 0 0-.146-.353l-1.415-1.415A.5.5 0 0 0 13.086 1H13v4.5A1.5 1.5 0 0 1 11.5 7h-7A1.5 1.5 0 0 1 3 5.5V1H1.5a.5.5 0 0 0-.5.5m3 4a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V1H4zM3 15h10v-4.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5z"/></svg></button>
+                                        <button class="btn btn-primary" value="guardar" onclick="guardar()">Guardar <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-floppy" viewBox="0 0 16 16"><path d="M11 2H9v3h2z"/><path d="M1.5 0h11.586a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13A1.5 1.5 0 0 1 1.5 0M1 1.5v13a.5.5 0 0 0 .5.5H2v-4.5A1.5 1.5 0 0 1 3.5 9h9a1.5 1.5 0 0 1 1.5 1.5V15h.5a.5.5 0 0 0 .5-.5V2.914a.5.5 0 0 0-.146-.353l-1.415-1.415A.5.5 0 0 0 13.086 1H13v4.5A1.5 1.5 0 0 1 11.5 7h-7A1.5 1.5 0 0 1 3 5.5V1H1.5a.5.5 0 0 0-.5.5m3 4a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V1H4zM3 15h10v-4.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5z"/></svg></button>
                                 </div>
 
                         </div>
@@ -139,7 +139,7 @@
                                         <tr id="trVendedor">
                                             <td><?= $vendedor['COD_VENDED'] ?></td>
                                             <td><?= $vendedor['NOMBRE_VEN'] ?></td>
-                                            <td><input type="checkbox"></td>
+                                            <td><input type="checkbox" style="width: 20px;height: 20px;"></td>
                                         </tr>
                                         <?php
                                             } 
