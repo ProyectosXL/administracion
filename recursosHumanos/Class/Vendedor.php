@@ -193,7 +193,7 @@ class Vendedor
     
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
 
-        if($num_suc == 201){
+        if($num_suc == 202){
             
             $_SESSION['conexion_dns'] = 'DESKTOP-K8EK5EV\AXSQLEXPRESS';
             $_SESSION['base_nombre'] = 'XL__NUEVOCENTRO';
@@ -202,7 +202,7 @@ class Vendedor
             die();
         }
 
-        if($num_suc == 202){
+        if($num_suc == 201){
             
             $_SESSION['conexion_dns'] = 'DESKTOP-L6VOQPJ\AXSQLEXPRESS_1';
             $_SESSION['base_nombre'] = 'TRES_CRUCES';
