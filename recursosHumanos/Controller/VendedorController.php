@@ -37,6 +37,19 @@
             bajaVendedores($vendedor);
             break;
         
+        case 'cambiarEntorno':
+            cambiarEntorno();
+            break;
+        
+        
+        case 'traerVendedoresPorSucursal':
+            traerVendedoresPorSucursal($vendedor);
+            break;
+        
+        case 'guardarGestionVendedores':
+            guardarGestionVendedores($vendedor);
+            break;
+        
         default:
             # code...
             break;
@@ -46,7 +59,7 @@
 
     function traerSucursales($vendedor){
  
-        $result = $vendedor->traertSucursales();
+        $result = $vendedor->traerSucursales();
         $result = json_encode($result);
 
         echo $result;
@@ -179,5 +192,53 @@
         }
 
         echo json_encode($respuestaPorLocal);
+    }
+
+    function cambiarEntorno () {
+        session_start();
+
+        $entorno = $_POST['entorno'];
+
+        $_SESSION['entorno'] = $entorno;
+
+        echo 'ok';
+    }
+
+    function traerVendedoresPorSucursal ($vendedor){
+
+        $sucursal = $_POST['sucursal'];
+        $filtroHabilitados = $_POST['filtroHabilitados'];
+
+        $conexion = $vendedor->localConexion($sucursal);
+
+        
+        if($conexion == true) {
+                
+            $result = $vendedor->traerVendedoresPorSucursal($filtroHabilitados);
+
+            echo json_encode($result);
+            
+        }else{
+
+            echo false;
+
+        }
+
+
+    }
+
+
+    function guardarGestionVendedores($vendedor) {
+
+        $stringParaSqlHabilita = $_POST['stringParaSqlHabilita'];
+        $stringParaSqlDeshabilita = $_POST['stringParaSqlDeshabilita'];
+        $sucursal = $_POST['sucursal'];
+
+
+        $conexion = $vendedor->localConexion($sucursal);
+
+        $result = $vendedor->guardarGestionVendedores($stringParaSqlHabilita, $stringParaSqlDeshabilita);
+
+        return $result;
     }
 ?>
