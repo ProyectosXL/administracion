@@ -113,8 +113,8 @@ class Vendedor
     }
     public function traerVendedoresPorSucursal ($filtroHabilitados) {
         
-        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23 WHERE INHABILITA like '%$filtroHabilitados%'";
-
+        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23 WHERE INHABILITA like '$filtroHabilitados'";
+      
         $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
 
         $cid = $this->cid->conectar($db);
@@ -244,8 +244,9 @@ class Vendedor
         SET INHABILITA = CASE 
                             WHEN COD_VENDED IN $stringHabilita THEN 0
                             WHEN COD_VENDED IN $stringDeshabilita THEN 1
+                            ELSE INHABILITA 
                          END";
-                         var_dump($sql);
+                  
          
         $stmt = sqlsrv_query( $cid_local, $sql );
 

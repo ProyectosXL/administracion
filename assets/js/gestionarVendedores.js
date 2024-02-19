@@ -35,6 +35,7 @@ const traerVendedores = () => {
                 data = JSON.parse(response)
                 let tabla = document.querySelector("#bodyVendedores")
                 tabla.innerHTML = '';
+           
                 data.forEach(element => {
                   
                     let row = document.createElement("tr")
@@ -168,6 +169,7 @@ const guardar = () => {
 
 
 const activarDatatable = () =>{
+    document.querySelector("#colBusquedaRapida").innerHTML = '';
 
     $('#tablaVendedores').DataTable({
         "bLengthChange": false,
@@ -190,13 +192,9 @@ const activarDatatable = () =>{
 
         },
     });
-    
+
     let filtro = document.querySelector(".dataTables_filter")
     let nuevoLugar = document.querySelector("#colBusquedaRapida")
     nuevoLugar.appendChild(filtro)
-    if(document.querySelector("#busquedaRapida").hidden != true){
-
-        document.querySelectorAll("#tablaVendedores_filter")[1].remove();
-    }
     document.querySelector("#busquedaRapida").hidden = false
 }
