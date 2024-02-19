@@ -73,7 +73,7 @@
 
         <div class="alert alert-secondary">
             <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Grupos alta vendedores</h6></div>
+                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Gestionar vendedores</h6></div>
                     <div class="card card-1">
                         <div id="periodo" hidden></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
