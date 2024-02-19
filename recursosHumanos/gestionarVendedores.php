@@ -87,11 +87,11 @@
 
 
                         </div>
-                        <div class="inline-container" style="margin-left:50px;width: 60%; display: inline-block;margin-bottom:20px">
+                        <div class="inline-container" style="margin-left:50px;width: 80%; display: inline-block;margin-bottom:20px">
                          
                                 
                                 Sucursal:
-                                <select name="selectSucursal" id="selectSucursal" onchange="traerVendedores(this)" style="width: 20%;height: 32px;margin-right:5%"  class="form-select">
+                                <select name="selectSucursal" id="selectSucursal" onchange="traerVendedores()" style="width: 20%;height: 32px;margin-right:5%"  class="form-select">
                                     
                                     <?php
                                         if(!isset($_SESSION['selectSucursal']) ){
@@ -106,6 +106,13 @@
                                     <?php
                                         }
                                     ?>
+                                </select>
+                                
+                                Estado:
+                                <select name="filtroHabilitados" id="filtroHabilitados" onchange="traerVendedores()" style="width: 20%;height: 32px;margin-right:5%"  class="form-select">
+                                        <option value="%">Todos</option>
+                                        <option value="0">Habilitados</option>
+                                        <option value="1">Inhabilitados</option>
                                 </select>
                                  Búsqueda rápida: <div id="colBusquedaRapida" style="display: inline-block;"></div>
 
@@ -131,20 +138,7 @@
                                 </tr>
                             </thead>
                             <tbody id="bodyVendedores">
-                                        <!-- <?php 
-                                            foreach ($vendedores as $key => $vendedor) {
-                                            
-                                            
-                                        ?>
-                                        <tr id="trVendedor">
-                                            <td><?= $vendedor['COD_VENDED'] ?></td>
-                                            <td><?= $vendedor['NOMBRE_VEN'] ?></td>
-                                            <td><input type="checkbox" style="width: 20px;height: 20px;"></td>
-                                        </tr>
-                                        <?php
-                                            } 
-                                        ?> -->
-                                
+                                   
                             </tbody>
             
                         </table>

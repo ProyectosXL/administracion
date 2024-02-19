@@ -1,7 +1,9 @@
-const traerVendedores = (div) => {
+const traerVendedores = () => {
 
-    let sucursal = div.value;
+    let sucursal = document.querySelector("#selectSucursal").value
+    let filtroHabilitados = document.querySelector("#filtroHabilitados").value
  
+    
     document.querySelector("#spanSucursal").textContent = $('#selectSucursal option:selected').attr('attr-name');
     $('#tablaVendedores').DataTable().destroy();
 
@@ -18,7 +20,8 @@ const traerVendedores = (div) => {
         type: "POST",
         url: "Controller/VendedorController.php?accion=traerVendedoresPorSucursal",
         data: {
-            sucursal: sucursal
+            sucursal: sucursal,
+            filtroHabilitados: filtroHabilitados
         },
         success: function (response) {
             

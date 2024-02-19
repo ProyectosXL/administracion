@@ -207,13 +207,14 @@
     function traerVendedoresPorSucursal ($vendedor){
 
         $sucursal = $_POST['sucursal'];
+        $filtroHabilitados = $_POST['filtroHabilitados'];
 
         $conexion = $vendedor->localConexion($sucursal);
 
         
         if($conexion == true) {
                 
-            $result = $vendedor->traerVendedoresPorSucursal();
+            $result = $vendedor->traerVendedoresPorSucursal($filtroHabilitados);
 
             echo json_encode($result);
             

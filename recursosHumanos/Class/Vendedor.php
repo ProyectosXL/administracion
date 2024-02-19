@@ -111,9 +111,9 @@ class Vendedor
         return $rows;
         
     }
-    public function traerVendedoresPorSucursal () {
+    public function traerVendedoresPorSucursal ($filtroHabilitados) {
         
-        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23";
+        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23 WHERE INHABILITA like '%$filtroHabilitados%'";
 
         $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
 
