@@ -190,9 +190,13 @@ const activarDatatable = () =>{
 
         },
     });
-
+    
     let filtro = document.querySelector(".dataTables_filter")
     let nuevoLugar = document.querySelector("#colBusquedaRapida")
     nuevoLugar.appendChild(filtro)
-    document.querySelectorAll("#tablaVendedores_filter")[1].remove();
+    if(document.querySelector("#busquedaRapida").hidden != true){
+
+        document.querySelectorAll("#tablaVendedores_filter")[1].remove();
+    }
+    document.querySelector("#busquedaRapida").hidden = false
 }

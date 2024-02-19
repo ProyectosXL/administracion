@@ -114,7 +114,7 @@
                                         <option value="0">Habilitados</option>
                                         <option value="1">Inhabilitados</option>
                                 </select>
-                                 Búsqueda rápida: <div id="colBusquedaRapida" style="display: inline-block;"></div>
+                                <span id="busquedaRapida" hidden> Búsqueda rápida: <div id="colBusquedaRapida" style="display: inline-block;"></div></span>
 
                           
                         </div>
@@ -131,9 +131,9 @@
                         <table class="table table-striped table-bordered table-sm table-hover" id="tablaVendedores" style="width: 60%; height:100px; margin-left:50px" cellspacing="0" data-page-length="20">
                             <thead class="thead-dark" style="">
                                 <tr>
-                                    <th style="text-align:center;" >COD VENDEDOR</th>
-                                    <th style="text-align:center;" >NOMBRE VENDEDOR</th>
-                                    <th style="text-align:center;" ></th>
+                                    <th style="text-align:center" >COD VENDEDOR</th>
+                                    <th style="text-align:center" >NOMBRE VENDEDOR</th>
+                                    <th style="text-align:center" ></th>
                                     
                                 </tr>
                             </thead>
@@ -158,31 +158,9 @@
 </html>
 
 <script>
-        $('#tablaVendedores').DataTable({
-            "bLengthChange": false,
-            
-            "bInfo": false,
-            "aaSorting": false,
-            'columnDefs': [
-                {
-                    "targets": "_all", 
-                    "className": "text-center",
-                    "sortable": false,
-             
-                },
-            ],
-            "oLanguage": {
-  
-                "sSearch": "",
-                "sSearchPlaceholder" : "Sobre cualquier campo"
-                
-
-            },
-        });
+       
         $(document).ready( function () {
-            let filtro = document.querySelector(".dataTables_filter")
-            let nuevoLugar = document.querySelector("#colBusquedaRapida")
-            nuevoLugar.appendChild(filtro)
+           
 
             $('[data-toggle="tooltip"]').tooltip()
             document.querySelector(".toggle").style.width="40px"
