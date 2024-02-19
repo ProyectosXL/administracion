@@ -30,18 +30,25 @@ const traerVendedores = (div) => {
                 })
             }else{
                 data = JSON.parse(response)
+                let tabla = document.querySelector("#bodyVendedores")
+                tabla.innerHTML = '';
+                data.forEach(element => {
+                  
+                    let row = document.createElement("tr")
 
-                trVendedor.forEach(vendedor => {
-                    
-                    data.forEach(element => {
-                   
-                        if(vendedor.querySelector("td").textContent == element['COD_VENDED']){
-                            vendedor.querySelectorAll("td")[2].querySelector("input").checked = true;
-                        }   
-                            
-                    });
+                    row.setAttribute("id","trVendedor");
+                    let checked = (element['INHABILITA'] != 0) ? '' : 'checked'
+                    let textHtml =  `
+                    <td>${element['COD_VENDED']}</td>
+                    <td>${element['NOMBRE_VEN']}</td>
+                    <td><input type="checkbox" style="width: 20px;height: 20px;" ${checked}></td>`;
 
+                    row.innerHTML = textHtml;
+                    tabla.appendChild(row)
                 });
+
+               
+               
             }
             activarDatatable();
         }
@@ -115,6 +122,7 @@ const guardar = () => {
         return 1
     }
 
+
     let trVendedor = document.querySelectorAll("#trVendedor")
 
     trVendedor.forEach(element => {
@@ -132,7 +140,6 @@ const guardar = () => {
     
     stringParaSqlDeshabilita = (stringParaSqlDeshabilita.length > 1) ? stringParaSqlDeshabilita.slice(0, -1) + ")" : "('')";
 
-   
     $.ajax({
         url: "Controller/vendedorController.php?accion=guardarGestionVendedores",
         method: "POST",

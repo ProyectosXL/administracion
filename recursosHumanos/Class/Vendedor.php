@@ -113,8 +113,7 @@ class Vendedor
     }
     public function traerVendedoresPorSucursal () {
         
-        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23
-        WHERE INHABILITA = 0";
+        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23";
 
         $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
 
