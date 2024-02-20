@@ -24,7 +24,7 @@ class Encabezado
             '".$datosDeCabezera['ordenCompra']."','".$datosDeCabezera['formaPago']."','".$datosDeCabezera['numeroBl']."','".$datosDeCabezera['tipoCambio']."','".$datosDeCabezera['valorFobDolar']."','".(float)$datosDeCabezera['valorFobPeso']."','".$datosDeCabezera['fechaArribo']."','".$datosDeCabezera['fechaDespacho']."' , '".$datosDeCabezera['ocm']."')
         ;";
         var_dump($sql);
-        die();
+        
         try {
 
             $stmt = sqlsrv_query($this->cid_central, $sql);
