@@ -270,6 +270,20 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
           carousel.appendChild(prevControl);
           carousel.appendChild(nextControl);
 
+          let rotateButton = document.createElement('button');
+          rotateButton.type = 'button';
+          rotateButton.style.width = '400px'
+          rotateButton.style.height = '50px'
+          rotateButton.style.marginTop = '10px'
+          rotateButton.style.marginBottom = '10px'
+          rotateButton.style.marginLeft = '35%'
+          rotateButton.className = 'btn btn-primary'; // Puedes ajustar las clases según tu estilo
+          rotateButton.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Rotar Imagen';
+          rotateButton.addEventListener('click', function() {
+              rotarImagen();
+          });
+
+          modalBody.appendChild(rotateButton);
           // Activa el carrusel de Bootstrap
           $(carousel).carousel();
 
@@ -318,3 +332,22 @@ const pasarImagen = (pos) =>{
     }
   
   }
+
+
+  
+const rotarImagen = () => {
+  let carousel = document.querySelector('#carruselImagenes .carousel-inner');
+  let activeItem = carousel.querySelector('.carousel-item.active img');
+
+  // Obtener el ángulo actual de rotación (en grados)
+  let currentRotation = activeItem.getAttribute('data-rotation') || 0;
+
+  // Incrementar el ángulo de rotación en 90 grados
+  let newRotation = (parseInt(currentRotation) + 90) % 360;
+
+  // Aplicar la rotación a la imagen
+  activeItem.style.transform = `rotate(${newRotation}deg)`;
+
+  // Actualizar el atributo data-rotation
+  activeItem.setAttribute('data-rotation', newRotation);
+}
