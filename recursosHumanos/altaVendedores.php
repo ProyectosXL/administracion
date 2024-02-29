@@ -2,11 +2,12 @@
 
 require_once 'Class/Vendedor.php';
 
+session_start();
 
 $vendedor = new Vendedor();
 
 $grupos = $vendedor->traerGrupos();
-$sucursales = $vendedor->traertSucursales();
+$sucursales = $vendedor->traerSucursales();
 $vendedores = $vendedor->traerVendedores();
 
 
@@ -16,6 +17,8 @@ if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
     $checked = '';
 }
     
+
+
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
 $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
 $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
@@ -155,15 +158,7 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                                                     <tbody id="tableVb" style="font-size: small;">
                                                         <?php 
                                                             foreach ($vendedores as $key => $vendedor) {
-                                           
-                                                                // $dataArray = (array) $value;
-                                                                // $cantidad = 0;
-
-                                                                // foreach ($dataArray['ARTICULOS'] as $v) {
-                                                                //     $cantidad += $v['CANTIDAD'];
-                                                                // } 
-
-                                                            
+                                
                                                                 echo '<tr>';
                                                                     echo '<td>'.$vendedor['COD_VENDED'].'</td>';
                                                                     echo '<td>'.$vendedor['NOMBRE_VEN'].'</td>';

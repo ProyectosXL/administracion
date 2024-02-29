@@ -87,7 +87,27 @@ const exportTable = () =>{
 
     }
 
-    const cambiarEntorno = () =>{}
+    const cambiarEntorno = (t) =>{
+
+
+        let entorno = 'central';
+    
+        if(t.getAttribute("data-off") == "ARG" ){
+            entorno = 'central';
+        }else{
+            entorno = 'uy';
+        }
+
+
+        $.ajax({
+        url: "Controller/vendedorController.php?accion=cambiarEntorno",
+        method: "POST",
+        data : {entorno: entorno},
+        success: function (data) {
+            location.reload();
+        }
+        });
+    }
 
 
     const ejecutarAccion = (accion) =>{
@@ -140,6 +160,8 @@ const exportTable = () =>{
             });
         }
         if(lsitadoDeVendedores.length == 0) {
+            
+            document.querySelector("#boxLoading").classList.remove("loading")
 
             Swal.fire({
                 icon: 'warning',
@@ -151,6 +173,8 @@ const exportTable = () =>{
         }
 
         if(listadoDeSucursales.length == 0){
+
+            document.querySelector("#boxLoading").classList.remove("loading")
 
             Swal.fire({
                 icon: 'warning',

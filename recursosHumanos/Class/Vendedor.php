@@ -6,6 +6,7 @@ class Vendedor
     private $cid;
     private $cid_central;
 
+
     
     function __construct()
     {
@@ -13,15 +14,18 @@ class Vendedor
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
         $this->cid = new Conexion();
         $this->cid_central = $this->cid->conectar('central');
+      
 
     } 
 
 
-    private function retornarArray($sqlEnviado){
+    private function retornarArray($sqlEnviado, $db = 'central'){
 
         $sql = $sqlEnviado;
 
-        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        $cid_central = $this->cid->conectar($db);
+
+        $stmt = sqlsrv_query( $cid_central, $sql );
 
         $rows = array();
 
@@ -33,7 +37,9 @@ class Vendedor
 
     }
 
-    public function traertSucursales(){
+    public function traerSucursales(){
+
+        $db = 'central';
 
         $sql = " 
         
@@ -41,7 +47,13 @@ class Vendedor
         AND NRO_SUC_MADRE IS NULL AND HABILITADO = 1
         ";
 
-        $rows = $this->retornarArray($sql);
+        if(isset($_SESSION['entorno'] ) && $_SESSION['entorno'] == 'uy'){
+
+            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM SUCURSALES_LAKERS WHERE CANAL = 'EXTERIOR'";
+            $db = 'locales';
+        }
+
+        $rows = $this->retornarArray($sql, $db);
 
         return $rows;
 
@@ -91,10 +103,33 @@ class Vendedor
         $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23
         WHERE INHABILITA = 0";
 
-        $rows = $this->retornarArray($sql);
+        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : 'central';
+
+
+        $rows = $this->retornarArray($sql, $db);
 
         return $rows;
         
+    }
+    public function traerVendedoresPorSucursal ($filtroHabilitados) {
+        
+        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23 WHERE INHABILITA like '$filtroHabilitados'";
+      
+        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
+
+        $cid = $this->cid->conectar($db);
+
+        $stmt = sqlsrv_query( $cid, $sql );
+
+        $rows = array();
+
+        while( $v = sqlsrv_fetch_array( $stmt) ) {
+            $rows[] = $v;
+        }
+
+        return $rows;  
+
+       
     }
 
     public function borrarGrupo ($grupo) {
@@ -156,11 +191,30 @@ class Vendedor
     public function localConexion($num_suc){
     
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
+
+        if($num_suc == 202){
+            
+            $_SESSION['conexion_dns'] = 'DESKTOP-K8EK5EV\AXSQLEXPRESS';
+            $_SESSION['base_nombre'] = 'XL__NUEVOCENTRO';
+
+            return true;
+            die();
+        }
+
+        if($num_suc == 201){
+            
+            $_SESSION['conexion_dns'] = 'DESKTOP-L6VOQPJ\AXSQLEXPRESS_1';
+            $_SESSION['base_nombre'] = 'TRES_CRUCES';
+
+            return true;
+            die();
+        }
+
         $cid = new Conexion();
         $cidTango = $cid->conectar('tangoBis');
 
         $sql_buscar_local = "SELECT TOP 1 * FROM ACTOR WHERE NUMERO_ACTOR = $num_suc";
-    
+  
       
         $stmt = sqlsrv_query( $cidTango, $sql_buscar_local );
 
@@ -177,7 +231,27 @@ class Vendedor
             $_SESSION['base_nombre'] = $v['BASE_ACTOR'];
     
         }
+     
         return true;
+    }
+
+    public function guardarGestionVendedores($stringHabilita, $stringDeshabilita){
+
+        $cid = new Conexion();
+        $cid_local = $cid->conectar('');
+
+        $sql = "UPDATE GVA23 
+        SET INHABILITA = CASE 
+                            WHEN COD_VENDED IN $stringHabilita THEN 0
+                            WHEN COD_VENDED IN $stringDeshabilita THEN 1
+                            ELSE INHABILITA 
+                         END";
+                  
+         
+        $stmt = sqlsrv_query( $cid_local, $sql );
+
+        return true;
+
     }
 
     public function habilitarVendedorPorSucursal($cod, $nombre){
@@ -185,9 +259,14 @@ class Vendedor
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
 
         $cid = new Conexion();
+        
+        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
+        
+        if($db == 'central'){
+            $db = '';
+        }
 
-        $cidLocal = $cid->conectar('');
-
+        $cidLocal = $cid->conectar($db);
 
         $sqlInsertaVended = 
         "
@@ -219,7 +298,13 @@ class Vendedor
 
         $cid = new Conexion();
 
-        $cidLocal = $cid->conectar('');
+        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : '';
+        
+        if($db == 'central'){
+            $db = '';
+        }
+
+        $cidLocal = $cid->conectar($db);
 
 
         $sqlInsertaVended = 
