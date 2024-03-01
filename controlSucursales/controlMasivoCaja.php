@@ -234,7 +234,7 @@ foreach ($todosLosImportes as $key => $value) {
                                             
                             <?php 
                                 foreach ($todosLosImportes as $key => $importe) {
-                                    if(in_array($medioPagoSelected[0], ['5','6','7','9'])){
+                                    if(in_array($medioPagoSelected[0], ['6','9'])){
                                         $importe['IMPORTE_$_FISICO'] = $importe['IMPORTE_$_SISTEMA'] ;
                                     }
                                     $totalEnPesos = $importe['IMPORTE_$_SISTEMA'] * $importe['COTIZACION_TC'];
