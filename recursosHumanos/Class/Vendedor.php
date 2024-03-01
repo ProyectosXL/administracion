@@ -192,31 +192,14 @@ class Vendedor
     
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
 
-        if($num_suc == 202){
-            
-            $_SESSION['conexion_dns'] = 'DESKTOP-K8EK5EV\AXSQLEXPRESS';
-            $_SESSION['base_nombre'] = 'XL__NUEVOCENTRO';
-
-            return true;
-            die();
-        }
-
-        if($num_suc == 201){
-            
-            $_SESSION['conexion_dns'] = 'DESKTOP-L6VOQPJ\AXSQLEXPRESS_1';
-            $_SESSION['base_nombre'] = 'TRES_CRUCES';
-
-            return true;
-            die();
-        }
 
         $cid = new Conexion();
-        $cidTango = $cid->conectar('tangoBis');
+        $cidLocales = $cid->conectar('locales');
 
-        $sql_buscar_local = "SELECT TOP 1 * FROM ACTOR WHERE NUMERO_ACTOR = $num_suc";
+        $sql_buscar_local = "SELECT TOP 1 * FROM SUCURSALES_LAKERS WHERE NRO_SUCURSAL = $num_suc";
   
       
-        $stmt = sqlsrv_query( $cidTango, $sql_buscar_local );
+        $stmt = sqlsrv_query( $cidLocales, $sql_buscar_local );
 
         
         if( $stmt === false ) {
@@ -227,8 +210,8 @@ class Vendedor
     
         while($v=sqlsrv_fetch_array($stmt)){
     
-            $_SESSION['conexion_dns'] = $v['SERVIDOR_ACTOR'];
-            $_SESSION['base_nombre'] = $v['BASE_ACTOR'];
+            $_SESSION['conexion_dns'] = $v['CONEXION_DNS'];
+            $_SESSION['base_nombre'] = $v['BASE_NOMBRE'];
     
         }
      

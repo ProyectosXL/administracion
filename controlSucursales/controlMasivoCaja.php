@@ -11,7 +11,7 @@ if(isset($_GET['mes']) &&$_GET['mes'] != "" ){
 if(isset($_GET['anio']) &&$_GET['anio'] != "" ){
     $anio = $_GET['anio'];
 }else{
-    $anio = "2023";
+    $anio = date("Y");
 }
 
 $dataSucursal = (isset($_GET['sucursal'])) ?  explode("-", $_GET['sucursal']) : ['2','UNICENTER'];
