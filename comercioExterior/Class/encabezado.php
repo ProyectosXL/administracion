@@ -23,7 +23,7 @@ class Encabezado
             VALUES (GETDATE(),'".$codProv."','".$datosDeCabezera['proveedor']."','".$datosDeCabezera['contenedor']."','".$datosDeCabezera['despacho']."','".$datosDeCabezera['material']."','".$datosDeCabezera['origen']."','".$datosDeCabezera['fechaEmbarque']."','".$datosDeCabezera['facturaProveedor']."','".$datosDeCabezera['fechaFactura']."',
             '".$datosDeCabezera['ordenCompra']."','".$datosDeCabezera['formaPago']."','".$datosDeCabezera['numeroBl']."','".$datosDeCabezera['tipoCambio']."','".$datosDeCabezera['valorFobDolar']."','".(float)$datosDeCabezera['valorFobPeso']."','".$datosDeCabezera['fechaArribo']."','".$datosDeCabezera['fechaDespacho']."' , '".$datosDeCabezera['ocm']."')
         ;";
-        var_dump($sql);
+  
         
         try {
 
