@@ -3,6 +3,7 @@ const agregar = (siglaRubro) =>{
     let codCategoria = document.getElementById("codCategoria").textContent;
     let descCategoria = document.getElementById("descCategoria").value;
 
+    codCategoria = String(codCategoria).padStart(2, '0')
 
     $.ajax({
         url: 'Controller/CategoriaController.php?accion=insertarNuevo',
