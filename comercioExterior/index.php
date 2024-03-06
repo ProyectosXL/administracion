@@ -2,11 +2,27 @@
 
 include 'Class/proveedor.php';
 include 'Class/ordenDeCompra.php';
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
+}
+    
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? 'css/bandera_con_sol__55757_std.jpg' : 'css/UY.png';
+$imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol__55757_std.jpg';
+
+
 
 $proveedor = new Proveedor();
 $todosLosProveedores = $proveedor->traerProveedores();
 $todosLosProveedores = json_decode($todosLosProveedores);
-
 
 ?>
 
@@ -42,7 +58,23 @@ $todosLosProveedores = json_decode($todosLosProveedores);
     <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
     <!-- Main CSS-->
     <link href="css/style.css" rel="stylesheet" media="all">
-    
+    <style>
+          .toggle-on {
+            background-image: url('<?= $imageOn ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+    </style>
 </head>
 
 <body>
@@ -51,7 +83,9 @@ $todosLosProveedores = json_decode($todosLosProveedores);
             <div class="card card-1">
                 <div class="card-heading"></div>
                     <div class="card-body">
-                    <h2 class="title"><i class="bi bi-folder-check"></i> Comercio Exterior</h2>
+                    <h2 class="title"><i class="bi bi-folder-check"></i> Comercio Exterior - 
+                    <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                    </h2>
                     <div class="row row-space">
                                 <div class="col-md-5">
                                 <div class="p-t-20">
@@ -77,6 +111,8 @@ $todosLosProveedores = json_decode($todosLosProveedores);
     <script src="assets/select2/select2.min.js"></script>
     <script src="assets/datepicker/moment.min.js"></script>
     <script src="assets/datepicker/daterangepicker.js"></script>
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
     <!-- Main JS-->
     <script src="js/global.js"></script>
@@ -88,7 +124,12 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
 
 <script>
+  $(document).ready( function () {
+    
+    document.querySelector(".toggle").style.width="40px"
+    document.querySelector(".toggle-on").style.fontSize="0"
+    document.querySelector(".toggle-off").style.fontSize="0"
 
-   
 
+    })
 </script>
