@@ -11,9 +11,10 @@
 
     $data = $categoria->traerVistaRubroCategoriaCodificacion($siglaRubro);
     $ultimo = count($data) - 1;
+    
     $ultimoCodigo = 0;
-
-    if($ultimo > 0){
+    
+    if($ultimo >= 0){
         $ultimoCodigo = $data[$ultimo]['CATEGORIA'];
     }
     

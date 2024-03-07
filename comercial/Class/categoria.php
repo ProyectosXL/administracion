@@ -57,8 +57,8 @@ class Categoria
     }
 
     public function insertarNuevaCategoria ($codCategoria, $descCategoria, $siglaRubro) {
-        
-        $sql = "INSERT INTO SJ_CATEGORIAS (CATEGORIA, DESC_CATEGORIA, RUBRO) VALUES ($codCategoria, '$descCategoria', '$siglaRubro')";
+
+        $sql = "INSERT INTO SJ_CATEGORIAS (CATEGORIA, DESC_CATEGORIA, RUBRO) VALUES ('$codCategoria', '$descCategoria', '$siglaRubro')";
         
         try{
             
