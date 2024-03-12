@@ -5,6 +5,7 @@ class Sucursal
     private $cid;
     private $cid_central;
     private $cid_locales;
+    private $conexion; 
 
     
     function __construct()
@@ -15,6 +16,16 @@ class Sucursal
 
         $this->cid_central = $this->cid->conectar('central');
         $this->cid_locales =($this->cid->env == 'DEV') ? $this->cid->conectar('central') : $this->cid->conectar('locales');
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+            $this->conexion = $this->cid->conectar('central');
+        }else{
+
+            $this->conexion = $this->cid->conectar('suc_uy');
+        }
 
     } 
 
@@ -224,9 +235,10 @@ class Sucursal
             }
 
             $sql = $sql."ORDER BY FECHA ASC;";
-       
+            var_dump($this->conexion);
+            die();
             
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            $stmt = sqlsrv_query($this->conexion , $sql);
 
             $v = [];
 

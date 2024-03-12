@@ -22,6 +22,7 @@ class Conexion{
         $this->env = $this->envVars['ENV'];
         $this->prefix = ($this->env == 'DEV') ? '[LAKERBIS].locales_lakers.dbo.' : '';
         $this->database_uy = $this->envVars['DATABASE_UY'];
+        $this->database_sucUy = $this->envVars['DATABASE_SUC_UY'];
 
     }
 
@@ -35,6 +36,8 @@ class Conexion{
             return array($this->host_locales, $this->database_tangobis);
         }elseif($nameServer == 'uy'){
             return array($this->host_central, $this->database_uy);
+        }elseif($nameServer == 'suc_uy'){
+            return array($this->host_locales, $this->database_sucUy);
         }else{
             return array($_SESSION['conexion_dns'], $_SESSION['base_nombre']);
         }

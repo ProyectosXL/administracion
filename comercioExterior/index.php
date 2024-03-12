@@ -129,6 +129,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
     document.querySelector(".toggle").style.width="40px"
     document.querySelector(".toggle-on").style.fontSize="0"
     document.querySelector(".toggle-off").style.fontSize="0"
+    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
 
 
     })
