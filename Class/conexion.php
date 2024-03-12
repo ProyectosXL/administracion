@@ -52,7 +52,7 @@ class Conexion{
             $pass = $this->pass;
             // $pass = ($nameServer == 'locales') ? $this->pass_locales : $this->pass;
 
-            if($nameServer == 'locales' || $nameServer == 'tangoBis'){
+            if($nameServer == 'locales' || $nameServer == 'tangoBis' || $nameServer == "suc_uy"){
 
                 $pass = $this->pass_locales;
                 

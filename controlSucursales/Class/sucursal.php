@@ -6,7 +6,7 @@ class Sucursal
     private $cid_central;
     private $cid_locales;
     private $conexion; 
-
+    private $cid_uy;
     
     function __construct()
     {
@@ -16,15 +16,18 @@ class Sucursal
 
         $this->cid_central = $this->cid->conectar('central');
         $this->cid_locales =($this->cid->env == 'DEV') ? $this->cid->conectar('central') : $this->cid->conectar('locales');
+        $this->cid_uy = $this->cid->conectar('uy');
+
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
 
-        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
-            $this->conexion = $this->cid->conectar('central');
-        }else{
 
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
             $this->conexion = $this->cid->conectar('suc_uy');
+        }else{
+            $this->conexion = $this->cid->conectar('central');
+
         }
 
     } 
@@ -107,9 +110,18 @@ class Sucursal
     public function traerLocales($orderByName = null)
     {
 
-        $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1
+        if((isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy')){
+
+            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS  WHERE CANAL = 'EXTERIOR' ";
+
+        }else{
+
+            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1
                     UNION ALL
                 SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE NRO_SUCURSAL = '16'";
+    
+            
+        }
 
         if($orderByName == true){
 
@@ -119,11 +131,13 @@ class Sucursal
 
             $sql = $sql."ORDER BY NRO_SUCURSAL"; 
             
-        }                
+        }    
 
+
+        $cid = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? $this->cid_uy : $this->cid_central;
                 
 
-        $stmt = sqlsrv_query($this->cid_central, $sql);
+        $stmt = sqlsrv_query($cid, $sql);
 
         try{
             
@@ -215,10 +229,13 @@ class Sucursal
     {
         
         try {
+            
+            $prefix = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? "" : "[LAKERBIS].locales_lakers.dbo.";
 
+         
             $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO,b.CONTABILIZADA,
             (case when c.FECHA_GUARDADO is not null then 1 else 0 end) guardado
-            FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES a 
+            FROM ".$prefix."RO_V_GASTOS_CAJA_SUCURSALES a 
             left join RO_T_GASTOS_CAJA_SUCURSALES b on REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '') collate Latin1_General_BIN 
             AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA 
             AND A.COD_CTA = B.COD_CUENTA 
@@ -235,9 +252,7 @@ class Sucursal
             }
 
             $sql = $sql."ORDER BY FECHA ASC;";
-            var_dump($this->conexion);
-            die();
-            
+      
             $stmt = sqlsrv_query($this->conexion , $sql);
 
             $v = [];
@@ -274,7 +289,7 @@ class Sucursal
 
         try{
             
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            $stmt = sqlsrv_query($this->conexion, $sql);
        
             return $stmt;
         
@@ -296,7 +311,7 @@ class Sucursal
 
         try{
             
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            $stmt = sqlsrv_query($this->conexion, $sql);
        
             return true;
         
@@ -323,7 +338,7 @@ class Sucursal
 
         try{
             
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            $stmt = sqlsrv_query($this->conexion, $sql);
        
             return $stmt;
         
@@ -344,7 +359,7 @@ class Sucursal
     
             try{
                 
-                $stmt = sqlsrv_query($this->cid_central, $sql);
+                $stmt = sqlsrv_query($this->conexion, $sql);
         
                 return true;
             

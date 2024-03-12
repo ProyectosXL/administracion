@@ -21,7 +21,7 @@
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
     }
-    
+  
     if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
         $checked = 'checked';
     }else{
@@ -29,8 +29,8 @@
     }
         
     $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
-    $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+    $dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
+    $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
     $imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
     $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
     
@@ -95,7 +95,7 @@
 
                         <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
 
-                            <div class="row" style="margin-top:10px">
+                            <div class="row" style="margin-top:10px;width:100%">
 
                                 <div style="margin-left:90px">Desde : <input type="date" class="form-control" id="desde" name="desde" value="<?=  $desde ?>"></div>
                                 <div style="margin-left:30px">Hasta : <input type="date" class="form-control" id="hasta"  name="hasta" value="<?=  $hasta ?>"></div>
@@ -118,7 +118,7 @@
                                 </div>
 
                                 <div>   
-                                    <button class="btn btn-primary btn-submit" id="btnSubmit" value="" >filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                                    <button class="btn btn-primary btn-submit ml-3" id="btnSubmit" style="margin-right:200px" value="" >filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                     <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
 
                                 </div>
