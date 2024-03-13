@@ -222,13 +222,15 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                 url: 'Controller/traerOrdenManualController.php',
                 method: 'GET',
                 success : function(data) {
-                   
+                    
                     selectOrdenCompra.hidden = true;
                     inputOrdenCompra.hidden = false;
                     
                     let num = JSON.parse(data);
-   
-
+                    
+                   if(num['nroOrden'] == null){
+                        num['nroOrden'] = 0;
+                    }
                     let sumaOrden = 200000000 + num['nroOrden'];
                     let orden = ` 0000${sumaOrden}`;
 

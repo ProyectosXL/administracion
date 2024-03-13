@@ -8,7 +8,11 @@ class Encabezado
 
         require_once __DIR__.'/../../class/conexion.php';
         $cid = new Conexion();
-        $this->cid_central = $cid->conectar('central');
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        $this->cid_central = $cid->conectar($db);
 
     } 
 
