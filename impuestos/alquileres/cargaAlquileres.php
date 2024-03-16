@@ -123,23 +123,21 @@
                                             <button class="btn btn-primary btn-submit ml-2">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                         </div>
                                     </div>
-                                    <div class="btn-with-icon">
-                                        <button style="margin-left:8rem; margin-top:0.5rem;" type="button" class="btn btn-success" onclick="procesar()">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
+                                    <div class="btn-group">
                                         <button style="margin-left:8rem; margin-top:0.5rem;" type="button" class="btn btn-info" onclick="AplicarAjuste()">Aplicar Ajuste <i class="bi bi-check-circle" style="color:white"></i></button>
-                                    </div>
-                                    <div class="btn-with-icon">
                                         <?php 
                                         if($estado == 1){
                                             echo '<div  id="estado" hidden>1</div>';
-                                            echo '<button type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-left: 20px; margin-top:0.5rem;" onclick="abrirPeriodo()">Abrir Periodo <i class="bi bi-unlock"></i></button>';
+                                            echo '<button type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-top:0.5rem;" onclick="abrirPeriodo()">Abrir Periodo <i class="bi bi-unlock"></i></button>';
                                         }else{
                                             echo '<div  id="estado" hidden>0</div>';
-                                            echo '<button type="button" class="btn btn-secondary" value="Cerrar Periodo" style="margin-left: 20px; margin-top:0.5rem;" onclick="cerrarPeriodo()">Cerrar Periodo <i class="bi bi-lock"></i></button>';
+                                            echo '<button type="button" class="btn btn-secondary" value="Cerrar Periodo" style="margin-top:0.5rem;" onclick="cerrarPeriodo()">Cerrar Periodo <i class="bi bi-lock"></i></button>';
                                         }
                                         ?>
                                         <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
+                                        <button style="margin-top:0.5rem; width:140px" type="button" class="btn btn-success" onclick="procesar()">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
                                     </div>
-                                    <div style="margin-left:2rem">
+                                    <div style="margin-left:10rem">
                                         <select class="form-control ml-6 mt-2" id="selectOcultarSucursal">
                                             <option value="" disabled selected>Selecciona una sucursal</option>
                                             <?php 
