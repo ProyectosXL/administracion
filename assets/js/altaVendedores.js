@@ -57,7 +57,7 @@ const filtrarCategoria = () =>{
 
         $.ajax({
 
-            url: 'Controller/ClienteController.php?accion=traerCategorias',
+            url: '../Controller/ClienteController.php?accion=traerCategorias',
             type: 'POST',
             dataType: 'json',
             data: {rubros: rubros},
@@ -100,7 +100,7 @@ const exportTable = () =>{
 
 
         $.ajax({
-        url: "Controller/vendedorController.php?accion=cambiarEntorno",
+        url: "../Controller/vendedorController.php?accion=cambiarEntorno",
         method: "POST",
         data : {entorno: entorno},
         success: function (data) {
@@ -188,7 +188,7 @@ const exportTable = () =>{
         
         $.ajax({
             type: "POST",
-            url: "Controller/VendedorController.php?accion="+accion,
+            url: "../Controller/VendedorController.php?accion="+accion,
             data: {
                 sucursalesPorHabilitar: listadoDeSucursales,
                 vendedoresPorHabilitar: lsitadoDeVendedores,

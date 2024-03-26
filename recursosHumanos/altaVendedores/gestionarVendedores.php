@@ -1,6 +1,6 @@
 <?php 
     session_start();
-   require_once 'Class/Vendedor.php';
+   require_once '../Class/Vendedor.php';
    $vendedor = new Vendedor();
    $sucursales = $vendedor->traerSucursales();
 //    $vendedores = $vendedor->traerVendedores();
@@ -17,8 +17,8 @@
     $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
     $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
     $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
-    $imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
-    $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
+    $imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
+    $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
 
 ?>
 
@@ -78,7 +78,7 @@
                         <div id="periodo" hidden></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
                         <div class="col-10">
-                                <h3 ><strong><img src="../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"> Gestion vendedores por sucursal -  <span id="spanSucursal"></span></strong></h3>
+                                <h3 ><strong><img src="../../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"> Gestion vendedores por sucursal -  <span id="spanSucursal"></span></strong></h3>
                         </div>
                         <div class="col-2" style="">
 
