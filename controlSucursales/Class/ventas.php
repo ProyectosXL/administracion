@@ -63,6 +63,14 @@ class Ventas
         $cid_conexion = ($this->cid->env == 'DEV') ? $this->cid->conectar('central') : $this->cid->conectar('locales');     
 
         $sql = "EXEC ".$this->cid->prefix."RO_SP_VENTAS_VS_COBRANZA_POR_COMPROBANTE '$desde', '$hasta'";
+     
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+            $cid_conexion = $this->cid->conectar('suc_uy');
+        }
 
         try {
 
@@ -80,6 +88,15 @@ class Ventas
     public function traerComprobantes($desde, $hasta)
     {
         $cid_conexion = ($this->cid->env == 'DEV') ? $this->cid->conectar('central') : $this->cid->conectar('locales');   
+
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+            $cid_conexion = $this->cid->conectar('suc_uy');
+        }
+      
 
         $this->ejercutarSP2($desde,$hasta);
 
@@ -108,6 +125,15 @@ class Ventas
     public function confirmarVentaVsCobranza($nroSucursal ,$nroComprobante)
     {
         $cid_conexion = ($this->cid->env == 'DEV') ? $this->cid->conectar('central') : $this->cid->conectar('locales');  
+        
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+            $cid_conexion = $this->cid->conectar('suc_uy');
+        }
+      
 
         $sql = "UPDATE ".$this->cid->prefix."CTA29 SET CONCILIADO = 1 WHERE NRO_SUCURS = '$nroSucursal' AND N_COMP = '$nroComprobante'";
 

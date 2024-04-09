@@ -86,7 +86,7 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                             <button type="submit" name="submit" class="btn btn-success ventaVsCobranza " id="btnExport">Exportar <i class="bi bi-file-earmark-excel"></i></button>
                
                             <label id="textBusqueda" class="ml-5">Busqueda rapida:</label>
-                            <input type="text" id="textBox" placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class=""></input>
+                            <input type="text" id="textBox" placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="" style="margin-right:20%"></input>
                             <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
 
     
