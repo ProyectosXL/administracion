@@ -10,9 +10,14 @@ class Gastos
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
-        $db = 'central';
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            $db = 'uy';
+        }else{
+            
+            $db = 'central';
+        }
         $this->cid_central = $cid->conectar($db);
-
+        
 
     } 
 
