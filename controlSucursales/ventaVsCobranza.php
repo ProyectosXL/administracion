@@ -67,7 +67,9 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
     <div class="alert alert-secondary">
         <div style="margin-left:1%">
             <div class="row">
-                
+                <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                    <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                </a>
                 <h4 class="ml-3 mt-4"><i class="bi bi-card-checklist"></i>  Ventas vs Cobranza por comprobante <a style="color: #6c757d;"><?php if (isset($_GET['desde'])){ echo $desde ?> a <?php echo $hasta ;}?></a></h4>
             </div>
             <div class="row" style='margin-left:1%'>   
