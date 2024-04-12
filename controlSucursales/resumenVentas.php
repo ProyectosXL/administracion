@@ -7,6 +7,20 @@ $ventas= new Ventas();
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
+
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
+}
+    
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
+$imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
+
+
 ?>
 
 <!DOCTYPE html>
@@ -21,7 +35,23 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <?php
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
     ?>
+<style>
+        .toggle-on {
+        background-image: url('<?= $imageOn ?>');
+        background-size: contain;
+        background-repeat: no-repeat;
+        height: 60px;
+        width: 60px;
+        }
 
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+</style>
 
 </head>
 
@@ -40,7 +70,10 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 <button type="submit" name="submit" class="btn btn-success ml-3" id="btnExport">Exportar <i class="bi bi-file-earmark-excel"></i></button>
                 
                 <label id="textBusqueda" class="ml-4">Busqueda rapida:</label>
-                <input type="text" id="textBox" placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="form-control form-control-sm ml-1"></input>
+                <input type="text" id="textBox" placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="form-control form-control-sm ml-1 mr-4"></input>
+                <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+
+                
                 
                 <!-- spinner -->
                 <div id="boxLoading"></div>     
@@ -128,6 +161,8 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <!-- Plugin to export Excel -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
     <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
 </body>
 
@@ -150,10 +185,19 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 fileext: ".xlsx" // file extension
             });
         });
+        
+            
+    document.querySelector(".toggle").style.width="40px"
+    document.querySelector(".toggle-on").style.fontSize="0"
+    document.querySelector(".toggle-off").style.fontSize="0"
+    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+
+
 
     });
 
 
+  
 </script>
 
 </html>

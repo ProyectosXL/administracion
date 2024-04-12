@@ -26,6 +26,7 @@ function buscarCuentas()
 
           limpiarSelect();
            dibujarSelectOrdenes(ordenes); 
+           $('.selectpicker').selectpicker('refresh');
           /*  inputCuenta.textContent = cuenta["VTEX_CUENTA"]; */
         } else {
 
