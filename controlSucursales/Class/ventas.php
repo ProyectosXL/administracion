@@ -14,11 +14,11 @@ class Ventas
             session_start();
         }
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
-            $this->cid_conn = 'suc_uy';
+            $this->cid_conn = $this->cid->conectar('suc_uy');
             
         }else{
 
-            $this->cid_conn = 'locales';
+            $this->cid_conn = $this->cid->conectar('locales');
             
         }
 

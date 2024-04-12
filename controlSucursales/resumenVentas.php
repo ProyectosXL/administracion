@@ -15,8 +15,8 @@ if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
 }
     
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-$dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
-$dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+$dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
 $imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
 $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
 
