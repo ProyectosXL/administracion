@@ -60,6 +60,9 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
     <div class="alert alert-secondary">
        
     <form class="form-inline mt-3 mb-3">
+            <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            </a>
             <h4 class="ml-3"><i class="bi bi-credit-card"></i>  Ventas por medio de pago <a style="color: #6c757d;"><?php if (isset($_GET['desde'])){ echo $desde ?> a <?php echo $hasta ;}?></a></h4>
                 <label class="ml-4">Desde:</label>
                 <input type="date" class="form-control form-control-sm ml-1" name="desde" value="<?= $desde ?>">
