@@ -3,6 +3,7 @@ let btnAgregarDetalle = document.querySelector("#btnAgregarDetalle");
 btnUpdateDetalle.addEventListener("click",()=> {
     let arrayDatos = [];
     let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
+    idEncabezado = '('+idEncabezado+')';
     let nroOrden = document.querySelector("#nroOrden").textContent;
    
     let table = document.querySelector("#table")

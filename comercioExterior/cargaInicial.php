@@ -44,6 +44,13 @@ $todosLosProveedores = json_decode($todosLosProveedores);
     <link href="css/style.css" rel="stylesheet" media="all">
     
 </head>
+<style>
+.contenedor {
+    display: flex;
+    flex-wrap: wrap; /* Permite el ajuste de los elementos en varias líneas */
+}
+
+</style>
 
 <body>
     <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
@@ -55,8 +62,18 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
 
                     <div class="row" style="margin-bottom:10px;margin-left:8px">
-                    Orden De Compra Manual <div class="col" id="checkOrden"><input type="checkbox" id="ordenManual" onchange="traerOrden()"></div>
+                    Orden De Compra Manual 
+                    <?php if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){?>
+
+                        <div class="col" id="checkOrden"><input type="checkbox" id="ordenManual" onchange="traerOrden()"></div>
+
+                    <?php }else{?>
+
+                        <div class="col" id="checkOrden"><input type="checkbox" id="ordenManual" onchange="traerOrdenArg()"></div>
+                
+                    <?php }?>
                     </div>
+                    <div id="entorno" hidden><?= (isset($_SESSION['entorno'])) ? $_SESSION['entorno'] : 'central' ?></div>
 
                             <div class="row row-space">
                                 <div class="col-md-5">
@@ -162,7 +179,18 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>      
                             </div>
                             <div class="row row-space">
-                                <div class="col-md-5">
+                       
+                                
+                                    <div class="col-md-5" <?php if(!isset($_SESSION['entorno']) || $_SESSION['entorno'] == 'central'){echo 'hidden'; }?>>
+                                        <div class="input-group">
+                                            <div style="margin-right:20px">ORDENES DE COMPRA</div>
+                                            <div><button id="btnAddOrdenCompra"><i class="bi bi-plus-circle-fill"></i></button></div>
+                                            
+                                        </div>    
+                                    <div id="ordenesSeleccionadas" class="contenedor"></div>
+                                    
+                                </div>
+                                <div class="col-md-5" <?php if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') {echo 'hidden'; }?>>
                                     <div class="input-group">
                                         <input class="" type="text" placeholder="ORDEN DE COMPRA" id="inputOrdenCompra" hidden readonly>
                                         <select id="ordenCompra">
@@ -170,6 +198,9 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                         </select>
                                     </div>    
                                 </div>
+                             
+                             
+
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <div class="rs-select2 js-select-simple select--no-search ">
@@ -185,7 +216,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>
                             </div>
                         <div class="p-t-20">
-                            <button class="btn btn-primary" id="btnSave">Guardar <i class="bi bi-cloud-download"></i></button>
+                            <button class="btn btn-primary" id="btnSave" onclick=<?= ($_SESSION['entorno'] && $_SESSION['entorno'] == 'uy') ? 'guardarCabeceraUy()' : 'guardarCabecera()'?>>Guardar <i class="bi bi-cloud-download"></i></button>
                         </div>
                 </div>
             </div>
@@ -211,8 +242,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
 
 <script>
-    // console.log(ordenManual.checked);
-    const traerOrden = ()=>{
+    const traerOrdenArg = ()=>{
         
         let ordenManual = document.querySelector("#ordenManual");
         let selectOrdenCompra = document.querySelector("#ordenCompra");
@@ -244,4 +274,141 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                 inputOrdenCompra.hidden = true;
         }
     }
+
+
+    const traerOrden = ()=>{
+        
+        let ordenManual = document.querySelector("#ordenManual");
+     
+        let ordenesSeleccionadas = document.querySelector("#ordenesSeleccionadas");
+        if(ordenManual.checked == true){
+            $.ajax({
+                url: 'Controller/traerOrdenManualController.php',
+                method: 'GET',
+                success : function(data) {
+
+                    ordenesSeleccionadas.innerHTML = '';
+
+         
+                    let num = JSON.parse(data);
+                    
+                    if(num['nroOrden'] == null){
+                         num['nroOrden'] = 0;
+                     }
+
+                    let sumaOrden = 200000000 + num['nroOrden'];
+                    let orden = ` 0000${sumaOrden}`;
+                    
+                    const div = document.createElement('div');
+                    div.id = 'ordenDeCompra'
+                    div.style.border = '1px solid black';
+                    div.style.margin = "5px"
+                    div.style.width = '130px';
+                    div.style.backgroundColor = '#7066e0';
+                    div.style.color = 'white';
+                    div.style.borderRadius = '10px';
+                    div.innerHTML = `   ${orden}`;
+                    document.querySelector("#ordenesSeleccionadas").appendChild(div);
+                    
+
+       
+
+                }
+            })
+        }else{
+            ordenesSeleccionadas.innerHTML = '';
+        }
+    }
+
+    $(document).ready(function() {
+
+        $('#btnAddOrdenCompra').on('click', function() {
+
+           if(document.querySelector("#proveedor").value == 'PROVEEDOR' ){
+             Swal.fire({
+                icon: 'error',
+                title: 'Error...',
+                text: 'Debes seleccionar un proveedor!',
+            })
+            return 
+            }
+
+            if( document.querySelector("#ordenManual").checked == true ){
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error...',
+                    text: 'No puedes agregar ordenes de compra si seleccionaste orden manual!',
+                })
+                return 
+
+            }
+      
+
+            let ordenes = localStorage.getItem('ordenes');
+            ordenes = JSON.parse(ordenes)
+            console.log(ordenes)
+            let ordenesSeleccionadas = document.querySelectorAll("#ordenDeCompra");
+
+            let selectOptions = '<option disabled>Selecciona una o varias opciónes</option>';
+
+            if (ordenes && Array.isArray(ordenes)) {
+                ordenes.forEach(function(orden, index) {
+                    let ordenesSeleccionadas2 = []
+                    ordenesSeleccionadas.forEach(element => {
+                         ordenesSeleccionadas2.push(element.textContent.trim())
+                    });
+       
+                
+                    if(ordenesSeleccionadas2.includes(orden.N_ORDEN_CO.trim())){
+                       
+                        return;
+                    }
+
+                    selectOptions += `<option value="${orden.N_ORDEN_CO}">${orden.N_ORDEN_CO}</option>`;
+                });
+            }
+
+            Swal.fire({
+                title: 'Añadir Orden de Compra',
+                html:
+                    `<select id="ordenCompra" class="swal2-select" multiple>${selectOptions}</select>`,
+                showCancelButton: true,
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const selectedOptions = Array.from(Swal.getPopup().querySelectorAll('.swal2-select option:checked'), option => option.value);
+                    selectedOptions.forEach(function(orden) {
+             
+                    const div = document.createElement('div');
+                    div.id = 'ordenDeCompra'
+                    div.style.border = '1px solid black';
+                    div.style.margin = "5px"
+                    div.style.width = '130px';
+                    div.style.backgroundColor = '#7066e0';
+                    div.style.color = 'white';
+                    div.style.borderRadius = '10px';
+                    div.innerHTML = ` ${orden} <button class="btn-delete" data-orden="${orden}" style="border-left: 1px solid black"> <i class="bi bi-x-circle" style="color:white;margin-left:3px"></i></button>`;
+                    document.querySelector("#ordenesSeleccionadas").appendChild(div);
+               
+               
+                });
+
+             
+                const deleteButtons = document.querySelectorAll('.btn-delete');
+                deleteButtons.forEach(function(button) {
+                    button.addEventListener('click', function() {
+                        const orden = this.getAttribute('data-orden');
+                   
+                        this.parentNode.remove();
+                                 
+                    });
+                });
+                let result = checkOrdenesUy()
+                }
+            });
+
+        });
+    });
 </script>

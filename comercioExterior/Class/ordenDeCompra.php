@@ -88,6 +88,26 @@ class OrdenDeCompra
         }
     }
 
+    public function verificarOrdenCompraUy($ordenesDeCompra)
+    {
+        
+        $cadenaSinComillas = trim($ordenesDeCompra, '"');
+        $sql = "SELECT ORDEN_COMPRA, COUNT(*) AS existencia FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ORDEN_COMPRA in  $cadenaSinComillas  GROUP BY ORDEN_COMPRA";
+        $rows = $this->retornarArray($sql);
+        $resultados = array();
+        
+        
+        foreach ($rows as $row) {
+     
+            if ($row['existencia'] > 0) {
+             
+                $resultados[] = array('ordenDeCompra' => $row['ORDEN_COMPRA'], 'existe' => true);
+            }
+        }
+
+        return $resultados;
+    }
+    
     public function deleteDetalle($idEncabezado){
 
         $sql = "DELETE RO_T_IMPORTACIONES_DETALLE WHERE ID_MG ='".$idEncabezado."'";
@@ -138,4 +158,10 @@ if (isset($_GET['proveedor'])) {
     {
         $cuenta->verificarOrdenCompra($_GET['OrdenCompra']);
     }
+}
+if (isset($_POST['ordenCompra'])) {
+
+   $result = $cuenta->verificarOrdenCompraUy($_POST['ordenCompra']);
+
+   echo json_encode($result);
 }

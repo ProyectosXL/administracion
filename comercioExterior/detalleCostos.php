@@ -5,6 +5,23 @@ include 'Class/maestroGastos.php';
 $gastos = new Gastos();
 $todosLosGastos = $gastos->traerGastos();
 
+$ordenesDeCompra = json_decode($_GET['ordenCompra']);
+
+$ordenCompra = ' ( ';
+$ordenCompra .= implode(', ', $ordenesDeCompra);
+$ordenCompra .= ' )';
+
+
+$Idencabezados = json_decode($_GET['idEncabezado']);
+
+$jsonStringClean = trim($Idencabezados, '" ');
+
+
+$array = json_decode($jsonStringClean);
+
+$encabezado = ' ( ';
+$encabezado .= implode(', ', $array);
+$encabezado .= ' )';
 ?>
 
 <!DOCTYPE html>
@@ -39,13 +56,13 @@ $todosLosGastos = $gastos->traerGastos();
                 <div class="card-body">
                     <div class="alert alert-primary">
                         <div class="row justify-content-md-center mb-2">
-                            <div class="col-md-auto"><h3 class="mb-1" style="font-weight: bold;"><i class="bi bi-box-seam-fill"></i> <?= $_GET['proveedor'].'-'.$_GET['ordenCompra']?></h3></div>
+                            <div class="col-md-auto"><h3 class="mb-1" style="font-weight: bold;"><i class="bi bi-box-seam-fill"></i> <?= $_GET['proveedor'].'-'.$ordenCompra?></h3></div>
                             <div id="nroOrdenCompra"  hidden><?= $_GET['ordenCompra'] ?></div>
                         </div>
                         <div class="row justify-content-md-center">
                             <div class="col-md-auto"><i class="bi bi-airplane-fill icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Nº Orden Proveedor</label><?= ' '.$_GET['contenedor']?></h5></div>
                             <div class="col-md-auto"><i class="bi bi-cash icon"></i><h5 class="mb-1" id ="valorPesosFob" attr-value = "<?=  $_GET['valorFobPeso'] ?>"><label style="font-weight: bold;" >Valor F.O.B. $: </label><?= ' '.$_GET['valorFobPeso']?></h5></div>
-                            <div id="idEncabezado" attr-value="<?= $_GET['idEncabezado'] ?>" hidden></div>
+                            <div id="idEncabezado" attr-value="<?= $encabezado ?>" hidden></div>
                             <div class="col-md-auto"><i class="bi bi-cash-coin icon"></i><h5 class="mb-1"><label  id="totalGastosDetalle" style="font-weight: bold;">Gastos $:</label></h5></div>
                             <div class="col-md-auto"><i class="bi bi-percent icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Costos nac.: </label> <span id="porcentaje"></span></h5></div>
                         </div>
@@ -72,7 +89,14 @@ $todosLosGastos = $gastos->traerGastos();
                                     <td id="id"><?=  $key['ID_MG']?></td>
                                     <td><?=  $key['GASTOS']?></td>
                                     <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)"></input></td>
-                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($valor <= 6) ? $_GET['tipoCambio'] : "0" ?>"></input></td>
+                                    <?php if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){?>
+                                    
+                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0"></input></td>
+                                    <?php }else{ ?>
+                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($valor <= 6) ? $_GET['tipoCambio'] : "0" ?>"></input></td>
+
+                                    <?php }?>
+                                    
                                     <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly></input></td>
                                     <td><input style="text-align:center"></input></td>
                                     <td><input></input></td>

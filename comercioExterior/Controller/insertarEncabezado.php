@@ -13,7 +13,6 @@ $datosDeCabezera['origen']= $_POST['origen'];
 $datosDeCabezera['fechaEmbarque']= $_POST['fechaEmbarque'];
 $datosDeCabezera['facturaProveedor'] = $_POST['facturaProveedor'];
 $datosDeCabezera['fechaFactura']= $_POST['fechaFactura'];
-$datosDeCabezera['ordenCompra']= $_POST['ordenCompra'];
 $datosDeCabezera['formaPago']= $_POST['formaPago'];
 $datosDeCabezera['numeroBl']= $_POST['numeroBl'];
 $datosDeCabezera['tipoCambio']= $_POST['tipoCambio'];
@@ -23,8 +22,24 @@ $datosDeCabezera['fechaArribo']= $_POST['fechaArribo'];
 $datosDeCabezera['fechaDespacho']= $_POST['fechaDespacho'];
 $datosDeCabezera['ocm']= $_POST['ocm'];
 
-$result = $cid->insertarEncabezado($datosDeCabezera);
-echo ($result);
+$ordenes = json_decode($_POST['ordenCompra'], true);
+
+$arrayResult = [];
+
+foreach ($ordenes as  $orden) {
+
+
+    $datosDeCabezera['ordenCompra'] = $orden ;
+
+    $result = $cid->insertarEncabezado($datosDeCabezera);
+
+    if ($result) {
+        $arrayResult[] = $result;
+    }
+
+}
+
+echo (json_encode($arrayResult));
 
 
 

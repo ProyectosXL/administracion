@@ -106,7 +106,9 @@ if(document.querySelector("#btnSaveDetalle") != null){
     let rows = document.querySelectorAll("#id");
     let arrayDatos = [];
     let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
+
     let nroOrdenDeCompra = document.querySelector("#nroOrdenCompra").textContent;
+  
     rows.forEach((e , x) => {
 
     let rowsElement = e.parentElement;
@@ -153,7 +155,7 @@ if(document.querySelector("#btnSaveDetalle") != null){
 
           
 
-            window.location = "index.php"
+            // window.location = "index.php"  
           })
    
 
