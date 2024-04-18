@@ -216,7 +216,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>
                             </div>
                         <div class="p-t-20">
-                            <button class="btn btn-primary" id="btnSave" onclick=<?= ($_SESSION['entorno'] && $_SESSION['entorno'] == 'uy') ? 'guardarCabeceraUy()' : 'guardarCabecera()'?>>Guardar <i class="bi bi-cloud-download"></i></button>
+                            <button class="btn btn-primary" id="btnSave" onclick=<?= (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'guardarCabeceraUy()' : 'guardarCabecera()'?>>Guardar <i class="bi bi-cloud-download"></i></button>
                         </div>
                 </div>
             </div>
