@@ -38,6 +38,7 @@
     $nowReverse = strrev($now);
 
     $data = consultarMesesDetalle($periodoPasadoReverse, $nowReverse);
+ 
     $dataDetalladaPorSucursal = traerDetalleHaceUnAño($periodoPasadoReverse, $nowReverse);
 
     $traerArrayPeriodo = traerArrayPeriodo();

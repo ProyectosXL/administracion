@@ -1,6 +1,6 @@
 <?php
     require_once "Class/Alquiler.php";
-    require_once "../../controlSucursales/Class/sucursal.php";
+    require_once "Class/sucursal.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -14,6 +14,23 @@
     $descConcepto = explode("-", $conceptoFiltrado)[1];
     $porcentajePorSucursal = $alquiler->traerPorcentajeSucursal($idConcepto);
 
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+        $checked = 'checked';
+    }else{
+        $checked = '';
+    }
+        
+    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+    $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+    $imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
+    $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
+    
+    
     ?>
 
     <!DOCTYPE html>
@@ -32,7 +49,26 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
         
     </head>
+    <style>
+        #inputText {
+            line-height: 1.2; /* Ajusta el valor para controlar el espacio entre líneas */
+        }
+        .toggle-on {
+            background-image: url('<?= $imageOn ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
 
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+    </style>
     <body>
 
         <div class="alert alert-secondary">
@@ -41,8 +77,13 @@
                     <div class="card card-1">
                         <div id="username" hidden><?= $_SESSION['username'] ?></div>
                         <div class="row" style="margin-left:50px">
-
-                            <h3><i class="bi bi-key" style="margin-right: 20px; font-size: 40px"></i>Carga Contratos Alquiler</h3>
+                        <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                            <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                        </a>
+                            <h3 style="margin-right:60%"><i class="bi bi-key" style="margin-right: 20px; font-size: 40px"></i>Carga Contratos Alquiler</h3>
+                            <div style="margin-top:30px">
+                                <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                            </div>
                         </div>
                         <form action="">
                         <div class="container-fluid" style="margin-left: 0px;">
@@ -124,10 +165,20 @@
         <script src="js/cargaContratoAlquileres.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     </body>
 
     </html>
     <script>    
- $("#selectSucursal").select2();
+        $("#selectSucursal").select2();
+        $(document).ready(() => {
+
+            document.querySelector(".toggle").style.width="40px"
+            document.querySelector(".toggle-on").style.fontSize="0"
+            document.querySelector(".toggle-off").style.fontSize="0"
+            document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+
+        });
                                                     
     </script>

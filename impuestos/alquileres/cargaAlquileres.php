@@ -51,7 +51,23 @@
         $sucursalesOcultasArray = explode(',', $arraySucursalesOcultas['sucursales']);
     }
 
-   
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+        $checked = 'checked';
+    }else{
+        $checked = '';
+    }
+        
+    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+    $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+    $imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
+    $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
+    
+    
 
 ?>
 
@@ -70,6 +86,23 @@
             </link>
 
         </head>
+        <style>
+              .toggle-on {
+                    background-image: url('<?= $imageOn ?>');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    height: 60px;
+                    width: 60px;
+                }
+
+                .toggle-off {
+                    background-image: url('<?= $imageOff ?>');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    height: 60px;
+                    width: 60px;
+                }
+        </style>
         <body style="width:2800px">
 
             <div class="alert alert-secondary">
@@ -78,7 +111,13 @@
                         <div class="card card-1">
 
                             <div class="row" style="margin-left:50px">
+                                <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                                    <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                                </a>
                                 <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Alquileres - <?= $fechaParaMostrar ?></strong></h3>
+                                <div style="margin-top:30px;margin-left:50%">
+                                    <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                                </div>
                             </div>
 
                             <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
@@ -157,11 +196,18 @@
                             </form>
 
                             <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle"> Control Por Sucursal</i></strong></div>
-                                <table class="table table-striped table-bordered table-sm table-hover" id="tablaAlquileres" style="font-size :12px;" >
+                            <?php 
+                                $width = '';
+                                
+                                if($_SESSION['entorno'] == 'uy'){
+                                    $width = 'width:30%';
+                                }
+                            ?>
+                                <table class="table table-striped table-bordered table-sm table-hover" id="tablaAlquileres" style="font-size :12px;<?= $width ?>" >
                                     <thead class="thead-dark">
                                         <tr>
-                                            <th style="text-align:center;width:30px" id="thIdConcepto">ID</th>
-                                            <th style="text-align:center;width:100px" id="thConcepto"  >CONCEPTOS </th>
+                                            <th style="text-align:center;width:5%" id="thIdConcepto">ID</th>
+                                            <th style="text-align:center;width:10%" id="thConcepto"  >CONCEPTOS </th>
                                             <?php 
                                                 foreach ($todosLosLocales as $key => $value) {   
 
@@ -169,8 +215,12 @@
                                                
                                                         continue;
                                                     } 
+                                                    $width = '';
+                                                    if($_SESSION['entorno'] == 'uy'){
+                                                        $width = 'width:1%';
+                                                    }
                                             ?>
-                                                <th style="text-align:center;width:50px" id="sucursal"  class = "suc<?= $value['NRO_SUCURSAL']?>" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?></th>
+                                                <th style="text-align:center;<?= $width ?>" id="sucursal"  class = "suc<?= $value['NRO_SUCURSAL']?>" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?></th>
                                             <?php
                                                 }
                                             ?>
@@ -294,6 +344,8 @@
                 require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
             ?>
 
+            <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+            <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
             <script src="js/cargaAlquileres.js"></script>
 
         </body>
@@ -314,6 +366,11 @@ $(document).ready(function() {
     }else{
         actualizarCargaAutomatica(<?= $estado ?>);
     }
+
+    document.querySelector(".toggle").style.width="40px"
+    document.querySelector(".toggle-on").style.fontSize="0"
+    document.querySelector(".toggle-off").style.fontSize="0"
+    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
 
 });
 
