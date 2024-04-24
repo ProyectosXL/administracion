@@ -155,7 +155,7 @@ if(document.querySelector("#btnSaveDetalle") != null){
 
           
 
-            // window.location = "index.php"  
+            window.location = "index.php"  
           })
    
 
