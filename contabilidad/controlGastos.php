@@ -305,26 +305,24 @@ foreach ($cuentas as $key => $value) {
 
                 <td><select class="auxiliar" id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
                     <?php 
-                    foreach ($todosLosCentrosCosto as  $y => $centro) {
+
+                     if($key->COD_AUXILIAR == 'SinAsignar'){
                         
-                        if($key->COD_AUXILIAR == $centro->COD_AUXILIAR){   
+                        echo '<option value="" attr-sector = "" attr-numSucursal = "" attr-codAuxiliar="" selected>Sin Asignar</option>';
+
+                    }
+
+                    foreach ($todosLosCentrosCosto as  $y => $centro) {              
+               
                     ?>
-                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>" selected>
-                                <?php
-                                    echo($centro->DESC_AUXILIAR);           
-                                ?>
-                            </option>
-                    <?php
-                        }else {
-                    ?>
-                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>">
+                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>" <?= ($key->COD_AUXILIAR == $centro->COD_AUXILIAR) ? 'selected' : '' ?>>
                                 <?php
                                     echo($centro->DESC_AUXILIAR);
                                 ?>
                             </option>
                     <?php
-                        }
-                            }
+                    }
+                        
                     ?>
                     </select>
                 </td>
