@@ -1,6 +1,6 @@
 <?php
     require_once "Class/Alquiler.php";
-    require_once "../../controlSucursales/Class/sucursal.php";
+    require_once "Class/Sucursal.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();

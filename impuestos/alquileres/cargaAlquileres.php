@@ -199,7 +199,7 @@
                             <?php 
                                 $width = '';
                                 
-                                if($_SESSION['entorno'] == 'uy'){
+                                if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
                                     $width = 'width:30%';
                                 }
                             ?>
@@ -216,7 +216,7 @@
                                                         continue;
                                                     } 
                                                     $width = '';
-                                                    if($_SESSION['entorno'] == 'uy'){
+                                                    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
                                                         $width = 'width:1%';
                                                     }
                                             ?>
