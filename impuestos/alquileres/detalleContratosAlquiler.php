@@ -14,6 +14,24 @@ if($estado == 0){
 
 }
 
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
+}
+    
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
+$imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
+
+
+
 ?>
 
 <!DOCTYPE html>
@@ -53,7 +71,22 @@ if($estado == 0){
             #tablaArticulos_paginate{
                 margin-right:42px 
             }
-            
+            .toggle-on {
+                background-image: url('<?= $imageOn ?>');
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
+            }
+
+            .toggle-off {
+                background-image: url('<?= $imageOff ?>');
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
+            }
+                
         </style>
     </head>
 
@@ -73,6 +106,10 @@ if($estado == 0){
                         <div id="periodo" hidden><?= $periodo ?></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
                             <h3><strong><i class="bi bi-key" style="margin-right:20px;font-size:40px"></i>Detalle contratos de alquiler </strong></h3>
+                            <div style="margin-left:60%">
+                                <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                            </div>
+
                         </div>
                         <form action="#">
 
@@ -189,14 +226,23 @@ if($estado == 0){
         <link rel="stylesheet" type="text/css" href="assets/select2/select2.min.css">
         <script src="assets/select2/select2.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-        <!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script> -->
-        <!-- <script src="js/controlFallas.js"></script> -->
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    
     </body>
 
 </html>
 <script>
     $(document).ready(function() {
+
         $('[data-toggle="tooltip"]').tooltip()
+
+
+        document.querySelector(".toggle").style.width="40px"
+        document.querySelector(".toggle-on").style.fontSize="0"
+        document.querySelector(".toggle-off").style.fontSize="0"
+        document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+
     })
   $('#tablaAlquileres').DataTable({
         "bLengthChange": true,
@@ -230,6 +276,28 @@ if($estado == 0){
     
         },
     });
+
+    const cambiarEntorno = (t) =>{
+
+        let entorno = 0;
+
+        if(t.getAttribute("data-off") == "ARG" ){
+        entorno = 0;
+        }else{
+        entorno = 1;
+        }
+
+
+        $.ajax({
+        url: "Controller/cambiarEntorno.php",
+        method: "POST",
+        data : {entorno: entorno},
+        success: function (data) {
+            location.reload();
+        }
+        });
+
+    }
 
 </script>
 <!-- <script src="js/gastosTesoreria.js"></script> -->

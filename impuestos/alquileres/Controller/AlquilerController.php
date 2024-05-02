@@ -94,20 +94,12 @@ function actualizarDetalle () {
 function cargarAlquieres ($fecha, $periodo) {
 
     require_once "Class/Alquiler.php";
-    require_once "../../controlSucursales/Class/sucursal.php";
+    require_once "Class/sucursal.php";
 
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
     $conceptos = $alquiler->traerConceptos();
-
-    // $inputStringWithDay = $fecha . "-01";
-
-    // // Convertir el string a un objeto DateTime
-    // $date = new DateTime($inputStringWithDay);
-
-    // // Formatear la fecha en el formato deseado "YYYY-MM-dd"
-    // $formattedDate = $date->format('Y-m-d');
 
     $contratoAlquiler = $alquiler->traerContratoAlquiler($fecha);
 
@@ -238,7 +230,7 @@ function cargarAlquieres ($fecha, $periodo) {
 function traerDetalleAlquiler ($fecha,$periodo) {
 
     require_once "Class/Alquiler.php";
-    require_once "../../controlSucursales/Class/sucursal.php";
+    require_once "Class/sucursal.php";
 
 
     $alquiler = new Alquiler();
@@ -443,7 +435,7 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
 function traerLocales () {
     
-    require_once "../../controlSucursales/Class/sucursal.php";
+    require_once "Class/sucursal.php";
 
     $sucursal = new Sucursal();
     $todosLosLocales= $sucursal->traerLocales();
@@ -465,7 +457,7 @@ function traerConceptos () {
 function consultarMesesDetalle ($periodoPasado, $periodo) {
     
     require_once "Class/Alquiler.php";
-    require_once "../../controlSucursales/Class/sucursal.php";
+    require_once "Class/sucursal.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -546,7 +538,7 @@ function traerArrayPeriodo () {
 function traerDetalleHaceUnAño ($periodoPasado, $now) {
     
     require_once "Class/Alquiler.php";
-    require_once "../../controlSucursales/Class/sucursal.php";
+    require_once "Class/sucursal.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();

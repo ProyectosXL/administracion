@@ -5,8 +5,22 @@ class Alquiler
 {
     function __construct(){
         require_once __DIR__.'/../../../Class/conexion.php';
+
         $cid = new Conexion();
+
         $this->cid_central = $cid->conectar('central');
+
+        if (session_status() == PHP_SESSION_NONE) {
+
+            session_start();
+
+        }
+        
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+
+            $this->cid_central = $cid->conectar('uy');
+
+        }
 
     } 
 
@@ -291,6 +305,7 @@ class Alquiler
                 FROM RO_T_DETALLE_ALQUILERES  A ) 
             b) 
         C where C.P BETWEEN '$periodoPasado' AND '$periodo' ;";
+    
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
        
@@ -517,18 +532,6 @@ class Alquiler
 
     function guardarContratoAlquiler($sucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta) {
 
-        // $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, VIG_DESDE, VIG_HASTA)
-        //              SELECT GETDATE(), '$sucursal', '$descSucursal', '$idValor', '$valor', '$desde', '$hasta'
-        //              WHERE NOT EXISTS (
-        //                  SELECT 1
-        //                  FROM RO_T_CONTRATOS_ALQUILERES
-        //                  WHERE (
-        //                      (VIG_DESDE <= '$desde' AND VIG_HASTA >= '$hasta')
-        //                      OR ('$desde' <= VIG_DESDE AND '$hasta' >= VIG_HASTA)
-        //                  ) 
-        //                  AND ID_CA = '$idValor'
-        //                  AND NRO_SUCURS = '$sucursal'
-        //              );";
 
         $sqlLlave = "INSERT INTO RO_T_CONTRATOS_ALQUILERES  (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, ID_CA_2, IMPORTE_2, ID_CA_3, IMPORTE_3, VIG_DESDE, VIG_HASTA) 
         VALUES (GETDATE(), '$sucursal', '$descSucursal', '4', '$valorLlave', '5', '$comisiones', '18', '$lanzamiento',  '$desde', '$hasta')";
