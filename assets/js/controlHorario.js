@@ -9,6 +9,16 @@ $(document).ready(function () {
     });
 
 
+    $.ajax({
+        url: '../Controller/HorarioController.php?accion=sucursales',
+        type: 'GET',
+        success: function(response) {
+    
+            localStorage.setItem('sucursales', response)
+        }
+    })
+
+
 });
 
 
@@ -41,6 +51,7 @@ const rellenarTableBody = () => {
       const tr=document.createElement('tr');
       tr.id = "trBodyDetalle";
       const td1=document.createElement('td');
+      td1.classList.add("noExport");
       const td2=document.createElement('td');
       const td3=document.createElement('td');
       const td4=document.createElement('td');
@@ -51,13 +62,24 @@ const rellenarTableBody = () => {
       const td8=document.createElement('td');
  
       const td9=document.createElement('td');
+      td9.classList.add("noExport");
       td9.hidden = true;
       
       const td10=document.createElement('td');
       td10.hidden = true;
+      td10.classList.add("noExport");
+
+      td2.style.textAlign = "left";
+      td3.style.textAlign = "left";
+      td4.style.textAlign = "left";
+      td5.style.textAlign = "left";
+      td6.style.textAlign = "left";
+
+
 
       let checkbox1 = document.createElement("input");
       checkbox1.type = "checkbox";
+      checkbox1.id = "checkEmpleado";
   
         let button8 = document.createElement("a");
         button8.setAttribute("href", "editarEmpleado.php?nroLegajo="+obj[x]['NRO_LEGAJO']);
@@ -71,9 +93,26 @@ const rellenarTableBody = () => {
       const text3=document.createTextNode(obj[x]['APELLIDO']);
       const text4=document.createTextNode(obj[x]['NOMBRE']);
       const text5=document.createTextNode(obj[x]['TAREA_HABITUAL']);
-      const text6=document.createTextNode(obj[x]['LOCALIDAD']);
-      const text7=document.createTextNode(obj[x]['NRO_SUCURS']);
-      const text9=document.createTextNode(obj[x]['BLOQUE']);
+      let text6 = '';
+      if(obj[x]['LOCALIDAD'] != null){
+
+        text6 = document.createTextNode(obj[x]['LOCALIDAD'].toUpperCase());
+
+      }else{
+          text6=document.createTextNode(obj[x]['LOCALIDAD']);
+      }
+      let sucursales = localStorage.getItem('sucursales')
+
+      let descSucursal = '';
+      if (obj[x]['NUM_SUCURSAL'] != null) {
+          let sucursalEncontrada = JSON.parse(sucursales).find(sucursal => sucursal.NRO_SUCURSAL == obj[x]['NUM_SUCURSAL']);
+          if (sucursalEncontrada) {
+              descSucursal = sucursalEncontrada['COD_CLIENT'];
+          }
+      }
+
+      const text7=document.createTextNode(descSucursal);
+      const text9=document.createTextNode(obj[x]['COD_VENDEDOR']);
       const text10=document.createTextNode(obj[x]['HABILITADO']);
 
 
@@ -113,39 +152,121 @@ const rellenarTableBody = () => {
 
 
 const filtrarTabla = (textoBusqueda) => {
-    $('#tableBody tr').each(function() {
-        // Obtener el texto de todas las celdas en la fila y convertirlo a minúsculas
-        let textoFila = $(this).text().toLowerCase();
-        // Mostrar la fila si el texto de la fila incluye el texto de búsqueda, de lo contrario, ocultarla
-        $(this).toggle(textoFila.indexOf(textoBusqueda) > -1);
-    });
+    if($('#tableBody tr').length > 0){
+        $('#tableBody tr').each(function() {
+            console.log("entro")
+            // Obtener el texto de todas las celdas en la fila y convertirlo a minúsculas
+            let textoFila = $(this).text().toLowerCase();
+            console.log(textoFila);
+            // Mostrar la fila si el texto de la fila incluye el texto de búsqueda, de lo contrario, ocultarla
+            $(this).toggle(textoFila.indexOf(textoBusqueda) > -1);
+        });
+    }else{
+        console.log($('#cuadrado'))
+        $('.cuadrado').each(function() {
+            // let textoFila = $(this).text().toLowerCase().trim();
+            let nroLegajo = $(this).find("#cuadradoIdLegajo").text().toLowerCase().trim()
+            let nombreCompleto = $(this).find("#cuadradoNombre").text().toLowerCase().trim()
+            let tipoVendedor = $(this).find("#cuadradoTipoVendedor").text().toLowerCase().trim()
+            
+            let textoFila = nroLegajo + " " + nombreCompleto + " " + tipoVendedor;
+            
+
+            $(this).toggle(textoFila.indexOf(textoBusqueda) > -1);
+        })
+    }
+
+
 }
 
 
-// Agregar controlador de eventos al cambio de valor del select
-$('#selectFiltro').on('change', function() {
-    // Obtener el valor seleccionado del select
-    let filtro = $(this).val().toLowerCase();
-    console.log(filtro);
-    // Recorrer las filas de la tabla
-    $('#tableBody tr').each(function() {
-        // Obtener el texto del td9 en la fila actual
-        let textoFila = $(this).find('td:eq(4)').text().toLowerCase();
-    
-        // Mostrar u ocultar la fila según el valor seleccionado del select y el texto del td9
-        if (filtro === '%' || textoFila == filtro) {
-            $(this).show(); // Mostrar la fila
-        } else {
-            $(this).hide(); // Ocultar la fila
-        }
-    });
-});
+// Función para aplicar los filtros
+function aplicarFiltros() {
+    let filtroFiltro = $('#selectFiltro').val().toLowerCase();
+    let filtroSucursal = $('#selectSucursal').val().toLowerCase();
+    let filtroLocalidad = $('#selectLocalidad').val().toLowerCase();
+
+    if ($('#tableBody tr').length > 0) {
+        $('#tableBody tr').each(function() {
+            let textoFiltro = $(this).find('td:eq(4)').text().toLowerCase();
+            let textoSucursal = $(this).find('td:eq(6)').text().toLowerCase();
+            let textoLocalidad = $(this).find('td:eq(5)').text().toLowerCase();
+
+            let mostrarFila = true;
+
+            console.log(textoFiltro,filtroFiltro)
+
+            // Comparación del filtroFiltro
+            if (filtroFiltro !== '%' && (textoFiltro !== filtroFiltro)) {
+                mostrarFila = false;
+            }
+            
+
+            // Comparación del filtroSucursal
+            if (filtroSucursal !== '%' && textoSucursal !== filtroSucursal) {
+                mostrarFila = false;
+            }
+
+            // Comparación del filtroLocalidad
+            if (filtroLocalidad !== '%' && textoLocalidad !== filtroLocalidad) {
+                mostrarFila = false;
+            }
+
+            if (mostrarFila) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    } else {
+        $('.cuadrado').each(function() {
+            let textoFiltro = $(this).find("#cuadradoV").text().toLowerCase().trim();
+            let textoSucursal = $(this).find("#cuadradoSucursal").text().toLowerCase().trim();
+            let textoLocalidad = $(this).find("#cuadradoLocalidad").text().toLowerCase().trim();
+
+            let mostrarFila = true;
+
+            // Comparación del filtroFiltro
+            if (filtroFiltro !== '%') {
+                let regexFiltro = new RegExp(filtroFiltro, 'i'); // 'i' indica que ignore mayúsculas y minúsculas
+                if (!regexFiltro.test(textoFiltro)) {
+                    mostrarFila = false;
+                }
+            }
+
+            // Comparación del filtroSucursal
+            if (filtroSucursal !== '%' && textoSucursal !== filtroSucursal) {
+                mostrarFila = false;
+            }
+
+            // Comparación del filtroLocalidad
+            if (filtroLocalidad !== '%' && textoLocalidad !== filtroLocalidad) {
+                mostrarFila = false;
+            }
+
+            if (mostrarFila) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
+}
+
+
+// Agregar controlador de eventos al cambio de valor de los select
+$('#selectFiltro, #selectSucursal, #selectLocalidad').on('change', aplicarFiltros);
+
+// Aplicar filtros al cargar la página
+$(document).ready(aplicarFiltros);
+
+
 
 
 function cambiarFormatoCuadricula(button) {
     
     button.innerHTML = '<i class="bi bi-grid-3x3-gap-fill" style="color:white"></i>'
-    // Crear el div principal con la clase y estilos
+
     button.setAttribute("onclick", "cambiarFormatoTabla(this)");
 
 
@@ -154,7 +275,6 @@ function cambiarFormatoCuadricula(button) {
     let allT = localStorage.getItem("empleados");
     allT = JSON.parse(allT);
 
-    // const allTdArray = Array.from(allTd);
     const grupos = [];
     const tamanoGrupo = 3;
     for (let i = 0; i < allT.length; i += tamanoGrupo) {
@@ -167,7 +287,18 @@ function cambiarFormatoCuadricula(button) {
         `;
         
         grupo.forEach(td => {
-     
+            
+            let sucursales = localStorage.getItem('sucursales')
+
+            let descSucursal = '';
+
+            if (td['NRO_SUCURS'] != null) {
+                let sucursalEncontrada = JSON.parse(sucursales).find(sucursal => sucursal.NRO_SUCURSAL == td['NRO_SUCURS']);
+                if (sucursalEncontrada) {
+                    descSucursal = sucursalEncontrada['COD_CLIENT'];
+                }
+            }
+       
             let estado = '';
             if (td['HABILITADO'] == "S") {
                 estado = '<span style="color:green">Activo</span>';
@@ -176,10 +307,10 @@ function cambiarFormatoCuadricula(button) {
             }
 
             html += `
-                <div class="col-4 ml-2" id="cuadrado">
+                <div class="col-4 ml-2 cuadrado" id="cuadrado">
                     <div class="row">
                         <div class="row ml-2" style="width:100%">
-                            <div class="col" style="text-align:left;color:#5095e3"><strong>${td['NRO_LEGAJO']}</strong></div>
+                            <div class="col" style="text-align:left;color:#5095e3" id="cuadradoIdLegajo"><strong>${td['NRO_LEGAJO']}</strong></div>
                             <div class="col"></div>
                             <div class="col"><a href='editarEmpleado.php?nroLegajo=${td['NRO_LEGAJO']}' style="color:black"><i class="bi bi-three-dots"></i></a></div>
                         </div>
@@ -188,12 +319,12 @@ function cambiarFormatoCuadricula(button) {
                                 <img src="../../assets/images/pruebafoto.png" alt="" style="height: auto; width: 85%;max-width:80%">
                             </div>
                             <div class="row ml-2" style="width:98%">
-                                <div class="col" style="color:#5095e3"><strong>${td['APELLIDO']} ${td['NOMBRE']}</strong></div>
+                                <div class="col" style="color:#5095e3" id="cuadradoNombre"><strong>${td['APELLIDO']} ${td['NOMBRE']}</strong></div>
                             </div>
                             <div class="row ml-2" style="width:98%;display: flex; flex-wrap: nowrap;">
                                 <div class="col" style="text-align:left">
                                     <img src="../../assets/images/Brillo1.png" alt="" style="height: 40px; width: 40px;margin-left:10%"> 
-                                    ${td['BLOQUE']} - ${td['TAREA_HABITUAL']}
+                                   <span id="cuadradoTipoVendedor"> ${td['COD_VENDEDOR']} - <span id="cuadradoV">${td['TAREA_HABITUAL']}</span></span>
                                 </div>
                             </div>
                         </div>
@@ -211,7 +342,8 @@ function cambiarFormatoCuadricula(button) {
                         </div>
                         <div class="row" style="width:99%">
                        
-                            <div class="col" style="text-align:center"><strong>Estado:${estado}</strong></div>
+                            <div class="col" style="text-align:center"><strong>Estado:<span id="cuadradoEstado">${estado}</span></strong></div>
+                            <div hidden id="cuadradoSucursal">${descSucursal}</div>
                   
                         </div>
                     </div>
@@ -223,7 +355,6 @@ function cambiarFormatoCuadricula(button) {
             </div>
         `;
 
-        // Agregar el HTML generado al contenedor principal
         document.querySelector("#tdPrincipal").innerHTML += html;
     });
 
@@ -235,20 +366,62 @@ function cambiarFormatoTabla(button){
     let allT = localStorage.getItem("empleados");
 
     document.querySelector("#tdPrincipal").innerHTML = `
-    <table style="width:100%">
+    <table style="width:100%" id="tableEmpleados">
     <thead >
       <tr style="background-color:#59b9e2;color:white">
-          <td> 
-                  <input type="checkbox" id="miCheckbox" class="custom-checkbox">
-                  <label for="miCheckbox" class="custom-checkbox-label"></label>
-          </td>
-          <td>Legajo</td>
-          <td>Apellido</td>
-          <td>Nombres</td>
-          <td>Cargo</td>
-          <td>Localidad</td>
-          <td>Local</td>
-          <td>Accion</td>
+        <th> 
+            <input type="checkbox" id="miCheckbox" class="custom-checkbox" onclick="checkAll(this)">
+            <label for="miCheckbox" class="custom-checkbox-label"></label>
+        </th>
+        <th style="position: relative; white-space: nowrap;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Legajo</span>
+                <span style="margin-left: 10px;">
+                    <i class="bi-arrow-down" onclick="ordenarPor(this)"></i>
+                </span>
+            </div>
+        </th>
+        <th style="position: relative; white-space: nowrap;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Apellido</span>
+                <span style="margin-left: 10px;">
+                    <i class="bi-arrow-down" onclick="ordenarPor(this)"></i>
+                </span>
+            </div>
+        </th>
+        <th style="position: relative; white-space: nowrap;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Nombre</span>
+                <span style="margin-left: 10px;">
+                    <i class="bi-arrow-down" onclick="ordenarPor(this)"></i>
+                </span>
+            </div>
+        </th>
+        <th style="position: relative; white-space: nowrap;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Cargo</span>
+                <span style="margin-left: 10px;">
+                    <i class="bi-arrow-down" onclick="ordenarPor(this)"></i>
+                </span>
+            </div>
+        </th>
+        <th style="position: relative; white-space: nowrap;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Localidad</span>
+                <span style="margin-left: 10px;">
+                    <i class="bi-arrow-down" onclick="ordenarPor(this)"></i>
+                </span>
+            </div>
+        </th>
+        <th style="position: relative; white-space: nowrap;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Local</span>
+                <span style="margin-left: 10px;">
+                    <i class="bi-arrow-down" onclick="ordenarPor(this)"></i>
+                </span>
+            </div>
+        </th>
+        <th>Accion</th>
       </tr>
     </thead>
     <tbody id="tableBody">
@@ -266,3 +439,15 @@ function cambiarFormatoTabla(button){
 }
 // Llamar a la función para crear el div
 // crearDiv();
+const checkAll = (div) =>{
+    let allCheck = document.querySelectorAll("#checkEmpleado");
+ 
+    allCheck.forEach(element => {
+        if(div.checked){
+            element.checked = true;
+        }else{
+            element.checked = false;
+        }
+    });
+
+}

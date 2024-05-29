@@ -50,6 +50,7 @@
             guardarGestionVendedores($vendedor);
             break;
         
+
         default:
             # code...
             break;
@@ -241,4 +242,6 @@
 
         return $result;
     }
+
+
 ?>
