@@ -63,15 +63,11 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
                     <div class="row" style="margin-bottom:10px;margin-left:8px">
                     Orden De Compra Manual 
-                    <?php if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){?>
+           
 
                         <div class="col" id="checkOrden"><input type="checkbox" id="ordenManual" onchange="traerOrden()"></div>
 
-                    <?php }else{?>
-
-                        <div class="col" id="checkOrden"><input type="checkbox" id="ordenManual" onchange="traerOrdenArg()"></div>
-                
-                    <?php }?>
+           
                     </div>
                     <div id="entorno" hidden><?= (isset($_SESSION['entorno'])) ? $_SESSION['entorno'] : 'central' ?></div>
 
@@ -181,7 +177,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                             <div class="row row-space">
                        
                                 
-                                    <div class="col-md-5" <?php if(!isset($_SESSION['entorno']) || $_SESSION['entorno'] == 'central'){echo 'hidden'; }?>>
+                                    <div class="col-md-5" >
                                         <div class="input-group">
                                             <div style="margin-right:20px">ORDENES DE COMPRA</div>
                                             <div><button id="btnAddOrdenCompra"><i class="bi bi-plus-circle-fill"></i></button></div>
@@ -190,16 +186,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                     <div id="ordenesSeleccionadas" class="contenedor"></div>
                                     
                                 </div>
-                                <div class="col-md-5" <?php if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') {echo 'hidden'; }?>>
-                                    <div class="input-group">
-                                        <input class="" type="text" placeholder="ORDEN DE COMPRA" id="inputOrdenCompra" hidden readonly>
-                                        <select id="ordenCompra">
-                                            <option disabled="disabled" selected="selected">ORDEN DE COMPRA</option>
-                                        </select>
-                                    </div>    
-                                </div>
-                             
-                             
+                      
 
                                 <div class="col-md-5">
                                     <div class="input-group">
@@ -216,7 +203,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>
                             </div>
                         <div class="p-t-20">
-                            <button class="btn btn-primary" id="btnSave" onclick=<?= (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'guardarCabeceraUy()' : 'guardarCabecera()'?>>Guardar <i class="bi bi-cloud-download"></i></button>
+                            <button class="btn btn-primary" id="btnSave" onclick="guardarCabeceraUy()" >Guardar <i class="bi bi-cloud-download"></i></button>
                         </div>
                 </div>
             </div>
@@ -242,38 +229,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
 
 <script>
-    const traerOrdenArg = ()=>{
-        
-        let ordenManual = document.querySelector("#ordenManual");
-        let selectOrdenCompra = document.querySelector("#ordenCompra");
-        let inputOrdenCompra = document.querySelector("#inputOrdenCompra");
-        if(ordenManual.checked == true){
-            $.ajax({
-                url: 'Controller/traerOrdenManualController.php',
-                method: 'GET',
-                success : function(data) {
-                    
-                    selectOrdenCompra.hidden = true;
-                    inputOrdenCompra.hidden = false;
-                    
-                    let num = JSON.parse(data);
-                    
-                   if(num['nroOrden'] == null){
-                        num['nroOrden'] = 0;
-                    }
-                    let sumaOrden = 200000000 + num['nroOrden'];
-                    let orden = ` 0000${sumaOrden}`;
 
-                    inputOrdenCompra.value = orden;
-       
-
-                }
-            })
-        }else{
-                selectOrdenCompra.hidden = false;
-                inputOrdenCompra.hidden = true;
-        }
-    }
 
 
     const traerOrden = ()=>{
