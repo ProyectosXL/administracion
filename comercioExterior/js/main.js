@@ -15,6 +15,36 @@ let selectProveedor=document.getElementById('proveedor');
 // console.log(selectOrdenes)
 
 
+selectProveedor.addEventListener('change',buscarCuentas);
+
+
+function buscarCuentas()
+{
+    let ordenes;
+    conexion1 = new XMLHttpRequest();
+    conexion1.onreadystatechange = () => {
+        if (conexion1.readyState == 4 && conexion1.status == 200) {
+
+            ordenes = JSON.parse(conexion1.responseText);
+        
+        
+            localStorage.setItem('ordenes',JSON.stringify(ordenes));
+      
+
+        } else {
+
+        }
+      };
+      conexion1.open(
+        "GET",
+        "Class/ordenDeCompra.php?proveedor=" +selectProveedor.value,
+        true
+      );
+      conexion1.send();
+}
+
+
+
 function dibujarSelectOrdenes(ordenes)
 {
     
