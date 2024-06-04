@@ -28,8 +28,13 @@ $arrayResult = [];
 
 foreach ($ordenes as  $orden) {
 
+    if(strlen(trim($orden)) == 13){
+        $orden = ' '.trim($orden);
+    }
 
     $datosDeCabezera['ordenCompra'] = $orden ;
+
+    
 
     $result = $cid->insertarEncabezado($datosDeCabezera);
 
