@@ -25,8 +25,14 @@ class CuentaContable
 
     public function traerCuentasContables(){
  
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
 
-        $sql = "SELECT COD_CUENTA, DESC_CUENTA FROM CUENTA WHERE COD_CUENTA BETWEEN '510100' AND '570200' ORDER BY DESC_CUENTA";
+            $sql =  "SELECT COD_CUENTA, DESC_CUENTA FROM CUENTA WHERE COD_CUENTA BETWEEN '500009' AND '500999' ORDER BY DESC_CUENTA;";
+            
+        }else{
+
+            $sql = "SELECT COD_CUENTA, DESC_CUENTA FROM CUENTA WHERE COD_CUENTA BETWEEN '510100' AND '570200' ORDER BY DESC_CUENTA";
+        }
         
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
