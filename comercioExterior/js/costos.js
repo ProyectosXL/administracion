@@ -38,26 +38,31 @@ const iniciarCalculo = (data,isCopy = null)=>{
   rows.forEach((x,e)=>{
 
       total = 0;
-    
-        let tipoCambio =(x.querySelectorAll("td")[3].firstChild.value).replace(",",".");
+        if( x.querySelectorAll("td")[2].firstChild.value == '' ){
+          return
+        }
+        let tipoCambio =(x.querySelectorAll("td")[3].firstChild.value).replaceAll(",",".");
+        x.querySelectorAll("td")[2].firstChild.value = x.querySelectorAll("td")[2].firstChild.value.replaceAll(".","")
 
         if(tipoCambio == 0){
-          total = (x.querySelectorAll("td")[2].firstChild.value ).replace(",",".")
+          total = x.querySelectorAll("td")[2].firstChild.value.replaceAll(",",".")
 
         }else{
-          total = (x.querySelectorAll("td")[2].firstChild.value ).replace(",",".")* (x.querySelectorAll("td")[3].firstChild.value).replace(",",".");
+          total = (x.querySelectorAll("td")[2].firstChild.value ).replaceAll(",",".")* (x.querySelectorAll("td")[3].firstChild.value).replaceAll(",",".");
         }
  
-        x.querySelectorAll("td")[4].firstChild.value =parseFloat(total).toFixed(2);
+        x.querySelectorAll("td")[4].firstChild.value = parseFloat(total).toLocaleString('es-ES', { minimumFractionDigits: 2 });
 
         let sobreFob = x.querySelectorAll("td")[5]
-        let importeEnPesos = x.querySelectorAll("td")[4].firstChild.value
-        
+        let importeEnPesos = x.querySelectorAll("td")[4].firstChild.value.replaceAll(".","").replaceAll(",",".");
+        console.log(importeEnPesos)
+
         let valorPesosFob = document.querySelector("#valorPesosFob").getAttribute("attr-value");
 
         valor = sacarParseo(valorPesosFob)
 
-        let result = ((importeEnPesos / valor)*100) ;
+
+        let result = ((parseFloat(importeEnPesos) / valor)*100) ;
         sobreFob.firstChild.value = result.toFixed(2) + "%";
 
       
@@ -78,18 +83,21 @@ const totalGastos = ()=> {
   importes.forEach(importe=>{
 
     if(importe.value!==''){
+      importe.value = importe.value.replaceAll(".","").replaceAll(",",".");
       sum = (parseFloat(sum))+parseFloat(importe.value)
     }
 
   });
 
-  total.textContent = 'Gastos: $'+ parseNumber(sum);
-  total.setAttribute("attr-value", parseNumber(sum))
-  totalResult.textContent ='Gastos: $'+ parseNumber(sum);
+  total.textContent = 'Gastos: $'+ sum.toLocaleString('es-ES', { minimumFractionDigits: 2 });
+  total.setAttribute("attr-value", sum.toLocaleString('es-ES', { minimumFractionDigits: 2 }));
+  totalResult.textContent ='Gastos: $'+ sum.toLocaleString('es-ES', { minimumFractionDigits: 2 });
 
-  valor = sacarParseo(valorPesosFob);
-  
-  let result = ((sum / valor)*100)
+  valor = valorPesosFob.replaceAll(".","");
+  console.log(valor, sum)
+  valor = valor.replaceAll(",",".");
+
+  let result = ((sum / parseFloat(valor))*100)
   let numberResult = (parseFloat(result).toFixed(2));
   porcentajeSpan.textContent = numberResult + "%";
   porcentajeSpan.setAttribute("attr-value",result.toFixed(2));
@@ -165,4 +173,14 @@ if(document.querySelector("#btnSaveDetalle") != null){
 
 
   })
+}
+
+
+const convertirNumeros = (input) =>{
+  
+    let valueI = input.value.replaceAll(',','.');
+    input.value = parseFloat(valueI).toLocaleString('es-ES', { minimumFractionDigits: 2 })
+    input.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value = (input.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value != '') ? parseFloat(input.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value.replaceAll(',','.')).toLocaleString('es-ES', { minimumFractionDigits: 2 }) : '0,00';
+
+
 }
