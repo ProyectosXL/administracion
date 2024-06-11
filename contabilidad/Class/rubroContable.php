@@ -7,7 +7,17 @@ class RubroContable
 
         require_once __DIR__.'/../../class/conexion.php';
         $cid = new Conexion();
-        $this->cid_central = $cid->conectar('central');
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            $this->cid_central  = $cid->conectar('uy');
+        }else{
+            $this->cid_central = $cid->conectar('central');
+
+        }
 
     } 
 
