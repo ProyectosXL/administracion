@@ -24,6 +24,12 @@ $encabezado .= implode(', ', $array);
 $encabezado .= ' )';
 $valorFobPeso = str_replace(',', '', $_GET['valorFobPeso']);
 $valorFobPeso  = number_format($valorFobPeso, 2, ',', '.');
+
+$tipoCambio = $_GET['tipoCambio'];
+
+$tipoCambio = str_replace(',', '', $tipoCambio);
+
+$tipoCambio  = number_format($tipoCambio, 2, ',', '.');
 ?>
 
 <!DOCTYPE html>
@@ -93,9 +99,9 @@ $valorFobPeso  = number_format($valorFobPeso, 2, ',', '.');
                                     <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" onchange='convertirNumeros(this)'></input></td>
                                     <?php if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){?>
                                     
-                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0"></input></td>
+                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0" onchange='convertirNumeros(this)'></input></td>
                                     <?php }else{ ?>
-                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($valor <= 6) ? $_GET['tipoCambio'] : "0" ?>"></input></td>
+                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio"  onchange='convertirNumeros(this)' value="<?= ($valor <= 6) ? $tipoCambio   : "0" ?>"></input></td>
 
                                     <?php }?>
                                     

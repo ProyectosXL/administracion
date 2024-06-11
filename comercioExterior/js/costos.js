@@ -30,44 +30,42 @@ let sacarParseo = (string,isNumber = false) => {
   return valor;
 }
 
-const iniciarCalculo = (data,isCopy = null)=>{
+const iniciarCalculo = (div)=>{
  
   let table = document.querySelector("#table")
-  let rows = table.querySelectorAll("tr:not(:last-child)")
+  console.log(div)
 
-  rows.forEach((x,e)=>{
 
       total = 0;
-        if( x.querySelectorAll("td")[2].firstChild.value == '' ){
-          return
-        }
-        let tipoCambio =(x.querySelectorAll("td")[3].firstChild.value).replaceAll(",",".");
-        x.querySelectorAll("td")[2].firstChild.value = x.querySelectorAll("td")[2].firstChild.value.replaceAll(".","")
+      if( div.value == '' ){
+        return
+      }
 
-        if(tipoCambio == 0){
-          total = x.querySelectorAll("td")[2].firstChild.value.replaceAll(",",".")
-
-        }else{
-          total = (x.querySelectorAll("td")[2].firstChild.value ).replaceAll(",",".")* (x.querySelectorAll("td")[3].firstChild.value).replaceAll(",",".");
-        }
- 
-        x.querySelectorAll("td")[4].firstChild.value = parseFloat(total).toLocaleString('es-ES', { minimumFractionDigits: 2 });
-
-        let sobreFob = x.querySelectorAll("td")[5]
-        let importeEnPesos = x.querySelectorAll("td")[4].firstChild.value.replaceAll(".","").replaceAll(",",".");
-        console.log(importeEnPesos)
-
-        let valorPesosFob = document.querySelector("#valorPesosFob").getAttribute("attr-value");
-
-        valor = sacarParseo(valorPesosFob)
-
-
-        let result = ((parseFloat(importeEnPesos) / valor)*100) ;
-        sobreFob.firstChild.value = result.toFixed(2) + "%";
-
+      let tipoCambio =(div.parentElement.parentElement.querySelectorAll("td")[3].firstChild.value).replaceAll(".","").replaceAll(",",".");
+      let valorFobUsd = (div.parentElement.parentElement.querySelectorAll("td")[2].firstChild.value).replaceAll(".","").replaceAll(",",".");
       
-  })
-  totalGastos();
+      if(tipoCambio == 0){
+        total = valorFobUsd
+
+      }else{
+        total = valorFobUsd * tipoCambio;
+      }
+
+      div.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value = parseFloat(total).toLocaleString('es-ES', { minimumFractionDigits: 2 });
+
+      let sobreFob = div.parentElement.parentElement.querySelectorAll("td")[5];
+      let importeEnPesos = div.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value.replaceAll(".","").replaceAll(",",".");
+      
+
+      let valorPesosFob = document.querySelector("#valorPesosFob").getAttribute("attr-value");
+
+      valor = valorPesosFob.replaceAll(".","").replaceAll(",",".");
+
+
+      let result = ((parseFloat(importeEnPesos) / parseFloat(valor))*100) ;
+      sobreFob.firstChild.value = result.toFixed(2) + "%";
+
+      totalGastos();
 }
 
 
@@ -83,8 +81,10 @@ const totalGastos = ()=> {
   importes.forEach(importe=>{
 
     if(importe.value!==''){
-      importe.value = importe.value.replaceAll(".","").replaceAll(",",".");
-      sum = (parseFloat(sum))+parseFloat(importe.value)
+
+      valor = importe.value.replaceAll(".","").replaceAll(",",".");
+      sum = (parseFloat(sum))+parseFloat(valor)
+
     }
 
   });
@@ -177,10 +177,7 @@ if(document.querySelector("#btnSaveDetalle") != null){
 
 
 const convertirNumeros = (input) =>{
-  
     let valueI = input.value.replaceAll(',','.');
     input.value = parseFloat(valueI).toLocaleString('es-ES', { minimumFractionDigits: 2 })
-    input.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value = (input.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value != '') ? parseFloat(input.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value.replaceAll(',','.')).toLocaleString('es-ES', { minimumFractionDigits: 2 }) : '0,00';
-
 
 }
