@@ -22,6 +22,14 @@ $array = json_decode($jsonStringClean);
 $encabezado = ' ( ';
 $encabezado .= implode(', ', $array);
 $encabezado .= ' )';
+$valorFobPeso = str_replace(',', '', $_GET['valorFobPeso']);
+$valorFobPeso  = number_format($valorFobPeso, 2, ',', '.');
+
+$tipoCambio = $_GET['tipoCambio'];
+
+$tipoCambio = str_replace(',', '', $tipoCambio);
+
+$tipoCambio  = number_format($tipoCambio, 2, ',', '.');
 ?>
 
 <!DOCTYPE html>
@@ -61,7 +69,7 @@ $encabezado .= ' )';
                         </div>
                         <div class="row justify-content-md-center">
                             <div class="col-md-auto"><i class="bi bi-airplane-fill icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Nº Orden Proveedor</label><?= ' '.$_GET['contenedor']?></h5></div>
-                            <div class="col-md-auto"><i class="bi bi-cash icon"></i><h5 class="mb-1" id ="valorPesosFob" attr-value = "<?=  $_GET['valorFobPeso'] ?>"><label style="font-weight: bold;" >Valor F.O.B. $: </label><?= ' '.$_GET['valorFobPeso']?></h5></div>
+                            <div class="col-md-auto"><i class="bi bi-cash icon"></i><h5 class="mb-1" id ="valorPesosFob" attr-value = "<?=  $valorFobPeso ?>"><label style="font-weight: bold;" >Valor F.O.B. $: </label><?= ' '.$valorFobPeso?></h5></div>
                             <div id="idEncabezado" attr-value="<?= $encabezado ?>" hidden></div>
                             <div class="col-md-auto"><i class="bi bi-cash-coin icon"></i><h5 class="mb-1"><label  id="totalGastosDetalle" style="font-weight: bold;">Gastos $:</label></h5></div>
                             <div class="col-md-auto"><i class="bi bi-percent icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Costos nac.: </label> <span id="porcentaje"></span></h5></div>
@@ -85,21 +93,21 @@ $encabezado .= ' )';
                                 <?php
                                 foreach($todosLosGastos as $valor => $key){
                                 ?>
-                                <tr>
+                                <tr id="trBody">
                                     <td id="id"><?=  $key['ID_MG']?></td>
                                     <td><?=  $key['GASTOS']?></td>
-                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)"></input></td>
+                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" onchange='convertirNumeros(this)'></input></td>
                                     <?php if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){?>
                                     
-                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0"></input></td>
+                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0" onchange='convertirNumeros(this)'></input></td>
                                     <?php }else{ ?>
-                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($valor <= 6) ? $_GET['tipoCambio'] : "0" ?>"></input></td>
+                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio"  onchange='convertirNumeros(this)' value="<?= ($valor <= 6) ? $tipoCambio   : "0" ?>"></input></td>
 
                                     <?php }?>
                                     
-                                    <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly></input></td>
-                                    <td><input style="text-align:center"></input></td>
-                                    <td><input></input></td>
+                                    <td><input class="decimales currencyInput importe skip" style="text-align:center"  id="valorFobPeso" name="inputNum[]" readonly></input></td>
+                                    <td><input style="text-align:center" class="skip"></input></td>
+                                    <td><input class="skip"></input></td>
                                 </tr>
                             <?php
                             }   
@@ -130,5 +138,45 @@ $encabezado .= ' )';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk" crossorigin="anonymous"></script>
     <script src="js/costos.js"></script>
 
+    <script>document.addEventListener("DOMContentLoaded", function() {
+    // Obtener todas las celdas de entrada en la tabla
+    var inputs = document.querySelectorAll("input.currencyInput");
+
+    // Agregar evento de teclado a cada celda de entrada
+    inputs.forEach(function(input) {
+        input.addEventListener("keydown", function(event) {
+            // Verificar si se presionó la tecla de flecha hacia abajo
+            if (event.key === "ArrowDown") {
+                moveFocus(event, 1);
+            }
+            // Verificar si se presionó la tecla de flecha hacia arriba
+            else if (event.key === "ArrowUp") {
+                moveFocus(event, -1);
+            }
+        });
+    });
+
+    function moveFocus(event, direction) {
+        // Obtener el índice de la celda actual
+        var currentIndex = Array.prototype.indexOf.call(inputs, event.target);
+
+        // Calcular el índice de la siguiente celda de entrada
+        var nextIndex = currentIndex + direction;
+
+        // Verificar si el índice está dentro del rango de celdas de entrada
+        if (nextIndex >= 0 && nextIndex < inputs.length) {
+            // Si la siguiente celda de entrada es la que deseas omitir, salta a la siguiente
+            if (inputs[nextIndex].classList.contains('skip')) {
+                nextIndex += direction;
+            }
+            // Enfocar la siguiente celda de entrada
+            inputs[nextIndex].focus();
+        } else {
+            // Si está fuera de rango, no hacer nada (mantener el foco en la celda actual)
+            event.preventDefault();
+        }
+    }
+});
+</script>
 </body>
 </html>
