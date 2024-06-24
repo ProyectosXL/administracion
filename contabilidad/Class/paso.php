@@ -9,7 +9,19 @@ class Paso
             require_once __DIR__.'/../../class/conexion.php';
 
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+ 
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
+    
             $sql = $sqlEnviado;
 
             $stmt = sqlsrv_query($cid_central, $sql);
@@ -23,7 +35,17 @@ class Paso
 
         require_once __DIR__.'/../../class/conexion.php';
         $cid = new Conexion();
-        $cid_central = $cid->conectar('central');
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            $cid_central  = $cid->conectar('uy');
+        }else{
+            $cid_central = $cid->conectar('central');
+
+        }
 
         $sql = "SELECT * FROM RO_T_CONTROL_INFORME_ECONOMICO WHERE PERIODO = '$periodo'";
         $stmt = sqlsrv_query($cid_central, $sql);
@@ -44,8 +66,17 @@ class Paso
         try {
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
-            
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
             $sql = "EXEC RO_SP_VENTAS_BRUTAS '$desde', '$hasta'";
 
             $stmt = sqlsrv_query($cid_central, $sql);
@@ -67,7 +98,18 @@ class Paso
             
             $cid = new Conexion();
 
-            $cid_conexion = ($cid->env == 'DEV') ? $cid->conectar('central') : $cid->conectar('locales');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('locales');
+    
+            }
+            $cid_conexion =  $cid_central;
 
             $sql = "EXEC ".$cid->prefix."RO_SP_VENTAS_VS_COBRANZA_TOTALES '$desde', '$hasta' ;";
 
@@ -99,7 +141,17 @@ class Paso
 
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
 
             $sql = "EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta' ;";
 
@@ -129,7 +181,17 @@ class Paso
         try {
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
 
             $sql = " EXEC RO_SP_ARTICULOS_SIN_PRECIO_COSTO '$desde', '$hasta';";
 
@@ -162,7 +224,17 @@ class Paso
 
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
 
             $sql = "EXEC RO_SP_RENTABILIDAD_BRUTA '$desde', '$hasta' ;";
 
@@ -193,7 +265,17 @@ class Paso
 
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
 
             $sql = "EXEC RO_SP_INSERTAR_MET_PRORRATEO_TODOS '$desde', '$hasta' ;";
 
@@ -225,7 +307,17 @@ class Paso
 
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
 
             $sql = "EXEC RO_SP_INTEGRAL '$desde', '$hasta' ;";
 
@@ -256,7 +348,18 @@ class Paso
 
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
+
 
             $sql = "EXEC RO_SP_APLICAR_COEF_AJUSTE '$desde', '$hasta' ;";
 
@@ -287,7 +390,19 @@ class Paso
 
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
+
 
             $sql ="INSERT INTO RO_T_CONTROL_INFORME_ECONOMICO (PERIODO,PASO_1) VALUES ('$periodo','1')";
 
@@ -308,7 +423,17 @@ class Paso
 
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
-            $cid_central = $cid->conectar('central');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
 
             $sql ="UPDATE RO_T_CONTROL_INFORME_ECONOMICO SET PASO_".$paso_ejecutado." = 1 WHERE PERIODO = '$periodo'";
 

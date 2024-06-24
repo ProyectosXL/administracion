@@ -25,6 +25,10 @@ switch ($accion) {
         resumen();
         break;
     
+    case 'cambiarEntorno':
+        cambiarEntorno();
+        break;
+    
     default:
         # code...
         break;
@@ -94,6 +98,18 @@ function resumen() {
 
     echo json_encode($result);
 
+}
+
+
+
+function cambiarEntorno () {
+    session_start();
+
+    $entorno = $_POST['entorno'];
+
+    $_SESSION['entorno'] = $entorno;
+
+    echo 'ok';
 }
 
 
