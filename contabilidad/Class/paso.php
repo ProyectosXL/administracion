@@ -111,7 +111,7 @@ class Paso
             }
             $cid_conexion =  $cid_central;
 
-            $prefix = ($cid_central == 'uy') ? '[LAKERBIS].locales_lakers.dbo.' : '';
+            $prefix = ($cid_central == 'uy') ? '[LAKERBIS].SUCURSALES_URUGUAY.dbo.' : '';
 
             $sql = "EXEC ".$prefix."RO_SP_VENTAS_VS_COBRANZA_TOTALES '$desde', '$hasta' ;";
 
