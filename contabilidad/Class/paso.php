@@ -110,13 +110,13 @@ class Paso
     
             }
             $cid_conexion =  $cid_central;
-
-            $prefix = ($cid_central == 'uy') ? '[LAKERBIS].SUCURSALES_URUGUAY.dbo.' : '';
+            
+            $prefix = ($_SESSION['entorno'] == 'uy') ? '[LAKERBIS].SUCURSALES_URUGUAY.dbo.' : '';
 
             $sql = "EXEC ".$prefix."RO_SP_VENTAS_VS_COBRANZA_TOTALES '$desde', '$hasta' ;";
 
             ini_set('max_execution_time', 300);
-
+            
             $stmt = sqlsrv_query($cid_conexion, $sql);
 
             $next_result = sqlsrv_next_result($stmt);
