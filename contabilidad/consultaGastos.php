@@ -69,6 +69,9 @@ $todosLosGastos = $gastos->traerGastosConsulta($desde, $hasta, $codRubro, $colum
 
     <div class="alert alert-secondary">
         <div class="row">
+        <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+            <img src="../image/home-button.png" style="width:50px;height:45px; margin-left: 0.5rem; margin-right:0.5rem; margin-top:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        </a>
             <div id="titlePrincipal" class="col-md-auto">
                 <h3 class="title"><i class="bi bi-ui-checks"></i> Consulta de Gastos</h3>
             </div>

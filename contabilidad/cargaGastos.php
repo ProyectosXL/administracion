@@ -63,6 +63,9 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <span class="select2-search__field"></span>
     <div class="alert alert-secondary">
         <div class="row">
+            <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                <img src="../image/home-button.png" style="width:50px;height:45px; margin-left: 0.5rem; margin-right:0.5rem; margin-top:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            </a>
             <div id="titlePrincipal" class="col-md-auto">
                 <h3 class="title"><i class="bi bi-ui-checks"></i> Carga de Gastos - Informe Económico</h3>
             </div>

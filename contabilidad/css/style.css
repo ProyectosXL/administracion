@@ -124,7 +124,7 @@ select, input{
     padding-top: 10px;
     padding-bottom: 5px;
     padding-right: 0;
-    margin-left: -2rem;
+    margin-left: 1rem;
 }
 
 .progressbar li {
