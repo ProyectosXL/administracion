@@ -160,7 +160,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                         </div>
                         <div  class="col-">
                         <label > Mes :</label> 
-                        <select name="mes" id="mes" style="width:80px">
+                        <select name="mes" id="mes" style="width:55px" class="form-control form-control-sm">
                         
                             <option value="01" <?php if($mes == '01'){echo 'selected'; }?> >01</option>
                             <option value="02" <?php if($mes == '02'){echo 'selected'; }?> >02</option>
@@ -179,7 +179,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                         </div>
                         <div  class="col-">
                         <label > Año :</label> 
-                        <select name="anio" id="selectAño" style="width:120px">
+                        <select name="anio" id="selectAño" style="width:70px" class="form-control form-control-sm">
                             
                             <option value="2022">2022</option>
                             <?php 

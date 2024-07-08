@@ -33,7 +33,7 @@ h2{
 
 #contCheck{
     position: relative;
-    margin-left: 5%;
+    margin-left: 2%;
 }
 
 #titlePrincipal{
@@ -72,7 +72,7 @@ form{
 }
 
 .btn-group{
-    margin-left: 25rem;
+    margin-left: 13rem;
     height: 55px;
     margin-top: 1em;
 }
