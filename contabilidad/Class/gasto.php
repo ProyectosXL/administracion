@@ -431,7 +431,7 @@ class Gasto
             ELSE 'false'
         END AS hay_registros_pendientes
         FROM RO_T_INTEGRAL_TANGO_2 
-        WHERE FECHA BETWEEN '$desde' AND '$hasta' AND AMORTIZAR IS NOT NULL AND AMORTIZAR <> 0 AND AMORTIZADO IS NULL";
+        WHERE FECHA BETWEEN '$desde' AND '$hasta' AND AMORTIZAR IS NOT NULL AND AMORTIZAR <> 0 AND AMORTIZADO IS NULL AND EXCLUIR = 0";
 
         /* WHERE AMORTIZADO IS NULL 
         AND FECHA BETWEEN '$desde' AND '$hasta' 

@@ -112,6 +112,9 @@
                         <div id="username" hidden><?= $_SESSION['username'] ?></div>
 
                         <div class="row" style="margin-left:80px">
+                            <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                                <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem; margin-top:0.5rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            </a>
                             <h3><i class="bi bi-wrench-adjustable" style="margin-right:10px;font-size:50px"></i>Gestión Relaciones Cuenta - Rubro Contable</h3>
                         </div>
                    

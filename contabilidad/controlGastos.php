@@ -113,9 +113,13 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
 
 <body>  
 
-    <div class="row" style="width:100%">
+    <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+        <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem; margin-top:0.5rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+    </a>
+    <div class="row">
+
         <div class="progressbar-wrapper">
-            <div hidden id="periodo" attr-periodo= "<?= $periodo ?>"></div>
+            <div hidden id="periodo" attr-periodo= "<?= $periodo ?>" style="margin-top:-2rem;"></div>
             <ul class="progressbar" >
                 <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
                 <li class="" id="paso2"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza (sucursales)">Paso</li>
