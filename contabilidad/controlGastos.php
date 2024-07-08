@@ -61,43 +61,63 @@ foreach ($cuentas as $key => $value) {
 
 }
 
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
+}
+    
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? 'images/bandera_con_sol__55757_std.jpg' : 'images/UY.png';
+$imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_con_sol__55757_std.jpg';
+
+
+
 
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Gastos</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <title>Resumen de ventas </title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" class="rel">
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.dataTables.min.css" class="rel">
+    <?php
+        require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+    ?>
+<style>
+        .toggle-on {
+        background-image: url('<?= $imageOn ?>');
+        background-size: contain;
+        background-repeat: no-repeat;
+        height: 60px;
+        width: 60px;
+        }
 
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-    <!-- <link rel="stylesheet" type="text/css" href="select2/select2.min.css"> -->
-
-    <!-- <script src="select2/select2.min.js"></script> -->
-    <link rel="stylesheet" href="css/style.css">
-    </link>
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+</style>
 
 </head>
-<?php
-
-// $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
-
-?>
 
 <body>  
+
     <a href="http://192.168.0.13:8000/" style="display:inline-block;">
         <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem; margin-top:0.5rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
     </a>
     <div class="row">
+
         <div class="progressbar-wrapper">
             <div hidden id="periodo" attr-periodo= "<?= $periodo ?>" style="margin-top:-2rem;"></div>
             <ul class="progressbar" >
@@ -112,7 +132,9 @@ foreach ($cuentas as $key => $value) {
             </ul>
         </div>
         <div>
-            <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar">Ejecutar <i class="bi bi-check2-square"></i></button>
+            <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:300px">Ejecutar <i class="bi bi-check2-square"></i></button>
+            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
+
             <!-- spinner -->
             <div id="boxLoading"></div>
         </div>
@@ -406,36 +428,47 @@ foreach ($cuentas as $key => $value) {
     <script src="../comercioExterior/assets/select2/select2.min.js"></script>
     <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script> -->
     <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
+
+
+
+
+
+</body>
 
     
 <script>
 
-        $(document).ready(function() {
-            $('#myTable').DataTable({
-                responsive: true,
-            });
-
-            $('.codRubro').select2();
-
-
-            
+    $(document).ready(function() {
+        $('#myTable').DataTable({
+            responsive: true,
         });
-        
-        $('.codCuenta').select2();
 
-        $(function() {
-            $('[data-toggle="tooltip"]').tooltip()
-        })
-
-        $('#myModal').modal('toggle')
-
-
+        $('.codRubro').select2();
+        document.querySelector(".toggle").style.width="40px"
+    document.querySelector(".toggle-on").style.fontSize="0"
+    document.querySelector(".toggle-off").style.fontSize="0"
+    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+    document.querySelector('.toggle.btn.btn-primary').style.marginTop = 'px'
     
-    </script>
 
 
-</body>
+        
+    });
+    
+    $('.codCuenta').select2();
+
+    $(function() {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+
+    $('#myModal').modal('toggle')
+
+
+
+</script>
 
 </html>
 
