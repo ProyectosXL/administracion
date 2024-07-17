@@ -112,10 +112,10 @@
                                             <div style="color:#5095e3;height:10%;border-bottom:1px solid grey"><strong></strong></div>
                                             <div class='ml-2' style="text-align:left;color:grey"><strong>Informacion</strong></div>
                                             <div class='ml-2 mt-2' style="text-align:left;color:grey;font-size:13px">
-                                                <div>
+                                                <!-- <div>
                                                     Legajo
                                                 </div>
-                                                <div><strong><?= $nroLegajo ?></strong></div>
+                                                <div><strong id="nroLegajo"><?= $nroLegajo ?></strong></div> -->
                                             </div>
                                             
 
@@ -146,7 +146,7 @@
                                                 </div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
-                                                <div class="col-2 mr-1" style="background-color:#dbdbdb;height:45px;font-size:12px;" id="nroLegajo"><span style="color:#969396">Nro. legajo</span> <br><?= $nroLegajo ?></div>
+                                                <!-- <div class="col-2 mr-1" style="background-color:#dbdbdb;height:45px;font-size:12px;" id="nroLegajo"><span style="color:#969396">Nro. legajo</span> <br><span id="nroLegajoSpan"></span></div> -->
                                                 <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Apellidos" onclick="updateValue(this)" id="apellido"><span style="color:#969396">Apellidos </span> <br></div>
                                                 <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Nombres" onclick="updateValue(this)" id="nombres"><span style="color:#969396">Nombres </span> <br> </div>
                                                 <div class="col-2 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Nro. Documento" onclick="updateValue(this)" id="nroDocumento"><span style="color:#969396">Nro. Documento </span> <br> </div>
@@ -167,7 +167,7 @@
                                                 <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Tarea fuente"  onclick="updateValue(this)"  id="tareaFuente"><span style="color:#969396">Tarea fuente </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
-                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Tipo de contrato"  onclick="updateValue(this)" id="tipoContrato"><span style="color:#969396">Tipo de contrato</span> <br></div>
+                                                <div class="col-3 mr-1 bordeDiv" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" attr-title="Tipo de contrato"   id="tipoContrato"><span style="color:#969396" >Tipo de contrato</span> <br></div>
                                                 <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Fecha de ingreso"  onclick="updateValueDate(this)" id="fechaIngreso"><span style="color:#969396">Fecha de ingreso </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
                                             </div>
 

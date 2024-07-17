@@ -271,9 +271,91 @@ const updateValueSelectPais = (element) => {
                document.querySelector("#divLocalidad").classList.add("bordeDiv"); 
                document.querySelector("#divLocalidad").style.backgroundColor ="white";
                
-        } 
+            } 
+
+            if(document.querySelector("#tipoContrato")){
+                document.querySelector("#tipoContrato").textContent = '';
+            }
+            if(document.querySelector("#tipoContrato")){
+                document.querySelector("#tipoContrato").setAttribute("onclick", `updateValueSelecTipoContrato(this)`);
+                document.querySelector("#tipoContrato").classList.add("bordeDiv"); 
+                document.querySelector("#tipoContrato").style.backgroundColor ="white";
+            }
     
         }
+
+    }
+  
+}
+const updateValueSelecTipoContrato = (element) => {
+
+    let tipo = ['EFECTIVO', 'TEMPORAL'];
+    let pais = document.querySelector("#pais").textContent;
+
+    if(pais == 'ARGENTINA'){
+        // si pais es argentina no puede ser efectivo
+        tipo = ['TEMPORAL'];
+
+    }
+
+    if (element.tagName.toLowerCase() === 'div') {
+        
+
+        const select = document.createElement('select');
+        
+
+       
+
+        tipo.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.textContent = option;
+            optionElement.value = option;
+            optionElement.setAttribute("attr-realValue", option); 
+            select.appendChild(optionElement);
+        });
+        
+        // Seleccionar la opción que coincide con el valor original del div
+        const originalValue = element.textContent.trim();
+        select.value = originalValue;
+        select.onchange = function() {
+            updateValueSelecTipoContrato(this);
+        }
+      
+        select.setAttribute("attr-title", element.getAttribute("attr-title"));
+    
+        select.classList = element.classList;
+        select.style = element.getAttribute('style');
+        
+
+        element.parentNode.replaceChild(select, element);
+
+    } else if (element.tagName.toLowerCase() === 'select') {
+        
+        let tipoContrato = element.value;
+   
+
+        console.log(tipoContrato)
+        if(tipoContrato == 'EFECTIVO'){
+
+        }
+        tipo.forEach(element => {
+            if (element == tipoContrato ) {
+                desSucursal =   element;
+            }
+        });
+        const value =  '<span style="color:#969396">'+element.getAttribute("attr-title")+'</span><br><span id="tipoContrato">'+desSucursal+'</span>';
+        const div = document.createElement('div');
+        div.innerHTML = value;
+        div.classList = element.classList;
+        div.style = element.getAttribute('style');
+        div.onclick = function() {
+            updateValueSelecTipoContrato(this);
+        };
+        div.setAttribute("attr-realValue", tipoContrato);
+        div.setAttribute("attr-title", element.getAttribute("attr-title"));
+        // Reemplazar el select con el div
+        element.parentNode.replaceChild(div, element);
+
     }
   
 }
@@ -315,7 +397,7 @@ const updateValueDate = (element) => {
 
 const guardaCambios = () => {
 
-    let nroLegajo = document.querySelector("#nroLegajo").textContent.replace('Nro. legajo ', ' ').trim();
+    // let nroLegajo = document.querySelector("#nroLegajo").textContent.replace('Nro. legajo ', ' ').trim();
     let apellido = document.querySelector("#apellido").textContent.replace('Apellidos', ' ').trim();
     let nombres = document.querySelector("#nombres").textContent.replace('Nombres', ' ').trim();
     let nroDocumento = document.querySelector("#nroDocumento").textContent.replace('Nro. Documento', ' ').trim();
@@ -340,7 +422,22 @@ const guardaCambios = () => {
         estado = 'N'
     }
 
-    
+    let legajo = 0;
+
+    if(tipoContrato == 'TEMPORAL' && pais == 'ARGENTINA'){
+        legajo = 1;
+    }else if(tipoContrato == 'EFECTIVO' && pais == 'URUGUAY'){
+        legajo = 2;
+    }else if(tipoContrato == 'TEMPORAL' && pais == 'URUGUAY'){
+        legajo = 3;
+    }else if ( tipoContrato == 'EFECTIVO' && pais == 'ARGENTINA'){
+        alert("El contrato efectivo no esta disponible para Argentina", "error");
+        return 1;
+    }else {
+        alert("No se puede crear el empleado con tipo Contrato vacio", "error");
+        return 1;
+    }
+ 
     let primerNombre = nombres.split(' ')[0];
     let primeraLetraApellido = apellido.charAt(0).toUpperCase();
     let ultimos3DigitosDocumento = nroDocumento.slice(-3);
@@ -350,12 +447,12 @@ const guardaCambios = () => {
     let stringParaSql = ""
 
 
-    stringParaSql = "('"+nroLegajo+"','"+nroDocumento+"','"+apellido+"','"+nombres+"','"+codVendedor+"','"+direccion+"','"+piso+"','"+depto+"','"+pais+"','"+localidad+"','"+codPostal+"','"+sucursal+"','"+tareaFuente+"','"+tipoContrato+"','"+fechaIngreso+"','"+email+"','"+telefono+"','"+telefonoE+"' , '"+estado+"', '"+contraseña+"')";
+    stringParaSql = "('"+nroDocumento+"','"+apellido+"','"+nombres+"','"+codVendedor+"','"+direccion+"','"+piso+"','"+depto+"','"+pais+"','"+localidad+"','"+codPostal+"','"+sucursal+"','"+tareaFuente+"','"+tipoContrato+"','"+fechaIngreso+"','"+email+"','"+telefono+"','"+telefonoE+"' , '"+estado+"', '"+contraseña+"')";
 
     $.ajax({
         url: '../Controller/HorarioController.php?accion=crearEmpleado',
         type: 'POST',
-        data: {stringParaSql},
+        data: {stringParaSql:stringParaSql, legajo:legajo},
         success: function(response) {
             console.log(response)
             if (response == true) {

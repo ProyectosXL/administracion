@@ -98,8 +98,10 @@
         function crearEmpleado ($horario) {
 
             $stringParaSql = $_POST['stringParaSql'];
-            
-            $result = $horario->crearEmpleado($stringParaSql);
+            $nroLegajo = $_POST['legajo'];
+
+            $result = $horario->crearEmpleado($stringParaSql, $nroLegajo);
+
 
             echo $result;
         }

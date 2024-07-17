@@ -114,9 +114,39 @@ class Horario
         
     }
 
-    public function crearEmpleado($stringParaSql) {
+    public function crearEmpleado($stringParaSql, $legajo) {
+        $nroLegajo = 0;
 
-        $sql = "INSERT INTO RO_T_LEGAJOS_PERSONAL (NRO_LEGAJO,NRO_DOCUMENTO, APELLIDO, NOMBRE, COD_VENDEDOR, DOMICILIO, PISO, DEPTO, PAIS, LOCALIDAD, CODIGO_POSTAL,NUM_SUCURSAL ,TAREA_HABITUAL , TIPO_CONTRATO, FECHA_INGRESO,EMAIL,TELEFONO, TELEFONO2, HABILITADO, CONTRASEÑA) VALUES $stringParaSql";
+        switch ($legajo) {
+            
+            case 1:
+                $min = 13000;
+                $max = 13999;
+                break;
+            
+            case 2:
+                $min = 10000;
+                $max = 10999;
+                break;
+            
+            case 3:
+                $min = 14000;
+                $max = 14999;
+                break;
+            
+            default:
+           
+                break;
+        }
+        
+        $nroLegajo = "(SELECT CASE WHEN MAX(NRO_LEGAJO) IS NOT NULL THEN MAX(NRO_LEGAJO) ELSE $min END AS MAX_LEGAJO FROM RO_T_LEGAJOS_PERSONAL WHERE NRO_LEGAJO BETWEEN $min AND $max)";
+   
+
+        $cadenaSinPrimerCaracter = substr($stringParaSql, 1);
+        $cadenaFinal = "($nroLegajo,".$cadenaSinPrimerCaracter;
+
+        
+        $sql = "INSERT INTO RO_T_LEGAJOS_PERSONAL (NRO_LEGAJO,NRO_DOCUMENTO, APELLIDO, NOMBRE, COD_VENDEDOR, DOMICILIO, PISO, DEPTO, PAIS, LOCALIDAD, CODIGO_POSTAL,NUM_SUCURSAL ,TAREA_HABITUAL , TIPO_CONTRATO, FECHA_INGRESO,EMAIL,TELEFONO, TELEFONO2, HABILITADO, CONTRASEÑA) VALUES $cadenaFinal";
        
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
