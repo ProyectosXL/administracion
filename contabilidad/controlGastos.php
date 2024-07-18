@@ -91,23 +91,23 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
     <?php
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
     ?>
-<style>
-        .toggle-on {
-        background-image: url('<?= $imageOn ?>');
-        background-size: contain;
-        background-repeat: no-repeat;
-        height: 60px;
-        width: 60px;
-        }
-
-        .toggle-off {
-            background-image: url('<?= $imageOff ?>');
+    <style>
+            .toggle-on {
+            background-image: url('<?= $imageOn ?>');
             background-size: contain;
             background-repeat: no-repeat;
             height: 60px;
             width: 60px;
-        }
-</style>
+            }
+
+            .toggle-off {
+                background-image: url('<?= $imageOff ?>');
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
+            }
+    </style>
 
 </head>
 
