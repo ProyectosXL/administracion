@@ -30,12 +30,18 @@ $articulo = new Articulo();
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
-// function data_first_month_day() {
-//     $month = date('m');
-//     $year = date('Y');
-//     return date('Y-m-d', mktime(0,0,0, $month, 1, $year));
-// }
-// $todosLosCodRubro = $gastos->traerCodRubro();
+
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
+}
+    
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? 'images/bandera_con_sol__55757_std.jpg' : 'images/UY.png';
+$imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_con_sol__55757_std.jpg';
 
 ?>
 
@@ -56,6 +62,24 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+    <style>
+                .toggle-on {
+        background-image: url('<?= $imageOn ?>');
+        background-size: contain;
+        background-repeat: no-repeat;
+        height: 60px;
+        width: 60px;
+        }
+
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -66,9 +90,11 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
             <a href="http://192.168.0.13:8000/" style="display:inline-block;">
                 <img src="../image/home-button.png" style="width:50px;height:45px; margin-left: 0.5rem; margin-right:0.5rem; margin-top:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
             </a>
-            <div id="titlePrincipal" class="col-md-auto">
+            <div id="titlePrincipal" class="col-md-auto" style="margin-right:50%">
                 <h3 class="title"><i class="bi bi-ui-checks"></i> Carga de Gastos - Informe Económico</h3>
             </div>
+            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
+
         </div>
     </div>
 
@@ -242,6 +268,9 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="js/carga.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
@@ -255,6 +284,15 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 <script>
     // In your Javascript (external .js resource or <script> tag)
     $(document).ready(function() {
+
+
+        document.querySelector(".toggle").style.width="40px"
+        document.querySelector(".toggle-on").style.fontSize="0"
+        document.querySelector(".toggle-off").style.fontSize="0"
+        document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+        document.querySelector('.toggle.btn.btn-primary').style.marginTop = '25px'
+
+
         $('.select-auxiliar').select2();
     });
     $(document).ready(function() {

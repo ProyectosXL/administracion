@@ -10,7 +10,7 @@ class RubroContable
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
-
+    
 
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
             $this->cid_central  = $cid->conectar('uy');
