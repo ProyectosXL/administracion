@@ -79,6 +79,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
             width: 60px;
         }
     </style>
+    
 
 </head>
 
