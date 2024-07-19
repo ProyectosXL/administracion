@@ -196,7 +196,7 @@
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
                                                 <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" id="tipoDeContrato"><span style="color:#969396">Tipo de contrato</span> <br><?= $empleado['TIPO_CONTRATO'] ?></div>
-                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" id="fechaIngreso"><span style="color:#969396">Fecha de ingreso </span> <br> <?= $empleado['FECHA_INGRESO']->format('y-m-d') ?><span style="margin-left:30%;margin-top:10%"></span></div>
+                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" id="fechaIngreso"><span style="color:#969396">Fecha de ingreso </span> <br> <?= $empleado['FECHA_INGRESO']->format('Y-m-d') ?><span style="margin-left:30%;margin-top:10%"></span></div>
                                             </div>
 
                                             <div style="color:grey;font-family: Arial;text-align:left;margin-left:10px;margin-top:10px;">
