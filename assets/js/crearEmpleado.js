@@ -416,6 +416,9 @@ const guardaCambios = () => {
     let telefono = document.querySelector("#telefono").textContent.replace('Telefono movil', ' ').trim();
     let telefonoE = document.querySelector("#telefonoE").textContent.replace('Telefono de emergencia', ' ').trim();
     let estado = document.querySelector("#flexSwitchCheckDefault").checked; 
+
+    let apellidoYNombre = apellido.toUpperCase() + ', ' + nombres.toUpperCase();
+    
     if (estado) {
         estado = 'S'
     }else{
@@ -447,7 +450,7 @@ const guardaCambios = () => {
     let stringParaSql = ""
 
 
-    stringParaSql = "('"+nroDocumento+"','"+apellido+"','"+nombres+"','"+codVendedor+"','"+direccion+"','"+piso+"','"+depto+"','"+pais+"','"+localidad+"','"+codPostal+"','"+sucursal+"','"+tareaFuente+"','"+tipoContrato+"','"+fechaIngreso+"','"+email+"','"+telefono+"','"+telefonoE+"' , '"+estado+"', '"+contraseña+"')";
+    stringParaSql = "('"+nroDocumento+"','"+apellido+"','"+nombres+"','"+apellidoYNombre+"', '"+codVendedor+"','"+direccion+"','"+piso+"','"+depto+"','"+pais+"','"+localidad+"','"+codPostal+"','"+sucursal+"','"+tareaFuente+"','"+tipoContrato+"','"+fechaIngreso+"','"+email+"','"+telefono+"','"+telefonoE+"' , '"+estado+"', '"+contraseña+"')";
 
     $.ajax({
         url: '../Controller/HorarioController.php?accion=crearEmpleado',
