@@ -26,6 +26,18 @@
     $metodosProrrateo = $prorrateo->traerMetodosProrrateo();
     $arrayMetodosProrrateo = json_decode($metodosProrrateo);
 
+
+    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+        $checked = 'checked';
+    }else{
+        $checked = '';
+    }
+        
+    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+    $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+    $imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
+    $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
     
     ?>
 
@@ -48,6 +60,23 @@
 
             .select2-container .select2-results__option {
                 font-size: 12px; /* Cambia el tamaño de fuente de las opciones */
+            }
+
+
+            .toggle-on {
+                background-image: url('<?= $imageOn ?>');
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
+            }
+
+            .toggle-off {
+                background-image: url('<?= $imageOff ?>');
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
             }
 
         </style>
@@ -83,6 +112,9 @@
                         <div id="username" hidden><?= $_SESSION['username'] ?></div>
 
                         <div class="row" style="margin-left:80px">
+                            <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                                <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem; margin-top:0.5rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            </a>
                             <h3><i class="bi bi-wrench-adjustable" style="margin-right:10px;font-size:50px"></i>Gestión Relaciones Cuenta - Rubro Contable</h3>
                         </div>
                    
@@ -168,6 +200,8 @@
                                 </div>
                             </div>
                             <div class="col-1" style="margin-top:55px;padding-left:1px"><button class="btn btn-success"  title="Agregar" data-toggle="tooltip" data-placement="bottom"  onclick="agregar()"><i class="bi bi-plus-square"></i></button></div>    
+                    <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                       
                         </div>
                         <div class="row" style="margin-left:65px;margin-top:20px">
                             <div class="col-10">
@@ -222,6 +256,8 @@
         <script src="js/gestionRelacionesCuenta.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     </body>
 
     </html>
@@ -250,7 +286,16 @@
 
             },
         });
+
+            
+    document.querySelector(".toggle").style.width="40px"
+    document.querySelector(".toggle-on").style.fontSize="0"
+    document.querySelector(".toggle-off").style.fontSize="0"
+    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+
     } );
+
+    
     $(function() {
             $('[data-toggle="tooltip"]').tooltip()
         })

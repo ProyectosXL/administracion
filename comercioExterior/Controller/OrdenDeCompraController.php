@@ -6,6 +6,9 @@ $datosDetalle = $_POST['array'];
 
 $nOrden = isset($_POST['idEncabezado']) ? $_POST['idEncabezado'] : null;
 
+$cadena = trim($nOrden, "( )");
+$idEncabezados = explode(", ", $cadena);
+
 $newArray = [];
 
 foreach($datosDetalle as $key => $value){
@@ -19,9 +22,11 @@ foreach($datosDetalle as $key => $value){
     
 }
 
-$ordenDeCompra->deleteDetalle($nOrden);
 
-$ordenDeCompra->insertDetalle($newArray, $nOrden);
+foreach ($idEncabezados as $encabezado) {
+    $ordenDeCompra->deleteDetalle($encabezado);
+    $ordenDeCompra->insertDetalle($newArray, $encabezado);
+}
 
 echo true;
 

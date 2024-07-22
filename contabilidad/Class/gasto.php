@@ -7,7 +7,19 @@ class Gasto
 
         require_once __DIR__.'/../../class/conexion.php';
         $cid = new Conexion();
-        $this->cid_central = $cid->conectar('central');
+
+
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            $this->cid_central  = $cid->conectar('uy');
+        }else{
+            $this->cid_central = $cid->conectar('central');
+
+        }
 
     } 
 
@@ -419,7 +431,7 @@ class Gasto
             ELSE 'false'
         END AS hay_registros_pendientes
         FROM RO_T_INTEGRAL_TANGO_2 
-        WHERE FECHA BETWEEN '$desde' AND '$hasta' AND AMORTIZAR IS NOT NULL AND AMORTIZAR <> 0 AND AMORTIZADO IS NULL";
+        WHERE FECHA BETWEEN '$desde' AND '$hasta' AND AMORTIZAR IS NOT NULL AND AMORTIZAR <> 0 AND AMORTIZADO IS NULL AND EXCLUIR = 0";
 
         /* WHERE AMORTIZADO IS NULL 
         AND FECHA BETWEEN '$desde' AND '$hasta' 

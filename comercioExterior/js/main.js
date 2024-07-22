@@ -1,19 +1,22 @@
 document.addEventListener('DOMContentLoaded',iniciar);
 
 //valida que los campos no esten vacíos//
-var btnSave = document.getElementById('btnSave');
-btnSave.addEventListener('click',guardarCabecera);
+
 
 let inputs=document.querySelectorAll('.input--style-1');
 let selected=document.querySelectorAll('.select2-hidden-accessible');
 
 let selectProveedor=document.getElementById('proveedor');
 
+
+// const selectOrdenes=document.getElementById('ordenCompra');
+
+// selectOrdenes.addEventListener('change',checkOrden);
+// console.log(selectOrdenes)
+
+
 selectProveedor.addEventListener('change',buscarCuentas);
 
-const selectOrdenes=document.getElementById('ordenCompra');
-
-selectOrdenes.addEventListener('change',checkOrden);
 
 function buscarCuentas()
 {
@@ -21,12 +24,13 @@ function buscarCuentas()
     conexion1 = new XMLHttpRequest();
     conexion1.onreadystatechange = () => {
         if (conexion1.readyState == 4 && conexion1.status == 200) {
-          ordenes = JSON.parse(conexion1.responseText);
-        
 
-          limpiarSelect();
-           dibujarSelectOrdenes(ordenes); 
-          /*  inputCuenta.textContent = cuenta["VTEX_CUENTA"]; */
+            ordenes = JSON.parse(conexion1.responseText);
+        
+        
+            localStorage.setItem('ordenes',JSON.stringify(ordenes));
+      
+
         } else {
 
         }
@@ -40,6 +44,7 @@ function buscarCuentas()
 }
 
 
+
 function dibujarSelectOrdenes(ordenes)
 {
     
@@ -50,6 +55,7 @@ function dibujarSelectOrdenes(ordenes)
         selectOrdenes.appendChild(option);
         /* selectOrdenes.innerHTML=`<option value=${orden.N_ORDEN_CO}>${orden.N_ORDEN_CO}</option>`; */
     })
+    
 }
 
 const limpiarSelect = () => {
@@ -60,22 +66,21 @@ const limpiarSelect = () => {
 
   
 //Guarda datos de cabecera//  
-function guardarCabecera(){
+function guardarCabeceraUy(){
 
     let b=0;
     let proveedor = document.querySelector("#proveedor");
     let origen = document.querySelector("#origen");
-    let ordenCompra = document.querySelector("#ordenCompra");
+    let ordenCompra = document.querySelector("#ordenesSeleccionadas");
     let ordenManual = document.querySelector("#ordenManual");
 
-    if(ordenManual.checked == false){
 
-        if (ordenCompra.selectedIndex == 0) {
-            ordenCompra.style.border="1px solid red";
-            b=1;
-        }
-        
+
+    if (ordenCompra.innerHTML == "") {
+        ordenCompra.style.border="1px solid red";
+        b=1;
     }
+
     
     if (origen.value == "") {
         origen.style.border="1px solid red";
@@ -87,126 +92,120 @@ function guardarCabecera(){
         b=1;
     }
 
-    inputs.forEach(el=>{ if(el.value == ''){
-        el.parentElement.style.border="1px solid red";
-        b=1;
-    }else{
-        el.parentElement.style.border="";
-    }
+    inputs.forEach(el=>{
+
+        if(el.value == ''){
+            el.parentElement.style.border="1px solid red";
+            b=1;
+        }else{
+            el.parentElement.style.border="";
+        }
    
-    selected.forEach(el=>{ if(el.value == '' || el.value.includes("PROVEEDOR")|| el.value.includes("FORMA") ){
-        el.parentElement.style.border="1px solid red";
-        b=1;
-    }else{
-        el.parentElement.style.border="";
-    }
-    
-    });
+        selected.forEach(el=>{ if(el.value == '' || el.value.includes("PROVEEDOR")|| el.value.includes("FORMA") ){
+            el.parentElement.style.border="1px solid red";
+            b=1;
+        }else{
+            el.parentElement.style.border="";
+        }
+        });
 
-/* 
-  // chequear esta function
-selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")|| el.value.includes("FORMA DE PAGO") ){
-     el.parentElement.style.border="1px solid red";
-     b=1;
- }else{
-     el.parentElement.style.border="";
- }
-  
- });
- */
+        var cod_proveedor = document.getElementById('proveedor').value;
+        var proveedor = document.getElementById('proveedor').selectedOptions[0].innerHTML;
+        var contenedor = document.getElementById('contenedor').value;
+        var despacho = document.getElementById('despacho').value;
+        var material = document.getElementById('material').value;
+        var origen = document.getElementById('origen').value;
+        var fechaEmbarque = document.getElementById('fechaEmbarque').value;
+        var facturaProveedor = document.getElementById('facturaProveedor').value;
+        var fechaFactura = document.getElementById('fechaFactura').value;
+        let ocm = 0;
+        let ordenCompra = document.querySelectorAll("#ordenDeCompra")
+        console.log(ordenCompra)
+        ordenCompra = Array.from(ordenCompra).map((el)=>el.innerHTML.trim().split(" ")[0]);
+        ordenCompra = JSON.stringify (ordenCompra);
 
 
-    var cod_proveedor = document.getElementById('proveedor').value;
-    var proveedor = document.getElementById('proveedor').selectedOptions[0].innerHTML;
-    var contenedor = document.getElementById('contenedor').value;
-    var despacho = document.getElementById('despacho').value;
-    var material = document.getElementById('material').value;
-    var origen = document.getElementById('origen').value;
-    var fechaEmbarque = document.getElementById('fechaEmbarque').value;
-    var facturaProveedor = document.getElementById('facturaProveedor').value;
-    var fechaFactura = document.getElementById('fechaFactura').value;
-    let ocm = 0;
-    if(ordenManual.checked == false){
-    var ordenCompra = document.getElementById('ordenCompra').value;
-    }
-    else{
-    var ordenCompra = document.getElementById('inputOrdenCompra').value;
-    ocm = 1;
-    }
-    var formaPago = document.getElementById('formaPago').value;
-    var numeroBl = document.getElementById('numeroBl').value;
-    var tipoCambio = document.getElementById('tipoCambio').value;
-    var valorFobDolar = document.getElementById('valorFobDolar').value;
-    var valorFobPeso = document.getElementById('valorFobPeso').value;
-    var fechaArribo = document.getElementById('fechaArribo').value;
-    var fechaDespacho = document.getElementById('fechaDespacho').value;
+        if(ordenManual.checked == true){
+            ocm = 1;
+        }
+        var formaPago = document.getElementById('formaPago').value;
+        var numeroBl = document.getElementById('numeroBl').value;
+        var tipoCambio = document.getElementById('tipoCambio').value;
+        var valorFobDolar = document.getElementById('valorFobDolar').value;
+        var valorFobPeso = document.getElementById('valorFobPeso').value;
+        var fechaArribo = document.getElementById('fechaArribo').value;
+        var fechaDespacho = document.getElementById('fechaDespacho').value;
  
- if(b==1){
-     Swal.fire({
-     icon: 'error',
-     title: 'Error...',
-     text: 'Debe completar todos los campos!',
-     });
-     }
- else{
-     Swal.fire({
-     title: 'Desea guardar los cambios?',
-     icon: 'info',
-     showDenyButton: true,
-     showCancelButton: true,
-     cancelButtonText: 'Cancelar',
-     confirmButtonText: 'Guardar',
-     denyButtonText: `Descartar`,
-     }).then((result) => {
-     /* Read more about isConfirmed, isDenied below */
-     if (result.isConfirmed) {
-        let env = 1;
-        let url = (env == 1) ? 'insertarEncabezado.php' : 'test.php';
-        let id = null;
-        $.ajax({
-            url: 'Controller/'+url,
-            method: 'POST',
-            data: {
-                cod_proveedor: cod_proveedor, 
-                proveedor: proveedor, 
-                contenedor: contenedor, 
-                despacho: despacho, 
-                material: material, 
-                origen: origen,
-                fechaEmbarque: fechaEmbarque, 
-                facturaProveedor: facturaProveedor, 
-                fechaFactura: fechaFactura, 
-                ordenCompra: ordenCompra, 
-                formaPago: formaPago,
-                numeroBl: numeroBl, 
-                tipoCambio: tipoCambio.replace(/,/g, ""), 
-                valorFobDolar: valorFobDolar.replace(/,/g, ""), 
-                valorFobPeso: valorFobPeso.replace(/,/g, ""), 
-                fechaArribo: fechaArribo, 
-                fechaDespacho: fechaDespacho,
-                ocm: ocm
-            },
-            success : function(data) {
-               id = data;
-            }
-        });
+        if(b==1){
             Swal.fire({
-                title: 'Despacho guardado!',
-                icon: 'success',
-                showDenyButton: true,
-                showCancelButton: false,
-                showConfirmButton: false,
-                denyButtonText: `Cargar detalle`,
-                })
-         .then(function () {
-            window.location = "detalleCostos.php?ordenCompra="+ordenCompra+'&proveedor='+proveedor+'&valorFobPeso='+valorFobPeso+'&contenedor='+contenedor+'&tipoCambio='+tipoCambio+'&idEncabezado='+id;
-        });
-     } else if (result.isDenied) {
-         Swal.fire('El despacho no fue guardado', '', 'info')
-     }
-     })}
-    }
- )};
+            icon: 'error',
+            title: 'Error...',
+            text: 'Debe completar todos los campos!',
+            });
+        }
+        else{
+            Swal.fire({
+            title: 'Desea guardar los cambios?',
+            icon: 'info',
+            showDenyButton: true,
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            confirmButtonText: 'Guardar',
+            denyButtonText: `Descartar`,
+            }).then((result) => {
+                /* Read more about isConfirmed, isDenied below */
+                if (result.isConfirmed) {
+                    let env = 1;
+                    let url = (env == 1) ? 'insertarEncabezado.php' : 'test.php';
+                    let id = null;
+                    $.ajax({
+                        url: 'Controller/'+url,
+                        method: 'POST',
+                        data: {
+                            cod_proveedor: cod_proveedor, 
+                            proveedor: proveedor, 
+                            contenedor: contenedor, 
+                            despacho: despacho, 
+                            material: material, 
+                            origen: origen,
+                            fechaEmbarque: fechaEmbarque, 
+                            facturaProveedor: facturaProveedor, 
+                            fechaFactura: fechaFactura, 
+                            ordenCompra: ordenCompra, 
+                            formaPago: formaPago,
+                            numeroBl: numeroBl, 
+                            tipoCambio: tipoCambio.replace(/,/g, ""), 
+                            valorFobDolar: valorFobDolar.replace(/,/g, ""), 
+                            valorFobPeso: valorFobPeso.replace(/,/g, ""), 
+                            fechaArribo: fechaArribo, 
+                            fechaDespacho: fechaDespacho,
+                            ocm: ocm
+                        },
+                        success : function(data) {
+                        
+                        let id = JSON.stringify(data)
+                            
+                        Swal.fire({
+                            title: 'Despacho guardado!',
+                            icon: 'success',
+                            showDenyButton: true,
+                            showCancelButton: false,
+                            showConfirmButton: false,
+                            denyButtonText: `Cargar detalle`,
+                            })
+                            .then(function () {
+                                window.location = "detalleCostos.php?ordenCompra="+ordenCompra+'&proveedor='+proveedor+'&valorFobPeso='+valorFobPeso+'&contenedor='+contenedor+'&tipoCambio='+tipoCambio+'&idEncabezado='+id;
+                            });
+                        }
+                    });
+                    
+                } else if (result.isDenied) {
+                    Swal.fire('El despacho no fue guardado', '', 'info')
+                }
+            })
+        }
+            }
+)};
 
     const parseNumber = (value)=>{
         return value.toLocaleString('en-US', {
@@ -288,7 +287,7 @@ selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")
                 icon: 'error',
                 title: 'ups...',
                 text: 'El comprobante '+ orden +' ya se encuentra cargado',
-                });
+            });
                 selectOrdenes.selectedIndex = "0";
           }
         } else {
@@ -302,3 +301,52 @@ selected.forEach(el=>{ if(el.value == '' || el.value.includes("ORDEN DE COMPRA")
       );
       conexion1.send();
    }
+
+   function checkOrdenesUy(){
+    let ordenes = document.querySelectorAll("#ordenDeCompra");
+    let stringParaSql = '(';
+    ordenes.forEach((orden, index)=>{
+        let ordenParaSql = orden.textContent.trim();
+        ordenParaSql = " "+ordenParaSql;
+        stringParaSql += "'"+ordenParaSql+"',";
+    })
+    stringParaSql = stringParaSql.slice(0, -1);
+    stringParaSql += ')';
+
+    
+    $.ajax({
+        url: 'Class/ordenDeCompra.php',
+        method: 'POST',
+        data:{
+          "ordenCompra": stringParaSql
+        },
+      }).then((e)=>{
+        let result = JSON.parse(e);
+        console.log(result)
+        let existen = ""
+        result.forEach(element => {
+            existen += element['ordenDeCompra'] + ", ";
+
+            
+          ordenes.forEach(orden=>{
+            if(" "+orden.textContent.trim() == element['ordenDeCompra']){
+                orden.remove();
+            }
+          })
+
+        });
+       
+        if(existen !=  "")
+        {
+          Swal.fire({
+              icon: 'error',
+              title: 'Error...',
+              text: 'Los comprobantes '+ existen +' ya se encuentran cargados',
+          });
+
+        }
+
+      });
+
+   }
+   

@@ -98,6 +98,9 @@ class Orden{
 
         try {
 
+            if(strlen(trim($nroOrden)) == 13){
+                $nroOrden = ' '.trim($nroOrden);
+            }
 
             $sql = "EXEC RO_SP_INSERTAR_COSTO_NACIONALIZACION '$nroOrden';";
  
@@ -119,15 +122,18 @@ class Orden{
 
     public function updateCostoNacionalizacion($nroOrden){
 
-        
+        if(strlen(trim($nroOrden)) == 13){
+            $nroOrden = ' '.trim($nroOrden);
+        }
+
         try {
+
             $sql = "DELETE FROM  RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO  =  '$nroOrden';";
 
             $stmt = sqlsrv_query($this->cid_central, $sql);
 
 
             $sql = "EXEC RO_SP_INSERTAR_COSTO_NACIONALIZACION '$nroOrden';";
- 
 
 
             ini_set('max_execution_time', 300);

@@ -33,7 +33,7 @@ h2{
 
 #contCheck{
     position: relative;
-    margin-left: 5%;
+    margin-left: 2%;
 }
 
 #titlePrincipal{
@@ -72,7 +72,7 @@ form{
 }
 
 .btn-group{
-    margin-left: 25rem;
+    margin-left: 13rem;
     height: 55px;
     margin-top: 1em;
 }
@@ -106,17 +106,7 @@ form{
     width: fit-content;
 }
 
-select, input{
-    background-color: #fff;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-    height: 28px;
-}
 
-.btn:not(:disabled):not(.disabled) {
-    cursor: pointer;
-    margin-left: 15px;
-}
 
 
 .progressbar-wrapper {
@@ -124,7 +114,7 @@ select, input{
     padding-top: 10px;
     padding-bottom: 5px;
     padding-right: 0;
-    margin-left: -2rem;
+    margin-left: 1rem;
 }
 
 .progressbar li {

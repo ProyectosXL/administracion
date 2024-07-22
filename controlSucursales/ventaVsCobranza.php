@@ -7,6 +7,24 @@ $ventas= new Ventas();
 $desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
 $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
 
+
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
+}
+    
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
+$imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
+
+
 ?>
 
 <!DOCTYPE html>
@@ -26,6 +44,21 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
         #inputText {
             line-height: 1.2; /* Ajusta el valor para controlar el espacio entre líneas */
         }
+        .toggle-on {
+            background-image: url('<?= $imageOn ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
     </style>
 </head>
 
@@ -34,7 +67,9 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     <div class="alert alert-secondary">
         <div style="margin-left:1%">
             <div class="row">
-                
+                <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                    <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                </a>
                 <h4 class="ml-3 mt-4"><i class="bi bi-card-checklist"></i>  Ventas vs Cobranza por comprobante <a style="color: #6c757d;"><?php if (isset($_GET['desde'])){ echo $desde ?> a <?php echo $hasta ;}?></a></h4>
             </div>
             <div class="row" style='margin-left:1%'>   
@@ -53,7 +88,9 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                             <button type="submit" name="submit" class="btn btn-success ventaVsCobranza " id="btnExport">Exportar <i class="bi bi-file-earmark-excel"></i></button>
                
                             <label id="textBusqueda" class="ml-5">Busqueda rapida:</label>
-                            <input type="text" id="textBox" placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class=""></input>
+                            <input type="text" id="textBox" placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="" style="margin-right:20%"></input>
+                            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+
     
             
                             <div id="boxLoading"></div> 
@@ -112,10 +149,13 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
     ?>
     
     <script src="js/main.js" charset="utf-8"></script>
-    
     <?php
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
     ?>
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 </body>
 
 <script>
@@ -136,6 +176,16 @@ $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
                 fileext: ".xlsx" // file extension
             });
         });
+
+        
+    
+            document.querySelector(".toggle").style.width="40px"
+            document.querySelector(".toggle-on").style.fontSize="0"
+            document.querySelector(".toggle-off").style.fontSize="0"
+            document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+
+
+
 
     });
     var lineBreakAdded = false;

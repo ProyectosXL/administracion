@@ -133,12 +133,15 @@ $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../.
                             </div>
 
                             <div class="col"  style="border:solid 1px;margin-left:20px;margin-right:20px">
-                            <div class="col-12" style="text-align:right">
+                            <div class="col-12" style="text-align:right; margin-top:0.5rem;">
+
+                                        <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                                            <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:40rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                                        </a> 
                                 <!-- <input type="checkbox" checked data-toggle="toggle" data-on="ARG" data-off="UY" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" <?= $_SESSION['CHECKED']  ?>> -->
                                     <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
                                 </div>
-                                    <div class="row" style="margin-left:50px;margin-top: 10px">
-                                              
+                                    <div class="row" style="margin-left:50px;margin-top: 10px">  
                                         <h3><img src="../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"><strong>Alta vendedores sucursales</strong></h3>
                                     </div>
                             

@@ -15,7 +15,17 @@ class Procesar
             require_once __DIR__ . '/../../class/conexion.php';
             $cid = new Conexion();
 
-            $cid_central = $cid->conectar('central');
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+    
+    
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+                $cid_central  = $cid->conectar('uy');
+            }else{
+                $cid_central = $cid->conectar('central');
+    
+            }
 
           /*   $result=[]; */
             $sql = "EXEC RO_SP_PROCESAR_DATAWAREHOUSE_IE ?,?";
