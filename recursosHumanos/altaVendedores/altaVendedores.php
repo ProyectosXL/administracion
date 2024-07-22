@@ -1,6 +1,6 @@
 <?php
 
-require_once 'Class/Vendedor.php';
+require_once '../Class/Vendedor.php';
 
 session_start();
 
@@ -22,8 +22,8 @@ if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
 $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
 $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
-$imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
-$imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
+$imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
+$imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
 
 
 ?>
@@ -70,7 +70,7 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
             width: 100%;
             height: 100%;
             z-index: 9999;
-            background: url('../assets/images/g0R9.gif') 50% 50% no-repeat rgb(0, 0, 0);
+            background: url('../../assets/images/g0R9.gif') 50% 50% no-repeat rgb(0, 0, 0);
             background-size: 25%;
             opacity: .8;
         }

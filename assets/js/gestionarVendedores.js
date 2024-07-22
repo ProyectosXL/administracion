@@ -18,7 +18,7 @@ const traerVendedores = () => {
 
     $.ajax({
         type: "POST",
-        url: "Controller/VendedorController.php?accion=traerVendedoresPorSucursal",
+        url: "../Controller/VendedorController.php?accion=traerVendedoresPorSucursal",
         data: {
             sucursal: sucursal,
             filtroHabilitados: filtroHabilitados
@@ -98,7 +98,7 @@ const cambiarEntorno = (t) =>{
     console.log(entorno)
 
     $.ajax({
-    url: "Controller/vendedorController.php?accion=cambiarEntorno",
+    url: "../Controller/vendedorController.php?accion=cambiarEntorno",
     method: "POST",
     data : {entorno: entorno},
     success: function (data) {
@@ -145,7 +145,7 @@ const guardar = () => {
     stringParaSqlDeshabilita = (stringParaSqlDeshabilita.length > 1) ? stringParaSqlDeshabilita.slice(0, -1) + ")" : "('')";
 
     $.ajax({
-        url: "Controller/vendedorController.php?accion=guardarGestionVendedores",
+        url: "../Controller/vendedorController.php?accion=guardarGestionVendedores",
         method: "POST",
         data : {
             sucursal: sucursal,

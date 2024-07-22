@@ -7,7 +7,7 @@ document.querySelector("#tableIndex").style.height= "620px";
 
 const traerLocales = () => {
 $.ajax({
-    url: 'Controller/VendedorController.php?accion=traerSucursales',
+    url: '../Controller/VendedorController.php?accion=traerSucursales',
     method: 'GET',
     dataType: 'json',
     success: function (data) {
@@ -19,7 +19,7 @@ $.ajax({
         tableBody.innerHTML = "";
           
         $.ajax({
-            url: 'Controller/VendedorController.php?accion=traerLocalesPorGrupo',
+            url: '../Controller/VendedorController.php?accion=traerLocalesPorGrupo',
             method: 'POST',
             data: {
                 // codPromocion:cadena,
@@ -188,7 +188,7 @@ if(!error){
 
 
     $.ajax({ 
-        url: 'Controller/VendedorController.php?accion=editarGrupo',
+        url: '../Controller/VendedorController.php?accion=editarGrupo',
         method: 'POST',
         data: {
             nombreGrupo:nombreGrupo,

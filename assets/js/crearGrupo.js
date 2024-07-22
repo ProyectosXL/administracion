@@ -7,7 +7,7 @@ $(document).ready(function () {
 
 const traerLocales = () => {
     $.ajax({
-        url: 'Controller/VendedorController.php?accion=traerSucursales',
+        url: '../Controller/VendedorController.php?accion=traerSucursales',
         method: 'GET',
         dataType: 'json',
         success: function (data) {
@@ -157,7 +157,7 @@ const crear = () => {
      
 
         $.ajax({ 
-            url: 'Controller/VendedorController.php?accion=crearGrupo',
+            url: '../Controller/VendedorController.php?accion=crearGrupo',
             method: 'POST',
             data:{
                 nombreGrupo:nombreGrupo,

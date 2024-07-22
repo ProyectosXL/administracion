@@ -41,7 +41,7 @@
                     <div class="card card-1">
                         <div id="periodo" hidden></div>
                         <div class="row" style="margin-left:50px; margin-top:30px">
-                            <h3><strong><img src="../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"> Grupos - Alta vendedores </strong></h3>
+                            <h3><strong><img src="../../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"> Grupos - Alta vendedores </strong></h3>
                         </div>
                         <div>
                             <button class="btn btn-success" style="margin-left:50px; margin-top: 2rem;" onclick="window.location.href='crearGrupo.php'">Crear Grupo <i class="bi bi-check2-square"></i></button>

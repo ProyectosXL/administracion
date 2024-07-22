@@ -10,7 +10,7 @@ $(document).ready(function () {
 
 const traerGrupos = () => {
     $.ajax({
-        url: 'Controller/VendedorController.php?accion=traerGrupos',
+        url: '../Controller/VendedorController.php?accion=traerGrupos',
         method: 'GET',
         dataType: 'json',
         success: function (data) {
@@ -111,7 +111,7 @@ const borrar = (div) => {
         /* Read more about isConfirmed, isDenied below */
         if (result.isConfirmed) {
             $.ajax({ 
-                url: 'Controller/VendedorController.php?accion=borrarGrupo',
+                url: '../Controller/VendedorController.php?accion=borrarGrupo',
                 method: 'POST',
                 data: {
                     nombreGrupo:grupo,
