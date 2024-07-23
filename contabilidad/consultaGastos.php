@@ -37,6 +37,19 @@ foreach ($cuentas as $key => $value) {
 
 }
 
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
+}
+    
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? 'images/bandera_con_sol__55757_std.jpg' : 'images/UY.png';
+$imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_con_sol__55757_std.jpg';
+
+
 
 $todosLosArticulos = $articulo->traerArticulosSinCostoNac();
 $todosLosGastos = $gastos->traerGastosConsulta($desde, $hasta, $codRubro, $columna, $codCuenta);
@@ -62,6 +75,24 @@ $todosLosGastos = $gastos->traerGastosConsulta($desde, $hasta, $codRubro, $colum
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        .toggle-on {
+        background-image: url('<?= $imageOn ?>');
+        background-size: contain;
+        background-repeat: no-repeat;
+        height: 60px;
+        width: 60px;
+        }
+
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+    </style>
+
     </link>
 
 </head>
@@ -118,12 +149,16 @@ $todosLosGastos = $gastos->traerGastosConsulta($desde, $hasta, $codRubro, $colum
                             <label id="textBusqueda">Busqueda rapida:</label>
                             <input type="text" id="textBox"  name="textBox" placeholder="Leyenda - Razon Social - Nro Comp" class="form-control form-control-sm" style="width: 250px;"></input>  
                         </div>
-                        <div>
+                        <div style="margin-right:50%">
                             <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
                         </div>
+                        <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
+
                     </div>
+                    
 
                 </form>
+                
             </div>
             </div>
         </div>
@@ -229,6 +264,8 @@ $todosLosGastos = $gastos->traerGastosConsulta($desde, $hasta, $codRubro, $colum
 
     <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
     <script src="../comercioExterior/assets/select2/select2.min.js"></script>
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
  
 
 
@@ -241,6 +278,13 @@ $todosLosGastos = $gastos->traerGastosConsulta($desde, $hasta, $codRubro, $colum
 
     <script>
         $(document).ready(function() {
+
+            document.querySelector(".toggle").style.width="40px"
+            document.querySelector(".toggle-on").style.fontSize="0"
+            document.querySelector(".toggle-off").style.fontSize="0"
+            document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+            document.querySelector('.toggle.btn.btn-primary').style.marginTop = '25px'
+
             $('#myTable').DataTable({
                 responsive: true,
             });

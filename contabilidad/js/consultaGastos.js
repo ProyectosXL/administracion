@@ -22,7 +22,28 @@ function iniciarEscuchaSelect() {
 
 }
 
+const cambiarEntorno = (t) =>{
 
+
+  let entorno = 'central';
+
+  if(t.getAttribute("data-off") == "ARG" ){
+      entorno = 'central';
+  }else{
+      entorno = 'uy';
+  }
+
+
+  $.ajax({
+  url: "Controller/controlGastosController.php?accion=cambiarEntorno",
+  method: "POST",
+  data : {entorno: entorno},
+  success: function (data) {
+      location.reload();
+  }
+  });
+
+}
 
 
 
