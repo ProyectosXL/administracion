@@ -1188,6 +1188,8 @@ const marcarControlado = ()=>{
 const insertarCoeficienteAjuste = () => {
 
   let coeficiente = document.querySelector("#ca-valor").value;
+  coeficiente = coeficiente.replace(',', '.');
+
   let periodo = document.querySelector("#ca-periodo").value;
 
   $.ajax({
