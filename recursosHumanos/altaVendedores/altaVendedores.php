@@ -43,10 +43,11 @@ $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../.
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         </link>
         <style>
-            .dataTables_filter {
+
+        .dataTables_filter {
             text-align: left;
         }
-
+        
         .toggle-on {
             background-image: url('<?= $imageOn ?>');
             background-size: contain;
@@ -136,13 +137,13 @@ $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../.
                             <div class="col-12" style="text-align:right; margin-top:0.5rem;">
 
                                         <a href="http://192.168.0.13:8000/" style="display:inline-block;">
-                                            <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:40rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                                            <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:40rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                                         </a> 
                                 <!-- <input type="checkbox" checked data-toggle="toggle" data-on="ARG" data-off="UY" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" <?= $_SESSION['CHECKED']  ?>> -->
                                     <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
                                 </div>
                                     <div class="row" style="margin-left:50px;margin-top: 10px">  
-                                        <h3><img src="../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"><strong>Alta vendedores sucursales</strong></h3>
+                                        <h3><img src="../../assets/images/price-tag.png" alt=""  style="margin-right: 20px;width: 30px;height: 30px;"><strong>Alta vendedores sucursales</strong></h3>
                                     </div>
                             
                                     <div class="row" style="margin-left:5px;margin-right:30px;margin-top:30px;">
