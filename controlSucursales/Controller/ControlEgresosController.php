@@ -36,6 +36,10 @@ switch ($accion) {
         contabilizar(0);
         break;
     
+    case 'autorizarEgreso':
+        autorizarEgreso();
+        break;
+    
     default:
         # code...
         break;
@@ -234,4 +238,22 @@ function contabilizar ($contabilizado) {
 
 }
 
+function autorizarEgreso (){
+    $fecha= $_POST['fecha'];
+    $nroSucursal= $_POST['nroSucursal'];
+    $tipoComp= $_POST['tipoComp'];
+    $comprobante= $_POST['comprobante'];
+    $codCuenta= $_POST['codCuenta'];
+    $descCuenta= $_POST['descCuenta'];
+    $monto= $_POST['monto'];
+    $leyenda= $_POST['leyenda'];
+    $fechaDeHoy = date('Y-m-d');
+
+
+    $sucursal = new Sucursal();
+
+    $result = $sucursal->autorizarEgreso ($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy);
+  
+    echo $result;
+}
 ?>

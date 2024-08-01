@@ -174,6 +174,32 @@ class Sucursal
 
     }
 
+    public function autorizarEgreso ($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy)
+    {
+
+        $sql="IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = '$comprobante'  AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComp')
+        BEGIN
+            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET AUTORIZADO = 1, FECHA_AUTORIZADO = '$fechaDeHoy' WHERE N_COMP  = '$comprobante' AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComp'
+        END
+        ELSE
+        BEGIN
+            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, AUTORIZADO, FECHA_AUTORIZADO) 
+            VALUES ('$fecha', $nroSucursal, '$tipoComp', '$comprobante', '$codCuenta', '$descCuenta', $monto, '$leyenda', '0', '0', '1', '$fechaDeHoy')
+        END";
+
+       
+        try{
+            
+            $stmt = sqlsrv_query($this->conexion, $sql);
+       
+            return $stmt;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+    }
+   
+
     public function traerVerificados ($fecha)
     {
 
@@ -518,4 +544,58 @@ class Sucursal
         }
     }
 
+
+    public function traerGastosAutorizarSucursales($desde, $hasta, $nroSucursal, $estado) {
+
+        
+        $sqlWhere = "";
+        if($estado == 1){
+            $sqlWhere = "AND (B.AUTORIZADO != 1 or B.AUTORIZADO IS NULL)";
+        }else if($estado == 2){
+            $sqlWhere = "AND B.AUTORIZADO = 1";
+        }
+
+        $sql = "SELECT A.*, B.AUTORIZADO, B.FECHA_AUTORIZADO, (CASE WHEN C.FECHA_GUARDADO IS NOT NULL THEN 1 ELSE 0 END) guardado
+        FROM LAKERBIS.LOCALES_LAKERS.DBO.RO_V_GASTOS_CAJA_SUCURSALES A
+        LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B on REPLACE(A.N_COMP, ' ', '') = REPLACE (B.N_COMP, ' ', '') collate Latin1_General_BIN
+        AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA
+        AND A.COD_CTA = B.COD_CUENTA
+        LEFT JOIN SJ_EGRESOS_DE_CAJA_GUARDADO C on A.N_COMP = C.N_COMP collate Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURSAL AND A.COD_CTA = C.COD_CTA
+        AND C.NRO_SUCURSAL LIKE '%$nroSucursal%'
+        WHERE A.FECHA BETWEEN '$desde' AND '$hasta' AND A.NRO_SUCURS LIKE '%$nroSucursal%' AND A.COD_CTA LIKE '5%'
+        $sqlWhere
+        ORDER BY FECHA ASC
+        ";  
+
+        try{
+            
+     
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            
+            $stmt = sqlsrv_query($this->cid_uy, $sql);
+        }else{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+        }
+
+            $v = [];
+  
+            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
+
+                $v[] = $row;
+
+            }
+
+            return $v;
+          
+        } catch (Exception $e) {
+            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+
+
+    }
 }
