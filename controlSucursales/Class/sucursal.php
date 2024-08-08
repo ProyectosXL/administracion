@@ -110,7 +110,8 @@ class Sucursal
     public function traerLocales($orderByName = null)
     {
 
-        if((isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy')){
+  
+        if((isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') || $_SESSION['entorno'] == 'uy'){
 
             $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS  WHERE CANAL = 'EXTERIOR' ";
 
@@ -555,8 +556,23 @@ class Sucursal
             $sqlWhere = "AND B.AUTORIZADO = 1";
         }
 
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $prefix = "LOCALES_LAKERS";
+
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            
+            $cid = $this->cid_uy;
+            $prefix = "SUCURSALES_URUGUAY";
+
+        }else{
+            $cid = $this->cid_central;
+        }
+
         $sql = "SELECT A.*, B.AUTORIZADO, B.FECHA_AUTORIZADO, (CASE WHEN C.FECHA_GUARDADO IS NOT NULL THEN 1 ELSE 0 END) guardado
-        FROM LAKERBIS.LOCALES_LAKERS.DBO.RO_V_GASTOS_CAJA_SUCURSALES A
+        FROM LAKERBIS.$prefix.DBO.RO_V_GASTOS_CAJA_SUCURSALES A
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B on REPLACE(A.N_COMP, ' ', '') = REPLACE (B.N_COMP, ' ', '') collate Latin1_General_BIN
         AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA
         AND A.COD_CTA = B.COD_CUENTA
@@ -569,18 +585,7 @@ class Sucursal
 
         try{
             
-     
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
-            
-            $stmt = sqlsrv_query($this->cid_uy, $sql);
-        }else{
-            
-            $stmt = sqlsrv_query($this->cid_central, $sql);
-        }
+        $stmt = sqlsrv_query($cid, $sql);
 
             $v = [];
   
