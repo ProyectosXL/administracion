@@ -561,8 +561,8 @@ class Sucursal
         AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA
         AND A.COD_CTA = B.COD_CUENTA
         LEFT JOIN SJ_EGRESOS_DE_CAJA_GUARDADO C on A.N_COMP = C.N_COMP collate Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURSAL AND A.COD_CTA = C.COD_CTA
-        AND C.NRO_SUCURSAL LIKE '%$nroSucursal%'
-        WHERE A.FECHA BETWEEN '$desde' AND '$hasta' AND A.NRO_SUCURS LIKE '%$nroSucursal%' AND A.COD_CTA LIKE '5%'
+        AND C.NRO_SUCURSAL LIKE '$nroSucursal'
+        WHERE A.FECHA BETWEEN '$desde' AND '$hasta' AND A.NRO_SUCURS LIKE '$nroSucursal' AND A.COD_CTA LIKE '5%'
         $sqlWhere
         ORDER BY FECHA ASC
         ";  

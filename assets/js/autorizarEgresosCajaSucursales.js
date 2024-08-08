@@ -36,7 +36,7 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
 
     let codCuenta = divImagen.parentElement.parentElement.querySelectorAll("td")[4].textContent;
 
-    let nroSucursal = document.querySelector("#selectSucursal").value.split("-")[0];
+    let nroSucursal = divImagen.parentElement.parentElement.querySelectorAll("td")[1].textContent;
     
     let carouselElement = document.querySelector('#carruselImagenes'); 
     
