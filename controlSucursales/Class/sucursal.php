@@ -111,7 +111,7 @@ class Sucursal
     {
 
   
-        if((isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') || $_SESSION['entorno'] == 'uy'){
+        if((isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') || (isset($_SESSION['entorno']) &&  $_SESSION['entorno'] == 'uy')){
 
             $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS  WHERE CANAL = 'EXTERIOR' ";
 
@@ -260,7 +260,7 @@ class Sucursal
             $prefix = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? "" : "[LAKERBIS].locales_lakers.dbo.";
 
          
-            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO,b.CONTABILIZADA,
+            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO,b.CONTABILIZADA,b.AUTORIZADO,b.FECHA_AUTORIZADO,
             (case when c.FECHA_GUARDADO is not null then 1 else 0 end) guardado
             FROM ".$prefix."RO_V_GASTOS_CAJA_SUCURSALES a 
             left join RO_T_GASTOS_CAJA_SUCURSALES b on REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '') collate Latin1_General_BIN 

@@ -39,12 +39,12 @@ const checkFactura = (div) => {
     let monto = allTd[6].textContent.replace(/[$.]/g, "");
     let leyenda = allTd[7].textContent;
     let factura = 0;
-    if(allTd[10].querySelector("input").checked == true){ 
+    if(allTd[11].querySelector("input").checked == true){ 
         factura = 1;
         
     }
     let control = 0;
-    if(allTd[11].querySelector("input").checked == true){ 
+    if(allTd[12].querySelector("input").checked == true){ 
         control = 1;
 
     }
@@ -92,12 +92,12 @@ const checkControl = (div) => {
     let monto = allTd[6].textContent.replace(/[$.]/g, "");;
     let leyenda = allTd[7].textContent;
     let factura = 0;
-    if(allTd[10].querySelector("input").checked == true){ 
+    if(allTd[11].querySelector("input").checked == true){ 
         factura = 1;
         
     }
     let control = 0;
-    if(allTd[11].querySelector("input").checked == true){ 
+    if(allTd[12].querySelector("input").checked == true){ 
         control = 1;
 
     }

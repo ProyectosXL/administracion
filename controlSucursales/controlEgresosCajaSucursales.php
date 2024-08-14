@@ -143,6 +143,7 @@
                                     <th > MONTO </th>
                                     <th > LEYENDA </th>
                                     <th > VER </th>
+                                    <th > AUTORIZADO</th>
                                     <th > RECIBIDO </th>
                                     <th > FACTURA </th>
                                     <th > CONTROL </th>
@@ -192,6 +193,13 @@
 
                                                 <?php } ?>
                                             </td>
+                                 
+                                                <?php if($gasto['AUTORIZADO'] == 1) {?>
+                                                    <td  data-toggle="tooltip" data-placement="top" title="AUTORIZADO:<?= $gasto['FECHA_AUTORIZADO']->format("Y-m-d") ?>"><i class="bi bi-check-circle-fill" style="font-size:30px;color:#4caf50;" ></i></td>    
+                                                <?php }else{
+                                                    echo "<td></td>";
+                                                } ?>
+                                     
                                             <td id="td_myTable" <?= $fechaRecibido ?> >
                                                 <?php 
                                                     if($gasto['RECIBIDO'] == 1){
