@@ -37,13 +37,19 @@ const iniciarCalculo = (div)=>{
 
 
       total = 0;
+      console.log(div.value, 'div value');
       if( div.value == '' ){
+        div.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value = '';
+        div.parentElement.parentElement.querySelectorAll("td")[5].firstChild.value = '';
         return
       }
 
       let tipoCambio =(div.parentElement.parentElement.querySelectorAll("td")[3].firstChild.value).replaceAll(".","").replaceAll(",",".");
       let valorFobUsd = (div.parentElement.parentElement.querySelectorAll("td")[2].firstChild.value).replaceAll(".","").replaceAll(",",".");
-      
+
+      if(valorFobUsd == ''){
+        return 
+      }
       if(tipoCambio == 0){
         total = valorFobUsd
 
@@ -177,6 +183,9 @@ if(document.querySelector("#btnSaveDetalle") != null){
 
 
 const convertirNumeros = (input) =>{
+    if(input.value == ''){
+      return
+    }
     let valueI = input.value.replaceAll(',','.');
     input.value = parseFloat(valueI).toLocaleString('es-ES', { minimumFractionDigits: 2 })
 
