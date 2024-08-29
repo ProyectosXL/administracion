@@ -24,7 +24,8 @@ let sacarParseo = (string,isNumber = false) => {
   if(isNumber == false){
     numero = convertToNumber(string);
   }
-  valorEnFloat = numero.replace(",",".");
+  valor = numero.replaceAll(".","");
+  valorEnFloat = valor.replaceAll(",",".");
   valor = parseFloat(valorEnFloat);
 
   return valor;
@@ -133,12 +134,12 @@ if(document.querySelector("#btnSaveDetalle") != null){
     let sobreFob = rowsElement.childNodes[11].childNodes[0].textContent.replace("%","");
     let observaciones = rowsElement.childNodes[13].childNodes[0].value
 
+    console.log(Gastos,importeEnDolares,tipoCambio,importeEnPesos,sobreFob,observaciones)
+
     arrayDatos [x] = [Gastos,importeEnDolares,tipoCambio,importeEnPesos,sobreFob,observaciones]
 
     });
-
-
-
+    
 
     $.ajax({
       url: 'Controller/OrdenDeCompraController.php',
