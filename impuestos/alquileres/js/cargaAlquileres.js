@@ -67,7 +67,12 @@ const totalizar = (div = null) => {
                 let valorId9 = document.querySelector(`#input-9-${s.textContent}`).value.replace(/[$.]/g, "");
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
 
-                inputActual.value ="$"+ parseNumber( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9) );
+                if ( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9)  < 0) {
+                    inputActual.value = "$0";
+                }else{
+
+                    inputActual.value ="$"+ parseNumber( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9) );
+                }
 
             }
 
