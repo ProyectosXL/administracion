@@ -19,12 +19,8 @@ $(document).ready(function() {
         }
     }
 
-    $('#contratoComercial').on('change', function(event) {
-        handleFileSelect(event, 'previewContratoComercial', 'actionsContratoComercial');
-    });
-
-    $('#contratoLocacion').on('change', function(event) {
-        handleFileSelect(event, 'previewContratoLocacion', 'actionsContratoLocacion');
+    $('#contratoComercial, #contratoLocacion, #habilitacion').on('change', function(event) {
+        handleFileSelect(event, 'preview' + this.id.charAt(0).toUpperCase() + this.id.slice(1), 'actions' + this.id.charAt(0).toUpperCase() + this.id.slice(1));
     });
 
     $('.view-file').on('click', function() {
@@ -47,26 +43,13 @@ $(document).ready(function() {
     $('#contratoAlquilerForm').on('submit', function(e) {
         e.preventDefault();
         
-        var franquicia = $('#franquicia').val();
-        var fechaDesde = $('#fechaDesde').val();
-        var fechaHasta = $('#fechaHasta').val();
-
-        if (!franquicia || !fechaDesde || !fechaHasta) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Por favor, complete todos los campos obligatorios.'
-            });
-            return;
-        }
-
-        const formData = new FormData(this);
+        var formData = new FormData(this);
 
         $('#spinner').show();
         $('#btnGuardar').attr('disabled', true);
 
         $.ajax({
-            url: 'Controller/insertContratoController.php',
+            url: 'controller/insertContratoController.php',
             type: 'POST',
             data: formData,
             processData: false,
@@ -97,25 +80,14 @@ $(document).ready(function() {
             error: function(jqXHR, textStatus, errorThrown) {
                 $('#spinner').hide();
                 $('#btnGuardar').attr('disabled', false);
-            
+
                 console.error("AJAX error: " + textStatus + ' : ' + errorThrown);
-                console.error("Respuesta del servidor:", jqXHR.responseText);
+                console.error(jqXHR.responseText);
                 
-                let errorMessage = 'Hubo un problema al procesar su solicitud.';
-                try {
-                    const response = JSON.parse(jqXHR.responseText);
-                    if (response && response.message) {
-                        errorMessage = response.message;
-                    }
-                } catch (e) {
-                    console.error("Error parsing JSON response:", e);
-                    errorMessage = "La respuesta del servidor no es JSON válido. Revisa la consola para más detalles.";
-                }
-            
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: errorMessage
+                    text: 'Hubo un problema al procesar su solicitud. Por favor, inténtelo de nuevo.'
                 });
             }
         });

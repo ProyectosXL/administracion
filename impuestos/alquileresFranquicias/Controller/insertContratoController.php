@@ -11,23 +11,43 @@ class InsertContratoController {
 
     public function insertarContrato() {
         try {
-            $nroSucursal = $_POST['franquicia'];
-            $descSucursal = '';
-            $franquicias = $this->alquiler->traerFranquicias();
-            foreach ($franquicias as $franquicia) {
-                if ($franquicia['NRO_SUCURSAL'] == $nroSucursal) {
-                    $descSucursal = $franquicia['DESC_SUCURSAL'];
-                    break;
-                }
-            }
-            $vigDesde = $_POST['fechaDesde'];
-            $vigHasta = $_POST['fechaHasta'];
+            $nroSucursal = $_POST['franquicia'] ?? null;
+            $vigDesde = $_POST['fechaDesde'] ?? null;
+            $vigHasta = $_POST['fechaHasta'] ?? null;
 
-            $this->alquiler->insertarContratoAlquiler($nroSucursal, $descSucursal, $vigDesde, $vigHasta);
-            echo json_encode(["success" => true, "message" => "Contrato de alquiler guardado exitosamente."]);
+            if (!$nroSucursal || !$vigDesde || !$vigHasta) {
+                throw new Exception("Datos incompletos.");
+            }
+
+            $contratoComercial = $this->uploadFile('contratoComercial');
+            $contratoLocacion = $this->uploadFile('contratoLocacion');
+            $habilitacion = $this->uploadFile('habilitacion');
+
+            $resultado = $this->alquiler->insertarContratoAlquiler($nroSucursal, $vigDesde, $vigHasta, $contratoComercial, $contratoLocacion, $habilitacion);
+
+            if ($resultado) {
+                echo json_encode(["success" => true, "message" => "Contrato de alquiler guardado exitosamente."]);
+            } else {
+                throw new Exception("No se pudo insertar el contrato.");
+            }
         } catch (Exception $e) {
-            error_log("Error al guardar el contrato: " . $e->getMessage());
-            echo json_encode(["success" => false, "message" => "Error al guardar el contrato. Por favor, inténtelo de nuevo más tarde."]);
+            echo json_encode(["success" => false, "message" => "Error al guardar el contrato: " . $e->getMessage()]);
+        }
+    }
+
+    private function uploadFile($inputName) {
+        if (!isset($_FILES[$inputName]) || $_FILES[$inputName]['error'] === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+
+        $uploadDir = __DIR__ . '/../archivos/';
+        $fileName = uniqid() . '_' . $_FILES[$inputName]['name'];
+        $filePath = $uploadDir . $fileName;
+
+        if (move_uploaded_file($_FILES[$inputName]['tmp_name'], $filePath)) {
+            return $fileName;
+        } else {
+            throw new Exception("Error al subir el archivo " . $inputName);
         }
     }
 }

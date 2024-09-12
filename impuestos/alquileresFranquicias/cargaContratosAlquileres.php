@@ -16,10 +16,6 @@ try {
     $mensaje = "Error al cargar las franquicias. Por favor, inténtelo de nuevo más tarde.";
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $resultado = $insertController->insertarContrato($_POST);
-    $mensaje = $resultado['message'];
-}
 ?>
 
 <!DOCTYPE html>
@@ -27,23 +23,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../../image/icono.jpg" type="image/jpg">
     <title>Carga Contratos Alquiler Franquicias</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-5-theme/1.3.0/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/cargaContratos.css" class="rel">
     <style>
-        body { background-color: #f8f9fa; }
-        .container { max-width: 800px; }
-        .card { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); }
-        .form-control, .form-select { border-radius: 0.5rem; }
-        .btn-primary { background-color: #007bff; border-color: #007bff; }
-        .btn-primary:hover { background-color: #0056b3; border-color: #0056b3; }
-        .select2-container--bootstrap-5 .select2-selection { height: auto; }
-        #spinner { display: none; }
-        .file-actions { display: none; }
-        .file-preview { margin-top: 10px; }
+        
     </style>
 </head>
 <body>

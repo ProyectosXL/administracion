@@ -28,24 +28,24 @@ class Gasto
     public function traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta = null){
 
     if($estado == '0'){
-
+           // Para amortizar // 
             $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE  AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0 AND COD_CUENTA LIKE '$codCuenta'
                         UNION ALL
                     SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0 AND COD_CUENTA LIKE '$codCuenta'" ;
     
     }elseif($estado == '1'){
-
+            // Para amortizar //
             $sql="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' 
                   AND PRORRATEADO IS NULL AND CONTROLADO IS NOT NULL AND EXCLUIR = 0 AND AMORTIZAR > 0 AND AMORTIZADO IS NULL
                   AND COD_CUENTA LIKE '$codCuenta'
             ";
     }elseif($estado == '2'){
-
+            // Gastos excluidos // 
             $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 1
              AND COD_CUENTA LIKE '$codCuenta'";
 
     }elseif($estado == '3'){
-
+            // Gastos pendientes // 
             $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL AND AMORTIZADO IS NULL)
              AND COD_CUENTA LIKE '$codCuenta'";
 
