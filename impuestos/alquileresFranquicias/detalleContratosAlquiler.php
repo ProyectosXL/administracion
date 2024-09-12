@@ -5,7 +5,7 @@ require_once 'Class/Alquiler.php';
 $alquiler = new Alquiler();
 $franquicias = $alquiler->traerFranquicias();
 $sucursal = isset($_GET['sucursal']) ? $_GET['sucursal'] : '';
-$vigente = isset($_GET['vigente']) ? $_GET['vigente'] : 'actual';
+$vigente = isset($_GET['contratoVigente']) ? $_GET['contratoVigente'] : 'actual';
 $contratos = $alquiler->obtenerContratos($sucursal, $vigente);
 
 ?>
@@ -22,7 +22,6 @@ $contratos = $alquiler->obtenerContratos($sucursal, $vigente);
     <link href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <link rel="stylesheet" href="css/detalleContratos.css" class="rel">
    
 </head>
@@ -34,32 +33,33 @@ $contratos = $alquiler->obtenerContratos($sucursal, $vigente);
                 Contratos Alquiler Franquicias
             </h3>
         </div>
-
-        <div class="row mb-3 align-items-end">
-            <div class="col-md-4">
-                <label for="sucursal" class="form-label">Sucursal</label>
-                <select id="sucursal" class="form-select">
-                    <option value="">Todas las sucursales</option>
-                    <?php foreach ($franquicias as $franquicia): ?>
-                        <option value="<?php echo htmlspecialchars($franquicia['NRO_SUCURSAL']); ?>">
-                            <?php echo htmlspecialchars($franquicia['DESC_SUCURSAL']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+        <form action="">
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="sucursal" class="form-label">Sucursal</label>
+                    <select id="sucursal" name="sucursal" class="form-select">
+                        <option value="">Todas las sucursales</option>
+                        <?php foreach ($franquicias as $franquicia): ?>
+                            <option value="<?php echo htmlspecialchars($franquicia['NRO_SUCURSAL']); ?>">
+                                <?php echo htmlspecialchars($franquicia['DESC_SUCURSAL']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="contratoVigente" class="form-label">Vigencia</label>
+                    <select id="contratoVigente" name="contratoVigente" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="actual" <?php echo $vigente === 'actual' ? 'selected' : ''; ?>>Actual</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button id="btnBuscar" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Buscar
+                    </button>
+                </div>
             </div>
-            <div class="col-md-3">
-                <label for="contratoVigente" class="form-label">Vigencia</label>
-                <select id="contratoVigente" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="actual" <?php echo $vigente === 'actual' ? 'selected' : ''; ?>>Actual</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button id="btnBuscar" class="btn btn-primary w-100">
-                    <i class="fas fa-search me-2"></i>Buscar
-                </button>
-            </div>
-        </div>
+        </form>
                         
         <div class="table-container">
             <table id="contratosTable" class="table table-striped table-bordered">
@@ -84,8 +84,8 @@ $contratos = $alquiler->obtenerContratos($sucursal, $vigente);
                             <td><?php echo htmlspecialchars($contrato['DESC_SUCURS']); ?></td>
                             <td><?= $contrato['VIG_DESDE']->format('Y-m-d') ?></td>
                             <td><?= $contrato['VIG_HASTA']->format('Y-m-d') ?></td>
-                            <td class="vigente-cell"></td>
-                            <td class="btn-center">
+                            <td class="vigente-cell" style="text-align:center"></td>
+                            <td class="btn-center" >
                                 <?php if (!empty($contrato['CONTRATO_COMERCIAL'])): ?>
                                     <button class="btn btn-warning btn-sm ver-archivo" data-archivo="<?php echo htmlspecialchars($contrato['CONTRATO_COMERCIAL']); ?>">
                                         <i class="fas fa-eye"></i> Ver
@@ -163,118 +163,12 @@ $contratos = $alquiler->obtenerContratos($sucursal, $vigente);
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="js/detalleAlquiler.js"></script>
 
     <script>
         
-        $(document).ready(function() {
-        // Manejador para los botones "Subir archivo"
-        $(document).on('click', '.subir-archivo', function() {
-            var tipo = $(this).data('tipo');
-            var id = $(this).data('id');
-            $('#contratoId').val(id);
-            $('#tipoArchivo').val(tipo);
-            $('#subirArchivoModalLabel').text('Subir ' + tipo.charAt(0).toUpperCase() + tipo.slice(1));
-            
-            // Limpiar el input de archivo y ocultar el botón de ver PDF
-            $('#archivo').val('');
-            $('#nombreArchivo').text('');
-            $('#verPdfBtn').hide();
-            
-            var myModal = new bootstrap.Modal(document.getElementById('subirArchivoModal'));
-            myModal.show();
-        });
-
-        function calcularVigencia() {
-                var today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                $('#contratosTable tbody tr').each(function() {
-                    var vigDesde = new Date($(this).find('td:eq(3)').text());
-                    var vigHasta = new Date($(this).find('td:eq(4)').text());
-                    
-                    if (today >= vigDesde && today <= vigHasta) {
-                        $(this).find('.vigente-cell').html('<i class="fas fa-check-circle text-success"></i>');
-                    } else {
-                        $(this).find('.vigente-cell').html('<i class="fas fa-times-circle text-danger"></i>');
-                    }
-                });
-            }
-        
-        // Mostrar el nombre del archivo seleccionado
-        $('#archivo').on('change', function() {
-            var fileName = $(this).val().split('\\').pop();
-            $('#nombreArchivo').text(fileName);
-        });
-
-        $('#btnGuardarArchivo').on('click', function() {
-            var formData = new FormData($('#subirArchivoForm')[0]);
-            
-            $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Subiendo...');
-            
-            $.ajax({
-                url: 'controller/subirArchivoController.php',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: '¡Éxito!',
-                            text: 'Archivo subido exitosamente',
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                location.reload();
-                            }
-                        });
-                        $('#verPdfBtn').show().data('archivo', response.fileName);
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Error al subir el archivo: ' + response.message,
-                        });
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    console.error("Error en la solicitud AJAX:", textStatus, errorThrown);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Error en la solicitud AJAX: ' + textStatus,
-                    });
-                },
-                complete: function() {
-                    $('#btnGuardarArchivo').prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
-                }
-            });
-        });
-
-        // Manejador para el botón "Ver PDF" en el modal
-        $('#verPdfBtn').on('click', function() {
-            var archivo = $(this).data('archivo');
-            if (archivo) {
-                window.open('archivos/' + archivo, '_blank');
-            }
-        });
-
-        // Manejador para los botones "Ver archivo" en la tabla
-        $(document).on('click', '.ver-archivo', function() {
-            var archivo = $(this).data('archivo');
-            if (archivo) {
-                window.open('archivos/' + archivo, '_blank');
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudo encontrar el archivo.',
-                });
-            }
-        });
-    });
-
+      
     </script>
     
 </body>

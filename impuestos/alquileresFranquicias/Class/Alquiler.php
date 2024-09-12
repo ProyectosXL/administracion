@@ -103,6 +103,31 @@ class Alquiler
         return true;
     }
 
+    public function validarVigencia ($nroSucursal, $desde, $hasta){
+
+        // VALIDA QUE UNA VIGENCIA NO PISE A OTRA 
+
+        $sql = "SELECT COUNT(*) AS CANTIDAD FROM RO_T_CONTRATOS_ALQUILER_FRANQUICIAS WHERE NRO_SUCURS = ? AND 
+                ((? BETWEEN VIG_DESDE AND VIG_HASTA) OR (? BETWEEN VIG_DESDE AND VIG_HASTA) OR (VIG_DESDE BETWEEN ? AND ?) OR (VIG_HASTA BETWEEN ? AND ?))";
+
+        $params = array($nroSucursal, $desde, $hasta, $desde, $hasta, $desde, $hasta);
+
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error al validar la vigencia del contrato.");
+        }
+
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+
+        sqlsrv_free_stmt($stmt);
+        
+        return $row['CANTIDAD'] == 0;
+
+
+
+    }
+
     private function obtenerDescripcionSucursal($nroSucursal)
     {
         $sql = "SELECT DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE NRO_SUCURSAL = ?";

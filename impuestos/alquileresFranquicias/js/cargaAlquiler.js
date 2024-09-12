@@ -43,6 +43,47 @@ $(document).ready(function() {
     $('#contratoAlquilerForm').on('submit', function(e) {
         e.preventDefault();
         
+        let sucursal = document.querySelector('#franquicia').value;
+        let fechaDesde = document.querySelector('#fechaDesde').value;
+        let fechaHasta = document.querySelector('#fechaHasta').value;
+        let contratoComercial = document.querySelector('#contratoComercial').files[0];
+
+        if(sucursal == ''){
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Debe seleccionar una franquicia.'
+            });
+            return;
+        }
+
+        if(fechaDesde == '' || fechaHasta == ''){
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Debe seleccionar un rango de fechas.'
+            });
+            return;
+        }
+
+        if(fechaDesde > fechaHasta){
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'La fecha de inicio no puede ser mayor a la fecha de fin.'
+            });
+            return;
+        }
+
+        if(contratoComercial == undefined){
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Debe adjuntar el contrato comercial.'
+            });
+            return;
+        }
+
         var formData = new FormData(this);
 
         $('#spinner').show();

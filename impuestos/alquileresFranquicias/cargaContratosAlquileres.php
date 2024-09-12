@@ -1,10 +1,8 @@
 
 <?php
 require_once 'Class/Alquiler.php';
-require_once 'controller/insertContratoController.php';
 
 $alquiler = new Alquiler();
-$insertController = new InsertContratoController();
 
 $franquicias = [];
 $mensaje = '';

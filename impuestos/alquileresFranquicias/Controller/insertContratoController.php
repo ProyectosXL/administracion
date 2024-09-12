@@ -18,6 +18,12 @@ class InsertContratoController {
             if (!$nroSucursal || !$vigDesde || !$vigHasta) {
                 throw new Exception("Datos incompletos.");
             }
+            $vigenciaOk = $this->alquiler->validarVigencia($nroSucursal, $vigDesde, $vigHasta);
+            
+            if(!$vigenciaOk){
+                // ERROR YA EXSTE VIGENCIA
+                throw new Exception("Ya existe un contrato vigente para la franquicia seleccionada.");
+            }
 
             $contratoComercial = $this->uploadFile('contratoComercial');
             $contratoLocacion = $this->uploadFile('contratoLocacion');
