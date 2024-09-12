@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $resultado = $alquiler->subirArchivoContrato($contratoId, $tipoArchivo, $archivo);
-        echo json_encode(['success' => true, 'message' => 'Archivo subido exitosamente', 'fileName' => $nombreArchivo]);
+        echo json_encode(['success' => true, 'message' => 'Archivo subido exitosamente']);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
