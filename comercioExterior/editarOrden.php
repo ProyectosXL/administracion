@@ -71,8 +71,8 @@ $orden = listarPorOrdenCompra($ordenCompra);
                                 <tr>
                                     <td id="id" attr-value="<?=$key['ID']?>"><?=  ($valor+1)?></td>
                                     <td><input style="text-align:center" type="text"  value = "<?=  $key['GASTOS']?>"></input></td>
-                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "<?=$key['IMPORTE_U$S']?>"></input></td>
-                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($key['TIPO_CAMBIO']) ? $key['TIPO_CAMBIO'] : "0" ?>"></input></td>
+                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "<?=$key['IMPORTE_U$S']?>" onclick='limpiarInput(this)'></input></td>
+                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($key['TIPO_CAMBIO']) ? $key['TIPO_CAMBIO'] : "0" ?>" onclick='limpiarInput(this)'></input></td>
                                     <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly value="<?=$key['IMPORTE_$']?>"></input></td>
                                     <td><input style="text-align:center"  value="<?= $porcentajeParseado ?>%" readonly></input></td>
                                     <td><input><?=$key['OBSERVACIONES']?></input></td>
@@ -105,7 +105,7 @@ $orden = listarPorOrdenCompra($ordenCompra);
     <!-- <script src="js/main.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk" crossorigin="anonymous"></script>
-    <script src="js/costos.js"></script>
+    <script src="js/costosEditar.js"></script>
     <script src="js/editar.js"></script>
 
 </body>

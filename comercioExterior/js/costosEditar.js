@@ -47,21 +47,10 @@ const iniciarCalculo = (div)=>{
       let tipoCambio = 0;
       let valorFobUsd = 0;
 
-      if(div.id == 'tipoCambio'){
-          tipoCambio = div.value;
-          if(div.value.includes(",")){
-            tipoCambio = sacarParseo(div.value,true);
-          }
-
-          valorFobUsd = div.parentElement.parentElement.querySelectorAll("td")[2].firstChild.value.replaceAll(".","").replaceAll(",",".");
-      }else{
-          valorFobUsd = div.value;
-          if(div.value.includes(",")){
-            valorFobUsd = sacarParseo(div.value,true);
-          }
-          tipoCambio = div.parentElement.parentElement.querySelectorAll("td")[3].firstChild.value.replaceAll(".","").replaceAll(",",".");
-      }
-      // console.log(valorFobUsd,"valorFobUsd", tipoCambio,"tipoCambio")
+      tipoCambio = div.parentElement.parentElement.querySelectorAll("td")[3].firstChild.value;
+      valorFobUsd = div.parentElement.parentElement.querySelectorAll("td")[2].firstChild.value;
+   
+      console.log(valorFobUsd,"valorFobUsd", tipoCambio,"tipoCambio")
 
       if(valorFobUsd == ''){
         return 
@@ -73,9 +62,10 @@ const iniciarCalculo = (div)=>{
       
         total = valorFobUsd * tipoCambio;
       }
+      console.log(total,"total")
       // let totalResult = parseFloat(total).toLocaleString('es-ES', { minimumFractionDigits: 2 },"totalp")
 
-      div.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value = parseFloat(total).toLocaleString('es-ES', { minimumFractionDigits: 2 });
+      div.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value = total;
 
       let sobreFob = div.parentElement.parentElement.querySelectorAll("td")[5];
       let importeEnPesos = div.parentElement.parentElement.querySelectorAll("td")[4].firstChild.value.replaceAll(".","").replaceAll(",",".");
