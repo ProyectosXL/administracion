@@ -7,6 +7,8 @@ $franquicias = $alquiler->traerFranquicias();
 $sucursal = isset($_GET['sucursal']) ? $_GET['sucursal'] : '';
 $vigente = isset($_GET['contratoVigente']) ? $_GET['contratoVigente'] : 'actual';
 $contratos = $alquiler->obtenerContratos($sucursal, $vigente);
+$contratosPendientes = $alquiler->traerFranquiciasSinContrato();
+$contratosPorVencer = $alquiler->traerContratosPorVencer();
 
 ?>
 
@@ -53,9 +55,19 @@ $contratos = $alquiler->obtenerContratos($sucursal, $vigente);
                         <option value="actual" <?php echo $vigente === 'actual' ? 'selected' : ''; ?>>Actual</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <button id="btnBuscar" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-2"></i>Buscar
+                        <i class="fas fa-search me-1"></i>Buscar
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="btnContratosPendientes" class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#contratosPendientesModal">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Contratos pendientes
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="btnProntoVencimiento" class="btn btn-info w-100" data-bs-toggle="modal" data-bs-target="#prontoVencimientoModal">
+                        <i class="fas fa-clock me-2"></i>Pronto vencimiento
                     </button>
                 </div>
             </div>
@@ -153,6 +165,72 @@ $contratos = $alquiler->obtenerContratos($sucursal, $vigente);
                     <button type="button" class="btn btn-primary" id="btnGuardarArchivo">
                         <i class="fas fa-save"></i> Guardar
                     </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Contratos Pendientes -->
+        <div class="modal fade" id="contratosPendientesModal" tabindex="-1" aria-labelledby="contratosPendientesModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="contratosPendientesModalLabel">Contratos Pendientes</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nro. Sucursal</th>
+                                    <th>Descripción Sucursal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($contratosPendientes as $contrato): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($contrato['NRO_SUCURSAL']); ?></td>
+                                        <td><?php echo htmlspecialchars($contrato['DESC_SUCURSAL']); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Contratos Pronto a Vencer -->
+        <div class="modal fade" id="prontoVencimientoModal" tabindex="-1" aria-labelledby="prontoVencimientoModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="prontoVencimientoModalLabel">Contratos Pronto a Vencer</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nro. Sucursal</th>
+                                    <th>Descripción Sucursal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($contratosPorVencer as $contrato): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($contrato['NRO_SUCURS']); ?></td>
+                                        <td><?php echo htmlspecialchars($contrato['DESC_SUCURS']); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
             </div>

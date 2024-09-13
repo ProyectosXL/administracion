@@ -77,6 +77,68 @@ class Alquiler
         return $rows;
     }
 
+    public function traerFranquiciasSinContrato()
+    {
+        $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS A
+                LEFT JOIN 
+                (
+                SELECT NRO_SUCURS, DESC_SUCURS FROM RO_T_CONTRATOS_ALQUILER_FRANQUICIAS
+                WHERE GETDATE() BETWEEN VIG_DESDE AND VIG_HASTA
+                ) B
+                ON A.NRO_SUCURSAL = B.NRO_SUCURS
+                WHERE CANAL = 'FRANQUICIAS' AND HABILITADO = 1 AND NRO_SUC_MADRE IS NULL AND B.NRO_SUCURS IS NULL";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            $errors = sqlsrv_errors();
+            throw new Exception("Error en la consulta SQL: " . print_r($errors, true));
+        }
+
+        try {
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+        
+        } catch (\Throwable $th){
+            throw new Exception("Error al procesar los resultados: " . $th->getMessage());
+        } finally {
+            sqlsrv_free_stmt($stmt);
+        }
+    }
+
+    public function traerContratosPorVencer()
+    {
+        $sql = "SELECT NRO_SUCURS, DESC_SUCURS FROM RO_T_CONTRATOS_ALQUILER_FRANQUICIAS 
+                WHERE VIG_HASTA BETWEEN GETDATE() AND DATEADD(DAY, 180, GETDATE());";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            $errors = sqlsrv_errors();
+            throw new Exception("Error en la consulta SQL: " . print_r($errors, true));
+        }
+
+        try {
+            $rows = array();
+    
+            while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $rows[] = $v;
+            }
+    
+            return $rows;
+        
+        } catch (\Throwable $th){
+            throw new Exception("Error al procesar los resultados: " . $th->getMessage());
+        } finally {
+            sqlsrv_free_stmt($stmt);
+        }
+    }
+
     
     public function insertarContratoAlquiler($nroSucursal, $vigDesde, $vigHasta, $contratoComercial, $contratoLocacion, $habilitacion)
     {
