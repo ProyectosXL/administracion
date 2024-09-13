@@ -48,6 +48,7 @@ class Alquiler
         }
 
     }
+    
     public function traerConceptosPorcentaje()
     {
 
