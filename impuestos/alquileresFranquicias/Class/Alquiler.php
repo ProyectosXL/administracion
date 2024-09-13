@@ -113,8 +113,8 @@ class Alquiler
 
     public function traerContratosPorVencer()
     {
-        $sql = "SELECT NRO_SUCURS, DESC_SUCURS FROM RO_T_CONTRATOS_ALQUILER_FRANQUICIAS 
-                WHERE VIG_HASTA BETWEEN GETDATE() AND DATEADD(DAY, 180, GETDATE());";
+        $sql = "SELECT NRO_SUCURS, DESC_SUCURS, VIG_HASTA FROM RO_T_CONTRATOS_ALQUILER_FRANQUICIAS 
+                WHERE VIG_HASTA BETWEEN GETDATE() AND DATEADD(DAY, 45, GETDATE());";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
 

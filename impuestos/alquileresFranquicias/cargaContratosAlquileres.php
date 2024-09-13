@@ -55,47 +55,44 @@ try {
             
             <h5 class="mt-4">Vigencia</h5>
             <div class="row mb-3">
-                <div class="col">
+                <div class="col-md-6">
                     <label for="fechaDesde" class="form-label">Desde</label>
                     <input type="date" class="form-control" id="fechaDesde" name="fechaDesde" required>
                 </div>
-                <div class="col">
+                <div class="col-md-6">
                     <label for="fechaHasta" class="form-label">Hasta</label>
                     <input type="date" class="form-control" id="fechaHasta" name="fechaHasta" required>
                 </div>
             </div>
             
             <h5 class="mt-4">Contrato Comercial</h5>
-            <div class="mb-3">
+            <div class="mb-3 file-input-group">
                 <input type="file" class="form-control" id="contratoComercial" name="contratoComercial" accept=".pdf">
-                <div class="file-preview" id="previewContratoComercial"></div>
-                <div class="file-actions" id="actionsContratoComercial">
-                    <button type="button" class="btn btn-primary btn-sm view-file">Ver</button>
-                    <button type="button" class="btn btn-danger btn-sm delete-file">Eliminar</button>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary btn-sm view-file"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-danger btn-sm delete-file"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
 
             <h5 class="mt-4">Contrato Locación</h5>
-            <div class="mb-3">
+            <div class="mb-3 file-input-group">
                 <input type="file" class="form-control" id="contratoLocacion" name="contratoLocacion" accept=".pdf">
-                <div class="file-preview" id="previewContratoLocacion"></div>
-                <div class="file-actions" id="actionsContratoLocacion">
-                    <button type="button" class="btn btn-primary btn-sm view-file">Ver</button>
-                    <button type="button" class="btn btn-danger btn-sm delete-file">Eliminar</button>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary btn-sm view-file"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-danger btn-sm delete-file"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
 
             <h5 class="mt-4">Habilitación Local</h5>
-            <div class="mb-3">
+            <div class="mb-3 file-input-group">
                 <input type="file" class="form-control" id="habilitacion" name="habilitacion" accept=".pdf">
-                <div class="file-preview" id="previewHabilitacion"></div>
-                <div class="file-actions" id="actionsHabilitacion">
-                    <button type="button" class="btn btn-primary btn-sm view-file">Ver</button>
-                    <button type="button" class="btn btn-danger btn-sm delete-file">Eliminar</button>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-primary btn-sm view-file"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-danger btn-sm delete-file"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
             
-            <button type="submit" class="btn btn-primary btn-lg w-100" id="btnGuardar">
+            <button type="submit" class="btn btn-primary w-100" id="btnGuardar">
                 <span id="spinner" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                 <i class="fas fa-save me-2"></i>Guardar
             </button>

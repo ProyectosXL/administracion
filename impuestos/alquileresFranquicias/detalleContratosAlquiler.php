@@ -217,6 +217,7 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
                                 <tr>
                                     <th>Nro. Sucursal</th>
                                     <th>Descripción Sucursal</th>
+                                    <th>Vencimiento</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -224,6 +225,7 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
                                     <tr>
                                         <td><?php echo htmlspecialchars($contrato['NRO_SUCURS']); ?></td>
                                         <td><?php echo htmlspecialchars($contrato['DESC_SUCURS']); ?></td>
+                                        <td><?= $contrato['VIG_HASTA']->format('Y-m-d') ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

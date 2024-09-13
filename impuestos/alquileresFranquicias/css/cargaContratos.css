@@ -29,6 +29,14 @@ body {
 .file-actions { 
     display: none; 
 }
-.file-preview { 
-    margin-top: 10px; 
+.file-input-group {
+    display: flex;
+    align-items: center;
+}
+.file-input-group .form-control {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+.file-input-group .btn-group {
+    flex-shrink: 0;
 }
