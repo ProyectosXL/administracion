@@ -96,12 +96,12 @@ $tipoCambio  = number_format($tipoCambio, 2, ',', '.');
                                 <tr id="trBody">
                                     <td id="id"><?=  $key['ID_MG']?></td>
                                     <td><?=  $key['GASTOS']?></td>
-                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" onchange='convertirNumeros(this)'></input></td>
+                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" onchange='convertirNumeros(this)' onclick='limpiarInput(this)'></input></td>
                                     <?php if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){?>
                                     
-                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0" onchange='convertirNumeros(this)'></input></td>
+                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0" onchange='convertirNumeros(this)' onclick='limpiarInput(this)'></input></td>
                                     <?php }else{ ?>
-                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio"  onchange='convertirNumeros(this)' value="<?= ($valor <= 6) ? $tipoCambio   : "0" ?>"></input></td>
+                                        <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio"  onchange='convertirNumeros(this)' value="<?= ($valor <= 6) ? $tipoCambio   : "0" ?>" onclick='limpiarInput(this)'></input></td>
 
                                     <?php }?>
                                     
