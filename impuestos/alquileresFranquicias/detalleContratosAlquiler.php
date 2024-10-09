@@ -197,7 +197,12 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
                         </table>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="btn btn-primary" id="btnDescargarPendientes">
+                            <i class="fas fa-download me-2"></i>Descargar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-close me-2"></i>Cerrar
+                    </button>
                     </div>
                 </div>
             </div>
@@ -244,11 +249,38 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
     <script src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script src="js/detalleAlquiler.js"></script>
-
     <script>
+
+       // Función para descargar los contratos pendientes en formato XLSX
+        function descargarContratosPendientes() {
+            // Obtener los datos de la tabla
+            var data = [['Nro. Sucursal', 'Descripción Sucursal']];
+            $('#contratosPendientesModal table tbody tr').each(function() {
+                var row = $(this);
+                data.push([
+                    row.find('td:eq(0)').text(),
+                    row.find('td:eq(1)').text()
+                ]);
+            });
+
+            // Crear un libro de trabajo y una hoja de cálculo
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(data);
+
+            // Añadir la hoja al libro
+            XLSX.utils.book_append_sheet(wb, ws, "Contratos Pendientes");
+
+            // Generar el archivo XLSX y descargarlo
+            XLSX.writeFile(wb, "contratos_pendientes.xlsx");
+        }
+
+        // Agregar el evento click al botón de descarga
+        $(document).ready(function() {
+            $('#btnDescargarPendientes').on('click', descargarContratosPendientes);
+        });
         
-      
     </script>
     
 </body>
