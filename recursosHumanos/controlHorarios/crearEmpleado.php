@@ -76,6 +76,12 @@
                     border:1px solid #dbdbdb;
             }
 
+        .required {
+            color: red;
+            font-weight: bold;
+        }
+
+
   </style>
 
     </head>
@@ -147,9 +153,9 @@
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
                                                 <!-- <div class="col-2 mr-1" style="background-color:#dbdbdb;height:45px;font-size:12px;" id="nroLegajo"><span style="color:#969396">Nro. legajo</span> <br><span id="nroLegajoSpan"></span></div> -->
-                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Apellidos" onclick="updateValue(this)" id="apellido"><span style="color:#969396">Apellidos </span> <br></div>
-                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Nombres" onclick="updateValue(this)" id="nombres"><span style="color:#969396">Nombres </span> <br> </div>
-                                                <div class="col-2 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Nro. Documento" onclick="updateValue(this)" id="nroDocumento"><span style="color:#969396">Nro. Documento </span> <br> </div>
+                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Apellidos" onclick="updateValue(this)" id="apellido"> <span style="color:#969396">Apellidos <span class="required">*</span></span> <br></div>
+                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Nombres" onclick="updateValue(this)" id="nombres"><span style="color:#969396">Nombres <span class="required">*</span></span> <br> </div>
+                                                <div class="col-2 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Nro. Documento" onclick="updateValue(this)" id="nroDocumento"><span style="color:#969396">Nro. Documento <span class="required">*</span></span> <br> </div>
                                                 <div class="bordeDiv" style="height:45px;width:14%;font-size:12px;text-align:left" attr-title="Cod. vend" onclick="updateValue(this)" id="codVendedor"><span style="color:#969396">Cod. vend</span> <br> <span style="margin-left:35%;margin-top:10%"></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
@@ -158,17 +164,17 @@
                                                 <div class="col-1 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Depto." onclick="updateValue(this)" attr-realValue="2" id="depto"><span style="color:#969396">Depto. </span> <br><span style="margin-left:35%;margin-top:10%"> </span></div>
                                             </div>
                                              <div class="row ml-2 mt-3" style="width:98%;">
-                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Pais"  onclick="updateValueSelectPais(this)" id="pais"><span style="color:#969396">Pais </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
-                                                <div class="col-3 mr-1" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"  attr-title="Localidad"  id="divLocalidad" id="localidad"><span style="color:#969396">Localidad </span> <br> </div>
+                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Pais"  onclick="updateValueSelectPais(this)" id="pais"><span style="color:#969396">Pais <span class="required">*</span> </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
+                                                <div class="col-3 mr-1" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"  attr-title="Localidad"  id="divLocalidad" id="localidad"><span style="color:#969396">Localidad <span class="required">*</span> </span> <br> </div>
                                                 <div class="bordeDiv" style="height:45px;width:14%;font-size:12px;text-align:left"  attr-title="Cod. postal" onclick="updateValue(this)" id="codPostal"><span style="color:#969396">Cod. postal</span> <br> <span style="margin-left:35%;margin-top:10%"></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
-                                                <div class="col-5 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Sucursal asignada" onclick="updateValueSelectSucursal(this)" id="sucursalAsignada"><span style="color:#969396">Sucursal asignada</span> <br></div>
+                                                <div class="col-5 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Sucursal asignada" onclick="updateValueSelectSucursal(this)" id="sucursalAsignada"><span style="color:#969396">Sucursal asignada <span class="required">*</span></span> <br></div>
                                                 <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Tarea fuente"  onclick="updateValue(this)"  id="tareaFuente"><span style="color:#969396">Tarea fuente </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
-                                                <div class="col-3 mr-1 bordeDiv" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" attr-title="Tipo de contrato"   id="tipoContrato"><span style="color:#969396" >Tipo de contrato</span> <br></div>
-                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Fecha de ingreso"  onclick="updateValueDate(this)" id="fechaIngreso"><span style="color:#969396">Fecha de ingreso </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
+                                                <div class="col-3 mr-1 bordeDiv" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" attr-title="Tipo de contrato"   id="tipoContrato"><span style="color:#969396" >Tipo de contrato <span class="required">*</span></span> <br></div>
+                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Fecha de ingreso"  onclick="updateValueDate(this)" id="fechaIngreso"><span style="color:#969396">Fecha de ingreso  <span class="required">*</span></span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
                                             </div>
 
                                             <div style="color:grey;font-family: Arial;text-align:left;margin-left:10px;margin-top:10px;">
