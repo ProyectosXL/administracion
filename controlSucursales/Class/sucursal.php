@@ -420,6 +420,21 @@ class Sucursal
         }
 
     }
+    public function controlTesoreria($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto)
+    {
+        $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CTROL_TESORERIA = 1, FECHA_CTROL_TESOR = GETDATE() WHERE N_COMP = '$nroComprobante' 
+        AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante' AND COD_CUENTA = '$codCuenta' AND MONTO = $monto AND FECHA = '$fecha'";
+ 
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+       
+            return true;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+    } 
    
     public function traerGastosTesoreria ($desde, $hasta) 
     {
@@ -491,7 +506,7 @@ class Sucursal
     public function traerDatosControlRecepcion ($desde, $hasta, $estado) 
     {   
 
-        $sql = "SELECT A.*, B.RECIBIDO 
+        $sql = "SELECT A.*, B.RECIBIDO, B.CTROL_TESORERIA
         FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
             ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL  
