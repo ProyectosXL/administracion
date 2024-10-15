@@ -491,7 +491,7 @@ class Sucursal
     public function traerDatosControlRecepcion ($desde, $hasta, $estado) 
     {   
 
-        $sql = "SELECT A.*, B.RECIBIDO 
+        $sql = "SELECT A.*, B.RECIBIDO, B.CTROL_TESORERIA 
         FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
             ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL  
