@@ -102,6 +102,7 @@
                                     <th style="text-align:center;width:20%" > CUENTA </th>
                                     <th style="text-align:center;width:10%" > MONTO </th>
                                     <th style="text-align:center;width:10%" > RECIBIDO </th>
+                                    <th style="text-align:center;width:10%" > CONTROLADO </th>
 
                                 </tr>
                             </thead>
@@ -135,7 +136,15 @@
                                                 }else{
                                                     echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarRecibido(this)'></td>";
                                                 }   
-                                            ?>                                    
+                                            ?>    
+                                              <?php 
+                                                if($gasto['CTROL_TESORERIA'] == 1){
+                                                   
+                                                    echo "<td style='text-align:center'><i class='bi bi-check-circle-fill' style='color:green;font-size:20px;' ></i></td>";
+                                                }else{
+                                                    echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarControlado(this)'></td>";
+                                                }   
+                                            ?>                                  
 
                                         </tr>
                                         

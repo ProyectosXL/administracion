@@ -40,6 +40,11 @@ switch ($accion) {
         autorizarEgreso();
         break;
     
+    
+    case 'controlTesoreria':
+        controlTesoreria($sucursal);
+        break;
+    
     default:
         # code...
         break;
@@ -128,6 +133,25 @@ function marcarRecibido ($sucursal){
 
 
     $result = $sucursal->marcarRecibido($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto);
+    
+    echo $result;
+
+}
+
+
+function controlTesoreria($sucursal){
+
+    $fecha = $_POST['fecha'];
+    $nroSucursal = $_POST['nroSucursal'];
+    $tipoComprobante = $_POST['tipoComprobante'];
+    $nroComprobante = $_POST['nroComprobante'];
+    $codCuenta = $_POST['codCuenta'];
+    $descripcionCuenta = $_POST['descripcionCuenta'];
+    $monto = $_POST['monto'];
+
+
+
+    $result = $sucursal->controlTesoreria($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto);
     
     echo $result;
 
