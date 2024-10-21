@@ -22,7 +22,6 @@ class Sucursal
             session_start();
         }
 
-
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
             $this->conexion = $this->cid->conectar('suc_uy');
         }else{
@@ -257,7 +256,7 @@ class Sucursal
         
         try {
             
-            $prefix = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? "" : "[LAKERBIS].locales_lakers.dbo.";
+            $prefix = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? "[LAKERBIS].SUCURSALES_URUGUAY.dbo." : "[LAKERBIS].locales_lakers.dbo.";
 
          
             $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO,b.CONTABILIZADA,b.AUTORIZADO,b.FECHA_AUTORIZADO,
@@ -279,8 +278,14 @@ class Sucursal
             }
 
             $sql = $sql."ORDER BY FECHA ASC;";
-      
-            $stmt = sqlsrv_query($this->conexion , $sql);
+
+            $conexion = $this->conexion;
+
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                $conexion = $this->cid_uy;
+            }
+
+            $stmt = sqlsrv_query($conexion , $sql);
 
             $v = [];
 
