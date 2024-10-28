@@ -24,9 +24,9 @@ class Sucursal
 
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
             $this->conexion = $this->cid->conectar('suc_uy');
+            $this->cid_locales = $this->cid->conectar('suc_uy');
         }else{
             $this->conexion = $this->cid->conectar('central');
-
         }
 
     } 
@@ -85,7 +85,7 @@ class Sucursal
         AND FECHA BETWEEN '$desde' AND '$hasta' 
         AND MEDIO_PAGO = '$medioDePago' 
         ORDER BY FECHA";
-        // AND VERIFICADO = '0' ;";
+        
 
         $stmt = sqlsrv_query($this->cid_locales, $sql);
 
