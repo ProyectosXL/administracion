@@ -84,6 +84,35 @@
             }
 
 
+     
+            .menu-container {
+            position: relative;
+            display: inline-block;
+            }
+
+     
+            .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 35px;
+            background-color: #f9f9f9;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            min-width: 160px;
+            border-radius: 5px;
+            }
+
+            .dropdown-menu a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            }
+
+            .dropdown-menu a:hover {
+            background-color: #ddd;
+            }
 
   </style>
 
@@ -91,6 +120,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <body>
+
 
             <div class="table-responsive" id="tableIndex">
                 <table class="table text-center" style="width: 70%;border: solid 1px;margin-left:20%;height:700px" cellspacing="0" data-page-length="100">
@@ -115,7 +145,16 @@
                                     <div class="col-4" style="height:500px">
                                         
                                         <div class="mt-1" style="width:100%;height:125%;border:1px solid grey; border-radius: 8px;">
-                                            <div style="height:30px;text-align:right;margin:10px" ><i class="bi bi-three-dots-vertical" style="color:black;font-size:25px"></i></div>
+                                        <div class="menu-container"  style="height:30px;text-align:right;margin:10px;margin-left:90%">
+                                            <div onclick="toggleMenu()" >
+                                                <i class="bi bi-three-dots-vertical" style="color:black;font-size:25px"></i>
+                                            </div>
+                                            
+                                   
+                                            <div class="dropdown-menu" id="dropdownMenu">
+                                                <a href="editarContraseña.php?nroLegajo=<?= $_GET['nroLegajo'] ?>" >Editar Contraseña</a>
+                                            </div>
+                                        </div>
                                             
                                             <img src="../../assets/images/pruebafoto.png" alt="" style="height: 115px; width: 100%;"> 
                                             <div style="color:#5095e3;height:10%;border-bottom:1px solid grey"><strong><?= $empleado['APELLIDO'] ?> <?= $empleado['NOMBRE'] ?></strong></div>
@@ -240,7 +279,7 @@
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.2/xlsx.full.min.js"></script>
 
-
+        
         
     </body>
 
