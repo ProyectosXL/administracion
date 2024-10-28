@@ -207,7 +207,7 @@
                                             </div>
                                             
                                             <div style="text-align:right; padding: 10px;margin-top:5%">
-                                              <a href="controlHorario.php"><button class="btn" style="background-color:#dbdbdb" >cerrar</button></a>                                              
+                                              <a href="verControlHorario.php"><button class="btn" style="background-color:#dbdbdb" >cerrar</button></a>                                              
                                           </div>
 
                                           
