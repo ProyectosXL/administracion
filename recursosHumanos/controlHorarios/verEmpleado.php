@@ -114,8 +114,8 @@
                                 <div class="row">
                                     <div class="col-4" style="height:500px">                                        
                                         <div class="mt-1" style="width:100%;height:125%;border:1px solid grey; border-radius: 8px;">
-                                        <div style="padding-top: 15px;">
-                                        <img src="../../assets/images/pruebafoto.png" alt="" style="height: 115px; width: 100%;">
+                                        <div style="margin-top: 25px;">
+                                            <img src="../../assets/images/pruebafoto.png" alt="" style="height: 115px; width: 100%;">
                                         </div> 
                                             <div style="color:#5095e3;height:10%;border-bottom:1px solid grey"><strong><?= $empleado['APELLIDO'] ?> <?= $empleado['NOMBRE'] ?></strong></div>
                                             <div class='ml-2' style="text-align:left;color:grey"><strong>Informacion</strong></div>
