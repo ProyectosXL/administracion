@@ -22,9 +22,13 @@ class Sucursal
             session_start();
         }
 
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            $this->cid_locales =  $this->cid->conectar('suc_uy');
+        }
+
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
             $this->conexion = $this->cid->conectar('suc_uy');
-            $this->cid_locales = $this->cid->conectar('suc_uy');
+         
         }else{
             $this->conexion = $this->cid->conectar('central');
         }
