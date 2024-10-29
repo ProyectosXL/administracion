@@ -166,7 +166,10 @@ class Sucursal
     {
         $importeControl = str_replace(' ', '', $importeControl);
 
-        $sql = "UPDATE ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
+
+        $tabla = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? "RO_T_VENTA_DIARIA_SUCURSALES_UY" : "RO_T_VENTA_DIARIA_SUCURSALES";
+
+        $sql = "UPDATE ".$this->cid->prefix.$tabla." SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
 
         try{
             
