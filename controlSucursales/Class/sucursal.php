@@ -37,10 +37,20 @@ class Sucursal
 
     public function traerTodosLosMediosDePago()
     {
-  
-        $sql = "SELECT * FROM RO_T_MEDIOS_DE_PAGO where ACTIVO = '1'";
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+    
+            $sql = "SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO FROM RO_T_VENTA_DIARIA_SUCURSALES_UY
+            ORDER BY MEDIO_PAGO";
+            $cid = $this->cid_locales; 
+        }else{
 
-        $stmt = sqlsrv_query($this->cid_central, $sql);
+            $sql = "SELECT * FROM RO_T_MEDIOS_DE_PAGO where ACTIVO = '1'";
+
+            $cid = $this->cid_central;
+
+        }
+
+        $stmt = sqlsrv_query($cid, $sql);
 
         try{
             
