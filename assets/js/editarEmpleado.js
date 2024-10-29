@@ -268,3 +268,19 @@ const guardaCambios = () => {
         }
     });
 }
+
+
+function toggleMenu() {
+    var menu = document.getElementById("dropdownMenu");
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  }
+
+  // Cerrar el menú si se hace clic fuera de él
+  window.onclick = function(event) {
+    if (!event.target.matches('.bi-three-dots-vertical')) {
+      var menu = document.getElementById("dropdownMenu");
+      if (menu.style.display === "block") {
+        menu.style.display = "none";
+      }
+    }
+  };
