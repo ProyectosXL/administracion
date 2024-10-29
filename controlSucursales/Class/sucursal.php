@@ -85,7 +85,9 @@ class Sucursal
     public function traerImportesTotalesPorPeriodo ($nroSucursal, $desde, $hasta, $medioDePago  )
     {
 
-        $sql = "SELECT * FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES where nro_sucursal = '$nroSucursal' 
+        $tabla = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? "RO_T_VENTA_DIARIA_SUCURSALES_UY" : "RO_T_VENTA_DIARIA_SUCURSALES";
+
+        $sql = "SELECT * FROM  ".$this->cid->prefix.$tabla." where nro_sucursal = '$nroSucursal' 
         AND FECHA BETWEEN '$desde' AND '$hasta' 
         AND MEDIO_PAGO = '$medioDePago' 
         ORDER BY FECHA";
