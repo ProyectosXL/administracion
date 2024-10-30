@@ -22,21 +22,37 @@ class Sucursal
             session_start();
         }
 
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            $this->cid_locales =  $this->cid->conectar('suc_uy');
+        }
+
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
             $this->conexion = $this->cid->conectar('suc_uy');
+         
         }else{
             $this->conexion = $this->cid->conectar('central');
-
         }
 
     } 
 
     public function traerTodosLosMediosDePago()
     {
-  
-        $sql = "SELECT * FROM RO_T_MEDIOS_DE_PAGO where ACTIVO = '1'";
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+    
+            $sql = "SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO FROM RO_T_VENTA_DIARIA_SUCURSALES_UY
+            ORDER BY MEDIO_PAGO";
+            $cid = $this->cid_locales; 
+        }else{
 
-        $stmt = sqlsrv_query($this->cid_central, $sql);
+            $sql = "
+            SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES WHERE MEDIO_PAGO IS NOT NULL
+            ORDER BY MEDIO_PAGO";
+
+            $cid = $this->cid_locales;
+
+        }
+        
+        $stmt = sqlsrv_query($cid, $sql);
 
         try{
             
@@ -81,11 +97,13 @@ class Sucursal
     public function traerImportesTotalesPorPeriodo ($nroSucursal, $desde, $hasta, $medioDePago  )
     {
 
-        $sql = "SELECT * FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES where nro_sucursal = '$nroSucursal' 
+        $tabla = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? "RO_T_VENTA_DIARIA_SUCURSALES_UY" : "RO_T_VENTA_DIARIA_SUCURSALES";
+
+        $sql = "SELECT * FROM  ".$this->cid->prefix.$tabla." where nro_sucursal = '$nroSucursal' 
         AND FECHA BETWEEN '$desde' AND '$hasta' 
         AND MEDIO_PAGO = '$medioDePago' 
         ORDER BY FECHA";
-        // AND VERIFICADO = '0' ;";
+        
 
         $stmt = sqlsrv_query($this->cid_locales, $sql);
 
@@ -160,7 +178,10 @@ class Sucursal
     {
         $importeControl = str_replace(' ', '', $importeControl);
 
-        $sql = "UPDATE ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
+
+        $tabla = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? "RO_T_VENTA_DIARIA_SUCURSALES_UY" : "RO_T_VENTA_DIARIA_SUCURSALES";
+
+        $sql = "UPDATE ".$this->cid->prefix.$tabla." SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
 
         try{
             
