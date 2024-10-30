@@ -163,7 +163,7 @@
                                  
                             ?>
                                     <tr>
-                                        <td value="<?= $value['ID_MP'] ?>"><?= $value['MEDIO_PAGO'] ?></td>
+                                        <td value="<?= $value['MEDIO_PAGO'] ?>"><?= $value['MEDIO_PAGO'] ?></td>
                                         <td  id="sistema" attr-idSistema="<?= isset($value['ID_VENTA']) ? $value['ID_VENTA'] : 0  ?>">$<?= isset($value['IMPORTE']) ? (number_format($value['IMPORTE'], 0, ',', '.'))  : 0 ?></td>
                                         <?php 
                                             if($localVerificado == 1) {

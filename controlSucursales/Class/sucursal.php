@@ -44,12 +44,14 @@ class Sucursal
             $cid = $this->cid_locales; 
         }else{
 
-            $sql = "SELECT * FROM RO_T_MEDIOS_DE_PAGO where ACTIVO = '1'";
+            $sql = "
+            SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES WHERE MEDIO_PAGO IS NOT NULL
+            ORDER BY MEDIO_PAGO";
 
-            $cid = $this->cid_central;
+            $cid = $this->cid_locales;
 
         }
-
+        
         $stmt = sqlsrv_query($cid, $sql);
 
         try{

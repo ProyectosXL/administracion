@@ -31,7 +31,7 @@ if(isset($_GET['anio']) &&$_GET['anio'] != "" ){
 
 $dataSucursal = (isset($_GET['sucursal'])) ?  explode("-", $_GET['sucursal']) : ['2','UNICENTER'];
 
-$medioPagoSelected = (isset($_GET['medioPago'])) ? explode("-", $_GET['medioPago'])  : "MODO_QR";
+$medioPagoSelected = (isset($_GET['medioPago'])) ?  $_GET['medioPago']  : "MODO_QR";
 
 
 
@@ -50,7 +50,7 @@ $primerDia = date('Y-m-01', strtotime($periodoRerverse));
 $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
 
-$todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $primerDia, $ultimoDia,str_replace("_", " ", $medioPagoSelected[1]));
+$todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $primerDia, $ultimoDia,str_replace("_", " ", $medioPagoSelected));
 
 $verificado = true;
 
@@ -222,7 +222,7 @@ foreach ($todosLosImportes as $key => $value) {
                                             foreach ($todosLosMediosDePago as $key => $medioPago) {
                                         ?>
 
-                                                <option value="<?= $medioPago['ID_MP'] ?>-<?= $medioPago['MEDIO_PAGO'] ?>" <?= ($medioPagoSelected[0] == $medioPago['ID_MP']) ? "selected" : "" ?>><?= $medioPago['MEDIO_PAGO'] ?></option>
+                                                <option value="<?= $medioPago['MEDIO_PAGO'] ?>" <?= ($medioPagoSelected == $medioPago['MEDIO_PAGO']) ? "selected" : "" ?>><?= $medioPago['MEDIO_PAGO'] ?></option>
 
 
                                         <?php
@@ -266,7 +266,7 @@ foreach ($todosLosImportes as $key => $value) {
                                             
                             <?php 
                                 foreach ($todosLosImportes as $key => $importe) {
-                                    if(in_array($medioPagoSelected[0], ['6','9'])){
+                                    if(in_array($medioPagoSelected, ['EUROS','EFECTIVO'])){
                                         $importe['IMPORTE_$_FISICO'] = $importe['IMPORTE_$_SISTEMA'] ;
                                     }
                                     $totalEnPesos = $importe['IMPORTE_$_SISTEMA'] * $importe['COTIZACION_TC'];
