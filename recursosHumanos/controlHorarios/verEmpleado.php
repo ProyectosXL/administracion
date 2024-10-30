@@ -166,7 +166,7 @@
                                                     <div class="col-3">
                                                     <div class="form-check form-switch">
                                                             <label class="form-check-label" for="flexSwitchCheckChecked">Estado</label>
-                                                            <input class="form-check-input" type="checkbox" role="switch" onchange="cambiarEstado(this)" id="flexSwitchCheckDefault" style="margin-left: 5px;" <?= ($empleado['HABILITADO'] == 'S') ? 'checked' : ''  ?>>
+                                                            <input class="form-check-input" type="checkbox" role="switch"  id="flexSwitchCheckDefault" style="margin-left: 5px;" <?= ($empleado['HABILITADO'] == 'S') ? 'checked' : ''  ?> disabled>
                                                         </div>
                                                     </div>
                                                 </div>
