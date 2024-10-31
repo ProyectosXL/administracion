@@ -48,21 +48,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function crearFilaRemito(datos) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${datos.remito}</td>
-            <td>${datos.destino}</td>
+            <td class="text-nowrap">${datos.remito}</td>
+            <td title="${datos.destino}">${datos.destino}</td>
             <td>
                 <input type="number" 
-                       class="form-control form-control-sm input-bultos" 
+                       class="form-control form-control-sm input-bultos mt-3" 
                        value="1" 
-                       min="1" 
-                       style="width: 80px">
+                       min="1">
             </td>
-            <td>
+            <td class="text-center">
                 <button type="button" class="btn btn-danger btn-sm btn-quitar">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
         `;
+    
 
         // Evento para el input de bultos
         const inputBultos = tr.querySelector('.input-bultos');
@@ -71,13 +71,22 @@ document.addEventListener('DOMContentLoaded', function() {
             actualizarTotalBultos();
         });
 
+
         // Evento para el botón de quitar
         const btnQuitar = tr.querySelector('.btn-quitar');
         btnQuitar.addEventListener('click', async function() {
-            const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este remito de la lista', 'warning');
+            const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este remito', 'warning');
             if (confirmar) {
                 tr.remove();
                 actualizarTotalBultos();
+            }
+        });
+
+        // Agregar tooltip para destinos largos en móviles
+        const tdDestino = tr.querySelector('td:nth-child(2)');
+        tdDestino.addEventListener('click', function() {
+            if (window.innerWidth <= 576) {
+                mostrarAlerta('Destino', this.textContent, 'info');
             }
         });
 

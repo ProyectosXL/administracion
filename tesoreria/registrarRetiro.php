@@ -167,6 +167,76 @@ function limpiarNombre($nombre) {
             justify-content: center;
         }
 
+        /* Estilos para la tabla de remitos */
+        .table-remitos {
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        .table-remitos th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        .table-remitos td {
+            padding: 0.4rem 0.5rem;
+            vertical-align: middle;
+        }
+
+        .table-remitos .input-bultos {
+            width: 50px !important;
+            min-width: auto;
+            padding: 0.25rem;
+            text-align: center;
+        }
+
+        .btn-quitar {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.8rem;
+        }
+
+        /* Ajustes responsivos para móviles */
+        @media (max-width: 576px) {
+            .table-remitos {
+                font-size: 0.75rem;
+            }
+
+            .table-remitos th,
+            .table-remitos td {
+                padding: 0.3rem;
+            }
+
+            .table-remitos th {
+                font-size: 0.75rem;
+            }
+
+            .table-remitos .input-bultos {
+                width: 40px !important;
+                padding: 0.2rem;
+            }
+
+            .btn-quitar {
+                padding: 0.15rem 0.3rem;
+                font-size: 0.75rem;
+            }
+
+            /* Acortar texto largo en destino */
+            .table-remitos td:nth-child(2) {
+                max-width: 100px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .total{
+                font-size: 1rem;
+            }
+        }
+
     </style>
        
 </head>
@@ -176,7 +246,7 @@ function limpiarNombre($nombre) {
         <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
             <i class="bi bi-clipboard-check alert-icon"></i>
             <div>
-                <h4 class="alert-heading mb-0">Formulario de Entrega - Sucursal <?php echo htmlspecialchars($nroSucurs); ?></h4>
+                <h4 class="alert-heading mb-0">Guia Retiros de Sucursal</h4>
             </div>
         </div>
 
@@ -302,22 +372,22 @@ function limpiarNombre($nombre) {
 
                     <!-- Tabla de remitos seleccionados -->
                     <div class="table-responsive">
-                        <table class="table table-sm" id="tablaRemitos">
+                        <table class="table table-sm table-remitos" id="tablaRemitos">
                             <thead>
                                 <tr>
                                     <th>Remito</th>
                                     <th>Destino</th>
                                     <th>Bultos</th>
-                                    <th>Acción</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="bodyRemitos">
                                 <!-- Aquí se agregarán los remitos dinámicamente -->
                             </tbody>
                             <tfoot>
-                                <tr>
-                                    <td colspan="2" class="text-end"><strong>Total Bultos:</strong></td>
-                                    <td id="totalBultos">0</td>
+                                <tr class="total">
+                                    <td colspan="2" class="text-end pe-2"><strong>Total:</strong></td>
+                                    <td id="totalBultos" class="fw-bold">0</td>
                                     <td></td>
                                 </tr>
                             </tfoot>
