@@ -433,11 +433,13 @@ const guardaCambios = () => {
      (document.querySelector("#divLocalidad") != null && document.querySelector("#divLocalidad").textContent.replace('Localidad', ' ').replace('*','').trim() == '' )
     ||(document.querySelector("#selectLocalidad") != null && document.querySelector("#selectLocalidad").textContent.replace('Localidad', ' ').replace('*','').trim() == '')){
         alert('La localidad no puede estar vacio', 'error');
-        if(document.querySelector("#selectLocalidad") != null ){
+        if(document.querySelector("#selectLocalidad") != null &&  document.querySelector("#selectLocalidad").querySelector("span") != null){
 
             document.querySelector("#selectLocalidad").querySelector("span").style.color = 'red';
         }else{
+            if(document.querySelector("#divLocalidad") != null && document.querySelector("#divLocalidad").querySelector("span") != null){
             document.querySelector("#divLocalidad").querySelector("span").style.color = 'red';
+            }
         }
         return 1;
     }
