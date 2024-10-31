@@ -417,21 +417,36 @@ const guardaCambios = () => {
     }
 
 
-    if(document.querySelector("#pais").textContent.replace('País', ' ').replace('*','').trim() == ''){
+    if(  document.querySelector('[attr-title="Pais"]').selectedIndex  == -1 || document.querySelector("#pais").textContent.replace('Pais', ' ').replace('*','').trim() == ''){
         alert('El pais no puede estar vacio', 'error');
-        document.querySelector("#pais").querySelector("span").style.color = 'red';
+        if(document.querySelector('[attr-title="Pais"]').selectedIndex  == -1 ){
+            document.querySelector('[attr-title="Pais"]').style.color = 'red';
+        }else{
+
+            document.querySelector("#pais").querySelector("span").style.color = 'red';
+        }
         return 1;
     }
 
-    if(document.querySelector("#selectLocalidad").textContent.replace('Localidad', ' ').replace('*','').trim() == ''){
+    
+    if( (document.querySelector('#selectLocalidad') && document.querySelector('#selectLocalidad').selectedIndex == -1 ) ||
+     (document.querySelector("#divLocalidad") != null && document.querySelector("#divLocalidad").textContent.replace('Localidad', ' ').replace('*','').trim() == '' )
+    ||(document.querySelector("#selectLocalidad") != null && document.querySelector("#selectLocalidad").textContent.replace('Localidad', ' ').replace('*','').trim() == '')){
         alert('La localidad no puede estar vacio', 'error');
-        document.querySelector("#selectLocalidad").querySelector("span").style.color = 'red';
+        if(document.querySelector("#selectLocalidad") != null ){
+
+            document.querySelector("#selectLocalidad").querySelector("span").style.color = 'red';
+        }else{
+            document.querySelector("#divLocalidad").querySelector("span").style.color = 'red';
+        }
         return 1;
     }
 
-    if(document.querySelector("#sucursalAsignada").textContent.replace('Sucursal asignada', ' ').replace('*','').trim() == ''){
+    if(document.querySelector('[attr-title="Sucursal asignada"]').selectedIndex  == -1 || document.querySelector("#sucursalAsignada").textContent.replace('Sucursal asignada', ' ').replace('*','').trim() == ''){
         alert('La sucursal no puede estar vacio', 'error');
-        document.querySelector("#sucursalAsignada").querySelector("span").style.color = 'red';
+        if(document.querySelector("#sucursalAsignada")){
+            document.querySelector("#sucursalAsignada").querySelector("span").style.color = 'red';
+        }
         return 1;
     }
 
