@@ -403,3 +403,26 @@ $("#btnExport").click(function() {
 });
 
 document.ready = calcularTotales ();
+
+
+const cambiarEntorno = (t) =>{
+
+    let entorno = 0;
+  
+    if(t.getAttribute("data-off") == "ARG" ){
+      entorno = 0;
+    }else{
+      entorno = 1;
+    }
+  
+  
+    $.ajax({
+      url: "Controller/cambiarEntornoTasky.php",
+      method: "POST",
+      data : {entorno: entorno},
+      success: function (data) {
+        window.location.href = "controlMasivoCaja.php";
+      }
+    });
+  
+}
