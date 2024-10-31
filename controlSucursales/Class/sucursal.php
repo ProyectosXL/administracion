@@ -44,8 +44,8 @@ class Sucursal
             $cid = $this->cid_locales; 
         }else{
 
-            $sql = "
-            SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES WHERE MEDIO_PAGO IS NOT NULL
+            $sql = "RO_T_VENTA_DIARIA_SUCURSALES 
+            SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO FROM  ".$this->cid->prefix."WHERE MEDIO_PAGO IS NOT NULL
             ORDER BY MEDIO_PAGO";
 
             $cid = $this->cid_locales;
