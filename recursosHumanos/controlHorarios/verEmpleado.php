@@ -164,7 +164,10 @@
                                                 <div class="row">
                                                     <div class="col-9">Datos Personales</div>
                                                     <div class="col-3">
-                                                        
+                                                    <div class="form-check form-switch">
+                                                            <label class="form-check-label" for="flexSwitchCheckChecked">Estado</label>
+                                                            <input class="form-check-input" type="checkbox" role="switch"  id="flexSwitchCheckDefault" style="margin-left: 5px;" <?= ($empleado['HABILITADO'] == 'S') ? 'checked' : ''  ?> disabled>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

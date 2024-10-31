@@ -309,7 +309,7 @@ function cambiarFormatoCuadricula(button) {
                         <div class="row ml-2" style="width:100%">
                             <div class="col" style="text-align:left;color:#5095e3" id="cuadradoIdLegajo"><strong>${td['NRO_LEGAJO']}</strong></div>
                             <div class="col"></div>
-                            <div class="col"><a href='editarEmpleado.php?nroLegajo=${td['NRO_LEGAJO']}' style="color:black"><i class="bi bi-three-dots"></i></a></div>
+                            <div class="col"><a href='verEmpleado.php?nroLegajo=${td['NRO_LEGAJO']}' style="color:black"><i class="bi bi-three-dots"></i></a></div>
                         </div>
                         <div class="row ml-2">
                             <div>
