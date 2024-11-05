@@ -37,37 +37,41 @@ class Sucursal
 
     public function traerTodosLosMediosDePago()
     {
-        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
-    
-            $sql = "SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO FROM RO_T_VENTA_DIARIA_SUCURSALES_UY
-            ORDER BY MEDIO_PAGO";
-            $cid = $this->cid_locales; 
-        }else{
-
-            $sql = "RO_T_VENTA_DIARIA_SUCURSALES 
-            SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO FROM  ".$this->cid->prefix."WHERE MEDIO_PAGO IS NOT NULL
-            ORDER BY MEDIO_PAGO";
-
-            $cid = $this->cid_locales;
-
-        }
-        
-        $stmt = sqlsrv_query($cid, $sql);
-
-        try{
+        try {
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') {
+                $sql = "SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO 
+                        FROM RO_T_VENTA_DIARIA_SUCURSALES_UY
+                        ORDER BY MEDIO_PAGO";
+                $cid = $this->cid_locales;
+            } else {
+                $sql = "SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO 
+                        FROM ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES 
+                        WHERE MEDIO_PAGO IS NOT NULL
+                        ORDER BY MEDIO_PAGO";
+                $cid = $this->cid_locales;
+            }
             
+            // Ejecutar la consulta y verificar errores
+            $stmt = sqlsrv_query($cid, $sql);
+            
+            if ($stmt === false) {
+                // Obtener información del error
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta SQL: " . print_r($errors, true));
+            }
+
             $rows = array();
-    
-            while ($v = sqlsrv_fetch_array($stmt)) {
+            while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $rows[] = $v;
             }
-    
-            return $rows;
-        
-        } catch (\Throwable $th){
-            print_r($th);
-        }
 
+            return $rows;
+            
+        } catch (Exception $e) {
+            // Manejar el error de forma más apropiada según tus necesidades
+            error_log($e->getMessage());
+            throw $e; // O manejar el error de otra forma
+        }
     }
 
     public function traerImportesTotales($nroSucursal, $fecha)
@@ -134,9 +138,7 @@ class Sucursal
 
         }else{
 
-            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1
-                    UNION ALL
-                SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE NRO_SUCURSAL = '16'";
+            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1";
     
             
         }

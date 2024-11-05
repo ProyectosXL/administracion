@@ -90,6 +90,9 @@ foreach ($todosLosImportes as $key => $value) {
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- Select2 CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.0.0/dist/select2-bootstrap4.min.css" rel="stylesheet">
         
         </link>
         <style>
@@ -128,6 +131,34 @@ foreach ($todosLosImportes as $key => $value) {
                 background-repeat: no-repeat;
                 height: 60px;
                 width: 60px;
+            }
+            .select2-container {
+                width: 100% !important;
+                min-width: 200px;
+            }
+
+            /* Estilo para hacer el dropdown responsive */
+            .select2-dropdown {
+                max-width: 100%;
+            }
+
+            @media (max-width: 768px) {
+                .form-inline {
+                    flex-wrap: wrap;
+                }
+                
+                .form-inline > div {
+                    width: 100%;
+                    margin: 5px 0;
+                }
+                
+                .select2-container {
+                    width: 100% !important;
+                }
+                
+                #sucursal {
+                    width: 100% !important;
+                }
             }
         </style>
 
@@ -233,10 +264,10 @@ foreach ($todosLosImportes as $key => $value) {
                                     </div>
 
                                     <button class="btn btn-primary btn-submit ml-2" onclick= "">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                    <div style="margin-left:2rem;">
-                                        <button class="btn btn-primary btn-secondary" type="button" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
+                                    <div>
+                                        <button class="btn btn-primary btn-secondary ml-1" type="button" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
                                         <button class="btn btn-primary btn-primary ml-2" type="button" id="controlar" <?= ($verificado == true) ? "hidden" : "" ?>>Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
-                                        <button name="btnExport" type="button" class="btn btn-success  ml-2" id="btnExport" style="margin-right:200px" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
+                                        <button name="btnExport" type="button" class="btn btn-success ml-1" id="btnExport" style="margin-right:2rem" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
                                         <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
                                             
                                     </div>
@@ -324,6 +355,8 @@ foreach ($todosLosImportes as $key => $value) {
         </div>
         <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+        <!-- Select2 JS -->
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
