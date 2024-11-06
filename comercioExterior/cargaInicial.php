@@ -110,19 +110,7 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                     </div>    
                                 </div>
                             </div>
-                            <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 js-datepicker" type="text" placeholder="FECHA DE EMBARQUE" id="fechaEmbarque">
-                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar"></i>
-                                    </div>                                
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 js-datepicker3" type="text" placeholder="FECHA ARRIBO" id="fechaArribo">
-                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar3"></i>
-                                    </div>
-                                </div>
+                            <div class="row row-space">                                
                             </div>
                             
                             <div class="row row-space">
@@ -138,36 +126,35 @@ $todosLosProveedores = json_decode($todosLosProveedores);
                                 </div>
                             </div>
                             <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 js-datepicker2" type="text" placeholder="FECHA FACTURA" id="fechaFactura">
-                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar2"></i>
-                                    </div>
-                                </div>
+                                
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <input class="input--style-1 mayusc" type="text" placeholder="FACTURA PROVEEDOR" id="facturaProveedor">
                                     </div>    
                                 </div>
-                            </div>
-                            <div class="row row-space">
+
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <input class="input--style-1 mayusc" type="text" value="CHINA" placeholder="ORIGEN" id="origen">
                                     </div>    
                                 </div>
+                            </div>
+                            <div class="row row-space">
+                                
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <input class="input--style-1 decimales currencyInput" onkeyup="calcular()" type="text" placeholder="VALOR F.O.B. U$S" id="valorFobDolar">
                                     </div>    
                                 </div>
-                            </div>
-                            <div class="row row-space">
+
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <input class="input--style-1 decimales currencyInput" onkeyup="calcular()" type="text" placeholder="TIPO DE CAMBIO DESPACHO" id="tipoCambio">
                                     </div>    
                                 </div>
+                            </div>
+                            <div class="row row-space">
+                              
                                 <div class="col-md-5">
                                     <div class="input-group">
                                         <input class="input--style-1 decimales" type="text" placeholder="VALOR F.O.B. $" id="valorFobPeso" readonly>
