@@ -83,6 +83,11 @@
                 white-space: nowrap;
             }
 
+            .required {
+                color: red;
+                font-weight: bold;
+            }
+
 
      
             .menu-container {
@@ -213,9 +218,9 @@
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
                                                 <div class="col-2 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;" id="nroLegajo"><span style="color:#969396">Nro. legajo</span> <br><?= $empleado['NRO_LEGAJO'] ?></div>
-                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Apellidos </span> <br> <?= $empleado['APELLIDO'] ?></div>
-                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Nombres </span> <br> <?= $empleado['NOMBRE'] ?></div>
-                                                <div class="col-2 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Nro. Documento </span> <br> <?= $empleado['NRO_DOCUMENTO'] ?></div>
+                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Apellidos <span class="required">*</span></span> <br> <?= $empleado['APELLIDO'] ?></div>
+                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Nombres <span class="required">*</span></span> <br> <?= $empleado['NOMBRE'] ?></div>
+                                                <div class="col-2 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Nro. Documento <span class="required">*</span></span> <br> <?= $empleado['NRO_DOCUMENTO'] ?></div>
                                                 <div class="inputOverflow" style="border:1px solid #dbdbdb;height:45px;width:14%;font-size:12px;text-align:left" id="codVendedor"><span style="color:#969396">Cod. vend</span> <br> <span style="margin-left:35%;margin-top:10%"><?= $empleado['COD_VENDEDOR'] ?></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
@@ -225,17 +230,17 @@
 
                                                 <div class="col-1 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValue(this)" attr-realValue="1" attr-title="Piso" id="piso"><span style="color:#969396">Piso </span> <br> <span style="margin-left:35%;margin-top:10%"> <?= $empleado['PISO'] ?></span></div>
                                                 <div class="col-1 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValue(this)" attr-realValue="2" attr-title="Depto." id="depto"><span style="color:#969396">Depto. </span> <br><span style="margin-left:35%;margin-top:10%">  <?= $empleado['DEPTO'] ?></span></div>
-                                                <div class="col-3 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValueSelectLocalidad(this)" attr-realValue="<?= $empleado['LOCALIDAD'] ?>" attr-title="Localidad" id="localidad"><span style="color:#969396">Localidad </span> <br> <?= $empleado['LOCALIDAD'] ?></div>
+                                                <div class="col-3 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValueSelectLocalidad(this)" attr-realValue="<?= $empleado['LOCALIDAD'] ?>" attr-title="Localidad" id="localidad"><span style="color:#969396">Localidad  <span class="required">*</span></span> <br> <?= $empleado['LOCALIDAD'] ?></div>
                                                 <div class="inputOverflow" style="border:1px solid #dbdbdb;height:45px;width:14%;font-size:12px;text-align:left" onclick="updateValue(this)" attr-realValue="<?= $empleado['CODIGO_POSTAL'] ?>" attr-title="Cod. postal" id="codPostal"><span style="color:#969396">Cod. postal</span> <br> <span style="margin-left:35%;margin-top:10%"><?= $empleado['CODIGO_POSTAL'] ?></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
-                                                <div class="col-5 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left"  onclick="updateValueSelectSucursal(this)" attr-realValue="<?= $nroSucursal?>" attr-title="Sucursal asignada"  id="sucursalAsignada"><span style="color:#969396">Sucursal asignada</span> <br><?= $sucursal ?></div>
+                                                <div class="col-5 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left"  onclick="updateValueSelectSucursal(this)" attr-realValue="<?= $nroSucursal?>" attr-title="Sucursal asignada"  id="sucursalAsignada"><span style="color:#969396">Sucursal asignada<span class="required">*</span></span> <br><?= $sucursal ?></div>
                                                 <div class="col-3 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValue(this)"  attr-realValue="<?= $empleado['TAREA_HABITUAL'] ?>" id="tareaFuente" attr-title="Tarea fuente"><span style="color:#969396">Tarea fuente </span> <br> <span style="margin-left:30%;margin-top:10%"><?= $empleado['TAREA_HABITUAL'] ?></span></div>
                                                 <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Pais </span> <br> <span style="margin-left:30%;margin-top:10%"  id="pais"><?= $empleado['PAIS'] ?></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
-                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" id="tipoDeContrato"><span style="color:#969396">Tipo de contrato</span> <br><?= $empleado['TIPO_CONTRATO'] ?></div>
-                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" id="fechaIngreso"><span style="color:#969396">Fecha de ingreso </span> <br> <?= $empleado['FECHA_INGRESO']->format('Y-m-d') ?><span style="margin-left:30%;margin-top:10%"></span></div>
+                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" id="tipoDeContrato"><span style="color:#969396">Tipo de contrato<span class="required">*</span></span> <br><?= $empleado['TIPO_CONTRATO'] ?></div>
+                                                <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" id="fechaIngreso"><span style="color:#969396">Fecha de ingreso <span class="required">*</span></span> <br> <?= $empleado['FECHA_INGRESO']->format('Y-m-d') ?><span style="margin-left:30%;margin-top:10%"></span></div>
                                             </div>
 
                                             <div style="color:grey;font-family: Arial;text-align:left;margin-left:10px;margin-top:10px;">

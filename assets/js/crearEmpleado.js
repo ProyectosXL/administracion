@@ -397,6 +397,67 @@ const updateValueDate = (element) => {
 
 const guardaCambios = () => {
 
+
+    if(document.querySelector("#apellido").textContent.replace('Apellidos', ' ').replace('*','').trim() == ''){
+        alert('El apellido no puede estar vacio', 'error');
+        document.querySelector("#apellido").querySelector("span").style.color = 'red';
+        return 1;
+    }
+
+    if(document.querySelector("#nombres").textContent.replace('Nombres', ' ').replace('*','').trim() == ''){
+        alert('El nombre no puede estar vacio', 'error');
+        document.querySelector("#nombres").querySelector("span").style.color = 'red';
+        return 1;
+    }
+
+    if(document.querySelector("#nroDocumento").textContent.replace('Nro. Documento', ' ').replace('*','').trim() == ''){
+        alert('El nro de documento no puede estar vacio', 'error');
+        document.querySelector("#nroDocumento").querySelector("span").style.color = 'red';
+        return 1;
+    }
+
+
+    if(  document.querySelector('[attr-title="Pais"]').selectedIndex  == -1 || document.querySelector("#pais").textContent.replace('Pais', ' ').replace('*','').trim() == ''){
+        alert('El pais no puede estar vacio', 'error');
+        if(document.querySelector('[attr-title="Pais"]').selectedIndex  == -1 ){
+            document.querySelector('[attr-title="Pais"]').style.color = 'red';
+        }else{
+
+            document.querySelector("#pais").querySelector("span").style.color = 'red';
+        }
+        return 1;
+    }
+
+    
+    if( (document.querySelector('#selectLocalidad') && document.querySelector('#selectLocalidad').selectedIndex == -1 ) ||
+     (document.querySelector("#divLocalidad") != null && document.querySelector("#divLocalidad").textContent.replace('Localidad', ' ').replace('*','').trim() == '' )
+    ||(document.querySelector("#selectLocalidad") != null && document.querySelector("#selectLocalidad").textContent.replace('Localidad', ' ').replace('*','').trim() == '')){
+        alert('La localidad no puede estar vacio', 'error');
+        if(document.querySelector("#selectLocalidad") != null &&  document.querySelector("#selectLocalidad").querySelector("span") != null){
+
+            document.querySelector("#selectLocalidad").querySelector("span").style.color = 'red';
+        }else{
+            if(document.querySelector("#divLocalidad") != null && document.querySelector("#divLocalidad").querySelector("span") != null){
+            document.querySelector("#divLocalidad").querySelector("span").style.color = 'red';
+            }
+        }
+        return 1;
+    }
+
+    if(document.querySelector('[attr-title="Sucursal asignada"]').selectedIndex  == -1 || document.querySelector("#sucursalAsignada").textContent.replace('Sucursal asignada', ' ').replace('*','').trim() == ''){
+        alert('La sucursal no puede estar vacio', 'error');
+        if(document.querySelector("#sucursalAsignada")){
+            document.querySelector("#sucursalAsignada").querySelector("span").style.color = 'red';
+        }
+        return 1;
+    }
+
+    if(document.querySelector("#fechaIngreso").textContent.replace('Fecha de ingreso', ' ').replace('*','').trim() == ''){
+        alert('La fecha de ingreso no puede estar vacio', 'error');
+        document.querySelector("#fechaIngreso").querySelector("span").style.color = 'red';
+        return 1;
+    }
+
     // let nroLegajo = document.querySelector("#nroLegajo").textContent.replace('Nro. legajo ', ' ').trim();
     let apellido = document.querySelector("#apellido").textContent.replace('Apellidos', ' ').trim();
     let nombres = document.querySelector("#nombres").textContent.replace('Nombres', ' ').trim();
@@ -418,6 +479,8 @@ const guardaCambios = () => {
     let estado = document.querySelector("#flexSwitchCheckDefault").checked; 
 
     let apellidoYNombre = apellido.toUpperCase() + ', ' + nombres.toUpperCase();
+
+
     
     if (estado) {
         estado = 'S'
