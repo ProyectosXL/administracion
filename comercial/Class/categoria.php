@@ -56,19 +56,35 @@ class Categoria
 
     }
 
-    public function insertarNuevaCategoria ($codCategoria, $descCategoria, $siglaRubro) {
-
-        $sql = "INSERT INTO SJ_CATEGORIAS (CATEGORIA, DESC_CATEGORIA, RUBRO) VALUES ('$codCategoria', '$descCategoria', '$siglaRubro')";
+    public function insertarNuevaCategoria($codCategoria, $descCategoria, $siglaRubro) {
         
-        try{
+        $checkSql = "SELECT 1 as colum FROM SJ_CATEGORIAS WHERE CATEGORIA = '$codCategoria' AND RUBRO = '$siglaRubro'";
+
+        try {
+         
+            $checkStmt = sqlsrv_query($this->cid_central, $checkSql);
             
-            $stmt = sqlsrv_query( $this->cid_central, $sql );
+            if ($checkStmt === false) {
+                throw new Exception("Error al verificar la existencia de la categoría");
+            }
+   
+            if (sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC) !== null) {
+                return false; 
+            }
+            $insertSql = "INSERT INTO SJ_CATEGORIAS (CATEGORIA, DESC_CATEGORIA, RUBRO) VALUES ($codCategoria, '$descCategoria', '$siglaRubro')";
+                            
+            $stmt = sqlsrv_query($this->cid_central, $insertSql);
+            
+            if ($stmt === false) {
+                throw new Exception("Error al insertar la categoría");
+            }
+            
             return true;
 
-        } catch (\Throwable $th){
+        } catch (\Throwable $th) {
             print_r($th);
-        }     
-
+            return false;
+        }
     }
 
     public function actualizarDescripcionCategoria ($descCategoria, $siglaRubro, $codCategoria) {

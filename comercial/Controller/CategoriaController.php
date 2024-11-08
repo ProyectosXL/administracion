@@ -29,9 +29,9 @@ function insertarNuevo () {
     $siglaRubro = $_POST['siglaRubro'];
 
 
-    $categoria->insertarNuevaCategoria($codCategoria, $descCategoria, $siglaRubro);
-
-    return true;
+    $result = $categoria->insertarNuevaCategoria($codCategoria, $descCategoria, $siglaRubro);
+    
+    echo $result;
 
 }
 
