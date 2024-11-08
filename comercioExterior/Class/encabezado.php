@@ -22,11 +22,12 @@ class Encabezado
   
         $datosDeCabezera['valorFobPeso'] = $datosDeCabezera['valorFobPeso']+0.15;
         
-        $sql = "INSERT INTO RO_T_IMPORTACIONES_ENCABEZADO(FECHA_MOV, COD_PROVEE, PROVEEDOR, CONTENEDOR, DESPACHO, MATERIAL, ORIGEN, FECHA_EMB, FACTURA, FECHA_FACT, 
-            ORDEN_COMPRA, FORMA_PAGO, NUMERO_BL, TIPO_CAMBIO, VALOR_FOB_DOLAR, VALOR_FOB_PESO, FECHA_ARR, FECHA_DESP_ADU,OCM)
-            VALUES (GETDATE(),'".$codProv."','".$datosDeCabezera['proveedor']."','".$datosDeCabezera['contenedor']."','".$datosDeCabezera['despacho']."','".$datosDeCabezera['material']."','".$datosDeCabezera['origen']."','".$datosDeCabezera['fechaEmbarque']."','".$datosDeCabezera['facturaProveedor']."','".$datosDeCabezera['fechaFactura']."',
-            '".$datosDeCabezera['ordenCompra']."','".$datosDeCabezera['formaPago']."','".$datosDeCabezera['numeroBl']."','".$datosDeCabezera['tipoCambio']."','".$datosDeCabezera['valorFobDolar']."','".(float)$datosDeCabezera['valorFobPeso']."','".$datosDeCabezera['fechaArribo']."','".$datosDeCabezera['fechaDespacho']."' , '".$datosDeCabezera['ocm']."')
-        ;";
+        $sql = "INSERT INTO RO_T_IMPORTACIONES_ENCABEZADO(FECHA_MOV, COD_PROVEE, PROVEEDOR, CONTENEDOR, DESPACHO, MATERIAL, ORIGEN, FACTURA, 
+        ORDEN_COMPRA, FORMA_PAGO, NUMERO_BL, TIPO_CAMBIO, VALOR_FOB_DOLAR, VALOR_FOB_PESO, FECHA_DESP_ADU, OCM)
+        VALUES (GETDATE(),'".$codProv."','".$datosDeCabezera['proveedor']."','".$datosDeCabezera['contenedor']."','".$datosDeCabezera['despacho']."','".$datosDeCabezera['material']."','".$datosDeCabezera['origen']."','".$datosDeCabezera['facturaProveedor']."',
+        '".$datosDeCabezera['ordenCompra']."','".$datosDeCabezera['formaPago']."','".$datosDeCabezera['numeroBl']."','".$datosDeCabezera['tipoCambio']."','".$datosDeCabezera['valorFobDolar']."','".(float)$datosDeCabezera['valorFobPeso']."','".$datosDeCabezera['fechaDespacho']."' , '".$datosDeCabezera['ocm']."');
+        ";
+
   
         
         try {
