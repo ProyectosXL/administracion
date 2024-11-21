@@ -171,5 +171,31 @@ class Sucursal {
         }
     }
 
+    public function listarEgresosEfectivo($nroSucurs) {
+        try {
+            $sql = "SELECT CAST(FECHA AS DATE) FECHA, N_COMP, CANT_MONE FROM CTA29 
+                    WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= GETDATE()-45 AND D_H = 'D'
+                    ORDER BY N_COMP DESC";
+    
+            $params = array($nroSucurs);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+            }
+    
+            $resultados = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $row['FECHA'] = $row['FECHA']->format('d/m/Y');
+                $resultados[] = $row;
+            }
+    
+            return $resultados;
+        } catch (Exception $e) {
+            error_log("Error en listarEgresos: " . $e->getMessage());
+            return [];
+        }
+    }
+
 }
 ?>

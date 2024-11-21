@@ -228,15 +228,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 await mostrarAlerta('Error', 'Debe ingresar el número de precinto cuando envía valores.');
                 return false;
             }
-        }
-        return true;
-    }
-
-    async function validarRemitos() {
-        const remitos = document.querySelectorAll('#bodyRemitos tr');
-        if (remitos.length === 0) {
-            await mostrarAlerta('Error', 'Debe agregar al menos un remito');
-            return false;
+    
+            const egresos = document.querySelectorAll('#bodyEgresos tr');
+            if (egresos.length === 0) {
+                await mostrarAlerta('Error', 'Debe agregar al menos un egreso cuando envía valores.');
+                return false;
+            }
         }
         return true;
     }
@@ -262,14 +259,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (datos.enviaValores === 'SI') {
             datos.numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
+            datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
+                comprobante: tr.cells[0].textContent,
+                fecha: tr.cells[1].textContent
+            }));
         }
-
+    
         const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
             remito: tr.cells[0].textContent,
             destino: tr.cells[1].textContent,
             bultos: tr.querySelector('.input-bultos').value
         }));
-
+    
         return {
             datos: datos,
             remitos: remitos
@@ -282,6 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('precintoContainer').style.display = 'none';
         document.getElementById('numeroPrecinto').required = false;
         document.getElementById('bodyRemitos').innerHTML = '';
+        document.getElementById('bodyEgresos').innerHTML = '';
         document.getElementById('totalBultos').textContent = '0';
         signaturePad.clear();
         numeroRegistro++;
@@ -321,4 +323,54 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('signature-pad').addEventListener('touchmove', function(e) {
         e.preventDefault();
     }, { passive: false });
+
+    // Función para crear una fila de egreso
+    function crearFilaEgreso(datos) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="text-nowrap">${datos.comprobante}</td>
+            <td>${datos.fecha}</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm btn-quitar">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+
+        // Evento para el botón de quitar
+        const btnQuitar = tr.querySelector('.btn-quitar');
+        btnQuitar.addEventListener('click', async function() {
+            const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este egreso', 'warning');
+            if (confirmar) {
+                tr.remove();
+            }
+        });
+
+        return tr;
+    }
+
+    // Evento para agregar egreso
+    document.getElementById('btnAgregarEgreso').addEventListener('click', async function() {
+        const select = document.getElementById('selectEgresos');
+        if (!select.value) {
+            await mostrarAlerta('Error', 'Por favor, seleccione un egreso');
+            return;
+        }
+
+        const datos = JSON.parse(select.value);
+        const tbody = document.getElementById('bodyEgresos');
+        
+        // Verificar si el egreso ya está agregado
+        const egresosExistentes = tbody.querySelectorAll('tr td:first-child');
+        for (let td of egresosExistentes) {
+            if (td.textContent === datos.comprobante) {
+                await mostrarAlerta('Error', 'Este egreso ya ha sido agregado');
+                return;
+            }
+        }
+
+        tbody.appendChild(crearFilaEgreso(datos));
+        select.value = ''; // Limpiar la selección
+    });
+
 });

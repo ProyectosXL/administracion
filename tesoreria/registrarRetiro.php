@@ -26,224 +26,11 @@ function limpiarNombre($nombre) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
     
-    <style>
-
-        body {
-            background-color: #f8f9fa;
-        }
-
-        .container {
-            max-width: 600px !important; /* Ancho máximo más reducido */
-            padding: 15px;
-            margin: 0 auto;
-        }
-
-        .card {
-            border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,.05);
-            background-color: white;
-            border-radius: 8px;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        #signature-pad {
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            touch-action: none;
-            width: 100%;
-            background-color: white;
-        }
-
-        .firma-container {
-            background-color: white;
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #ced4da;
-            margin-bottom: 10px;
-        }
-
-        .form-label {
-            color: #212529;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .form-control, .form-select {
-            border: 1px solid #ced4da;
-            padding: 0.375rem 0.75rem;
-            border-radius: 4px;
-            background-color: white;
-            margin-bottom: 1rem;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: #86b7fe;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-
-        .alert {
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-        }
-
-        .alert-icon {
-            font-size: 1.5rem;
-            margin-right: 10px;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-        }
-
-        .btn-lg {
-            padding: 0.75rem 1.25rem;
-        }
-
-        /* Ajustes responsivos */
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .card-body {
-                padding: 1rem;
-            }
-        }
-
-        @media (min-width: 768px) {
-            .form-control, .form-select {
-                max-width: 100%;  /* Asegura que los campos no sean demasiado anchos */
-            }
-        }
-
-        /* Estilo específico para el número de registro */
-        #numeroRegistro {
-            background-color: #f8f9fa;
-            cursor: not-allowed;
-        }
-
-        /* Estilo para los campos obligatorios */
-        .required-field::after {
-            content: '*';
-            color: red;
-            margin-left: 4px;
-        }
-
-        /* Mejoras visuales para el área de firma */
-        .signature-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        #clear {
-            margin-top: 0.5rem;
-        }
-
-        .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-        line-height: 1.5;
-        border-radius: 0.2rem;
-        }
-
-        .swal2-popup {
-            font-size: 0.875rem !important;
-        }
-
-        .btn-quitar, #btnAgregarRemito {
-            width: 32px;
-            height: 31px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Estilos para la tabla de remitos */
-        .table-remitos {
-            font-size: 0.875rem;
-            margin-bottom: 1rem;
-            width: 100%;
-        }
-
-        .table-remitos th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            padding: 0.5rem;
-            font-size: 0.8rem;
-            white-space: nowrap;
-        }
-
-        .table-remitos td {
-            padding: 0.4rem 0.5rem;
-            vertical-align: middle;
-        }
-
-        .table-remitos .input-bultos {
-            width: 50px !important;
-            min-width: auto;
-            padding: 0.25rem;
-            text-align: center;
-        }
-
-        .btn-quitar {
-            padding: 0.2rem 0.4rem;
-            font-size: 0.8rem;
-        }
-
-        /* Ajustes responsivos para móviles */
-        @media (max-width: 576px) {
-            .table-remitos {
-                font-size: 0.75rem;
-            }
-
-            .table-remitos th,
-            .table-remitos td {
-                padding: 0.3rem;
-            }
-
-            .table-remitos th {
-                font-size: 0.75rem;
-            }
-
-            .table-remitos .input-bultos {
-                width: 40px !important;
-                padding: 0.2rem;
-            }
-
-            .btn-quitar {
-                padding: 0.15rem 0.3rem;
-                font-size: 0.75rem;
-            }
-
-            /* Acortar texto largo en destino */
-            .table-remitos td:nth-child(2) {
-                max-width: 100px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .total{
-                font-size: 1rem;
-            }
-        }
-
-    </style>
-       
 </head>
 <body>
-    <div class="container">
+    <div class="container" style="max-width:600px;">
         <!-- Header con título -->
-        <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
+        <div class="alert alert-primary d-flex align-items-center mb-4" style="font-size: 22px;" role="alert">
             <i class="bi bi-clipboard-check alert-icon"></i>
             <div>
                 <h4 class="alert-heading mb-0">Guia Retiros de Sucursal</h4>
@@ -336,6 +123,53 @@ function limpiarNombre($nombre) {
                         <strong>Número de Precinto</strong>
                     </label>
                     <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto">
+                    <!-- Campo para Egresos (dentro del precintoContainer) -->
+                    <div class="mb-3 mt-2" id="egresosContainer">
+                        <label for="selectEgresos" class="form-label">
+                            <i class="bi bi-cash"></i>
+                            Seleccionar Egresos
+                        </label>
+                        <div class="d-flex gap-2 mb-2">
+                            <select class="form-select" id="selectEgresos">
+                                <option value="">Seleccione un egreso</option>
+                                <?php
+                                try {
+                                    $egresos = $data->listarEgresosEfectivo($nroSucurs);
+                                    foreach ($egresos as $egreso) {
+                                        $valor = json_encode([
+                                            'comprobante' => $egreso['N_COMP'],
+                                            'fecha' => $egreso['FECHA']
+                                        ]);
+                                        echo '<option value=\'' . htmlspecialchars($valor) . '\'>' . 
+                                            htmlspecialchars($egreso['N_COMP'] . ' (' . $egreso['FECHA'] . ')') . 
+                                            '</option>';
+                                    }
+                                } catch (Exception $e) {
+                                    error_log("Error al cargar egresos: " . $e->getMessage());
+                                }
+                                ?>
+                            </select>
+                            <button type="button" class="btn btn-primary btn-sm" id="btnAgregarEgreso">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Tabla de egresos seleccionados -->
+                        <div class="table-responsive">
+                            <table class="table table-sm table-egresos" id="tablaEgresos">
+                                <thead>
+                                    <tr>
+                                        <th>Comprobante</th>
+                                        <th>Fecha</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyEgresos">
+                                    <!-- Aquí se agregarán los egresos dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Agregar después del campo de observaciones y antes de la firma -->

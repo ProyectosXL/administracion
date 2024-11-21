@@ -117,3 +117,129 @@ body {
 #clear {
     margin-top: 0.5rem;
 }
+
+.btn-sm {
+padding: 0.25rem 0.5rem;
+font-size: 0.875rem;
+line-height: 1.5;
+border-radius: 0.2rem;
+}
+
+.swal2-popup {
+    font-size: 0.875rem !important;
+}
+
+.btn-quitar, #btnAgregarRemito {
+    width: 32px;
+    height: 31px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Estilos para la tabla de remitos */
+.table-remitos {
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.table-remitos th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.table-remitos td {
+    padding: 0.4rem 0.5rem;
+    vertical-align: middle;
+}
+
+.table-remitos .input-bultos {
+    width: 50px !important;
+    min-width: auto;
+    padding: 0.25rem;
+    text-align: center;
+}
+
+.btn-quitar {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+}
+
+/* Agregar a tu archivo CSS */
+.table-egresos {
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.table-egresos th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.table-egresos td {
+    padding: 0.4rem 0.5rem;
+    vertical-align: middle;
+}
+
+/* Ajustes responsivos para móviles */
+@media (max-width: 576px) {
+    .table-remitos {
+        font-size: 0.75rem;
+    }
+
+    .table-remitos th,
+    .table-remitos td {
+        padding: 0.3rem;
+    }
+
+    .table-remitos th {
+        font-size: 0.75rem;
+    }
+
+    .table-remitos .input-bultos {
+        width: 40px !important;
+        padding: 0.2rem;
+    }
+
+    .btn-quitar {
+        padding: 0.15rem 0.3rem;
+        font-size: 0.75rem;
+    }
+
+    /* Acortar texto largo en destino */
+    .table-remitos td:nth-child(2) {
+        margin-top: 1rem;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .total{
+        font-size: 1rem;
+    }
+
+    .table-egresos {
+        font-size: 0.75rem;
+    }
+
+    .table-egresos th,
+    .table-egresos td {
+        padding: 0.3rem;
+    }
+
+    .table-egresos th {
+        font-size: 0.75rem;
+    }
+}
+
+
