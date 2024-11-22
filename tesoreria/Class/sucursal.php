@@ -197,5 +197,50 @@ class Sucursal {
         }
     }
 
+ 
+    public function listarGuiasRetiro($nroSucurs, $fechaDesde, $fechaHasta) {
+        try {
+            $sql = "SELECT 
+                        FORMAT(FECHA_REG, 'dd/MM/yyyy HH:mm') as FECHA,
+                        NRO_REGISTRO,
+                        CASE 
+                            WHEN CHARINDEX('++', ENTREGO) > 0 
+                            THEN LEFT(ENTREGO, CHARINDEX('++', ENTREGO) - 1)
+                            ELSE ENTREGO 
+                        END as EMISOR,
+                        ESTADO
+                    FROM RO_ENC_GUIA_RETIROS_SUC
+                    WHERE NRO_SUCURS = ?
+                        AND CAST(FECHA_REG AS DATE) BETWEEN ? AND ?
+                    ORDER BY FECHA_REG DESC";
+
+            $params = array($nroSucurs, $fechaDesde, $fechaHasta);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $resultados = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                // Asegurarse de que la fecha sea una cadena
+                if ($row['FECHA'] instanceof DateTime) {
+                    $row['FECHA'] = $row['FECHA']->format('d/m/Y H:i');
+                }
+                
+                // Limpiar el emisor de espacios extras
+                $row['EMISOR'] = trim($row['EMISOR']);
+                
+                $resultados[] = $row;
+            }
+
+            return $resultados;
+
+        } catch (Exception $e) {
+            error_log("Error en listarGuiasRetiro: " . $e->getMessage());
+            throw new Exception("Error al obtener las guías: " . $e->getMessage());
+        }
+    }
+
 }
 ?>
