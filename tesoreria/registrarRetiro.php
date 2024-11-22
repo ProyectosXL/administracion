@@ -20,11 +20,26 @@ function limpiarNombre($nombre) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulario de Entrega</title>
+    <?php
+        require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+    ?>
     <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+
+    <style>
+
+        .firma-container {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            margin-bottom: 10px;
+        }
+
+    </style>
     
 </head>
 <body>
@@ -138,10 +153,11 @@ function limpiarNombre($nombre) {
                                     foreach ($egresos as $egreso) {
                                         $valor = json_encode([
                                             'comprobante' => $egreso['N_COMP'],
+                                            'tipo' => $egreso['COD_COMP'],
                                             'fecha' => $egreso['FECHA']
                                         ]);
                                         echo '<option value=\'' . htmlspecialchars($valor) . '\'>' . 
-                                            htmlspecialchars($egreso['N_COMP'] . ' (' . $egreso['FECHA'] . ')') . 
+                                            htmlspecialchars($egreso['COD_COMP'] . ' - ' . $egreso['N_COMP'] . ' (' . $egreso['FECHA'] . ')') . 
                                             '</option>';
                                     }
                                 } catch (Exception $e) {
@@ -159,6 +175,7 @@ function limpiarNombre($nombre) {
                             <table class="table table-sm table-egresos" id="tablaEgresos">
                                 <thead>
                                     <tr>
+                                        <th>Tipo</th>
                                         <th>Comprobante</th>
                                         <th>Fecha</th>
                                         <th></th>
@@ -253,11 +270,16 @@ function limpiarNombre($nombre) {
                         </button>
                     </div>
 
-                    <!-- Botón de envío -->
-                    <button type="submit" class="btn btn-primary btn-sm w-100">
-                        <i class="bi bi-save-fill me-2"></i>
-                        Registrar
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success btn-sm flex-grow-1" id="btnGuardar">
+                            <i class="bi bi-file-earmark-check me-2"></i>
+                            Guardar
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-sm flex-grow-1" id="btnRegistrar">
+                            <i class="bi bi-send-check me-2"></i>
+                            Registrar
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

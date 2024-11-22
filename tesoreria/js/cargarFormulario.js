@@ -11,9 +11,13 @@ document.addEventListener('DOMContentLoaded', function() {
             text: texto,
             icon: tipo,
             confirmButtonText: 'Aceptar',
-            confirmButtonColor: '#0d6efd'
+            confirmButtonColor: tipo === 'success' ? '#198754' : '#0d6efd',
+            customClass: {
+                popup: 'swal2-small'
+            }
         });
     }
+    
 
     async function confirmarAccion(titulo, texto, tipo = 'question') {
         const result = await Swal.fire({
@@ -24,14 +28,17 @@ document.addEventListener('DOMContentLoaded', function() {
             confirmButtonColor: '#0d6efd',
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Confirmar',
-            cancelButtonText: 'Cancelar'
+            cancelButtonText: 'Cancelar',
+            customClass: {
+                popup: 'swal2-small'
+            }
         });
         return result.isConfirmed;
     }
 
     // Función para generar el número de registro
     function generarNumeroRegistro() {
-        return 'C' + String(numeroRegistro).padStart(10, '0');
+        return 'C' + String(numeroRegistro).padStart(11, '0');
     }
 
     // Inicializar el número de registro
@@ -52,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <td title="${datos.destino}">${datos.destino}</td>
             <td>
                 <input type="number" 
-                       class="form-control form-control-sm input-bultos mt-3" 
+                       class="form-control form-control-sm input-bultos" 
                        value="1" 
                        min="1">
             </td>
@@ -260,8 +267,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (datos.enviaValores === 'SI') {
             datos.numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
             datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
-                comprobante: tr.cells[0].textContent,
-                fecha: tr.cells[1].textContent
+                tipo: tr.cells[0].textContent,
+                comprobante: tr.cells[1].textContent,
+                fecha: tr.cells[2].textContent
             }));
         }
     
@@ -293,25 +301,34 @@ document.addEventListener('DOMContentLoaded', function() {
     // Manejar el envío del formulario
     document.getElementById('entregaForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-
+    
         if (!(await validarFormulario())) {
             return;
         }
-
+    
         try {
+            const confirmar = await confirmarAccion(
+                '¿Confirmar registro?',
+                'Esta acción no se puede deshacer',
+                'question'
+            );
+    
+            if (!confirmar) return;
+    
             const datos = obtenerDatosFormulario();
-            console.log('Datos a enviar:', datos);
-
-            // Aquí iría el código para enviar los datos al servidor
-            await mostrarAlerta('¡Éxito!', 'Formulario enviado correctamente', 'success');
+            console.log('Datos a registrar:', datos);
+    
+            // Aquí iría el código para registrar los datos
+            await mostrarAlerta('¡Éxito!', 'Formulario registrado correctamente', 'success');
             reiniciarFormulario();
-
+    
         } catch (error) {
             console.error('Error:', error);
-            await mostrarAlerta('Error', 'Error al procesar el formulario: ' + error.message);
+            await mostrarAlerta('Error', 'Error al registrar el formulario: ' + error.message);
         }
     });
 
+    
     // Prevenir el zoom en dispositivos móviles
     document.addEventListener('touchstart', function(e) {
         if (e.touches.length > 1) {
@@ -328,6 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function crearFilaEgreso(datos) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <td class="text-nowrap">${datos.tipo}</td>
             <td class="text-nowrap">${datos.comprobante}</td>
             <td>${datos.fecha}</td>
             <td class="text-center">
@@ -372,5 +390,32 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.appendChild(crearFilaEgreso(datos));
         select.value = ''; // Limpiar la selección
     });
+
+    // Función para manejar el guardado 
+    async function guardarFormulario() {
+        if (!(await validarFormulario())) {
+            return false;
+        }
+    
+        try {
+            const datos = obtenerDatosFormulario();
+            console.log('Datos a guardar:', datos);
+    
+            // Aquí iría el código para guardar los datos
+            await mostrarAlerta('¡Éxito!', 'Datos guardados correctamente', 'success');
+            return true;
+        } catch (error) {
+            console.error('Error:', error);
+            await mostrarAlerta('Error', 'Error al guardar los datos: ' + error.message);
+            return false;
+        }
+    }
+
+    // Evento para el botón guardar
+    document.getElementById('btnGuardar').addEventListener('click', async function() {
+        await guardarFormulario();
+    });
+
+    
 
 });

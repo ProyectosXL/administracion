@@ -28,14 +28,6 @@ body {
     background-color: white;
 }
 
-.firma-container {
-    background-color: white;
-    padding: 15px;
-    border-radius: 4px;
-    border: 1px solid #ced4da;
-    margin-bottom: 10px;
-}
-
 .form-label {
     color: #212529;
     font-weight: 500;
@@ -188,6 +180,16 @@ border-radius: 0.2rem;
 .table-egresos td {
     padding: 0.4rem 0.5rem;
     vertical-align: middle;
+}
+
+/* Agregar a tu archivo CSS */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.btn i {
+    font-size: 1rem;
 }
 
 /* Ajustes responsivos para móviles */

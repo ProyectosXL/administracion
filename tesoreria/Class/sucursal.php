@@ -144,12 +144,12 @@ class Sucursal {
                         B.DESC_SUCURSAL DESTINO 
                     FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA09 A
                     INNER JOIN [LAKERBIS].LOCALES_LAKERS.DBO.SUCURSALES_LAKERS B 
-                        ON A.SUC_DESTIN = B.NRO_SUCURSAL
+                        ON A.SUC_DESTIN = B.NRO_SUCURSAL AND A.COD_PRO_CL = B.COD_CLIENT COLLATE Latin1_General_BIN
                     WHERE T_COMP = 'REM' 
                         AND A.NRO_SUCURS = ? 
                         AND A.FECHA_MOV >= DATEADD(day, -45, GETDATE())
-                        AND SUC_DESTIN > 1
-                    ORDER BY A.FECHA_MOV DESC";
+                        AND COD_PRO_CL LIKE 'GT%'
+                    ORDER BY A.FECHA_MOV DESC, N_COMP DESC";
     
             $params = array($nroSucurs);
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
@@ -173,8 +173,8 @@ class Sucursal {
 
     public function listarEgresosEfectivo($nroSucurs) {
         try {
-            $sql = "SELECT CAST(FECHA AS DATE) FECHA, N_COMP, CANT_MONE FROM CTA29 
-                    WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= GETDATE()-45 AND D_H = 'D'
+            $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA29 
+                    WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
                     ORDER BY N_COMP DESC";
     
             $params = array($nroSucurs);
