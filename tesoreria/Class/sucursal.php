@@ -242,5 +242,57 @@ class Sucursal {
         }
     }
 
+    public function traerDatosGuiaRetiro($id) {
+
+        try {
+            $sql = "SELECT 
+                FORMAT(FECHA_REG, 'dd/MM/yyyy HH:mm') as FECHA,
+                NRO_REGISTRO,
+                ENTREGO,
+                RECIBIO,
+                ENVIA_VALORES,
+                OBSERVACIONES,
+                FIRMA
+            FROM RO_ENC_GUIA_RETIROS_SUC
+            WHERE NRO_REGISTRO = ?";
+
+            $params = array($id);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $resultados = [];
+
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $resultados[] = $row;
+            }
+
+            return $resultados;
+
+        } catch (Exception $e) {
+            error_log("Error en listarGuiasRetiro: " . $e->getMessage());
+            throw new Exception("Error al obtener las guías: " . $e->getMessage());
+        }
+    }
+    public function actualizarGuiaRetiro($id, $entrego, $recibio, $enviaValores, $observaciones, $firma) {
+        try {
+            $sql = "UPDATE RO_ENC_GUIA_RETIROS_SUC 
+                    SET ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?) 
+                    WHERE NRO_REGISTRO = ?";
+                    
+            $params = [$entrego, $recibio, $enviaValores, $observaciones, $firma, $id];
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+    
+            if ($stmt === false) {
+                throw new Exception(print_r(sqlsrv_errors(), true));
+            }
+        } catch (Exception $e) {
+            error_log("Error al actualizar la guía: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
 }
 ?>

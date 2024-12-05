@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Inicializar el número de registro
-   document.getElementById('numeroRegistro').value = generarNumeroRegistro();
+   //document.getElementById('numeroRegistro').value = generarNumeroRegistro();
 
     // Función para actualizar el total de bultos
     function actualizarTotalBultos() {
