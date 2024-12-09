@@ -330,6 +330,7 @@ const registrar = async () => {
 
 
 
+    
 const muestra = () => {
     let entrego = document.querySelector("#entrego").value;
     let recibio = document.querySelector("#recibio").value;
