@@ -6,7 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($inputData['firma'])) {
         // Directorio donde se guardará la firma
         $root = $_SERVER["DOCUMENT_ROOT"];
-        $targetDir = '../assets/uploads/';
+        $targetDir = $_SERVER['DOCUMENT_ROOT'].'/administracion/tesoreria/assets/uploads/';
 
         // Crear el directorio si no existe
         if (!file_exists($targetDir)) {

@@ -222,37 +222,91 @@ document.getElementById('clear').addEventListener('click', function () {
 
 
 
-    // Manejar el envío del formulario
-    const registrar = async () => {
-
-        if (!(await validarFormulario())) {
-            return;
-        }
+// Manejar el envío del formulario
+const registrar = async () => {
     
-        try {
-            const confirmar = await confirmarAccion(
-                '¿Confirmar registro?',
-                'Esta acción no se puede deshacer',
-                'question'
-            );
-    
-            if (!confirmar) return;
-    
-            const datos = obtenerDatosFormulario();
 
-            let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
+    const datos = obtenerDatosFormulario();
+        
+    let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
+    
+    const response = await fetch('Controller/upload_image.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            firma: firmaBase64,
+            nro_registro: datos.numeroRegistro,
+            sucursal: document.querySelector("#numSucurs").textContent}),
+        });
+        
+        const respuestaDatos = await response.json();
+        
+        let firma = (respuestaDatos.filePath);
 
-            const response = await fetch('Controller/upload_image.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    firma: firmaBase64,
-                    nro_registro: datos.numeroRegistro,
-                    sucursal: document.querySelector("#numSucurs").textContent}),
+    if (!(await validarFormulario())) {
+        return;
+    }
+    
+    try {
+        const confirmar = await confirmarAccion(
+            '¿Confirmar registro?',
+            'Esta acción no se puede deshacer',
+            'question'
+        );
+        
+        if (!confirmar) return;
+        
+     
+
+            $.ajax({
+                url: 'Controller/retiroController.php?accion=registrar',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    datos: datos,
+                    firma: firma
+                }
             });
-    
             // LLAMADO AJAX  
             
+            
+            // try {
+                //     const response = await fetch(`Controller/retiroController.php?accion=traerDatos&numeroRegistro=${numeroRegistro}`);
+                
+                //     if (!response.ok) {
+                //         throw new Error("Error al traer los datos del formulario.");
+                //     }
+            
+                //     const datos = await response.json();
+            
+                //     if (!datos.success) {
+                //         throw new Error(datos.message || "Error desconocido al traer los datos.");
+                //     }
+            
+                    
+                //     document.getElementById('entrego').value = datos.data.entrego || '';
+                //     document.getElementById('recibio').value = datos.data.recibio || '';
+                //     document.getElementById('enviaValores').value = datos.data.enviaValores || '';
+                //     document.getElementById('observaciones').value = datos.data.observaciones || '';
+                //     document.getElementById('numeroRegistro').value = datos.data.numeroRegistro || '';
+            
+                    
+                //     if (datos.data.firma) {
+                //         const image = new Image();
+                //         image.onload = () => {
+                //             const ctx = document.getElementById('signature-pad').getContext('2d');
+                //             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
+                //             ctx.drawImage(image, 0, 0); 
+                //         };
+                //         image.src = datos.data.firma;
+                //     }
+            
+                //     console.log("Datos cargados exitosamente:", datos.data);
+                // } catch (error) {
+                //     console.error("Error al traer los datos del formulario:", error);
+                //     await mostrarAlerta('Error', 'No se pudieron cargar los datos del formulario: ' + error.message);
+                // }
+        
             
             
             

@@ -315,8 +315,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
             if (!confirmar) return;
     
+            // 
+            
             const datos = obtenerDatosFormulario();
-            console.log('Datos a registrar:', datos);
+            console.log('Datos a registrar:', datos); 
     
             // Aquí iría el código para registrar los datos
             await mostrarAlerta('¡Éxito!', 'Formulario registrado correctamente', 'success');
