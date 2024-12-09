@@ -378,6 +378,29 @@ class Sucursal {
         }
     }
     
+
+    function ultimoRegistro($nroSucursal) {
+
+        $sql = "SELECT MAX (NRO_REGISTRO) AS NRO_REGISTRO FROM RO_ENC_GUIA_RETIROS_SUC WHERE NRO_SUCURS = ?";
+
+        $params = array($nroSucursal);
+
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $nroRegistro = 0;
+
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $nroRegistro = $row['NRO_REGISTRO'];
+        }
+
+        return $nroRegistro;
+        
+
+    }
 }
 
 ?>

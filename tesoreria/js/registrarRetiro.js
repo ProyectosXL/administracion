@@ -1,4 +1,21 @@
 
+function generarNumeroRegistro() {
+    let codigo = document.querySelector("#anterior").textContent;
+
+    let parteNumerica = parseInt(codigo.slice(1), 10);
+
+    parteNumerica += 1;
+
+    let nuevoCodigo = "C" + String(parteNumerica).padStart(11, '0');
+
+    console.log(nuevoCodigo); 
+
+    document.getElementById('numeroRegistro').value = nuevoCodigo;
+
+}
+
+generarNumeroRegistro();
+
 const validarRemitos = () => {
     const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
         remito: tr.cells[0].textContent,
@@ -12,13 +29,6 @@ const validarRemitos = () => {
     }
     return true;
 };
-
-
-function generarNumeroRegistro() {
-    const num = 'C' + String(numeroRegistro).padStart(11, '0');
-    document.getElementById('numeroRegistro').value = num;
-}
-
 
 async function mostrarAlerta(titulo, texto, tipo = 'error') {
     return await Swal.fire({
@@ -188,11 +198,14 @@ function obtenerDatosFormulario() {
 function reiniciarFormulario() {
     document.getElementById('entregaForm').reset();
     document.getElementById('precintoContainer').style.display = 'none';
+    document.getElementById('numeroPrecinto').required = false;
     document.getElementById('bodyRemitos').innerHTML = '';
+    document.getElementById('bodyEgresos').innerHTML = '';
     document.getElementById('totalBultos').textContent = '0';
     signaturePad.clear();
+    numeroRegistro++;
+    document.getElementById('numeroRegistro').value = generarNumeroRegistro();
 }
-
 
 document.getElementById('btnAgregarRemito').addEventListener('click', function () {
     const select = document.getElementById('selectRemitos');
@@ -209,15 +222,57 @@ document.getElementById('clear').addEventListener('click', function () {
 
 
 
+    // Manejar el envío del formulario
+    const registrar = async () => {
 
-document.getElementById('entregaForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    if (!(await validarFormulario())) return;
+        if (!(await validarFormulario())) {
+            return;
+        }
+    
+        try {
+            const confirmar = await confirmarAccion(
+                '¿Confirmar registro?',
+                'Esta acción no se puede deshacer',
+                'question'
+            );
+    
+            if (!confirmar) return;
+    
+            const datos = obtenerDatosFormulario();
 
-    const datos = obtenerDatosFormulario();
-    console.log('Datos:', datos);
-    reiniciarFormulario();
-});
+            let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
+
+            const response = await fetch('Controller/upload_image.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    firma: firmaBase64,
+                    nro_registro: datos.numeroRegistro,
+                    sucursal: document.querySelector("#numSucurs").textContent}),
+            });
+    
+            // LLAMADO AJAX  
+            
+            
+            
+            
+            
+            // LLAMADO 
+
+
+
+            
+            // Aquí iría el código para registrar los datos
+            await mostrarAlerta('¡Éxito!', 'Formulario registrado correctamente', 'success');
+            reiniciarFormulario();
+    
+        } catch (error) {
+            console.error('Error:', error);
+            await mostrarAlerta('Error', 'Error al registrar el formulario: ' + error.message);
+        }
+      
+    };
+
 
 
 

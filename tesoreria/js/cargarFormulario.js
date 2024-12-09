@@ -225,8 +225,6 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         console.log("aca")
         let firma = signaturePad.toDataURL();
-        console.log(firma)
-        return 1
         if (!(await validarFormulario())) {
             return;
         }

@@ -1,6 +1,11 @@
 
 <?php
 session_start();
+require_once 'Class/sucursal.php';
+
+$sucursal = new Sucursal();
+
+$ultimoRegistro = $sucursal->ultimoRegistro($_SESSION['numsuc']);
 
 if (!isset($_SESSION['numsuc'])) {
     $_SESSION['numsuc'] = '2';
@@ -12,6 +17,7 @@ $nroSucurs = $_SESSION['numsuc'];
 function limpiarNombre($nombre) {
     return trim(str_replace(array("\r", "\n", "<br>", "<br/>", "<br />"), ' ', $nombre));
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -51,17 +57,17 @@ function limpiarNombre($nombre) {
                 <h4 class="alert-heading mb-0">Guia Retiros de Sucursal</h4>
             </div>
         </div>
-
+        <div hidden id="numSucurs"><?= $nroSucurs ?></div>
         <!-- Card principal -->
         <div class="card">
             <div class="card-body">
-                <form id="entregaForm">
                     <!-- Número de Registro -->
                     <div class="mb-3">
                         <label for="numeroRegistro" class="form-label">
                             <i class="bi bi-hash"></i>
                             Número de Registro
                         </label>
+                        <div hidden id="anterior"><?= $ultimoRegistro ?></div>
                         <input type="text" class="form-control" id="numeroRegistro" readonly>
                     </div>
 
@@ -275,12 +281,12 @@ function limpiarNombre($nombre) {
                             <i class="bi bi-file-earmark-check me-2"></i>
                             Guardar
                         </button>
-                        <button type="submit" class="btn btn-primary btn-sm flex-grow-1" id="btnRegistrar">
+                        <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btnRegistrar" onclick="registrar()">
                             <i class="bi bi-send-check me-2"></i>
                             Registrar
                         </button>
                     </div>
-                </form>
+    
             </div>
         </div>
     </div>
