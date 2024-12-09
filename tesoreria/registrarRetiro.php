@@ -137,7 +137,7 @@ function limpiarNombre($nombre) {
                         <i class="bi bi-lock-fill"></i>
                         <strong>Número de Precinto</strong>
                     </label>
-                    <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto">
+                    <input type="number" class="form-control" id="numeroPrecinto" name="numeroPrecinto">
                     <!-- Campo para Egresos (dentro del precintoContainer) -->
                     <div class="mb-3 mt-2" id="egresosContainer">
                         <label for="selectEgresos" class="form-label">
@@ -289,6 +289,7 @@ function limpiarNombre($nombre) {
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.5.3/signature_pad.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
-    <script src="js/cargarFormulario.js"></script>
+    <script src="js/registrarRetiro.js"></script>
+    <!--  <script src="js/cargarFormulario.js"></script>  -->
 
 </html>

@@ -4,19 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let numeroRegistro = 1;
     let signaturePad;
 
-    // Funciones de alerta con SweetAlert2
-    async function mostrarAlerta(titulo, texto, tipo = 'error') {
-        return await Swal.fire({
-            title: titulo,
-            text: texto,
-            icon: tipo,
-            confirmButtonText: 'Aceptar',
-            confirmButtonColor: tipo === 'success' ? '#198754' : '#0d6efd',
-            customClass: {
-                popup: 'swal2-small'
-            }
-        });
-    }
+    console.log("hola mundo")
+
+
     
 
     async function confirmarAccion(titulo, texto, tipo = 'question') {
@@ -37,12 +27,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para generar el número de registro
-    function generarNumeroRegistro() {
-        return 'C' + String(numeroRegistro).padStart(11, '0');
-    }
+    // function generarNumeroRegistro() {
+    //     return 'C' + String(numeroRegistro).padStart(11, '0');
+    // }
 
     // Inicializar el número de registro
-   document.getElementById('numeroRegistro').value = generarNumeroRegistro();
+    document.getElementById('numeroRegistro').value = generarNumeroRegistro();
 
     // Función para actualizar el total de bultos
     function actualizarTotalBultos() {
@@ -51,54 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('totalBultos').textContent = total;
     }
 
-    // Función para crear una fila de remito
-    function crearFilaRemito(datos) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="text-nowrap">${datos.remito}</td>
-            <td title="${datos.destino}">${datos.destino}</td>
-            <td>
-                <input type="number" 
-                       class="form-control form-control-sm input-bultos" 
-                       value="1" 
-                       min="1">
-            </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm btn-quitar">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
-    
 
-        // Evento para el input de bultos
-        const inputBultos = tr.querySelector('.input-bultos');
-        inputBultos.addEventListener('input', function() {
-            if (this.value < 1) this.value = 1;
-            actualizarTotalBultos();
-        });
-
-
-        // Evento para el botón de quitar
-        const btnQuitar = tr.querySelector('.btn-quitar');
-        btnQuitar.addEventListener('click', async function() {
-            const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este remito', 'warning');
-            if (confirmar) {
-                tr.remove();
-                actualizarTotalBultos();
-            }
-        });
-
-        // Agregar tooltip para destinos largos en móviles
-        const tdDestino = tr.querySelector('td:nth-child(2)');
-        tdDestino.addEventListener('click', function() {
-            if (window.innerWidth <= 576) {
-                mostrarAlerta('Destino', this.textContent, 'info');
-            }
-        });
-
-        return tr;
-    }
 
     // Configuración del pad de firma
     function initSignaturePad() {
@@ -128,54 +71,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar SignaturePad
     signaturePad = initSignaturePad();
 
-    // Evento para agregar remito
-    document.getElementById('btnAgregarRemito').addEventListener('click', async function() {
-        const select = document.getElementById('selectRemitos');
-        if (!select.value) {
-            await mostrarAlerta('Error', 'Por favor, seleccione un remito');
-            return;
-        }
 
-        const datos = JSON.parse(select.value);
-        const tbody = document.getElementById('bodyRemitos');
-        
-        const remitosExistentes = tbody.querySelectorAll('tr td:first-child');
-        for (let td of remitosExistentes) {
-            if (td.textContent === datos.remito) {
-                await mostrarAlerta('Error', 'Este remito ya ha sido agregado');
-                return;
-            }
-        }
-
-        tbody.appendChild(crearFilaRemito(datos));
-        actualizarTotalBultos();
-        select.value = '';
-    });
 
     // Manejar el redimensionamiento de la ventana
     let resizeTimeout;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-            var canvas = document.getElementById('signature-pad');
-            var ratio = Math.max(window.devicePixelRatio || 1, 1);
-            var newWidth = canvas.parentElement.offsetWidth - 30;
+    // window.addEventListener('resize', function() {
+    //     clearTimeout(resizeTimeout);
+    //     resizeTimeout = setTimeout(function() {
+    //         var canvas = document.getElementById('signature-pad');
+    //         var ratio = Math.max(window.devicePixelRatio || 1, 1);
+    //         var newWidth = canvas.parentElement.offsetWidth - 30;
+          
+    //         var signatureData = signaturePad.toData();
             
-            var signatureData = signaturePad.toData();
+    //         canvas.width = newWidth * ratio;
+    //         canvas.height = 150 * ratio;
+    //         canvas.style.width = newWidth + 'px';
+    //         canvas.style.height = '150px';
             
-            canvas.width = newWidth * ratio;
-            canvas.height = 150 * ratio;
-            canvas.style.width = newWidth + 'px';
-            canvas.style.height = '150px';
-            
-            var ctx = canvas.getContext('2d');
-            ctx.scale(ratio, ratio);
-            signaturePad.clear();
-            if (signatureData) {
-                signaturePad.fromData(signatureData);
-            }
-        }, 200);
-    });
+    //         var ctx = canvas.getContext('2d');
+    //         ctx.scale(ratio, ratio);
+    //         signaturePad.clear();
+    //         if (signatureData) {
+    //             signaturePad.fromData(signatureData);
+    //         }
+    //     }, 200);
+    // });
 
     // Manejar la visibilidad del número de precinto
     document.getElementById('enviaValores').addEventListener('change', function() {
@@ -205,6 +126,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const entrego = document.getElementById('entrego').value;
         const recibio = document.getElementById('recibio').value;
         const enviaValores = document.getElementById('enviaValores').value;
+
+        console.log(entrego, 'aca');
 
         if (!entrego || !recibio || !enviaValores) {
             await mostrarAlerta('Error', 'Por favor, complete todos los campos obligatorios.');
@@ -250,9 +173,8 @@ document.addEventListener('DOMContentLoaded', function() {
         return await validarSelects() && 
                await validarFirma() && 
                await validarPrecinto() &&
-               await validarRemitos();
+            validarRemitos();
     }
-
     // Obtener datos del formulario
     function obtenerDatosFormulario() {
         const datos = {
@@ -301,7 +223,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Manejar el envío del formulario
     document.getElementById('entregaForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-    
+        console.log("aca")
+        let firma = signaturePad.toDataURL();
+        console.log(firma)
+        return 1
         if (!(await validarFormulario())) {
             return;
         }
