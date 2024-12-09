@@ -31,6 +31,7 @@ function limpiarNombre($nombre) {
     ?>
     <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- Bootstrap Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
@@ -211,7 +212,8 @@ function limpiarNombre($nombre) {
                                     $valor = json_encode([
                                         'remito' => $remito['REMITO'],
                                         'destino' => $remito['DESTINO'],
-                                        'fecha' => $remito['FECHA']
+                                        'fecha' => $remito['FECHA'],
+                                        't_comp' => $remito['T_COMP'],
                                     ]);
                                     echo '<option value=\'' . htmlspecialchars($valor) . '\'>' . 
                                         htmlspecialchars($remito['REMITO'] . ' - ' . $remito['DESTINO'] . ' (' . $remito['FECHA'] . ')') . 

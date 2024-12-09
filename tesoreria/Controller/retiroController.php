@@ -39,57 +39,39 @@ switch ($accion) {
 function registrarRetiro() {
     $datos = $_POST['datos'] ?? null;
     $firma = $_POST['firma'] ?? null;
+    $remitos = $_POST['remitos'] ?? null;
+    $nroSucursal = $_POST['nroSucursal'] ?? null;
+    $estado = $_POST['estado'] ?? null;
+    
+    if($estado != 1 ){
 
+        if (empty($datos) || empty($firma)) {
+            echo json_encode(['success' => false, 'message' => 'Datos no proporcionados.']);
+            exit;
+        }
 
-    var_dump($datos, $firma);
-    // try {
-    //     $datos = [
-    //         'numeroRegistro' => $_POST['numeroRegistro'] ?? '',
-    //         'nroSucursal'   => $_SESSION['numsuc'] ?? '2',
-    //         'entrego'       => $_POST['entrego'] ?? '',
-    //         'recibio'       => $_POST['recibio'] ?? '',
-    //         'enviaValores'  => $_POST['enviaValores'] ?? '',
-    //         'precinto'      => $_POST['numeroPrecinto'] ?? null,
-    //         'observaciones' => $_POST['observaciones'] ?? '',
-    //         'firma'         => $_POST['firma'] ?? '',
-    //         'egresos'       => $_POST['egresos'] ?? [],
-    //         'remitos'       => $_POST['remitos'] ?? []
-    //     ];
+    }
+    $sucursal = new Sucursal();
+    
+   
+    $resultado = $sucursal->insertarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
+    
+    if ($resultado['success']) {
 
-        
-    //     if (empty($datos['numeroRegistro']) || empty($datos['entrego']) || empty($datos['recibio'])) {
-    //         throw new Exception("Datos faltantes o incorrectos.");
-    //     }
+        if(empty($remitos)){
+            echo true;
+            die();
+        }
 
-        
-    //     if (!$sucursal->insertarEncabezadoGuiaRetiro($datos)) {
-    //         throw new Exception("Error al insertar el encabezado.");
-    //     }
+        foreach ($remitos as $remito) {    
+            $sucursal->insertarEgresos($datos['numeroRegistro'], $remito['fecha'], $remito['t_comp'], $remito['remito']);
+            $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos']);
+            
+        }
 
-        
-    //     if ($datos['enviaValores'] === 'SI' && !empty($datos['egresos'])) {
-    //         if (!$sucursal->insertarEgresos($datos['numeroRegistro'], $datos['egresos'])) {
-    //             throw new Exception("Error al insertar egresos.");
-    //         }
-    //     }
+        echo true;
+    }else{
+        echo false;
+    }
 
-        
-    //     if (!empty($datos['remitos'])) {
-    //         if (!$sucursal->insertarRemitos($datos['numeroRegistro'], $datos['remitos'])) {
-    //             throw new Exception("Error al insertar remitos.");
-    //         }
-    //     }
-
-    //     echo json_encode([
-    //         'success' => true,
-    //         'message' => 'Registro exitoso'
-    //     ]);
-
-    // } catch (Exception $e) {
-    //     error_log("Error al registrar el retiro: " . $e->getMessage());
-    //     echo json_encode([
-    //         'success' => false,
-    //         'message' => "Error: " . $e->getMessage()
-    //     ]);
-    // }
 }

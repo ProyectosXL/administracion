@@ -21,8 +21,8 @@ if (isset($_POST['filtrar'])) {
 
 $data = new Sucursal();
 $guias = $data->listarGuiasRetiro($nroSucurs, $fechaDesde, $fechaHasta);
-// var_dump($guias);
-// die();
+
+
 ?>
 
 <!DOCTYPE html>

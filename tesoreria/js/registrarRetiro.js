@@ -78,6 +78,8 @@ function crearFilaRemito(datos) {
                 <i class="bi bi-trash"></i>
             </button>
         </td>
+        <td hidden>${datos.fecha}</td>
+        <td hidden>${datos.t_comp}</td>
     `;
 
 
@@ -191,9 +193,42 @@ function obtenerDatosFormulario() {
         observaciones: document.getElementById('observaciones').value,
         firma: signaturePad.toDataURL()
     };
-    return datos;
+    if (datos.enviaValores === 'SI') {
+        datos.numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
+        datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
+            tipo: tr.cells[0].textContent,
+            comprobante: tr.cells[1].textContent,
+            fecha: tr.cells[2].textContent
+        }));
+    }
+
+    const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
+        remito: tr.cells[0].textContent,
+        destino: tr.cells[1].textContent,
+        bultos: tr.querySelector('.input-bultos').value,
+        fecha : tr.cells[4].textContent,
+        t_comp : tr.cells[5].textContent
+    }));
+
+    return {
+        datos: datos,
+        remitos: remitos
+    };
 }
 
+document.getElementById('enviaValores').addEventListener('change', function() {
+    const precintoContainer = document.getElementById('precintoContainer');
+    const numeroPrecinto = document.getElementById('numeroPrecinto');
+    
+    if (this.value === 'SI') {
+        precintoContainer.style.display = 'block';
+        numeroPrecinto.required = true;
+    } else {
+        precintoContainer.style.display = 'none';
+        numeroPrecinto.required = false;
+        numeroPrecinto.value = '';
+    }
+});
 
 function reiniciarFormulario() {
     document.getElementById('entregaForm').reset();
@@ -222,20 +257,20 @@ document.getElementById('clear').addEventListener('click', function () {
 
 
 
-// Manejar el envío del formulario
 const registrar = async () => {
     
 
     const datos = obtenerDatosFormulario();
-        
+
     let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
+    let nroSucursal = document.querySelector("#numSucurs").textContent;
     
     const response = await fetch('Controller/upload_image.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             firma: firmaBase64,
-            nro_registro: datos.numeroRegistro,
+            nro_registro: datos.datos.numeroRegistro,
             sucursal: document.querySelector("#numSucurs").textContent}),
         });
         
@@ -263,62 +298,34 @@ const registrar = async () => {
                 type: 'POST',
                 dataType: 'json',
                 data: {
-                    datos: datos,
-                    firma: firma
+                    datos: datos.datos,
+                    remitos: datos.remitos,
+                    nroSucursal: nroSucursal,
+                    firma: firma,
+                    estado: 2
+                },
+                success: function (data) {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: 'Formulario registrado correctamente',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#198754',
+                        customClass: {
+                            popup: 'swal2-small'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            location.reload();
+                        }
+                    });
+    
+    
                 }
-            });
-            // LLAMADO AJAX  
+            })
             
-            
-            // try {
-                //     const response = await fetch(`Controller/retiroController.php?accion=traerDatos&numeroRegistro=${numeroRegistro}`);
-                
-                //     if (!response.ok) {
-                //         throw new Error("Error al traer los datos del formulario.");
-                //     }
-            
-                //     const datos = await response.json();
-            
-                //     if (!datos.success) {
-                //         throw new Error(datos.message || "Error desconocido al traer los datos.");
-                //     }
-            
-                    
-                //     document.getElementById('entrego').value = datos.data.entrego || '';
-                //     document.getElementById('recibio').value = datos.data.recibio || '';
-                //     document.getElementById('enviaValores').value = datos.data.enviaValores || '';
-                //     document.getElementById('observaciones').value = datos.data.observaciones || '';
-                //     document.getElementById('numeroRegistro').value = datos.data.numeroRegistro || '';
-            
-                    
-                //     if (datos.data.firma) {
-                //         const image = new Image();
-                //         image.onload = () => {
-                //             const ctx = document.getElementById('signature-pad').getContext('2d');
-                //             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); 
-                //             ctx.drawImage(image, 0, 0); 
-                //         };
-                //         image.src = datos.data.firma;
-                //     }
-            
-                //     console.log("Datos cargados exitosamente:", datos.data);
-                // } catch (error) {
-                //     console.error("Error al traer los datos del formulario:", error);
-                //     await mostrarAlerta('Error', 'No se pudieron cargar los datos del formulario: ' + error.message);
-                // }
-        
-            
-            
-            
-            
-            // LLAMADO 
-
-
-
-            
+     
             // Aquí iría el código para registrar los datos
-            await mostrarAlerta('¡Éxito!', 'Formulario registrado correctamente', 'success');
-            reiniciarFormulario();
     
         } catch (error) {
             console.error('Error:', error);
@@ -372,3 +379,110 @@ const muestra = () => {
         }
     });
 }
+
+document.getElementById('btnAgregarEgreso').addEventListener('click', async function() {
+    const select = document.getElementById('selectEgresos');
+    if (!select.value) {
+        await mostrarAlerta('Error', 'Por favor, seleccione un egreso');
+        return;
+    }
+
+    const datos = JSON.parse(select.value);
+    const tbody = document.getElementById('bodyEgresos');
+    
+    // Verificar si el egreso ya está agregado
+    const egresosExistentes = tbody.querySelectorAll('tr td:first-child');
+    for (let td of egresosExistentes) {
+        if (td.textContent === datos.comprobante) {
+            await mostrarAlerta('Error', 'Este egreso ya ha sido agregado');
+            return;
+        }
+    }
+
+    tbody.appendChild(crearFilaEgreso(datos));
+    select.value = ''; // Limpiar la selección
+});
+
+function crearFilaEgreso(datos) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td class="text-nowrap">${datos.tipo}</td>
+        <td class="text-nowrap">${datos.comprobante}</td>
+        <td>${datos.fecha}</td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm btn-quitar">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+
+    // Evento para el botón de quitar
+    const btnQuitar = tr.querySelector('.btn-quitar');
+    btnQuitar.addEventListener('click', async function() {
+        const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este egreso', 'warning');
+        if (confirmar) {
+            tr.remove();
+        }
+    });
+
+    return tr;
+}
+
+
+async function guardarFormulario() {
+
+    let nroSucursal = document.querySelector("#numSucurs").textContent;
+
+
+    if (!(await validarFormulario())) {
+        return false;
+    }
+
+    try {
+        const datos = obtenerDatosFormulario();
+        console.log('Datos a guardar:', datos);
+
+       
+        $.ajax({
+            url: 'Controller/retiroController.php?accion=registrar',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                datos: datos.datos,
+                remitos: datos.remitos,
+                nroSucursal: nroSucursal,
+                estado: 1
+            },
+            success: function (data) {
+                // await mostrarAlerta('¡Éxito!', 'Formulario registrado correctamente', 'success');
+                Swal.fire({
+                    title: '¡Éxito!',
+                    text: 'Formulario registrado correctamente',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#198754',
+                    customClass: {
+                        popup: 'swal2-small'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // location.reload();
+                    }
+                });
+
+
+            }
+        })
+        
+ 
+
+    } catch (error) {
+        console.error('Error:', error);
+        await mostrarAlerta('Error', 'Error al guardar los datos: ' + error.message);
+        return false;
+    }
+}
+
+document.getElementById('btnGuardar').addEventListener('click', async function() {
+    await guardarFormulario();
+});

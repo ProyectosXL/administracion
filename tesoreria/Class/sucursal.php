@@ -35,7 +35,7 @@ class Sucursal {
     }
 
 
-    public function insertarEncabezadoGuiaRetiro($datos) {
+    public function insertarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado) {
         try {
             $sql = "INSERT INTO RO_ENC_GUIA_RETIROS_SUC 
                     (FECHA_REG, NRO_REGISTRO, NRO_SUCURS, ENTREGO, RECIBIO, ENVIA_VALORES, PRECINTO, OBSERVACIONES, FIRMA, ESTADO) 
@@ -43,45 +43,46 @@ class Sucursal {
     
             $params = [
                 $datos['numeroRegistro'],
-                $datos['nroSucursal'],
+                $nroSucursal,
                 $datos['entrego'],
                 $datos['recibio'],
                 $datos['enviaValores'] === 'SI' ? 1 : 0,
-                $datos['precinto'] ?? null,
+                $datos['numeroPrecinto'] ?? null,
                 $datos['observaciones'],
-                $datos['firma'],
-                1 // Estado "guardada"
+                $firma,
+                $estado
             ];
     
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
             }
-            return true;
+       
+            return ['success' => true, 'data' => $datos['numeroRegistro']];
+            
         } catch (Exception $e) {
             error_log("Error en insertarEncabezadoGuiaRetiro: " . $e->getMessage());
             return false;
         }
     }
     
-    public function insertarEgresos($nroRegistro, $egresos) {
+    public function insertarEgresos($nroRegistro, $fecha, $tComp, $nComp) {
         try {
             $sql = "INSERT INTO RO_EGRESOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_COMP, T_COMP, N_COMP) 
                     VALUES (?, ?, ?, ?)";
-    
-            foreach ($egresos as $egreso) {
-                $params = [
-                    $nroRegistro,
-                    $egreso['fecha'],
-                    $egreso['tipo'],
-                    $egreso['comprobante']
-                ];
-    
-                $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-                if ($stmt === false) {
-                    throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
-                }
+
+            $params = [
+                $nroRegistro,
+                $fecha,
+                $tComp,
+                $nComp
+            ];
+
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
             }
+        
             return true;
         } catch (Exception $e) {
             error_log("Error en insertarEgresos: " . $e->getMessage());
@@ -89,25 +90,25 @@ class Sucursal {
         }
     }
     
-    public function insertarRemitos($nroRegistro, $remitos) {
+    public function insertarRemitos($nroRegistro, $fecha, $remito, $destino, $bultos) {
         try {
             $sql = "INSERT INTO RO_REMITOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_REM, N_COMP, DESTINO, BULTOS) 
                     VALUES (?, ?, ?, ?, ?)";
     
-            foreach ($remitos as $remito) {
-                $params = [
-                    $nroRegistro,
-                    $remito['fecha'],
-                    $remito['remito'],
-                    $remito['destino'],
-                    $remito['bultos']
-                ];
-    
-                $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-                if ($stmt === false) {
-                    throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
-                }
+           
+            $params = [
+                $nroRegistro,
+                $fecha,
+                $remito,
+                $destino,
+                $bultos
+            ];
+
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
             }
+            
             return true;
         } catch (Exception $e) {
             error_log("Error en insertarRemitos: " . $e->getMessage());
@@ -222,7 +223,8 @@ class Sucursal {
     public function listarRemitos($nroSucurs) {
         try {
             $sql = "SELECT 
-                        CAST(A.FECHA_MOV AS DATE) FECHA, 
+                        CAST(A.FECHA_MOV AS DATE) FECHA,
+                        T_COMP, 
                         N_COMP REMITO, 
                         B.DESC_SUCURSAL DESTINO 
                     FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA09 A

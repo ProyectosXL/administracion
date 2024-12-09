@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
+            <td hidden>${datos.fecha}</td>
         `;
     
 
