@@ -74,12 +74,10 @@ $datosGuia = $datosGuia[0];
             <i class="bi bi-pencil-square me-2"></i>
             <h4 class="mb-0">Editar Guía de Retiros</h4>
         </div>
-        
-        <form action="actualizarGuia.php" method="POST">
            
             <input type="hidden" name="id" value="<?php echo htmlspecialchars($id); ?>">
 
-           
+            <div hidden id="numSucurs"><?= $nroSucurs ?></div>
             <div class="mb-3">
                 <label for="numeroRegistro" class="form-label">
                     <i class="bi bi-hash"></i> Número de Registro
@@ -353,13 +351,13 @@ $datosGuia = $datosGuia[0];
 
             
             <div class="d-grid">
-                <button type="submit" class="btn btn-primary">
+                <button type="button" class="btn btn-primary"  onclick="registrar()">
                     <i class="bi bi-save2-fill"></i> Actualizar Registro
                 </button>
             </div>
 
             
-                </form>
+           
             </div>
 
 

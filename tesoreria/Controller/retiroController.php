@@ -75,3 +75,44 @@ function registrarRetiro() {
     }
 
 }
+
+function actualizarRetiro() {
+    $datos = $_POST['datos'] ?? null;
+    $firma = $_POST['firma'] ?? null;
+    $remitos = $_POST['remitos'] ?? null;
+    $nroSucursal = $_POST['nroSucursal'] ?? null;
+    $estado = $_POST['estado'] ?? null;
+    
+    if($estado != 1 ){
+
+        if (empty($datos) || empty($firma)) {
+            echo json_encode(['success' => false, 'message' => 'Datos no proporcionados.']);
+            exit;
+        }
+
+    }
+    $sucursal = new Sucursal();
+    
+   
+    $resultado = $sucursal->actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
+    
+    if ($resultado['success']) {
+
+        if(empty($remitos)){
+            echo true;
+            die();
+        }
+
+        foreach ($remitos as $remito) {    
+            $sucursal->insertarEgresos($datos['numeroRegistro'], $remito['fecha'], $remito['t_comp'], $remito['remito']);
+            $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos']);
+            
+        }
+
+        echo true;
+    }else{
+        echo false;
+    }
+
+
+}

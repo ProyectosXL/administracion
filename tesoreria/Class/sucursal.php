@@ -464,7 +464,32 @@ class Sucursal {
 
     }
     
-
+    public function actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado) {
+        try {
+            $sql = "UPDATE RO_ENC_GUIA_RETIROS_SUC 
+                    SET ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?), ESTADO = ? 
+                    WHERE NRO_REGISTRO = ?";
+                    
+            $params = [
+                $datos['entrego'],
+                $datos['recibio'],
+                $datos['enviaValores'] === 'SI' ? 1 : 0,
+                $datos['observaciones'],
+                $firma,
+                $estado,
+                $datos['numeroRegistro']
+                
+            ];
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+    
+            if ($stmt === false) {
+                throw new Exception(print_r(sqlsrv_errors(), true));
+            }
+        } catch (Exception $e) {
+            error_log("Error al actualizar la guía: " . $e->getMessage());
+            throw $e;
+        }
+    }
 }
 
 ?>
