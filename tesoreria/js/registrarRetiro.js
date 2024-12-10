@@ -2,16 +2,20 @@
 function generarNumeroRegistro() {
     let codigo = document.querySelector("#anterior").textContent;
 
-    let parteNumerica = parseInt(codigo.slice(1), 10);
+    if(codigo == '0'){
 
-    parteNumerica += 1;
+        let nuevoCodigo = "C00000000001";
+        console.log(nuevoCodigo); 
+        document.getElementById('numeroRegistro').value = nuevoCodigo;
+        return;
 
-    let nuevoCodigo = "C" + String(parteNumerica).padStart(11, '0');
+    }else{   
+        let numero = parseInt(codigo) + 1;
+        let nuevoCodigo = "C" + numero.toString().padStart(11, '0');
+        document.getElementById('numeroRegistro').value = nuevoCodigo;
+        return;
 
-    console.log(nuevoCodigo); 
-
-    document.getElementById('numeroRegistro').value = nuevoCodigo;
-
+    }
 }
 
 generarNumeroRegistro();
@@ -316,7 +320,7 @@ const registrar = async () => {
                         }
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            location.reload();
+                            window.location.href = 'listarRetiros.php';
                         }
                     });
     

@@ -7,6 +7,7 @@ $sucursal = new Sucursal();
 
 $ultimoRegistro = $sucursal->ultimoRegistro($_SESSION['numsuc']);
 
+
 if (!isset($_SESSION['numsuc'])) {
     $_SESSION['numsuc'] = '2';
 }

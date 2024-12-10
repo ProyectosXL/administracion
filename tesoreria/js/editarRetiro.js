@@ -1,5 +1,4 @@
 
-document.addEventListener('DOMContentLoaded', function() {
     // Variables globales
     let numeroRegistro = 1;
     let signaturePad;
@@ -69,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </td>
             <td hidden>${datos.fecha}</td>
+            <td hidden>${datos.t_comp}</td>
         `;
     
 
@@ -254,37 +254,6 @@ document.addEventListener('DOMContentLoaded', function() {
                await validarRemitos();
     }
 
-    // Obtener datos del formulario
-    function obtenerDatosFormulario() {
-        const datos = {
-            numeroRegistro: document.getElementById('numeroRegistro').value,
-            entrego: document.getElementById('entrego').value,
-            recibio: document.getElementById('recibio').value,
-            enviaValores: document.getElementById('enviaValores').value,
-            observaciones: document.getElementById('observaciones').value,
-            firma: signaturePad.toDataURL()
-        };
-
-        if (datos.enviaValores === 'SI') {
-            datos.numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
-            datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
-                tipo: tr.cells[0].textContent,
-                comprobante: tr.cells[1].textContent,
-                fecha: tr.cells[2].textContent
-            }));
-        }
-    
-        const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
-            remito: tr.cells[0].textContent,
-            destino: tr.cells[1].textContent,
-            bultos: tr.querySelector('.input-bultos').value
-        }));
-    
-        return {
-            datos: datos,
-            remitos: remitos
-        };
-    }
 
     // Reiniciar formulario
     function reiniciarFormulario() {
@@ -298,85 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
         numeroRegistro++;
         document.getElementById('numeroRegistro').value = generarNumeroRegistro();
     }
-
-    // Manejar el envío del formulario
-    const registrar = async () => {
-    
-
-        const datos = obtenerDatosFormulario();
-    
-        let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
-        let nroSucursal = document.querySelector("#numSucurs").textContent;
-        
-        const response = await fetch('Controller/upload_image.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                firma: firmaBase64,
-                nro_registro: datos.datos.numeroRegistro,
-                sucursal: document.querySelector("#numSucurs").textContent}),
-            });
-            
-            const respuestaDatos = await response.json();
-            
-            let firma = (respuestaDatos.filePath);
-    
-        if (!(await validarFormulario())) {
-            return;
-        }
-        
-        try {
-            const confirmar = await confirmarAccion(
-                '¿Confirmar registro?',
-                'Esta acción no se puede deshacer',
-                'question'
-            );
-            
-            if (!confirmar) return;
-            
-         
-    
-                $.ajax({
-                    url: 'Controller/retiroController.php?accion=registrar',
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        datos: datos.datos,
-                        remitos: datos.remitos,
-                        nroSucursal: nroSucursal,
-                        firma: firma,
-                        estado: 2
-                    },
-                    success: function (data) {
-                        Swal.fire({
-                            title: '¡Éxito!',
-                            text: 'Formulario registrado correctamente',
-                            icon: 'success',
-                            confirmButtonText: 'Aceptar',
-                            confirmButtonColor: '#198754',
-                            customClass: {
-                                popup: 'swal2-small'
-                            }
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                location.reload();
-                            }
-                        });
-        
-        
-                    }
-                })
-                
-         
-                // Aquí iría el código para registrar los datos
-        
-            } catch (error) {
-                console.error('Error:', error);
-                await mostrarAlerta('Error', 'Error al registrar el formulario: ' + error.message);
-            }
-          
-        };
-    
 
     
     // Prevenir el zoom en dispositivos móviles
@@ -461,11 +351,128 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Evento para el botón guardar
-    document.getElementById('btnGuardar').addEventListener('click', async function() {
-        await guardarFormulario();
-    });
+  
+const validarRemitos = () => {
+    const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
+        remito: tr.cells[0].textContent,
+        destino: tr.cells[1].textContent,
+        bultos: tr.querySelector('.input-bultos').value
+    }));
 
+    if (document.getElementById('enviaValores').value != 'SI' && remitos.length === 0) {
+        alert('Debe cargar al menos un remito');
+        return false;
+    }
+    return true;
+};  
+
+const registrar = async () => {
     
 
-});
+    const datos = obtenerDatosFormulario();
+
+    let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
+    let nroSucursal = document.querySelector("#numSucurs").textContent;
+    
+    const response = await fetch('Controller/upload_image.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            firma: firmaBase64,
+            nro_registro: datos.datos.numeroRegistro,
+            sucursal: document.querySelector("#numSucurs").textContent}),
+        });
+        
+        const respuestaDatos = await response.json();
+        
+        let firma = (respuestaDatos.filePath);
+
+    if (!(await validarFormulario())) {
+        return;
+    }
+    
+    try {
+        const confirmar = await confirmarAccion(
+            '¿Confirmar registro?',
+            'Esta acción no se puede deshacer',
+            'question'
+        );
+        
+        if (!confirmar) return;
+        
+     
+
+            $.ajax({
+                url: 'Controller/retiroController.php?accion=actualizar',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    datos: datos.datos,
+                    remitos: datos.remitos,
+                    nroSucursal: nroSucursal,
+                    firma: firma,
+                    estado: 2
+                },
+                success: function (data) {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: 'Formulario registrado correctamente',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#198754',
+                        customClass: {
+                            popup: 'swal2-small'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'listarRetiros.php';
+                        }
+                    });
+    
+    
+                }
+            })
+            
+     
+            // Aquí iría el código para registrar los datos
+    
+        } catch (error) {
+            console.error('Error:', error);
+            await mostrarAlerta('Error', 'Error al registrar el formulario: ' + error.message);
+        }
+      
+};
+
+
+
+function obtenerDatosFormulario() {
+    const datos = {
+        numeroRegistro: document.getElementById('numeroRegistro').value,
+        entrego: document.getElementById('entrego').value,
+        recibio: document.getElementById('recibio').value,
+        enviaValores: document.getElementById('enviaValores').value,
+        observaciones: document.getElementById('observaciones').value,
+        firma: signaturePad.toDataURL()
+    };
+    if (datos.enviaValores === 'SI') {
+        datos.numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
+        datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
+            tipo: tr.cells[0].textContent,
+            comprobante: tr.cells[1].textContent,
+            fecha: tr.cells[2].textContent
+        }));
+    }
+
+    const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
+        remito: tr.cells[0].textContent,
+        destino: tr.cells[1].textContent,
+        bultos: tr.querySelector('.input-bultos').value,
+        fecha : tr.cells[4].textContent,
+        t_comp : tr.cells[5].textContent
+    }));
+
+    return {
+        datos: datos,
+        remitos: remitos
+    };
+}

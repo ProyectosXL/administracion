@@ -82,7 +82,7 @@ $datosGuia = $datosGuia[0];
                 <label for="numeroRegistro" class="form-label">
                     <i class="bi bi-hash"></i> Número de Registro
                 </label>
-                <input type="text" class="form-control" value="<?php echo $datosGuia['NRO_REGISTRO']; ?>" readonly>
+                <input type="text" class="form-control" id="numeroRegistro" value="<?php echo $datosGuia['NRO_REGISTRO']; ?>" readonly>
             </div>
 
             
@@ -154,7 +154,7 @@ $datosGuia = $datosGuia[0];
                 <i class="bi bi-lock-fill"></i>
                 <strong>Número de Precinto</strong>
             </label>
-            <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto" value="<?php echo htmlspecialchars($datosGuia['NUMERO_PRECINTO'] ?? ''); ?>">
+            <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto" value="<?php echo htmlspecialchars($datosGuia['PRECINTO'] ?? ''); ?>">
         </div>
 
 
@@ -231,7 +231,8 @@ $datosGuia = $datosGuia[0];
                             $valor = json_encode([
                                 'remito' => $remito['REMITO'],
                                 'destino' => $remito['DESTINO'],
-                                'fecha' => $remito['FECHA']
+                                'fecha' => $remito['FECHA'],
+                                't_comp' => $remito['T_COMP'],
                             ]);
                             echo '<option value=\'' . htmlspecialchars($valor) . '\'>' . 
                                 htmlspecialchars($remito['REMITO'] . ' - ' . $remito['DESTINO'] . ' (' . $remito['FECHA'] . ')') . 
@@ -271,59 +272,6 @@ $datosGuia = $datosGuia[0];
                 </table>
             </div>
         </div>
-
-<?php if (isset($datosGuia['ENVIA_VALORES']) && $datosGuia['ENVIA_VALORES'] == '1'): ?>
-    
-    <div class="mb-3 mt-2" id="egresosContainer">
-        <label for="selectEgresos" class="form-label">
-            <i class="bi bi-cash"></i>
-            Seleccionar Egresos
-        </label>
-        <div class="d-flex gap-2 mb-2">
-            <select class="form-select" id="selectEgresos">
-                <option value="">Seleccione un egreso</option>
-                <?php
-                try {
-                    $egresos = $guiaRetiro->listarEgresosEfectivo($nroSucurs);
-                    foreach ($egresos as $egreso) {
-                        $valor = json_encode([
-                            'comprobante' => $egreso['N_COMP'],
-                            'tipo' => $egreso['COD_COMP'],
-                            'fecha' => $egreso['FECHA']
-                        ]);
-                        echo '<option value=\'' . htmlspecialchars($valor) . '\'>' . 
-                            htmlspecialchars($egreso['COD_COMP'] . ' - ' . $egreso['N_COMP'] . ' (' . $egreso['FECHA'] . ')') . 
-                            '</option>';
-                    }
-                } catch (Exception $e) {
-                    error_log("Error al cargar egresos: " . $e->getMessage());
-                }
-                ?>
-            </select>
-            <button type="button" class="btn btn-primary btn-sm" id="btnAgregarEgreso">
-                <i class="bi bi-plus-lg"></i>
-            </button>
-        </div>
-
-        
-        <div class="table-responsive">
-            <table class="table table-sm table-egresos" id="tablaEgresos">
-                <thead>
-                    <tr>
-                        <th>Tipo</th>
-                        <th>Comprobante</th>
-                        <th>Fecha</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="bodyEgresos">
-                    
-                </tbody>
-            </table>
-            </div>
-        </div>
-<?php endif; ?>
-
             
             <div class="mb-3">
                 <label for="observaciones" class="form-label">
@@ -364,7 +312,7 @@ $datosGuia = $datosGuia[0];
 </body>
 
 </html>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.5.3/signature_pad.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
     <script src="js/editarRetiro.js"></script>

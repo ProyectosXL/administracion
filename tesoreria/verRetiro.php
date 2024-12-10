@@ -19,7 +19,7 @@ $id = $_GET['id'];
 $datosGuia = $guiaRetiro->traerDatosGuiaRetiro($id);
 $datosGuia = $datosGuia[0];
 
-$remitos = $guiaRetiro->listarRemitosPorGuia($id); 
+$remitos = $guiaRetiro->listarRemitosPorGuia($id, $nroSucurs); 
 $totalBultos = 0;
 foreach ($remitos as $key => $remito) {
     $totalBultos += $remito['BULTOS'];

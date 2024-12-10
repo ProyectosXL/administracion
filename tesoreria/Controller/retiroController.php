@@ -12,6 +12,10 @@ switch ($accion) {
         registrarRetiro();
         break;
 
+    case 'actualizar':
+        actualizarRetiro();
+        break;
+
     case 'traerDatos': 
         $numeroRegistro = $_GET['numeroRegistro'] ?? '';
         if (empty($numeroRegistro)) {
@@ -65,7 +69,7 @@ function registrarRetiro() {
 
         foreach ($remitos as $remito) {    
             $sucursal->insertarEgresos($datos['numeroRegistro'], $remito['fecha'], $remito['t_comp'], $remito['remito']);
-            $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos']);
+            $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos'], $nroSucursal);
             
         }
 
@@ -95,24 +99,20 @@ function actualizarRetiro() {
     
    
     $resultado = $sucursal->actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
-    
-    if ($resultado['success']) {
 
-        if(empty($remitos)){
-            echo true;
-            die();
-        }
-
-        foreach ($remitos as $remito) {    
-            $sucursal->insertarEgresos($datos['numeroRegistro'], $remito['fecha'], $remito['t_comp'], $remito['remito']);
-            $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos']);
-            
-        }
-
+    if(empty($remitos)){
         echo true;
-    }else{
-        echo false;
+        die();
     }
+
+    foreach ($remitos as $remito) {    
+        $sucursal->insertarEgresos($datos['numeroRegistro'], $remito['fecha'], $remito['t_comp'], $remito['remito']);
+        $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos'], $nroSucursal);
+        
+    }
+
+    echo true;
+
 
 
 }

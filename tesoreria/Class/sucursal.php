@@ -68,6 +68,18 @@ class Sucursal {
     
     public function insertarEgresos($nroRegistro, $fecha, $tComp, $nComp) {
         try {
+
+
+            $sql = "DELETE FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ?";
+            $params = [$nroRegistro];
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+
+
+
             $sql = "INSERT INTO RO_EGRESOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_COMP, T_COMP, N_COMP) 
                     VALUES (?, ?, ?, ?)";
 
@@ -90,10 +102,20 @@ class Sucursal {
         }
     }
     
-    public function insertarRemitos($nroRegistro, $fecha, $remito, $destino, $bultos) {
+    public function insertarRemitos($nroRegistro, $fecha, $remito, $destino, $bultos, $nroSucurs) {
         try {
-            $sql = "INSERT INTO RO_REMITOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_REM, N_COMP, DESTINO, BULTOS) 
-                    VALUES (?, ?, ?, ?, ?)";
+
+            $sql = "DELETE FROM RO_REMITOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
+            $params = [$nroRegistro, $nroSucurs];
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            
+
+            $sql = "INSERT INTO RO_REMITOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_REM, N_COMP, DESTINO, BULTOS, NRO_SUCURS) 
+                    VALUES (?, ?, ?, ?, ?, ?)";
     
            
             $params = [
@@ -101,7 +123,8 @@ class Sucursal {
                 $fecha,
                 $remito,
                 $destino,
-                $bultos
+                $bultos,
+                $nroSucurs
             ];
 
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
@@ -390,7 +413,7 @@ class Sucursal {
 
     function ultimoRegistro($nroSucursal) {
 
-        $sql = "SELECT MAX (NRO_REGISTRO) AS NRO_REGISTRO FROM RO_ENC_GUIA_RETIROS_SUC WHERE NRO_SUCURS = ?";
+        $sql = "SELECT  CAST(SUBSTRING(NRO_REGISTRO, 2, LEN(NRO_REGISTRO)) AS int) AS NRO_REGISTRO FROM RO_ENC_GUIA_RETIROS_SUC WHERE NRO_SUCURS = ?";
 
         $params = array($nroSucursal);
 
@@ -411,7 +434,7 @@ class Sucursal {
 
     }
 
-    public function listarRemitosPorGuia($id) {
+    public function listarRemitosPorGuia($id, $nroSucurs) {
         try {
             $sql = "SELECT 
                         CAST(FECHA_REM AS DATE) FECHA, 
@@ -420,9 +443,10 @@ class Sucursal {
                         BULTOS 
                     FROM RO_REMITOS_GUIA_RETIROS_SUC 
                     WHERE NRO_REGISTRO = ? 
+                    AND NRO_SUCURS = ?
                     ORDER BY FECHA_REM DESC, N_COMP DESC";
     
-            $params = array($id);
+            $params = array($id, $nroSucurs);   
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             
             if ($stmt === false) {
