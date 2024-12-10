@@ -19,17 +19,14 @@ $id = $_GET['id'];
 $datosGuia = $guiaRetiro->traerDatosGuiaRetiro($id);
 $datosGuia = $datosGuia[0];
 
+$remitos = $guiaRetiro->listarRemitosPorGuia($id); 
+$totalBultos = 0;
+foreach ($remitos as $key => $remito) {
+    $totalBultos += $remito['BULTOS'];
+    
+}
 
-
-$remitoSeleccionado = isset($datosGuia['REMITO']) ? htmlspecialchars($datosGuia['REMITO']) : '';
-$remitos = $guiaRetiro->listarRemitos($nroSucurs);
-
-
-$totalBultos = array_sum(array_column($remitos, 'bultos')); 
-
-
-
-
+$egresos = $guiaRetiro->listarEgresosPorGuia($id);
 
 ?>
 
@@ -110,15 +107,12 @@ $totalBultos = array_sum(array_column($remitos, 'bultos'));
                         <strong>Número de Precinto</strong>
                     </label>
                     <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto"
-                        value="<?php echo htmlspecialchars($datosGuia['NUMERO_PRECINTO'] ?? ''); ?>" readonly>
+                        value="<?php echo htmlspecialchars($datosGuia['PRECINTO'] ?? ''); ?>" readonly>
                 </div>
 
 
                 <div class="mb-3 mt-2" id="egresosContainer">
-                <label for="selectEgresos" class="form-label">
-                    <i class="bi bi-cash"></i>
-                    Egresos Seleccionados
-                </label>
+                
                 <div class="table-responsive">
                     <table class="table table-sm table-egresos" id="tablaEgresos">
                         <thead>
@@ -129,46 +123,25 @@ $totalBultos = array_sum(array_column($remitos, 'bultos'));
                             </tr>
                         </thead>
                         <tbody id="bodyEgresos">
-                            <?php
-                            require_once 'Class/sucursal.php';
-                            $data = new Sucursal();
+    <?php if (!empty($egresos)): ?>
+        <?php foreach ($egresos as $egreso): ?>
+            <tr>
+                <td><?php echo htmlspecialchars($egreso['T_COMP']); ?></td>
+                <td><?php echo htmlspecialchars($egreso['N_COMP']); ?></td>
+                <td><?php echo $egreso['FECHA_COMP']->format("d/m/Y");; ?></td>
+            </tr>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <tr>
+            <td colspan="3">No hay egresos asociados.</td>
+        </tr>
+    <?php endif; ?>
+</tbody>
 
-                            if (isset($data) && !empty($datosGuia['ID'])) {
-                                $egresos = $data->listarEgresosPorGuia($datosGuia['ID']);
-                                if (!empty($egresos)) {
-                                    foreach ($egresos as $egreso) {
-                                        echo '<tr>';
-                                        echo '<td>' . htmlspecialchars($egreso['tipo']) . '</td>';
-                                        echo '<td>' . htmlspecialchars($egreso['comprobante']) . '</td>';
-                                        echo '<td>' . htmlspecialchars($egreso['fecha']) . '</td>';
-                                        echo '</tr>';
-                                    }
-                                } else {
-                                    echo '<tr><td colspan="3">No hay egresos asociados.</td></tr>';
-                                }
-                            } else {
-                                echo '<tr><td colspan="3">Error al cargar los egresos.</td></tr>';
-                            }
-                            ?>
-                        </tbody>
                         </table>
                     </div>
                 </div>
                 <?php endif; ?>
-
-
-                    <div class="mb-3">
-                    <label for="selectRemitos" class="form-label"><i class="bi bi-file-earmark-text"></i> Seleccionar Remitos</label>
-                    <select class="form-select" id="selectRemitos" disabled>
-                        <option><?php echo $remitoSeleccionado; ?></option>
-                        <?php foreach ($remitos as $remito): ?>
-                            <option value="<?php echo htmlspecialchars($remito['REMITO']); ?>">
-                                <?php echo htmlspecialchars($remito['REMITO']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    </div>
-
 
                     <div class="table-responsive">
                         <table class="table">
@@ -179,7 +152,17 @@ $totalBultos = array_sum(array_column($remitos, 'bultos'));
                                     <th>Bultos</th>
                                     <th></th>
                                 </tr>
-                            </thead>                                           
+                            </thead>
+                            <tbody>
+                                <?php foreach ($remitos as $remito){ ?>
+                                    <tr>
+                                        <td><?php echo $remito['REMITO']; ?></td>
+                                        <td><?php echo $remito['DESTINO']; ?></td>
+                                        <td><?php echo $remito['BULTOS']; ?></td>
+                                        <td></td>
+                                    </tr>
+                                <?php }; ?>
+                            </tbody>                                           
 
                     <tfoot>
                         <tr class="total">

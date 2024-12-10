@@ -337,6 +337,7 @@ class Sucursal {
                 RECIBIO,
                 ENVIA_VALORES,
                 OBSERVACIONES,
+                PRECINTO,
                 FIRMA
             FROM RO_ENC_GUIA_RETIROS_SUC
             WHERE NRO_REGISTRO = ?";
@@ -403,6 +404,61 @@ class Sucursal {
         
 
     }
+
+    public function listarRemitosPorGuia($id) {
+        try {
+            $sql = "SELECT 
+                        CAST(FECHA_REM AS DATE) FECHA, 
+                        N_COMP REMITO, 
+                        DESTINO, 
+                        BULTOS 
+                    FROM RO_REMITOS_GUIA_RETIROS_SUC 
+                    WHERE NRO_REGISTRO = ? 
+                    ORDER BY FECHA_REM DESC, N_COMP DESC";
+    
+            $params = array($id);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+            }
+    
+            $resultados = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $row['FECHA'] = $row['FECHA']->format('d/m/Y');
+                $resultados[] = $row;
+            }
+    
+            return $resultados;
+        } catch (Exception $e) {
+            error_log("Error en listarRemitosPorGuia: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function listarEgresosPorGuia($idGuia) {
+        $sql = "SELECT T_COMP, N_COMP, FECHA_COMP 
+                FROM RO_EGRESOS_GUIA_RETIROS_SUC 
+                WHERE NRO_REGISTRO = ?";
+        $params = array($idGuia);
+        
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $resultados = [];
+
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $resultados[] = $row;
+        }
+
+        return $resultados;
+
+    }
+    
+
 }
 
 ?>
