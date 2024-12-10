@@ -234,6 +234,10 @@ class Sucursal {
                         AND A.NRO_SUCURS = ? 
                         AND A.FECHA_MOV >= DATEADD(day, -45, GETDATE())
                         AND COD_PRO_CL LIKE 'GT%'
+                        AND N_COMP COLLATE Latin1_General_BIN NOT IN (
+                            SELECT N_COMP COLLATE Latin1_General_BIN 
+                            FROM RO_REMITOS_GUIA_RETIROS_SUC
+                        )
                     ORDER BY A.FECHA_MOV DESC, N_COMP DESC";
     
             $params = array($nroSucurs);
@@ -260,8 +264,9 @@ class Sucursal {
         try {
             $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA29 
                     WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
+                    AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
                     ORDER BY N_COMP DESC";
-    
+
             $params = array($nroSucurs);
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             
@@ -281,6 +286,7 @@ class Sucursal {
             return [];
         }
     }
+
 
  
     public function listarGuiasRetiro($nroSucurs, $fechaDesde, $fechaHasta) {
