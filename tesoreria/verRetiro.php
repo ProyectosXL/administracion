@@ -159,7 +159,7 @@ $totalBultos = array_sum(array_column($remitos, 'bultos'));
 
                     <div class="mb-3">
                     <label for="selectRemitos" class="form-label"><i class="bi bi-file-earmark-text"></i> Seleccionar Remitos</label>
-                    <select class="form-select" id="selectRemitos">
+                    <select class="form-select" id="selectRemitos" disabled>
                         <option><?php echo $remitoSeleccionado; ?></option>
                         <?php foreach ($remitos as $remito): ?>
                             <option value="<?php echo htmlspecialchars($remito['REMITO']); ?>">
@@ -200,11 +200,20 @@ $totalBultos = array_sum(array_column($remitos, 'bultos'));
                     </div>
 
                     <div class="mb-3">
-                        <label for="firma" class="form-label"><i class="bi bi-pen"></i> Firma</label>
-                        <div class="firma-container">
-                            <canvas id="signature-pad" readonly></canvas>
-                        </div>
-                </div>
+    <label for="firma" class="form-label"><i class="bi bi-pen"></i> Firma</label>
+    <div class="firma-container">
+        <?php if (!empty($datosGuia['FIRMA'])): ?>
+            <?php 
+                // Convertir la ruta absoluta en una ruta relativa para el navegador
+                $urlFirma = str_replace('C:/xampp/htdocs', '', $datosGuia['FIRMA']);
+            ?>
+            <img src="<?php echo htmlspecialchars($urlFirma); ?>" alt="Firma" class="img-fluid">
+        <?php else: ?>
+            <p class="text-muted">No hay firma registrada.</p>
+        <?php endif; ?>
+    </div>
+</div>
+
 
                     
                 </form>
