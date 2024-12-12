@@ -65,29 +65,36 @@ class Sucursal {
             return false;
         }
     }
-    
-    public function insertarEgresos($nroRegistro, $fecha, $tComp, $nComp) {
+
+    public function limpiarEgresos($nroRegistro, $nroSucurs){
+
         try {
-
-
-            $sql = "DELETE FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ?";
+            $sql = "DELETE FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NR_SUCURS = $nroSucurs";
             $params = [$nroRegistro];
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
             }
+            return true;
+        } catch (Exception $e) {
+            error_log("Error en limpiarEgresos: " . $e->getMessage());
+            return false;
+        }
 
+    }
 
+    public function insertarEgresos($nroRegistro, $fecha, $tComp, $nComp, $nroSucursal) {
+        try {
 
-
-            $sql = "INSERT INTO RO_EGRESOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_COMP, T_COMP, N_COMP) 
-                    VALUES (?, ?, ?, ?)";
+            $sql = "INSERT INTO RO_EGRESOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_COMP, T_COMP, N_COMP, NRO_SUCURS) 
+                    VALUES (?, ?, ?, ?, ?)";
 
             $params = [
                 $nroRegistro,
                 $fecha,
                 $tComp,
-                $nComp
+                $nComp,
+                $nroSucursal
             ];
 
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
@@ -101,19 +108,23 @@ class Sucursal {
             return false;
         }
     }
+
+    public function limpiarRemitos($nroRegistro, $nroSucurs){
+
+        $sql = "DELETE FROM RO_REMITOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NRO_SUCURS = $nroSucurs";
+        $params = [$nroRegistro];
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+        return true;
+
+
+    }
     
     public function insertarRemitos($nroRegistro, $fecha, $remito, $destino, $bultos, $nroSucurs) {
         try {
-
-            $sql = "DELETE FROM RO_REMITOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
-            $params = [$nroRegistro, $nroSucurs];
-            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-            if ($stmt === false) {
-                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
-            }
-
             
-
             $sql = "INSERT INTO RO_REMITOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_REM, N_COMP, DESTINO, BULTOS, NRO_SUCURS) 
                     VALUES (?, ?, ?, ?, ?, ?)";
     

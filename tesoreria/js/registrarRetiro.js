@@ -191,7 +191,7 @@ async function validarFormulario() {
 function obtenerDatosFormulario() {
     const datos = {
         numeroRegistro: document.getElementById('numeroRegistro').value,
-        entrego: document.getElementById('entrego').value,
+        entrego: (document.getElementById('entrego').value).split('++')[0],
         recibio: document.getElementById('recibio').value,
         enviaValores: document.getElementById('enviaValores').value,
         observaciones: document.getElementById('observaciones').value,
