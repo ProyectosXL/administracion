@@ -246,14 +246,29 @@ function reiniciarFormulario() {
     document.getElementById('numeroRegistro').value = generarNumeroRegistro();
 }
 
-document.getElementById('btnAgregarRemito').addEventListener('click', function () {
+document.getElementById('btnAgregarRemito').addEventListener('click', async function () {
     const select = document.getElementById('selectRemitos');
+    if (!select.value) {
+        await mostrarAlerta('Error', 'Por favor, seleccione un remito');
+        return;
+    }
+
     const datos = JSON.parse(select.value);
     const tbody = document.getElementById('bodyRemitos');
+
+    const remitosExistentes = tbody.querySelectorAll('tr td:nth-child(1)');
+    for (let td of remitosExistentes) {
+        if (td.textContent.trim() === datos.remito) {
+            await mostrarAlerta('Error', 'Este remito ya ha sido agregado');
+            return;
+        }
+    }
+
     tbody.appendChild(crearFilaRemito(datos));
     actualizarTotalBultos();
     select.value = '';
 });
+
 
 document.getElementById('clear').addEventListener('click', function () {
     signaturePad.clear();
@@ -395,10 +410,10 @@ document.getElementById('btnAgregarEgreso').addEventListener('click', async func
     const tbody = document.getElementById('bodyEgresos');
     
     // Verificar si el egreso ya está agregado
-    const egresosExistentes = tbody.querySelectorAll('tr td:first-child');
+    const egresosExistentes = tbody.querySelectorAll('tr td:nth-child(2)');
     for (let td of egresosExistentes) {
         if (td.textContent === datos.comprobante) {
-            await mostrarAlerta('Error', 'Este egreso ya ha sido agregado');
+            await mostrarAlerta('Error', 'Este comprobante ya ha sido agregado');
             return;
         }
     }
