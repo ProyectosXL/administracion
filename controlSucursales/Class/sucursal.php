@@ -534,11 +534,14 @@ class Sucursal
     public function traerDatosControlRecepcion ($desde, $hasta, $estado) 
     {   
 
-        $sql = "SELECT A.*, B.RECIBIDO, B.CTROL_TESORERIA
+        $sql = "SELECT A.*, CASE WHEN C.N_COMP IS NULL THEN 0 ELSE 1 END DESPACHADO, FECHA_DESP, A.N_COMP, B.RECIBIDO, B.CTROL_TESORERIA
         FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
             ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL  
             AND B.RECIBIDO LIKE '%$estado%'
+        LEFT JOIN (SELECT FECHA_REG FECHA_DESP, B.FECHA_COMP, B.T_COMP, B.N_COMP, B.NRO_SUCURS FROM RO_ENC_GUIA_RETIROS_SUC A 
+                   INNER JOIN RO_EGRESOS_GUIA_RETIROS_SUC B ON A.NRO_REGISTRO = B.NRO_REGISTRO) C 
+            ON A.N_COMP = C.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = C.T_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURS
         WHERE COD_CTA = '100100' 
             AND A.FECHA BETWEEN '$desde' AND '$hasta'";
         if($estado == "0"){
