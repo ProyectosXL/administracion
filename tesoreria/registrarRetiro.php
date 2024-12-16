@@ -1,6 +1,12 @@
 
 <?php
 session_start();
+require_once 'Class/sucursal.php';
+
+$sucursal = new Sucursal();
+
+$ultimoRegistro = $sucursal->ultimoRegistro($_SESSION['numsuc']);
+
 
 if (!isset($_SESSION['numsuc'])) {
     $_SESSION['numsuc'] = '2';
@@ -12,6 +18,7 @@ $nroSucurs = $_SESSION['numsuc'];
 function limpiarNombre($nombre) {
     return trim(str_replace(array("\r", "\n", "<br>", "<br/>", "<br />"), ' ', $nombre));
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -25,6 +32,7 @@ function limpiarNombre($nombre) {
     ?>
     <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- Bootstrap Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
@@ -51,17 +59,17 @@ function limpiarNombre($nombre) {
                 <h4 class="alert-heading mb-0">Guia Retiros de Sucursal</h4>
             </div>
         </div>
-
+        <div hidden id="numSucurs"><?= $nroSucurs ?></div>
         <!-- Card principal -->
         <div class="card">
             <div class="card-body">
-                <form id="entregaForm">
                     <!-- Número de Registro -->
                     <div class="mb-3">
                         <label for="numeroRegistro" class="form-label">
                             <i class="bi bi-hash"></i>
                             Número de Registro
                         </label>
+                        <div hidden id="anterior"><?= $ultimoRegistro ?></div>
                         <input type="text" class="form-control" id="numeroRegistro" readonly>
                     </div>
 
@@ -137,7 +145,7 @@ function limpiarNombre($nombre) {
                         <i class="bi bi-lock-fill"></i>
                         <strong>Número de Precinto</strong>
                     </label>
-                    <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto">
+                    <input type="number" class="form-control" id="numeroPrecinto" name="numeroPrecinto">
                     <!-- Campo para Egresos (dentro del precintoContainer) -->
                     <div class="mb-3 mt-2" id="egresosContainer">
                         <label for="selectEgresos" class="form-label">
@@ -205,7 +213,8 @@ function limpiarNombre($nombre) {
                                     $valor = json_encode([
                                         'remito' => $remito['REMITO'],
                                         'destino' => $remito['DESTINO'],
-                                        'fecha' => $remito['FECHA']
+                                        'fecha' => $remito['FECHA'],
+                                        't_comp' => $remito['T_COMP'],
                                     ]);
                                     echo '<option value=\'' . htmlspecialchars($valor) . '\'>' . 
                                         htmlspecialchars($remito['REMITO'] . ' - ' . $remito['DESTINO'] . ' (' . $remito['FECHA'] . ')') . 
@@ -275,20 +284,22 @@ function limpiarNombre($nombre) {
                             <i class="bi bi-file-earmark-check me-2"></i>
                             Guardar
                         </button>
-                        <button type="submit" class="btn btn-primary btn-sm flex-grow-1" id="btnRegistrar">
+                        <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btnRegistrar" onclick="registrar()">
                             <i class="bi bi-send-check me-2"></i>
                             Registrar
                         </button>
                     </div>
-                </form>
+    
             </div>
         </div>
     </div>
 </body>
 </html>
+    <script src="assets/jquery/jquery.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.5.3/signature_pad.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
-    <script src="js/cargarFormulario.js"></script>
+    <script src="js/registrarRetiro.js"></script>
+    <!--  <script src="js/cargarFormulario.js"></script>  -->
 
 </html>

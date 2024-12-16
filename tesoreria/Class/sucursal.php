@@ -34,6 +34,124 @@ class Sucursal {
         }
     }
 
+
+    public function insertarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado) {
+        try {
+            $sql = "INSERT INTO RO_ENC_GUIA_RETIROS_SUC 
+                    (FECHA_REG, NRO_REGISTRO, NRO_SUCURS, ENTREGO, RECIBIO, ENVIA_VALORES, PRECINTO, OBSERVACIONES, FIRMA, ESTADO) 
+                    VALUES (GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+            $params = [
+                $datos['numeroRegistro'],
+                $nroSucursal,
+                $datos['entrego'],
+                $datos['recibio'],
+                $datos['enviaValores'] === 'SI' ? 1 : 0,
+                $datos['numeroPrecinto'] ?? null,
+                $datos['observaciones'],
+                $firma,
+                $estado
+            ];
+    
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+       
+            return ['success' => true, 'data' => $datos['numeroRegistro']];
+            
+        } catch (Exception $e) {
+            error_log("Error en insertarEncabezadoGuiaRetiro: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function limpiarEgresos($nroRegistro, $nroSucurs){
+
+        try {
+            $sql = "DELETE FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NR_SUCURS = $nroSucurs";
+            $params = [$nroRegistro];
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            return true;
+        } catch (Exception $e) {
+            error_log("Error en limpiarEgresos: " . $e->getMessage());
+            return false;
+        }
+
+    }
+
+    public function insertarEgresos($nroRegistro, $fecha, $tComp, $nComp, $nroSucursal) {
+        try {
+
+            $sql = "INSERT INTO RO_EGRESOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_COMP, T_COMP, N_COMP, NRO_SUCURS) 
+                    VALUES (?, ?, ?, ?, ?)";
+
+            $params = [
+                $nroRegistro,
+                $fecha,
+                $tComp,
+                $nComp,
+                $nroSucursal
+            ];
+
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+        
+            return true;
+        } catch (Exception $e) {
+            error_log("Error en insertarEgresos: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function limpiarRemitos($nroRegistro, $nroSucurs){
+
+        $sql = "DELETE FROM RO_REMITOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NRO_SUCURS = $nroSucurs";
+        $params = [$nroRegistro];
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+        return true;
+
+
+    }
+    
+    public function insertarRemitos($nroRegistro, $fecha, $remito, $destino, $bultos, $nroSucurs) {
+        try {
+            
+            $sql = "INSERT INTO RO_REMITOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_REM, N_COMP, DESTINO, BULTOS, NRO_SUCURS) 
+                    VALUES (?, ?, ?, ?, ?, ?)";
+    
+           
+            $params = [
+                $nroRegistro,
+                $fecha,
+                $remito,
+                $destino,
+                $bultos,
+                $nroSucurs
+            ];
+
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Error en insertarRemitos: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+
+
     public function listarUsuarios($nroSucurs){
         try {
             $nroSucurs = intval($nroSucurs); // Sanitizar la entrada
@@ -139,7 +257,8 @@ class Sucursal {
     public function listarRemitos($nroSucurs) {
         try {
             $sql = "SELECT 
-                        CAST(A.FECHA_MOV AS DATE) FECHA, 
+                        CAST(A.FECHA_MOV AS DATE) FECHA,
+                        T_COMP, 
                         N_COMP REMITO, 
                         B.DESC_SUCURSAL DESTINO 
                     FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA09 A
@@ -149,6 +268,10 @@ class Sucursal {
                         AND A.NRO_SUCURS = ? 
                         AND A.FECHA_MOV >= DATEADD(day, -45, GETDATE())
                         AND COD_PRO_CL LIKE 'GT%'
+                        AND N_COMP COLLATE Latin1_General_BIN NOT IN (
+                            SELECT N_COMP COLLATE Latin1_General_BIN 
+                            FROM RO_REMITOS_GUIA_RETIROS_SUC
+                        )
                     ORDER BY A.FECHA_MOV DESC, N_COMP DESC";
     
             $params = array($nroSucurs);
@@ -175,8 +298,9 @@ class Sucursal {
         try {
             $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA29 
                     WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
+                    AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
                     ORDER BY N_COMP DESC";
-    
+
             $params = array($nroSucurs);
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             
@@ -197,6 +321,7 @@ class Sucursal {
         }
     }
 
+
  
     public function listarGuiasRetiro($nroSucurs, $fechaDesde, $fechaHasta) {
         try {
@@ -213,8 +338,8 @@ class Sucursal {
                     WHERE NRO_SUCURS = ?
                         AND CAST(FECHA_REG AS DATE) BETWEEN ? AND ?
                     ORDER BY FECHA_REG DESC";
-
             $params = array($nroSucurs, $fechaDesde, $fechaHasta);
+
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             
             if ($stmt === false) {
@@ -242,5 +367,165 @@ class Sucursal {
         }
     }
 
+    public function traerDatosGuiaRetiro($id) {
+
+        try {
+            $sql = "SELECT 
+                FORMAT(FECHA_REG, 'dd/MM/yyyy HH:mm') as FECHA,
+                NRO_REGISTRO,
+                ENTREGO,
+                RECIBIO,
+                ENVIA_VALORES,
+                OBSERVACIONES,
+                PRECINTO,
+                FIRMA
+            FROM RO_ENC_GUIA_RETIROS_SUC
+            WHERE NRO_REGISTRO = ?";
+
+            $params = array($id);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $resultados = [];
+
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $resultados[] = $row;
+            }
+
+            return $resultados;
+
+        } catch (Exception $e) {
+            error_log("Error en listarGuiasRetiro: " . $e->getMessage());
+            throw new Exception("Error al obtener las guías: " . $e->getMessage());
+        }
+    }
+
+    public function actualizarGuiaRetiro($id, $entrego, $recibio, $enviaValores, $observaciones, $firma) {
+        try {
+            $sql = "UPDATE RO_ENC_GUIA_RETIROS_SUC 
+                    SET ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?) 
+                    WHERE NRO_REGISTRO = ?";
+                    
+            $params = [$entrego, $recibio, $enviaValores, $observaciones, $firma, $id];
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+    
+            if ($stmt === false) {
+                throw new Exception(print_r(sqlsrv_errors(), true));
+            }
+        } catch (Exception $e) {
+            error_log("Error al actualizar la guía: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+
+    function ultimoRegistro($nroSucursal) {
+
+        $sql = "SELECT  CAST(SUBSTRING(NRO_REGISTRO, 2, LEN(NRO_REGISTRO)) AS int) AS NRO_REGISTRO FROM RO_ENC_GUIA_RETIROS_SUC WHERE NRO_SUCURS = ?";
+
+        $params = array($nroSucursal);
+
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $nroRegistro = 0;
+
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $nroRegistro = $row['NRO_REGISTRO'];
+        }
+
+        return $nroRegistro;
+        
+
+    }
+
+    public function listarRemitosPorGuia($id, $nroSucurs) {
+        try {
+            $sql = "SELECT 
+                        CAST(FECHA_REM AS DATE) FECHA, 
+                        N_COMP REMITO, 
+                        DESTINO, 
+                        BULTOS 
+                    FROM RO_REMITOS_GUIA_RETIROS_SUC 
+                    WHERE NRO_REGISTRO = ? 
+                    AND NRO_SUCURS = ?
+                    ORDER BY FECHA_REM DESC, N_COMP DESC";
+    
+            $params = array($id, $nroSucurs);   
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+            }
+    
+            $resultados = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $row['FECHA'] = $row['FECHA']->format('d/m/Y');
+                $resultados[] = $row;
+            }
+    
+            return $resultados;
+        } catch (Exception $e) {
+            error_log("Error en listarRemitosPorGuia: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function listarEgresosPorGuia($idGuia) {
+        $sql = "SELECT T_COMP, N_COMP, FECHA_COMP 
+                FROM RO_EGRESOS_GUIA_RETIROS_SUC 
+                WHERE NRO_REGISTRO = ?";
+        $params = array($idGuia);
+        
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $resultados = [];
+
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $resultados[] = $row;
+        }
+
+        return $resultados;
+
+    }
+    
+    public function actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado) {
+        try {
+            $sql = "UPDATE RO_ENC_GUIA_RETIROS_SUC 
+                    SET ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?), ESTADO = ? 
+                    WHERE NRO_REGISTRO = ?";
+                    
+            $params = [
+                $datos['entrego'],
+                $datos['recibio'],
+                $datos['enviaValores'] === 'SI' ? 1 : 0,
+                $datos['observaciones'],
+                $firma,
+                $estado,
+                $datos['numeroRegistro']
+                
+            ];
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+    
+            if ($stmt === false) {
+                throw new Exception(print_r(sqlsrv_errors(), true));
+            }
+        } catch (Exception $e) {
+            error_log("Error al actualizar la guía: " . $e->getMessage());
+            throw $e;
+        }
+    }
 }
+
 ?>
+
