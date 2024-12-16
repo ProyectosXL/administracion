@@ -395,10 +395,10 @@ document.getElementById('btnAgregarEgreso').addEventListener('click', async func
     const tbody = document.getElementById('bodyEgresos');
     
     // Verificar si el egreso ya está agregado
-    const egresosExistentes = tbody.querySelectorAll('tr td:first-child');
+    const egresosExistentes = tbody.querySelectorAll('tr td:nth-child(2)');
     for (let td of egresosExistentes) {
         if (td.textContent === datos.comprobante) {
-            await mostrarAlerta('Error', 'Este egreso ya ha sido agregado');
+            await mostrarAlerta('Error', 'Este comprobante ya ha sido agregado');
             return;
         }
     }
