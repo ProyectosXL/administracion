@@ -29,7 +29,9 @@ $guias = $data->listarGuiasRetiro($nroSucurs, $fechaDesde, $fechaHasta);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Retiros de Sucursal</title>
-    
+    <?php
+        require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+    ?>
     <!-- CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
