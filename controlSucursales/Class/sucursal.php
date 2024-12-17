@@ -534,6 +534,7 @@ class Sucursal
     public function traerDatosControlRecepcion ($desde, $hasta, $estado) 
     {   
 
+
         $sql = "SELECT A.*, CASE WHEN C.N_COMP IS NULL THEN 0 ELSE 1 END DESPACHADO, FECHA_DESP, A.N_COMP, B.RECIBIDO, B.CTROL_TESORERIA
         FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 

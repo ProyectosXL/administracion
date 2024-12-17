@@ -144,8 +144,10 @@
                                                 }else{
                                                     echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarRecibido(this)'></td>";
                                                 }   
+
                                             ?>    
                                               <?php 
+                                      
                                                 if($gasto['CTROL_TESORERIA'] == 1){
                                                    
                                                     echo "<td style='text-align:center'><i class='bi bi-check-circle-fill' style='color:green;font-size:20px;' ></i></td>";
