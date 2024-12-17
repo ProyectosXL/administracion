@@ -103,10 +103,15 @@ $guias = $data->listarGuiasRetiro($nroSucurs, $fechaDesde, $fechaHasta);
     <div class="container py-4">
         <!-- Título -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3">
-                <i class="bi bi-clipboard-data me-2"></i>
-                Lista de Retiros de Sucursal
-            </h1>
+            <div class="d-flex align-items-center gap-3">
+                <a href="../../sistemas/index.php" class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Volver al Menú">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-clipboard-data me-2"></i>
+                    Lista de Retiros de Sucursal
+                </h1>
+            </div>
             <a href="registrarRetiro.php" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-2"></i>
                 Nueva Guía
