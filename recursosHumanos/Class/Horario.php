@@ -197,4 +197,13 @@ class Horario
     
             return true;
     }
+
+    public function updatePassword ($newPassword, $nroLegajo) {
+        
+        $sql = "UPDATE RO_T_LEGAJOS_PERSONAL SET CONTRASEÑA = '$newPassword' WHERE NRO_LEGAJO = $nroLegajo";
+    
+        $stmt = sqlsrv_query( $this->cid_central, $sql );
+
+        return true;
+    }
 }

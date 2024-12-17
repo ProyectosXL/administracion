@@ -22,37 +22,56 @@ class Sucursal
             session_start();
         }
 
+        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
+            $this->cid_locales =  $this->cid->conectar('suc_uy');
+        }
 
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
             $this->conexion = $this->cid->conectar('suc_uy');
+         
         }else{
             $this->conexion = $this->cid->conectar('central');
-
         }
 
     } 
 
     public function traerTodosLosMediosDePago()
     {
-  
-        $sql = "SELECT * FROM RO_T_MEDIOS_DE_PAGO where ACTIVO = '1'";
-
-        $stmt = sqlsrv_query($this->cid_central, $sql);
-
-        try{
+        try {
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') {
+                $sql = "SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO 
+                        FROM RO_T_VENTA_DIARIA_SUCURSALES_UY
+                        ORDER BY MEDIO_PAGO";
+                $cid = $this->cid_locales;
+            } else {
+                $sql = "SELECT DISTINCT(MEDIO_PAGO) MEDIO_PAGO 
+                        FROM ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES 
+                        WHERE MEDIO_PAGO IS NOT NULL
+                        ORDER BY MEDIO_PAGO";
+                $cid = $this->cid_locales;
+            }
             
+            // Ejecutar la consulta y verificar errores
+            $stmt = sqlsrv_query($cid, $sql);
+            
+            if ($stmt === false) {
+                // Obtener información del error
+                $errors = sqlsrv_errors();
+                throw new Exception("Error en la consulta SQL: " . print_r($errors, true));
+            }
+
             $rows = array();
-    
-            while ($v = sqlsrv_fetch_array($stmt)) {
+            while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $rows[] = $v;
             }
-    
-            return $rows;
-        
-        } catch (\Throwable $th){
-            print_r($th);
-        }
 
+            return $rows;
+            
+        } catch (Exception $e) {
+            // Manejar el error de forma más apropiada según tus necesidades
+            error_log($e->getMessage());
+            throw $e; // O manejar el error de otra forma
+        }
     }
 
     public function traerImportesTotales($nroSucursal, $fecha)
@@ -82,11 +101,13 @@ class Sucursal
     public function traerImportesTotalesPorPeriodo ($nroSucursal, $desde, $hasta, $medioDePago  )
     {
 
-        $sql = "SELECT * FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES where nro_sucursal = '$nroSucursal' 
+        $tabla = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? "RO_T_VENTA_DIARIA_SUCURSALES_UY" : "RO_T_VENTA_DIARIA_SUCURSALES";
+
+        $sql = "SELECT * FROM  ".$this->cid->prefix.$tabla." where nro_sucursal = '$nroSucursal' 
         AND FECHA BETWEEN '$desde' AND '$hasta' 
         AND MEDIO_PAGO = '$medioDePago' 
         ORDER BY FECHA";
-        // AND VERIFICADO = '0' ;";
+        
 
         $stmt = sqlsrv_query($this->cid_locales, $sql);
 
@@ -117,9 +138,7 @@ class Sucursal
 
         }else{
 
-            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1
-                    UNION ALL
-                SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE NRO_SUCURSAL = '16'";
+            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1";
     
             
         }
@@ -161,7 +180,10 @@ class Sucursal
     {
         $importeControl = str_replace(' ', '', $importeControl);
 
-        $sql = "UPDATE ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
+
+        $tabla = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? "RO_T_VENTA_DIARIA_SUCURSALES_UY" : "RO_T_VENTA_DIARIA_SUCURSALES";
+
+        $sql = "UPDATE ".$this->cid->prefix.$tabla." SET IMPORTE_\$_FISICO = '$importeControl', VERIFICADO = $verificado, FECHA_MODIF = GETDATE(), OBSERVACIONES = '$observaciones' WHERE ID = $id";
 
         try{
             
@@ -257,7 +279,7 @@ class Sucursal
         
         try {
             
-            $prefix = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? "" : "[LAKERBIS].locales_lakers.dbo.";
+            $prefix = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? "[LAKERBIS].SUCURSALES_URUGUAY.dbo." : "[LAKERBIS].locales_lakers.dbo.";
 
          
             $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO,b.CONTABILIZADA,b.AUTORIZADO,b.FECHA_AUTORIZADO,
@@ -279,8 +301,14 @@ class Sucursal
             }
 
             $sql = $sql."ORDER BY FECHA ASC;";
-      
-            $stmt = sqlsrv_query($this->conexion , $sql);
+
+            $conexion = $this->conexion;
+
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                $conexion = $this->cid_uy;
+            }
+
+            $stmt = sqlsrv_query($conexion , $sql);
 
             $v = [];
 
@@ -420,6 +448,21 @@ class Sucursal
         }
 
     }
+    public function controlTesoreria($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto)
+    {
+        $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CTROL_TESORERIA = 1, FECHA_CTROL_TESOR = GETDATE() WHERE N_COMP = '$nroComprobante' 
+        AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante' AND COD_CUENTA = '$codCuenta' AND MONTO = $monto AND FECHA = '$fecha'";
+ 
+        try{
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+       
+            return true;
+        
+        } catch (\Throwable $th){
+            print_r($th);
+        }
+    } 
    
     public function traerGastosTesoreria ($desde, $hasta) 
     {
@@ -491,11 +534,15 @@ class Sucursal
     public function traerDatosControlRecepcion ($desde, $hasta, $estado) 
     {   
 
-        $sql = "SELECT A.*, B.RECIBIDO, B.CTROL_TESORERIA 
+
+        $sql = "SELECT A.*, CASE WHEN C.N_COMP IS NULL THEN 0 ELSE 1 END DESPACHADO, FECHA_DESP, A.N_COMP, B.RECIBIDO, B.CTROL_TESORERIA
         FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
             ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL  
             AND B.RECIBIDO LIKE '%$estado%'
+        LEFT JOIN (SELECT FECHA_REG FECHA_DESP, B.FECHA_COMP, B.T_COMP, B.N_COMP, B.NRO_SUCURS FROM RO_ENC_GUIA_RETIROS_SUC A 
+                   INNER JOIN RO_EGRESOS_GUIA_RETIROS_SUC B ON A.NRO_REGISTRO = B.NRO_REGISTRO) C 
+            ON A.N_COMP = C.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = C.T_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURS
         WHERE COD_CTA = '100100' 
             AND A.FECHA BETWEEN '$desde' AND '$hasta'";
         if($estado == "0"){

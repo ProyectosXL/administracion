@@ -3,6 +3,21 @@
 require_once "Class/sucursal.php";
 
 
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
+}
+    
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
+$imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
+
+
+
+
 if(isset($_GET['mes']) &&$_GET['mes'] != "" ){
     $mes = $_GET['mes'];
 }else{
@@ -16,7 +31,7 @@ if(isset($_GET['anio']) &&$_GET['anio'] != "" ){
 
 $dataSucursal = (isset($_GET['sucursal'])) ?  explode("-", $_GET['sucursal']) : ['2','UNICENTER'];
 
-$medioPagoSelected = (isset($_GET['medioPago'])) ? explode("-", $_GET['medioPago'])  : "MODO_QR";
+$medioPagoSelected = (isset($_GET['medioPago'])) ?  $_GET['medioPago']  : "MODO_QR";
 
 
 
@@ -35,7 +50,7 @@ $primerDia = date('Y-m-01', strtotime($periodoRerverse));
 $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
 
-$todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $primerDia, $ultimoDia,str_replace("_", " ", $medioPagoSelected[1]));
+$todosLosImportes= $sucursal->traerImportesTotalesPorPeriodo($dataSucursal[0], $primerDia, $ultimoDia,str_replace("_", " ", $medioPagoSelected));
 
 $verificado = true;
 
@@ -75,6 +90,9 @@ foreach ($todosLosImportes as $key => $value) {
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- Select2 CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.0.0/dist/select2-bootstrap4.min.css" rel="stylesheet">
         
         </link>
         <style>
@@ -98,6 +116,49 @@ foreach ($todosLosImportes as $key => $value) {
             thead {
                 position: sticky;
                 top: 0;
+            }
+            .toggle-on {
+            background-image: url('<?= $imageOn ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+            }
+
+            .toggle-off {
+                background-image: url('<?= $imageOff ?>');
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
+            }
+            .select2-container {
+                width: 100% !important;
+                min-width: 200px;
+            }
+
+            /* Estilo para hacer el dropdown responsive */
+            .select2-dropdown {
+                max-width: 100%;
+            }
+
+            @media (max-width: 768px) {
+                .form-inline {
+                    flex-wrap: wrap;
+                }
+                
+                .form-inline > div {
+                    width: 100%;
+                    margin: 5px 0;
+                }
+                
+                .select2-container {
+                    width: 100% !important;
+                }
+                
+                #sucursal {
+                    width: 100% !important;
+                }
             }
         </style>
 
@@ -192,7 +253,7 @@ foreach ($todosLosImportes as $key => $value) {
                                             foreach ($todosLosMediosDePago as $key => $medioPago) {
                                         ?>
 
-                                                <option value="<?= $medioPago['ID_MP'] ?>-<?= $medioPago['MEDIO_PAGO'] ?>" <?= ($medioPagoSelected[0] == $medioPago['ID_MP']) ? "selected" : "" ?>><?= $medioPago['MEDIO_PAGO'] ?></option>
+                                                <option value="<?= $medioPago['MEDIO_PAGO'] ?>" <?= ($medioPagoSelected == $medioPago['MEDIO_PAGO']) ? "selected" : "" ?>><?= $medioPago['MEDIO_PAGO'] ?></option>
 
 
                                         <?php
@@ -203,10 +264,12 @@ foreach ($todosLosImportes as $key => $value) {
                                     </div>
 
                                     <button class="btn btn-primary btn-submit ml-2" onclick= "">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                    <div style="margin-left:2rem;">
-                                        <button class="btn btn-primary btn-secondary" type="button" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
+                                    <div>
+                                        <button class="btn btn-primary btn-secondary ml-1" type="button" onclick= "guardar()">Guardar <i class="bi bi-box-arrow-down" style="color:white"></i></button>
                                         <button class="btn btn-primary btn-primary ml-2" type="button" id="controlar" <?= ($verificado == true) ? "hidden" : "" ?>>Controlar <i class="bi bi-check-circle" style="color:white"></i></button>
-                                        <button name="btnExport" type="button" class="btn btn-success  ml-2" id="btnExport" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
+                                        <button name="btnExport" type="button" class="btn btn-success ml-1" id="btnExport" style="margin-right:2rem" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
+                                        <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                                            
                                     </div>
 
                                 </div>
@@ -234,7 +297,7 @@ foreach ($todosLosImportes as $key => $value) {
                                             
                             <?php 
                                 foreach ($todosLosImportes as $key => $importe) {
-                                    if(in_array($medioPagoSelected[0], ['6','9'])){
+                                    if(in_array($medioPagoSelected, ['EUROS','EFECTIVO'])){
                                         $importe['IMPORTE_$_FISICO'] = $importe['IMPORTE_$_SISTEMA'] ;
                                     }
                                     $totalEnPesos = $importe['IMPORTE_$_SISTEMA'] * $importe['COTIZACION_TC'];
@@ -292,18 +355,18 @@ foreach ($todosLosImportes as $key => $value) {
         </div>
         <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+        <!-- Select2 JS -->
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
-        <!-- <link rel="stylesheet" type="text/css" href="assets/select2/select2.min.css"> -->
-        <!-- <script src="assets/select2/select2.min.js"></script> -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-        <!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script> -->
-
         <script src="js/controlMasivo.js"></script>
         <script src="https://cdn.datatables.net/fixedheader/3.1.9/js/dataTables.fixedHeader.min.js"></script>
         <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
 
     </body>
@@ -342,6 +405,14 @@ foreach ($todosLosImportes as $key => $value) {
     
         },
     });
+
+
+    $(document).ready( function () {
+        document.querySelector(".toggle").style.width="40px"
+        document.querySelector(".toggle-on").style.fontSize="0"
+        document.querySelector(".toggle-off").style.fontSize="0"
+        document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+    })
 
 
 </script>

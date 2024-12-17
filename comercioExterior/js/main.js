@@ -115,9 +115,9 @@ function guardarCabeceraUy(){
         var despacho = document.getElementById('despacho').value;
         var material = document.getElementById('material').value;
         var origen = document.getElementById('origen').value;
-        var fechaEmbarque = document.getElementById('fechaEmbarque').value;
+        
         var facturaProveedor = document.getElementById('facturaProveedor').value;
-        var fechaFactura = document.getElementById('fechaFactura').value;
+        
         let ocm = 0;
         let ordenCompra = document.querySelectorAll("#ordenDeCompra")
         console.log(ordenCompra)
@@ -133,7 +133,6 @@ function guardarCabeceraUy(){
         var tipoCambio = document.getElementById('tipoCambio').value;
         var valorFobDolar = document.getElementById('valorFobDolar').value;
         var valorFobPeso = document.getElementById('valorFobPeso').value;
-        var fechaArribo = document.getElementById('fechaArribo').value;
         var fechaDespacho = document.getElementById('fechaDespacho').value;
  
         if(b==1){
@@ -168,16 +167,14 @@ function guardarCabeceraUy(){
                             despacho: despacho, 
                             material: material, 
                             origen: origen,
-                            fechaEmbarque: fechaEmbarque, 
                             facturaProveedor: facturaProveedor, 
-                            fechaFactura: fechaFactura, 
                             ordenCompra: ordenCompra, 
                             formaPago: formaPago,
                             numeroBl: numeroBl, 
                             tipoCambio: tipoCambio.replace(/,/g, ""), 
                             valorFobDolar: valorFobDolar.replace(/,/g, ""), 
                             valorFobPeso: valorFobPeso.replace(/,/g, ""), 
-                            fechaArribo: fechaArribo, 
+
                             fechaDespacho: fechaDespacho,
                             ocm: ocm
                         },

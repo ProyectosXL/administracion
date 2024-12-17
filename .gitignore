@@ -2,4 +2,5 @@
 .env
 test
 impuestos/alquileresFranquicias/archivos/
-image
+image/gastosTesoreria
+tesoreria/assets/uploads

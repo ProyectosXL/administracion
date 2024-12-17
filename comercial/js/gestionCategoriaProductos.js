@@ -1,9 +1,30 @@
 const agregar = (siglaRubro) =>{
 
-    let codCategoria = document.getElementById("codCategoria").textContent;
+    let codCategoria = document.getElementById("codCategoria").querySelector("input").value;
     let descCategoria = document.getElementById("descCategoria").value;
 
+    if(codCategoria == "" || descCategoria == ""){
+        Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: `Complete los campos!`,
+            })
+        return;
+    }
+
+    if(codCategoria < 0 || codCategoria > 100){ 
+
+        Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: `El codigo de la categoria no puede ser negativo o mayor a 100!`,
+            })
+        return;
+
+    }
+
     codCategoria = String(codCategoria).padStart(2, '0')
+
 
     $.ajax({
         url: 'Controller/CategoriaController.php?accion=insertarNuevo',
@@ -14,14 +35,25 @@ const agregar = (siglaRubro) =>{
             siglaRubro:siglaRubro
         },
         success : function(data) {
-          Swal.fire({
-            icon: "success",
-            title: "Carga Exitosa",
-            text: `Categoria Insertada!`,
-          }).then((result) => {
-              
-              location.reload();
-          })
+        if(data == 1){
+
+            Swal.fire({
+              icon: "success",
+              title: "Carga Exitosa",
+              text: `Categoria Insertada!`,
+            }).then((result) => {
+                
+                location.reload();
+            })
+
+        }else{
+                
+                Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: `La categoria ya existe para ese rubro!`,
+                })
+        }
 
 
         }

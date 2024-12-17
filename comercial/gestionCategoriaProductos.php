@@ -89,7 +89,7 @@
                                         </thead>
 
                                         <tbody id="tableVb" style="font-size: small;">
-                                            <td id="codCategoria"><?= ($ultimoCodigo + 1) ?></td>
+                                            <td id="codCategoria"><input type="number"></td>
                                             <td ><input type="text" style="width:100%;height:30px" id="descCategoria"></td>
                                         </tbody>
                                     </table>

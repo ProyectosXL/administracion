@@ -222,7 +222,7 @@ const guardaCambios = () => {
     let direccion = document.querySelector('#direccion').textContent.replace('Dirección', '').trim()
     let piso = document.querySelector('#piso').textContent.replace('Piso', '').trim()
     let depto = document.querySelector('#depto').textContent.replace('Depto.', '').trim()
-    let	localidad = document.querySelector('#localidad').textContent.replace('Localidad', '').trim()
+    let	localidad = document.querySelector('#localidad').textContent.replace('Localidad', '').replace('*','').trim()
     let codPostal = document.querySelector('#codPostal').textContent.replace('Cod. postal', '').trim()
     let sucursalAsignada = document.querySelector('#sucursalAsignada').getAttribute('attr-realValue')
     let tareaFuente = document.querySelector('#tareaFuente').textContent.replace('Tarea fuente', '').trim()
@@ -268,3 +268,19 @@ const guardaCambios = () => {
         }
     });
 }
+
+
+function toggleMenu() {
+    var menu = document.getElementById("dropdownMenu");
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+  }
+
+  // Cerrar el menú si se hace clic fuera de él
+  window.onclick = function(event) {
+    if (!event.target.matches('.bi-three-dots-vertical')) {
+      var menu = document.getElementById("dropdownMenu");
+      if (menu.style.display === "block") {
+        menu.style.display = "none";
+      }
+    }
+  };

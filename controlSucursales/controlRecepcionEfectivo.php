@@ -101,6 +101,7 @@
                                     <th style="text-align:center;width:10%" > COD.CUENTA </th>
                                     <th style="text-align:center;width:20%" > CUENTA </th>
                                     <th style="text-align:center;width:10%" > MONTO </th>
+                                    <th style="text-align:center;width:10%" > DESPACHADO </th>
                                     <th style="text-align:center;width:10%" > RECIBIDO </th>
                                     <th style="text-align:center;width:10%" > CONTROLADO </th>
 
@@ -128,7 +129,14 @@
                                             <td  data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
                                             <td><?= $gasto['COD_CTA'] ?></td>
                                             <td><?= $gasto['DESC_CUENTA'] ?></td>                                         
-                                            <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>     
+                                            <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>    
+                                            <?php 
+                                                if ($gasto['DESPACHADO'] == 1) {
+                                                    echo "<td style='text-align:center'>" . ($gasto['FECHA_DESP'])->format("d/m/Y H:i") . "</td>";
+                                                } else {
+                                                    echo "<td></td>";
+                                                }   
+                                            ?>
                                             <?php 
                                                 if($gasto['RECIBIDO'] == 1){
                                                    
@@ -136,15 +144,17 @@
                                                 }else{
                                                     echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarRecibido(this)'></td>";
                                                 }   
-                                            ?>
-                                            <?php 
+
+                                            ?>    
+                                              <?php 
+                                      
                                                 if($gasto['CTROL_TESORERIA'] == 1){
                                                    
                                                     echo "<td style='text-align:center'><i class='bi bi-check-circle-fill' style='color:green;font-size:20px;' ></i></td>";
                                                 }else{
-                                                    echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarControlTesoreria(this)'></td>";
+                                                    echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarControlado(this)'></td>";
                                                 }   
-                                            ?>                                      
+                                            ?>                                  
 
                                         </tr>
                                         
