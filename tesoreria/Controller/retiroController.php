@@ -43,7 +43,7 @@ switch ($accion) {
 function registrarRetiro() {
     $datos = $_POST['datos'] ?? null;
     $firma = $_POST['firma'] ?? null;
-    $remitos = $_POST['remitos'] ?? null;
+    $remitos = $_POST['remitos'] ?? [];
     $nroSucursal = $_POST['nroSucursal'] ?? null;
     $estado = $_POST['estado'] ?? null;
     if($estado != 1 ){
@@ -72,7 +72,7 @@ function registrarRetiro() {
         }
 
 
-        if(count($datos['egresos']) > 0){
+        if(isset($datos['egresos']) && count($datos['egresos']) > 0){
 
             $sucursal->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
 
