@@ -98,12 +98,13 @@
                                     <th style="text-align:center;width:10%" > DESC.SUCURSAL</th>
                                     <th style="text-align:center;width:10%" > TIPO COMP. </th>
                                     <th style="text-align:center;width:10%" > COMPROBANTE </th>
-                                    <th style="text-align:center;width:10%" > COD.CUENTA </th>
-                                    <th style="text-align:center;width:20%" > CUENTA </th>
+                                    <th style="text-align:center;width:10%" hidden> COD.CUENTA </th>
+                                    <th style="text-align:center;width:20%" hidden> CUENTA </th>
                                     <th style="text-align:center;width:10%" > MONTO </th>
                                     <th style="text-align:center;width:10%" > DESPACHADO </th>
                                     <th style="text-align:center;width:10%" > RECIBIDO </th>
                                     <th style="text-align:center;width:10%" > CONTROLADO </th>
+                                    <th>observaciones</th>
 
                                 </tr>
                             </thead>
@@ -120,15 +121,15 @@
                                         }
                                 ?>
             
-                                        <tr>
+                                        <tr id="trA">
 
                                             <td><?= $gasto['FECHA']->format("d/m/Y") ?></td>
                                             <td><?= $gasto['NRO_SUCURS'] ?></td>
                                             <td><?= $sucursal ?></td>
                                             <td><?= $gasto['COD_COMP'] ?></td>
                                             <td  data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
-                                            <td><?= $gasto['COD_CTA'] ?></td>
-                                            <td><?= $gasto['DESC_CUENTA'] ?></td>                                         
+                                            <td hidden><?= $gasto['COD_CTA'] ?></td>
+                                            <td hidden><?= $gasto['DESC_CUENTA'] ?></td>                                         
                                             <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>    
                                             <?php 
                                                 if ($gasto['DESPACHADO'] == 1) {
@@ -155,6 +156,9 @@
                                                     echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarControlado(this)'></td>";
                                                 }   
                                             ?>                                  
+                                        <td>
+                                            <textarea style="width: 100%; height: 60px; resize: none;"></textarea>
+                                        </td>
 
                                         </tr>
                                         

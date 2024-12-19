@@ -376,18 +376,18 @@ class Sucursal
 
     }
 
-    public function marcarControlado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control) 
+    public function marcarControlado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control, $observaciones) 
     {
 
         $sql = "
         IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = '$nroComprobante'  AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante' AND COD_CUENTA = '$codCuenta')
         BEGIN
-            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = $control ,FECHA_CONTROL = GETDATE() WHERE N_COMP  = '$nroComprobante' AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante' AND COD_CUENTA = '$codCuenta'
+            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = $control ,FECHA_CONTROL = GETDATE(), OBSERVACIONES = '$observaciones' WHERE N_COMP  = '$nroComprobante' AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante' AND COD_CUENTA = '$codCuenta'
         END
         ELSE
         BEGIN
-            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, FECHA_CONTROL, USUARIO) 
-            VALUES ('$fecha', $nroSucursal, '$tipoComprobante', '$nroComprobante', '$codCuenta', '$descripcionCuenta', $monto, '$leyenda', $factura, $control, GETDATE(), '')
+            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, FECHA_CONTROL, USUARIO, 'OBSERVACIONES') 
+            VALUES ('$fecha', $nroSucursal, '$tipoComprobante', '$nroComprobante', '$codCuenta', '$descripcionCuenta', $monto, '$leyenda', $factura, $control, GETDATE(), '', '$observaciones')
         END
         ";
 
@@ -423,17 +423,17 @@ class Sucursal
             }
     }
 
-    public function marcarRecibido ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto) 
+    public function marcarRecibido ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $observaciones) 
     {
 
         $sql = "
         IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = '$nroComprobante'  AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante')
         BEGIN
-            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET RECIBIDO = 1,FECHA_RECIBIDO = '$fecha'  WHERE N_COMP  = $nroComprobante AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante'
+            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET RECIBIDO = 1,FECHA_RECIBIDO = '$fecha', OBSERVACIONES = '$observaciones'  WHERE N_COMP  = $nroComprobante AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante'
         END
         ELSE
         BEGIN
-            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, FECHA_RECIBIDO, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, RECIBIDO) VALUES ('$fecha',GETDATE(),$nroSucursal,'$tipoComprobante','$nroComprobante','$codCuenta','$descripcionCuenta','$monto','1')
+            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, FECHA_RECIBIDO, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, RECIBIDO, OBSERVACIONES) VALUES ('$fecha',GETDATE(),$nroSucursal,'$tipoComprobante','$nroComprobante','$codCuenta','$descripcionCuenta','$monto','1', '$observaciones')
         END
         ";
 
