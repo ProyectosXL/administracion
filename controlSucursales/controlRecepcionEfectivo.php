@@ -93,17 +93,18 @@
                             <thead class="thead-dark" style="">
                                 <tr>
 
-                                    <th style="text-align:center;width:10%" > FECHA </th>
-                                    <th style="text-align:center;width:10%" > NRO.SUCURSAL</th>
-                                    <th style="text-align:center;width:10%" > DESC.SUCURSAL</th>
-                                    <th style="text-align:center;width:10%" > TIPO COMP. </th>
-                                    <th style="text-align:center;width:10%" > COMPROBANTE </th>
-                                    <th style="text-align:center;width:10%" > COD.CUENTA </th>
-                                    <th style="text-align:center;width:20%" > CUENTA </th>
-                                    <th style="text-align:center;width:10%" > MONTO </th>
-                                    <th style="text-align:center;width:10%" > DESPACHADO </th>
-                                    <th style="text-align:center;width:10%" > RECIBIDO </th>
-                                    <th style="text-align:center;width:10%" > CONTROLADO </th>
+                                    <th class="col-" style="text-align:center" > FECHA </th>
+                                    <th class="col-" style="text-align:center" > NRO.SUCURSAL</th>
+                                    <th class="col-" style="text-align:center" > DESC.SUCURSAL</th>
+                                    <th class="col-" style="text-align:center" > TIPO COMP. </th>
+                                    <th class="col-" style="text-align:center" > COMPROBANTE </th>
+                                    <th class="col-" style="text-align:center" > COD.CUENTA </th>
+                                    <th class="col-" style="text-align:center" > CUENTA </th>
+                                    <th class="col-" style="text-align:center" > MONTO </th>
+                                    <th class="col-" style="text-align:center" > DESPACHADO </th>
+                                    <th class="col-" style="text-align:center" > PRECINTO </th>
+                                    <th class="col-" style="text-align:center" > RECIBIDO </th>
+                                    <th class="col-" style="text-align:center" > CONTROLADO </th>
 
                                 </tr>
                             </thead>
@@ -133,6 +134,13 @@
                                             <?php 
                                                 if ($gasto['DESPACHADO'] == 1) {
                                                     echo "<td style='text-align:center'>" . ($gasto['FECHA_DESP'])->format("d/m/Y H:i") . "</td>";
+                                                } else {
+                                                    echo "<td></td>";
+                                                }   
+                                            ?>
+                                            <?php 
+                                                if ($gasto['PRECINTO'] > 1) {
+                                                    echo "<td style='text-align:center'>" . ($gasto['PRECINTO']) . "</td>";
                                                 } else {
                                                     echo "<td></td>";
                                                 }   

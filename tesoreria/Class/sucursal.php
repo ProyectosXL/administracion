@@ -367,7 +367,7 @@ class Sucursal {
         }
     }
 
-    public function traerDatosGuiaRetiro($id) {
+    public function traerDatosGuiaRetiro($id, $nroSucurs) {
 
         try {
             $sql = "SELECT 
@@ -380,9 +380,9 @@ class Sucursal {
                 PRECINTO,
                 FIRMA
             FROM RO_ENC_GUIA_RETIROS_SUC
-            WHERE NRO_REGISTRO = ?";
+            WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
 
-            $params = array($id);
+            $params = array($id, $nroSucurs);
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             
             if ($stmt === false) {
