@@ -28,6 +28,51 @@ $.ajax({
 
 
 
+document.addEventListener('keydown', function(event) {
+
+    if (event.key === 'Tab') {
+        event.preventDefault(); 
+
+        const elementsArray = ['apellido', 'nombres', 'nroDocumento', 'codVendedor', 'direccion', 'piso', 'depto',
+             'pais', 'divLocalidad',
+            'codPostal',
+             'sucursalAsignada',
+              'tareaFuente', 
+              'tipoContrato',
+             'fechaIngreso', 'email', 'telefono', 'telefonoE'];
+
+
+
+        const currentElement = document.activeElement; 
+        let nextElement = null; 
+
+        elementsArray.forEach((element,x) => {
+            console.log(currentElement.getAttribute('id'))
+            if(element == currentElement.getAttribute('id')){
+
+                if(x == elementsArray.length - 1){
+
+                    nextElement = elementsArray[0];
+
+                }else{
+
+                    nextElement = elementsArray[x+1];
+                }
+    
+            }
+        });
+
+        let proxDiv = document.querySelector("#" + nextElement);
+        
+        proxDiv.click();
+    
+        proxDiv.focus();
+      
+     
+    }
+});
+
+
 const updateValue = (element) => {
     if (element.tagName.toLowerCase() === 'div') {
         // Si el elemento es un div, lo convertimos en un input
@@ -36,6 +81,7 @@ const updateValue = (element) => {
         input.setAttribute('attr-title', element.getAttribute("attr-title"));
         input.setAttribute("id", element.getAttribute("id"));
         input.type = 'text';
+        input.value = element.getAttribute("attr-realValue");
         // input.value = value;
         input.classList = element.classList;
         input.style = element.getAttribute('style');
@@ -273,9 +319,9 @@ const updateValueSelectPais = (element) => {
                
             } 
 
-            if(document.querySelector("#tipoContrato")){
-                document.querySelector("#tipoContrato").textContent = '';
-            }
+            // if(document.querySelector("#tipoContrato") ==){
+            //     document.querySelector("#tipoContrato").textContent = '';
+            // }
             if(document.querySelector("#tipoContrato")){
                 document.querySelector("#tipoContrato").setAttribute("onclick", `updateValueSelecTipoContrato(this)`);
                 document.querySelector("#tipoContrato").classList.add("bordeDiv"); 
@@ -370,6 +416,7 @@ const updateValueDate = (element) => {
         input.setAttribute('attr-title', element.getAttribute("attr-title"));
         input.type = 'date';
         input.value = value;
+        input.id = 'fechaIngreso';
         input.classList = element.classList;
         input.style = element.getAttribute('style');
         input.onblur = function() {
