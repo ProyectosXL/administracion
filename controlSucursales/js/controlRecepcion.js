@@ -64,3 +64,26 @@ const marcarControlado = (e) => {
     });
 
 }
+
+
+const guardarObservaciones = (div) => {
+
+    let observaciones = div.parentElement.parentElement.querySelectorAll("td")[11].querySelector("textArea").value;
+    let nroSucursal = div.parentElement.parentElement.querySelectorAll("td")[1].textContent;
+    let nroComprobante = div.parentElement.parentElement.querySelectorAll("td")[4].textContent;
+
+
+    $.ajax({
+        type: "POST",
+        url: "Controller/ControlEgresosController.php?accion=guardarObservaciones",
+        data: {
+            nroSucursal: nroSucursal,
+            nroComprobante: nroComprobante,
+            observaciones: observaciones
+        },
+        success: function (response) {
+            div.hidden = true;
+            div.parentElement.parentElement.querySelectorAll("td")[11].querySelector("textArea").disabled = true;
+        }
+    });
+}

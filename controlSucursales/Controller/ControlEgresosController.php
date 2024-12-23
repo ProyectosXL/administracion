@@ -45,6 +45,10 @@ switch ($accion) {
         controlTesoreria($sucursal);
         break;
     
+    case 'guardarObservaciones':
+        guardarObservaciones($sucursal);
+        break;
+    
     default:
         # code...
         break;
@@ -281,5 +285,18 @@ function autorizarEgreso (){
     $result = $sucursal->autorizarEgreso ($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy);
   
     echo $result;
+}
+
+function guardarObservaciones ($sucursal) {
+
+    $observaciones = $_POST['observaciones'];
+    $nroSucursal = $_POST['nroSucursal'];
+    $nroComprobante = $_POST['nroComprobante'];
+
+
+    $sucursal->guardarObservaciones($observaciones, $nroSucursal, $nroComprobante);
+
+    return true; 
+
 }
 ?>

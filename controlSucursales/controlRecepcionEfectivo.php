@@ -104,7 +104,8 @@
                                     <th style="text-align:center;width:10%" > DESPACHADO </th>
                                     <th style="text-align:center;width:10%" > RECIBIDO </th>
                                     <th style="text-align:center;width:10%" > CONTROLADO </th>
-                                    <th>observaciones</th>
+                                    <th>OBSERVACIONES</th>
+                                    <th style="text-align:center;width:10%">ACCIONES</th>
 
                                 </tr>
                             </thead>
@@ -157,9 +158,24 @@
                                                 }   
                                             ?>                                  
                                         <td>
-                                            <textarea style="width: 100%; height: 60px; resize: none;"></textarea>
-                                        </td>
+                                            <?php
+                                                if($gasto['OBSERVACIONES'] != NULL){
+                                                    echo "<textarea style='width: 100%; height: 60px; resize: none;' disabled>".$gasto['OBSERVACIONES']."</textarea>";
+                                                }else{
+                                                    echo '<textarea style="width: 100%; height: 60px; resize: none;"></textarea>';
+                                                }
+                                            ?>
 
+                                       
+                                        </td>
+                                        <td>
+                                            <?php
+                                                if($gasto['OBSERVACIONES'] == NULL){
+                                                    echo "<button class='btn btn-primary' type='button' onclick='guardarObservaciones(this)'><i class='bi bi-pencil-square'></i> Guardar</button>";
+                                                }
+                                            ?>
+                                           
+                                        </td>
                                         </tr>
                                         
                                 <?php 
