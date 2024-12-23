@@ -33,6 +33,8 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'Tab') {
         event.preventDefault(); 
 
+   
+
         const elementsArray = ['apellido', 'nombres', 'nroDocumento', 'codVendedor', 'direccion', 'piso', 'depto',
              'pais', 'divLocalidad',
             'codPostal',
@@ -44,6 +46,12 @@ document.addEventListener('keydown', function(event) {
 
 
         const currentElement = document.activeElement; 
+
+        if(currentElement.tagName.toLowerCase() === 'select'){
+            return
+        }
+
+        
         let nextElement = null; 
 
         elementsArray.forEach((element,x) => {
@@ -64,9 +72,12 @@ document.addEventListener('keydown', function(event) {
 
         let proxDiv = document.querySelector("#" + nextElement);
         
+      
         proxDiv.click();
-    
-        proxDiv.focus();
+
+        let siguienteDiv = document.querySelector("#" + nextElement);
+        console.log(proxDiv)
+        siguienteDiv.focus();
       
      
     }
@@ -125,7 +136,7 @@ const updateValueSelectSucursal = (element) => {
         let options = JSON.parse(sucursales)
         
         const select = document.createElement('select');
-        
+        select.id = "sucursalAsignada"
         options.forEach(option => {
             const optionElement = document.createElement('option');
             optionElement.textContent = option.COD_CLIENT+' - '+option.DESC_SUCURSAL;
@@ -175,6 +186,9 @@ const updateValueSelectSucursal = (element) => {
         div.setAttribute("attr-title", element.getAttribute("attr-title"));
         // Reemplazar el select con el div
         element.parentNode.replaceChild(div, element);
+
+        document.querySelector("#tareaFuente").click();
+        document.querySelector("#tareaFuente").focus();
     }
 }
 
@@ -235,7 +249,7 @@ const updateValueSelectLocalidad = (element) => {
         });
         const value =  '<span style="color:#969396">'+element.getAttribute("attr-title")+'</span><br>'+desSucursal;
         const div = document.createElement('div');
-        div.id = 'selectLocalidad';
+        div.id = 'divLocalidad';
         div.innerHTML = value;
         div.classList = element.classList;
         div.style = element.getAttribute('style');
@@ -244,8 +258,13 @@ const updateValueSelectLocalidad = (element) => {
         };
         div.setAttribute("attr-realValue", localidad);
         div.setAttribute("attr-title", element.getAttribute("attr-title"));
+
+
         // Reemplazar el select con el div
         element.parentNode.replaceChild(div, element);
+
+        document.querySelector("#codPostal").click();
+        document.querySelector("#codPostal").focus();
     }
 }
 
@@ -269,7 +288,7 @@ const updateValueSelectPais = (element) => {
             select.appendChild(optionElement);
         });
         
-        // Seleccionar la opción que coincide con el valor original del div
+
         const originalValue = element.textContent.trim();
         select.value = originalValue;
         select.onchange = function() {
@@ -280,6 +299,7 @@ const updateValueSelectPais = (element) => {
     
         select.classList = element.classList;
         select.style = element.getAttribute('style');
+        select.id = 'pais';
         
 
         element.parentNode.replaceChild(select, element);
@@ -309,19 +329,23 @@ const updateValueSelectPais = (element) => {
         if(document.querySelector("#pais").textContent != ''){
            if(document.querySelector("#selectLocalidad")){
 
-               document.querySelector("#selectLocalidad").textContent = '';
+               document.querySelector("#selectLocalidad").innerHTML = '<span style="color:#969396">Localidad <span class="required">*</span> </span>';
            }
            if(  document.querySelector("#divLocalidad")){
                
                document.querySelector("#divLocalidad").setAttribute("onclick", `updateValueSelectLocalidad(this)`);
                document.querySelector("#divLocalidad").classList.add("bordeDiv"); 
                document.querySelector("#divLocalidad").style.backgroundColor ="white";
+               document.querySelector("#divLocalidad").click();
+               document.querySelector("#selectLocalidad").focus();
                
             } 
 
-            // if(document.querySelector("#tipoContrato") ==){
-            //     document.querySelector("#tipoContrato").textContent = '';
-            // }
+            if(document.querySelector("#tipoContrato")){
+                // document.querySelector("#tipoContrato").innerHTML = '<span style="color:#969396" >Tipo de contrato <span class="required">*</span></span>';
+                document.querySelector("#tipoContrato").textContent = '';
+                document.querySelector("#tipoContrato").innerHTML = '<span style="color:#969396" >Tipo de contrato <span class="required">*</span></span>'
+            }
             if(document.querySelector("#tipoContrato")){
                 document.querySelector("#tipoContrato").setAttribute("onclick", `updateValueSelecTipoContrato(this)`);
                 document.querySelector("#tipoContrato").classList.add("bordeDiv"); 
@@ -368,7 +392,7 @@ const updateValueSelecTipoContrato = (element) => {
         }
       
         select.setAttribute("attr-title", element.getAttribute("attr-title"));
-    
+        select.id = 'tipoContrato'
         select.classList = element.classList;
         select.style = element.getAttribute('style');
         

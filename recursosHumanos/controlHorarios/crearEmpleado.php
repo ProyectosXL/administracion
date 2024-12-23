@@ -160,8 +160,8 @@
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
                                                 <div class="col-5 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Direccion" onclick="updateValue(this)" id="direccion"><span style="color:#969396">Direccion</span> <br></div>
-                                                <div class="col-1 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Piso" onclick="updateValue(this)" attr-realValue="1" id="piso"><span style="color:#969396">Piso </span> <br> <span style="margin-left:35%;margin-top:10%"></span></div>
-                                                <div class="col-1 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Depto." onclick="updateValue(this)" attr-realValue="2" id="depto"><span style="color:#969396">Depto. </span> <br><span style="margin-left:35%;margin-top:10%"> </span></div>
+                                                <div class="col-1 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Piso" onclick="updateValue(this)" id="piso"><span style="color:#969396">Piso </span> <br> <span style="margin-left:35%;margin-top:10%"></span></div>
+                                                <div class="col-1 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Depto." onclick="updateValue(this)" id="depto"><span style="color:#969396">Depto. </span> <br><span style="margin-left:35%;margin-top:10%"> </span></div>
                                             </div>
                                              <div class="row ml-2 mt-3" style="width:98%;">
                                                 <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Pais"  onclick="updateValueSelectPais(this)" id="pais"><span style="color:#969396">Pais <span class="required">*</span> </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
