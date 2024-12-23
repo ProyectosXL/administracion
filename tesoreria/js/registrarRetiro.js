@@ -486,6 +486,7 @@ async function guardarFormulario() {
                 }).then((result) => {
                     if (result.isConfirmed) {
                         // location.reload();
+                        window.location = 'listarRetiros.php';
                     }
                 });
 
@@ -502,6 +503,3 @@ async function guardarFormulario() {
     }
 }
 
-document.getElementById('btnGuardar').addEventListener('click', async function() {
-    await guardarFormulario();
-});

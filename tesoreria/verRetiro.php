@@ -16,7 +16,7 @@ require_once 'Class/sucursal.php';
 $guiaRetiro = new Sucursal();
 
 $id = $_GET['id'];
-$datosGuia = $guiaRetiro->traerDatosGuiaRetiro($id);
+$datosGuia = $guiaRetiro->traerDatosGuiaRetiro($id, $nroSucurs);
 $datosGuia = $datosGuia[0];
 
 $remitos = $guiaRetiro->listarRemitosPorGuia($id, $nroSucurs); 

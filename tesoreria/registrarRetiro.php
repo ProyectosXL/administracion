@@ -280,7 +280,7 @@ function limpiarNombre($nombre) {
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-success btn-sm flex-grow-1" id="btnGuardar">
+                        <button type="button" class="btn btn-success btn-sm flex-grow-1" id="btnGuardar" onclick="guardarFormulario()">
                             <i class="bi bi-file-earmark-check me-2"></i>
                             Guardar
                         </button>
