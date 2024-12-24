@@ -403,6 +403,7 @@ const updateValueSelecTipoContrato = (element) => {
         
         let tipoContrato = element.value;
    
+        let siguienteDiv = document.querySelector("#fechaIngreso");
 
         console.log(tipoContrato)
         if(tipoContrato == 'EFECTIVO'){
@@ -425,6 +426,10 @@ const updateValueSelecTipoContrato = (element) => {
         div.setAttribute("attr-title", element.getAttribute("attr-title"));
         // Reemplazar el select con el div
         element.parentNode.replaceChild(div, element);
+
+        updateValueDate(siguienteDiv);
+
+        document.querySelector("#fechaIngreso").focus();
 
     }
   
