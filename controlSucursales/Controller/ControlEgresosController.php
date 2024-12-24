@@ -45,6 +45,10 @@ switch ($accion) {
         controlTesoreria($sucursal);
         break;
     
+    case 'guardarObservaciones':
+        guardarObservaciones($sucursal);
+        break;
+    
     default:
         # code...
         break;
@@ -99,9 +103,10 @@ function marcarControlado ($sucursal){
     $monto = $_POST['monto'];
     $leyenda = $_POST['leyenda'];
     $factura = $_POST['factura'];
-    $control = $_POST['control'];    
+    $control = $_POST['control'];  
+    $observaciones = $_POST['observaciones'];  
 
-    $sucursal->marcarControlado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
+    $sucursal->marcarControlado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control, $observaciones);
 
 
 }
@@ -129,10 +134,11 @@ function marcarRecibido ($sucursal){
     $codCuenta = $_POST['codCuenta'];
     $descripcionCuenta = $_POST['descripcionCuenta'];
     $monto = $_POST['monto'];
+    $observaciones = $_POST['observaciones'];
 
 
 
-    $result = $sucursal->marcarRecibido($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto);
+    $result = $sucursal->marcarRecibido($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $observaciones);
     
     echo $result;
 
@@ -279,5 +285,18 @@ function autorizarEgreso (){
     $result = $sucursal->autorizarEgreso ($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy);
   
     echo $result;
+}
+
+function guardarObservaciones ($sucursal) {
+
+    $observaciones = $_POST['observaciones'];
+    $nroSucursal = $_POST['nroSucursal'];
+    $nroComprobante = $_POST['nroComprobante'];
+
+
+    $sucursal->guardarObservaciones($observaciones, $nroSucursal, $nroComprobante);
+
+    return true; 
+
 }
 ?>

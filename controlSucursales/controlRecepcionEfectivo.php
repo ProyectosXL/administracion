@@ -93,18 +93,21 @@
                             <thead class="thead-dark" style="">
                                 <tr>
 
-                                    <th class="col-" style="text-align:center" > FECHA </th>
-                                    <th class="col-" style="text-align:center" > NRO.SUCURSAL</th>
-                                    <th class="col-" style="text-align:center" > DESC.SUCURSAL</th>
-                                    <th class="col-" style="text-align:center" > TIPO COMP. </th>
-                                    <th class="col-" style="text-align:center" > COMPROBANTE </th>
-                                    <th class="col-" style="text-align:center" > COD.CUENTA </th>
-                                    <th class="col-" style="text-align:center" > CUENTA </th>
-                                    <th class="col-" style="text-align:center" > MONTO </th>
-                                    <th class="col-" style="text-align:center" > DESPACHADO </th>
-                                    <th class="col-" style="text-align:center" > PRECINTO </th>
-                                    <th class="col-" style="text-align:center" > RECIBIDO </th>
-                                    <th class="col-" style="text-align:center" > CONTROLADO </th>
+
+                                    <th style="text-align:center;width:10%" > FECHA </th>
+                                    <th style="text-align:center;width:10%" > NRO.SUCURSAL</th>
+                                    <th style="text-align:center;width:10%" > DESC.SUCURSAL</th>
+                                    <th style="text-align:center;width:10%" > TIPO COMP. </th>
+                                    <th style="text-align:center;width:10%" > COMPROBANTE </th>
+                                    <th style="text-align:center;width:10%" hidden> COD.CUENTA </th>
+                                    <th style="text-align:center;width:20%" hidden> CUENTA </th>
+                                    <th style="text-align:center;width:10%" > MONTO </th>
+                                    <th style="text-align:center;width:10%" > DESPACHADO </th>
+                                    <th style="text-align:center;width:10%" > RECIBIDO </th>
+                                    <th style="text-align:center;width:10%" > CONTROLADO </th>
+                                    <th>OBSERVACIONES</th>
+                                    <th style="text-align:center;width:10%">ACCIONES</th>
+
 
                                 </tr>
                             </thead>
@@ -121,15 +124,15 @@
                                         }
                                 ?>
             
-                                        <tr>
+                                        <tr id="trA">
 
                                             <td><?= $gasto['FECHA']->format("d/m/Y") ?></td>
                                             <td><?= $gasto['NRO_SUCURS'] ?></td>
                                             <td><?= $sucursal ?></td>
                                             <td><?= $gasto['COD_COMP'] ?></td>
                                             <td  data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
-                                            <td><?= $gasto['COD_CTA'] ?></td>
-                                            <td><?= $gasto['DESC_CUENTA'] ?></td>                                         
+                                            <td hidden><?= $gasto['COD_CTA'] ?></td>
+                                            <td hidden><?= $gasto['DESC_CUENTA'] ?></td>                                         
                                             <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>    
                                             <?php 
                                                 if ($gasto['DESPACHADO'] == 1) {
@@ -163,7 +166,25 @@
                                                     echo "<td style='text-align:center' ><input type='checkbox' class='form-check-input' style='width:20px;height:20px' onclick='marcarControlado(this)'></td>";
                                                 }   
                                             ?>                                  
+                                        <td>
+                                            <?php
+                                                if($gasto['OBSERVACIONES'] != NULL){
+                                                    echo "<textarea style='width: 100%; height: 60px; resize: none;' disabled>".$gasto['OBSERVACIONES']."</textarea>";
+                                                }else{
+                                                    echo '<textarea style="width: 100%; height: 60px; resize: none;"></textarea>';
+                                                }
+                                            ?>
 
+                                       
+                                        </td>
+                                        <td>
+                                            <?php
+                                                if($gasto['OBSERVACIONES'] == NULL){
+                                                    echo "<button class='btn btn-primary' type='button' onclick='guardarObservaciones(this)'><i class='bi bi-pencil-square'></i> Guardar</button>";
+                                                }
+                                            ?>
+                                           
+                                        </td>
                                         </tr>
                                         
                                 <?php 
