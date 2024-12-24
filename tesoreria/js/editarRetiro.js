@@ -213,60 +213,31 @@ function eliminarRemito(remito) {
         }
     });
 
-    // Funciones de validación
     async function validarSelects() {
-        const entrego = document.getElementById('entrego').value;
-        const recibio = document.getElementById('recibio').value;
-        const enviaValores = document.getElementById('enviaValores').value;
-
-        if (!entrego || !recibio || !enviaValores) {
-            await mostrarAlerta('Error', 'Por favor, complete todos los campos obligatorios.');
-            return false;
-        }
-
-        if (entrego === recibio) {
-            await mostrarAlerta('Error', 'La persona que entrega no puede ser la misma que recibe.');
-            return false;
-        }
-
-        return true;
+        return true; 
     }
+    
 
     async function validarFirma() {
-        if (signaturePad.isEmpty()) {
-            await mostrarAlerta('Error', 'Por favor, proporcione una firma.');
-            return false;
-        }
-        return true;
+        return true; 
     }
+    
 
     async function validarPrecinto() {
-        const enviaValores = document.getElementById('enviaValores').value;
-        if (enviaValores === 'SI') {
-            const numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
-            if (!numeroPrecinto) {
-                await mostrarAlerta('Error', 'Debe ingresar el número de precinto cuando envía valores.');
-                return false;
-            }
+        return true; 
+    }
     
-            const egresos = document.querySelectorAll('#bodyEgresos tr');
-            if (egresos.length === 0) {
-                await mostrarAlerta('Error', 'Debe agregar al menos un egreso cuando envía valores.');
-                return false;
-            }
-        }
-        return true;
-    }
 
-    // Validación completa del formulario
     async function validarFormulario() {
-        return await validarSelects() && 
-               await validarFirma() && 
-               await validarPrecinto() &&
-               await validarRemitos();
+                const remitos = document.querySelectorAll('#bodyRemitos tr');
+        if (remitos.length === 0) {
+            await mostrarAlerta('Error', 'Debe cargar al menos un remito.');
+            return false;
+        }
+    
+        return await validarPrecinto();
     }
-
-
+    
     // Reiniciar formulario
     function reiniciarFormulario() {
         document.getElementById('entregaForm').reset();
