@@ -36,6 +36,8 @@ function limpiarNombre($nombre) {
     <!-- Bootstrap Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
     <style>
 
@@ -45,6 +47,39 @@ function limpiarNombre($nombre) {
             border-radius: 4px;
             border: 1px solid #ced4da;
             margin-bottom: 10px;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single {
+            min-height: 38px !important;
+            height: 38px !important;
+            padding: 0.375rem 0.75rem !important;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-radius: 0.375rem;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            padding: 0 !important;
+            line-height: 1.5 !important;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection__arrow {
+            height: 36px !important;
+        }
+
+        /* Ajustar el dropdown */
+        .select2-results__option {
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+        }
+
+        /* Ajustes responsivos */
+        @media (max-width: 768px) {
+            .select2-container--bootstrap-5 .select2-selection--single {
+                min-height: 35px !important;
+                height: 35px !important;
+                font-size: 0.875rem;
+            }
         }
 
     </style>
@@ -85,7 +120,7 @@ function limpiarNombre($nombre) {
                             try {
                                 require_once 'Class/sucursal.php';
                                 $data = new Sucursal();
-                                $usuarios = $data->listarUsuarios($nroSucurs);
+                                $usuarios = $data->listarUsuarios();
 
                                 if (!empty($usuarios)) {
                                     foreach ($usuarios as $v) {
@@ -299,6 +334,7 @@ function limpiarNombre($nombre) {
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.5.3/signature_pad.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="js/registrarRetiro.js"></script>
     <!--  <script src="js/cargarFormulario.js"></script>  -->
 

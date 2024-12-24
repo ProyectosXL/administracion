@@ -27,7 +27,7 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $id = $_GET['id'];
 
 
-$datosGuia = $guiaRetiro->traerDatosGuiaRetiro($id);
+$datosGuia = $guiaRetiro->traerDatosGuiaRetiro($id, $nroSucurs);
 
 if (empty($datosGuia)) {
     die("Error: No se encontraron datos para el ID especificado.");

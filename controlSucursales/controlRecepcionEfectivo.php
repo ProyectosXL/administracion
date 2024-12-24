@@ -93,6 +93,7 @@
                             <thead class="thead-dark" style="">
                                 <tr>
 
+
                                     <th style="text-align:center;width:10%" > FECHA </th>
                                     <th style="text-align:center;width:10%" > NRO.SUCURSAL</th>
                                     <th style="text-align:center;width:10%" > DESC.SUCURSAL</th>
@@ -106,6 +107,7 @@
                                     <th style="text-align:center;width:10%" > CONTROLADO </th>
                                     <th>OBSERVACIONES</th>
                                     <th style="text-align:center;width:10%">ACCIONES</th>
+
 
                                 </tr>
                             </thead>
@@ -135,6 +137,13 @@
                                             <?php 
                                                 if ($gasto['DESPACHADO'] == 1) {
                                                     echo "<td style='text-align:center'>" . ($gasto['FECHA_DESP'])->format("d/m/Y H:i") . "</td>";
+                                                } else {
+                                                    echo "<td></td>";
+                                                }   
+                                            ?>
+                                            <?php 
+                                                if ($gasto['PRECINTO'] > 1) {
+                                                    echo "<td style='text-align:center'>" . ($gasto['PRECINTO']) . "</td>";
                                                 } else {
                                                     echo "<td></td>";
                                                 }   
