@@ -449,19 +449,18 @@ function crearFilaEgreso(datos) {
 
 
 async function guardarFormulario() {
-
     let nroSucursal = document.querySelector("#numSucurs").textContent;
 
-
-    if (!(await validarFormulario())) {
-        return false;
+    const remitos = document.querySelectorAll('#bodyRemitos tr');
+    if (!remitos.length) {
+        await mostrarAlerta('Error', 'Debe cargar al menos un remito.');
+        return false; 
     }
 
     try {
         const datos = obtenerDatosFormulario();
         console.log('Datos a guardar:', datos);
 
-       
         $.ajax({
             url: 'Controller/retiroController.php?accion=registrar',
             type: 'POST',
@@ -470,13 +469,12 @@ async function guardarFormulario() {
                 datos: datos.datos,
                 remitos: datos.remitos,
                 nroSucursal: nroSucursal,
-                estado: 1
+                estado: 1 
             },
             success: function (data) {
-                // await mostrarAlerta('¡Éxito!', 'Formulario registrado correctamente', 'success');
                 Swal.fire({
                     title: '¡Éxito!',
-                    text: 'Formulario registrado correctamente',
+                    text: 'Formulario guardado como borrador correctamente',
                     icon: 'success',
                     confirmButtonText: 'Aceptar',
                     confirmButtonColor: '#198754',
@@ -485,16 +483,11 @@ async function guardarFormulario() {
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // location.reload();
                         window.location = 'listarRetiros.php';
                     }
                 });
-
-
             }
-        })
-        
- 
+        });
 
     } catch (error) {
         console.error('Error:', error);
@@ -502,4 +495,6 @@ async function guardarFormulario() {
         return false;
     }
 }
+
+
 
