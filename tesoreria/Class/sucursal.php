@@ -152,10 +152,8 @@ class Sucursal {
     
 
 
-    public function listarUsuarios($nroSucurs){
+    public function listarUsuarios(){
         try {
-            $nroSucurs = intval($nroSucurs); // Sanitizar la entrada
-            
             $sql = "SELECT DISTINCT 
                         CASE 
                             WHEN CHARINDEX(' -', NOMBRE_VEN) > 0 THEN LEFT(NOMBRE_VEN, CHARINDEX(' -', NOMBRE_VEN) - 1)
@@ -176,7 +174,6 @@ class Sucursal {
                     INNER JOIN (SELECT * FROM [LAKERBIS].LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS') B 
                         ON A.XML_CA_1118_NUM_SUCURSAL = B.NRO_SUCURSAL
                     WHERE XML_CA_1118_NUM_SUCURSAL IS NOT NULL 
-                    AND XML_CA_1118_NUM_SUCURSAL = ?
                     
                     UNION ALL
                     
@@ -200,16 +197,14 @@ class Sucursal {
                     INNER JOIN (SELECT * FROM [LAKERBIS].LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'EXTERIOR') B 
                         ON A.XML_CA_1118_NUM_SUCURSAL = B.NRO_SUCURSAL
                     WHERE XML_CA_1118_NUM_SUCURSAL IS NOT NULL
-                    AND XML_CA_1118_NUM_SUCURSAL = ?
                     ORDER BY NOMBRE_VEN";
-
-            $params = array($nroSucurs, $nroSucurs);
-            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+    
+            $stmt = sqlsrv_query($this->cid_central, $sql);
             
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
             }
-
+    
             $resultados = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 // Limpiamos los datos antes de devolverlos
@@ -217,9 +212,9 @@ class Sucursal {
                 $row['BLOQUE'] = trim($row['BLOQUE']);
                 $resultados[] = $row;
             }
-
+    
             return $resultados;
-
+    
         } catch (Exception $e) {
             error_log("Error en listarUsuarios: " . $e->getMessage());
             return [];
