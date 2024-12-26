@@ -28,6 +28,62 @@ $.ajax({
 
 
 
+document.addEventListener('keydown', function(event) {
+
+    if (event.key === 'Tab') {
+        event.preventDefault(); 
+
+   
+
+        const elementsArray = ['apellido', 'nombres', 'nroDocumento', 'codVendedor', 'direccion', 'piso', 'depto',
+             'pais', 'divLocalidad',
+            'codPostal',
+             'sucursalAsignada',
+              'tareaFuente', 
+              'tipoContrato',
+             'fechaIngreso', 'email', 'telefono', 'telefonoE'];
+
+
+
+        const currentElement = document.activeElement; 
+
+        if(currentElement.tagName.toLowerCase() === 'select'){
+            return
+        }
+
+        
+        let nextElement = null; 
+
+        elementsArray.forEach((element,x) => {
+            console.log(currentElement.getAttribute('id'))
+            if(element == currentElement.getAttribute('id')){
+
+                if(x == elementsArray.length - 1){
+
+                    nextElement = elementsArray[0];
+
+                }else{
+
+                    nextElement = elementsArray[x+1];
+                }
+    
+            }
+        });
+
+        let proxDiv = document.querySelector("#" + nextElement);
+        
+      
+        proxDiv.click();
+
+        let siguienteDiv = document.querySelector("#" + nextElement);
+        console.log(proxDiv)
+        siguienteDiv.focus();
+      
+     
+    }
+});
+
+
 const updateValue = (element) => {
     if (element.tagName.toLowerCase() === 'div') {
         // Si el elemento es un div, lo convertimos en un input
@@ -36,6 +92,7 @@ const updateValue = (element) => {
         input.setAttribute('attr-title', element.getAttribute("attr-title"));
         input.setAttribute("id", element.getAttribute("id"));
         input.type = 'text';
+        input.value = element.getAttribute("attr-realValue");
         // input.value = value;
         input.classList = element.classList;
         input.style = element.getAttribute('style');
@@ -79,7 +136,7 @@ const updateValueSelectSucursal = (element) => {
         let options = JSON.parse(sucursales)
         
         const select = document.createElement('select');
-        
+        select.id = "sucursalAsignada"
         options.forEach(option => {
             const optionElement = document.createElement('option');
             optionElement.textContent = option.COD_CLIENT+' - '+option.DESC_SUCURSAL;
@@ -129,6 +186,9 @@ const updateValueSelectSucursal = (element) => {
         div.setAttribute("attr-title", element.getAttribute("attr-title"));
         // Reemplazar el select con el div
         element.parentNode.replaceChild(div, element);
+
+        document.querySelector("#tareaFuente").click();
+        document.querySelector("#tareaFuente").focus();
     }
 }
 
@@ -189,7 +249,7 @@ const updateValueSelectLocalidad = (element) => {
         });
         const value =  '<span style="color:#969396">'+element.getAttribute("attr-title")+'</span><br>'+desSucursal;
         const div = document.createElement('div');
-        div.id = 'selectLocalidad';
+        div.id = 'divLocalidad';
         div.innerHTML = value;
         div.classList = element.classList;
         div.style = element.getAttribute('style');
@@ -198,8 +258,13 @@ const updateValueSelectLocalidad = (element) => {
         };
         div.setAttribute("attr-realValue", localidad);
         div.setAttribute("attr-title", element.getAttribute("attr-title"));
+
+
         // Reemplazar el select con el div
         element.parentNode.replaceChild(div, element);
+
+        document.querySelector("#codPostal").click();
+        document.querySelector("#codPostal").focus();
     }
 }
 
@@ -223,7 +288,7 @@ const updateValueSelectPais = (element) => {
             select.appendChild(optionElement);
         });
         
-        // Seleccionar la opción que coincide con el valor original del div
+
         const originalValue = element.textContent.trim();
         select.value = originalValue;
         select.onchange = function() {
@@ -234,6 +299,7 @@ const updateValueSelectPais = (element) => {
     
         select.classList = element.classList;
         select.style = element.getAttribute('style');
+        select.id = 'pais';
         
 
         element.parentNode.replaceChild(select, element);
@@ -263,18 +329,22 @@ const updateValueSelectPais = (element) => {
         if(document.querySelector("#pais").textContent != ''){
            if(document.querySelector("#selectLocalidad")){
 
-               document.querySelector("#selectLocalidad").textContent = '';
+               document.querySelector("#selectLocalidad").innerHTML = '<span style="color:#969396">Localidad <span class="required">*</span> </span>';
            }
            if(  document.querySelector("#divLocalidad")){
                
                document.querySelector("#divLocalidad").setAttribute("onclick", `updateValueSelectLocalidad(this)`);
                document.querySelector("#divLocalidad").classList.add("bordeDiv"); 
                document.querySelector("#divLocalidad").style.backgroundColor ="white";
+               document.querySelector("#divLocalidad").click();
+               document.querySelector("#selectLocalidad").focus();
                
             } 
 
             if(document.querySelector("#tipoContrato")){
+                // document.querySelector("#tipoContrato").innerHTML = '<span style="color:#969396" >Tipo de contrato <span class="required">*</span></span>';
                 document.querySelector("#tipoContrato").textContent = '';
+                document.querySelector("#tipoContrato").innerHTML = '<span style="color:#969396" >Tipo de contrato <span class="required">*</span></span>'
             }
             if(document.querySelector("#tipoContrato")){
                 document.querySelector("#tipoContrato").setAttribute("onclick", `updateValueSelecTipoContrato(this)`);
@@ -322,7 +392,7 @@ const updateValueSelecTipoContrato = (element) => {
         }
       
         select.setAttribute("attr-title", element.getAttribute("attr-title"));
-    
+        select.id = 'tipoContrato'
         select.classList = element.classList;
         select.style = element.getAttribute('style');
         
@@ -333,6 +403,7 @@ const updateValueSelecTipoContrato = (element) => {
         
         let tipoContrato = element.value;
    
+        let siguienteDiv = document.querySelector("#fechaIngreso");
 
         console.log(tipoContrato)
         if(tipoContrato == 'EFECTIVO'){
@@ -356,6 +427,10 @@ const updateValueSelecTipoContrato = (element) => {
         // Reemplazar el select con el div
         element.parentNode.replaceChild(div, element);
 
+        updateValueDate(siguienteDiv);
+
+        document.querySelector("#fechaIngreso").focus();
+
     }
   
 }
@@ -370,6 +445,7 @@ const updateValueDate = (element) => {
         input.setAttribute('attr-title', element.getAttribute("attr-title"));
         input.type = 'date';
         input.value = value;
+        input.id = 'fechaIngreso';
         input.classList = element.classList;
         input.style = element.getAttribute('style');
         input.onblur = function() {
