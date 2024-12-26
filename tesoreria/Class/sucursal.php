@@ -40,14 +40,14 @@ class Sucursal {
             $sql = "INSERT INTO RO_ENC_GUIA_RETIROS_SUC 
                     (FECHA_REG, NRO_REGISTRO, NRO_SUCURS, ENTREGO, RECIBIO, ENVIA_VALORES, PRECINTO, OBSERVACIONES, FIRMA, ESTADO) 
                     VALUES (GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    
+
             $params = [
                 $datos['numeroRegistro'],
                 $nroSucursal,
                 $datos['entrego'],
                 $datos['recibio'],
                 $datos['enviaValores'] === 'SI' ? 1 : 0,
-                $datos['numeroPrecinto'] ?? null,
+                (isset($datos['numeroPrecinto']) && $datos['numeroPrecinto'] != '') ? $datos['numeroPrecinto'] : null,
                 $datos['observaciones'],
                 $firma,
                 $estado

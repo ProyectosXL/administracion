@@ -46,6 +46,7 @@ function registrarRetiro() {
     $remitos = $_POST['remitos'] ?? [];
     $nroSucursal = $_POST['nroSucursal'] ?? null;
     $estado = $_POST['estado'] ?? null;
+    
     if($estado != 1 ){
 
         if (empty($datos) || empty($firma)) {
@@ -55,6 +56,8 @@ function registrarRetiro() {
 
     }
     $sucursal = new Sucursal();
+
+
     
     $resultado = $sucursal->insertarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
     
@@ -95,7 +98,9 @@ function actualizarRetiro() {
     $remitos = $_POST['remitos'] ?? null;
     $nroSucursal = $_POST['nroSucursal'] ?? null;
     $estado = $_POST['estado'] ?? null;
+    $egresos = $_POST['egresos'] ?? null;
     
+
     if($estado != 1 ){
 
         if (empty($datos) || empty($firma)) {
@@ -109,17 +114,27 @@ function actualizarRetiro() {
    
     $resultado = $sucursal->actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
 
-    if(empty($remitos)){
-        echo true;
-        die();
+
+    if((count($remitos) > 0) ){
+
+        $sucursal->limpiarRemitos($datos['numeroRegistro'], $nroSucursal);
+
+        foreach ($remitos as $remito) {    
+            $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos'], $nroSucursal);
+            
+        }
+
     }
 
-    foreach ($remitos as $remito) {    
-        $sucursal->insertarEgresos($datos['numeroRegistro'], $remito['fecha'], $remito['t_comp'], $remito['remito']);
-        $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos'], $nroSucursal);
-        
-    }
 
+    if(isset($datos['egresos']) && count($datos['egresos']) > 0){
+
+        $sucursal->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
+
+        foreach ($datos['egresos'] as $egreso) {
+            $sucursal->insertarEgresos($datos['numeroRegistro'], $egreso['fecha'], $egreso['tipo'], $egreso['comprobante'], $nroSucursal);                
+        }
+    }
     echo true;
 
 

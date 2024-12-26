@@ -101,6 +101,18 @@
         return tr;
     }
 
+    // Función para eliminar un remito específico por su número
+function eliminarRemito(remito) {
+    const row = Array.from(document.querySelectorAll('#bodyRemitos tr')).find(tr => {
+        return tr.querySelector('td').textContent.trim() === remito;
+    });
+
+    if (row) {
+        row.remove(); // Eliminar la fila de la tabla
+        actualizarTotalBultos(); // Actualizar el total de bultos si es necesario
+    }
+}
+
     // Configuración del pad de firma
     function initSignaturePad() {
         var canvas = document.getElementById('signature-pad');
@@ -219,6 +231,7 @@
 
         return true;
     }
+    
 
     async function validarFirma() {
         if (signaturePad.isEmpty()) {
@@ -227,6 +240,7 @@
         }
         return true;
     }
+    
 
     async function validarPrecinto() {
         const enviaValores = document.getElementById('enviaValores').value;
@@ -245,16 +259,22 @@
         }
         return true;
     }
+    
 
-    // Validación completa del formulario
     async function validarFormulario() {
-        return await validarSelects() && 
-               await validarFirma() && 
-               await validarPrecinto() &&
-               await validarRemitos();
+        const remitos = document.querySelectorAll('#bodyRemitos tr');
+        if (remitos.length === 0) {
+            await mostrarAlerta('Error', 'Debe cargar al menos un remito.');
+            return false;
+        }
+    
+        return (
+            await validarSelects() &&
+            await validarFirma() &&
+            await validarPrecinto()
+        );
     }
-
-
+    
     // Reiniciar formulario
     function reiniciarFormulario() {
         document.getElementById('entregaForm').reset();
@@ -424,6 +444,7 @@ const registrar = async () => {
                             popup: 'swal2-small'
                         }
                     }).then((result) => {
+                        console.log(result)
                         if (result.isConfirmed) {
                             window.location.href = 'listarRetiros.php';
                         }
@@ -466,9 +487,11 @@ function obtenerDatosFormulario() {
     const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
         remito: tr.cells[0].textContent,
         destino: tr.cells[1].textContent,
-        bultos: tr.querySelector('.input-bultos').value,
+        bultos: tr.querySelectorAll("td")[2].querySelector("input").value,
         fecha : tr.cells[4].textContent,
-        t_comp : tr.cells[5].textContent
+        // t_comp : tr.cells[5].textContent
+
+        
     }));
 
     return {
@@ -476,3 +499,4 @@ function obtenerDatosFormulario() {
         remitos: remitos
     };
 }
+

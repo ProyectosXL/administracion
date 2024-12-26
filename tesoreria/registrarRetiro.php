@@ -315,14 +315,14 @@ function limpiarNombre($nombre) {
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-success btn-sm flex-grow-1" id="btnGuardar">
-                            <i class="bi bi-file-earmark-check me-2"></i>
-                            Guardar
-                        </button>
-                        <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btnRegistrar" onclick="registrar()">
-                            <i class="bi bi-send-check me-2"></i>
-                            Registrar
-                        </button>
+                    <button type="button" class="btn btn-success btn-sm flex-grow-1" id="btnGuardar" onclick="guardarFormulario()">
+                        <i class="bi bi-file-earmark-check me-2"></i>
+                        Guardar
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btnRegistrar" onclick="registrar()">
+                        <i class="bi bi-send-check me-2"></i>
+                        Registrar
+                    </button>
                     </div>
     
             </div>

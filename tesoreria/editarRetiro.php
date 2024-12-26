@@ -34,6 +34,9 @@ if (empty($datosGuia)) {
 }
 
 $datosGuia = $datosGuia[0];
+
+
+$remitosCargados = $guiaRetiro->listarRemitosPorGuia($id, $nroSucurs);
 ?>
 
 <!DOCTYPE html>
@@ -103,7 +106,7 @@ $datosGuia = $datosGuia[0];
             $valor = $nombre . '++' . $bloque;
 
             
-            $selected = ($valor === $datosGuia['ENTREGO']) ? 'selected' : '';
+            $selected = ($nombre === $datosGuia['ENTREGO']) ? 'selected' : '';
 
             
             printf(
@@ -260,8 +263,21 @@ $datosGuia = $datosGuia[0];
                     </tr>
                 </thead>
                 <tbody id="bodyRemitos">
-                    
+                    <?php foreach ($remitosCargados as $remito): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($remito['REMITO']); ?></td>
+                            <td><?php echo htmlspecialchars($remito['DESTINO']); ?></td>
+                            <td><input type="number" class="form-control form-control-sm input-bultos" value="<?= $remito['BULTOS'] ?>" min="1"></td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarRemito('<?php echo htmlspecialchars($remito['REMITO']); ?>')">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                            </td>
+                            <td hidden><?= $remito['FECHA'] ?></td>
+                        </tr>
+                    <?php endforeach; ?>
                 </tbody>
+
                 <tfoot>
                     <tr class="total">
                         <td colspan="2" class="text-end pe-2"><strong>Total:</strong></td>
