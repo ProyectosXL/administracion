@@ -1,4 +1,31 @@
 
+$(document).ready(function() {
+    // Inicializar Select2 en el select de entrego
+    $('#entrego').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Seleccione una persona',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return "No se encontraron resultados";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    });
+
+    // Ajustar estilos específicos
+    $('.select2-container--bootstrap-5 .select2-selection--single').css({
+        'height': 'calc(3.5rem + 2px)',
+        'padding': '1rem 0.75rem',
+        'font-size': '1rem',
+        'line-height': '1.5',
+        'border-radius': '0.375rem'
+    });
+});
+
     // Variables globales
     let numeroRegistro = 1;
     let signaturePad;
