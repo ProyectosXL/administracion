@@ -1,89 +1,119 @@
-const marcarRecibido = (e) => {
 
- 
-    let nroSucursal = e.parentElement.parentElement.querySelectorAll("td")[1].textContent;
-    let fecha = e.parentElement.parentElement.querySelectorAll("td")[0].textContent;
-    let tipoComprobante = e.parentElement.parentElement.querySelectorAll("td")[3].textContent;
-    let nroComprobante = e.parentElement.parentElement.querySelectorAll("td")[4].textContent;
-    let codCuenta = e.parentElement.parentElement.querySelectorAll("td")[5].textContent;
-    let descripcionCuenta = e.parentElement.parentElement.querySelectorAll("td")[6].textContent;
-    let monto = e.parentElement.parentElement.querySelectorAll("td")[7].textContent.replace(/[$.]/g, "");
-    let observaciones = e.parentElement.parentElement.querySelectorAll("td")[11].querySelector("textArea").value;
+const marcarRecibido = async (e) => {
+    try {
+        const row = e.closest('tr');
+        const cells = row.querySelectorAll('td');
+        const data = {
+            fecha: cells[0].textContent,
+            nroSucursal: cells[1].textContent,
+            tipoComprobante: cells[3].textContent,
+            nroComprobante: cells[4].textContent,
+            monto: cells[5].textContent.replace(/[$.]/g, ''),
+            codCuenta: cells[12].textContent,      // Nueva columna oculta
+            descripcionCuenta: cells[13].textContent, // Nueva columna oculta
+            observaciones: cells[10].querySelector('textarea')?.value || ''
+        };
 
-    e.parentElement.parentElement.querySelectorAll("td")[9].innerHTML = `<i class='bi bi-check-circle-fill' style='color:green;font-size:20px;' ></i>`;
+        $.ajax({
+            type: 'POST',
+            url: 'Controller/ControlEgresosController.php?accion=marcarRecibido',
+            data: data,
+            success: function(response) {
+                cells[8].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                alert('Error al marcar como recibido');
+            }
+        });
+    } catch (error) {
+        console.error('Error al marcar como recibido:', error);
+        alert('Ocurrió un error al marcar como recibido');
+    }
+};
 
-    $.ajax({
-        type: "POST",
-        url: "Controller/ControlEgresosController.php?accion=marcarRecibido",
-        data: {
-            nroSucursal: nroSucursal,
-            tipoComprobante: tipoComprobante,
-            nroComprobante: nroComprobante,
-            codCuenta: codCuenta,
-            descripcionCuenta: descripcionCuenta,
-            monto: monto,
-            fecha: fecha,
-            observaciones: observaciones
-        },
-        success: function (response) {
+const marcarControlado = async (e) => {
+    try {
+        const row = e.closest('tr');
+        const cells = row.querySelectorAll('td');
         
-        }
-    });
+        const data = {
+            fecha: cells[0].textContent,
+            nroSucursal: cells[1].textContent,
+            tipoComprobante: cells[3].textContent,
+            nroComprobante: cells[4].textContent,
+            monto: cells[5].textContent.replace(/[$.]/g, ''),
+            codCuenta: cells[12].textContent,      // Nueva columna oculta
+            descripcionCuenta: cells[13].textContent, // Nueva columna oculta
+            observaciones: cells[10].querySelector('textarea')?.value || ''
+        };
 
-}
+        $.ajax({
+            type: 'POST',
+            url: 'Controller/ControlEgresosController.php?accion=controlTesoreria',
+            data: data,
+            success: function(response) {
+                cells[9].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                alert('Error al marcar como controlado');
+                console.log('Datos enviados:', data); // Para debugging
+            }
+        });
+    } catch (error) {
+        console.error('Error al marcar como controlado:', error);
+        alert('Ocurrió un error al marcar como controlado');
+    }
+};
 
-const marcarControlado = (e) => {
-
-    let nroSucursal = e.parentElement.parentElement.querySelectorAll("td")[1].textContent;
-    let fecha = e.parentElement.parentElement.querySelectorAll("td")[0].textContent;
-    let tipoComprobante = e.parentElement.parentElement.querySelectorAll("td")[3].textContent;
-    let nroComprobante = e.parentElement.parentElement.querySelectorAll("td")[4].textContent;
-    let codCuenta = e.parentElement.parentElement.querySelectorAll("td")[5].textContent;
-    let descripcionCuenta = e.parentElement.parentElement.querySelectorAll("td")[6].textContent;
-    let monto = e.parentElement.parentElement.querySelectorAll("td")[7].textContent.replace(/[$.]/g, "");
-    let observaciones = e.parentElement.parentElement.querySelectorAll("td")[11].querySelector("textArea").value;
-
-    e.parentElement.parentElement.querySelectorAll("td")[10].innerHTML = `<i class='bi bi-check-circle-fill' style='color:green;font-size:20px;margin-right:5%'></i>`;
-
-    $.ajax({
-        type: "POST",
-        url: "Controller/ControlEgresosController.php?accion=controlTesoreria",
-        data: {
-            nroSucursal: nroSucursal,
-            tipoComprobante: tipoComprobante,
-            nroComprobante: nroComprobante,
-            codCuenta: codCuenta,
-            descripcionCuenta: descripcionCuenta,
-            monto: monto,
-            fecha: fecha,
-            observaciones: observaciones
-        },
-        success: function (response) {
+const guardarObservaciones = async (btn) => {
+    try {
+        const row = btn.closest('tr');
+        const cells = row.querySelectorAll('td');
+        const textarea = cells[10].querySelector('textarea');
         
+        if (!textarea.value.trim()) {
+            alert('Por favor, ingrese una observación');
+            return;
         }
-    });
 
-}
+        const data = {
+            nroSucursal: cells[1].textContent,
+            nroComprobante: cells[4].textContent,
+            observaciones: textarea.value
+        };
 
+        $.ajax({
+            type: 'POST',
+            url: 'Controller/ControlEgresosController.php?accion=guardarObservaciones',
+            data: data,
+            success: function(response) {
+                btn.style.display = 'none';
+                textarea.disabled = true;
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                alert('Error al guardar las observaciones');
+            }
+        });
+    } catch (error) {
+        console.error('Error al guardar observaciones:', error);
+        alert('Ocurrió un error al guardar las observaciones');
+    }
+};
 
-const guardarObservaciones = (div) => {
+// Event listener para el botón de filtrar
+document.getElementById('btnFiltrarControlRecepcion').addEventListener('click', (e) => {
+    e.preventDefault();
+    const desde = document.getElementById('desde').value;
+    const hasta = document.getElementById('hasta').value;
+    const estado = document.getElementById('selectEstado').value;
 
-    let observaciones = div.parentElement.parentElement.querySelectorAll("td")[11].querySelector("textArea").value;
-    let nroSucursal = div.parentElement.parentElement.querySelectorAll("td")[1].textContent;
-    let nroComprobante = div.parentElement.parentElement.querySelectorAll("td")[4].textContent;
+    if (!desde || !hasta) {
+        alert('Por favor, seleccione fechas válidas');
+        return;
+    }
 
-
-    $.ajax({
-        type: "POST",
-        url: "Controller/ControlEgresosController.php?accion=guardarObservaciones",
-        data: {
-            nroSucursal: nroSucursal,
-            nroComprobante: nroComprobante,
-            observaciones: observaciones
-        },
-        success: function (response) {
-            div.hidden = true;
-            div.parentElement.parentElement.querySelectorAll("td")[11].querySelector("textArea").disabled = true;
-        }
-    });
-}
+    window.location.href = `?desde=${desde}&hasta=${hasta}&selectEstado=${estado}`;
+});
