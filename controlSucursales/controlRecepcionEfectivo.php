@@ -207,7 +207,7 @@ $locales = $sucursal->traerLocales();
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <textarea class="form-control" rows="2" <?= $gasto['OBSERVACIONES'] ? 'disabled' : '' ?>><?= $gasto['OBSERVACIONES'] ?></textarea>
+                                            <textarea class="form-control" rows="1" <?= $gasto['OBSERVACIONES'] ? 'disabled' : '' ?>><?= $gasto['OBSERVACIONES'] ?></textarea>
                                         </td>
                                         <td>
                                             <?php if($gasto['OBSERVACIONES'] == NULL): ?>
