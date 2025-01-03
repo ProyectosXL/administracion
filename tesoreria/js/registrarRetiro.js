@@ -102,7 +102,7 @@ function crearFilaRemito(datos) {
             <input type="number" 
                    class="form-control form-control-sm input-bultos" 
                    value="1" 
-                   min="1">
+                   min="0">
         </td>
         <td class="text-center">
             <button type="button" class="btn btn-danger btn-sm btn-quitar">
@@ -116,7 +116,7 @@ function crearFilaRemito(datos) {
 
     const inputBultos = tr.querySelector('.input-bultos');
     inputBultos.addEventListener('input', function () {
-        if (this.value < 1) this.value = 1;
+        if (this.value < 1) this.value = 0;
         actualizarTotalBultos();
     });
 

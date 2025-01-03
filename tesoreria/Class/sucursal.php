@@ -419,7 +419,7 @@ class Sucursal {
 
     function ultimoRegistro($nroSucursal) {
 
-        $sql = "SELECT  CAST(SUBSTRING(NRO_REGISTRO, 2, LEN(NRO_REGISTRO)) AS int) AS NRO_REGISTRO FROM RO_ENC_GUIA_RETIROS_SUC WHERE NRO_SUCURS = ?";
+        $sql = "SELECT  MAX(CAST(SUBSTRING(NRO_REGISTRO, 2, LEN(NRO_REGISTRO)) AS int)) AS NRO_REGISTRO FROM RO_ENC_GUIA_RETIROS_SUC WHERE NRO_SUCURS = ?";
 
         $params = array($nroSucursal);
 
@@ -432,6 +432,9 @@ class Sucursal {
         $nroRegistro = 0;
 
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            if($row['NRO_REGISTRO'] == NULL){
+                continue;
+            }
             $nroRegistro = $row['NRO_REGISTRO'];
         }
 
@@ -498,7 +501,7 @@ class Sucursal {
         try {
             $sql = "UPDATE RO_ENC_GUIA_RETIROS_SUC 
                     SET ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?), ESTADO = ? 
-                    WHERE NRO_REGISTRO = ?";
+                    WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
                     
             $params = [
                 $datos['entrego'],
@@ -507,7 +510,8 @@ class Sucursal {
                 $datos['observaciones'],
                 $firma,
                 $estado,
-                $datos['numeroRegistro']
+                $datos['numeroRegistro'],
+                $nroSucursal
                 
             ];
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
