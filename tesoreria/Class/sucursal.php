@@ -398,24 +398,7 @@ class Sucursal {
         }
     }
 
-    public function actualizarGuiaRetiro($id, $entrego, $recibio, $enviaValores, $observaciones, $firma) {
-        try {
-            $sql = "UPDATE RO_ENC_GUIA_RETIROS_SUC 
-                    SET ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?) 
-                    WHERE NRO_REGISTRO = ?";
-                    
-            $params = [$entrego, $recibio, $enviaValores, $observaciones, $firma, $id];
-            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-    
-            if ($stmt === false) {
-                throw new Exception(print_r(sqlsrv_errors(), true));
-            }
-        } catch (Exception $e) {
-            error_log("Error al actualizar la guía: " . $e->getMessage());
-            throw $e;
-        }
-    }
-    
+
 
     function ultimoRegistro($nroSucursal) {
 
@@ -475,11 +458,11 @@ class Sucursal {
         }
     }
 
-    public function listarEgresosPorGuia($idGuia) {
+    public function listarEgresosPorGuia($idGuia, $nroSucurs) {
         $sql = "SELECT T_COMP, N_COMP, FECHA_COMP 
                 FROM RO_EGRESOS_GUIA_RETIROS_SUC 
-                WHERE NRO_REGISTRO = ?";
-        $params = array($idGuia);
+                WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
+        $params = array($idGuia, $nroSucurs);
         
         $stmt = sqlsrv_query($this->cid_central, $sql, $params);
 
@@ -500,7 +483,7 @@ class Sucursal {
     public function actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado) {
         try {
             $sql = "UPDATE RO_ENC_GUIA_RETIROS_SUC 
-                    SET ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?), ESTADO = ? 
+                    SET FECHA_REG = GETDATE(), ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?), ESTADO = ?, PRECINTO = ?  
                     WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
                     
             $params = [
@@ -510,6 +493,7 @@ class Sucursal {
                 $datos['observaciones'],
                 $firma,
                 $estado,
+                (isset($datos['numeroPrecinto']) && $datos['numeroPrecinto'] != '') ? $datos['numeroPrecinto'] : null,
                 $datos['numeroRegistro'],
                 $nroSucursal
                 

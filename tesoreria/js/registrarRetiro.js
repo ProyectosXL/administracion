@@ -193,6 +193,7 @@ async function validarFirma() {
 async function validarPrecinto() {
     const enviaValores = document.getElementById('enviaValores').value;
     if (enviaValores === 'SI') {
+        console.log("entro")
         const numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
         if (!numeroPrecinto) {
             await mostrarAlerta('Error', 'Debe ingresar el número de precinto cuando envía valores.');
@@ -203,6 +204,8 @@ async function validarPrecinto() {
             return false;
         }
     }
+    console.log("validar precinto")
+
     return true;
 }
 

@@ -156,7 +156,7 @@ $locales = $sucursal->traerLocales();
                     <table class="table table-striped table-hover" id="tablaControlRecepcion">
                         <thead>
                             <tr>
-                                <th>FECHA</th>
+                                <th>FECHA RAF</th>
                                 <th>NRO.SUCURSAL</th>
                                 <th>DESC.SUCURSAL</th>
                                 <th>TIPO COMP.</th>

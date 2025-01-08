@@ -543,7 +543,7 @@ const guardaCambios = () => {
     let piso = document.querySelector("#piso").textContent.replace('Piso', ' ').trim();
     let depto = document.querySelector("#depto").textContent.replace('Depto.', ' ').trim();
     let pais = document.querySelector("#pais").textContent.replace('País', ' ').trim();
-    let localidad = document.querySelector("#selectLocalidad").textContent.replace('Localidad', ' ').trim();
+    let localidad = document.querySelector("#divLocalidad").textContent.replace('Localidad', ' ').trim();
     let codPostal = document.querySelector("#codPostal").textContent.replace('Cod. postal', ' ').trim();
     let sucursal = document.querySelector("#sucursalAsignada").getAttribute("attr-realValue");
     let tareaFuente = document.querySelector("#tareaFuente").textContent.replace('Tarea fuente', ' ').trim();

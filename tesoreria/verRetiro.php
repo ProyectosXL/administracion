@@ -26,7 +26,7 @@ foreach ($remitos as $key => $remito) {
     
 }
 
-$egresos = $guiaRetiro->listarEgresosPorGuia($id);
+$egresos = $guiaRetiro->listarEgresosPorGuia($id, $nroSucurs);
 
 ?>
 
