@@ -291,24 +291,43 @@ class Sucursal {
 
     public function listarEgresosEfectivo($nroSucurs) {
         try {
-            $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA29 
-                    WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
-                    AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
-                    ORDER BY N_COMP DESC";
 
-            $params = array($nroSucurs);
-            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-            
-            if ($stmt === false) {
-                throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+            $conexion = new Conexion();
+            $cid_local = $conexion->conectar('');
+
+            if(!$cid_local){
+     
+                $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA29 
+                        WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
+                        AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
+                        ORDER BY N_COMP DESC";
+
+                $params = array($nroSucurs);
+                $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+                
+                if ($stmt === false) {
+                    throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+                }
+        
+                $resultados = [];
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                    $row['FECHA'] = $row['FECHA']->format('d/m/Y');
+                    $resultados[] = $row;
+                }
+
+                    
+            }else{
+                $hostLocal = $_SESSION['conexion_dns'];
+                $db = $_SESSION['base_nombre'];
+                $sql="SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM $hostLocal.$db.DBO.SBA05
+                WHERE COD_CTA = '100100' AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
+                AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
+                ORDER BY N_COMP DESC";
+
+                var_dump($sql);
+                die();
             }
-    
-            $resultados = [];
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $row['FECHA'] = $row['FECHA']->format('d/m/Y');
-                $resultados[] = $row;
-            }
-    
+
             return $resultados;
         } catch (Exception $e) {
             error_log("Error en listarEgresos: " . $e->getMessage());
