@@ -292,6 +292,7 @@ class Sucursal {
     public function listarEgresosEfectivo($nroSucurs) {
         try {
 
+            require_once __DIR__.'/../../Class/conexion.php';
             $conexion = new Conexion();
             $cid_local = $conexion->conectar('');
 
@@ -324,8 +325,21 @@ class Sucursal {
                 AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
                 ORDER BY N_COMP DESC";
 
-                var_dump($sql);
-                die();
+                
+            
+                $stmt = sqlsrv_query($cid_local, $sql);
+
+                if ($stmt === false) {
+                    throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+                }
+
+                $resultados = [];
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                    $row['FECHA'] = $row['FECHA']->format('d/m/Y');
+                    $resultados[] = $row;
+                }
+
+                
             }
 
             return $resultados;
