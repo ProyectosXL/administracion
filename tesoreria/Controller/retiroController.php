@@ -100,7 +100,7 @@ function actualizarRetiro() {
     $estado = $_POST['estado'] ?? null;
     $egresos = $_POST['egresos'] ?? null;
     
-
+    
     if($estado != 1 ){
 
         if (empty($datos) || empty($firma)) {
@@ -110,7 +110,7 @@ function actualizarRetiro() {
 
     }
     $sucursal = new Sucursal();
-    
+ 
    
     $resultado = $sucursal->actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
 

@@ -298,7 +298,8 @@ function eliminarRemito(remito) {
         return (
             await validarSelects() &&
             await validarFirma() &&
-            await validarPrecinto()
+            await validarPrecinto() && 
+            validarEgresos()
         );
     }
     
@@ -413,6 +414,30 @@ const validarRemitos = () => {
     return true;
 };  
 
+const validarEgresos = () => {
+  
+    if(document.getElementById('enviaValores').value == 'SI'){
+        let egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
+            tipo: tr.cells[0].textContent,
+            comprobante: tr.cells[1].textContent,
+            fecha: tr.cells[2].textContent
+        }));
+       
+        if(egresos.length == 0){
+            mostrarAlerta('Error', 'Debe cargar al menos un egreso.');
+            console.log("aca1");
+            return false;
+        }else{
+            console.log("aca");
+            return true;
+        }
+
+    }else{
+        return true
+    }
+}
+
+
 const registrar = async () => {
     
 
@@ -433,10 +458,12 @@ const registrar = async () => {
         const respuestaDatos = await response.json();
         
         let firma = (respuestaDatos.filePath);
+        console.log("antes");
 
     if (!(await validarFormulario())) {
         return;
     }
+    console.log("paso");
     
     try {
         const confirmar = await confirmarAccion(

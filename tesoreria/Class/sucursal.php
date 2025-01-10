@@ -483,7 +483,7 @@ class Sucursal {
     public function actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado) {
         try {
             $sql = "UPDATE RO_ENC_GUIA_RETIROS_SUC 
-                    SET FECHA_REG = GETDATE(), ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = CONVERT(VARBINARY(MAX), ?), ESTADO = ?, PRECINTO = ?  
+                    SET FECHA_REG = GETDATE(), ENTREGO = ?, RECIBIO = ?, ENVIA_VALORES = ?, OBSERVACIONES = ?, FIRMA = ?, ESTADO = ?, PRECINTO = ?  
                     WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
                     
             $params = [

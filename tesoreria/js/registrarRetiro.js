@@ -55,11 +55,30 @@ const validarRemitos = () => {
     }));
 
     if (document.getElementById('enviaValores').value != 'SI' && remitos.length === 0) {
-        alert('Debe cargar al menos un remito');
+        mostrarAlerta('Error', 'Debe cargar al menos un remito');
         return false;
     }
     return true;
 };
+
+const validarEgresos = () => {
+    
+    if(document.getElementById('enviaValores').value == 'SI'){
+        let egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
+            tipo: tr.cells[0].textContent,
+            comprobante: tr.cells[1].textContent,
+            fecha: tr.cells[2].textContent
+        }));
+       
+        if(egresos.length == 0){
+            mostrarAlerta('Error', 'Debe cargar al menos un egreso');
+            return false;
+        }else{
+            return true;
+        }
+
+    }
+}
 
 async function mostrarAlerta(titulo, texto, tipo = 'error') {
     return await Swal.fire({
@@ -214,7 +233,9 @@ async function validarFormulario() {
     return await validarSelects() &&
            await validarFirma() &&
            await validarPrecinto() &&
-           validarRemitos();
+           validarRemitos() &&
+           validarEgresos();
+           
 }
 
 
