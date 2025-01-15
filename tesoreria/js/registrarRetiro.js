@@ -47,7 +47,7 @@ function generarNumeroRegistro() {
 
 generarNumeroRegistro();
 
-const validarRemitos = () => {
+const validarRemitos = async () => {
     const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
         remito: tr.cells[0].textContent,
         destino: tr.cells[1].textContent,
@@ -61,7 +61,7 @@ const validarRemitos = () => {
     return true;
 };
 
-const validarEgresos = () => {
+const validarEgresos = async () => {
     
     if(document.getElementById('enviaValores').value == 'SI'){
         let egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
@@ -77,6 +77,8 @@ const validarEgresos = () => {
             return true;
         }
 
+    }else{
+        return true
     }
 }
 
@@ -233,8 +235,8 @@ async function validarFormulario() {
     return await validarSelects() &&
            await validarFirma() &&
            await validarPrecinto() &&
-           validarRemitos() &&
-           validarEgresos();
+           await validarRemitos() &&
+           await validarEgresos();
            
 }
 
