@@ -251,38 +251,89 @@ class Sucursal {
 
     public function listarRemitos($nroSucurs) {
         try {
-            $sql = "SELECT 
+
+            require_once __DIR__.'/../../Class/conexion.php';
+            $conexion = new Conexion();
+            
+            $cid_local = $conexion->conectar('');
+            
+
+            if(!$cid_local){
+
+                $sql = "SELECT 
+                            CAST(A.FECHA_MOV AS DATE) FECHA,
+                            T_COMP, 
+                            N_COMP REMITO, 
+                            B.DESC_SUCURSAL DESTINO 
+                        FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA09 A
+                        INNER JOIN [LAKERBIS].LOCALES_LAKERS.DBO.SUCURSALES_LAKERS B 
+                            ON A.SUC_DESTIN = B.NRO_SUCURSAL AND A.COD_PRO_CL = B.COD_CLIENT COLLATE Latin1_General_BIN
+                        WHERE T_COMP = 'REM' 
+                            AND A.NRO_SUCURS = ? 
+                            AND A.FECHA_MOV >= DATEADD(day, -45, GETDATE())
+                            AND COD_PRO_CL LIKE 'GT%'
+                            AND N_COMP COLLATE Latin1_General_BIN NOT IN (
+                                SELECT N_COMP COLLATE Latin1_General_BIN 
+                                FROM RO_REMITOS_GUIA_RETIROS_SUC
+                            )
+                        ORDER BY A.FECHA_MOV DESC, N_COMP DESC";
+        
+                $params = array($nroSucurs);
+                $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+                
+                if ($stmt === false) {
+                    throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+                }
+        
+                $resultados = [];
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                    $row['FECHA'] = $row['FECHA']->format('d/m/Y');
+                    $resultados[] = $row;
+                }
+        
+                return $resultados;
+
+            }else{
+
+                $sql ="SELECT 
                         CAST(A.FECHA_MOV AS DATE) FECHA,
                         T_COMP, 
                         N_COMP REMITO, 
-                        B.DESC_SUCURSAL DESTINO 
-                    FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA09 A
-                    INNER JOIN [LAKERBIS].LOCALES_LAKERS.DBO.SUCURSALES_LAKERS B 
-                        ON A.SUC_DESTIN = B.NRO_SUCURSAL AND A.COD_PRO_CL = B.COD_CLIENT COLLATE Latin1_General_BIN
+                        CASE WHEN B.DESC_SUCURSAL = 'LAKERS SA' THEN 'CASA CENTRAL' ELSE B.DESC_SUCURSAL END DESTINO 
+                    FROM STA14 A
+                    INNER JOIN SUCURSAL B 
+                        ON A.SUC_DESTIN = B.NRO_SUCURSAL
                     WHERE T_COMP = 'REM' 
-                        AND A.NRO_SUCURS = ? 
                         AND A.FECHA_MOV >= DATEADD(day, -45, GETDATE())
                         AND COD_PRO_CL LIKE 'GT%'
-                        AND N_COMP COLLATE Latin1_General_BIN NOT IN (
-                            SELECT N_COMP COLLATE Latin1_General_BIN 
-                            FROM RO_REMITOS_GUIA_RETIROS_SUC
-                        )
                     ORDER BY A.FECHA_MOV DESC, N_COMP DESC";
-    
-            $params = array($nroSucurs);
-            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-            
-            if ($stmt === false) {
-                throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+
+                $params = array($nroSucurs);
+
+                $stmt = sqlsrv_query($cid_local, $sql, $params);
+
+                if ($stmt === false) {
+                    throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
+                }
+
+                $resultados = [];
+
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                    $row['FECHA'] = $row['FECHA']->format('d/m/Y');
+                    $resultados[] = $row;
+                }
+
+                $remitosCentral = $this->traerRemitosCentral();
+
+                foreach ($resultados as $key => $value) {
+                    if(in_array($value['REMITO'], $remitosCentral)){
+                        unset($resultados[$key]);
+                    }
+                }
+
+                return $resultados;
+
             }
-    
-            $resultados = [];
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $row['FECHA'] = $row['FECHA']->format('d/m/Y');
-                $resultados[] = $row;
-            }
-    
-            return $resultados;
         } catch (Exception $e) {
             error_log("Error en listarRemitos: " . $e->getMessage());
             return [];
@@ -294,6 +345,7 @@ class Sucursal {
 
             require_once __DIR__.'/../../Class/conexion.php';
             $conexion = new Conexion();
+            
             $cid_local = $conexion->conectar('');
 
             if(!$cid_local){
@@ -318,13 +370,10 @@ class Sucursal {
 
                     
             }else{
-                $hostLocal = $_SESSION['conexion_dns'];
-                $db = $_SESSION['base_nombre'];
-                $sql="SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM $hostLocal.$db.DBO.SBA05
-                WHERE COD_CTA = '100100' AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
-                AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
-                ORDER BY N_COMP DESC";
 
+                $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM SBA05
+                WHERE COD_CTA = '100100' AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
+                ORDER BY N_COMP DESC";
                 
             
                 $stmt = sqlsrv_query($cid_local, $sql);
@@ -334,11 +383,21 @@ class Sucursal {
                 }
 
                 $resultados = [];
+                
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $row['FECHA'] = $row['FECHA']->format('d/m/Y');
                     $resultados[] = $row;
                 }
 
+                $remitosCentral = $this->traerEgresosCentral();
+      
+                foreach ($resultados as $key => $value) {
+                    if(in_array($value['N_COMP'], $remitosCentral)){
+                        unset($resultados[$key]);
+                    }
+                }
+                
+                return $resultados;
                 
             }
 
@@ -350,6 +409,42 @@ class Sucursal {
     }
 
 
+    public function traerRemitosCentral (){
+
+        $sql ="SELECT N_COMP COLLATE Latin1_General_BIN  as remitos
+        FROM RO_REMITOS_GUIA_RETIROS_SUC";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $remitos = [];
+
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $remitos[] = $row['remitos'];
+        }
+
+        return $remitos;
+
+    }
+    public function traerEgresosCentral () {
+
+        $sql = "SELECT N_COMP COLLATE Latin1_General_BIN as remitos FROM RO_EGRESOS_GUIA_RETIROS_SUC";
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $remitos = [];
+
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $remitos[] = $row['remitos'];
+        }
+
+        return $remitos;
+    }
  
     public function listarGuiasRetiro($nroSucurs, $fechaDesde, $fechaHasta) {
         try {
