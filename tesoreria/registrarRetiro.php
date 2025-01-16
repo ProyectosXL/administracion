@@ -192,6 +192,7 @@ function limpiarNombre($nombre) {
                                 <?php
                                 try {
                                     $egresos = $data->listarEgresosEfectivo($nroSucurs);
+                           
                                     foreach ($egresos as $egreso) {
                                         $valor = json_encode([
                                             'comprobante' => $egreso['N_COMP'],
