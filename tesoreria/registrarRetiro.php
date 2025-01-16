@@ -17,7 +17,7 @@ $nroSucurs = $_SESSION['numsuc'];
 function limpiarNombre($nombre) {
     return trim(str_replace(array("\r", "\n", "<br>", "<br/>", "<br />"), ' ', $nombre));
 }
-var_dump($_SESSION);
+
 ?>
 
 <!DOCTYPE html>
