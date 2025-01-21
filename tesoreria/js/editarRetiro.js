@@ -128,7 +128,7 @@ $(document).ready(function() {
         return tr;
     }
 
-   
+    // Función para eliminar un remito específico por su número
     function eliminarRemito(remito) {
         const row = Array.from(document.querySelectorAll('#bodyRemitos tr')).find(tr => {
             return tr.querySelector('td').textContent.trim() === remito;
@@ -140,13 +140,18 @@ $(document).ready(function() {
         }
     }
 
-    function eliminarEgreso(comprobante) {
-        const row = Array.from(document.querySelectorAll('#bodyEgresos tr')).find(tr => {
-            return tr.querySelectorAll('td')[1].textContent.trim() === comprobante.trim();
-        });
+    async function eliminarEgreso(comprobante) {
+        const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este egreso', 'warning');
+            if (confirmar) {
+        
+    
+            const row = Array.from(document.querySelectorAll('#bodyEgresos tr')).find(tr => {
+                return tr.querySelectorAll('td')[1].textContent.trim() === comprobante.trim();
+            });
 
-        if (row) {
-            row.remove();
+            if (row) {
+                row.remove();
+            }
         }
     }
 
