@@ -1,13 +1,8 @@
 
 <?php
-// Controller/getPeriodos.php
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-
-header('Content-Type: application/json');
 
 try {
-    require_once '../Class/Anticipo.php';
+    require_once '../../Class/Anticipo.php';
     $anticipo = new Anticipo();
     
     // Usar el método de la clase

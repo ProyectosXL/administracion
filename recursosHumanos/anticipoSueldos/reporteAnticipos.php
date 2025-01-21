@@ -62,12 +62,6 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Sucursal</label>
-                            <select id="sucursalFilter" class="form-select">
-                                <option value="">Todas las sucursales</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
                             <label class="form-label">Buscar</label>
                             <div class="input-group">
                                 <span class="input-group-text">
