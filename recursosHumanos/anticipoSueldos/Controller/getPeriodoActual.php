@@ -1,8 +1,8 @@
-
 <?php
 // Controller/getPeriodoActual.php
+
 error_reporting(E_ALL);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 header('Content-Type: application/json');
@@ -10,25 +10,10 @@ header('Content-Type: application/json');
 try {
     require_once '../../Class/Anticipo.php';
     $anticipo = new Anticipo();
-    
-    $sql = "SELECT TOP 1 PERIODO, 
-            FORMAT(FECHA_ANTICIPO, 'dd/MM/yyyy') as FECHA_ANTICIPO,
-            FORMAT(VIG_DESDE, 'dd/MM/yyyy HH:mm') as VIG_DESDE,
-            FORMAT(VIG_HASTA, 'dd/MM/yyyy HH:mm') as VIG_HASTA
-            FROM RO_T_FECHA_ANTICIPOS 
-            WHERE MONTH(FECHA_ANTICIPO) = MONTH(GETDATE()) 
-            AND YEAR(FECHA_ANTICIPO) = YEAR(GETDATE())";
-    
-    $stmt = sqlsrv_query($anticipo->cid_central, $sql);
-    
-    if ($stmt === false) {
-        error_log("Error SQL: " . print_r(sqlsrv_errors(), true));
-        throw new Exception("Error al ejecutar la consulta");
-    }
-    
-    $periodoData = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    error_log("Datos recuperados: " . print_r($periodoData, true));
-    
+
+    // Obtener datos del período actual a través del método de la clase Anticipo
+    $periodoData = $anticipo->obtenerPeriodoAnticipo();
+
     if ($periodoData) {
         $response = [
             'success' => true,
@@ -37,17 +22,13 @@ try {
             'vigDesde' => $periodoData['VIG_DESDE'],
             'vigHasta' => $periodoData['VIG_HASTA']
         ];
-        error_log("Respuesta a enviar: " . print_r($response, true));
     } else {
         $response = [
-            'success' => true,
-            'periodo' => null,
-            'fechaAnticipo' => '',
-            'vigDesde' => '',
-            'vigHasta' => ''
+            'success' => false,
+            'message' => 'No se encontraron datos del período actual.'
         ];
     }
-    
+
     echo json_encode($response);
 
 } catch (Exception $e) {
@@ -55,6 +36,6 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => 'Error al obtener los datos: ' . $e->getMessage()
     ]);
 }
