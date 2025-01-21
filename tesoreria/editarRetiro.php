@@ -241,9 +241,9 @@ $egresosCargados = $guiaRetiro->listarEgresosPorGuia($id, $nroSucurs);
                     <tr>
                         <td><?php echo htmlspecialchars($egreso['T_COMP']); ?></td>
                         <td><?php echo htmlspecialchars($egreso['N_COMP']); ?></td>
-                        <td><?php echo htmlspecialchars($egreso['FECHA_COMP']->format('Y-m-d')); ?></td>
-                        <td>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="eliminarEgreso('<?php echo htmlspecialchars($egreso['N_COMP']); ?>')">
+                        <td><?php echo htmlspecialchars($egreso['FECHA_COMP']->format('d/m/Y')); ?></td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-danger btn-sm btn-quitar" onclick="eliminarEgreso('<?php echo htmlspecialchars($egreso['N_COMP']); ?>')">
                                 <i class="bi bi-trash-fill"></i>
                             </button>
                         </td>
