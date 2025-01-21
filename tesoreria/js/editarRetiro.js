@@ -128,17 +128,27 @@ $(document).ready(function() {
         return tr;
     }
 
-    // Función para eliminar un remito específico por su número
-function eliminarRemito(remito) {
-    const row = Array.from(document.querySelectorAll('#bodyRemitos tr')).find(tr => {
-        return tr.querySelector('td').textContent.trim() === remito;
-    });
+   
+    function eliminarRemito(remito) {
+        const row = Array.from(document.querySelectorAll('#bodyRemitos tr')).find(tr => {
+            return tr.querySelector('td').textContent.trim() === remito;
+        });
 
-    if (row) {
-        row.remove(); // Eliminar la fila de la tabla
-        actualizarTotalBultos(); // Actualizar el total de bultos si es necesario
+        if (row) {
+            row.remove(); // Eliminar la fila de la tabla
+            actualizarTotalBultos(); // Actualizar el total de bultos si es necesario
+        }
     }
-}
+
+    function eliminarEgreso(comprobante) {
+        const row = Array.from(document.querySelectorAll('#bodyEgresos tr')).find(tr => {
+            return tr.querySelectorAll('td')[1].textContent.trim() === comprobante.trim();
+        });
+
+        if (row) {
+            row.remove();
+        }
+    }
 
     // Configuración del pad de firma
     function initSignaturePad() {
