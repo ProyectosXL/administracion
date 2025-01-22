@@ -100,8 +100,20 @@ class Vendedor
 
     public function traerVendedores () {
         
-        $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23
-        WHERE INHABILITA = 0";
+        $sql = "
+        SELECT 
+            COD_VENDEDOR AS COD_VENDED, 
+            CONCAT(APELLIDO_Y_NOMBRE, ' - ', NRO_LEGAJO) AS NOMBRE_VEN, 
+            CASE 
+                WHEN HABILITADO = 'S' THEN 0 
+                WHEN HABILITADO = 'N' THEN 1 
+                ELSE NULL 
+            END AS INHABILITA 
+        FROM 
+            RO_T_LEGAJOS_PERSONAL
+        WHERE 
+            HABILITADO = 'S';
+        ";
 
         $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : 'central';
 

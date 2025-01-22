@@ -37,6 +37,7 @@ $datosGuia = $datosGuia[0];
 
 
 $remitosCargados = $guiaRetiro->listarRemitosPorGuia($id, $nroSucurs);
+$egresosCargados = $guiaRetiro->listarEgresosPorGuia($id, $nroSucurs);
 ?>
 
 <!DOCTYPE html>
@@ -236,6 +237,18 @@ $remitosCargados = $guiaRetiro->listarRemitosPorGuia($id, $nroSucurs);
                 </tr>
             </thead>
             <tbody id="bodyEgresos">
+                <?php foreach ($egresosCargados as $egreso): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($egreso['T_COMP']); ?></td>
+                        <td><?php echo htmlspecialchars($egreso['N_COMP']); ?></td>
+                        <td><?php echo htmlspecialchars($egreso['FECHA_COMP']->format('d/m/Y')); ?></td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-danger btn-sm btn-quitar" onclick="eliminarEgreso('<?php echo htmlspecialchars($egreso['N_COMP']); ?>')">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
                 
             </tbody>
         </table>

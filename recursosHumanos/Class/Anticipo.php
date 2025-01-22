@@ -80,6 +80,27 @@ class Anticipo
         return $rows;
     }
 
+    public function existeAnticipo($legajo, $periodo) {
+        $sql = "SELECT COUNT(*) as total 
+                FROM RO_T_DETALLE_ANTICIPOS 
+                WHERE NRO_LEGAJO = ? AND PERIODO = ?";
+        
+        $params = array($legajo, $periodo);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+    
+        if ($stmt === false) {
+            throw new Exception('Error al verificar duplicados: ' . json_encode(sqlsrv_errors()));
+        }
+    
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    
+        if ($row === false || !isset($row['total'])) {
+            throw new Exception('No se pudo obtener el resultado de la consulta de anticipos.');
+        }
+    
+        return $row['total'] > 0;
+    }
+
     public function validarDNI($dni, $legajo) {
         $sql = "SELECT COUNT(*) as total 
                 FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO 
@@ -252,4 +273,23 @@ class Anticipo
          return $row['total'];
      }
 
+    public function obtenerPeriodoAnticipo()
+    {
+        $sql = "SELECT TOP 1 PERIODO, 
+                       FORMAT(FECHA_ANTICIPO, 'dd/MM/yyyy') as FECHA_ANTICIPO,
+                       FORMAT(VIG_DESDE, 'dd/MM/yyyy HH:mm') as VIG_DESDE,
+                       FORMAT(VIG_HASTA, 'dd/MM/yyyy HH:mm') as VIG_HASTA
+                FROM RO_T_FECHA_ANTICIPOS 
+                WHERE MONTH(FECHA_ANTICIPO) = MONTH(GETDATE()) 
+                AND YEAR(FECHA_ANTICIPO) = YEAR(GETDATE())";
+    
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+    
+        if ($stmt === false) {
+            throw new Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+    
+        return sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    }
+    
 }

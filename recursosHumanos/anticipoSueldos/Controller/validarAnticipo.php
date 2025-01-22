@@ -1,8 +1,7 @@
-
 <?php
 // Controller/validarAnticipo.php
 error_reporting(E_ALL);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 header('Content-Type: application/json');
@@ -22,37 +21,36 @@ try {
     require_once '../../Class/Anticipo.php';
     $anticipo = new Anticipo();
 
-    // Obtener período vigente usando el método de la clase
+    // Obtener el período vigente usando el método de la clase
     $periodoData = $anticipo->obtenerPeriodoActual();
     
-    if (!$periodoData) {
+    if (!$periodoData || empty($periodoData['PERIODO'])) {
         throw new Exception('No hay un período vigente para cargar anticipos');
     }
 
-    // Validar duplicados usando el método obtenerValor
-    $sql = "SELECT a.*, CONVERT(VARCHAR, a.FECHA_CARGA, 120) as FECHA_FORMATEADA 
-            FROM RO_T_DETALLE_ANTICIPOS a 
-            WHERE a.NRO_LEGAJO = ? AND a.PERIODO = ?";
-    
-    $stmt = sqlsrv_query($anticipo->cid_central, $sql, array($registro['legajo'], $periodoVigente));
-    
-    if ($stmt === false) {
-        throw new Exception('Error al verificar duplicados');
+    $periodoVigente = isset($periodoData['PERIODO']) ? $periodoData['PERIODO'] : null;
+
+if (!$periodoVigente) {
+    throw new Exception('El período vigente no está definido.');
+}
+
+foreach ($registros as $registro) {
+    if (!isset($registro['legajo'], $registro['nombre'])) {
+        throw new Exception('Faltan datos requeridos en el registro.');
     }
 
-    $duplicado = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    // Verificación de anticipo usando el nuevo método del modelo
     
-    if ($duplicado) {
-        $fechaCarga = new DateTime($duplicado['FECHA_FORMATEADA']);
+    if ($anticipo->existeAnticipo($registro['legajo'], $periodoVigente)) {
         throw new Exception(
-            "Ya existe un anticipo registrado para el empleado:\n" .
-            "Legajo: " . $registro['legajo'] . "\n" .
-            "Nombre: " . $registro['nombre'] . "\n" .
-            "Período: " . $periodoVigente . "\n" .
-            "Importe: $" . number_format($duplicado['IMPORTE'], 2, ',', '.') . "\n" .
-            "Fecha de carga: " . $fechaCarga->format('d/m/Y H:i:s')
+            "Ya existe un anticipo registrado para el empleado:<br>" .
+            "Legajo: " . htmlspecialchars($registro['legajo']) . "<br>" .
+            "Nombre: " . htmlspecialchars($registro['nombre']) . "<br>" .
+            "Período: " . htmlspecialchars($periodoVigente) . "<br>"
         );
     }
+}
+
 
     $response = array(
         'success' => true,
