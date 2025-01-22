@@ -61,8 +61,9 @@ class Anticipo
 
     public function traerEmpleadosIndividual($search = ''){
         $sql = "SELECT TOP 10 NRO_LEGAJO, NRO_DOCUMENTO, APELLIDO_Y_NOMBRE 
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO 
-                WHERE APELLIDO_Y_NOMBRE LIKE ? 
+                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO A
+                LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.LEGAJO_SU B ON A.ID_LEGAJO = B.ID_LEGAJO 
+                WHERE APELLIDO_Y_NOMBRE LIKE ? AND B.HABILITADO = 'S' 
                 ORDER BY APELLIDO_Y_NOMBRE";
         
         $params = array("%$search%");
