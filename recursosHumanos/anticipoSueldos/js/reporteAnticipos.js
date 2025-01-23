@@ -39,15 +39,22 @@ $(document).ready(function() {
         columns: [
             { data: 'NRO_LEGAJO' },
             { data: 'APELLIDO_Y_NOMBRE' },
-            { data: 'DNI' },
+            { 
+                data: 'DNI',
+                render: function(data) {
+                    return data.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                }
+            },
             { data: 'PERIODO' },
-            { data: 'IMPORTE', 
-              render: function(data) {
-                  return '$ ' + data;
-              }
+            { 
+                data: 'IMPORTE', 
+                render: function(data) {
+                let importe = parseFloat(data).toFixed(0);
+                return importe.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            }
             },
             { data: 'FECHA_CARGA' }
-        ],
+        ],        
         dom: 'Bfrtip',
         buttons: [
             {

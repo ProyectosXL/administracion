@@ -12,6 +12,17 @@
     <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        .table-responsive {
+            overflow-x: hidden !important;
+        }
+        #reportTable {
+            width: 100% !important;
+            table-layout: auto !important;
+        }
+        .dataTables_wrapper {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
         .card {
             border: none;
             box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
