@@ -1,22 +1,30 @@
 
 <?php
 session_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-
 header('Content-Type: application/json');
 
 try {
     require_once '../../Class/Anticipo.php';
     $anticipo = new Anticipo();
     
-    $nroSucursal = isset($_SESSION['numsuc']) ? $_SESSION['numsuc'] : '1';
-    $empleados = $anticipo->traerEmpleadosGrupo($nroSucursal);
+    $sector = isset($_GET['sector']) ? $_GET['sector'] : null;
     
-    echo json_encode($empleados);
+    if (!$sector) {
+        echo json_encode([
+            'data' => []
+        ]);
+        exit;
+    }
+
+    $empleados = $anticipo->traerEmpleadosGrupo($sector);
+    
+    echo json_encode([
+        'data' => $empleados
+    ]);
 
 } catch (Exception $e) {
-    error_log("Error: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    echo json_encode([
+        'data' => [],
+        'error' => $e->getMessage()
+    ]);
 }

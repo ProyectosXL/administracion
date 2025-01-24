@@ -191,6 +191,21 @@ $nroSucurs = $_SESSION['numsuc'];
             </div>
         </div>
 
+        <!-- Sector Selector - Se mostrará solo cuando la sucursal sea Casa Central -->
+        <div class="col-12" id="sectorSelector" style="display: none;">
+            <div class="info-box bg-light">
+                <div class="info-box-content">
+                    <i class="fas fa-industry me-2 text-primary"></i>
+                    <span class="info-box-text">Sector:</span>
+                    <select id="sector" class="form-select mt-2">
+                        <option value="">Seleccione sector</option>
+                        <option value="FABRICA">FABRICA</option>
+                        <option value="LOGISTICA">LOGISTICA</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Form -->
         <form id="adelantoForm" class="mb-4">
             <div class="card">

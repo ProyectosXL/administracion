@@ -38,23 +38,25 @@ class Anticipo
 
     }
 
-    public function traerEmpleadosGrupo($nroSucurs){
-
-        $sql = "SELECT NRO_LEGAJO, NRO_DOCUMENTO, APELLIDO_Y_NOMBRE, NRO_SUCURS, SECTOR FROM RO_V_LEGAJO_GRUPOS
-                WHERE NRO_SUCURS = $nroSucurs
-                ORDER BY SECTOR, APELLIDO_Y_NOMBRE 
-        ";
-
-        $stmt = sqlsrv_query( $this->cid_central, $sql );
-
-        $rows = array();
-
-        while( $v = sqlsrv_fetch_array( $stmt) ) {
-            $rows[] = $v;
+    public function traerEmpleadosGrupo($sector = null) {
+        $sql = "SELECT NRO_LEGAJO, APELLIDO_Y_NOMBRE, SECTOR 
+                FROM RO_V_LEGAJO_GRUPOS 
+                WHERE SECTOR = ? 
+                ORDER BY APELLIDO_Y_NOMBRE";
+    
+        $params = array($sector);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+    
+        if ($stmt === false) {
+            return array();
         }
-
-        return $rows;  
-
+    
+        $rows = array();
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $rows[] = $row;
+        }
+    
+        return $rows;
     }
 
     public function traerEmpleadosIndividual($search = ''){
