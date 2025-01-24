@@ -48,26 +48,47 @@ $(document).ready(function() {
             { data: 'PERIODO' },
             { 
                 data: 'IMPORTE', 
-                render: function(data) {
-                let importe = parseFloat(data).toFixed(0);
-                return importe.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            }
+                render: function(data, type, row) {
+                    let importe = parseFloat(data).toFixed(0);
+                    
+                    if (type === 'display') {
+                        return importe.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                    } else if (type === 'export' || type === 'excel' || type === 'pdf') {
+                        return importe.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    }
+                    return importe;
+                }
             },
             { data: 'FECHA_CARGA' }
         ],        
+                
         dom: 'Bfrtip',
         buttons: [
             {
-                extend: 'excel',
+                extend: 'excelHtml5',
                 text: '<i class="fas fa-file-excel me-2"></i>Excel',
                 className: 'btn btn-success',
-                title: 'Reporte de Anticipos'
+                title: 'Reporte de Anticipos',
+                exportOptions: {
+                    columns: ':visible',
+                    format: {
+                        body: function(data, row, column, node) {
+                            if (column === 4) {
+                                return data.replace(/\./g, '');
+                            }
+                            return data;
+                        }
+                    }
+                }
             },
             {
-                extend: 'pdf',
+                extend: 'pdfHtml5',
                 text: '<i class="fas fa-file-pdf me-2"></i>PDF',
                 className: 'btn btn-danger',
-                title: 'Reporte de Anticipos'
+                title: 'Reporte de Anticipos',
+                exportOptions: {
+                    columns: ':visible'
+                }
             }
         ],
         language: {
@@ -77,14 +98,14 @@ $(document).ready(function() {
         ordering: true,
         order: [[5, 'desc']],
         responsive: true
-    });
-
-    // Manejar filtros
-    $('#periodFilter').on('change', function() {
-        table.ajax.reload();
-    });
-
-    $('#searchBox').on('keyup', function() {
-        table.search(this.value).draw();
-    });
-});
+        });
+        
+        $('#periodFilter').on('change', function() {
+            table.ajax.reload();
+        });
+        
+        $('#searchBox').on('keyup', function() {
+            table.search(this.value).draw();
+        });
+        });
+        
