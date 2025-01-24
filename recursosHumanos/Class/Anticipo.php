@@ -40,12 +40,10 @@ class Anticipo
 
     public function traerEmpleadosGrupo($nroSucurs){
 
-        $sql = "SELECT * FROM RO_T_LEGAJOS_PERSONAL WHERE NUM_SUCURSAL = $nroSucurs
+        $sql = "SELECT NRO_LEGAJO, NRO_DOCUMENTO, APELLIDO_Y_NOMBRE, NRO_SUCURS, SECTOR FROM RO_V_LEGAJO_GRUPOS
+                WHERE NRO_SUCURS = $nroSucurs
+                ORDER BY SECTOR, APELLIDO_Y_NOMBRE 
         ";
-
-        if($nroLegajo != null){
-            $sql .= " WHERE NRO_LEGAJO = $nroLegajo";
-        }
 
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
@@ -61,9 +59,8 @@ class Anticipo
 
     public function traerEmpleadosIndividual($search = ''){
         $sql = "SELECT TOP 10 NRO_LEGAJO, NRO_DOCUMENTO, APELLIDO_Y_NOMBRE 
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO A
-                LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.LEGAJO_SU B ON A.ID_LEGAJO = B.ID_LEGAJO 
-                WHERE APELLIDO_Y_NOMBRE LIKE ? AND B.HABILITADO = 'S' 
+                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO
+                WHERE APELLIDO_Y_NOMBRE LIKE ?
                 ORDER BY APELLIDO_Y_NOMBRE";
         
         $params = array("%$search%");

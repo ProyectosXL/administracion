@@ -71,8 +71,8 @@ try {
 
             // Insertar registro
             $sql = "INSERT INTO RO_T_DETALLE_ANTICIPOS 
-                    (NRO_LEGAJO, APELLIDO_Y_NOMBRE, DNI, IMPORTE, PERIODO, FECHA_CARGA) 
-                    VALUES (?, ?, ?, ?, ?, GETDATE())";
+                    (NRO_LEGAJO, APELLIDO_Y_NOMBRE, DNI, IMPORTE, PERIODO, FECHA_CARGA, NRO_SUCURS, SECTOR) 
+                    VALUES (?, ?, ?, ?, ?, GETDATE(), 1, 'ADMINISTRACION')";
             
             $params = array(
                 $registro['legajo'],
