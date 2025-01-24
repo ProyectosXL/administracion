@@ -38,19 +38,20 @@ foreach ($registros as $registro) {
     if (!isset($registro['legajo'], $registro['nombre'])) {
         throw new Exception('Faltan datos requeridos en el registro.');
     }
-
     // Verificación de anticipo usando el nuevo método del modelo
     
     if ($anticipo->existeAnticipo($registro['legajo'], $periodoVigente)) {
+        $detalleAnticipo = $anticipo->obtenerAnticipoDetalle($registro['legajo'], $periodoVigente);
         throw new Exception(
             "Ya existe un anticipo registrado para el empleado:<br>" .
             "Legajo: " . htmlspecialchars($registro['legajo']) . "<br>" .
             "Nombre: " . htmlspecialchars($registro['nombre']) . "<br>" .
-            "Período: " . htmlspecialchars($periodoVigente) . "<br>"
+            "Período: " . htmlspecialchars($periodoVigente) . "<br>" .
+            "Importe: " . '$' . number_format($detalleAnticipo['IMPORTE'], 2, ',', '.') . "<br>" .
+            "Fecha de carga: " . $detalleAnticipo['FECHA_CARGA']->format('d/m/Y H:i') . "<br>"
         );
     }
 }
-
 
     $response = array(
         'success' => true,

@@ -291,5 +291,20 @@ class Anticipo
     
         return sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     }
-    
+ 
+    public function obtenerAnticipoDetalle($legajo, $periodo)
+    {
+        $sql = "SELECT NRO_LEGAJO, PERIODO, IMPORTE, FECHA_CARGA 
+                FROM RO_T_DETALLE_ANTICIPOS 
+                WHERE NRO_LEGAJO = ? AND PERIODO = ?";
+        
+        $params = array($legajo, $periodo);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+        
+        if ($stmt === false) {
+            throw new Exception("Error al obtener detalle de anticipo: " . print_r(sqlsrv_errors(), true));
+        }
+        
+        return sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    }
 }
