@@ -38,13 +38,15 @@ class Anticipo
 
     }
 
-    public function traerEmpleadosGrupo($sector = null) {
+    public function traerEmpleadosGrupo($sector, $nroSucursal) {
         $sql = "SELECT NRO_LEGAJO, APELLIDO_Y_NOMBRE, SECTOR 
                 FROM RO_V_LEGAJO_GRUPOS 
-                WHERE SECTOR = ? 
+                WHERE SECTOR like ?
+                AND NRO_SUCURS = ? 
                 ORDER BY APELLIDO_Y_NOMBRE";
     
-        $params = array($sector);
+        $params = array($sector, $nroSucursal);
+
         $stmt = sqlsrv_query($this->cid_central, $sql, $params);
     
         if ($stmt === false) {

@@ -6,10 +6,12 @@ $(document).ready(function() {
     if (isCasaCentral) {
         $('#sectorSelector').show();
     }
-    
+    let nroSucursal = document.querySelector('#numSucursal').getAttribute('attr-numSucursal');
+
+
     const table = $('#empleadosTable').DataTable({
         ajax: {
-            url: 'Controller/getEmpleadosGrupo.php',
+            url: 'Controller/getEmpleadosGrupo.php?sucursal=' + nroSucursal,
             type: 'GET',
             data: function(d) {
                 return {
