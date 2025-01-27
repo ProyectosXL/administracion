@@ -68,10 +68,9 @@ if (json_last_error() !== JSON_ERROR_NONE || !is_array($registros)) {
                 throw new Exception('El importe no es válido');
             }
 
-            // Obtener el DNI del empleado basado en el legajo
-$sqlDni = "SELECT DNI FROM RO_V_LEGAJO_GRUPOS WHERE NRO_LEGAJO = ?";
-$dni = $anticipo->obtenerValor($sqlDni, array($registro['legajo']));
-
+            $sqlDni = "SELECT NRO_DOCUMENTO FROM RO_V_LEGAJO_GRUPOS WHERE NRO_LEGAJO = ?";
+            $dni = $anticipo->obtenerValor($sqlDni, array($registro['legajo']));
+            
 if (!$dni) {
     throw new Exception("No se encontró el DNI para el legajo {$registro['legajo']}");
 }

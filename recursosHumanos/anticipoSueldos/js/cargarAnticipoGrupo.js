@@ -27,21 +27,23 @@ $(document).ready(function() {
             { data: 'APELLIDO_Y_NOMBRE' },
             {
                 data: 'IMPORTE',
-                render: function(data, type, row) {
-                    let importe = data ? data : '0'; 
-                    let disabled = parseFloat(importe) > 0 ? 'readonly' : ''; 
-                    return `<input type="text" class="form-control importe-input" value="${importe}" ${disabled} placeholder="0">`;
+                render: function(data) {
+                    if (data && data !== '0') {
+                        return `<input type="text" class="form-control importe-input" value="$ ${data}" disabled>`;
+                    }
+                    return `<input type="text" class="form-control importe-input" value="$ 0">`;
                 }
-            }            
+            }
+            
         ],
         language: {
             "sProcessing": "Procesando...",
-            "sLengthMenu": "Mostrar _MENU_ registros",
+            "sLengthMenu": "Mostrar MENU registros",
             "sZeroRecords": "No se encontraron resultados",
             "sEmptyTable": "Ningún dato disponible en esta tabla",
-            "sInfo": "Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros",
+            "sInfo": "Mostrando registros del START al END de un total de TOTAL registros",
             "sInfoEmpty": "Mostrando registros del 0 al 0 de un total de 0 registros",
-            "sInfoFiltered": "(filtrado de un total de _MAX_ registros)",
+            "sInfoFiltered": "(filtrado de un total de MAX registros)",
             "sSearch": "Buscar:",
             "sLoadingRecords": "Cargando..."
         },
@@ -56,38 +58,48 @@ $(document).ready(function() {
 
     table.on('draw', function() {
         $('.importe-input').each(function() {
+            let inputValue = $(this).val().replace(/\$|\s|,/g, '').trim(); // Eliminamos el signo $ y espacios
+    
             new Cleave(this, {
                 numeral: true,
                 numeralThousandsGroupStyle: 'thousand',
+                prefix: '$ ',
                 numeralDecimalScale: 0
             });
-        });        
+    
+            if (inputValue !== '' && parseInt(inputValue) > 0) {
+                $(this).prop('disabled', true);
+            } else {
+                $(this).prop('disabled', false).val('$ 0'); // Valor por defecto cuando es 0 o vacío
+            }
+        });
     });
 
-    // Manejar la validación y el envío del formulario
-    $('#adelantoForm').on('submit', function(e) {
-        e.preventDefault(); // Evitar el envío predeterminado del formulario
-        cargarAnticipoGrupo();
-    });
 });
-
 // Función para validar y enviar datos
 const cargarAnticipoGrupo = () => {
     let valid = false;
     let dataToSend = [];
 
-    $('.importe-input').each(function() {
-        let valor = $(this).val().replace(/\$|,/g, '').trim();
-        let row = $(this).closest('tr');
+    $('#empleadosTable tbody tr').each(function() {
+        let row = $(this);
         let legajo = row.find('td:first').text().trim();
-        let nombre = row.find('td:eq(1)').text().trim();  // Asegúrate de que se captura correctamente el nombre
-    
-        if (valor !== '' && parseFloat(valor) > 0) {
+        let nombre = row.find('td:eq(1)').text().trim();
+        let input = row.find('.importe-input:not(:disabled)');
+
+        let valor = input.val() ? input.val().replace(/\$|\s|,/g, '').trim() : '';
+
+        if (valor !== '' && parseInt(valor) > 0) {
             valid = true;
-            dataToSend.push({ legajo: legajo, nombre: nombre, importe: valor });
+            dataToSend.push({
+                legajo: legajo,
+                nombre: nombre,
+                importe: valor
+            });
+
+            input.prop('disabled', true);
         }
     });
-    
 
     if (!valid) {
         Swal.fire({
