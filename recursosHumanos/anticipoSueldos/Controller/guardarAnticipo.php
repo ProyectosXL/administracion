@@ -12,14 +12,13 @@ try {
     $anticipo = new Anticipo();
 
     // Obtener y validar los datos POST
-    if (!isset($_POST['registros'])) {
-        throw new Exception('No se recibieron datos para guardar');
-    }
+    $inputJSON = file_get_contents('php://input');
+$registros = json_decode($inputJSON, true);
 
-    $registros = json_decode($_POST['registros'], true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        throw new Exception('Error al procesar los datos recibidos');
-    }
+if (json_last_error() !== JSON_ERROR_NONE || !is_array($registros)) {
+    error_log("Error en la decodificación JSON: " . json_last_error_msg());
+    throw new Exception('Error al procesar los datos recibidos');
+}
 
     // Validar período vigente
     $sql = "SELECT COUNT(*) as hay_vigente 
@@ -49,7 +48,7 @@ try {
     try {
         foreach ($registros as $registro) {
             // Validar datos requeridos
-            if (!isset($registro['legajo'], $registro['nombre'], $registro['dni'], $registro['importe'])) {
+            if (!isset($registro['legajo'], $registro['nombre'], $registro['importe'])) {
                 throw new Exception('Datos incompletos en el registro');
             }
 
@@ -69,6 +68,15 @@ try {
                 throw new Exception('El importe no es válido');
             }
 
+            // Obtener el DNI del empleado basado en el legajo
+$sqlDni = "SELECT DNI FROM RO_V_LEGAJO_GRUPOS WHERE NRO_LEGAJO = ?";
+$dni = $anticipo->obtenerValor($sqlDni, array($registro['legajo']));
+
+if (!$dni) {
+    throw new Exception("No se encontró el DNI para el legajo {$registro['legajo']}");
+}
+
+
             // Insertar registro
             $sql = "INSERT INTO RO_T_DETALLE_ANTICIPOS 
                     (NRO_LEGAJO, APELLIDO_Y_NOMBRE, DNI, IMPORTE, PERIODO, FECHA_CARGA, NRO_SUCURS, SECTOR) 
@@ -77,10 +85,11 @@ try {
             $params = array(
                 $registro['legajo'],
                 $registro['nombre'],
-                $registro['dni'],
+                $dni,  // Aquí agregamos el DNI obtenido
                 floatval($importe),
                 $periodoVigente
             );
+            
 
             if (!$anticipo->ejecutar($sql, $params)) {
                 throw new Exception('Error al insertar el registro');

@@ -39,14 +39,19 @@ class Anticipo
     }
 
     public function traerEmpleadosGrupo($sector, $nroSucursal) {
-        $sql = "SELECT NRO_LEGAJO, APELLIDO_Y_NOMBRE, SECTOR 
-                FROM RO_V_LEGAJO_GRUPOS 
-                WHERE SECTOR like ?
-                AND NRO_SUCURS = ? 
-                ORDER BY APELLIDO_Y_NOMBRE";
+        $sql = "SELECT 
+                    a.NRO_LEGAJO, 
+                    a.APELLIDO_Y_NOMBRE, 
+                    COALESCE(d.IMPORTE, 0) AS IMPORTE 
+                FROM RO_V_LEGAJO_GRUPOS a
+                LEFT JOIN RO_T_DETALLE_ANTICIPOS d 
+                    ON a.NRO_LEGAJO = d.NRO_LEGAJO
+                WHERE a.SECTOR like ? 
+                AND a.NRO_SUCURS = ? 
+                ORDER BY a.APELLIDO_Y_NOMBRE";
     
         $params = array($sector, $nroSucursal);
-
+    
         $stmt = sqlsrv_query($this->cid_central, $sql, $params);
     
         if ($stmt === false) {
@@ -60,6 +65,7 @@ class Anticipo
     
         return $rows;
     }
+    
 
     public function traerEmpleadosIndividual($search = ''){
         $sql = "SELECT TOP 10 NRO_LEGAJO, NRO_DOCUMENTO, APELLIDO_Y_NOMBRE 
