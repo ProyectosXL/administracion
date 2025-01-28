@@ -1,7 +1,11 @@
 
 <?php
+session_start();
 if (!isset($_SESSION['numsuc'])) {
     $_SESSION['numsuc'] = 'Casa Central';
+    $nombreSucursal = 'Casa Central';
+}else{
+    $nombreSucursal = $_SESSION['descLocal'];
 }
 $nroSucurs = $_SESSION['numsuc'];
 ?>
@@ -141,7 +145,7 @@ $nroSucurs = $_SESSION['numsuc'];
                                 <div class="info-box-content">
                                     <i class="fas fa-building me-2 text-primary"></i>
                                     <span class="info-box-text">Sucursal:</span>
-                                    <span class="info-box-number" id="numSucursal"><?php echo $nroSucurs; ?></span>
+                                    <span class="info-box-number" id="numSucursal" attr-numSucursal="<?php echo $nroSucurs ?>"><?php echo $nombreSucursal; ?></span>
                                 </div>
                             </div>
                         </div>
@@ -226,7 +230,7 @@ $nroSucurs = $_SESSION['numsuc'];
             </div>
 
             <div class="text-end mt-3">
-                <button type="submit" class="btn btn-primary">
+                <button type="button" class="btn btn-primary" onclick = "cargarAnticipoGrupo()">
                     <i class="fas fa-paper-plane me-2"></i>Enviar
                 </button>
             </div>
