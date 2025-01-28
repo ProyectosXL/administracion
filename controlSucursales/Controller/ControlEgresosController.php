@@ -93,7 +93,6 @@ function uncheckFactura ($sucursal) {
 
 function marcarControlado ($sucursal){
 
-
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nro_sucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -105,7 +104,7 @@ function marcarControlado ($sucursal){
     $factura = $_POST['factura'];
     $control = $_POST['control'];  
     $observaciones = $_POST['observaciones'];  
-
+    
     $sucursal->marcarControlado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control, $observaciones);
 
 
