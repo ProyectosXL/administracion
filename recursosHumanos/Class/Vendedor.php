@@ -263,12 +263,35 @@ class Vendedor
 
         $cidLocal = $cid->conectar($db);
 
+        if (strlen($nombre) > 30) {
+            $nombreLimite = $nombre;
+            $posGuion = strpos($nombre, '-');
+            
+            if ($posGuion !== false) {
+                $nombreParte = substr($nombre, 0, $posGuion);
+                $numeroParte = substr($nombre, $posGuion);
+    
+                $maxNombreLength = 30 - strlen($numeroParte);
+    
+                if (strlen($nombreParte) > $maxNombreLength) {
+                    $nombreParte = substr($nombreParte, 0, $maxNombreLength);
+                }
+
+                $nombreLimite = $nombreParte . $numeroParte;
+            } else {
+                $nombreLimite = substr($nombre, 0, 30);
+            }
+        } else {
+            $nombreLimite = $nombre;
+        }
+
+
         $sqlInsertaVended = 
         "
         IF NOT EXISTS (SELECT * FROM GVA23 WHERE COD_VENDED = '".$cod."')
         BEGIN
             INSERT INTO GVA23 (COD_VENDED, NOMBRE_VEN, PORC_COMIS, INHABILITA, TIPO_DOC, COD_GVA23)
-            VALUES('".$cod."', '".$nombre."', 1, 0, 99, '".$cod."')
+            VALUES('".$cod."', '".$nombreLimite."', 1, 0, 99, '".$cod."')
         END
         ELSE 
         BEGIN
