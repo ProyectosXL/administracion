@@ -80,7 +80,7 @@ const checkFactura = (div) => {
 }
 
 const checkControl = (div) => {
- 
+
 
     allTd = div.parentElement.parentElement.querySelectorAll("td");
     let fecha = allTd[0].textContent;
@@ -111,6 +111,7 @@ const checkControl = (div) => {
         accion = "uncheckControl";
 
     }
+  
 
     $.ajax({
         type: "POST",
@@ -126,6 +127,7 @@ const checkControl = (div) => {
             leyenda: leyenda,
             factura: factura,
             control: control,
+            observaciones: "",
         },
         success: function (response) {
         }
