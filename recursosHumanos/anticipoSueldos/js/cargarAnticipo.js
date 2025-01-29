@@ -122,8 +122,8 @@ if (fechaActual < fechaInicio || fechaActual > fechaFin) {
         text: 'El período para solicitar anticipos se encuentra cerrado'
     });
 
+    return 1;
 }    
-return 1;
 
 // Primera validación
 const validacionResponse = $.ajax({
