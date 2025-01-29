@@ -34,7 +34,6 @@ $(document).ready(function() {
                     return `<input type="text" class="form-control importe-input" value="$ 0">`;
                 }
             }
-            
         ],
         language: {
             "sProcessing": "Procesando...",
@@ -76,17 +75,63 @@ $(document).ready(function() {
     });
 
 });
-// Función para validar y enviar datos
+
+const obtenerFechaDesdeTexto = (idElemento) => {
+    const elemento = document.getElementById(idElemento);
+    if (!elemento) {
+        console.error(`Error: No se encontró el elemento ${idElemento}`);
+        return null;
+    }
+    const textoFecha = elemento.textContent.trim();
+    if (!textoFecha) {
+        console.error(`Error: El elemento ${idElemento} no tiene texto`);
+        return null;
+    }
+    console.log(`${idElemento} actualizado:`, textoFecha);
+    
+    const partes = textoFecha.split(' ');
+    const fechaPartes = partes[0].split('/');
+    if (fechaPartes.length !== 3) {
+        console.error(`Error en formato de fecha: ${textoFecha}`);
+        return null;
+    }
+    
+    return new Date(`${fechaPartes[2]}-${fechaPartes[1]}-${fechaPartes[0]}T${partes[1] || '00:00'}:00`);
+};
+
 const cargarAnticipoGrupo = () => {
     let valid = false;
     let dataToSend = [];
 
-    $('#empleadosTable tbody tr').each(function() {
+    const fechaInicio = obtenerFechaDesdeTexto('vigDesde');
+    const fechaFin = obtenerFechaDesdeTexto('vigHasta');
+    const fechaDeposito = obtenerFechaDesdeTexto('fechaDeposito');
+    const fechaActual = new Date();
+
+    if (!fechaInicio || !fechaFin || !fechaDeposito) {
+        console.error("Error: No se pudieron obtener correctamente las fechas.");
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de fecha',
+            text: 'No se pudieron obtener las fechas correctamente. Verifique el formato.'
+        });
+        return;
+    }
+
+     if (fechaActual < fechaInicio || fechaActual > fechaFin) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Período cerrado',
+            text: 'El período para solicitar anticipos se encuentra cerrado'
+        });
+        return;
+    }    
+
+    $('#empleadosTable tbody tr').each(function () {
         let row = $(this);
         let legajo = row.find('td:first').text().trim();
         let nombre = row.find('td:eq(1)').text().trim();
         let input = row.find('.importe-input:not(:disabled)');
-
         let valor = input.val() ? input.val().replace(/\$|\s|,/g, '').trim() : '';
 
         if (valor !== '' && parseInt(valor) > 0) {
@@ -109,31 +154,22 @@ const cargarAnticipoGrupo = () => {
         });
         return;
     }
-
-    // Enviar datos al backend
+  
     $.ajax({
         url: 'Controller/guardarAnticipo.php',
         type: 'POST',
         data: JSON.stringify(dataToSend),
         contentType: 'application/json',
-        success: function(response) {
-            if (response.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Éxito',
-                    text: response.message
-                }).then(() => {
-                    location.reload();
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: response.message
-                });
-            }
+        success: function (response) {
+            Swal.fire({
+                icon: response.success ? 'success' : 'error',
+                title: response.success ? 'Éxito' : 'Error',
+                text: response.message
+            }).then(() => {
+                if (response.success) location.reload();
+            });
         },
-        error: function() {
+        error: function () {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
@@ -142,4 +178,3 @@ const cargarAnticipoGrupo = () => {
         }
     });
 };
-

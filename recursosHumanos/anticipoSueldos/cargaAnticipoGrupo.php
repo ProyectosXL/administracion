@@ -1,7 +1,7 @@
 
 <?php
 session_start();
-if (!isset($_SESSION['numsuc'])) {
+if (!isset($_SESSION['numsuc']) || $_SESSION['numsuc'] == 'Casa Central') {
     $_SESSION['numsuc'] = 'Casa Central';
     $nombreSucursal = 'Casa Central';
 }else{
