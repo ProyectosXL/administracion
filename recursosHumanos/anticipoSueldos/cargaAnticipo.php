@@ -219,7 +219,7 @@ $nroSucurs = $_SESSION['numsuc'];
             </div>
 
             <div class="text-end mt-3">
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-primary" onclick = "cargarAnticipo()">    
                     <i class="fas fa-paper-plane me-2"></i>Enviar
                 </button>
             </div>
