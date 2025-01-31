@@ -13,7 +13,8 @@ try {
 
     // Obtener y validar los datos POST
     $inputJSON = file_get_contents('php://input');
-$registros = json_decode($inputJSON, true);
+    $registros = json_decode($_POST['registros'], true);
+
 
 if (json_last_error() !== JSON_ERROR_NONE || !is_array($registros)) {
     error_log("Error en la decodificación JSON: " . json_last_error_msg());
@@ -71,9 +72,9 @@ if (json_last_error() !== JSON_ERROR_NONE || !is_array($registros)) {
             $sqlDni = "SELECT NRO_DOCUMENTO FROM RO_V_LEGAJO_GRUPOS WHERE NRO_LEGAJO = ?";
             $dni = $anticipo->obtenerValor($sqlDni, array($registro['legajo']));
             
-if (!$dni) {
-    throw new Exception("No se encontró el DNI para el legajo {$registro['legajo']}");
-}
+            if (!$dni) {
+                throw new Exception("No se encontró el DNI para el legajo {$registro['legajo']}");
+            }
 
 
             // Insertar registro

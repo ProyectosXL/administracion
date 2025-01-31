@@ -106,74 +106,92 @@ const cargarAnticipo = () => {
         
         if (!fechaInicio || !fechaFin || !fechaDeposito) {
             console.error("Error: No se pudieron obtener correctamente las fechas.");
-    Swal.fire({
-        icon: 'error',
-        title: 'Error de fecha',
-        text: 'No se pudieron obtener las fechas correctamente. Verifique el formato.'
-    });
-    return;
-}
-
-if (fechaActual < fechaInicio || fechaActual > fechaFin) {
-    
-    Swal.fire({
-        icon: 'warning',
-        title: 'Período cerrado',
-        text: 'El período para solicitar anticipos se encuentra cerrado'
-    });
-
-    return 1;
-}    
-
-// Primera validación
-const validacionResponse = $.ajax({
-    url: 'Controller/validarAnticipo.php',
-    method: 'POST',
-    dataType: 'json',
-    data: { registros: JSON.stringify(formData) }
-});
-
-console.log('Respuesta validación:', validacionResponse);
-
-if (!validacionResponse.success) {
-    let errorTitle = 'Error de Validación';
-    let errorMessage = validacionResponse.message || 'Error desconocido';
-    
-    // Verificar si es un anticipo duplicado
-    if (validacionResponse.message && validacionResponse.message.includes('Ya existe un anticipo')) {
-        errorTitle = 'Anticipo Duplicado';
-        // El mensaje ya viene formateado del servidor, solo reemplazamos los saltos de línea
-        errorMessage = validacionResponse.message.replace(/\n/g, '<br>');
-    }
-    
-     Swal.fire({
-        icon: 'error',
-        title: errorTitle,
-        html: errorMessage,
-        confirmButtonText: 'Entendido'
-    });
-    return;
-}
-
-// Si la validación es exitosa, proceder con el guardado
-const saveResponse = $.ajax({
-    url: 'Controller/guardarAnticipo.php',
-    method: 'POST',
-    dataType: 'json',
-    data: { registros: JSON.stringify(formData) }
-        });
-        
-        if (saveResponse.success) {
-             Swal.fire({
-                icon: 'success',
-                title: 'Éxito',
-                text: 'Los anticipos fueron registrados correctamente',
-                confirmButtonText: 'Aceptar'
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de fecha',
+                text: 'No se pudieron obtener las fechas correctamente. Verifique el formato.'
             });
-            location.reload();
-        } else {
-            throw new Error(saveResponse.message || 'Error al guardar los datos');
+            return;
         }
+
+        if (fechaActual < fechaInicio || fechaActual > fechaFin) {
+            
+            Swal.fire({
+                icon: 'warning',
+                title: 'Período cerrado',
+                text: 'El período para solicitar anticipos se encuentra cerrado'
+            });
+
+            return 1;
+        }    
+
+        // Primera validación
+        $.ajax({
+            url: 'Controller/validarAnticipo.php',
+            method: 'POST',
+            dataType: 'json',
+            data: { registros: JSON.stringify(formData) },
+            success: function (data) {
+
+                $.ajax({
+                    url: 'Controller/guardarAnticipo.php',
+                    method: 'POST',
+                    dataType: 'json',
+                    data: { registros: JSON.stringify(formData) },
+                    success: function (saveResponse) {
+                        if (saveResponse.responseJSON.success) {
+                            Swal.fire({
+                               icon: 'success',
+                               title: 'Éxito',
+                               text: 'Los anticipos fueron registrados correctamente',
+                               confirmButtonText: 'Aceptar'
+                           });
+                           location.reload();
+                       }
+                    },
+                    error: function (error) {
+                        console.log(error);
+                        let text = error.responseJSON.message || 'Error al guardar los datos';
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: text,
+                            confirmButtonText: 'Aceptar'
+                        });
+                        
+
+                        throw new Error(error.responseText.message || 'Error al guardar los datos');
+                    }
+                    });
+
+            },
+            error: function (error) {
+                let validacionResponse = error
+                console.log('Respuesta validación:', validacionResponse.responseJSON);
+        
+                if (!validacionResponse.responseJSON.success) {
+                    let errorTitle = 'Error de Validación';
+                    let errorMessage = validacionResponse.responseJSON.message || 'Error desconocido';
+                    
+                    // Verificar si es un anticipo duplicado
+                    if (validacionResponse.responseJSON.message && validacionResponse.responseJSON.message.includes('Ya existe un anticipo')) {
+                        errorTitle = 'Anticipo Duplicado';
+                        // El mensaje ya viene formateado del servidor, solo reemplazamos los saltos de línea
+                        errorMessage = validacionResponse.responseJSON.message.replace(/\n/g, '<br>');
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: errorTitle,
+                        html: errorMessage,
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
+            }
+        });
+
         
     } catch (error) {
         console.error('Error completo:', error);
