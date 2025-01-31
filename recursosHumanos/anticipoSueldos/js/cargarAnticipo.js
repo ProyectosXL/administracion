@@ -221,8 +221,9 @@ const guardarAnticipo = (formData) =>{
                    title: 'Éxito',
                    text: 'Los anticipos fueron registrados correctamente',
                    confirmButtonText: 'Aceptar'
+               }).then((result) => {
+                   location.reload();
                });
-               location.reload();
            }
         },
         error: function (error) {
