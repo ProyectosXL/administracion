@@ -155,26 +155,52 @@ const cargarAnticipoGrupo = () => {
         return;
     }
   
-    $.ajax({
-        url: 'Controller/guardarAnticipo.php',
-        type: 'POST',
-        data: JSON.stringify(dataToSend),
-        contentType: 'application/json',
-        success: function (response) {
-            Swal.fire({
-                icon: response.success ? 'success' : 'error',
-                title: response.success ? 'Éxito' : 'Error',
-                text: response.message
-            }).then(() => {
-                if (response.success) location.reload();
+    // confirmar accion
+    Swal.fire({
+        title: 'Confirmar',
+        text: '¿Desea guardar los anticipos?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí',
+        cancelButtonText: 'No'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: 'Controller/guardarAnticipo.php',
+                type: 'POST',
+                data: JSON.stringify(dataToSend),
+                contentType: 'application/json',
+                success: function (response) {
+                    Swal.fire({
+                        icon: response.success ? 'success' : 'error',
+                        title: response.success ? 'Éxito' : 'Error',
+                        text: response.message
+                    }).then(() => {
+                        if (response.success) location.reload();
+                    });
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Hubo un problema al guardar los datos'
+                    });
+                }
             });
-        },
-        error: function () {
+        }else{
             Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Hubo un problema al guardar los datos'
+                icon: 'info',
+                title: 'Operación cancelada',
+                text: 'No se guardaron los anticipos'
             });
+
+            $('#empleadosTable tbody tr').each(function () {
+                let row = $(this);
+                let input = row.find('.importe-input:disabled');
+                input.prop('disabled', false);
+            });
+            
         }
     });
+   
 };
