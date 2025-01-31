@@ -35,6 +35,7 @@ const obtenerFechaDesdeTexto = (idElemento) => {
 
 const cargarAnticipo = () => {
 
+
     const formData = [];
     let hasErrors = false;
     const table = $('#registrosTable').DataTable();
@@ -133,37 +134,19 @@ const cargarAnticipo = () => {
             data: { registros: JSON.stringify(formData) },
             success: function (data) {
 
-                $.ajax({
-                    url: 'Controller/guardarAnticipo.php',
-                    method: 'POST',
-                    dataType: 'json',
-                    data: { registros: JSON.stringify(formData) },
-                    success: function (saveResponse) {
-                        if (saveResponse.responseJSON.success) {
-                            Swal.fire({
-                               icon: 'success',
-                               title: 'Éxito',
-                               text: 'Los anticipos fueron registrados correctamente',
-                               confirmButtonText: 'Aceptar'
-                           });
-                           location.reload();
-                       }
-                    },
-                    error: function (error) {
-                        console.log(error);
-                        let text = error.responseJSON.message || 'Error al guardar los datos';
-
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: text,
-                            confirmButtonText: 'Aceptar'
-                        });
-                        
-
-                        throw new Error(error.responseText.message || 'Error al guardar los datos');
+                // confirmar accion
+                Swal.fire({
+                    title: 'Confirmar acción',
+                    text: '¿Desea confirmar el registro de los anticipos?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí',
+                    cancelButtonText: 'No'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        guardarAnticipo(formData);
                     }
-                    });
+                });
 
             },
             error: function (error) {
@@ -222,4 +205,38 @@ const cargarAnticipo = () => {
         });
     } 
     
+}
+
+const guardarAnticipo = (formData) =>{
+    $.ajax({
+        url: 'Controller/guardarAnticipo.php',
+        method: 'POST',
+        dataType: 'json',
+        data: { registros: JSON.stringify(formData) },
+        success: function (saveResponse) {
+            if (saveResponse.responseJSON.success) {
+                Swal.fire({
+                   icon: 'success',
+                   title: 'Éxito',
+                   text: 'Los anticipos fueron registrados correctamente',
+                   confirmButtonText: 'Aceptar'
+               });
+               location.reload();
+           }
+        },
+        error: function (error) {
+            console.log(error);
+            let text = error.responseJSON.message || 'Error al guardar los datos';
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: text,
+                confirmButtonText: 'Aceptar'
+            });
+            
+
+            throw new Error(error.responseText.message || 'Error al guardar los datos');
+        }
+        });
 }
