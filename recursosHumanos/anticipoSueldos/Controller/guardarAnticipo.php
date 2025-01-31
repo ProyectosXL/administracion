@@ -13,8 +13,11 @@ try {
 
     // Obtener y validar los datos POST
     $inputJSON = file_get_contents('php://input');
-    $registros = json_decode($_POST['registros'], true);
-
+    $registros = json_decode($inputJSON, true);
+    // $registros = json_decode($_POST['registros'], true);
+    if(!$registros){
+        $registros = json_decode($_POST['registros'], true);
+    }
 
 if (json_last_error() !== JSON_ERROR_NONE || !is_array($registros)) {
     error_log("Error en la decodificación JSON: " . json_last_error_msg());
@@ -69,13 +72,11 @@ if (json_last_error() !== JSON_ERROR_NONE || !is_array($registros)) {
                 throw new Exception('El importe no es válido');
             }
 
-            $sqlDni = "SELECT NRO_DOCUMENTO FROM RO_V_LEGAJO_GRUPOS WHERE NRO_LEGAJO = ?";
-            $dni = $anticipo->obtenerValor($sqlDni, array($registro['legajo']));
+            $dni = $anticipo->traerDNI($registro['legajo']);
             
             if (!$dni) {
                 throw new Exception("No se encontró el DNI para el legajo {$registro['legajo']}");
             }
-
 
             // Insertar registro
             $sql = "INSERT INTO RO_T_DETALLE_ANTICIPOS 
@@ -85,7 +86,7 @@ if (json_last_error() !== JSON_ERROR_NONE || !is_array($registros)) {
             $params = array(
                 $registro['legajo'],
                 $registro['nombre'],
-                $dni,  // Aquí agregamos el DNI obtenido
+                $dni,  
                 floatval($importe),
                 $periodoVigente
             );

@@ -110,6 +110,7 @@ class Anticipo
     }
 
     public function validarDNI($dni, $legajo) {
+
         $sql = "SELECT COUNT(*) as total 
                 FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO 
                 WHERE NRO_DOCUMENTO = ? AND NRO_LEGAJO = ?";
@@ -123,6 +124,23 @@ class Anticipo
     
         $row = sqlsrv_fetch_array($stmt);
         return $row['total'] > 0;
+    }
+
+    public function traerDNI($legajo) {
+
+        $sql = "SELECT NRO_DOCUMENTO
+                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO 
+                WHERE NRO_LEGAJO = ?";
+        
+        $params = array($legajo);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+        
+        if ($stmt === false) {
+            return false;
+        }
+    
+        $row = sqlsrv_fetch_array($stmt);
+        return $row['NRO_DOCUMENTO'];
     }
 
     public function obtenerValor($sql, $params = array()) {
