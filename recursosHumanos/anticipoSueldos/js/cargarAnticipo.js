@@ -214,7 +214,8 @@ const guardarAnticipo = (formData) =>{
         dataType: 'json',
         data: { registros: JSON.stringify(formData) },
         success: function (saveResponse) {
-            if (saveResponse.responseJSON.success) {
+           
+            if (saveResponse.success) {
                 Swal.fire({
                    icon: 'success',
                    title: 'Éxito',
