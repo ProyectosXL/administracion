@@ -39,21 +39,17 @@ class Anticipo
     }
 
     public function traerEmpleadosGrupo($sector, $nroSucursal) {
-        
-        $mesActual = date('m');
-        
         $sql = "SELECT 
-                    a.NRO_LEGAJO, 
-                    a.APELLIDO_Y_NOMBRE, 
-                    COALESCE(d.IMPORTE, 0) AS IMPORTE 
-                FROM RO_V_LEGAJO_GRUPOS a
-                LEFT JOIN RO_T_DETALLE_ANTICIPOS d 
-                    ON a.NRO_LEGAJO = d.NRO_LEGAJO
-                WHERE a.SECTOR like ? 
-                AND a.NRO_SUCURS = ? 
-                AND MONTH(d.fecha_carga) = ?
-                AND YEAR(d.fecha_carga) = YEAR(GETDATE())
-                ORDER BY a.APELLIDO_Y_NOMBRE";
+        a.NRO_LEGAJO,
+        a.APELLIDO_Y_NOMBRE,
+        COALESCE(d.IMPORTE, 0) AS IMPORTE,
+        FROM RO_V_LEGAJO_GRUPOS a
+        LEFT JOIN RO_T_DETALLE_ANTICIPOS d ON a.NRO_LEGAJO = d.NRO_LEGAJO
+        AND MONTH(d.FECHA_CARGA) = MONTH(GETDATE())
+        AND YEAR(d.FECHA_CARGA) = YEAR(GETDATE())
+        WHERE a.SECTOR LIKE ?  AND 
+        a.NRO_SUCURS = ?
+        ORDER BY a.APELLIDO_Y_NOMBRE";
     
         $params = array($sector, $nroSucursal);
     
