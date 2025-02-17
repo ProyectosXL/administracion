@@ -39,6 +39,9 @@ class Anticipo
     }
 
     public function traerEmpleadosGrupo($sector, $nroSucursal) {
+        
+        $mesActual = date('m');
+        
         $sql = "SELECT 
                     a.NRO_LEGAJO, 
                     a.APELLIDO_Y_NOMBRE, 
@@ -48,6 +51,8 @@ class Anticipo
                     ON a.NRO_LEGAJO = d.NRO_LEGAJO
                 WHERE a.SECTOR like ? 
                 AND a.NRO_SUCURS = ? 
+                AND MONTH(d.fecha_carga) = ?
+                AND YEAR(d.fecha_carga) = YEAR(GETDATE())
                 ORDER BY a.APELLIDO_Y_NOMBRE";
     
         $params = array($sector, $nroSucursal);
