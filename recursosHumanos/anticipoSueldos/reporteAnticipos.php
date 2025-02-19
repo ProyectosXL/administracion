@@ -98,6 +98,7 @@
                                 <th>Período</th>
                                 <th>Importe</th>
                                 <th>Fecha de Carga</th>
+                                <th>Departamento</th>
                             </tr>
                         </thead>
                     </table>

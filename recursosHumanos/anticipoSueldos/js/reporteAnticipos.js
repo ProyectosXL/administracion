@@ -59,7 +59,8 @@ $(document).ready(function() {
                     return importe;
                 }
             },
-            { data: 'FECHA_CARGA' }
+            { data: 'FECHA_CARGA' },
+            { data: 'DESC_DEPARTAMENTO' }
         ],        
                 
         dom: 'Bfrtip',
@@ -73,7 +74,7 @@ $(document).ready(function() {
                     columns: ':visible',
                     format: {
                         body: function(data, row, column, node) {
-                            if (column === 4) {
+                            if (column === 5) {
                                 return data.replace(/\./g, '');
                             }
                             return data;
