@@ -49,14 +49,19 @@ $(document).ready(function() {
             { 
                 data: 'IMPORTE', 
                 render: function(data, type, row) {
-                    let importe = parseFloat(data).toFixed(0);
-                    
-                    if (type === 'display') {
-                        return importe.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                    } else if (type === 'export' || type === 'excel' || type === 'pdf') {
-                        return importe.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    // Para mostrar en pantalla
+                    if (type === 'display' || type === 'filter') {
+                        return data ? '$ ' + parseFloat(data).toLocaleString('es-AR', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        }) : '$ 0';
+                    } 
+                    // Para exportación, mantener solo el número sin formato
+                    else if (type === 'export') {
+                        return data ? parseFloat(data).toString() : '0';
                     }
-                    return importe;
+                    // Para ordenamiento y otros usos internos
+                    return parseFloat(data || 0);
                 }
             },
             { data: 'FECHA_CARGA' },
@@ -88,14 +93,19 @@ $(document).ready(function() {
                 className: 'btn btn-danger',
                 title: 'Reporte de Anticipos',
                 exportOptions: {
-                    columns: ':visible'
+                    columns: ':visible',
+                    modifier: {
+                        // Exportar todas las páginas
+                        page: 'all',
+                        search: 'none'
+                    }
                 }
             }
         ],
         language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.5/i18n/es-ES.json'
         },        
-        pageLength: 50,
+        pageLength: 200,
         ordering: true,
         order: [[5, 'desc']],
         responsive: true
