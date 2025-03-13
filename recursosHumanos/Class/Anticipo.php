@@ -335,4 +335,41 @@ class Anticipo
         
         return sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     }
+
+    public function getFechasPorPeriodo($periodoActual)
+    {
+        
+        $sql = "SELECT VIG_DESDE, VIG_HASTA FROM RO_T_FECHA_ANTICIPOS WHERE PERIODO = '$periodoActual'";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            throw new Exception("Error al obtener fechas por periodo: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $rows = array();
+        while( $v = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ) ) {
+            $rows['fechaDesde'] = $v['VIG_DESDE']->format('Y-m-d');
+            $rows['fechaHasta'] = $v['VIG_HASTA']->format('Y-m-d');
+        }
+        return $rows;  
+        
+    }
+
+    public function getEmails($periodoActual)
+    {
+        $sql = "SELECT EMAIL FROM FU_EMAIL_ANTICIPOS";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            throw new Exception("Error al obtener emails por periodo: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $rows = array();
+        while( $v = sqlsrv_fetch_array( $stmt, SQLSRV_FETCH_ASSOC ) ) {
+            $rows[] = $v['EMAIL'];
+        }
+        return $rows;  
+    }
 }
