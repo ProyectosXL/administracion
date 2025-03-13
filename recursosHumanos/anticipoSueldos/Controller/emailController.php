@@ -3,6 +3,7 @@ require_once '../Class/Anticipo.php';
 require_once '../Class/Email.php';
 
 function iniciarEnvioAutomatico($periodoActual) {
+    
     $anticipo = new Anticipo();
     $fechas = $anticipo->getFechasPorPeriodo($periodoActual);
     $emails = $anticipo->getEmails($periodoActual);
@@ -12,10 +13,14 @@ function iniciarEnvioAutomatico($periodoActual) {
     if ($fechaHoy == $fechas['fechaDesde']) {
         enviarEmailInicio($emails);
     }
+
+    if ($fechaHoy == $fechas['fechaHasta']) {
+        enviarEmailCierre($emails);
+    }
+
 }
 
 function enviarEmailInicio($emails) {
-    $apiUrl = "http://app.xl.com.ar:6002/api/email/";
 
     foreach ($emails as $email) {
        
@@ -26,8 +31,21 @@ function enviarEmailInicio($emails) {
         );
 
 
-        $emailObj->sendEmail($apiUrl);
+        $emailObj->sendEmail();
     }
 }
 
+function enviarEmailCierre($emails) {
+
+    foreach ($emails as $email) {
+        $emailObj = new Email(
+            $email, 
+            Email::getSubjectAnticiposCierre(), 
+            Email::getHtmlAnticiposCierre()
+        );
+
+        $emailObj->sendEmail();
+    }
+
+}
 ?>
