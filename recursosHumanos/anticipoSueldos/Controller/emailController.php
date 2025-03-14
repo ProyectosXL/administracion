@@ -1,6 +1,6 @@
 <?php
-require_once '../Class/Anticipo.php';
-require_once '../Class/Email.php';
+require_once 'C:\xampp\htdocs\administracion\recursosHumanos\Class\Anticipo.php';
+require_once 'C:\xampp\htdocs\administracion\recursosHumanos\Class\Email.php';
 
 function iniciarEnvioAutomatico($periodoActual) {
     
