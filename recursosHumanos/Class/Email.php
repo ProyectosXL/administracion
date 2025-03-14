@@ -49,11 +49,15 @@ class Email {
 
     // Métodos estáticos para obtener templates de email
     public static function getSubjectAnticipos() {
-        return "Apertura del Período de Anticipos";
+        $mes = date('F');
+        $anio = date('Y');
+        return "Apertura: Período de Anticipos de Sueldo - $mes $anio";
     }
 
     public static function getSubjectAnticiposCierre() {
-        return "Cierre del Período de Anticipos";
+        $mes = date('F');
+        $anio = date('Y');
+        return "ÚLTIMO DÍA: Cierre Solicitudes de Anticipos - $mes $anio";
     }
 
     public static function getHtmlAnticipos() {
