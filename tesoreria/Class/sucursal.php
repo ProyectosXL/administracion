@@ -251,12 +251,13 @@ class Sucursal {
 
     public function listarRemitos($nroSucurs) {
         try {
-
             require_once __DIR__.'/../../Class/conexion.php';
             $conexion = new Conexion();
-            
+
+            $cid_local = $conexion->setearDnsBaseName($nroSucurs);
+
             $cid_local = $conexion->conectar('');
-            
+
 
             if(!$cid_local){
 
@@ -341,11 +342,10 @@ class Sucursal {
     }
 
     public function listarEgresosEfectivo($nroSucurs) {
-        try {
-
+        try {            
             require_once __DIR__.'/../../Class/conexion.php';
             $conexion = new Conexion();
-            
+            $cid_local = $conexion->setearDnsBaseName($nroSucurs);
             $cid_local = $conexion->conectar('');
 
             if(!$cid_local){
@@ -370,7 +370,6 @@ class Sucursal {
 
                     
             }else{
-
                 $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM SBA05
                 WHERE COD_CTA = '100100' AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
                 ORDER BY N_COMP DESC";
@@ -389,7 +388,7 @@ class Sucursal {
                     $resultados[] = $row;
                 }
 
-                $remitosCentral = $this->traerEgresosCentral();
+                $remitosCentral = $this->traerEgresosCentral($nroSucurs);
       
                 foreach ($resultados as $key => $value) {
                     if(in_array($value['N_COMP'], $remitosCentral)){
@@ -429,9 +428,9 @@ class Sucursal {
         return $remitos;
 
     }
-    public function traerEgresosCentral () {
+    public function traerEgresosCentral ($nroSucurs) {
 
-        $sql = "SELECT N_COMP COLLATE Latin1_General_BIN as remitos FROM RO_EGRESOS_GUIA_RETIROS_SUC";
+        $sql = "SELECT N_COMP COLLATE Latin1_General_BIN as remitos FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_SUCURS = $nroSucurs";
         $stmt = sqlsrv_query($this->cid_central, $sql);
         if ($stmt === false) {
             throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
