@@ -99,6 +99,9 @@ class Vendedor
       
 
     public function traerVendedores () {
+    
+        // Determine the country based on the environment
+        $pais = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'URUGUAY' : 'ARGENTINA';
         
         $sql = "
         SELECT 
@@ -112,17 +115,19 @@ class Vendedor
         FROM 
             RO_T_LEGAJOS_PERSONAL
         WHERE 
-            HABILITADO = 'S';
+            HABILITADO = 'S' AND TAREA_HABITUAL IN
+        ('CAJERO','CAJERA','ENCARGADA','VENDEDOR','VENDEDORA','SUB ENCARGADO','SUB ENCARGADA')
+        AND PAIS = '$pais' AND NRO_LEGAJO NOT BETWEEN '13000' AND '13710';
         ";
-
-        $db = isset($_SESSION['entorno'] ) ? $_SESSION['entorno'] : 'central';
-
-
+    
+        // Always use the central database for this query
+        $db = 'central';
+    
         $rows = $this->retornarArray($sql, $db);
-
+    
         return $rows;
-        
     }
+    
     public function traerVendedoresPorSucursal ($filtroHabilitados) {
         
         $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23 WHERE INHABILITA like '$filtroHabilitados' ORDER BY NOMBRE_VEN";
