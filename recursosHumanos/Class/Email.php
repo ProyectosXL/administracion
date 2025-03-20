@@ -18,7 +18,8 @@ class Email {
         return [
             "to" => $this->to,
             "subject" => $this->subject,
-            "html" => $this->htmlContent
+            "html" => $this->htmlContent,
+            "emailType" => "Anticipos",
         ];
     }
 
