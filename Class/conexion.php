@@ -44,6 +44,37 @@ class Conexion{
 
     }
 
+    public function setearDnsBaseName($nroSucursal) {
+
+        $sql = "SELECT CONEXION_DNS, BASE_NOMBRE 
+                FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS 
+                WHERE NRO_SUC_MADRE IS NULL 
+                AND NRO_SUCURSAL = ?";
+    
+     
+        $conn = $this->conectar('central');
+    
+        if (!$conn) {
+            die("Error de conexión: " . print_r(sqlsrv_errors(), true));
+        }
+    
+      
+        $params = array($nroSucursal);;
+        $stmt = sqlsrv_query($conn, $sql, $params);
+    
+        if (!$stmt) {
+            die("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+    
+        if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $_SESSION['conexion_dns'] = $row['CONEXION_DNS'];
+            $_SESSION['base_nombre'] = $row['BASE_NOMBRE'];
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public function conectar($nameServer = null) {
         try {
 
