@@ -71,7 +71,8 @@ class Categoria
             if (sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC) !== null) {
                 return false; 
             }
-            $insertSql = "INSERT INTO SJ_CATEGORIAS (CATEGORIA, DESC_CATEGORIA, RUBRO) VALUES ($codCategoria, '$descCategoria', '$siglaRubro')";
+
+            $insertSql = "INSERT INTO SJ_CATEGORIAS (CATEGORIA, DESC_CATEGORIA, RUBRO) VALUES ('$codCategoria', '$descCategoria', '$siglaRubro')";
                             
             $stmt = sqlsrv_query($this->cid_central, $insertSql);
             
