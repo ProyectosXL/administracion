@@ -1,8 +1,87 @@
 
+// Archivo principal para el sistema de gestión de políticas y procedimientos
+
 // Variables globales
-let currentDocument = null;
-        
-// Función para mostrar tabs
+let currentDocument = null;  // Almacena información del documento actual en visualización
+
+// Inicialización al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar componentes
+    initSidebar();
+    initSearch();
+    initPdfViewer();
+    initGlossary();
+    initFileUpload();
+    initTagsInput();
+    initFormValidation();
+    
+    // Verificar si hay mensajes de estado en la URL
+    checkUrlMessages();
+    
+    // Inicializar tooltips y popovers si se usan
+    initTooltips();
+    
+    // Cargar datos
+    loadSampleData();
+    
+    // Cerrar los modales si el usuario hace clic fuera de ellos
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    };
+    
+    // Actualizar estadísticas cada 5 minutos
+    setInterval(updateStatistics, 5 * 60 * 1000);
+});
+
+// ===== Funciones de inicialización de la interfaz =====
+
+function initSidebar() {
+    // Alternar la visibilidad de la barra lateral
+    const toggleBtn = document.getElementById('toggleSidebar');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+            adjustMainContent();
+        });
+    }
+    
+    // Ajustar el contenido principal cuando la ventana cambia de tamaño
+    window.addEventListener('resize', adjustMainContent);
+    
+    // Manejar la navegación del menú lateral
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Eliminar la clase active de todos los enlaces
+            document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));
+            
+            // Añadir la clase active al enlace clickeado
+            this.classList.add('active');
+        });
+    });
+}
+
+function adjustMainContent() {
+    // Ajustar el margen del contenido principal basado en el estado de la barra lateral
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (!sidebar || !mainContent) return;
+    
+    if (window.innerWidth > 768) {
+        if (sidebar.classList.contains('collapsed')) {
+            mainContent.style.marginLeft = '80px';
+        } else {
+            mainContent.style.marginLeft = '280px';
+        }
+    } else {
+        mainContent.style.marginLeft = '0';
+    }
+}
+
+// ===== Funciones de gestión de la navegación por pestañas =====
+
 function showTab(tabId) {
     // Ocultar todos los contenidos de tabs
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -32,252 +111,23 @@ function showTab(tabId) {
     });
 }
 
-// Función para visualizar un documento
-function viewDocument(documentId) {
-    // En una implementación real, se haría una solicitud AJAX para obtener los detalles del documento
-    fetch('Controller/obtener_documento.php?id=' + documentId)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                currentDocument = data.documento;
-                
-                // Establecer título
-                document.getElementById('pdfTitle').textContent = currentDocument.titulo;
-                
-                // Cargar el PDF en el visor
-                const pdfViewer = document.getElementById('pdfViewer');
-                
-                // En un sistema real utilizaríamos PDF.js para mostrar el PDF
-                pdfViewer.innerHTML = `
-                    <div style="padding: 20px; text-align: center;">
-                        <h4>Visualizando: ${currentDocument.titulo}</h4>
-                        <p>Sector: ${currentDocument.sector_nombre}</p>
-                        <p>Fecha: ${currentDocument.fecha_actualizacion}</p>
-                        <p>En una implementación real, aquí se mostraría el PDF usando una biblioteca como PDF.js</p>
-                        <div class="pdf-placeholder">
-                            <i class="fas fa-file-pdf"></i>
-                        </div>
-                    </div>
-                `;
-                
-                // Mostrar el modal
-                document.getElementById('pdfViewerModal').style.display = 'block';
-            } else {
-                showNotification('Error al cargar el documento', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Error al cargar el documento', 'error');
-            
-            // Como prueba, mostrar un visor simulado
-            simulateDocumentView(documentId);
-        });
+// ===== Funciones de carga de datos =====
+
+function loadSampleData() {
+    // En una implementación real, cargaríamos datos desde una API o base de datos
+    console.log('Cargando datos de ejemplo...');
+    
+    // Simular carga de datos con un pequeño retraso
+    setTimeout(() => {
+        // Aquí se podrían cargar datos dinámicamente
+        console.log('Datos cargados correctamente');
+    }, 500);
 }
 
-// Función para simular la visualización de un documento (para desarrollo)
-function simulateDocumentView(documentId) {
-    // Datos simulados
-    const documents = document.querySelectorAll('.policy-item');
-    let documentTitle = "Documento #" + documentId;
-    
-    // Buscar título en los elementos de la lista
-    documents.forEach(item => {
-        if (item.querySelector('.action-btn.view').getAttribute('onclick').includes(documentId)) {
-            documentTitle = item.querySelector('h4').textContent;
-        }
-    });
-    
-    currentDocument = {
-        id: documentId,
-        titulo: documentTitle,
-        sector_nombre: "Sector de prueba",
-        fecha_actualizacion: new Date().toLocaleDateString()
-    };
-    
-    // Establecer título
-    document.getElementById('pdfTitle').textContent = currentDocument.titulo;
-    
-    // Cargar simulación de PDF
-    const pdfViewer = document.getElementById('pdfViewer');
-    pdfViewer.innerHTML = `
-        <div style="padding: 20px; text-align: center;">
-            <h4>Visualizando: ${currentDocument.titulo}</h4>
-            <p>Sector: ${currentDocument.sector_nombre}</p>
-            <p>Fecha: ${currentDocument.fecha_actualizacion}</p>
-            <p>En una implementación real, aquí se mostraría el PDF usando una biblioteca como PDF.js</p>
-            <div class="pdf-placeholder">
-                <i class="fas fa-file-pdf"></i>
-            </div>
-        </div>
-    `;
-    
-    // Mostrar el modal
-    document.getElementById('pdfViewerModal').style.display = 'block';
-}
+// ===== Funciones de utilidad =====
 
-// Función para descargar un documento
-function downloadDocument(documentId) {
-    // En una implementación real, redirigir a un script que gestione la descarga
-    window.location.href = 'descargar_documento.php?id=' + documentId;
-    
-    // Mostrar notificación
-    showNotification('Iniciando descarga...', 'info');
-}
-
-// Función para descargar el documento actual en visualización
-function downloadCurrentPdf() {
-    if (currentDocument) {
-        downloadDocument(currentDocument.id);
-    }
-}
-
-// Función para imprimir el PDF actual
-function printPdf() {
-    showNotification('Preparando documento para impresión...', 'info');
-    // En una implementación real, se utilizaría la API de impresión del navegador
-    // window.print();
-}
-
-// Funciones para el modal del PDF
-function closePdfViewer() {
-    document.getElementById('pdfViewerModal').style.display = 'none';
-    currentDocument = null;
-}
-
-function searchInPdf() {
-    // Simular búsqueda dentro del PDF
-    const searchTerm = prompt("Introducir término a buscar en el documento:");
-    if (searchTerm && searchTerm.trim() !== '') {
-        showNotification(`Buscando "${searchTerm}" en el documento actual.`, 'info');
-    }
-}
-
-// Funciones para el glosario
-function showGlossary() {
-    document.getElementById('glossaryModal').style.display = 'block';
-}
-
-function closeGlossary() {
-    document.getElementById('glossaryModal').style.display = 'none';
-}
-
-// Filtrar términos del glosario
-document.getElementById('glossarySearch').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const glossaryItems = document.querySelectorAll('.glossary-item');
-    const glossaryLetters = document.querySelectorAll('.glossary-letter');
-    let visibleCount = 0;
-    
-    glossaryItems.forEach(item => {
-        const term = item.querySelector('h4').textContent.toLowerCase();
-        const definition = item.querySelector('p').textContent.toLowerCase();
-        
-        if (term.includes(searchTerm) || definition.includes(searchTerm)) {
-            item.style.display = 'block';
-            visibleCount++;
-        } else {
-            item.style.display = 'none';
-        }
-    });
-    
-    // Mostrar/ocultar encabezados de letra
-    glossaryLetters.forEach(letter => {
-        const nextList = letter.nextElementSibling;
-        if (nextList && nextList.classList.contains('glossary-list')) {
-            const visibleItems = nextList.querySelectorAll('.glossary-item[style="display: block"]').length;
-            letter.style.display = visibleItems > 0 ? 'block' : 'none';
-        }
-    });
-    
-    // Mostrar mensaje si no hay resultados
-    const noResultsMessage = document.querySelector('.no-results-message');
-    if (noResultsMessage) {
-        noResultsMessage.style.display = visibleCount === 0 ? 'block' : 'none';
-    }
-});
-
-// Filtrar políticas por sector
-function filterPolicies() {
-    const sectorId = document.getElementById('sectorFilterPolicies').value;
-    window.location.href = 'index.php?tipo=politica&sector=' + sectorId;
-}
-
-// Filtrar procedimientos por sector
-function filterProcedures() {
-    const sectorId = document.getElementById('sectorFilterProcedures').value;
-    window.location.href = 'index.php?tipo=procedimiento&sector=' + sectorId;
-}
-
-// Filtrar documentos por sector específico
-function filterBySection(sectorId) {
-    window.location.href = 'index.php?sector=' + sectorId;
-}
-
-// Gestión de formularios en configuración
-document.addEventListener('DOMContentLoaded', function() {
-    // Toggle formulario de nuevo sector
-    const newSectorBtn = document.getElementById('newSectorBtn');
-    if (newSectorBtn) {
-        newSectorBtn.addEventListener('click', function() {
-            document.getElementById('newSectorForm').style.display = 'block';
-        });
-    }
-    
-    const cancelSectorBtn = document.getElementById('cancelSectorBtn');
-    if (cancelSectorBtn) {
-        cancelSectorBtn.addEventListener('click', function() {
-            document.getElementById('newSectorForm').style.display = 'none';
-        });
-    }
-    
-    // Toggle formulario de nuevo término
-    const newTermBtn = document.getElementById('newTermBtn');
-    if (newTermBtn) {
-        newTermBtn.addEventListener('click', function() {
-            document.getElementById('newTermForm').style.display = 'block';
-        });
-    }
-    
-    const cancelTermBtn = document.getElementById('cancelTermBtn');
-    if (cancelTermBtn) {
-        cancelTermBtn.addEventListener('click', function() {
-            document.getElementById('newTermForm').style.display = 'none';
-        });
-    }
-    
-    // Búsqueda global
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const searchTerm = this.value.trim();
-                if (searchTerm) {
-                    window.location.href = 'index.php?busqueda=' + encodeURIComponent(searchTerm);
-                }
-            }
-        });
-    }
-    
-    // Alternar la visibilidad de la barra lateral
-    const toggleSidebar = document.getElementById('toggleSidebar');
-    if (toggleSidebar) {
-        toggleSidebar.addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('collapsed');
-        });
-    }
-    
-    // Cerrar los modales si el usuario hace clic fuera de ellos
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-        }
-    };
-});
-
-// Funciones de utilidad
 function showNotification(message, type = 'info') {
-    // Crear elemento de notificación
+    // Crear un elemento de notificación
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
@@ -288,9 +138,17 @@ function showNotification(message, type = 'info') {
         <button class="close-notification">&times;</button>
     `;
     
-    // Añadir al contenedor
-    const container = document.querySelector('.notification-container');
-    container.appendChild(notification);
+    // Añadir al DOM
+    const notificationContainer = document.querySelector('.notification-container');
+    if (!notificationContainer) {
+        // Crear contenedor si no existe
+        const container = document.createElement('div');
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+        container.appendChild(notification);
+    } else {
+        notificationContainer.appendChild(notification);
+    }
     
     // Configurar eliminación automática
     setTimeout(() => {
@@ -309,15 +167,90 @@ function showNotification(message, type = 'info') {
     });
 }
 
-// Funciones para editar y eliminar sectores
-function editSector(sectorId) {
-    // En una implementación real, cargar los datos del sector y mostrar formulario
-    showNotification('Función de edición no implementada', 'info');
+// Verificar y mostrar mensajes de estado en la URL
+function checkUrlMessages() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mensaje = urlParams.get('mensaje');
+    const texto = urlParams.get('texto');
+    
+    if (mensaje && texto) {
+        let tipo = 'info';
+        switch (mensaje) {
+            case 'success':
+                tipo = 'success';
+                break;
+            case 'error':
+                tipo = 'error';
+                break;
+            case 'warning':
+                tipo = 'warning';
+                break;
+        }
+        
+        showNotification(decodeURIComponent(texto), tipo);
+    }
 }
 
-function confirmDeleteSector(sectorId) {
-    if (confirm('¿Está seguro que desea eliminar este sector? Esta acción puede afectar a los documentos asociados.')) {
-        // Enviar solicitud de eliminación
-        window.location.href = 'eliminar_sector.php?id=' + sectorId;
-    }
+// Inicializar tooltips (si se implementan)
+function initTooltips() {
+    const tooltipElements = document.querySelectorAll('[data-tooltip]');
+    tooltipElements.forEach(element => {
+        element.addEventListener('mouseover', function() {
+            const tooltipText = this.getAttribute('data-tooltip');
+            
+            if (tooltipText) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltip.textContent = tooltipText;
+                
+                document.body.appendChild(tooltip);
+                
+                const rect = this.getBoundingClientRect();
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                
+                tooltip.classList.add('show');
+                
+                this.addEventListener('mouseout', function() {
+                    tooltip.remove();
+                });
+            }
+        });
+    });
+}
+
+// Formatear fecha
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
+// Verificar si un elemento está visible en el viewport
+function isElementInViewport(el) {
+    const rect = el.getBoundingClientRect();
+    
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+}
+
+// Función para actualizar estadísticas de uso
+function updateStatistics() {
+    fetch('actualizar_estadisticas.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Estadísticas actualizadas correctamente');
+            }
+        })
+        .catch(error => {
+            console.error('Error al actualizar estadísticas:', error);
+        });
 }

@@ -486,57 +486,103 @@ $glosario = $politicaObj->obtenerGlosario();
             <div id="upload-content" class="tab-content" style="display: none;">
                 <div class="section-header">
                     <h2>Subir Documento</h2>
-                    <p>Añadir nuevo documento al sistema</p>
+                    <p>Añadir nuevo documento al sistema de políticas y procedimientos</p>
                 </div>
                 
-                <div class="card">
-                    <form id="uploadForm" action="procesar_documento.php" method="post" enctype="multipart/form-data">
-                        <div class="form-group">
-                            <label for="docTitle">Título del documento:</label>
-                            <input type="text" id="docTitle" name="titulo" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="docType">Tipo de documento:</label>
-                            <select id="docType" name="tipo" required>
-                                <option value="politica">Política</option>
-                                <option value="procedimiento">Procedimiento</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="docSector">Sector:</label>
-                            <select id="docSector" name="sector_id" required>
-                                <option value="">Seleccione un sector</option>
-                                <?php foreach ($sectores as $sector): ?>
-                                <option value="<?php echo $sector['id']; ?>"><?php echo htmlspecialchars($sector['nombre']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="docDescription">Descripción:</label>
-                            <textarea id="docDescription" name="descripcion" rows="4"></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="docTags">Etiquetas (separadas por comas):</label>
-                            <input type="text" id="docTags" name="tags" placeholder="ej. seguridad, finanzas, auditoría">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="docFile">Archivo PDF:</label>
-                            <input type="file" id="docFile" name="archivo" accept=".pdf" required>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="submit" class="btn primary">Subir Documento</button>
-                            <button type="button" class="btn secondary" onclick="showTab('overview')">Cancelar</button>
-                        </div>
-                    </form>
+                <div class="upload-container">
+                    <!-- Información sobre el proceso -->
+                    <div class="upload-info">
+                        <h4><i class="fas fa-info-circle"></i> Información sobre la carga de documentos</h4>
+                        <ul>
+                            <li>Sólo se permiten archivos en formato PDF.</li>
+                            <li>El tamaño máximo permitido es de 10 MB.</li>
+                            <li>Procure usar nombres descriptivos para facilitar la búsqueda.</li>
+                            <li>Las etiquetas ayudan a categorizar y encontrar más fácilmente el documento.</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Formulario de carga -->
+                    <div class="upload-form">
+                        <form id="uploadForm" action="Controller/procesar_documento.php" method="post" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label for="docTitle">Título del documento <span class="required">*</span></label>
+                                <input type="text" id="docTitle" name="titulo" required placeholder="Ingrese un título descriptivo">
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="docType">Tipo de documento <span class="required">*</span></label>
+                                    <select id="docType" name="tipo" required>
+                                        <option value="" disabled selected>Seleccione un tipo</option>
+                                        <option value="politica">Política</option>
+                                        <option value="procedimiento">Procedimiento</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group col-md-6">
+                                    <label for="docSector">Sector <span class="required">*</span></label>
+                                    <select id="docSector" name="sector_id" required>
+                                        <option value="" disabled selected>Seleccione un sector</option>
+                                        <?php foreach ($sectores as $sector): ?>
+                                        <option value="<?php echo $sector['id']; ?>"><?php echo htmlspecialchars($sector['nombre']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="docDescription">Descripción</label>
+                                <textarea id="docDescription" name="descripcion" rows="4" placeholder="Describa brevemente el contenido del documento"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="docTags">Etiquetas (separadas por comas)</label>
+                                <input type="text" id="docTags" name="tags" placeholder="ej. seguridad, finanzas, auditoría">
+                                
+                                <div class="tags-container" id="tagsContainer">
+                                    <!-- Las etiquetas se mostrarán aquí dinámicamente -->
+                                </div>
+                                
+                                <div class="tag-suggestions">
+                                    <span onclick="addTag('importante')">importante</span>
+                                    <span onclick="addTag('nuevo')">nuevo</span>
+                                    <span onclick="addTag('urgente')">urgente</span>
+                                    <span onclick="addTag('actualizado')">actualizado</span>
+                                    <span onclick="addTag('confidencial')">confidencial</span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Archivo PDF <span class="required">*</span></label>
+                                <div class="file-upload-container">
+                                    <div class="file-upload-button" id="fileUploadBtn">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <div class="main-text">Arrastre y suelte su archivo aquí</div>
+                                        <p>o haga clic para seleccionar un archivo</p>
+                                        <p class="file-types">Solo archivos PDF (máx. 10 MB)</p>
+                                    </div>
+                                    <input type="file" id="docFile" name="archivo" accept=".pdf" required class="file-upload-input">
+                                    
+                                    <div class="file-info" id="fileInfo">
+                                        <i class="fas fa-file-pdf"></i>
+                                        <span class="file-name" id="fileName">nombre_del_archivo.pdf</span>
+                                        <span class="file-size" id="fileSize">0 KB</span>
+                                        <i class="fas fa-times remove-file" onclick="removeFile()"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn secondary" onclick="showTab('overview')">Cancelar</button>
+                                <button type="submit" class="btn primary">
+                                    <i class="fas fa-upload"></i> Subir Documento
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-            
+                        
             <!-- Vista de Configuración -->
             <div id="settings-content" class="tab-content" style="display: none;">
                 <div class="section-header">
@@ -740,7 +786,13 @@ $glosario = $politicaObj->obtenerGlosario();
     <!-- Contenedor de notificaciones -->
     <div class="notification-container"></div>
  
+    <!-- Inclusión de archivos JavaScript al final del body -->
     <script src="js/main.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/document-viewer.js"></script>
+    <script src="js/glossary.js"></script>
+    <script src="js/upload-form.js"></script>
+    <script src="js/sectors.js"></script>
  
 </body>
 </html>
