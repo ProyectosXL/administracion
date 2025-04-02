@@ -14,7 +14,7 @@ class Politica
         $this->cid_central = $this->cid->conectar('central');
         
         // Definir la carpeta de almacenamiento de documentos
-        $this->upload_dir = $_SERVER['DOCUMENT_ROOT'].'/documentos/';
+        $this->upload_dir = dirname(__FILE__, 2) . '/documentos/';
         
         // Crear el directorio si no existe
         if (!file_exists($this->upload_dir)) {
@@ -417,12 +417,19 @@ class Politica
         $resultado = $this->retornarArray($sql);
         $estadisticas['total_documentos'] = $resultado[0]['total'];
         
-        // Documentos por tipo
-        $sql = "SELECT tipo, COUNT(*) as cantidad 
-                FROM Politicas_Procedimientos 
-                WHERE estado = 'activo' 
-                GROUP BY tipo";
-        $estadisticas['por_tipo'] = $this->retornarArray($sql);
+        // Obtener específicamente la cantidad de políticas
+        $sql = "SELECT COUNT(*) as cantidad 
+        FROM Politicas_Procedimientos 
+        WHERE estado = 'activo' AND tipo = 'politica'";
+        $resultado = $this->retornarArray($sql);
+        $estadisticas['total_politicas'] = $resultado[0]['cantidad'];
+
+        // Obtener específicamente la cantidad de procedimientos
+        $sql = "SELECT COUNT(*) as cantidad 
+            FROM Politicas_Procedimientos 
+            WHERE estado = 'activo' AND tipo = 'procedimiento'";
+        $resultado = $this->retornarArray($sql);
+        $estadisticas['total_procedimientos'] = $resultado[0]['cantidad'];
         
         // Documentos por sector
         $sql = "SELECT s.nombre, COUNT(*) as cantidad 

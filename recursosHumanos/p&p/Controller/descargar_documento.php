@@ -4,7 +4,7 @@
 session_start();
 
 // Incluir la clase Politica
-require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Politica.php';
+require_once '../Class/Politica.php';
 
 // Crear instancia de la clase
 $politicaObj = new Politica();

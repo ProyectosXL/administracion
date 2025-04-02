@@ -3,11 +3,32 @@
 
 // Inicializar la funcionalidad del glosario
 function initGlossary() {
-    const glossarySearch = document.querySelector('.glossary-search');
+    const glossarySearch = document.getElementById('glossarySearch');
     if (glossarySearch) {
+        // Limpiar el campo de búsqueda al abrir el modal
+        document.querySelector('.sidebar-menu a[onclick="showGlossary()"]').addEventListener('click', function() {
+            glossarySearch.value = '';
+            // Resetear la visualización de los elementos del glosario
+            document.querySelectorAll('.glossary-item').forEach(item => {
+                item.style.display = 'block';
+            });
+            document.querySelectorAll('.glossary-letter').forEach(letter => {
+                letter.style.display = 'block';
+            });
+            document.querySelector('.no-results-message').style.display = 'none';
+        });
+        
+        // Manejar la búsqueda
         glossarySearch.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
+            const searchTerm = this.value.trim().toLowerCase();
             filterGlossaryItems(searchTerm);
+        });
+        
+        // Permitir cerrar con la tecla Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('glossaryModal').style.display === 'block') {
+                closeGlossary();
+            }
         });
     }
     
@@ -29,12 +50,27 @@ function initGlossary() {
 
 // Mostrar el modal del glosario
 function showGlossary() {
-    document.getElementById('glossaryModal').style.display = 'block';
+    const glossaryModal = document.getElementById('glossaryModal');
+    glossaryModal.style.display = 'block';
+    
+    // Enfocar el campo de búsqueda automáticamente
+    setTimeout(() => {
+        const glossarySearch = document.getElementById('glossarySearch');
+        if (glossarySearch) {
+            glossarySearch.focus();
+        }
+    }, 300);
+    
+    // Prevenir el scroll del body cuando el modal está abierto
+    document.body.style.overflow = 'hidden';
 }
 
 // Cerrar el modal del glosario
 function closeGlossary() {
     document.getElementById('glossaryModal').style.display = 'none';
+    
+    // Restaurar el scroll del body
+    document.body.style.overflow = '';
 }
 
 // Filtrar términos del glosario según búsqueda
@@ -42,14 +78,20 @@ function filterGlossaryItems(searchTerm) {
     const glossaryItems = document.querySelectorAll('.glossary-item');
     const glossaryLetters = document.querySelectorAll('.glossary-letter');
     
+    // Normalizar el término de búsqueda (quitar acentos y convertir a minúsculas)
+    const normalizedSearchTerm = searchTerm.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
     // Ocultar/mostrar términos del glosario basados en la búsqueda
     let visibleItemsCount = 0;
     
     glossaryItems.forEach(item => {
-        const term = item.querySelector('h4').textContent.toLowerCase();
-        const description = item.querySelector('p').textContent.toLowerCase();
+        const term = item.querySelector('h4').textContent.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const description = item.querySelector('p').textContent.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
-        if (term.includes(searchTerm) || description.includes(searchTerm)) {
+        if (term.includes(normalizedSearchTerm) || description.includes(normalizedSearchTerm)) {
             item.style.display = 'block';
             visibleItemsCount++;
         } else {
@@ -73,6 +115,17 @@ function filterGlossaryItems(searchTerm) {
     const noResultsMsg = document.querySelector('.no-results-message');
     if (noResultsMsg) {
         noResultsMsg.style.display = visibleItemsCount === 0 ? 'block' : 'none';
+    }
+    
+    // Desplazar al primer resultado visible si hay alguno
+    if (visibleItemsCount > 0 && searchTerm.length > 0) {
+        const firstVisibleItem = Array.from(glossaryItems).find(item => item.style.display !== 'none');
+        if (firstVisibleItem) {
+            // Desplazar suavemente al primer elemento visible
+            setTimeout(() => {
+                firstVisibleItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
     }
 }
 

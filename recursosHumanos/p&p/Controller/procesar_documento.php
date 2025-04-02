@@ -4,7 +4,7 @@
 session_start();
 
 // Incluir la clase Politica
-require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Politica.php';
+require_once '../Class/Politica.php';
 
 // Crear instancia de la clase
 $politicaObj = new Politica();
@@ -30,9 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Redireccionar con mensaje de resultado
         if ($resultado['status'] === 'success') {
-            header('Location: index.php?mensaje=success&texto=Documento guardado correctamente');
+            // Usar ruta relativa en lugar de absoluta para la redirección
+            header('Location: ../index.php?mensaje=success&texto=Documento guardado correctamente');
         } else {
-            header('Location: index.php?mensaje=error&texto=' . urlencode($resultado['message']));
+            header('Location: ../index.php?mensaje=error&texto=' . urlencode($resultado['message']));
         }
         
     } else {
@@ -53,11 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Error desconocido al subir el archivo';
         }
         
-        header('Location: index.php?mensaje=error&texto=' . urlencode($error));
+        header('Location: ../index.php?mensaje=error&texto=' . urlencode($error));
     }
     
 } else {
     // No es una solicitud POST
-    header('Location: index.php');
+    header('Location: ../index.php');
 }
 exit;

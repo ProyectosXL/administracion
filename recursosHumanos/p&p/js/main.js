@@ -7,13 +7,13 @@ let currentDocument = null;  // Almacena información del documento actual en vi
 // Inicialización al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar componentes
-    initSidebar();
-    initSearch();
-    initPdfViewer();
-    initGlossary();
-    initFileUpload();
-    initTagsInput();
-    initFormValidation();
+    if (typeof initSidebar === 'function') initSidebar();
+    if (typeof initSearch === 'function') initSearch();
+    if (typeof initPdfViewer === 'function') initPdfViewer();
+    if (typeof initGlossary === 'function') initGlossary();
+    if (typeof initFileUpload === 'function') initFileUpload();
+    if (typeof initTagsInput === 'function') initTagsInput();
+    if (typeof initFormValidation === 'function') initFormValidation();
     
     // Verificar si hay mensajes de estado en la URL
     checkUrlMessages();

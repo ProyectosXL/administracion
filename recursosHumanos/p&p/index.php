@@ -40,7 +40,14 @@ $glosario = $politicaObj->obtenerGlosario();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión de Políticas y Procedimientos</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/main.css">
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+        // Configurar el worker de PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    </script>
+    
 </head>
 <body>
     <div class="container">
@@ -141,17 +148,17 @@ $glosario = $politicaObj->obtenerGlosario();
                         <i class="fas fa-file-alt"></i>
                     </div>
                     <div class="stat-info">
-                        <h3><?php echo isset($estadisticas['por_tipo']) ? array_sum(array_column($estadisticas['por_tipo'], 'cantidad')) : 0; ?></h3>
+                        <h3><?php echo isset($estadisticas['total_politicas']) ? $estadisticas['total_politicas'] : 0; ?></h3>
                         <p>Políticas Totales</p>
                     </div>
                 </div>
-                
+
                 <div class="stat-card">
                     <div class="icon red">
                         <i class="fas fa-tasks"></i>
                     </div>
                     <div class="stat-info">
-                        <h3><?php echo isset($estadisticas['por_tipo']) ? array_sum(array_column($estadisticas['por_tipo'], 'cantidad')) : 0; ?></h3>
+                        <h3><?php echo isset($estadisticas['total_procedimientos']) ? $estadisticas['total_procedimientos'] : 0; ?></h3>
                         <p>Procedimientos</p>
                     </div>
                 </div>
@@ -210,7 +217,8 @@ $glosario = $politicaObj->obtenerGlosario();
                                             <div class="policy-details">
                                                 <h4><?php echo htmlspecialchars($doc['titulo']); ?></h4>
                                                 <p>Sector <?php echo htmlspecialchars($doc['sector_nombre']); ?> - 
-                                                   Actualizado: <?php echo date('d/m/Y', strtotime($doc['fecha_actualizacion'])); ?></p>
+                                                Actualizado: <?php echo isset($doc['fecha_actualizacion']) ? date('d/m/Y', is_string($doc['fecha_actualizacion']) ? strtotime($doc['fecha_actualizacion']) : strtotime($doc['fecha_actualizacion']->format('Y-m-d'))) : 'Fecha no disponible'; ?></p>
+
                                             </div>
                                         </div>
                                         <div class="policy-actions">
@@ -401,7 +409,14 @@ $glosario = $politicaObj->obtenerGlosario();
                                     <div class="policy-details">
                                         <h4><?php echo htmlspecialchars($procedure['titulo']); ?></h4>
                                         <p>Sector <?php echo htmlspecialchars($procedure['sector_nombre']); ?> - 
-                                           Actualizado: <?php echo date('d/m/Y', strtotime($procedure['fecha_actualizacion'])); ?></p>
+                                        Actualizado: <?php 
+                                                        echo isset($procedure['fecha_actualizacion']) 
+                                                            ? date('d/m/Y', is_string($procedure['fecha_actualizacion']) 
+                                                                ? strtotime($procedure['fecha_actualizacion']) 
+                                                                : strtotime($procedure['fecha_actualizacion']->format('Y-m-d'))) 
+                                                            : 'Fecha no disponible'; 
+                                                        ?>
+                                                        </p>
                                     </div>
                                 </div>
                                 <div class="policy-actions">
@@ -714,19 +729,7 @@ $glosario = $politicaObj->obtenerGlosario();
                 <!-- Aquí se cargará el PDF -->
                 <div id="pdfViewer">
                     <p>Visor de PDF cargando...</p>
-                    <!-- En una implementación real, aquí se cargaría un visor de PDF como PDF.js -->
                 </div>
-            </div>
-            <div class="pdf-controls">
-                <button class="pdf-btn" onclick="searchInPdf()">
-                    <i class="fas fa-search"></i> Buscar en documento
-                </button>
-                <button class="pdf-btn" onclick="downloadCurrentPdf()">
-                    <i class="fas fa-download"></i> Descargar
-                </button>
-                <button class="pdf-btn" onclick="printPdf()">
-                    <i class="fas fa-print"></i> Imprimir
-                </button>
             </div>
         </div>
     </div>
@@ -735,8 +738,11 @@ $glosario = $politicaObj->obtenerGlosario();
     <div id="glossaryModal" class="modal">
         <div class="modal-content glossary-modal">
             <span class="close-modal" onclick="closeGlossary()">&times;</span>
-            <h3>Glosario de Términos</h3>
-            <input type="text" class="glossary-search" id="glossarySearch" placeholder="Buscar término...">
+            
+            <div class="glossary-search-container">
+                <h3>Glosario de Términos</h3>
+                <input type="text" class="glossary-search" id="glossarySearch" placeholder="Buscar término...">
+            </div>
             
             <div class="glossary-content">
                 <?php
@@ -787,12 +793,12 @@ $glosario = $politicaObj->obtenerGlosario();
     <div class="notification-container"></div>
  
     <!-- Inclusión de archivos JavaScript al final del body -->
-    <script src="js/main.js"></script>
     <script src="js/search.js"></script>
     <script src="js/document-viewer.js"></script>
     <script src="js/glossary.js"></script>
     <script src="js/upload-form.js"></script>
     <script src="js/sectors.js"></script>
+    <script src="js/main.js"></script>
  
 </body>
 </html>
