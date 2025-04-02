@@ -195,28 +195,16 @@ class Politica
                 fecha_actualizacion = GETDATE()";
         
         // Actualizar campos si están presentes
-        if (isset($datos['titulo']) && !empty($datos['titulo'])) {
-            $sql .= ", titulo = '".$this->escaparTexto($datos['titulo'])."'";
+        if (isset($datos['version']) && !empty($datos['version'])) {
+            $sql .= ", version = '".$this->escaparTexto($datos['version'])."'";
         }
         
         if (isset($datos['descripcion'])) {
             $sql .= ", descripcion = '".$this->escaparTexto($datos['descripcion'])."'";
         }
         
-        if (isset($datos['sector_id']) && !empty($datos['sector_id'])) {
-            $sql .= ", sector_id = ".$datos['sector_id'];
-        }
-        
         if (isset($datos['tags'])) {
             $sql .= ", tags = '".$this->escaparTexto($datos['tags'])."'";
-        }
-        
-        if (isset($datos['estado']) && in_array($datos['estado'], ['activo', 'inactivo', 'obsoleto'])) {
-            $sql .= ", estado = '".$datos['estado']."'";
-        }
-        
-        if (isset($datos['version'])) {
-            $sql .= ", version = '".$datos['version']."'";
         }
         
         // Si hay un archivo nuevo, procesarlo
@@ -232,7 +220,7 @@ class Politica
             }
             
             // Generar nuevo nombre y ruta
-            $titulo = isset($datos['titulo']) ? $datos['titulo'] : $documento['titulo'];
+            $titulo = $documento['titulo']; // Mantener el título original
             $nuevo_nombre = $this->generarNombreArchivo($titulo, $extension);
             $ruta_completa = $this->upload_dir . $nuevo_nombre;
             
@@ -256,7 +244,16 @@ class Politica
         // Completar la consulta
         $sql .= " WHERE id = $id";
         
-        return $this->ejecutarSQL($sql);
+        // Ejecutar la actualización
+        $resultado = $this->ejecutarSQL($sql);
+        
+        // Comprobar si se actualizó correctamente
+        if ($resultado['status'] === 'success') {
+            // Opcional: Registrar la actualización en un historial
+            $this->registrarHistorialVersion($id, $datos['version'] ?? '1.0', $datos['descripcion'] ?? '');
+        }
+        
+        return $resultado;
     }
     
     /**
@@ -490,4 +487,48 @@ class Politica
     private function escaparTexto($texto) {
         return str_replace("'", "''", $texto);
     }
+
+    /**
+     * Registra una entrada en el historial de versiones
+     */
+    private function registrarHistorialVersion($documento_id, $version, $descripcion = '') {
+        $usuario = isset($_SESSION['usuario_nombre']) ? $_SESSION['usuario_nombre'] : 'Sistema';
+        
+        $sql = "INSERT INTO Historial_Versiones (documento_id, version, descripcion, usuario, fecha) 
+                VALUES ($documento_id, '".$this->escaparTexto($version)."', 
+                '".$this->escaparTexto($descripcion)."', '".$this->escaparTexto($usuario)."', GETDATE())";
+        
+        return $this->ejecutarSQL($sql);
+    }
+
+    /**
+     * Obtiene el historial de versiones de un documento
+     */
+    public function obtenerHistorialVersiones($documento_id) {
+        $sql = "SELECT id, documento_id, version, descripcion, fecha, usuario 
+                FROM Historial_Versiones 
+                WHERE documento_id = $documento_id 
+                ORDER BY fecha DESC";
+        
+        $historial = $this->retornarArray($sql);
+        
+        // Formatear fechas
+        foreach ($historial as &$version) {
+            if (isset($version['fecha'])) {
+                if ($version['fecha'] instanceof DateTime) {
+                    // Si es un objeto DateTime, formatearlo directamente
+                    $version['fecha'] = $version['fecha']->format('d/m/Y H:i');
+                } elseif (is_object($version['fecha']) && isset($version['fecha']->date)) {
+                    // Si es un objeto con propiedad 'date', convertirlo
+                    $version['fecha'] = date('d/m/Y H:i', strtotime($version['fecha']->date));
+                } elseif (is_string($version['fecha'])) {
+                    // Si ya es una cadena, formatearla normalmente
+                    $version['fecha'] = date('d/m/Y H:i', strtotime($version['fecha']));
+                }
+            }
+        }
+        
+        return $historial;
+    }
+
 }

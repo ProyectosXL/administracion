@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof initFileUpload === 'function') initFileUpload();
     if (typeof initTagsInput === 'function') initTagsInput();
     if (typeof initFormValidation === 'function') initFormValidation();
+    if (typeof initFormValidation === 'function') initUpdateForm();
+    if (typeof initFormValidation === 'function') checkUrlTab();
     
     // Verificar si hay mensajes de estado en la URL
     checkUrlMessages();
@@ -253,4 +255,14 @@ function updateStatistics() {
         .catch(error => {
             console.error('Error al actualizar estadísticas:', error);
         });
+}
+
+// Verificar si hay parámetros en la URL que indiquen la pestaña a mostrar
+function checkUrlTab() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    
+    if (tab) {
+        showTab(tab);
+    }
 }

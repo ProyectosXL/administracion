@@ -103,6 +103,12 @@ $glosario = $politicaObj->obtenerGlosario();
                     </a>
                 </li>
                 <li>
+                    <a href="#" onclick="showTab('update')">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Actualizar Documento</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#" onclick="showTab('settings')">
                         <i class="fas fa-cog"></i>
                         <span>Configuración</span>
@@ -597,6 +603,144 @@ $glosario = $politicaObj->obtenerGlosario();
                     </div>
                 </div>
             </div>
+
+            <!-- Vista de Actualización de Documentos -->
+<div id="update-content" class="tab-content" style="display: none;">
+    <div class="section-header">
+        <h2>Actualizar Documento</h2>
+        <p>Cargar una nueva versión de un documento existente</p>
+    </div>
+    
+    <div class="upload-container">
+        <!-- Información sobre el proceso -->
+        <div class="upload-info">
+            <h4><i class="fas fa-info-circle"></i> Información sobre la actualización de documentos</h4>
+            <ul>
+                <li>Seleccione el documento que desea actualizar de la lista.</li>
+                <li>Sólo podrá modificar el archivo y opcionalmente la descripción y etiquetas.</li>
+                <li>La nueva versión reemplazará a la anterior pero se mantendrá un historial.</li>
+                <li>Sólo se permiten archivos en formato PDF.</li>
+            </ul>
+        </div>
+        
+        <!-- Formulario de selección de documento -->
+        <div class="upload-form">
+            <div class="upload-form-title">
+                <h3>Paso 1: Seleccione el documento a actualizar</h3>
+            </div>
+            
+            <div class="form-group">
+                <label for="documentSelect">Documento:</label>
+                <select id="documentSelect" name="documento_id" required onchange="loadDocumentDetails(this.value)">
+                    <option value="" disabled selected>Seleccione un documento</option>
+                    <?php
+                    // Obtener todos los documentos para mostrarlos en el selector
+                    $todos_documentos = $politicaObj->obtenerTodos();
+                    foreach ($todos_documentos as $doc) {
+                        echo '<option value="'.$doc['id'].'">' . htmlspecialchars($doc['titulo']) . ' ('. htmlspecialchars($doc['sector_nombre']) .')</option>';
+                    }
+                    ?>
+                </select>
+            </div>
+            
+            <!-- Área donde se mostrarán los detalles del documento seleccionado -->
+            <div id="documentDetails" style="display: none;" class="document-details">
+                <div class="document-info-card">
+                    <h4>Información del documento</h4>
+                    <div class="info-row">
+                        <span class="label">Título:</span>
+                        <span id="docDetailTitle" class="value"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Tipo:</span>
+                        <span id="docDetailType" class="value"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Sector:</span>
+                        <span id="docDetailSector" class="value"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Versión actual:</span>
+                        <span id="docDetailVersion" class="value"></span>
+                        <button type="button" class="btn-link" onclick="showVersionHistory(document.getElementById('updateDocId').value)">
+                            <i class="fas fa-history"></i> Ver historial
+                        </button>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Última actualización:</span>
+                        <span id="docDetailDate" class="value"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para historial de versiones -->
+        <div id="versionHistoryModal" class="modal">
+            <div class="modal-content history-modal">
+                <span class="close-modal" onclick="closeVersionHistory()">&times;</span>
+                <h3>Historial de Versiones</h3>
+                <div id="versionHistoryContent">
+                    <p>Cargando historial...</p>
+                </div>
+            </div>
+        </div>
+        
+                    <!-- Formulario de actualización -->
+                    <div id="updateForm" class="upload-form" style="display: none;">
+                        <div class="upload-form-title">
+                            <h3>Paso 2: Actualizar documento</h3>
+                        </div>
+                        
+                        <form id="documentUpdateForm" action="Controller/actualizar_documento.php" method="post" enctype="multipart/form-data">
+                            <input type="hidden" id="updateDocId" name="documento_id" value="">
+                            
+                            <div class="form-group">
+                                <label for="updateVersion">Nueva versión:</label>
+                                <input type="text" id="updateVersion" name="version" placeholder="Ej: 2.0" required>
+                                <span class="field-info">La versión actual se mostrará como referencia</span>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="updateDesc">Descripción (opcional):</label>
+                                <textarea id="updateDesc" name="descripcion" rows="3" placeholder="Describa los cambios realizados en esta versión"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="updateTags">Etiquetas (opcional):</label>
+                                <input type="text" id="updateTags" name="tags" placeholder="Separadas por comas">
+                                <div class="tags-container" id="updateTagsContainer"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Archivo PDF <span class="required">*</span></label>
+                                <div class="file-upload-container">
+                                    <div class="file-upload-button" id="updateFileUploadBtn">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <div class="main-text">Arrastre y suelte la nueva versión aquí</div>
+                                        <p>o haga clic para seleccionar un archivo</p>
+                                        <p class="file-types">Solo archivos PDF (máx. 10 MB)</p>
+                                    </div>
+                                    <input type="file" id="updateDocFile" name="archivo" accept=".pdf" required class="file-upload-input">
+                                    
+                                    <div class="file-info" id="updateFileInfo">
+                                        <i class="fas fa-file-pdf"></i>
+                                        <span class="file-name" id="updateFileName">nombre_del_archivo.pdf</span>
+                                        <span class="file-size" id="updateFileSize">0 KB</span>
+                                        <i class="fas fa-times remove-file" onclick="removeUpdateFile()"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn secondary" onclick="cancelUpdate()">Cancelar</button>
+                                <button type="submit" class="btn primary">
+                                    <i class="fas fa-sync-alt"></i> Actualizar Documento
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
                         
             <!-- Vista de Configuración -->
             <div id="settings-content" class="tab-content" style="display: none;">
@@ -798,6 +942,7 @@ $glosario = $politicaObj->obtenerGlosario();
     <script src="js/glossary.js"></script>
     <script src="js/upload-form.js"></script>
     <script src="js/sectors.js"></script>
+    <script src="js/update-document.js"></script>
     <script src="js/main.js"></script>
  
 </body>
