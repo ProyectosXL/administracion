@@ -1,4 +1,5 @@
 
+// update-document.js
 // Funciones para actualizar documentos existentes
 
 // Inicializar el manejo de actualización de documentos

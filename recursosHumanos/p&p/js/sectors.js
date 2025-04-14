@@ -1,4 +1,5 @@
 
+// sectors.js
 // Funciones para la gestión de sectores
 
 // Inicializar la gestión de sectores

@@ -1,4 +1,6 @@
 
+//document-viewer.js
+
 // Función para visualizar un documento por su ID
 function viewDocument(documentId) {
     // Mostrar un indicador de carga
@@ -212,4 +214,36 @@ function searchInPdf() {
     setTimeout(() => {
         alert(`Función de búsqueda: En una implementación completa, aquí se buscaría "${searchTerm}" en el documento PDF.`);
     }, 1000);
+}
+
+// Función para cerrar el visor de PDF
+function closePdfViewer() {
+    // Obtener el modal
+    const modal = document.getElementById('pdfViewerModal');
+    
+    // Ocultar el modal
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Limpiar el contenido del visor para liberar memoria
+    const pdfViewer = document.getElementById('pdfViewer');
+    if (pdfViewer) {
+        pdfViewer.innerHTML = '<p>Visor de PDF cargando...</p>';
+    }
+    
+    // Resetear variables si estamos usando PDF.js
+    pdfDoc = null;
+    pageNum = 1;
+    pageRendering = false;
+    pageNumPending = null;
+}
+
+// Función para descargar un documento por su ID
+function downloadDocument(documentId) {
+    // Mostrar un indicador de carga
+    showNotification('Preparando descarga...', 'info');
+    
+    // Redirigir al script de descarga con el ID del documento
+    window.location.href = 'Controller/descargar_documento.php?id=' + documentId;
 }

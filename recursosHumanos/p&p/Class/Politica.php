@@ -94,8 +94,11 @@ class Politica
     
     /**
      * Obtiene un documento específico por su ID
+     * @param int $id ID del documento
+     * @param bool $incrementarVista Si es true, incrementa el contador de vistas
+     * @return array|bool El documento encontrado o false
      */
-    public function obtenerPorId($id) {
+    public function obtenerPorId($id, $incrementarVista = false) {
         $sql = "SELECT p.*, s.nombre as sector_nombre, s.icono 
                 FROM Politicas_Procedimientos p 
                 JOIN Sectores s ON p.sector_id = s.id 
@@ -104,8 +107,10 @@ class Politica
         $resultado = $this->retornarArray($sql);
         
         if (count($resultado) > 0) {
-            // Incrementar contador de vistas
-            $this->incrementarContador($id, 'vistas');
+            // Incrementar contador de vistas solo si se solicita explícitamente
+            if ($incrementarVista) {
+                $this->incrementarContador($id, 'vistas');
+            }
             return $resultado[0];
         }
         

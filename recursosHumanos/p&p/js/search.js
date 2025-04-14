@@ -1,4 +1,5 @@
 
+// search.js
 // Funciones de búsqueda para el sistema de gestión de políticas y procedimientos
 
 // Inicializar la búsqueda

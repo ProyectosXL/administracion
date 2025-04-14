@@ -14,11 +14,11 @@ try {
     if (isset($_GET['id']) && !empty($_GET['id'])) {
         $documento_id = (int)$_GET['id'];
         
-        // Obtener información del documento
-        $documento = $politicaObj->obtenerPorId($documento_id);
+        // Obtener información del documento sin incrementar vista (parámetro en false)
+        $documento = $politicaObj->obtenerPorId($documento_id, false);
         
         if ($documento) {
-            // Registrar la visualización
+            // Registrar la visualización (esto ya incrementa el contador una vez)
             $usuario_id = isset($_SESSION['usuario_id']) ? $_SESSION['usuario_id'] : null;
             $politicaObj->registrarAcceso($documento_id, 'vista', $usuario_id);
             

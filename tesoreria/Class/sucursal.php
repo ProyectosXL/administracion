@@ -262,22 +262,44 @@ class Sucursal {
             if(!$cid_local){
 
                 $sql = "SELECT 
-                            CAST(A.FECHA_MOV AS DATE) FECHA,
-                            T_COMP, 
-                            N_COMP REMITO, 
-                            B.DESC_SUCURSAL DESTINO 
+                            CAST(A.FECHA_MOV AS DATE) AS FECHA,
+                            A.T_COMP, 
+                            A.N_COMP AS REMITO, 
+                            B.DESC_SUCURSAL AS DESTINO 
                         FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA09 A
                         INNER JOIN [LAKERBIS].LOCALES_LAKERS.DBO.SUCURSALES_LAKERS B 
-                            ON A.SUC_DESTIN = B.NRO_SUCURSAL AND A.COD_PRO_CL = B.COD_CLIENT COLLATE Latin1_General_BIN
-                        WHERE T_COMP = 'REM' 
+                            ON A.SUC_DESTIN = B.NRO_SUCURSAL 
+                            AND A.COD_PRO_CL = B.COD_CLIENT COLLATE Latin1_General_BIN
+                        WHERE A.T_COMP = 'REM' 
                             AND A.NRO_SUCURS = ? 
-                            AND A.FECHA_MOV >= DATEADD(day, -45, GETDATE())
-                            AND COD_PRO_CL LIKE 'GT%'
-                            AND N_COMP COLLATE Latin1_General_BIN NOT IN (
+                            AND A.FECHA_MOV >= DATEADD(DAY, -45, GETDATE())
+                            AND A.COD_PRO_CL LIKE 'GT%'
+                            AND A.N_COMP COLLATE Latin1_General_BIN NOT IN (
                                 SELECT N_COMP COLLATE Latin1_General_BIN 
                                 FROM RO_REMITOS_GUIA_RETIROS_SUC
                             )
-                        ORDER BY A.FECHA_MOV DESC, N_COMP DESC";
+
+                        UNION ALL
+
+                        SELECT 
+                            CAST(A.FECHA_MOV AS DATE) AS FECHA,
+                            A.T_COMP, 
+                            A.N_COMP AS REMITO, 
+                            B.DESC_SUCURSAL AS DESTINO 
+                        FROM [LAKERBIS].SUCURSALES_URUGUAY.DBO.CTA09 A
+                        INNER JOIN [LAKERBIS].LOCALES_LAKERS.DBO.SUCURSALES_LAKERS B 
+                            ON A.SUC_DESTIN = B.NRO_SUCURSAL 
+                            AND A.COD_PRO_CL = B.COD_CLIENT COLLATE Latin1_General_BIN
+                        WHERE A.T_COMP = 'REM' 
+                            AND A.NRO_SUCURS = ? 
+                            AND A.FECHA_MOV >= DATEADD(DAY, -45, GETDATE())
+                            AND A.COD_PRO_CL LIKE 'U%'
+                            AND A.N_COMP COLLATE Latin1_General_BIN NOT IN (
+                                SELECT N_COMP COLLATE Latin1_General_BIN 
+                                FROM RO_REMITOS_GUIA_RETIROS_SUC
+                            )
+
+                        ORDER BY FECHA DESC, REMITO DESC;";
         
                 $params = array($nroSucurs);
                 $stmt = sqlsrv_query($this->cid_central, $sql, $params);
@@ -297,17 +319,23 @@ class Sucursal {
             }else{
 
                 $sql ="SELECT 
-                        CAST(A.FECHA_MOV AS DATE) FECHA,
-                        T_COMP, 
-                        N_COMP REMITO, 
-                        CASE WHEN B.DESC_SUCURSAL = 'LAKERS SA' THEN 'CASA CENTRAL' ELSE B.DESC_SUCURSAL END DESTINO 
-                    FROM STA14 A
-                    INNER JOIN SUCURSAL B 
-                        ON A.SUC_DESTIN = B.NRO_SUCURSAL
-                    WHERE T_COMP = 'REM' 
-                        AND A.FECHA_MOV >= DATEADD(day, -45, GETDATE())
-                        AND COD_PRO_CL LIKE 'GT%'
-                    ORDER BY A.FECHA_MOV DESC, N_COMP DESC";
+                            CAST(A.FECHA_MOV AS DATE) AS FECHA,
+                            A.T_COMP, 
+                            A.N_COMP AS REMITO, 
+                            CASE 
+                                WHEN B.DESC_SUCURSAL = 'LAKERS SA' THEN 'CASA CENTRAL' 
+                                WHEN B.DESC_SUCURSAL = 'TASKY S.A' THEN 'CASA CENTRAL'
+                                WHEN LEFT(B.DESC_SUCURSAL, 6) = 'TASKY ' THEN SUBSTRING(B.DESC_SUCURSAL, 7, LEN(B.DESC_SUCURSAL))
+                                ELSE B.DESC_SUCURSAL 
+                            END AS DESTINO 
+                        FROM STA14 A
+                        INNER JOIN SUCURSAL B 
+                            ON A.SUC_DESTIN = B.NRO_SUCURSAL
+                        WHERE A.T_COMP = 'REM' 
+                            AND A.FECHA_MOV >= DATEADD(DAY, -45, GETDATE())
+                            AND A.COD_PRO_CL LIKE '[GU][TR]%'
+                        ORDER BY A.FECHA_MOV DESC, A.N_COMP DESC;
+                        ";
 
                 $params = array($nroSucurs);
 

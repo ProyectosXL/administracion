@@ -1,4 +1,5 @@
 
+// main.js
 // Archivo principal para el sistema de gestión de políticas y procedimientos
 
 // Variables globales

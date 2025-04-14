@@ -104,6 +104,8 @@ class Vendedor
         $pais = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'URUGUAY' : 'ARGENTINA';
         
         $sql = "
+        SELECT * FROM
+        (
         SELECT 
             COD_VENDEDOR AS COD_VENDED, 
             CONCAT(APELLIDO_Y_NOMBRE, ' - ', NRO_LEGAJO) AS NOMBRE_VEN, 
@@ -117,7 +119,8 @@ class Vendedor
         WHERE 
             HABILITADO = 'S' AND TAREA_HABITUAL IN
         ('CAJERO','CAJERA','ENCARGADA','VENDEDOR','VENDEDORA','SUB ENCARGADO','SUB ENCARGADA')
-        AND PAIS = '$pais' AND NRO_LEGAJO NOT BETWEEN '13000' AND '13710';
+        AND PAIS = '$pais' AND NRO_LEGAJO NOT BETWEEN '13000' AND '13710'
+        ) A ORDER BY NOMBRE_VEN;
         ";
     
         // Always use the central database for this query

@@ -1,4 +1,5 @@
 
+// glossary.js
 // Funciones para la gestión del glosario de términos
 
 // Inicializar la funcionalidad del glosario
