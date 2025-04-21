@@ -330,6 +330,8 @@ class Sucursal
     public function marcarFacturado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control) 
     {
 
+
+  
         $sql = "
         IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = '$nroComprobante'  AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante')
         BEGIN
@@ -343,8 +345,13 @@ class Sucursal
         ";
 
         try{
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                $stmt = sqlsrv_query($this->cid_uy, $sql);
             
-            $stmt = sqlsrv_query($this->conexion, $sql);
+            }else{
+
+                $stmt = sqlsrv_query($this->conexion, $sql);
+            }
        
             return $stmt;
         
@@ -366,7 +373,14 @@ class Sucursal
 
         try{
             
-            $stmt = sqlsrv_query($this->conexion, $sql);
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                $stmt = sqlsrv_query($this->cid_uy, $sql);
+            
+            }else{
+
+                $stmt = sqlsrv_query($this->conexion, $sql);
+            }
+       
        
             return true;
         
@@ -393,7 +407,14 @@ class Sucursal
 
         try{
             
-            $stmt = sqlsrv_query($this->conexion, $sql);
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                $stmt = sqlsrv_query($this->cid_uy, $sql);
+            
+            }else{
+
+                $stmt = sqlsrv_query($this->conexion, $sql);
+            }
+       
        
             return $stmt;
         
@@ -414,7 +435,14 @@ class Sucursal
     
             try{
                 
-                $stmt = sqlsrv_query($this->conexion, $sql);
+                if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                    $stmt = sqlsrv_query($this->cid_uy, $sql);
+                
+                }else{
+    
+                    $stmt = sqlsrv_query($this->conexion, $sql);
+                }
+           
         
                 return true;
             
