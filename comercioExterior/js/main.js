@@ -119,9 +119,9 @@ function guardarCabeceraUy(){
         var facturaProveedor = document.getElementById('facturaProveedor').value;
         
         let ocm = 0;
-        let ordenCompra = document.querySelectorAll("#ordenDeCompra")
-        console.log(ordenCompra)
+        let ordenCompra = document.querySelectorAll("#nroOrdenSpan")
         ordenCompra = Array.from(ordenCompra).map((el)=>el.innerHTML.trim().split(" ")[0]);
+        console.log(ordenCompra, 'ordenes')
         ordenCompra = JSON.stringify (ordenCompra);
 
 
@@ -300,7 +300,7 @@ function guardarCabeceraUy(){
    }
 
    function checkOrdenesUy(){
-    let ordenes = document.querySelectorAll("#ordenDeCompra");
+    let ordenes = document.querySelectorAll("#nroOrdenSpan");
     let stringParaSql = '(';
     ordenes.forEach((orden, index)=>{
         let ordenParaSql = orden.textContent.trim();

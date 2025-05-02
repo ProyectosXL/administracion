@@ -404,7 +404,7 @@ class Sucursal
             VALUES ('$fecha', $nroSucursal, '$tipoComprobante', '$nroComprobante', '$codCuenta', '$descripcionCuenta', $monto, '$leyenda', $factura, $control, GETDATE(), '', '$observaciones')
         END
         ";
-
+var_dump($sql);
         try{
             
             if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){

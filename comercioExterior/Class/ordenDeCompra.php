@@ -57,7 +57,7 @@ class OrdenDeCompra
                     --          WHERE A.FECHA_MOV >=GETDATE()-365 AND A.TCOMP_IN_S = 'RP' AND B.COD_PRO_CL LIKE 'Z%'
                     --          ) A 
                     --        )
-                        AND FEC_GENER >=GETDATE()-365 
+                        AND FEC_GENER >=GETDATE()-720
                         AND COD_PROVEE like '%$proveedor'
                         ";
     
