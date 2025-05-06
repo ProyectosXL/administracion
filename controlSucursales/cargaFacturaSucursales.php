@@ -1,4 +1,5 @@
 <?php
+    session_start();
     require_once "Class/sucursal.php";
     $selectSucursal = isset($_GET['selectSucursal']) ?  $_GET['selectSucursal'] : '2-UNICENTER';
         
@@ -29,6 +30,14 @@
     
     }
 
+    // --- Lógica de entorno y banderas ---
+    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $checked = ($checkedValue == 'central') ? 'checked' : '';
+    $dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
+    $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
+    $imageOn = ($checkedValue === 'central') ? '../contabilidad/images/bandera_con_sol__55757_std.jpg' : '../contabilidad/images/UY.png';
+    $imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '../contabilidad/images/bandera_con_sol__55757_std.jpg';
+
 ?>
 
 <!DOCTYPE html>
@@ -47,6 +56,28 @@
         
         </link>
 
+        <!-- Bootstrap Toggle CSS -->
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+        <!-- Bootstrap Toggle JS -->
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+
+        <style>
+        .toggle-on {
+            background-image: url('<?= $imageOn ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+        </style>
+
     </head>
 
     <body>
@@ -57,6 +88,7 @@
                     <div class="card card-1">
                         
                         <div class="row" style="margin-left:50px; margin-top:20px">
+                            <input type="checkbox" <?= $checked ?> data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px; margin-right:20px" onchange="cambiarEntorno(this)" id="checkEntorno" >
                             <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:40px;"></i>Carga Factura Sucursales- <?= $selectSucursal[1] ?></strong></h3>
                         </div>
 

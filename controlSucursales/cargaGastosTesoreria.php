@@ -36,6 +36,17 @@ if(count($gastosTesoreria) > 0){
 
 }
 
+// --- Lógica de entorno y banderas ---
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$checked = ($checkedValue == 'central') ? 'checked' : '';
+$dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
+$dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
+$imageOn = ($checkedValue === 'central') ? '../contabilidad/images/bandera_con_sol__55757_std.jpg' : '../contabilidad/images/UY.png';
+$imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '../contabilidad/images/bandera_con_sol__55757_std.jpg';
+
 ?>
 
 <!DOCTYPE html>
@@ -61,10 +72,27 @@ if(count($gastosTesoreria) > 0){
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         
-        </link>
+        <!-- Bootstrap Toggle CSS -->
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+        <!-- Bootstrap Toggle JS -->
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
         <style>
             #myTable_filter input[type="search"] {
                 margin-right:20px;
+            }
+            .toggle-on {
+                background-image: url('<?= $imageOn ?>');
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
+            }
+            .toggle-off {
+                background-image: url('<?= $imageOff ?>');
+                background-size: contain;
+                background-repeat: no-repeat;
+                height: 60px;
+                width: 60px;
             }
         </style>
 
@@ -78,6 +106,7 @@ if(count($gastosTesoreria) > 0){
                     <div class="card card-1">
                         <div id="periodo" hidden><?= $periodo ?></div>
                         <div class="row" style="margin-left:50px; margin-top:10px">
+                            <input type="checkbox" <?= $checked ?> data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px; margin-right:20px" onchange="cambiarEntorno(this)" id="checkEntorno" >
                             <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga Gastos Tesoreria - <?= $fechaParaMostrar ?></strong></h3>
                         </div>
 
