@@ -404,7 +404,7 @@ class Sucursal
             VALUES ('$fecha', $nroSucursal, '$tipoComprobante', '$nroComprobante', '$codCuenta', '$descripcionCuenta', $monto, '$leyenda', $factura, $control, GETDATE(), '', '$observaciones')
         END
         ";
-var_dump($sql);
+
         try{
             
             if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
@@ -498,7 +498,13 @@ var_dump($sql);
         $sql = " UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET OBSERVACIONES = '$observaciones' WHERE N_COMP = '$nroComprobante' AND NRO_SUCURSAL = '$nroSucursal'";
    
         try{
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                $stmt = sqlsrv_query($this->cid_uy, $sql);
+            
+            }else{
+
+                $stmt = sqlsrv_query($this->conexion, $sql);
+            }
        
             return true;
         
@@ -629,7 +635,13 @@ var_dump($sql);
 
         try{
             
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            $conexion = $this->cid_central;
+
+            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                $conexion = $this->cid_uy;
+            }
+
+            $stmt = sqlsrv_query($conexion, $sql);
             return true;
 
           

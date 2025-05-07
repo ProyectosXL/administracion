@@ -36,12 +36,13 @@ if(count($gastosTesoreria) > 0){
 
 }
 
-// --- Lógica de entorno y banderas ---
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+    $checked = 'checked';
+}else{
+    $checked = '';
 }
+    
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-$checked = ($checkedValue == 'central') ? 'checked' : '';
 $dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
 $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
 $imageOn = ($checkedValue === 'central') ? '../contabilidad/images/bandera_con_sol__55757_std.jpg' : '../contabilidad/images/UY.png';
@@ -72,10 +73,7 @@ $imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '.
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         
-        <!-- Bootstrap Toggle CSS -->
-        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-        <!-- Bootstrap Toggle JS -->
-        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+
         <style>
             #myTable_filter input[type="search"] {
                 margin-right:20px;
@@ -106,8 +104,10 @@ $imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '.
                     <div class="card card-1">
                         <div id="periodo" hidden><?= $periodo ?></div>
                         <div class="row" style="margin-left:50px; margin-top:10px">
-                            <input type="checkbox" <?= $checked ?> data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px; margin-right:20px" onchange="cambiarEntorno(this)" id="checkEntorno" >
-                            <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga Gastos Tesoreria - <?= $fechaParaMostrar ?></strong></h3>
+                            <!-- <input type="checkbox" <?= $checked ?> data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px; margin-right:20px" onchange="cambiarEntorno(this)" id="checkEntorno" > -->
+                            <h3 style="margin-right:50%"><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga Gastos Tesoreria - <?= $fechaParaMostrar ?></strong></h3>
+                            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
+
                         </div>
 
                         <form action="#" method="get" style="margin-bottom:20px" class="form-inline">
@@ -236,8 +236,11 @@ $imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '.
             </div>
         </div>
 
+        <?php
+            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
+        ?>
         <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+        <!-- <script src="https://code.jquery.com/jquery-3.5.1.js"></script> -->
         <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
@@ -246,6 +249,8 @@ $imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '.
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
         <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
     </body>
 
@@ -266,6 +271,16 @@ $imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '.
             filename: "Excel", //do not include extension
             fileext: ".xlsx" // file extension
         });
+    })
+
+    $(document).ready( function () {
+    
+        document.querySelector(".toggle").style.width="40px"
+        document.querySelector(".toggle-on").style.fontSize="0"
+        document.querySelector(".toggle-off").style.fontSize="0"
+        document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+        document.querySelector('.toggle.btn.btn-primary').style.marginTop = '25px'
+
     })
     
 </script>

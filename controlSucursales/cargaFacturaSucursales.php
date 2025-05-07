@@ -30,14 +30,17 @@
     
     }
 
-    // --- Lógica de entorno y banderas ---
+    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+        $checked = 'checked';
+    }else{
+        $checked = '';
+    }
+        
     $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $checked = ($checkedValue == 'central') ? 'checked' : '';
     $dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
     $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
     $imageOn = ($checkedValue === 'central') ? '../contabilidad/images/bandera_con_sol__55757_std.jpg' : '../contabilidad/images/UY.png';
     $imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '../contabilidad/images/bandera_con_sol__55757_std.jpg';
-
 ?>
 
 <!DOCTYPE html>
@@ -56,27 +59,24 @@
         
         </link>
 
-        <!-- Bootstrap Toggle CSS -->
-        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-        <!-- Bootstrap Toggle JS -->
-        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-
         <style>
-        .toggle-on {
-            background-image: url('<?= $imageOn ?>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            height: 60px;
-            width: 60px;
-        }
-        .toggle-off {
-            background-image: url('<?= $imageOff ?>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            height: 60px;
-            width: 60px;
-        }
+                    .toggle-on {
+                    background-image: url('<?= $imageOn ?>');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    height: 60px;
+                    width: 60px;
+                }
+
+                .toggle-off {
+                    background-image: url('<?= $imageOff ?>');
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    height: 60px;
+                    width: 60px;
+                }
         </style>
+   
 
     </head>
 
@@ -88,8 +88,9 @@
                     <div class="card card-1">
                         
                         <div class="row" style="margin-left:50px; margin-top:20px">
-                            <input type="checkbox" <?= $checked ?> data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px; margin-right:20px" onchange="cambiarEntorno(this)" id="checkEntorno" >
-                            <h3><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:40px;"></i>Carga Factura Sucursales- <?= $selectSucursal[1] ?></strong></h3>
+                            <h3 style="margin-right:50%"><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:40px;"></i>Carga Factura Sucursales- <?= $selectSucursal[1] ?></strong></h3>
+                            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                        
                         </div>
 
                         <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
@@ -210,9 +211,10 @@
 </html>
 
 <!-- INCLUDE JS FILES -->
-
+<?php
+    require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
+?>
 <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
 <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
@@ -226,6 +228,9 @@
 <script src="js/cargaFacturaSucursales.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <!-- Bootstrap Toggle CSS -->
+<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
 
 <script>
@@ -234,5 +239,14 @@
     document.querySelector(".select2-selection.select2-selection--single").style.height = "44px"
     document.querySelector("#select2-selectSucursal-container").style.marginTop = "8px"
 
+    $(document).ready( function () {
+    
+    document.querySelector(".toggle").style.width="40px"
+    document.querySelector(".toggle-on").style.fontSize="0"
+    document.querySelector(".toggle-off").style.fontSize="0"
+    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+    document.querySelector('.toggle.btn.btn-primary').style.marginTop = '25px'
+
+    })
 
 </script>
