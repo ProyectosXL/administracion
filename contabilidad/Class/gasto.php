@@ -45,16 +45,16 @@ class Gasto
              AND COD_CUENTA LIKE '$codCuenta'";
 
     }elseif($estado == '3'){
-            // Gastos pendientes // 
+            // Gastos sin asignar // 
             $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL AND AMORTIZADO IS NULL)
              AND COD_CUENTA LIKE '$codCuenta'";
 
     }else{
 
-            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' --AND PRORRATEADO IS NULL
                     AND COD_RUBRO LIKE '$codRubro'
                     AND COD_CUENTA LIKE '$codCuenta'
-                    UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
+                        UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
                     AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
                     --AND PRORRATEADO IS NULL 
                     AND COD_RUBRO LIKE '$codRubro' 
@@ -300,9 +300,10 @@ class Gasto
     }
     
     public function traerRelacionCuentaRubroContable() {
-        $sql = "SELECT a.*,b.COD_CUENTA,b.DESC_CUENTA,c.RUBRO_CONTABLE from RO_T_RELACION_CUENTA_RUBRO_CONTABLE a
+        $sql = "SELECT a.*,b.COD_CUENTA,b.DESC_CUENTA,c.RUBRO_CONTABLE, D.DESC_PRORRATEO from RO_T_RELACION_CUENTA_RUBRO_CONTABLE a
         INNER JOIN CUENTA b ON b.COD_CUENTA = a.COD_CUENTA
         INNER JOIN RO_T_RUBROS_CONTABLES c ON c.COD_RUBRO = a.COD_RUBRO
+        LEFT JOIN RO_T_METODOS_PRORRATEO D ON A.COD_PRORRATEO = D.COD_PRORRATEO
         ORDER BY a.ID DESC";
 
         $stmt = sqlsrv_query( $this->cid_central, $sql );
@@ -505,4 +506,35 @@ class Gasto
             print_r($th);
         }        
     }
+
+    // Método actualizado para mantener la relación codCuenta-sector sin posibilidad de cambio
+    public function actualizarRelacionCuentaRubroContable($id, $codCuenta, $sector, $codRubro, $codProrrateo) {
+        
+        // Actualizamos solo los campos permitidos: COD_RUBRO y COD_PRORRATEO
+        $sql = "UPDATE RO_T_RELACION_CUENTA_RUBRO_CONTABLE 
+                SET COD_RUBRO = '$codRubro', 
+                    COD_PRORRATEO = '$codProrrateo' 
+                WHERE ID = $id";
+        
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+        if ($stmt === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+        
+        return 1;
+    }
+
+    public function eliminarRelacionCuentaRubroContable($id) {
+        $sql = "DELETE FROM RO_T_RELACION_CUENTA_RUBRO_CONTABLE WHERE ID = $id";
+        
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+        if ($stmt === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+        
+        return 1;
+    }
+
 }  

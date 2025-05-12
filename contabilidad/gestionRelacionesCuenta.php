@@ -207,32 +207,39 @@
                             <div class="col-10">
                             
                                 <div class="table-wrapper" id="tableIndex">
-                                    <table id="tableData" class="table table-hover table-condensed table-striped text-center"  cellspacing="0" data-page-length="100">
+                                    <!-- Modificación en la tabla de relaciones existentes para añadir acciones -->
+                                    <table id="tableData" class="table table-hover table-condensed table-striped text-center" cellspacing="0" data-page-length="100">
                                         <thead class="thead-dark" style="font-size: small;">
                                             <th scope="col" style="width: 6%">COD. CUENTA</th>
                                             <th scope="col" style="width: 15%">DESC. CUENTA</th>
                                             <th scope="col" style="width: 8%">SECTOR</th>
                                             <th scope="col" style="width: 8%">COD. RUBRO</th>
-                                            <th scope="col" style="width: 8%">RUBRO CONTABLE </th>
-
+                                            <th scope="col" style="width: 8%">RUBRO CONTABLE</th>
+                                            <th scope="col" style="width: 8%">COD. PRORRATEO</th>
+                                            <th scope="col" style="width: 8%">DESC. PRORRATEO</th>
+                                            <th scope="col" style="width: 6%">ACCIONES</th>
                                         </thead>
 
                                         <tbody id="tableVb" style="font-size: small;">
-                                                        <?php 
-                                                            foreach ($RelacionCuentaRubroContable as $key => $value) {
-                                                        ?>
-
-                                                            <tr>
-                                                                <td><?= $value['COD_CUENTA'] ?></td>
-                                                                <td><?= $value['DESC_CUENTA'] ?></td>
-                                                                <td><?= $value['SECTOR'] ?></td>
-                                                                <td><?= $value['COD_RUBRO'] ?></td>
-                                                                <td><?= $value['RUBRO_CONTABLE'] ?></td>
-                                                            </tr>
-
-                                                        <?php
-                                                            }
-                                                        ?>
+                                            <?php 
+                                            foreach ($RelacionCuentaRubroContable as $key => $value) {
+                                            ?>
+                                                <tr>
+                                                    <td><?= $value['COD_CUENTA'] ?></td>
+                                                    <td><?= $value['DESC_CUENTA'] ?></td>
+                                                    <td><?= $value['SECTOR'] ?></td>
+                                                    <td><?= $value['COD_RUBRO'] ?></td>
+                                                    <td><?= $value['RUBRO_CONTABLE'] ?></td>
+                                                    <td><?= $value['COD_PRORRATEO'] ?></td>
+                                                    <td><?= $value['DESC_PRORRATEO'] ?></td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-primary" onclick="editarRelacion(<?= $value['ID'] ?>, '<?= $value['COD_CUENTA'] ?>', '<?= $value['SECTOR'] ?>', '<?= $value['COD_RUBRO'] ?>', '<?= $value['COD_PRORRATEO'] ?>')" title="Editar"><i class="bi bi-pencil-square"></i></button>
+                                                        <button class="btn btn-sm btn-danger" onclick="eliminarRelacion(<?= $value['ID'] ?>)" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                                    </td>
+                                                </tr>
+                                            <?php
+                                            }
+                                            ?>
                                         </tbody>
                                     </table>
                                 </div>
@@ -242,6 +249,63 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Modal para editar relaciones -->
+        <div class="modal fade" id="editarModal" tabindex="-1" role="dialog" aria-labelledby="editarModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editarModalLabel">Editar Relación</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="idRelacion">
+                <div class="form-group">
+                    <label for="editCodCuenta">Código Cuenta:</label>
+                    <input type="text" class="form-control" id="editCodCuenta" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editDescCuenta">Descripción Cuenta:</label>
+                    <input type="text" class="form-control" id="editDescCuenta" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editSector">Sector:</label>
+                    <input type="text" class="form-control" id="editSector" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editCodRubro">Código Rubro:</label>
+                    <select class="form-control editCodRubro" id="editCodRubro" onchange="traerDescRubroEdit(this)">
+                        <option disabled="disabled" selected></option>
+                        <?php 
+                        foreach ($todosLosRubros as $key => $value) {
+                            echo "<option value='".$value->COD_RUBRO."' attr-desc-rubro='".$value->RUBRO_CONTABLE."'>".$value->COD_RUBRO."-".$value->RUBRO_CONTABLE."</option>";
+                        }
+                        ?>
+                    </select>
+                    <div id="editRubroContable" class="mt-2 font-weight-bold"></div>
+                </div>
+                <div class="form-group">
+                    <label for="editCodProrrateo">Código Prorrateo:</label>
+                    <select class="form-control editCodProrrateo" id="editCodProrrateo" onchange="traerDescProrrateoEdit(this)">
+                        <option disabled="disabled" selected></option>
+                        <?php 
+                        foreach ($arrayMetodosProrrateo as $key => $value) {
+                            echo "<option value='".$value->COD_PRORRATEO."' attr-desc-prorrateo='".$value->DESC_PRORRATEO."'>".$value->COD_PRORRATEO.'-'.$value->DESC_PRORRATEO."</option>";
+                        }
+                        ?>
+                    </select>
+                    <div id="editDescProrrateo" class="mt-2 font-weight-bold"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarCambios()">Guardar cambios</button>
+            </div>
+            </div>
+        </div>
         </div>
 
         <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
