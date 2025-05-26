@@ -42,9 +42,8 @@ class Vendedor
         $db = 'central';
 
         $sql = " 
-        
-        SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS WHERE CANAL IN ('PROPIOS') 
-        AND NRO_SUC_MADRE IS NULL AND HABILITADO = 1
+       SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS WHERE COD_CLIENT = (select COD_CLIENT FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS where cod_client = 'GTPAGA') OR CANAL IN ('PROPIOS') 
+        AND NRO_SUC_MADRE IS NULL AND HABILITADO = 1;
         ";
 
         if(isset($_SESSION['entorno'] ) && $_SESSION['entorno'] == 'uy'){
