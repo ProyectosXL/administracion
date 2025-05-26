@@ -219,11 +219,15 @@ class Vendedor
         $sql_buscar_local = "SELECT TOP 1 * FROM SUCURSALES_LAKERS WHERE NRO_SUCURSAL = $num_suc";
   
       
+        if($cidLocales == false){
+            return false;
+        }
+
         $stmt = sqlsrv_query( $cidLocales, $sql_buscar_local );
 
         
         if( $stmt === false ) {
-            die( print_r( sqlsrv_errors(), true));
+            return false;
         }
 
         $datos = array();
