@@ -358,7 +358,7 @@ class Anticipo
 
     public function getEmails($periodoActual)
     {
-        $sql = "SELECT EMAIL FROM FU_EMAIL_ANTICIPOS";
+        $sql = "SELECT EMAIL FROM RO_T_DESTINATARIOS_MAIL WHERE TIPO_NOTIFICACION = 'ANTICIPO_SUELDOS' AND ACTIVO = 1";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
 
