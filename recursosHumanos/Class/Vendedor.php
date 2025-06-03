@@ -237,7 +237,14 @@ class Vendedor
             $_SESSION['base_nombre'] = $v['BASE_NOMBRE'];
     
         }
-     
+        
+
+        $cidConexionFinal =  $cid->conectar('');
+
+        if(!$cidConexionFinal){
+            return false;
+        }
+
         return true;
     }
 
@@ -271,8 +278,12 @@ class Vendedor
         if($db == 'central'){
             $db = '';
         }
-
+   
         $cidLocal = $cid->conectar($db);
+        
+        if($cidLocal == false){
+            return false;
+        }
 
         if (strlen($nombre) > 30) {
             $nombreLimite = $nombre;
@@ -313,7 +324,7 @@ class Vendedor
         $stmt = sqlsrv_query( $cidLocal, $sqlInsertaVended );
 
         if( $stmt === false ) {
-            die( print_r( sqlsrv_errors(), true));
+            return false;
         }
 
         return true;

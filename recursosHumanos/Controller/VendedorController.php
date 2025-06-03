@@ -132,7 +132,6 @@
         foreach ($sucursalesPorHabilitar as $key => $sucursal) {
 
             $conexion = $vendedor->localConexion($sucursal);
-
             if($conexion == true) {
 
                 foreach ($vendedoresPorHabilitar as $key => $vendedorHabilitar) {
