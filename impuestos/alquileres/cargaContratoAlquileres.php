@@ -1,0 +1,184 @@
+<?php
+    require_once "Class/Alquiler.php";
+    require_once "Class/sucursal.php";
+
+    $alquiler = new Alquiler();
+    $sucursal = new Sucursal();
+
+    $conceptos = $alquiler->traerConceptosPorcentaje();
+    $locales = $sucursal->traerLocales(true);
+    
+    $conceptoFiltrado = isset($_GET['conceptos']) ? $_GET['conceptos'] : "6-Porc. S/ventas brutas";
+
+    $idConcepto = explode("-", $conceptoFiltrado)[0];
+    $descConcepto = explode("-", $conceptoFiltrado)[1];
+    $porcentajePorSucursal = $alquiler->traerPorcentajeSucursal($idConcepto);
+
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
+        $checked = 'checked';
+    }else{
+        $checked = '';
+    }
+        
+    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
+    $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
+    $imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
+    $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
+    
+    
+    ?>
+
+    <!DOCTYPE html>
+    <html lang="en">
+       <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Carga Contratos Alquiler</title>
+        
+        <!-- INCLUDES CSS -->
+        <?php
+            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+        ?>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+        
+    </head>
+    <style>
+        #inputText {
+            line-height: 1.2; /* Ajusta el valor para controlar el espacio entre líneas */
+        }
+        .toggle-on {
+            background-image: url('<?= $imageOn ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 60px;
+            width: 60px;
+        }
+    </style>
+    <body>
+
+        <div class="alert alert-secondary">
+            <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
+                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Carga Contratos Alquiler</h6></div>
+                    <div class="card card-1">
+                        <div id="username" hidden><?= $_SESSION['username'] ?></div>
+                        <div class="row" style="margin-left:50px">
+                        <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                            <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                        </a>
+                            <h3 style="margin-right:60%"><i class="bi bi-key" style="margin-right: 20px; font-size: 40px"></i>Carga Contratos Alquiler</h3>
+                            <div style="margin-top:30px">
+                                <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                            </div>
+                        </div>
+                        <form action="">
+                        <div class="container-fluid" style="margin-left: 0px;">
+
+                            <div class="row" style="width:1300px; margin-left: 60px">
+                                <div clas="col" style="width:550px;">
+                                    <div class="row" style="margin-top:3rem">
+                                        <div style="text-align:left;margin-right:5px">Sucursal:</div>
+                                        <div style="margin-right:5px">
+                                            <select name="selectSucursal" id="selectSucursal" style="height:40px;width:12rem">
+                                                 <?php 
+                                                    foreach ($locales as  $value) {
+                                                ?>
+                                                        <option value="<?= $value['NRO_SUCURSAL'] ?>-<?= $value['DESC_SUCURSAL'] ?>"><?= $value['DESC_SUCURSAL'] ?></option>
+                                                <?php 
+                                                    } ;
+                                                ?>
+                                            </select>
+                                        </div>
+                             
+                                    </div>
+                                </div>
+                                <div class="col-4" style="width:550px;">
+                                    <div class="row" >
+                  
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                        </form>
+                        <div class="row" style="margin-left:65px;margin-top:30px;margin-bottom:1rem">
+                            Vigencia
+                        </div>
+                        <div class="contenedor">
+                            <div>
+                                Desde: <input type="date" style="margin-left:5px" id="desde" value="<?= $desde ?>">
+                                Hasta: <input type="date" style="margin-left:5px" id="hasta" value="<?= $hasta ?>">
+                            </div>
+
+                        </div>
+
+                        <div class="row" style="margin-left:65px;margin-top:4%;width:370px">
+                            <div class="col">
+                                Valor llave
+                            </div>
+                            <div class="col">
+                                <input type="text" id="valorLlave" onchange="parseNumber(this)">
+                             </div>
+                        </div>
+                        <div class="row" style="margin-left:65px;margin-top:1%;width:370px">
+                            <div class="col">
+                                Comisiones
+                            </div>
+                            <div class="col">
+                                <input type="text" id="comisiones"  onchange="parseNumber(this)">
+                             </div>
+                        </div>
+                        <div class="row" style="margin-left:65px;margin-top:1%;width:370px">
+                            <div class="col">
+                                FPC lanzamiento
+                            </div>
+                            <div class="col">
+                                <input type="text" id="lanzamiento"  onchange="parseNumber(this)">
+                             </div>
+                        </div>
+                        <div class="row" style="margin-left:65px;margin-top:1%;width:500px">
+                            <div class="col"></div>
+                            <div class="col"><button class="btn btn-success mb-4" onclick="guardar()"style="margin-left:35px">Guardar <i class="bi bi-floppy"></i></button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php
+                require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
+            ?>
+        <script src="js/cargaContratoAlquileres.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    </body>
+
+    </html>
+    <script>    
+        $("#selectSucursal").select2();
+        $(document).ready(() => {
+
+            document.querySelector(".toggle").style.width="40px"
+            document.querySelector(".toggle-on").style.fontSize="0"
+            document.querySelector(".toggle-off").style.fontSize="0"
+            document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+
+        });
+                                                    
+    </script>

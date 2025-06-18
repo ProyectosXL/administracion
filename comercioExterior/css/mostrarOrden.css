@@ -1,0 +1,24 @@
+.select2-dropdown.select2-dropdown--above {
+
+    width:300px;
+}
+input[type='search'] {
+    margin-right:23rem
+}
+.dataTables_length{
+    margin-left:1rem
+}
+.dataTables_info{
+    margin-left:1rem
+}
+#tableDinamic_paginate{
+    margin-right:23rem;
+}
+thead {
+    position: sticky;
+    top: 0;
+}
+.form-inline{
+    width: 50%;
+    margin-bottom:20px
+}

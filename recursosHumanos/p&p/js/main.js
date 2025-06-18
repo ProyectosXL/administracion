@@ -1,0 +1,269 @@
+
+// main.js
+// Archivo principal para el sistema de gestión de políticas y procedimientos
+
+// Variables globales
+let currentDocument = null;  // Almacena información del documento actual en visualización
+
+// Inicialización al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar componentes
+    if (typeof initSidebar === 'function') initSidebar();
+    if (typeof initSearch === 'function') initSearch();
+    if (typeof initPdfViewer === 'function') initPdfViewer();
+    if (typeof initGlossary === 'function') initGlossary();
+    if (typeof initFileUpload === 'function') initFileUpload();
+    if (typeof initTagsInput === 'function') initTagsInput();
+    if (typeof initFormValidation === 'function') initFormValidation();
+    if (typeof initFormValidation === 'function') initUpdateForm();
+    if (typeof initFormValidation === 'function') checkUrlTab();
+    
+    // Verificar si hay mensajes de estado en la URL
+    checkUrlMessages();
+    
+    // Inicializar tooltips y popovers si se usan
+    initTooltips();
+    
+    // Cargar datos
+    loadSampleData();
+    
+    // Cerrar los modales si el usuario hace clic fuera de ellos
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    };
+    
+    // Actualizar estadísticas cada 5 minutos
+    setInterval(updateStatistics, 5 * 60 * 1000);
+});
+
+// ===== Funciones de inicialización de la interfaz =====
+
+function initSidebar() {
+    // Alternar la visibilidad de la barra lateral
+    const toggleBtn = document.getElementById('toggleSidebar');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('collapsed');
+            adjustMainContent();
+        });
+    }
+    
+    // Ajustar el contenido principal cuando la ventana cambia de tamaño
+    window.addEventListener('resize', adjustMainContent);
+    
+    // Manejar la navegación del menú lateral
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Eliminar la clase active de todos los enlaces
+            document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));
+            
+            // Añadir la clase active al enlace clickeado
+            this.classList.add('active');
+        });
+    });
+}
+
+function adjustMainContent() {
+    // Ajustar el margen del contenido principal basado en el estado de la barra lateral
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    if (!sidebar || !mainContent) return;
+    
+    if (window.innerWidth > 768) {
+        if (sidebar.classList.contains('collapsed')) {
+            mainContent.style.marginLeft = '80px';
+        } else {
+            mainContent.style.marginLeft = '280px';
+        }
+    } else {
+        mainContent.style.marginLeft = '0';
+    }
+}
+
+// ===== Funciones de gestión de la navegación por pestañas =====
+
+function showTab(tabId) {
+    // Ocultar todos los contenidos de tabs
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Eliminar la clase active de todos los tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Mostrar el contenido del tab seleccionado
+    document.getElementById(tabId + '-content').style.display = 'block';
+    
+    // Añadir clase active al tab seleccionado
+    const activeTab = document.querySelector(`.tab[onclick="showTab('${tabId}')"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+    
+    // Activar enlace en el menú lateral
+    document.querySelectorAll('.sidebar-menu a').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('onclick') && link.getAttribute('onclick').includes(tabId)) {
+            link.classList.add('active');
+        }
+    });
+}
+
+// ===== Funciones de carga de datos =====
+
+function loadSampleData() {
+    // En una implementación real, cargaríamos datos desde una API o base de datos
+    console.log('Cargando datos de ejemplo...');
+    
+    // Simular carga de datos con un pequeño retraso
+    setTimeout(() => {
+        // Aquí se podrían cargar datos dinámicamente
+        console.log('Datos cargados correctamente');
+    }, 500);
+}
+
+// ===== Funciones de utilidad =====
+
+function showNotification(message, type = 'info') {
+    // Crear un elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas ${type === 'info' ? 'fa-info-circle' : type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="close-notification">&times;</button>
+    `;
+    
+    // Añadir al DOM
+    const notificationContainer = document.querySelector('.notification-container');
+    if (!notificationContainer) {
+        // Crear contenedor si no existe
+        const container = document.createElement('div');
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+        container.appendChild(notification);
+    } else {
+        notificationContainer.appendChild(notification);
+    }
+    
+    // Configurar eliminación automática
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 4000);
+    
+    // Configurar cierre manual
+    notification.querySelector('.close-notification').addEventListener('click', () => {
+        notification.classList.add('fade-out');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    });
+}
+
+// Verificar y mostrar mensajes de estado en la URL
+function checkUrlMessages() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const mensaje = urlParams.get('mensaje');
+    const texto = urlParams.get('texto');
+    
+    if (mensaje && texto) {
+        let tipo = 'info';
+        switch (mensaje) {
+            case 'success':
+                tipo = 'success';
+                break;
+            case 'error':
+                tipo = 'error';
+                break;
+            case 'warning':
+                tipo = 'warning';
+                break;
+        }
+        
+        showNotification(decodeURIComponent(texto), tipo);
+    }
+}
+
+// Inicializar tooltips (si se implementan)
+function initTooltips() {
+    const tooltipElements = document.querySelectorAll('[data-tooltip]');
+    tooltipElements.forEach(element => {
+        element.addEventListener('mouseover', function() {
+            const tooltipText = this.getAttribute('data-tooltip');
+            
+            if (tooltipText) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltip.textContent = tooltipText;
+                
+                document.body.appendChild(tooltip);
+                
+                const rect = this.getBoundingClientRect();
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                
+                tooltip.classList.add('show');
+                
+                this.addEventListener('mouseout', function() {
+                    tooltip.remove();
+                });
+            }
+        });
+    });
+}
+
+// Formatear fecha
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
+// Verificar si un elemento está visible en el viewport
+function isElementInViewport(el) {
+    const rect = el.getBoundingClientRect();
+    
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+}
+
+// Función para actualizar estadísticas de uso
+function updateStatistics() {
+    fetch('actualizar_estadisticas.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Estadísticas actualizadas correctamente');
+            }
+        })
+        .catch(error => {
+            console.error('Error al actualizar estadísticas:', error);
+        });
+}
+
+// Verificar si hay parámetros en la URL que indiquen la pestaña a mostrar
+function checkUrlTab() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    
+    if (tab) {
+        showTab(tab);
+    }
+}

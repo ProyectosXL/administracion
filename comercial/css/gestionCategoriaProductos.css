@@ -1,0 +1,15 @@
+
+.table-wrapper {
+width: 110%;
+height: 590px; 
+overflow: auto;
+overflow-x:hidden;
+}
+
+.table-wrapper table thead {
+    position: -webkit-sticky; 
+    position: sticky;
+    top: 0;
+    left: 0;
+}
+

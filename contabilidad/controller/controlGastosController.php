@@ -1,0 +1,117 @@
+<?php 
+require_once '../Class/Gasto.php';
+
+$accion = $_GET['accion'];
+
+switch ($accion) {
+    case 'validarPendienteDeAsignar':
+        validarPendienteDeAsignar();
+        break;
+    
+    case 'validarPendienteControl':
+        validarPendienteControl();
+        break;
+    
+    case 'validarPendienteAmortizar':
+        validarPendienteAmortizar();
+        break;
+    
+    case 'existeResumen':
+        existeResumen();
+        break;
+    
+    
+    case 'resumen':
+        resumen();
+        break;
+    
+    case 'cambiarEntorno':
+        cambiarEntorno();
+        break;
+    
+    default:
+        # code...
+        break;
+}
+
+
+function validarPendienteDeAsignar() {
+
+    $gasto = new Gasto();
+
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+
+    $result = $gasto->validarPendienteDeAsignar($desde, $hasta); 
+
+    echo $result;
+
+}
+
+function validarPendienteControl() {
+
+    $gasto = new Gasto();
+
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+
+    $result = $gasto->validarPendienteControl($desde, $hasta); 
+
+    echo $result;
+
+}
+
+function validarPendienteAmortizar() {
+
+    $gasto = new Gasto();
+
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+
+    $result = $gasto->validarPendienteAmortizar($desde, $hasta); 
+
+    echo $result;
+
+}
+
+function existeResumen() {
+
+    $gasto = new Gasto();
+
+    $periodo = $_POST['periodo'];
+
+
+    $result = $gasto->existeResumen($periodo); 
+
+    echo $result;
+
+}
+
+function resumen() {
+
+    $gasto = new Gasto();
+
+    $periodo = $_POST['periodo'];
+
+
+    $result = $gasto->traerResumen($periodo); 
+
+    echo json_encode($result);
+
+}
+
+
+
+function cambiarEntorno () {
+    session_start();
+
+    $entorno = $_POST['entorno'];
+
+    $_SESSION['entorno'] = $entorno;
+
+    echo 'ok';
+}
+
+
+
+ ?>

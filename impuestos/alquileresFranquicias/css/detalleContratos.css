@@ -1,0 +1,25 @@
+
+.table-container {
+    overflow-x: hidden;
+  }
+.container-fluid{
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.dataTables_wrapper .dataTables_filter {
+    float: right;
+}
+.dataTables_wrapper .dataTables_length {
+    float: left;
+}
+.table-container {
+    max-height: 600px;
+    overflow-y: auto;
+}
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
