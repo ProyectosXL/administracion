@@ -65,8 +65,6 @@ const checkControl = (div) => {
     if(div.checked == true){
         accion = "checkControl";
         control = 1;
-        // Obtener observaciones con prompt
-        observaciones = prompt("Ingrese observaciones (opcional):") || "";
     }else{
         accion = "uncheckControl";
         control = 0;
