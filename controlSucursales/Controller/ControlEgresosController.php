@@ -40,7 +40,6 @@ switch ($accion) {
         autorizarEgreso();
         break;
     
-    
     case 'controlTesoreria':
         controlTesoreria($sucursal);
         break;
@@ -50,15 +49,10 @@ switch ($accion) {
         break;
     
     default:
-        # code...
         break;
 }
 
-
-
 function marcarFacturado ($sucursal) {
-
-
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nro_sucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -71,28 +65,19 @@ function marcarFacturado ($sucursal) {
     $control = $_POST['control'];    
 
     $sucursal->marcarFacturado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
-
-
 }
 
-
 function uncheckFactura ($sucursal) {
-
-  
     $nroSucursal = $_POST['nro_sucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
     $nroComprobante = $_POST['nroComprobante'];
     $codCuenta = $_POST['codCuenta'];
     $monto = $_POST['monto'];
- 
 
     $sucursal->uncheckFactura($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto);
-
-
 }
 
 function marcarControlado ($sucursal){
-
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nro_sucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -106,26 +91,19 @@ function marcarControlado ($sucursal){
     $observaciones = $_POST['observaciones'];  
     
     $sucursal->marcarControlado($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control, $observaciones);
-
-
 }
 
-
 function uncheckControl ($sucursal){
-
     $nroSucursal = $_POST['nro_sucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
     $nroComprobante = $_POST['nroComprobante'];
     $codCuenta = $_POST['codCuenta'];
     $monto = $_POST['monto'];
- 
 
     $sucursal->uncheckControl($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto);
 }
 
 function marcarRecibido ($sucursal){
-
-
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nroSucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -135,17 +113,12 @@ function marcarRecibido ($sucursal){
     $monto = $_POST['monto'];
     $observaciones = $_POST['observaciones'];
 
-
-
     $result = $sucursal->marcarRecibido($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $observaciones);
     
     echo $result;
-
 }
 
-
 function controlTesoreria($sucursal){
-
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nroSucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -154,96 +127,125 @@ function controlTesoreria($sucursal){
     $descripcionCuenta = $_POST['descripcionCuenta'];
     $monto = $_POST['monto'];
 
-
-
     $result = $sucursal->controlTesoreria($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto);
     
     echo $result;
-
 }
 
 function contarFotosEnCarpeta() {
-    
     $nComp = (isset($_POST['nComp'])) ? $_POST['nComp'] : "";
-    $nroSucursal = $_POST['nroSucursal'];
-    $codCuenta = (isset ($_POST['codCuenta'])) ? $_POST['codCuenta'] : "";
+    $nroSucursal = (isset($_POST['nroSucursal'])) ? $_POST['nroSucursal'] : "";
+    $codCta = (isset($_POST['codCta'])) ? $_POST['codCta'] : "";
+    $codComp = (isset($_POST['codComp'])) ? $_POST['codComp'] : "";
+    $fechaComprobante = (isset($_POST['fechaComprobante'])) ? $_POST['fechaComprobante'] : "";
+
     $root = $_SERVER["DOCUMENT_ROOT"];
-
     $targetDir = $root.'/Imagenes/egresosCaja/';
- 
+    
     if(isset($_POST['arrayNcomp'])){
-
         $arrayArticulos = $_POST['arrayNcomp'];
-
-    }
-
- 
-    if(isset($arrayArticulos)){
-        
         $contadorFotos = 0;
         $datosDeLosArchivos = [];
         $datosDeLosArchivos['cantidad'] = 0;
+        
         foreach ($arrayArticulos as $key => $codigo) {
             $fileName = $codigo;
-            // Abre el directorio
+            
             if ($gestor = opendir($targetDir)) {
-                // Recorre los archivos en el directorio
                 while (($archivo = readdir($gestor)) !== false) {
-                    // Ignora las carpetas "." y ".."
                     if ($archivo != "." && $archivo != "..") {
-        
                         if (stripos(pathinfo($archivo, PATHINFO_FILENAME), $fileName) !== false) {
-                            // $contadorFotos++;
-                            $datosDeLosArchivos['cantidad'] ++;
-        
+                            $datosDeLosArchivos['cantidad']++;
                             $datosDeLosArchivos['nombre'][] = $codigo;
-        
-                            // array_push($nombreArchivo, pathinfo($archivo, PATHINFO_FILENAME));
                         } 
-         
-                     
                     }
                 }
-        
-                // Cierra el directorio
                 closedir($gestor);
             }
-
         }
-
-    }else{
-
-    
-        $fileName = $nComp.$nroSucursal.$codCuenta;
-        $contadorFotos = 0;
+    } else {
+        // Buscar fotos individuales con lógica de compatibilidad
         $datosDeLosArchivos = [];
-        $datosDeLosArchivos['cantidad'] = 0; 
-
-        // Abre el directorio
-        if ($gestor = opendir($targetDir)) {
-            // Recorre los archivos en el directorio
-            while (($archivo = readdir($gestor)) !== false) {
-                // Ignora las carpetas "." y ".."
-                if ($archivo != "." && $archivo != "..") {
-
-                    $fileName = str_replace(' ', '', $fileName);
-
-                    if (stripos(pathinfo($archivo, PATHINFO_FILENAME), $fileName) !== false) {
-                        
-                        // $contadorFotos++;
-                        $datosDeLosArchivos['cantidad'] ++;
-
-                        $datosDeLosArchivos['nombre'][] = pathinfo($archivo, PATHINFO_FILENAME);
-
-                        // array_push($nombreArchivo, pathinfo($archivo, PATHINFO_FILENAME));
-                    } 
-    
+        $datosDeLosArchivos['cantidad'] = 0;
+        $datosDeLosArchivos['nombre'] = [];
+        
+        // Si tenemos todos los datos necesarios, buscar con nueva nomenclatura
+        if (!empty($nComp) && !empty($codCta) && !empty($codComp) && !empty($nroSucursal)) {
+            $nombreNuevo = $nComp . $nroSucursal . $codCta . $codComp;
+            
+            if ($gestor = opendir($targetDir)) {
+                while (($archivo = readdir($gestor)) !== false) {
+                    if ($archivo != "." && $archivo != "..") {
+                        if (stripos(pathinfo($archivo, PATHINFO_FILENAME), $nombreNuevo) !== false) {
+                            $datosDeLosArchivos['cantidad']++;
+                            $datosDeLosArchivos['nombre'][] = pathinfo($archivo, PATHINFO_FILENAME);
+                        }
+                    }
+                }
+                closedir($gestor);
+            }
+        }
+        
+        // Si no encuentra con nueva nomenclatura, buscar con la vieja
+        // PERO verificar la validación del año
+        if ($datosDeLosArchivos['cantidad'] === 0 && !empty($nComp)) {
+            $puedeUsarModalidadVieja = true;
+            
+            // Verificar si existe registro guardado con modalidad vieja
+            if (!empty($codCta) && !empty($nroSucursal)) {
+                require_once "../Class/sucursal.php";
+                $sucursal = new Sucursal();
                 
+                // Obtener el año del comprobante actual para comparar años
+                $añoComprobante = date('Y', strtotime($fechaComprobante));
+                
+                // Buscar en la base de datos si hay registro con modalidad vieja
+                if (session_status() == PHP_SESSION_NONE) {
+                    session_start();
+                }
+                
+                $conexion = $sucursal->cid_central;
+                if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
+                    $conexion = $sucursal->cid_uy;
+                }
+                
+                $sql = "SELECT FECHA_GUARDADO FROM SJ_EGRESOS_DE_CAJA_GUARDADO 
+                        WHERE N_COMP = ? AND COD_CTA = ? AND NRO_SUCURSAL = ? 
+                        AND (COD_COMP IS NULL OR COD_COMP = '')";
+                
+                $stmt = sqlsrv_prepare($conexion, $sql, array($nComp, $codCta, $nroSucursal));
+                
+                if ($stmt && sqlsrv_execute($stmt)) {
+                    if ($row = sqlsrv_fetch_array($stmt)) {
+                        $fechaGuardado = $row['FECHA_GUARDADO'];
+                        $añoGuardado = $fechaGuardado->format('Y');
+                        
+                        // Solo permitir ver fotos de modalidad vieja si son del mismo año
+                        if ($añoComprobante != $añoGuardado) {
+                            $puedeUsarModalidadVieja = false;
+                        }
+                    }
                 }
             }
-
-            // Cierra el directorio
-            closedir($gestor);
+            
+            if ($puedeUsarModalidadVieja) {
+                $nombreViejo = $nComp;
+                if (!empty($nroSucursal) && !empty($codCta)) {
+                    $nombreViejo = $nComp . $nroSucursal . $codCta;
+                }
+                
+                if ($gestor = opendir($targetDir)) {
+                    while (($archivo = readdir($gestor)) !== false) {
+                        if ($archivo != "." && $archivo != "..") {
+                            if (stripos(pathinfo($archivo, PATHINFO_FILENAME), $nombreViejo) !== false) {
+                                $datosDeLosArchivos['cantidad']++;
+                                $datosDeLosArchivos['nombre'][] = pathinfo($archivo, PATHINFO_FILENAME);
+                            }
+                        }
+                    }
+                    closedir($gestor);
+                }
+            }
         }
     }
 
@@ -251,7 +253,6 @@ function contarFotosEnCarpeta() {
 }
 
 function contabilizar ($contabilizado) {
-    
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nro_sucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -260,11 +261,9 @@ function contabilizar ($contabilizado) {
     $monto = $_POST['monto'];
 
     $sucursal = new Sucursal();
-
     $result = $sucursal->contabilizar($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto,$contabilizado);
     
     echo $result;
-
 }
 
 function autorizarEgreso (){
@@ -278,24 +277,19 @@ function autorizarEgreso (){
     $leyenda= $_POST['leyenda'];
     $fechaDeHoy = date('Y-m-d');
 
-
     $sucursal = new Sucursal();
-
     $result = $sucursal->autorizarEgreso ($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy);
   
     echo $result;
 }
 
 function guardarObservaciones ($sucursal) {
-
     $observaciones = $_POST['observaciones'];
     $nroSucursal = $_POST['nroSucursal'];
     $nroComprobante = $_POST['nroComprobante'];
 
-
     $sucursal->guardarObservaciones($observaciones, $nroSucursal, $nroComprobante);
 
     return true; 
-
 }
 ?>

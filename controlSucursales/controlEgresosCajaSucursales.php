@@ -235,18 +235,16 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
 <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+<script src="js/controlEgresosSucursales.js"></script> 
 <script>
     $("#selectSucursal").select2();
     document.querySelector(".select2-selection.select2-selection--single").style.height = "44px"
     document.querySelector("#select2-selectSucursal-container").style.marginTop = "8px"
 
-  $(document).ready( function () {
-    
-    document.querySelector(".toggle").style.width="40px"
-    document.querySelector(".toggle-on").style.fontSize="0"
-    document.querySelector(".toggle-off").style.fontSize="0"
-    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
-
-
+    $(document).ready( function () {
+        document.querySelector(".toggle").style.width="40px"
+        document.querySelector(".toggle-on").style.fontSize="0"
+        document.querySelector(".toggle-off").style.fontSize="0"
+        document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
     })
 </script>
