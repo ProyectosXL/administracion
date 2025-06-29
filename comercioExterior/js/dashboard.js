@@ -1,4 +1,4 @@
-// Dashboard JavaScript
+// Dashboard JavaScript con manejo de errores mejorado
 class Dashboard {
     constructor() {
         this.charts = {};
@@ -7,10 +7,81 @@ class Dashboard {
             fechaHasta: null,
             proveedor: null
         };
+        this.baseUrl = this.getBaseUrl();
+        this.debugMode = true; // Cambiar a false en producción
         this.init();
     }
 
+    getBaseUrl() {
+        const currentPath = window.location.pathname;
+        const pathSegments = currentPath.split('/');
+        const baseIndex = pathSegments.indexOf('comercioExterior');
+        
+        if (baseIndex !== -1) {
+            const basePath = pathSegments.slice(0, baseIndex + 1).join('/');
+            return window.location.origin + basePath + '/';
+        }
+        
+        // Fallback - asumir que estamos en la raíz del proyecto
+        return window.location.origin + window.location.pathname.replace('dashboard.php', '');
+    }
+
+    // Configurar fechas por defecto (últimos 6 meses)
+    setDefaultDates() {
+        const today = new Date();
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(today.getMonth() - 6);
+        
+        const fechaDesde = sixMonthsAgo.toISOString().split('T')[0];
+        const fechaHasta = today.toISOString().split('T')[0];
+        
+        // Establecer en los inputs
+        document.getElementById('filter-fecha-desde').value = fechaDesde;
+        document.getElementById('filter-fecha-hasta').value = fechaHasta;
+        
+        // Establecer en los filtros internos
+        this.filters.fechaDesde = fechaDesde;
+        this.filters.fechaHasta = fechaHasta;
+        
+        // Actualizar el indicador de período
+        this.updatePeriodIndicator();
+        
+        this.log('Fechas por defecto configuradas:', { fechaDesde, fechaHasta });
+    }
+
+    // Actualizar indicador de período seleccionado
+    updatePeriodIndicator() {
+        const subtitle = document.querySelector('.dashboard-subtitle');
+        if (!subtitle) return;
+        
+        const fechaDesde = this.filters.fechaDesde || 'No definida';
+        const fechaHasta = this.filters.fechaHasta || 'No definida';
+        
+        const formatDate = (dateStr) => {
+            if (!dateStr || dateStr === 'No definida') return dateStr;
+            try {
+                return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-ES');
+            } catch {
+                return dateStr;
+            }
+        };
+        
+        const originalText = 'Panel de control y análisis de costos de nacionalización';
+        const periodText = `${originalText}<br><small class="text-muted">Período: ${formatDate(fechaDesde)} - ${formatDate(fechaHasta)}</small>`;
+        
+        subtitle.innerHTML = periodText;
+    }
+
+    log(message, data = null) {
+        if (this.debugMode) {
+            console.log(`[Dashboard] ${message}`, data || '');
+        }
+    }
+
     init() {
+        this.log('Inicializando Dashboard');
+        this.log('Base URL:', this.baseUrl);
+        this.setDefaultDates(); // Configurar fechas por defecto
         this.setupEventListeners();
         this.loadInitialData();
         this.loadProveedores();
@@ -26,13 +97,16 @@ class Dashboard {
     }
 
     async loadInitialData() {
+        this.log('Cargando datos iniciales');
         try {
             await Promise.all([
                 this.loadKPIs(),
                 this.loadEvolucionMensual(),
+                this.loadProveedorBarChart(), // Cambiado para usar el método correcto
                 this.loadTopProveedores(),
                 this.loadDistribucionCostos()
             ]);
+            this.log('Todos los datos iniciales cargados correctamente');
         } catch (error) {
             console.error('Error cargando datos iniciales:', error);
             this.showError('Error al cargar los datos del dashboard');
@@ -40,10 +114,10 @@ class Dashboard {
     }
 
     async apiCall(action, params = {}) {
-        const url = new URL('api/dashboard.php', window.location.origin + window.location.pathname.replace('dashboard.php', ''));
+        const url = new URL('api/dashboard.php', this.baseUrl);
         url.searchParams.append('action', action);
         
-        // Corregir nombres de parámetros para que coincidan con el backend
+        // Mapeo de parámetros
         const paramMap = {
             fechaDesde: 'fecha_desde',
             fechaHasta: 'fecha_hasta'
@@ -56,21 +130,44 @@ class Dashboard {
             }
         });
 
+        this.log(`API Call: ${action}`, {
+            url: url.toString(),
+            params: params
+        });
+
         try {
             const response = await fetch(url);
             
+            this.log(`Response status: ${response.status}`, {
+                ok: response.ok,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+            
+            // Obtener el texto de la respuesta primero
+            const responseText = await response.text();
+            this.log('Response text:', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+            
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                console.error('Error Response:', responseText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}. Response: ${responseText.substring(0, 200)}`);
             }
             
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Respuesta no es JSON:', text);
-                throw new Error('La respuesta del servidor no es JSON válido');
+            // Verificar si el contenido parece ser JSON
+            if (!responseText.trim().startsWith('{') && !responseText.trim().startsWith('[')) {
+                console.error('Respuesta no es JSON válido:', responseText);
+                throw new Error('La respuesta del servidor no es JSON válido. Respuesta: ' + responseText.substring(0, 200));
             }
             
-            const data = await response.json();
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('Error parsing JSON:', parseError);
+                console.error('Raw response:', responseText);
+                throw new Error('Error al parsear JSON: ' + parseError.message);
+            }
+            
+            this.log('Parsed data:', data);
             
             if (!data.success) {
                 throw new Error(data.error || 'Error en la API');
@@ -78,17 +175,21 @@ class Dashboard {
             
             return data.data;
         } catch (error) {
-            console.error('Error en apiCall:', error);
+            console.error(`Error en apiCall para ${action}:`, error);
+            this.log(`Error en ${action}:`, error.message);
             throw error;
         }
     }
 
     async loadKPIs() {
+        this.log('Cargando KPIs');
         try {
             const kpis = await this.apiCall('kpis_generales', this.filters);
             this.renderKPIs(kpis);
+            this.log('KPIs cargados correctamente', kpis);
         } catch (error) {
             console.error('Error cargando KPIs:', error);
+            this.showKPIError();
         }
     }
 
@@ -100,7 +201,7 @@ class Dashboard {
         document.getElementById('kpi-promedio-costo').textContent = kpis.promedio_costo_general + '%';
         
         // Valor Total Importado
-        document.getElementById('kpi-valor-total').textContent = + this.formatCurrency(kpis.valor_total_importado);
+        document.getElementById('kpi-valor-total').textContent = this.formatCurrency(kpis.valor_total_importado);
         
         // Total Proveedores
         document.getElementById('kpi-total-proveedores').textContent = this.formatNumber(kpis.total_proveedores);
@@ -112,18 +213,172 @@ class Dashboard {
         document.getElementById('kpi-costo-maximo').textContent = kpis.maximo_costo + '%';
     }
 
+    showKPIError() {
+        const kpiValues = [
+            'kpi-total-despachos',
+            'kpi-promedio-costo',
+            'kpi-valor-total',
+            'kpi-total-proveedores',
+            'kpi-costo-minimo',
+            'kpi-costo-maximo'
+        ];
+
+        kpiValues.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = 'Error';
+                element.style.color = '#dc2626';
+            }
+        });
+    }
+
     async loadEvolucionMensual() {
+        this.log('Cargando evolución mensual');
         try {
             const data = await this.apiCall('evolucion_mensual');
             this.renderEvolucionChart(data);
+            this.log('Evolución mensual cargada correctamente');
         } catch (error) {
             console.error('Error cargando evolución mensual:', error);
             this.showChartError('evolucion-chart');
         }
     }
 
+    async loadProveedorBarChart() {
+        this.log('Cargando datos por proveedor para gráfico de barras');
+        try {
+            const data = await this.apiCall('promedio_barras_proveedor', this.filters);
+            this.renderProveedorBarChart(data);
+            this.log('Gráfico de barras por proveedor cargado correctamente');
+        } catch (error) {
+            console.error('Error cargando datos por proveedor:', error);
+            this.showChartError('proveedor-chart');
+        }
+    }
+
+    renderProveedorBarChart(data) {
+        const ctx = document.getElementById('proveedor-chart');
+        if (!ctx) {
+            console.error('Canvas proveedor-chart no encontrado');
+            return;
+        }
+        
+        if (this.charts.proveedor) {
+            this.charts.proveedor.destroy();
+        }
+
+        // Tomar solo los top 10 y ordenar de mayor a menor
+        const topData = data
+            .sort((a, b) => b.promedio_costo_nac - a.promedio_costo_nac)
+            .slice(0, 10);
+
+        const labels = topData.map(item => {
+            // Truncar nombres largos
+            const nombre = item.proveedor || 'Sin nombre';
+            return nombre.length > 25 ? nombre.substring(0, 25) + '...' : nombre;
+        });
+
+        const costos = topData.map(item => item.promedio_costo_nac || 0);
+
+        // Generar colores degradados
+        const colors = costos.map((_, index) => {
+            const intensity = 1 - (index / topData.length);
+            return `rgba(37, 99, 235, ${0.6 + intensity * 0.4})`;
+        });
+
+        const borderColors = costos.map((_, index) => {
+            const intensity = 1 - (index / topData.length);
+            return `rgba(37, 99, 235, ${0.8 + intensity * 0.2})`;
+        });
+
+        this.charts.proveedor = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Costo de Nacionalización (%)',
+                    data: costos,
+                    backgroundColor: colors,
+                    borderColor: borderColors,
+                    borderWidth: 2,
+                    borderRadius: 4,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Top 10 Proveedores por Costo de Nacionalización',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                const index = context[0].dataIndex;
+                                return topData[index].proveedor || 'Sin nombre';
+                            },
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                const item = topData[index];
+                                return [
+                                    `Costo: ${context.parsed.y.toFixed(2)}%`,
+                                    `Despachos: ${item.total_despachos}`,
+                                    `Valor FOB: $${item.valor_total_fob?.toLocaleString('es-ES') || '0'}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Costo de Nacionalización (%)'
+                        },
+                        grid: {
+                            color: '#e2e8f0'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(1) + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Proveedores'
+                        },
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+    }
+
     renderEvolucionChart(data) {
-        const ctx = document.getElementById('evolucion-chart').getContext('2d');
+        const ctx = document.getElementById('evolucion-chart');
+        if (!ctx) {
+            console.error('Canvas evolucion-chart no encontrado');
+            return;
+        }
         
         if (this.charts.evolucion) {
             this.charts.evolucion.destroy();
@@ -211,111 +466,25 @@ class Dashboard {
         });
     }
 
-    async loadProveedorBarChart() {
-        try {
-            const data = await this.apiCall('promedio_barras_proveedor', this.filters);
-            this.renderProveedorBarChart(data);
-        } catch (error) {
-            console.error('Error cargando datos por proveedor:', error);
-            this.showChartError('proveedor-chart');
-        }
-    }
-
-    renderProveedorChart(data) {
-        const ctx = document.getElementById('proveedor-chart').getContext('2d');
-        
-        if (this.charts.proveedor) {
-            this.charts.proveedor.destroy();
-        }
-
-        // Agrupar por proveedor y obtener los top 10
-        const proveedoresData = {};
-        data.forEach(item => {
-            if (!proveedoresData[item.proveedor]) {
-                proveedoresData[item.proveedor] = [];
-            }
-            proveedoresData[item.proveedor].push({
-                fecha: `${item.mes}/${item.anio}`,
-                costo: item.promedio_costo_nac,
-                despachos: item.total_despachos
-            });
-        });
-
-        // Obtener top 10 proveedores por promedio
-        const topProveedores = Object.keys(proveedoresData)
-            .map(proveedor => ({
-                nombre: proveedor,
-                promedio: proveedoresData[proveedor].reduce((sum, item) => sum + item.costo, 0) / proveedoresData[proveedor].length
-            }))
-            .sort((a, b) => b.promedio - a.promedio)
-            .slice(0, 10);
-
-        const datasets = topProveedores.map((prov, index) => ({
-            label: prov.nombre.length > 25 ? prov.nombre.substring(0, 25) + '...' : prov.nombre,
-            data: proveedoresData[prov.nombre].map(item => item.costo),
-            borderColor: this.getColorForProvider(index),
-            backgroundColor: this.getColorForProvider(index, 0.1),
-            borderWidth: 2,
-            fill: false,
-            tension: 0.3
-        }));
-
-        // Crear labels únicos ordenados
-        const allDates = [...new Set(data.map(item => `${item.mes}/${item.anio}`))].sort();
-
-        this.charts.proveedor = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: allDates,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Promedio Mensual por Proveedor (Top 10)',
-                        font: { size: 16, weight: 'bold' }
-                    },
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            boxWidth: 12,
-                            font: { size: 10 }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Costo de Nacionalización (%)'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Periodo (Mes/Año)'
-                        }
-                    }
-                }
-            }
-        });
-    }
-
     async loadTopProveedores() {
+        this.log('Cargando top proveedores');
         try {
             const data = await this.apiCall('top_proveedores', this.filters);
             this.renderTopProveedoresTable(data);
+            this.log('Top proveedores cargados correctamente');
         } catch (error) {
             console.error('Error cargando top proveedores:', error);
+            this.showTableError('top-proveedores-table');
         }
     }
 
     renderTopProveedoresTable(data) {
         const tbody = document.getElementById('top-proveedores-table');
+        if (!tbody) {
+            console.error('Elemento top-proveedores-table no encontrado');
+            return;
+        }
+        
         tbody.innerHTML = '';
 
         data.forEach((item, index) => {
@@ -344,10 +513,19 @@ class Dashboard {
         });
     }
 
+    showTableError(tableId) {
+        const tbody = document.getElementById(tableId);
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al cargar datos</td></tr>';
+        }
+    }
+
     async loadDistribucionCostos() {
+        this.log('Cargando distribución de costos');
         try {
             const data = await this.apiCall('distribucion_costos', this.filters);
             this.renderDistribucionChart(data);
+            this.log('Distribución de costos cargada correctamente');
         } catch (error) {
             console.error('Error cargando distribución de costos:', error);
             this.showChartError('distribucion-chart');
@@ -355,7 +533,11 @@ class Dashboard {
     }
 
     renderDistribucionChart(data) {
-        const ctx = document.getElementById('distribucion-chart').getContext('2d');
+        const ctx = document.getElementById('distribucion-chart');
+        if (!ctx) {
+            console.error('Canvas distribucion-chart no encontrado');
+            return;
+        }
         
         if (this.charts.distribucion) {
             this.charts.distribucion.destroy();
@@ -405,9 +587,11 @@ class Dashboard {
     }
 
     async loadProveedores() {
+        this.log('Cargando lista de proveedores');
         try {
             const proveedores = await this.apiCall('lista_proveedores');
             this.renderProveedoresSelect(proveedores);
+            this.log('Proveedores cargados correctamente');
         } catch (error) {
             console.error('Error cargando proveedores:', error);
         }
@@ -415,6 +599,11 @@ class Dashboard {
 
     renderProveedoresSelect(proveedores) {
         const select = document.getElementById('filter-proveedor');
+        if (!select) {
+            console.error('Select filter-proveedor no encontrado');
+            return;
+        }
+        
         select.innerHTML = '<option value="">Todos los proveedores</option>';
         
         proveedores.forEach(prov => {
@@ -430,9 +619,14 @@ class Dashboard {
         this.filters.fechaHasta = document.getElementById('filter-fecha-hasta').value || null;
         this.filters.proveedor = document.getElementById('filter-proveedor').value || null;
 
+        this.log('Aplicando filtros', this.filters);
+
+        // Actualizar indicador de período
+        this.updatePeriodIndicator();
+
         // Recargar datos con filtros (excepto evolución mensual)
         this.loadKPIs();
-        this.loadProveedorChart();
+        this.loadProveedorBarChart();
         this.loadTopProveedores();
         this.loadDistribucionCostos();
 
@@ -441,36 +635,35 @@ class Dashboard {
     }
 
     clearFilters() {
-        document.getElementById('filter-fecha-desde').value = '';
-        document.getElementById('filter-fecha-hasta').value = '';
+        // Restablecer a las fechas por defecto en lugar de limpiar completamente
+        this.setDefaultDates();
         document.getElementById('filter-proveedor').value = '';
         
-        this.filters = {
-            fechaDesde: null,
-            fechaHasta: null,
-            proveedor: null
-        };
+        this.filters.proveedor = null;
+        // fechaDesde y fechaHasta ya se establecen en setDefaultDates()
+
+        this.log('Filtros restablecidos a valores por defecto');
 
         // Recargar todos los datos
         this.loadInitialData();
-        this.showNotification('Filtros limpiados', 'info');
+        this.showNotification('Filtros restablecidos', 'info');
     }
 
     refreshData() {
-        console.log('Actualizando datos del dashboard...');
+        this.log('Actualizando datos del dashboard...');
         this.loadInitialData();
     }
 
     // Utility functions
     formatNumber(num) {
-        return new Intl.NumberFormat('es-ES').format(num);
+        return new Intl.NumberFormat('es-ES').format(num || 0);
     }
 
     formatCurrency(num) {
         return new Intl.NumberFormat('es-ES', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(num);
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(num || 0);
     }
 
     getColorForYear(index) {
@@ -478,37 +671,9 @@ class Dashboard {
         return colors[index % colors.length];
     }
 
-    getColorForProvider(index, alpha = 1) {
-        const colors = [
-            '#2563eb', '#059669', '#d97706', '#dc2626', '#0891b2',
-            '#7c3aed', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'
-        ];
-        const color = colors[index % colors.length];
-        
-        if (alpha < 1) {
-            // Convertir hex a rgba
-            const hex = color.replace('#', '');
-            const r = parseInt(hex.substr(0, 2), 16);
-            const g = parseInt(hex.substr(2, 2), 16);
-            const b = parseInt(hex.substr(4, 2), 16);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        }
-        
-        return color;
-    }
-
     showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.innerHTML = `
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            ${message}
-        `;
-        
-        const container = document.querySelector('.dashboard-container');
-        container.insertBefore(errorDiv, container.firstChild);
-        
-        setTimeout(() => errorDiv.remove(), 5000);
+        console.error(message);
+        this.showNotification(message, 'error');
     }
 
     showChartError(chartId) {
@@ -531,55 +696,9 @@ class Dashboard {
                 </div>
                 <div class="empty-state-title">Error al cargar gráfico</div>
                 <div class="empty-state-description">
-                    No se pudieron cargar los datos. Inténtalo más tarde.
+                    No se pudieron cargar los datos. Revisa la consola para más detalles.
                 </div>
             </div>
-        `;
-    }
-
-    updateFilterDisplay() {
-        // Crear o actualizar indicador de período seleccionado
-        let filterIndicator = document.getElementById('filter-period-indicator');
-        
-        if (!filterIndicator) {
-            filterIndicator = document.createElement('div');
-            filterIndicator.id = 'filter-period-indicator';
-            filterIndicator.className = 'alert alert-info mt-2';
-            filterIndicator.style.cssText = `
-                background: #e0f2fe;
-                border: 1px solid #0891b2;
-                color: #0891b2;
-                padding: 0.5rem 1rem;
-                border-radius: 8px;
-                font-size: 0.875rem;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            `;
-            
-            const filtersSection = document.querySelector('.filters-section');
-            filtersSection.appendChild(filterIndicator);
-        }
-        
-        const fechaDesde = this.filters.fechaDesde || 'No definida';
-        const fechaHasta = this.filters.fechaHasta || 'No definida';
-        const proveedor = this.filters.proveedor || 'Todos';
-        
-        // Formatear fechas para mejor lectura
-        const formatDate = (dateStr) => {
-            if (!dateStr || dateStr === 'No definida') return dateStr;
-            try {
-                return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-ES');
-            } catch {
-                return dateStr;
-            }
-        };
-        
-        filterIndicator.innerHTML = `
-            <i class="bi bi-info-circle"></i>
-            <strong>Período aplicado:</strong> 
-            ${formatDate(fechaDesde)} - ${formatDate(fechaHasta)} | 
-            <strong>Proveedor:</strong> ${proveedor === '' ? 'Todos' : proveedor}
         `;
     }
 
@@ -606,7 +725,7 @@ class Dashboard {
             notification.style.opacity = '0';
             notification.style.transform = 'translateX(100%)';
             setTimeout(() => notification.remove(), 300);
-        }, 3000);
+        }, 5000);
     }
 }
 
@@ -615,7 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.dashboard = new Dashboard();
 });
 
-// Inicializar Chart.js defaults
+// Configuración de Chart.js
 Chart.defaults.font.family = 'Inter, -apple-system, BlinkMacSystemFont, sans-serif';
 Chart.defaults.color = '#64748b';
 Chart.defaults.borderColor = '#e2e8f0';

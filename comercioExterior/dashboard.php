@@ -25,15 +25,14 @@
 </head>
 
 <body>
-    <div class="dashboard-container">
-        <!-- Header -->
+    <!-- Header -->
         <div class="dashboard-header">
             <div>
                 <h1 class="dashboard-title">
                     <i class="bi bi-graph-up-arrow"></i>
                     Dashboard de Comercio Exterior
                 </h1>
-                <p class="dashboard-subtitle">Panel de control y análisis de costos de nacionalización</p>
+                <div class="dashboard-subtitle">Panel de control y análisis de costos de nacionalización</div>
             </div>
             <div class="header-actions">
                 <a href="mostrarOrden.php" class="back-btn">

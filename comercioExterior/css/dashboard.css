@@ -575,3 +575,21 @@ body {
 .empty-state-description {
     font-size: 0.875rem;
 }
+
+/* Mejoras para el subtítulo del dashboard */
+.dashboard-subtitle {
+    color: var(--secondary-color);
+    font-size: 1rem;
+    margin-top: 0.5rem;
+    line-height: 1.4;
+}
+
+.dashboard-subtitle small {
+    font-size: 0.875rem;
+    color: var(--info-color);
+    font-weight: 500;
+    border-left: 3px solid var(--info-color);
+    padding-left: 0.5rem;
+    margin-top: 0.25rem;
+    display: inline-block;
+}
