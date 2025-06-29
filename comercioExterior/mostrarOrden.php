@@ -1,16 +1,45 @@
+
 <?php
 
 require_once __DIR__ ."./Controller/listarOrden.php";
 
 $fecha_actual = date("Y-m-d");
-$desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d",strtotime($fecha_actual."- 1 month"));
-$hasta = isset($_GET['hasta']) ? $_GET['hasta'] : $fecha_actual;
 
+// Debug - mostrar qué parámetros se recibieron
+$debug_info = [
+    'GET_params' => $_GET,
+    'filter_isset' => isset($_GET['filter']),
+    'desde_isset' => isset($_GET['desde']),
+    'hasta_isset' => isset($_GET['hasta'])
+];
+
+// Establecer fechas por defecto
+$desde_default = date("Y-m-d", strtotime($fecha_actual . "- 3 month"));
+$hasta_default = $fecha_actual;
+
+// Obtener fechas de los parámetros GET o usar por defecto
+$desde = isset($_GET['desde']) && !empty($_GET['desde']) ? $_GET['desde'] : $desde_default;
+$hasta = isset($_GET['hasta']) && !empty($_GET['hasta']) ? $_GET['hasta'] : $hasta_default;
+
+// Debug - mostrar fechas que se van a usar
+$debug_info['fechas_usadas'] = [
+    'desde' => $desde,
+    'hasta' => $hasta
+];
+
+// Siempre llamar a la función con las fechas (filtradas o por defecto)
 $listaDeOrdenes = listarPorFecha($desde, $hasta);
+
+// Debug - mostrar cantidad de resultados
+$debug_info['total_registros'] = count($listaDeOrdenes);
+
+// Mostrar debug en desarrollo (comentar en producción)
+// echo "<!-- DEBUG: " . json_encode($debug_info, JSON_PRETTY_PRINT) . " -->";
+
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <!-- Required meta tags-->
@@ -18,105 +47,304 @@ $listaDeOrdenes = listarPorFecha($desde, $hasta);
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Title Page-->
-    <title>Costos Importacion</title>
+    <title>Gestión de Despachos | Comercio Exterior</title>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css">
 
-        <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css"> -->
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" class="rel">
-        <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.dataTables.min.css" class="rel">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
-        <!-- Bootstrap Icons -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
-
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
-    <!-- Main CSS-->
-    <link href="./../contabilidad/css/style.css" rel="stylesheet" media="all">
-    <link href="css/mostrarOrden.css" rel="stylesheet" media="all">
+    <link rel="stylesheet" href="css/mostrarOrden.css" class="css">
+    
+
 </head>
 
 <body>
-    <div class="page-wrapper bg-secondary p-b-100 pt-2">
-        <div class="wrapper wrapper--w680">
-            <div class="card card-1">
-                <div class="card-heading"></div>
-                <div class="card-body">
-                    <h2 class="title"><i class="bi bi-folder-check"></i> Seleccion de despachos de importacion</h2>
+    <div class="main-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-archive"></i>
+                Gestión de Despachos
+            </h1>
+            <p class="page-subtitle">Administra y consulta los despachos de importación registrados en el sistema</p>
+        </div>
 
-                    <form class="form-inline"  action="#">
-                        <label for="email">Desde :</label>
-                        <input type="date" class="form-control form-control-sm ml-1" id="desde" name="desde" value="<?=  $desde ?>">
-                        <label for="email" class="ml-2" >Hasta :</label>
-                        <input type="date" class="form-control form-control-sm ml-1" id="hasta"  name="hasta" value="<?=  $hasta ?>">
-                                
-                        <button type="submit" name="filter" class="btn btn-primary">Filtrar <i class="bi bi-search"></i></button>
-                        <button name="btnExport" type="button" class="btn btn-success" id="btnExport" >Exportar <i class="bi bi-file-earmark-excel"></i></button>
-
-                    </form>
-        
-        <table class="table table-striped table-bordered display" id="tableDinamic" style="width: 80%; font-size: 11.5px" data-page-length="100">
-                
-        <thead class="table-dark">
-            <tr>
-                <th style="position: sticky; top: 0; z-index: 10; width: 100px; background: #343a40">FECHA INGRESO</th>
-                <th style="position: sticky; top: 0; z-index: 10; width: 100px; background: #343a40">FECHA DESP.</th>
-                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">CONTENEDOR</th>
-                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">DESPACHO N°</th>
-                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">PROVEEDOR</th>
-                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">N° ORDEN PROV.</th>
-                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">N° ORD.DE COMPRA</th>
-                <th style="position: sticky; top: 0; z-index: 10; background: #343a40">COSTO NAC.</th>
-                <th style="position: sticky; top: 0; z-index: 10; background: #343a40; width: 1.5rem;"></th>
-                <th style="position: sticky; top: 0; z-index: 10; background: #343a40; width: 1.5rem;"></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            foreach($listaDeOrdenes as $orden ){
-                $newDate = $orden['FECHA_MOV']->format('d/m/Y'); // Format - Date
-            ?>
-                <td id="fecha2"><?= $newDate ?></td>
-                <td><?= $orden['FECHA_DESP_ADU']->format('d/m/Y');?></td>
-                <td><?= $orden['CONTENEDOR']?></td>
-                <td><?= $orden['DESPACHO']?></td>
-                <td ><?= $orden['PROVEEDOR']?></td>
-                <td ><?= $orden['COD_PROVEE']?></td>
-                <td><?= $orden['ORDEN_COMPRA']?></td>
-                <td><?= number_format($orden['COSTO_NAC'], 2).' %'?></td>
-                <td><button class="btn btn-sm btn-success" title="Editar" onclick="verDetalle('<?= $orden['ID']?>','<?= $orden['PROVEEDOR']?>','<?= $orden['ORDEN_COMPRA']?>','<?= $orden['COD_PROVEE']?>','<?= $orden['VALOR_FOB_PESO']?>')"><i class="fa fa-edit" style="font-size: 23px;"></td>
-                <td><button class="btn btn-sm btn-warning" title="Descargar" onclick="imprimir('<?=$orden['ID']?>')"><i class="bi bi-download" style="font-size: 18px; color: white;" aria-hidden="true"></td>
-
-            </tr>
-            <?php
-            }
-            ?>
-            </tbody>
-    </table>
+        <!-- Filters Card -->
+        <div class="filters-card">
+            <form class="filter-form" method="GET" action="">
+                <div class="filter-group">
+                    <label class="filter-label" for="desde">
+                        <i class="bi bi-calendar-date"></i> Fecha Desde
+                    </label>
+                    <input type="date" class="form-control-modern" id="desde" name="desde" value="<?= htmlspecialchars($desde) ?>" required>
                 </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label" for="hasta">
+                        <i class="bi bi-calendar-check"></i> Fecha Hasta
+                    </label>
+                    <input type="date" class="form-control-modern" id="hasta" name="hasta" value="<?= htmlspecialchars($hasta) ?>" required>
+                </div>
+                
+                <div class="filter-group">
+                    <button type="submit" name="filter" value="1" class="btn-modern btn-primary-modern">
+                        <i class="bi bi-funnel"></i>
+                        Filtrar
+                    </button>
+                </div>
+                
+                <div class="filter-group">
+                    <a href="<?= $_SERVER['PHP_SELF'] ?>" class="btn-modern" style="background: var(--secondary-color); color: white; text-decoration: none;">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Limpiar
+                    </a>
+                </div>
+                
+                <div class="filter-group">
+                    <button type="button" class="btn-modern btn-success-modern" id="btnExport">
+                        <i class="bi bi-file-earmark-excel"></i>
+                        Exportar Excel
+                    </button>
+                </div>
+
+                <div class="filter-group">
+                    <a href="dashboard.php" class="btn-modern" style="background: var(--warning-color); color: white; text-decoration: none;">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        Dashboard
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table Card -->
+        <div class="table-card">
+            <div class="table-header">
+                <h2 class="table-title">
+                    <i class="bi bi-table"></i>
+                    Despachos de Importación
+                    <span class="badge bg-secondary"><?= count($listaDeOrdenes) ?> registros</span>
+                </h2>
+            </div>
+            
+            <div class="table-container">
+                <table class="table table-hover" id="tableDinamic" data-page-length="25">
+                    <thead>
+                        <tr>
+                            <th>Fecha Despacho</th>
+                            <th>Fecha Ingreso</th>
+                            <th>Contenedor</th>
+                            <th>Despacho N°</th>
+                            <th>Cod. Proveedor.</th>
+                            <th>Proveedor</th>
+                            <th>N° Ord. Compra</th>
+                            <th>Costo Nac.</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($listaDeOrdenes as $orden): ?>
+                            <tr>
+                                <!-- Agregar data-sort para ordenamiento correcto -->
+                                <td data-sort="<?= $orden['FECHA_DESP_ADU']->format('Y-m-d') ?>">
+                                    <?= $orden['FECHA_DESP_ADU']->format('d/m/Y') ?>
+                                </td>
+                                <td data-sort="<?= $orden['FECHA_MOV']->format('Y-m-d') ?>">
+                                    <?= $orden['FECHA_MOV']->format('d/m/Y') ?>
+                                </td>
+                                <td>
+                                    <span class="fw-medium"><?= $orden['CONTENEDOR'] ?></span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark"><?= $orden['DESPACHO'] ?></span>
+                                </td>
+                                <td>
+                                    <code class="small"><?= $orden['COD_PROVEE'] ?></code>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;" title="<?= htmlspecialchars($orden['PROVEEDOR']) ?>">
+                                        <?= $orden['PROVEEDOR'] ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="fw-medium"><?= $orden['ORDEN_COMPRA'] ?></span>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $costoNac = number_format($orden['COSTO_NAC'], 2);
+                                    $badgeClass = $costoNac > 10 ? 'status-warning' : 'status-success';
+                                    ?>
+                                    <span class="status-badge <?= $badgeClass ?>">
+                                        <?= $costoNac ?>%
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-center">
+                                        <button class="action-btn btn-edit" 
+                                                title="Editar despacho"
+                                                onclick="verDetalle('<?= $orden['ID'] ?>','<?= addslashes($orden['PROVEEDOR']) ?>','<?= $orden['ORDEN_COMPRA'] ?>','<?= $orden['COD_PROVEE'] ?>','<?= $orden['VALOR_FOB_PESO'] ?>')">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button class="action-btn btn-download" 
+                                                title="Descargar PDF"
+                                                onclick="imprimir('<?= $orden['ID'] ?>')">
+                                            <i class="bi bi-download"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    
-    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Jquery JS-->
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/jquery/jquery.min.js"></script>
-    <!-- Vendor JS-->
-    <script src="assets/select2/select2.min.js"></script>
-    <script src="assets/datepicker/moment.min.js"></script>
-    <script src="assets/datepicker/daterangepicker.js"></script>
-    <!-- <script src="js/index.js"></script> -->
-    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/fixedheader/3.1.9/js/dataTables.fixedHeader.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
     <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
-    <script src="js/mostrarOrden.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <script>
+        // Funciones de navegación
+        const verDetalle = (id, prov, orden, codProv, valorFobPeso) => {
+            window.location = `editarOrden.php?idEncabezado=${id}&proveedor=${encodeURIComponent(prov)}&ordenDeCompra=${encodeURIComponent(orden)}&codProveedor=${codProv}&valorFobPeso=${valorFobPeso}`;
+        }
+
+        const imprimir = (id) => {
+            window.location = `imprimir.php?idEncabezado=${id}`;
+        }
+
+        // Configuración de DataTables
+        $(document).ready(function() {
+            $('#tableDinamic').DataTable({
+                responsive: true,
+                fixedHeader: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+                language: {
+                    lengthMenu: "Mostrar _MENU_ registros por página",
+                    zeroRecords: "No se encontraron registros",
+                    info: "Mostrando página _PAGE_ de _PAGES_ (_TOTAL_ registros total)",
+                    infoEmpty: "No hay registros disponibles",
+                    infoFiltered: "(filtrado de _MAX_ registros totales)",
+                    search: "Buscar:",
+                    searchPlaceholder: "Buscar en cualquier campo...",
+                    paginate: {
+                        first: "Primero",
+                        last: "Último",
+                        next: "Siguiente",
+                        previous: "Anterior"
+                    }
+                },
+                order: [[0, 'desc']], // Ordenar por Fecha Despacho descendente
+                columnDefs: [
+                    {
+                        targets: [0, 1], // Columnas de fecha (Fecha Despacho y Fecha Ingreso)
+                        type: "date",
+                        render: function(data, type, row) {
+                            // Para ordenamiento y búsqueda, usar el data-sort
+                            if (type === 'sort' || type === 'type') {
+                                return $(data).parent().attr('data-sort') || data;
+                            }
+                            // Para mostrar, usar el texto visible
+                            return data;
+                        }
+                    },
+                    {
+                        targets: -1, // Última columna (Acciones)
+                        orderable: false,
+                        searchable: false,
+                        className: "text-center"
+                    }
+                ],
+                // Configuración alternativa para fechas
+                createdRow: function(row, data, dataIndex) {
+                    // Aplicar el atributo data-sort a las celdas de fecha
+                    $('td:eq(0)', row).attr('data-order', $('td:eq(0)', row).attr('data-sort'));
+                    $('td:eq(1)', row).attr('data-order', $('td:eq(1)', row).attr('data-sort'));
+                },
+                initComplete: function() {
+                    // Animación de entrada
+                    $('.table-card').css('opacity', '0').animate({opacity: 1}, 500);
+                    
+                    console.log('DataTable inicializado con ordenamiento por fecha descendente');
+                }
+            });
+
+            // Exportar a Excel
+            $("#btnExport").click(function() {
+                $("#tableDinamic").table2excel({
+                    exclude: ".no-export",
+                    name: "Despachos_Importacion",
+                    filename: `Despachos_${new Date().toISOString().split('T')[0]}`,
+                    fileext: ".xlsx"
+                });
+                
+                // Mostrar notificación
+                Swal.fire({
+                    title: 'Exportación exitosa',
+                    text: 'El archivo Excel se ha descargado correctamente',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            });
+
+            // Efectos visuales adicionales
+            $('.action-btn').hover(
+                function() {
+                    $(this).addClass('shadow');
+                },
+                function() {
+                    $(this).removeClass('shadow');
+                }
+            );
+        });
+
+        // Loading state para botones
+        $('.btn-modern').click(function(e) {
+            const btn = $(this);
+            
+            // Si es el botón de exportar, no hacer nada especial
+            if (btn.attr('id') === 'btnExport') {
+                return;
+            }
+            
+            // Si es un botón de tipo submit, dejar que el formulario se envíe normalmente
+            if (btn.attr('type') === 'submit') {
+                return;
+            }
+            
+            // Para otros botones, aplicar el estado de loading
+            const originalText = btn.html();
+            btn.prop('disabled', true);
+            btn.html('<span class="loading"></span> Procesando...');
+            
+            setTimeout(() => {
+                btn.prop('disabled', false);
+                btn.html(originalText);
+            }, 1000);
+        });
+    </script>
+    
 </body>
 
 </html>
-
-

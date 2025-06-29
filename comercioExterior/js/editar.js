@@ -1,5 +1,7 @@
+
 let btnUpdateDetalle = document.querySelector("#btnUpdateDetalle");
 let btnAgregarDetalle = document.querySelector("#btnAgregarDetalle");
+
 btnUpdateDetalle.addEventListener("click",()=> {
     let arrayDatos = [];
     let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
@@ -10,19 +12,17 @@ btnUpdateDetalle.addEventListener("click",()=> {
     let rows = table.querySelectorAll("tr:not(:last-child)")
   
     rows.forEach((x,e)=>{
-      
       let gastos = x.querySelectorAll("td")[1].firstChild.value;
       let idDetalle = x.querySelectorAll("td")[0].getAttribute('attr-value')
-      let importeEnDolares = sacarParseo( x.querySelectorAll("td")[2].firstChild.value,true);
-      let tipoCambio = sacarParseo(x.querySelectorAll("td")[3].firstChild.value,true);
-      let importeEnPesos = sacarParseo(x.querySelectorAll("td")[4].firstChild.value,true);
+      let importeEnDolares = window.convertirANumero(x.querySelectorAll("td")[2].firstChild.value);
+      let tipoCambio = window.convertirANumero(x.querySelectorAll("td")[3].firstChild.value);
+      let importeEnPesos = window.convertirANumero(x.querySelectorAll("td")[4].firstChild.value);
       let sobreFob = x.querySelectorAll("td")[5].firstChild.value.replace("%","");
+      sobreFob = window.convertirANumero(sobreFob);
       let observaciones = x.querySelectorAll("td")[6].firstChild.value;
 
       arrayDatos [e] = [gastos, importeEnDolares, tipoCambio, importeEnPesos, sobreFob, observaciones, idDetalle]
-
     })
-
 
     $.ajax({
       url: 'Controller/OrdenDeCompraController.php',
@@ -33,7 +33,6 @@ btnUpdateDetalle.addEventListener("click",()=> {
       },
     })
     .done(function(e) {
-
       $.ajax({
         url: 'Controller/updateCostoNacionalizacion.php',
         method: 'POST',
@@ -53,39 +52,58 @@ btnUpdateDetalle.addEventListener("click",()=> {
         .then((e) => {
           window.location = "../comercioExterior/mostrarOrden.php"
         })
-
     })
-
 })
 
-
 btnAgregarDetalle.addEventListener("click",()=>{
-
-
   let rows = document.querySelectorAll("#id");
   let original = rows[rows.length - 1].parentElement;
   let lastId =  Number(original.childNodes[1].textContent) + 1 
+  
   let text = `
     <tr>
     <td id ="id">${lastId}</td>
     <td><input type="text" style ="text-align:center"></td>
-    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this,true)" value = ""></input></td>
-    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this,true)" id="tipoCambio" value="0"></input></td>
-    <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly value="00,00"></input></td>
+    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "" onblur="window.formatearInput(this)"></input></td>
+    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0,00" onblur="window.formatearInput(this)"></input></td>
+    <td><input class="decimales currencyInput importe" style="text-align:center" type="text" id="valorFobPeso" name="inputNum[]" readonly value="0,00"></input></td>
     <td><input style="text-align:center" value="0,00%" readonly></input></td>
     <td><input></input></td>
     <td><button type="button" class="btn btn-danger" onclick="borrarGasto(this)">X</button></td>
     </tr>
   `;
 
-
-
-  original.insertAdjacentHTML("afterend",text)
-
- 
-
+  original.insertAdjacentHTML("afterend",text);
+  
+  // Agregar event listeners a los nuevos inputs
+  let newRow = original.nextElementSibling;
+  let newInputs = newRow.querySelectorAll('.currencyInput');
+  newInputs.forEach(input => {
+    input.addEventListener('blur', function() {
+      if(this.value !== ''){
+        window.formatearInput(this);
+      }
+    });
+  });
 })
+
 const borrarGasto = (e)=>{
   let row = e.parentElement.parentElement
   row.remove()
+  // Recalcular totales después de borrar
+  if(typeof totalGastos === 'function') {
+    totalGastos();
+  }
 }
+
+// Inicializar formateo para inputs existentes
+document.addEventListener('DOMContentLoaded', function() {
+    // Agregar formateo automático a todos los inputs de currency existentes
+    document.querySelectorAll('.currencyInput').forEach(input => {
+        input.addEventListener('blur', function() {
+            if(this.value !== '' && this.value !== '0'){
+                window.formatearInput(this);
+            }
+        });
+    });
+});

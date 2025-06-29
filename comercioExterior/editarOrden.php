@@ -1,9 +1,78 @@
+
 <?php
 require_once __DIR__ ."./Controller/listarOrden.php";
 $ordenCompra = $_GET['idEncabezado']; 
 $orden = listarPorOrdenCompra($ordenCompra);
-?>
 
+// Función para formatear números con separador de miles
+function formatearImporte($numero) {
+    if (is_null($numero) || $numero === '' || $numero === 0) {
+        return '0,00';
+    }
+    return number_format((float)$numero, 2, ',', '.');
+}
+
+// Función para obtener valor numérico limpio CORREGIDA
+function obtenerValorNumerico($valor) {
+    if (is_null($valor) || $valor === '') {
+        return 0;
+    }
+    
+    // Si ya es un número, devolverlo directamente
+    if (is_numeric($valor)) {
+        return (float)$valor;
+    }
+    
+    // Si es string, detectar el formato
+    if (is_string($valor)) {
+        $valor = trim($valor);
+        
+        // Contar puntos y comas para determinar el formato
+        $puntos = substr_count($valor, '.');
+        $comas = substr_count($valor, ',');
+        
+        // Caso 1: Formato como 53384128.15 (punto decimal, sin separadores de miles)
+        if ($puntos == 1 && $comas == 0) {
+            return (float)$valor;
+        }
+        
+        // Caso 2: Formato como 53.384.128,15 (puntos como miles, coma decimal)
+        if ($puntos > 1 && $comas == 1) {
+            $limpio = str_replace('.', '', $valor); // Remover puntos (miles)
+            $limpio = str_replace(',', '.', $limpio); // Coma a punto decimal
+            return (float)$limpio;
+        }
+        
+        // Caso 3: Formato como 53,384,128.15 (comas como miles, punto decimal)
+        if ($comas > 1 && $puntos == 1) {
+            $limpio = str_replace(',', '', $valor); // Remover comas (miles)
+            return (float)$limpio;
+        }
+        
+        // Caso 4: Solo comas (formato español sin miles)
+        if ($comas == 1 && $puntos == 0) {
+            $limpio = str_replace(',', '.', $valor);
+            return (float)$limpio;
+        }
+        
+        // Caso 5: Solo puntos (formato inglés sin miles)
+        if ($puntos == 1 && $comas == 0) {
+            return (float)$valor;
+        }
+        
+        // Fallback: remover todo formato y convertir
+        $limpio = preg_replace('/[^0-9.]/', '', $valor);
+        return (float)$limpio;
+    }
+    
+    return (float)$valor;
+}
+
+// Debug para verificar la conversión
+$valorOriginal = $_GET['valorFobPeso'];
+$valorNumerico = obtenerValorNumerico($valorOriginal);
+$valorFormateado = formatearImporte($valorOriginal);
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -42,7 +111,13 @@ $orden = listarPorOrdenCompra($ordenCompra);
                         </div>
                         <div class="row justify-content-md-center">
                             <div class="col-md-auto"><i class="bi bi-airplane-fill icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Nº Orden Proveedor</label><?= ' '.$_GET['codProveedor']?></h5></div>
-                            <div class="col-md-auto"><i class="bi bi-cash icon"></i><h5 class="mb-1" id ="valorPesosFob" attr-value = "<?=  $_GET['valorFobPeso'] ?>"><label style="font-weight: bold;" >Valor F.O.B. $: </label><?= ' '.$_GET['valorFobPeso']?></h5></div>
+                            <!-- VALOR FOB CORREGIDO -->
+                            <div class="col-md-auto">
+                                <i class="bi bi-cash icon"></i>
+                                <h5 class="mb-1" id="valorPesosFob" attr-value="<?= $valorNumerico ?>">
+                                    <label style="font-weight: bold;">Valor F.O.B. $: </label><?= $valorFormateado ?>
+                                </h5>
+                            </div>
                             <div id="idEncabezado" attr-value="<?= $_GET['idEncabezado'] ?>" hidden></div>
                             <div class="col-md-auto"><i class="bi bi-cash-coin icon"></i><h5 class="mb-1"><label  id="totalGastosDetalle" style="font-weight: bold;">Gastos $:</label></h5></div>
                             <div class="col-md-auto"><i class="bi bi-percent icon"></i><h5 class="mb-1"><label style="font-weight: bold;">Costos nac.: </label> <span id="porcentaje"></span></h5></div>
@@ -65,17 +140,19 @@ $orden = listarPorOrdenCompra($ordenCompra);
 
                                 <?php
                                 foreach($orden as $valor => $key){
-                                    $porcentaje = ($key['IMPORTE_$'] / $_GET['valorFobPeso']) * 100;
-                                    $porcentajeParseado = (number_format((float)$porcentaje, 2, '.', '')); 
+                                    $importePesoNumerico = obtenerValorNumerico($key['IMPORTE_$']);
+                                    
+                                    $porcentaje = $valorNumerico > 0 ? ($importePesoNumerico / $valorNumerico) * 100 : 0;
+                                    $porcentajeParseado = number_format((float)$porcentaje, 2, ',', '.'); 
                                 ?>
                                 <tr>
                                     <td id="id" attr-value="<?=$key['ID']?>"><?=  ($valor+1)?></td>
                                     <td><input style="text-align:center" type="text"  value = "<?=  $key['GASTOS']?>"></input></td>
-                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "<?=$key['IMPORTE_U$S']?>" onclick='limpiarInput(this)'></input></td>
-                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= ($key['TIPO_CAMBIO']) ? $key['TIPO_CAMBIO'] : "0" ?>" onclick='limpiarInput(this)'></input></td>
-                                    <td><input class="decimales currencyInput importe" style="text-align:center" type="number" id="valorFobPeso" name="inputNum[]" readonly value="<?=$key['IMPORTE_$']?>"></input></td>
+                                    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "<?= formatearImporte($key['IMPORTE_U$S']) ?>" onclick='window.limpiarInput(this)'></input></td>
+                                    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="<?= formatearImporte($key['TIPO_CAMBIO']) ?>" onclick='window.limpiarInput(this)'></input></td>
+                                    <td><input class="decimales currencyInput importe" style="text-align:center" type="text" id="valorFobPeso" name="inputNum[]" readonly value="<?= formatearImporte($key['IMPORTE_$']) ?>"></input></td>
                                     <td><input style="text-align:center"  value="<?= $porcentajeParseado ?>%" readonly></input></td>
-                                    <td><input><?=$key['OBSERVACIONES']?></input></td>
+                                    <td><input value="<?=$key['OBSERVACIONES']?>"></input></td>
                                     <td><button type="button" class="btn btn-danger" onclick="borrarGasto(this)">X</button></td>
                                 </tr>
                             <?php
@@ -102,11 +179,22 @@ $orden = listarPorOrdenCompra($ordenCompra);
     <!-- Jquery JS-->
     <script src="assets/jquery/jquery.min.js"></script>
 
-    <!-- <script src="js/main.js"></script> -->
+    <!-- Utilities script - DEBE CARGARSE PRIMERO -->
+    <script src="js/utils-formateo.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk" crossorigin="anonymous"></script>
     <script src="js/costosEditar.js"></script>
     <script src="js/editar.js"></script>
+
+    <!-- DEBUG: Mostrar valores para verificación -->
+    <script>
+        console.log('DEBUG PHP - Valor FOB original:', '<?= $valorOriginal ?>');
+        console.log('DEBUG PHP - Valor FOB numérico corregido:', <?= $valorNumerico ?>);
+        console.log('DEBUG PHP - Valor FOB formateado:', '<?= $valorFormateado ?>');
+        console.log('DEBUG PHP - Tipo del valor original:', typeof '<?= $valorOriginal ?>');
+        console.log('DEBUG PHP - Es numérico?:', <?= is_numeric($valorOriginal) ? 'true' : 'false' ?>);
+    </script>
 
 </body>
 </html>
