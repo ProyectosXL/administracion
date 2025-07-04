@@ -1,4 +1,3 @@
-
 $.ajax({
     url: '../Controller/HorarioController.php?accion=sucursales',
     type: 'GET',
@@ -191,6 +190,56 @@ const updateValueSelectLocalidad = (element) => {
     }
 }
 
+const updateValueSelectTareaFrecuente = (element) => {
+    const tareas = [
+        'CAJERO',
+        'CAJERA',
+        'ENCARGADA',
+        'VENDEDOR',
+        'VENDEDORA',
+        'SUB ENCARGADO',
+        'SUB ENCARGADA'
+    ];
+
+    if (element.tagName.toLowerCase() === 'div') {
+        const select = document.createElement('select');
+        select.id = 'tareaFuente';
+        tareas.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.textContent = option;
+            optionElement.value = option;
+            optionElement.setAttribute('attr-realValue', option);
+            if (option === element.getAttribute('attr-realValue')) {
+                optionElement.selected = true;
+            }
+            select.appendChild(optionElement);
+        });
+        select.value = element.getAttribute('attr-realValue');
+        select.onchange = function() {
+            updateValueSelectTareaFrecuente(this);
+        };
+        select.setAttribute('attr-title', element.getAttribute('attr-title'));
+        select.classList = element.classList;
+        select.style = element.getAttribute('style');
+        element.parentNode.replaceChild(select, element);
+        select.focus();
+    } else if (element.tagName.toLowerCase() === 'select') {
+        const tarea = element.value;
+        const value = '<span style="color:#969396">' + element.getAttribute('attr-title') + ' <span class="required">*</span></span><br>' + tarea;
+        const div = document.createElement('div');
+        div.innerHTML = value;
+        div.setAttribute('attr-realValue', tarea);
+        div.setAttribute('attr-title', element.getAttribute('attr-title'));
+        div.setAttribute('id', 'tareaFuente');
+        div.classList = element.classList;
+        div.style = element.getAttribute('style');
+        div.onclick = function() {
+            updateValueSelectTareaFrecuente(this);
+        };
+        element.parentNode.replaceChild(div, element);
+    }
+}
+
 const cambiarEstado = (checkbox) => {
 
     let estado = 'N';
@@ -225,7 +274,7 @@ const guardaCambios = () => {
     let	localidad = document.querySelector('#localidad').textContent.replace('Localidad', '').replace('*','').trim()
     let codPostal = document.querySelector('#codPostal').textContent.replace('Cod. postal', '').trim()
     let sucursalAsignada = document.querySelector('#sucursalAsignada').getAttribute('attr-realValue')
-    let tareaFuente = document.querySelector('#tareaFuente').textContent.replace('Tarea fuente', '').trim()
+    let tareaFuente = document.querySelector('#tareaFuente').textContent.replace('Tarea frecuente', '').replace('*','').trim()
     let pais = document.querySelector('#pais').textContent.replace('Pais', '').trim()
     let tipoDeContrato = document.querySelector('#tipoDeContrato').textContent.replace('Tipo de contrato', '').trim()
     let fechaIngreso = document.querySelector('#fechaIngreso').textContent.replace('Fecha de ingreso', '').trim()
@@ -233,6 +282,11 @@ const guardaCambios = () => {
     let telefonoM = document.querySelector('#telefonoM').textContent.replace('Telefono movil', '').trim()
     let telefonoE = document.querySelector('#telefonoE').textContent.replace('Telefono de emergencia', '').trim()
 
+    if(tareaFuente == ''){
+        alert('La tarea frecuente no puede estar vacía', 'error');
+        document.querySelector('#tareaFuente').querySelector('span').style.color = 'red';
+        return 1;
+    }
 
     $.ajax({
 

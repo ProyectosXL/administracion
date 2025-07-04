@@ -224,7 +224,7 @@
                                                 <div class="inputOverflow" style="border:1px solid #dbdbdb;height:45px;width:14%;font-size:12px;text-align:left" id="codVendedor"><span style="color:#969396">Cod. vend</span> <br> <span style="margin-left:35%;margin-top:10%"><?= $empleado['COD_VENDEDOR'] ?></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
-                                                <div class="col-5 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;" onclick="updateValue(this)" attr-realValue="<?= $empleado['DOMICILIO'] ?>" attr-title="Direccion"  id="direccion">
+                                                <div class="col-5 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValue(this)" attr-realValue="<?= $empleado['DOMICILIO'] ?>" attr-title="Direccion"  id="direccion">
                                                     <span style="color:#969396">Dirección</span> <br><?= $empleado['DOMICILIO'] ?>
                                                 </div>
 
@@ -235,7 +235,7 @@
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
                                                 <div class="col-5 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left"  onclick="updateValueSelectSucursal(this)" attr-realValue="<?= $nroSucursal?>" attr-title="Sucursal asignada"  id="sucursalAsignada"><span style="color:#969396">Sucursal asignada<span class="required">*</span></span> <br><?= $sucursal ?></div>
-                                                <div class="col-3 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValue(this)"  attr-realValue="<?= $empleado['TAREA_HABITUAL'] ?>" id="tareaFuente" attr-title="Tarea fuente"><span style="color:#969396">Tarea fuente </span> <br> <span style="margin-left:30%;margin-top:10%"><?= $empleado['TAREA_HABITUAL'] ?></span></div>
+                                                <div class="col-3 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValueSelectTareaFrecuente(this)"  attr-realValue="<?= $empleado['TAREA_HABITUAL'] ?>" id="tareaFuente" attr-title="Tarea frecuente"><span style="color:#969396">Tarea frecuente <span class="required">*</span></span> <br> <span style="margin-left:30%;margin-top:10%"><?= $empleado['TAREA_HABITUAL'] ?></span></div>
                                                 <div class="col-3 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Pais </span> <br> <span style="margin-left:30%;margin-top:10%"  id="pais"><?= $empleado['PAIS'] ?></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">

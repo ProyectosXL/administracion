@@ -357,6 +357,62 @@ const updateValueSelectPais = (element) => {
     }
   
 }
+
+const updateValueSelectTareaFrecuente = (element) => {
+    const tareas = [
+        'CAJERO',
+        'CAJERA',
+        'ENCARGADA',
+        'VENDEDOR',
+        'VENDEDORA',
+        'SUB ENCARGADO',
+        'SUB ENCARGADA'
+    ];
+
+    if (element.tagName.toLowerCase() === 'div') {
+        const select = document.createElement('select');
+        select.id = 'tareaFuente';
+        tareas.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.textContent = option;
+            optionElement.value = option;
+            optionElement.setAttribute('attr-realValue', option);
+            if (option === element.getAttribute('attr-realValue')) {
+                optionElement.selected = true;
+            }
+            select.appendChild(optionElement);
+        });
+        select.value = element.getAttribute('attr-realValue');
+        select.onchange = function() {
+            updateValueSelectTareaFrecuente(this);
+        };
+        select.setAttribute('attr-title', element.getAttribute('attr-title'));
+        select.classList = element.classList;
+        select.style = element.getAttribute('style');
+        element.parentNode.replaceChild(select, element);
+        select.focus();
+    } else if (element.tagName.toLowerCase() === 'select') {
+        const tarea = element.value;
+        const value = '<span style="color:#969396">' + element.getAttribute('attr-title') + ' <span class="required">*</span></span><br>' + tarea;
+        const div = document.createElement('div');
+        div.innerHTML = value;
+        div.setAttribute('attr-realValue', tarea);
+        div.setAttribute('attr-title', element.getAttribute('attr-title'));
+        div.setAttribute('id', 'tareaFuente');
+        div.classList = element.classList;
+        div.style = element.getAttribute('style');
+        div.onclick = function() {
+            updateValueSelectTareaFrecuente(this);
+        };
+        element.parentNode.replaceChild(div, element);
+        // Opcional: enfocar el siguiente campo si lo deseas
+        if(document.querySelector('#tipoContrato')) {
+            document.querySelector('#tipoContrato').click();
+            document.querySelector('#tipoContrato').focus();
+        }
+    }
+}
+
 const updateValueSelecTipoContrato = (element) => {
 
     let tipo = ['EFECTIVO', 'TEMPORAL'];
@@ -525,6 +581,12 @@ const guardaCambios = () => {
         if(document.querySelector("#sucursalAsignada")){
             document.querySelector("#sucursalAsignada").querySelector("span").style.color = 'red';
         }
+        return 1;
+    }
+
+    if(document.querySelector("#tareaFuente").textContent.replace('Tarea frecuente', ' ').replace('*','').trim() == ''){
+        alert('La tarea frecuente no puede estar vacio', 'error');
+        document.querySelector("#tareaFuente").querySelector("span").style.color = 'red';
         return 1;
     }
 
