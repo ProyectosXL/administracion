@@ -223,7 +223,7 @@
                                                 <div class="col-2 mr-1 inputOverflow" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left"><span style="color:#969396">Nro. Documento <span class="required">*</span></span> <br> <?= $empleado['NRO_DOCUMENTO'] ?></div>
                                                 <div class="inputOverflow" style="border:1px solid #dbdbdb;height:45px;width:14%;font-size:12px;text-align:left" id="codVendedor"><span style="color:#969396">Cod. vend</span> <br> <span style="margin-left:35%;margin-top:10%"><?= $empleado['COD_VENDEDOR'] ?></span></div>
                                             </div>
-                                            <div class="row ml-2 mt-3" style="width:98%;">
+                                            <div class="row ml-2 mt-3" style="width:98%;"> 
                                                 <div class="col-5 mr-1 inputOverflow" style="border:1px solid #dbdbdb;height:45px;font-size:12px;text-align:left" onclick="updateValue(this)" attr-realValue="<?= $empleado['DOMICILIO'] ?>" attr-title="Direccion"  id="direccion">
                                                     <span style="color:#969396">Dirección</span> <br><?= $empleado['DOMICILIO'] ?>
                                                 </div>
