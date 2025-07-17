@@ -528,6 +528,12 @@ const guardaCambios = () => {
         return 1;
     }
 
+    if(document.querySelector("#tareaFuente").textContent.replace('Tarea frecuente', ' ').replace('*','').trim() == ''){
+        alert('El campo tarea Frecuente no puede estar vacio', 'error');
+        document.querySelector("#tareaFuente").querySelector("span").style.color = 'red';
+        return 1;
+    }
+    
     if(document.querySelector("#fechaIngreso").textContent.replace('Fecha de ingreso', ' ').replace('*','').trim() == ''){
         alert('La fecha de ingreso no puede estar vacio', 'error');
         document.querySelector("#fechaIngreso").querySelector("span").style.color = 'red';

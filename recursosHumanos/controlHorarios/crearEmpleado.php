@@ -170,7 +170,7 @@
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
                                                 <div class="col-5 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left"  attr-title="Sucursal asignada" onclick="updateValueSelectSucursal(this)" id="sucursalAsignada"><span style="color:#969396">Sucursal asignada <span class="required">*</span></span> <br></div>
-                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Tarea fuente"  onclick="updateValue(this)"  id="tareaFuente"><span style="color:#969396">Tarea fuente </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
+                                                <div class="col-3 mr-1 bordeDiv" style="height:45px;font-size:12px;text-align:left" attr-title="Tarea fuente"  onclick="updateValue(this)"  id="tareaFuente"><span style="color:#969396">Tarea frecuente<span class="required">*</span> </span> <br> <span style="margin-left:30%;margin-top:10%"></span></div>
                                             </div>
                                             <div class="row ml-2 mt-3" style="width:98%;">
                                                 <div class="col-3 mr-1 bordeDiv" style="background-color:#dbdbdb;height:45px;font-size:12px;text-align:left" attr-title="Tipo de contrato"   id="tipoContrato"><span style="color:#969396" >Tipo de contrato <span class="required">*</span></span> <br></div>
