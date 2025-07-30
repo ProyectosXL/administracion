@@ -16,16 +16,37 @@ const guardar = () => {
     let valorLlave = document.querySelector("#valorLlave").value.replace(/[$.]/g, "");
     let comisiones = document.querySelector("#comisiones").value.replace(/[$.]/g, "");
     let lanzamiento = document.querySelector("#lanzamiento").value.replace(/[$.]/g, "");
+    let error = false;
 
     if(valorLlave == "" && comisiones == "" && lanzamiento == ""){
-
-        Swal.fire({
-            icon: 'error',
-            title: 'Oops...',
-            text: 'Debes cargar al menos un valor!',
-        })
-        return 1
+        error = true;
     }
+    valorLlave = (valorLlave != '') ? valorLlave : 0;
+    comisiones = (comisiones != '') ? comisiones : 0;
+    lanzamiento = (lanzamiento != '') ? lanzamiento : 0;
+
+    if(error){
+        Swal.fire({
+        icon: "warning",
+        title: "Estás guardando un contrato sin importes cargados. ¿Deseás continuar?",
+        showDenyButton: true,
+        confirmButtonText: "Aceptar",
+        denyButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+             enviarData(desde, hasta, idSucursal, descSucursal, valorLlave, comisiones, lanzamiento);
+            } else if (result.isDenied) {
+                return 1;
+            }});
+     return 
+    }
+   
+   enviarData(desde, hasta, idSucursal, descSucursal, valorLlave, comisiones, lanzamiento);
+
+}
+
+const enviarData = (desde, hasta, idSucursal, descSucursal, valorLlave, comisiones, lanzamiento) =>{
+
     $.ajax({
         url: 'Controller/alquilerController.php?accion=guardarContratoAlquiler',
         type: 'POST',
@@ -54,11 +75,11 @@ const guardar = () => {
                 Swal.fire({
                     icon: 'error',
                     title: 'Error...',
-                    text: 'Ya exise un registro para ese periodo!',
+                    text: 'Ya existe un registro para ese periodo!',
                 })
 
             }
-     
+
         }
     });
 

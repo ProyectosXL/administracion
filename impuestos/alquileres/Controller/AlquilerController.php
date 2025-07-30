@@ -692,9 +692,9 @@ function guardarContratoAlquiler () {
         $result = [];
    
 
-        $result [] = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta);
+        $result = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta);
         
-        echo true;
+        echo $result;
         
 }
 
