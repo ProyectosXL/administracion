@@ -1,17 +1,15 @@
-<?php 
 
+<?php 
 require_once "Class/Alquiler.php";
 $alquiler = new Alquiler();
 $estado = (isset($_GET['estado'])) ? $_GET['estado'] : 0;
 
 if($estado == 0){
-
     $contratos = $alquiler->traerContratoVigente();
-
-}else{
-
+}elseif($estado == 1){
     $contratos = $alquiler->traerContratoAnterior();
-
+}else{
+    $contratos = $alquiler->traerContratosFuturos();
 }
 
 if (session_status() == PHP_SESSION_NONE) {
@@ -29,276 +27,368 @@ $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
 $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
 $imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
 $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
-
-
-
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Contratos de Alquiler</title>
+    
+    <!-- CSS Includes -->
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php'; ?>
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/detalleContratosAlquiler.css">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Detalle contrato Alquiler</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <style>
 
-        <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css"> -->
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" class="rel">
-        <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.dataTables.min.css" class="rel">
+        .toggle-on, .toggle-off {
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            height: 30px;
+            width: 30px;
+            border-radius: 4px;
+        }
 
-        <!-- Bootstrap Icons -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+        .toggle-on {
+            background-image: url('<?= $imageOn ?>');
+        }
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></link>
+        .toggle-off {
+            background-image: url('<?= $imageOff ?>');
+        }
 
-        <!-- INCLUDES CSS -->
-        <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
-        ?>
+        /* Custom toggle styles */
+        .toggle.btn {
+            height: 38px !important;
+            min-width: 80px !important;
+            border-radius: 6px !important;
+        }
 
-        <style>
-            input[type='search'] {
-                margin-right:45px
-            }
-            .dataTables_length{
-                margin-left:50px
-            }
-            .dataTables_info{
-                margin-left:50px
-            }
-            #tablaArticulos_paginate{
-                margin-right:42px 
-            }
-            .toggle-on {
-                background-image: url('<?= $imageOn ?>');
-                background-size: contain;
-                background-repeat: no-repeat;
-                height: 60px;
-                width: 60px;
-            }
+        .toggle-on, .toggle-off {
+            font-size: 0 !important;
+        }
 
-            .toggle-off {
-                background-image: url('<?= $imageOff ?>');
-                background-size: contain;
-                background-repeat: no-repeat;
-                height: 60px;
-                width: 60px;
-            }
-                
-        </style>
-    </head>
+    </style>
+</head>
 
-    <body>
-        
-      
-        <input type="file" name="archivos[]" id="archivos" multiple accept=".pdf, .jpg, .png" style="display: none;" />
-        <div id="carruselImagenes" class="modal fade" tabindex="-1" aria-hidden="true" style="margin-left:10%;max-width:80%"></div>
-        <div id="nroSucursal" hidden><?= $nroSucurs; ?></div>
-
-        <div class="alert alert-secondary">
-            <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-
-                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Detalle contratos de alquiler</h6></div>
-
-                    <div class="card card-1">
-                        <div id="periodo" hidden><?= $periodo ?></div>
-                        <div class="row" style="margin-left:50px; margin-top:30px">
-                            <h3><strong><i class="bi bi-key" style="margin-right:20px;font-size:40px"></i>Detalle contratos de alquiler </strong></h3>
-                            <div style="margin-left:60%">
-                                <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
-                            </div>
-
-                        </div>
-                        <form action="#">
-
-                            <div class="form-inline" style="margin-bottom:20px">
-
-                                <div class="row" style="margin-top:10px">
-
-                                    <div style="margin-left:60px">Estado: 
-                                        <select name="estado" id="estado" class="form-control form-control-l">
-
-                                            <option value="0" <?= ($estado == "0") ? "selected" : "" ?>>VIGENTE</option>
-                                            <option value="1" <?= ($estado == "1") ? "selected" : "" ?>>ANTERIOR</option>                                      
-                                    
-                                        </select>
-                                    </div>
-
-                                    <button class="btn btn-primary btn-submit ml-2" style="margin-top: -0.15em; margin-right: 5rem; height: 38px">Filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-
-
-                                </div>
-
-                            </div>
-
-                        </form>
-
-                        <table class="table table-striped table-bordered table-sm table-hover dataTable no-footer" id="tablaAlquileres" >
-                            <thead class="thead-dark" style="">
-                                <tr>
-                                    <th style="text-align:center;width:10%" >NRO. SUCURSAL</th>
-                                    <th style="text-align:center;width:10%" >SUCURSAL</th>
-                                    <th style="text-align:center;width:10%" >DESDE</th>
-                                    <th style="text-align:center;width:10%">HASTA</th>
-                                    <th style="text-align:center;width:15%" >VALOR LLAVE</th>
-                                    <th style="text-align:center;width:15%" >COMISIONES</th>
-                                    <th style="text-align:center;width:20%" >FPC LANZAMIENTO</th>
-                                    <th style="text-align:center;width:10%" >MESES</th>
-                                    <th style="text-align:center;width:15%" ></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php 
-                                    foreach ($contratos as $key => $contrato) {
-                                        
-                                    $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
-                                    $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
-                                    $hoy = new DateTime(date("Y-m-d")); // Segunda fecha
-                                     
-                            
-
-                                    $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
-
-                                    // Calcula la diferencia en meses
-                                    $mesesDiferencia = round(($diferenciaDeDias / 365) * 12);
-
-                                    if($mesesDiferencia == 0){
-                                        $mesesDiferencia = 1;
-                                    }
-                            
-                                ?>
-                                <tr>
-                                    <td style="text-align:center"><?= $contrato['NRO_SUCURS'] ?></td>
-                                    <td style="text-align:center"><?= $contrato['DESC_SUCURS'] ?></td>
-                                    <td style="text-align:center"><?= $contrato['VIG_DESDE']->format("Y-m-d") ?></td>
-                                    <td style="text-align:center"><?= $contrato['VIG_HASTA']->format("Y-m-d") ?></td>
-                                    <td style="text-align:center">$<?= number_format($contrato['IMPORTE'], 0, ',', '.') ?></td>
-                                    <td style="text-align:center">$<?= number_format($contrato['IMPORTE_2'], 0, ',', '.') ?></td>
-                                    <td style="text-align:center">$<?= number_format($contrato['IMPORTE_3'], 0, ',', '.') ?></td>
-                                    <td style="text-align:center"><?= (int)$mesesDiferencia?></td>
-                                    <?php 
-                                    
-                                    if ($hoy > $vigHasta) {
-                                        // Ya has superado la fecha de vencimiento
-                                        $dias = $vigHasta->diff($hoy)->days;
-                                    ?>
-
-                                    <td ><button class="btn btn-danger" data-toggle="tooltip" data-placement="top" title='El contrato se encuentra <?= $dias ?> dias vencido'><i class="bi bi-exclamation-circle-fill" style="color:white"></i></button></td>
-                                    <?php   
-                                    } else {
-                               
-                                        $dias = $hoy->diff($vigHasta)->days;
-
-                                        if($dias <= 90){
-                                    ?>
-                                    <td ><button class="btn btn-warning" data-toggle="tooltip" data-placement="top" title='Restan <?= $dias ?> dias para vencimiento del contrato'><i class="bi bi-exclamation-circle-fill" style="color:white"></i></button></td>
-                                    <?php   
-                                        }else{
-                                            echo "<td></td>";
-                                        }
-                                    }
-
-                                    ?>
-
-                                </tr>
-
-
-                                <?php 
-                                        
-                                    }
-                                ?>
-                            
-                            </tbody>
-            
-                        </table>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="header-title">
+                    <a href="http://192.168.0.13:8000/" class="home-button" title="Ir al menú principal">
+                        <i class="bi bi-house-fill"></i>
+                    </a>
+                    <div class="title-info">
+                        <h1><i class="bi bi-key"></i> Detalle Contratos de Alquiler</h1>
+                        <p class="subtitle">Gestión y seguimiento de contratos</p>
                     </div>
+                </div>
+                
+                <div class="environment-toggle">
+                    <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
+                           data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
+                           class="custom-toggle" onchange="cambiarEntorno(this)" 
+                           id="checkEntorno">
                 </div>
             </div>
         </div>
-        <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-        <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
-        <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
-        <link rel="stylesheet" type="text/css" href="assets/select2/select2.min.css">
-        <script src="assets/select2/select2.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-    
-    </body>
 
-</html>
-<script>
-    $(document).ready(function() {
+        <!-- Content -->
+        <div class="content-wrapper">
+            <!-- Filters Section -->
+            <div class="filters-section">
+                <div class="section-title">
+                    <i class="bi bi-funnel"></i>
+                    <span>Filtros de Búsqueda</span>
+                </div>
+                
+                <form action="#" method="GET" class="filters-form">
+                    <div class="filter-group">
+                        <label for="estado" class="filter-label">Estado del Contrato:</label>
+                        <select name="estado" id="estado" class="filter-select">
+                            <option value="0" <?= ($estado == "0") ? "selected" : "" ?>>
+                                <i class="bi bi-check-circle"></i> Vigentes
+                            </option>
+                            <option value="1" <?= ($estado == "1") ? "selected" : "" ?>>
+                                <i class="bi bi-clock-history"></i> Anteriores
+                            </option>
+                            <option value="2" <?= ($estado == "2") ? "selected" : "" ?>>
+                                <i class="bi bi-calendar-plus"></i> Futuros
+                            </option>
+                        </select>
+                        
+                        <button type="submit" class="filter-button">
+                            <i class="bi bi-search"></i>
+                            Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-        $('[data-toggle="tooltip"]').tooltip()
+            <!-- Stats Cards -->
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-icon vigente">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3><?= count($contratos) ?></h3>
+                        <p>
+                            <?php 
+                            if($estado == 0) echo "Contratos Vigentes";
+                            elseif($estado == 1) echo "Contratos Anteriores";
+                            else echo "Contratos Futuros";
+                            ?>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="contratosProximosVencer">0</h3>
+                        <p>Próximos a Vencer</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon danger">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="contratosVencidos">0</h3>
+                        <p>Vencidos</p>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Table Section -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h2><i class="bi bi-table"></i> Lista de Contratos</h2>
+                    <div class="table-actions">
+                        <button class="export-btn" onclick="exportarDatos()">
+                            <i class="bi bi-download"></i>
+                            Exportar
+                        </button>
+                        <a href="cargaContratoAlquileres.php" class="add-btn">
+                            <i class="bi bi-plus-lg"></i>
+                            Nuevo Contrato
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="contracts-table" id="tablaAlquileres">
+                        <thead>
+                            <tr>
+                                <th><i class="bi bi-hash"></i> N° Sucursal</th>
+                                <th><i class="bi bi-building"></i> Sucursal</th>
+                                <th><i class="bi bi-calendar-event"></i> Desde</th>
+                                <th><i class="bi bi-calendar-x"></i> Hasta</th>
+                                <th><i class="bi bi-key-fill"></i> Valor Llave</th>
+                                <th><i class="bi bi-percent"></i> Comisiones</th>
+                                <th><i class="bi bi-rocket"></i> FPC Lanzamiento</th>
+                                <th><i class="bi bi-calendar3"></i> Meses</th>
+                                <th><i class="bi bi-info-circle"></i> Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $contratosVencidos = 0;
+                            $contratosProximosVencer = 0;
+                            
+                            foreach ($contratos as $key => $contrato) {
+                                $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d"));
+                                $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d"));
+                                $hoy = new DateTime(date("Y-m-d"));
+                                
+                                $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
+                                $mesesDiferencia = round(($diferenciaDeDias / 365) * 12);
+                                if($mesesDiferencia == 0) $mesesDiferencia = 1;
+                                
+                                // Calcular estado del contrato
+                                $estadoContrato = '';
+                                $claseEstado = '';
+                                $diasRestantes = 0;
+                                
+                                if ($hoy > $vigHasta) {
+                                    $diasVencido = $vigHasta->diff($hoy)->days;
+                                    $estadoContrato = "Vencido hace {$diasVencido} días";
+                                    $claseEstado = 'status-expired';
+                                    $contratosVencidos++;
+                                } elseif ($hoy < $vigDesde) {
+                                    $diasFuturos = $hoy->diff($vigDesde)->days;
+                                    $estadoContrato = "Inicia en {$diasFuturos} días";
+                                    $claseEstado = 'status-future';
+                                } else {
+                                    $diasRestantes = $hoy->diff($vigHasta)->days;
+                                    if($diasRestantes <= 90){
+                                        $estadoContrato = "Vence en {$diasRestantes} días";
+                                        $claseEstado = 'status-warning';
+                                        $contratosProximosVencer++;
+                                    } else {
+                                        $estadoContrato = "Vigente";
+                                        $claseEstado = 'status-active';
+                                    }
+                                }
+                            ?>
+                            <tr class="contract-row" data-estado="<?= $claseEstado ?>">
+                                <td class="text-center font-weight-bold"><?= $contrato['NRO_SUCURS'] ?></td>
+                                <td class="sucursal-name"><?= $contrato['DESC_SUCURS'] ?></td>
+                                <td class="text-center date-cell"><?= $vigDesde->format("d/m/Y") ?></td>
+                                <td class="text-center date-cell"><?= $vigHasta->format("d/m/Y") ?></td>
+                                <td class="text-right amount-cell">$<?= number_format($contrato['IMPORTE'], 0, ',', '.') ?></td>
+                                <td class="text-right amount-cell">$<?= number_format($contrato['IMPORTE_2'], 0, ',', '.') ?></td>
+                                <td class="text-right amount-cell">$<?= number_format($contrato['IMPORTE_3'], 0, ',', '.') ?></td>
+                                <td class="text-center">
+                                    <span class="duration-badge"><?= (int)$mesesDiferencia ?> meses</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="status-badge <?= $claseEstado ?>">
+                                        <?php if($claseEstado == 'status-expired'): ?>
+                                            <i class="bi bi-x-circle-fill"></i>
+                                        <?php elseif($claseEstado == 'status-warning'): ?>
+                                            <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <?php elseif($claseEstado == 'status-future'): ?>
+                                            <i class="bi bi-calendar-plus"></i>
+                                        <?php else: ?>
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        <?php endif; ?>
+                                        <?= $estadoContrato ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php } ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        document.querySelector(".toggle").style.width="40px"
-        document.querySelector(".toggle-on").style.fontSize="0"
-        document.querySelector(".toggle-off").style.fontSize="0"
-        document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    })
-  $('#tablaAlquileres').DataTable({
-        "bLengthChange": true,
-        "lengthMenu": [ [100], [100] ],
-        "language": {
-                    "lengthMenu": "mostrar _MENU_ registros",
-                    "info":           "Mostrando registros del _START_ al _END_ de un total de  _TOTAL_ registros",
-                    "paginate": {
-                        "next":       "Siguiente",
-                        "previous":   "Anterior"
-                    },
-
-        },
-    
-        
-        "bInfo": true,
-        "aaSorting": false,
-        'columnDefs': [
-            {
-                "targets": "_all", 
-                "className": "text-center",
-                "sortable": false,
-         
-            },
-        ],
-        "oLanguage": {
-    
-            "sSearch": "Busqueda rapida:",
-            "sSearchPlaceholder" : "Sobre cualquier campo"
+    <script>
+        $(document).ready(function() {
+            // Actualizar contadores en las cards
+            document.getElementById('contratosVencidos').textContent = <?= $contratosVencidos ?>;
+            document.getElementById('contratosProximosVencer').textContent = <?= $contratosProximosVencer ?>;
             
-    
-        },
-    });
+            // Inicializar DataTable
+            $('#tablaAlquileres').DataTable({
+                "responsive": true,
+                "lengthChange": true,
+                "lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "Todos"]],
+                "pageLength": 25,
+                "language": {
+                    "lengthMenu": "Mostrar _MENU_ registros por página",
+                    "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                    "infoEmpty": "No hay registros disponibles",
+                    "infoFiltered": "(filtrado de _MAX_ registros totales)",
+                    "search": "Buscar:",
+                    "searchPlaceholder": "Escriba para buscar...",
+                    "paginate": {
+                        "next": "Siguiente",
+                        "previous": "Anterior",
+                        "first": "Primero",
+                        "last": "Último"
+                    },
+                    "emptyTable": "No hay datos disponibles en la tabla",
+                    "zeroRecords": "No se encontraron registros coincidentes"
+                },
+                "order": [[2, "desc"]], // Ordenar por fecha desde (más recientes primero)
+                "columnDefs": [
+                    {
+                        "targets": [0, 2, 3, 7, 8],
+                        "className": "text-center"
+                    },
+                    {
+                        "targets": [4, 5, 6],
+                        "className": "text-right"
+                    }
+                ],
+                "drawCallback": function(settings) {
+                    // Aplicar tooltips después de cada redibujado
+                    $('[data-toggle="tooltip"]').tooltip();
+                }
+            });
 
-    const cambiarEntorno = (t) =>{
+            // Configurar toggle
+            setTimeout(() => {
+                const toggle = document.querySelector(".toggle");
+                const toggleOn = document.querySelector(".toggle-on");
+                const toggleOff = document.querySelector(".toggle-off");
+                
+                if (toggle) toggle.style.width = "80px";
+                if (toggleOn) toggleOn.style.fontSize = "0";
+                if (toggleOff) toggleOff.style.fontSize = "0";
+            }, 100);
 
-        let entorno = 0;
-
-        if(t.getAttribute("data-off") == "ARG" ){
-        entorno = 0;
-        }else{
-        entorno = 1;
-        }
-
-
-        $.ajax({
-        url: "Controller/cambiarEntorno.php",
-        method: "POST",
-        data : {entorno: entorno},
-        success: function (data) {
-            location.reload();
-        }
+            // Inicializar tooltips
+            $('[data-toggle="tooltip"]').tooltip();
         });
 
-    }
+        const cambiarEntorno = (toggle) => {
+            const entorno = toggle.getAttribute("data-off") === "ARG" ? 0 : 1;
+            
+            Swal.fire({
+                title: 'Cambiando entorno',
+                text: 'Por favor espere...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
-</script>
-<!-- <script src="js/gastosTesoreria.js"></script> -->
+            $.ajax({
+                url: "Controller/cambiarEntorno.php",
+                method: "POST",
+                data: { entorno: entorno },
+                success: function(data) {
+                    location.reload();
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo cambiar el entorno'
+                    });
+                }
+            });
+        };
 
+        const exportarDatos = () => {
+            Swal.fire({
+                icon: 'info',
+                title: 'Exportar datos',
+                text: 'Funcionalidad de exportación en desarrollo',
+                confirmButtonText: 'Entendido'
+            });
+        };
+    </script>
+</body>
+</html>

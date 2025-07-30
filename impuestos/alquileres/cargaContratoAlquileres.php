@@ -29,156 +29,188 @@
     $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
     $imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
     $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
-    
-    
-    ?>
+?>
 
-    <!DOCTYPE html>
-    <html lang="en">
-       <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Carga Contratos Alquiler</title>
-        
-        <!-- INCLUDES CSS -->
-        <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
-        ?>
-        
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-        
-    </head>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carga Contratos Alquiler</title>
+    
+    <!-- CSS Includes -->
+    <?php
+        require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+    ?>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/cargaAlquileres.css">
+    
     <style>
-        #inputText {
-            line-height: 1.2; /* Ajusta el valor para controlar el espacio entre líneas */
-        }
-        .toggle-on {
-            background-image: url('<?= $imageOn ?>');
+
+        .toggle-on, .toggle-off {
             background-size: contain;
             background-repeat: no-repeat;
-            height: 60px;
-            width: 60px;
+            background-position: center;
+            height: 30px;
+            width: 30px;
+            border-radius: 4px;
+        }
+
+        .toggle-on {
+            background-image: url('<?= $imageOn ?>');
         }
 
         .toggle-off {
             background-image: url('<?= $imageOff ?>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            height: 60px;
-            width: 60px;
         }
+
+        /* Custom toggle styles */
+        .toggle.btn {
+            height: 38px !important;
+            min-width: 80px !important;
+            border-radius: 6px !important;
+        }
+
+        .toggle-on, .toggle-off {
+            font-size: 0 !important;
+        }
+
     </style>
-    <body>
+</head>
 
-        <div class="alert alert-secondary">
-            <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Carga Contratos Alquiler</h6></div>
-                    <div class="card card-1">
-                        <div id="username" hidden><?= $_SESSION['username'] ?></div>
-                        <div class="row" style="margin-left:50px">
-                        <a href="http://192.168.0.13:8000/" style="display:inline-block;">
-                            <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                        </a>
-                            <h3 style="margin-right:60%"><i class="bi bi-key" style="margin-right: 20px; font-size: 40px"></i>Carga Contratos Alquiler</h3>
-                            <div style="margin-top:30px">
-                                <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
-                            </div>
-                        </div>
-                        <form action="">
-                        <div class="container-fluid" style="margin-left: 0px;">
-
-                            <div class="row" style="width:1300px; margin-left: 60px">
-                                <div clas="col" style="width:550px;">
-                                    <div class="row" style="margin-top:3rem">
-                                        <div style="text-align:left;margin-right:5px">Sucursal:</div>
-                                        <div style="margin-right:5px">
-                                            <select name="selectSucursal" id="selectSucursal" style="height:40px;width:12rem">
-                                                 <?php 
-                                                    foreach ($locales as  $value) {
-                                                ?>
-                                                        <option value="<?= $value['NRO_SUCURSAL'] ?>-<?= $value['DESC_SUCURSAL'] ?>"><?= $value['DESC_SUCURSAL'] ?></option>
-                                                <?php 
-                                                    } ;
-                                                ?>
-                                            </select>
-                                        </div>
-                             
-                                    </div>
-                                </div>
-                                <div class="col-4" style="width:550px;">
-                                    <div class="row" >
-                  
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                        </form>
-                        <div class="row" style="margin-left:65px;margin-top:30px;margin-bottom:1rem">
-                            Vigencia
-                        </div>
-                        <div class="contenedor">
-                            <div>
-                                Desde: <input type="date" style="margin-left:5px" id="desde" value="<?= $desde ?>">
-                                Hasta: <input type="date" style="margin-left:5px" id="hasta" value="<?= $hasta ?>">
-                            </div>
-
-                        </div>
-
-                        <div class="row" style="margin-left:65px;margin-top:4%;width:370px">
-                            <div class="col">
-                                Valor llave
-                            </div>
-                            <div class="col">
-                                <input type="text" id="valorLlave" onchange="parseNumber(this)">
-                             </div>
-                        </div>
-                        <div class="row" style="margin-left:65px;margin-top:1%;width:370px">
-                            <div class="col">
-                                Comisiones
-                            </div>
-                            <div class="col">
-                                <input type="text" id="comisiones"  onchange="parseNumber(this)">
-                             </div>
-                        </div>
-                        <div class="row" style="margin-left:65px;margin-top:1%;width:370px">
-                            <div class="col">
-                                FPC lanzamiento
-                            </div>
-                            <div class="col">
-                                <input type="text" id="lanzamiento"  onchange="parseNumber(this)">
-                             </div>
-                        </div>
-                        <div class="row" style="margin-left:65px;margin-top:1%;width:500px">
-                            <div class="col"></div>
-                            <div class="col"><button class="btn btn-success mb-4" onclick="guardar()"style="margin-left:35px">Guardar <i class="bi bi-floppy"></i></button></div>
-                        </div>
-                    </div>
-                </div>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <a href="http://192.168.0.13:8000/" class="home-button" title="Ir al menú principal">
+                    <img src="../../image/home-button.png" alt="Home">
+                </a>
+                <i class="bi bi-key" style="font-size: 28px;"></i>
+                <h1>Carga Contratos Alquiler</h1>
+            </div>
+            
+            <div class="environment-toggle">
+                <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
+                       data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
+                       class="custom-toggle" onchange="cambiarEntorno(this)" 
+                       id="checkEntorno">
             </div>
         </div>
 
-        <?php
-                require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
-            ?>
-        <script src="js/cargaContratoAlquileres.js"></script>
-        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-    </body>
+        <!-- Form Content -->
+        <div class="form-content">
+            <div id="username" class="hidden"><?= $_SESSION['username'] ?></div>
+            
+            <form>
+                <!-- Sucursal Section -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="bi bi-building"></i>
+                        Información de Sucursal
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="selectSucursal" class="form-label">Sucursal</label>
+                        <select name="selectSucursal" id="selectSucursal" class="form-control">
+                            <?php foreach ($locales as $value): ?>
+                                <option value="<?= $value['NRO_SUCURSAL'] ?>-<?= $value['DESC_SUCURSAL'] ?>">
+                                    <?= $value['DESC_SUCURSAL'] ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
 
-    </html>
-    <script>    
-        $("#selectSucursal").select2();
-        $(document).ready(() => {
+                <!-- Vigencia Section -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="bi bi-calendar-range"></i>
+                        Período de Vigencia
+                    </div>
+                    
+                    <div class="date-inputs">
+                        <div class="date-group">
+                            <label for="desde">Desde:</label>
+                            <input type="date" id="desde" value="<?= isset($desde) ? $desde : '' ?>">
+                        </div>
+                        <div class="date-group">
+                            <label for="hasta">Hasta:</label>
+                            <input type="date" id="hasta" value="<?= isset($hasta) ? $hasta : '' ?>">
+                        </div>
+                    </div>
+                </div>
 
-            document.querySelector(".toggle").style.width="40px"
-            document.querySelector(".toggle-on").style.fontSize="0"
-            document.querySelector(".toggle-off").style.fontSize="0"
-            document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
+                <!-- Importes Section -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="bi bi-currency-dollar"></i>
+                        Importes del Contrato
+                    </div>
+                    
+                    <div class="amounts-grid">
+                        <div class="amount-field">
+                            <label for="valorLlave" class="form-label">Valor Llave</label>
+                            <input type="text" id="valorLlave" class="form-control" 
+                                   placeholder="Ingrese el valor llave" onchange="parseNumber(this)">
+                        </div>
+                        
+                        <div class="amount-field">
+                            <label for="comisiones" class="form-label">Comisiones</label>
+                            <input type="text" id="comisiones" class="form-control" 
+                                   placeholder="Ingrese las comisiones" onchange="parseNumber(this)">
+                        </div>
+                        
+                        <div class="amount-field">
+                            <label for="lanzamiento" class="form-label">FPC Lanzamiento</label>
+                            <input type="text" id="lanzamiento" class="form-control" 
+                                   placeholder="Ingrese FPC lanzamiento" onchange="parseNumber(this)">
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Save Button -->
+                <div class="form-group" style="text-align: center;">
+                    <button type="button" class="save-button" onclick="guardar()">
+                        <i class="bi bi-floppy"></i>
+                        Guardar Contrato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php'; ?>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <script src="js/cargaContratoAlquileres.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2
+            $("#selectSucursal").select2({
+                placeholder: "Seleccione una sucursal",
+                allowClear: false
+            });
+
+            // Style adjustments after initialization
+            setTimeout(() => {
+                const toggle = document.querySelector(".toggle");
+                if (toggle) {
+                    toggle.style.width = "80px";
+                }
+                
+                const toggleOn = document.querySelector(".toggle-on");
+                const toggleOff = document.querySelector(".toggle-off");
+                if (toggleOn) toggleOn.style.fontSize = "0";
+                if (toggleOff) toggleOff.style.fontSize = "0";
+            }, 100);
         });
-                                                    
     </script>
+</body>
+</html>
