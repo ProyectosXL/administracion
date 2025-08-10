@@ -6,6 +6,7 @@
  */
 
 require_once 'Database.php';
+require_once 'Usuario.php';
 
 class Novedades {
     private $db;
@@ -14,8 +15,19 @@ class Novedades {
     public function __construct() {
         $this->db = Database::getInstance();
         
+        // Inicializar configuración de usuario
+        $this->inicializarConfiguracionUsuario();
+        
         // Inicializar tablas necesarias
         $this->inicializarTablas();
+    }
+    
+    /**
+     * Inicializar configuración de usuario
+     */
+    private function inicializarConfiguracionUsuario() {
+        // Incluir configuración temporal de usuario
+        require_once __DIR__ . '/../config/usuario_config.php';
     }
     
     /**
@@ -146,10 +158,25 @@ class Novedades {
     }
 
     /**
-     * Obtener tipos de novedad activos
+     * Obtener tipos de novedad activos - FILTRADOS DIRECTO DESDE BD
      */
     public function getTiposNovedad() {
-        $sql = "SELECT * FROM tipos_novedad WHERE activo = 1 ORDER BY id";
+        $tipoUsuario = Usuario::getTipoUsuario();
+        
+        // Construir la condición WHERE según el tipo de usuario
+        $campoPermiso = '';
+        switch($tipoUsuario) {
+            case 1: $campoPermiso = 'user_adm'; break;
+            case 2: $campoPermiso = 'user_com'; break; 
+            case 3: $campoPermiso = 'user_prod'; break;
+            default: $campoPermiso = 'user_adm'; break;
+        }
+        
+        $sql = "SELECT id, codigo, descripcion 
+                FROM tipos_novedad 
+                WHERE activo = 1 AND $campoPermiso = 1 
+                ORDER BY id";
+        
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
@@ -164,7 +191,7 @@ class Novedades {
     }
 
     /**
-     * Crear tabla tipos_novedad si no existe
+     * Crear tabla tipos_novedad si no existe - SIMPLIFICADA
      */
     private function crearTablaTiposNovedad() {
         $sql = "IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='tipos_novedad' AND xtype='U')
@@ -173,12 +200,15 @@ class Novedades {
                     codigo VARCHAR(20) UNIQUE NOT NULL,
                     descripcion VARCHAR(100) NOT NULL,
                     activo BIT DEFAULT 1,
-                    fecha_creacion DATETIME DEFAULT GETDATE()
+                    fecha_creacion DATETIME DEFAULT GETDATE(),
+                    user_adm BIT DEFAULT 0,
+                    user_com BIT DEFAULT 0,
+                    user_prod BIT DEFAULT 0
                 )";
         
         $this->db->query($sql);
         
-        // Insertar tipos si la tabla está vacía
+        // Si la tabla está vacía, insertar tipos básicos
         $checkSql = "SELECT COUNT(*) as count FROM tipos_novedad";
         $result = $this->db->query($checkSql);
         $row = $result->fetch();
@@ -247,25 +277,26 @@ class Novedades {
     }
 
     /**
-     * Insertar tipos de novedad
+     * Insertar tipos de novedad con permisos - SEGÚN TU SQL
      */
     private function insertarTiposNovedad() {
+        // Tipos con permisos exactos según tu SQL ejecutado
         $tipos = [
-            ['CAMBIO_SUCURSAL', 'Cambio de sucursal'],
-            ['NUEVO_PUESTO', 'Nuevo puesto'],
-            ['NUEVO_SALARIO', 'Nuevo salario neto'],
-            ['AJUSTE_PREMIOS', 'Ajuste de premios'],
-            ['HORAS_EXTRAS', 'Horas extras'],
-            ['HORAS_ADICIONALES', 'Horas adicionales'],
-            ['PERMISOS', 'Permisos'],
-            ['CORTES', 'Cortes'],
-            ['PRODUCCION_25', 'Producción 25%'],
-            ['PRODUCCION_50', 'Producción 50%'],
-            ['PRODUCCION_100', 'Producción 100%']
+            ['CAMBIO_SUCURSAL', 'Cambio de sucursal', 1, 1, 0],
+            ['NUEVO_PUESTO', 'Nuevo puesto', 1, 1, 0],
+            ['NUEVO_SALARIO', 'Nuevo salario neto', 1, 0, 0],
+            ['AJUSTE_PREMIOS', 'Ajuste de premios', 1, 1, 0],
+            ['HORAS_EXTRAS', 'Horas extras', 1, 1, 1],
+            ['HORAS_ADICIONALES', 'Horas adicionales', 1, 1, 1],
+            ['PERMISOS', 'Permisos', 1, 1, 1],
+            ['CORTES', 'Cortes', 1, 1, 1],
+            ['PRODUCCION_25', 'Producción 25%', 0, 0, 1],
+            ['PRODUCCION_50', 'Producción 50%', 0, 0, 1],
+            ['PRODUCCION_100', 'Producción 100%', 0, 0, 1]
         ];
 
         foreach ($tipos as $tipo) {
-            $sql = "INSERT INTO tipos_novedad (codigo, descripcion) VALUES (?, ?)";
+            $sql = "INSERT INTO tipos_novedad (codigo, descripcion, user_adm, user_com, user_prod) VALUES (?, ?, ?, ?, ?)";
             $this->db->query($sql, $tipo);
         }
     }
@@ -290,11 +321,15 @@ class Novedades {
     }
 
     /**
-     * Crear nueva novedad - CORREGIDO PARA ESTRUCTURA REAL DE TABLA
+     * Crear nueva novedad - CORREGIDO PARA ESTRUCTURA REAL DE TABLA + VALIDACIÓN PERMISOS
      */
     public function crearNovedad($datos) {
         try {
             $this->db->beginTransaction();
+
+            // Validar que el usuario puede crear este tipo de novedad
+            $tipoNovedad = (int)$datos['tipo_novedad'];
+            $this->validarPermisosTipoNovedad($tipoNovedad);
 
             $periodo = $this->getPeriodoActual();
             
@@ -334,6 +369,39 @@ class Novedades {
             $this->db->rollback();
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+    
+    /**
+     * Validar permisos DIRECTO desde BD
+     */
+    private function validarPermisosTipoNovedad($tipoNovedadId) {
+        $tipoUsuario = Usuario::getTipoUsuario();
+        
+        // Construir el nombre del campo según el tipo de usuario
+        $campoPermiso = '';
+        switch($tipoUsuario) {
+            case 1: $campoPermiso = 'user_adm'; break;
+            case 2: $campoPermiso = 'user_com'; break;
+            case 3: $campoPermiso = 'user_prod'; break;
+            default: throw new Exception("Tipo de usuario no válido");
+        }
+        
+        $sql = "SELECT $campoPermiso as tiene_permiso, descripcion 
+                FROM tipos_novedad 
+                WHERE id = ? AND activo = 1";
+        
+        $stmt = $this->db->query($sql, [$tipoNovedadId]);
+        $result = $stmt->fetch();
+        
+        if (!$result) {
+            throw new Exception("Tipo de novedad no encontrado");
+        }
+        
+        if (!$result['tiene_permiso']) {
+            throw new Exception("No tienes permisos para crear el tipo: " . $result['descripcion']);
+        }
+        
+        return true;
     }
 
     /**

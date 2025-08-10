@@ -30,6 +30,12 @@
                         Consultar Novedades
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="mostrarManualUso()">
+                        <i class="fas fa-question-circle me-1"></i>
+                        Ayuda
+                    </a>
+                </li>
             </ul>
             
             <div class="navbar-text">

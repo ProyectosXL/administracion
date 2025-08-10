@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Sistema de Novedades RRHH</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+        .manual-header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        .table-of-contents {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+        .section {
+            margin: 3rem 0;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 2rem;
+        }
+        .section h2 {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 0.5rem;
+        }
+        .subsection h3 {
+            color: #0056b3;
+            margin-top: 2rem;
+        }
+        .highlight-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .error-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .success-box {
+            background-color: #d1e7dd;
+            border-left: 4px solid #198754;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Header -->
+    <div class="manual-header">
+        <div class="container">
+            <h1><i class="fas fa-book me-3"></i>Manual de Usuario</h1>
+            <h2>Sistema de Novedades RRHH</h2>
+            <p class="lead">Guía completa para el uso del sistema de gestión de novedades</p>
+            <small>Versión 1.0 - Agosto 2025</small>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        
+        <!-- Información del Documento -->
+        <div class="section">
+            <h2><i class="fas fa-info-circle me-2"></i>Información del Documento</h2>
+            <table class="table table-striped">
+                <tr><td><strong>Sistema:</strong></td><td>Sistema de Novedades RRHH</td></tr>
+                <tr><td><strong>Versión:</strong></td><td>1.0</td></tr>
+                <tr><td><strong>Fecha:</strong></td><td>Agosto 2025</td></tr>
+                <tr><td><strong>Responsable:</strong></td><td>Eduardo Berga - Analista Funcional</td></tr>
+                <tr><td><strong>Cliente:</strong></td><td>Patricia La Torre - RRHH</td></tr>
+            </table>
+        </div>
+
+        <!-- Tabla de Contenidos -->
+        <div class="table-of-contents">
+            <h3><i class="fas fa-list me-2"></i>Tabla de Contenidos</h3>
+            <ol>
+                <li><a href="#introduccion">Introducción</a></li>
+                <li><a href="#descripcion-general">Descripción General del Sistema</a></li>
+                <li><a href="#acceso-sistema">Acceso al Sistema</a></li>
+                <li><a href="#panel-control">Panel de Control (Inicio)</a></li>
+                <li><a href="#crear-novedad">Crear Nueva Novedad</a></li>
+                <li><a href="#tipos-novedad">Tipos de Novedad</a></li>
+                <li><a href="#consultar-novedades">Consultar Novedades</a></li>
+                <li><a href="#sistema-permisos">Sistema de Permisos</a></li>
+                <li><a href="#mensajes-validaciones">Mensajes y Validaciones</a></li>
+                <li><a href="#problemas">Resolución de Problemas</a></li>
+                <li><a href="#mejores-practicas">Consejos y Mejores Prácticas</a></li>
+                <li><a href="#apendices">Apéndices</a></li>
+            </ol>
+        </div>
+
+        <!-- Introducción -->
+        <div class="section" id="introduccion">
+            <h2>1. Introducción</h2>
+            
+            <div class="subsection">
+                <h3>1.1 Propósito del Sistema</h3>
+                <p>El Sistema de Novedades RRHH es una aplicación web moderna diseñada para digitalizar y optimizar el proceso de recolección de novedades laborales que impactan en la liquidación de sueldos.</p>
+                
+                <div class="highlight-box">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Beneficios Clave:</strong> Precisión, trazabilidad y eficiencia en la gestión de novedades de personal.
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>1.2 Usuarios Objetivo</h3>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-user-tie fa-2x text-danger mb-2"></i>
+                                <h5>Administradores</h5>
+                                <p class="small">Acceso completo a todos los tipos de novedad</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-user-tag fa-2x text-primary mb-2"></i>
+                                <h5>Área Comercial</h5>
+                                <p class="small">Acceso a novedades comerciales y operativas</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-hard-hat fa-2x text-warning mb-2"></i>
+                                <h5>Área de Producción</h5>
+                                <p class="small">Acceso a novedades operativas y de producción</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Descripción General -->
+        <div class="section" id="descripcion-general">
+            <h2>2. Descripción General del Sistema</h2>
+            
+            <div class="subsection">
+                <h3>2.1 Características Principales</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-group">
+                            <li class="list-group-item"><i class="fas fa-mobile-alt text-primary me-2"></i>Interfaz Responsive</li>
+                            <li class="list-group-item"><i class="fas fa-check-double text-success me-2"></i>Validación en Tiempo Real</li>
+                            <li class="list-group-item"><i class="fas fa-search text-info me-2"></i>Búsqueda Inteligente</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group">
+                            <li class="list-group-item"><i class="fas fa-filter text-warning me-2"></i>Filtros Avanzados</li>
+                            <li class="list-group-item"><i class="fas fa-file-excel text-success me-2"></i>Exportación a Excel</li>
+                            <li class="list-group-item"><i class="fas fa-history text-secondary me-2"></i>Trazabilidad Completa</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>2.2 Período de Vigencia</h3>
+                <div class="warning-box">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    <strong>IMPORTANTE:</strong> El sistema maneja períodos mensuales fijos del día 28 del mes anterior al 27 del mes actual.
+                </div>
+                
+                <div class="highlight-box">
+                    <strong>Ejemplo para agosto 2025:</strong><br>
+                    <i class="fas fa-calendar-day me-2"></i><strong>Desde:</strong> 28 de julio de 2025<br>
+                    <i class="fas fa-calendar-day me-2"></i><strong>Hasta:</strong> 27 de agosto de 2025
+                </div>
+            </div>
+        </div>
+
+        <!-- Tipos de Novedad -->
+        <div class="section" id="tipos-novedad">
+            <h2>6. Tipos de Novedad</h2>
+            
+            <div class="subsection">
+                <h3>6.1 Clasificación por Perfil de Usuario</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Tipo de Novedad</th>
+                                <th>Admin</th>
+                                <th>Comercial</th>
+                                <th>Producción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Cambio de Sucursal</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Nuevo Puesto</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nuevo Salario Neto</strong></td>
+                                <td><i class="fas fa-star text-warning"></i></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Ajuste de Premios</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Horas Extras</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Horas Adicionales</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Permisos</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                            </tr>
+                            <tr>
+                                <td>Cortes</td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                                <td><i class="fas fa-check text-success"></i></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Producción 25%</strong></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                                <td><i class="fas fa-star text-warning"></i></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Producción 50%</strong></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                                <td><i class="fas fa-star text-warning"></i></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Producción 100%</strong></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                                <td><i class="fas fa-times text-danger"></i></td>
+                                <td><i class="fas fa-star text-warning"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>6.2 Detalle de Tipos con Cálculos Automáticos</h3>
+                
+                <div class="accordion" id="tiposAccordion">
+                    <!-- Horas Extras -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#horasExtras">
+                                <i class="fas fa-clock me-2"></i>Horas Extras
+                            </button>
+                        </h2>
+                        <div id="horasExtras" class="accordion-collapse collapse show">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6>Campos Requeridos:</h6>
+                                        <ul>
+                                            <li><strong>Cantidad de Horas:</strong> Número entero de horas trabajadas</li>
+                                            <li><strong>Fecha de Vigencia:</strong> Día o período de las horas extras</li>
+                                        </ul>
+                                        <h6>Validaciones:</h6>
+                                        <ul>
+                                            <li>La cantidad debe ser mayor a cero</li>
+                                            <li>Máximo recomendado: 20 horas por período</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="success-box">
+                                            <i class="fas fa-calculator me-2"></i>
+                                            <strong>Cálculo Automático:</strong><br>
+                                            $1,000 por hora extra
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Producción -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#produccion">
+                                <i class="fas fa-industry me-2"></i>Tipos de Producción
+                            </button>
+                        </h2>
+                        <div id="produccion" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Tipo</th>
+                                                <th>Valor por Unidad</th>
+                                                <th>Campo Requerido</th>
+                                                <th>Acceso</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Producción 25%</td>
+                                                <td><strong>$150</strong></td>
+                                                <td>Cantidad de Unidades + Fecha</td>
+                                                <td><span class="badge bg-warning">Solo Producción</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Producción 50%</td>
+                                                <td><strong>$300</strong></td>
+                                                <td>Cantidad de Unidades + Fecha</td>
+                                                <td><span class="badge bg-warning">Solo Producción</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Producción 100%</td>
+                                                <td><strong>$500</strong></td>
+                                                <td>Cantidad de Unidades + Fecha</td>
+                                                <td><span class="badge bg-warning">Solo Producción</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crear Nueva Novedad -->
+        <div class="section" id="crear-novedad">
+            <h2>5. Crear Nueva Novedad</h2>
+            
+            <div class="subsection">
+                <h3>5.1 Proceso Paso a Paso</h3>
+                
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <strong>1</strong>
+                                </div>
+                                <h6 class="mt-2">Seleccionar Empleado</h6>
+                                <p class="small">Buscar por nombre, apellido o legajo</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <div class="rounded-circle bg-success text-white d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <strong>2</strong>
+                                </div>
+                                <h6 class="mt-2">Elegir Tipo</h6>
+                                <p class="small">Según tus permisos verás diferentes opciones</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <div class="rounded-circle bg-warning text-white d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <strong>3</strong>
+                                </div>
+                                <h6 class="mt-2">Completar Datos</h6>
+                                <p class="small">Llenar campos específicos del tipo</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <div class="rounded-circle bg-info text-white d-inline-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <strong>4</strong>
+                                </div>
+                                <h6 class="mt-2">Guardar</h6>
+                                <p class="small">Revisar y confirmar la novedad</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>5.2 Validaciones Importantes</h3>
+                <div class="highlight-box">
+                    <h6><i class="fas fa-shield-alt me-2"></i>El sistema valida automáticamente:</h6>
+                    <ul class="mb-0">
+                        <li><strong>Empleado:</strong> Debe existir en la base de datos</li>
+                        <li><strong>Campos Obligatorios:</strong> No pueden estar vacíos</li>
+                        <li><strong>Fechas:</strong> Deben estar dentro del período vigente</li>
+                        <li><strong>Importes:</strong> Deben ser valores positivos</li>
+                        <li><strong>Cantidades:</strong> Horas, unidades y cortes deben ser mayores a cero</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resolución de Problemas -->
+        <div class="section" id="problemas">
+            <h2>10. Resolución de Problemas</h2>
+            
+            <div class="subsection">
+                <h3>10.1 Problemas Comunes y Soluciones</h3>
+                
+                <div class="accordion" id="problemasAccordion">
+                    <!-- Problema 1 -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#problema1">
+                                🔧 "No se cargan los empleados al buscar"
+                            </button>
+                        </h2>
+                        <div id="problema1" class="accordion-collapse collapse show">
+                            <div class="accordion-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Posibles Causas:</h6>
+                                        <ul>
+                                            <li>Conexión a la base de datos interrumpida</li>
+                                            <li>JavaScript deshabilitado</li>
+                                            <li>Filtros de firewall corporativo</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Soluciones:</h6>
+                                        <ol>
+                                            <li>Recargar la página (F5)</li>
+                                            <li>Verificar conexión a internet</li>
+                                            <li>Intentar con otro navegador</li>
+                                            <li>Contactar al administrador del sistema</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Problema 2 -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problema2">
+                                🔧 "Error al guardar novedad"
+                            </button>
+                        </h2>
+                        <div id="problema2" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="error-box">
+                                    <strong>Pasos para resolver:</strong>
+                                    <ol>
+                                        <li>Revisar todos los campos obligatorios</li>
+                                        <li>Verificar que las fechas sean válidas</li>
+                                        <li>Intentar guardar nuevamente</li>
+                                        <li>Si persiste, contactar soporte técnico</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>10.2 Códigos de Error del Sistema</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Acción Recomendada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>E001</code></td>
+                                <td>Empleado no encontrado</td>
+                                <td>Verificar número de legajo</td>
+                            </tr>
+                            <tr>
+                                <td><code>E002</code></td>
+                                <td>Tipo de novedad inválido</td>
+                                <td>Seleccionar tipo válido</td>
+                            </tr>
+                            <tr>
+                                <td><code>E003</code></td>
+                                <td>Fecha fuera de período</td>
+                                <td>Ajustar fecha al período vigente</td>
+                            </tr>
+                            <tr>
+                                <td><code>E004</code></td>
+                                <td>Permisos insuficientes</td>
+                                <td>Contactar administrador</td>
+                            </tr>
+                            <tr>
+                                <td><code>E005</code></td>
+                                <td>Error de conexión BD</td>
+                                <td>Reportar al soporte técnico</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mejores Prácticas -->
+        <div class="section" id="mejores-practicas">
+            <h2>11. Consejos y Mejores Prácticas</h2>
+            
+            <div class="subsection">
+                <h3>11.1 Recomendaciones de Uso Diario</h3>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border-primary h-100">
+                            <div class="card-header bg-primary text-white text-center">
+                                <i class="fas fa-sun me-2"></i>Inicio de Jornada
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Revisar dashboard</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Ver estadísticas del día</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Revisar novedades pendientes</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-warning h-100">
+                            <div class="card-header bg-warning text-dark text-center">
+                                <i class="fas fa-clock me-2"></i>Durante el Día
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Registrar novedades inmediatamente</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Usar observaciones para contexto</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Verificar datos antes de guardar</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success h-100">
+                            <div class="card-header bg-success text-white text-center">
+                                <i class="fas fa-moon me-2"></i>Fin de Jornada
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Revisar novedades del día</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Exportar resumen si necesario</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Cerrar sesión correctamente</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h3>11.2 Atajos de Teclado</h3>
+                <div class="highlight-box">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><kbd>F1</kbd></td>
+                                    <td>Abrir manual de ayuda</td>
+                                </tr>
+                                <tr>
+                                    <td><kbd>Ctrl+N</kbd></td>
+                                    <td>Nueva novedad</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><kbd>Ctrl+F</kbd></td>
+                                    <td>Buscar/Filtrar</td>
+                                </tr>
+                                <tr>
+                                    <td><kbd>Esc</kbd></td>
+                                    <td>Cerrar modales</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-5 pt-4 border-top">
+            <p class="text-muted">
+                <i class="fas fa-copyright me-2"></i>2025 - Sistema de Novedades RRHH - Manual de Usuario v1.0
+            </p>
+            <p class="text-muted">
+                <i class="fas fa-user me-2"></i>Desarrollado por Eduardo Berga - Analista Funcional
+            </p>
+            <button class="btn btn-primary no-print" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>Imprimir Manual
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+</body>
+</html>

@@ -820,5 +820,13 @@
             }
         }
     </script>
+    
+    <!-- Manual JavaScript -->
+    <script src="js/manual.js"></script>
+    <script src="js/modal_fix.js"></script>
+
+    <!-- Manual de Usuario Modal -->
+    <?php include 'components/manual_modal.php'; ?>
+
 </body>
 </html>

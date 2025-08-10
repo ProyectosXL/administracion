@@ -85,7 +85,7 @@ function mostrarUltimasNovedades(novedades) {
                 <td>
                     <span class="badge bg-primary">${novedad.tipo_descripcion}</span>
                 </td>
-                <td>${novedad.sucursal}</td>
+                <td>${novedad.nombre_sucursal || novedad.sucursal}</td>
                 <td>
                     <small>${fechaCreacion}</small>
                 </td>

@@ -30,14 +30,16 @@ async function cargarNovedades() {
 }
 
 /**
- * Aplicar filtros a los datos - ACTUALIZADO PARA UN SOLO CAMPO EMPLEADO
+ * Aplicar filtros a los datos - ACTUALIZADO CON FILTROS DE FECHA
  */
 function aplicarFiltros() {
     // Obtener valores de los filtros
     filtrosActivos = {
         empleado: $('#filtro-empleado').val() || '', // Solo un campo empleado/legajo
         sucursal: document.getElementById('filtro-sucursal').value,
-        tipo: document.getElementById('filtro-tipo').value
+        tipo: document.getElementById('filtro-tipo').value,
+        fechaDesde: document.getElementById('fecha-desde').value,
+        fechaHasta: document.getElementById('fecha-hasta').value
     };
 
     console.log('Aplicando filtros:', filtrosActivos);
@@ -63,6 +65,24 @@ function aplicarFiltros() {
         // Filtro por tipo de novedad
         if (filtrosActivos.tipo && novedad.tipo_novedad != filtrosActivos.tipo) {
             return false;
+        }
+        
+        // Filtro por fecha desde
+        if (filtrosActivos.fechaDesde) {
+            const fechaDesde = new Date(filtrosActivos.fechaDesde);
+            const fechaVigencia = new Date(novedad.fecha_vigencia);
+            if (fechaVigencia < fechaDesde) {
+                return false;
+            }
+        }
+        
+        // Filtro por fecha hasta
+        if (filtrosActivos.fechaHasta) {
+            const fechaHasta = new Date(filtrosActivos.fechaHasta);
+            const fechaVigencia = new Date(novedad.fecha_vigencia);
+            if (fechaVigencia > fechaHasta) {
+                return false;
+            }
         }
         
         return true;
@@ -528,6 +548,8 @@ function limpiarFiltros() {
     // Limpiar selects normales
     document.getElementById('filtro-sucursal').value = '';
     document.getElementById('filtro-tipo').value = '';
+    document.getElementById('fecha-desde').value = '';
+    document.getElementById('fecha-hasta').value = '';
     
     // Limpiar Select2 único
     $('#filtro-empleado').val(null).trigger('change');
@@ -537,6 +559,64 @@ function limpiarFiltros() {
     aplicarFiltros();
     
     console.log('Filtros limpiados');
+}
+
+/**
+ * Filtrar por períodos predefinidos
+ */
+function filtrarPeriodo(periodo) {
+    const hoy = new Date();
+    const fechaDesde = document.getElementById('fecha-desde');
+    const fechaHasta = document.getElementById('fecha-hasta');
+    
+    switch(periodo) {
+        case 'hoy':
+            const hoyStr = hoy.toISOString().split('T')[0];
+            fechaDesde.value = hoyStr;
+            fechaHasta.value = hoyStr;
+            break;
+            
+        case 'semana':
+            const inicioSemana = new Date(hoy);
+            inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+            const finSemana = new Date(inicioSemana);
+            finSemana.setDate(inicioSemana.getDate() + 6);
+            
+            fechaDesde.value = inicioSemana.toISOString().split('T')[0];
+            fechaHasta.value = finSemana.toISOString().split('T')[0];
+            break;
+            
+        case 'mes':
+            const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+            
+            fechaDesde.value = inicioMes.toISOString().split('T')[0];
+            fechaHasta.value = finMes.toISOString().split('T')[0];
+            break;
+            
+        case 'actual':
+            // Período del 28 del mes anterior al 27 del mes actual
+            const fechaActual = new Date();
+            let mesAnterior, añoAnterior;
+            
+            if (fechaActual.getMonth() === 0) {
+                mesAnterior = 11;
+                añoAnterior = fechaActual.getFullYear() - 1;
+            } else {
+                mesAnterior = fechaActual.getMonth() - 1;
+                añoAnterior = fechaActual.getFullYear();
+            }
+            
+            const inicioPeriodo = new Date(añoAnterior, mesAnterior, 28);
+            const finPeriodo = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 27);
+            
+            fechaDesde.value = inicioPeriodo.toISOString().split('T')[0];
+            fechaHasta.value = finPeriodo.toISOString().split('T')[0];
+            break;
+    }
+    
+    // Aplicar filtros automáticamente
+    aplicarFiltros();
 }
 
 /**
@@ -918,6 +998,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     }
     
+    // Agregar event listeners para los filtros de fecha
+    const fechaDesde = document.getElementById('fecha-desde');
+    const fechaHasta = document.getElementById('fecha-hasta');
+    
+    if (fechaDesde) {
+        fechaDesde.addEventListener('change', aplicarFiltros);
+    }
+    
+    if (fechaHasta) {
+        fechaHasta.addEventListener('change', aplicarFiltros);
+    }
+    
+    // Event listeners para otros filtros
+    const filtroSucursal = document.getElementById('filtro-sucursal');
+    const filtroTipo = document.getElementById('filtro-tipo');
+    
+    if (filtroSucursal) {
+        filtroSucursal.addEventListener('change', aplicarFiltros);
+    }
+    
+    if (filtroTipo) {
+        filtroTipo.addEventListener('change', aplicarFiltros);
+    }
+    
     // Event listeners para filtros normales
     document.getElementById('filtro-sucursal').addEventListener('change', aplicarFiltros);
     document.getElementById('filtro-tipo').addEventListener('change', aplicarFiltros);
@@ -972,7 +1076,9 @@ async function cargarDatosBase() {
         console.error('❌ Error cargando datos base:', error);
         NovedadesApp.mostrarError('Error cargando datos base');
     }
-}/**
+}
+
+/**
  * Actualizar estadísticas de filtros
  */
 function actualizarEstadisticasFiltros(datosFiltrados) {

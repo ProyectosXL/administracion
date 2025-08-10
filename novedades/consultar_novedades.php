@@ -63,7 +63,7 @@
             
             <form id="form-filtros">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="filtro-empleado" class="form-label">
                             <i class="fas fa-user me-2"></i>Empleado/Legajo
                         </label>
@@ -72,7 +72,7 @@
                         </select>
                     </div>
                     
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="filtro-sucursal" class="form-label">
                             <i class="fas fa-building me-2"></i>Sucursal
                         </label>
@@ -81,7 +81,7 @@
                         </select>
                     </div>
                     
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="filtro-tipo" class="form-label">
                             <i class="fas fa-tags me-2"></i>Tipo de Novedad
                         </label>
@@ -90,27 +90,52 @@
                         </select>
                     </div>
                     
-                    <div class="col-md-2 d-flex align-items-end">
-                        <div class="btn-group w-100">
-                            <button type="button" class="btn btn-primary" onclick="aplicarFiltros()">
+                    <div class="col-md-2">
+                        <label for="fecha-desde" class="form-label">
+                            <i class="fas fa-calendar-alt me-2"></i>Fecha Desde
+                        </label>
+                        <input type="date" class="form-control" id="fecha-desde">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label for="fecha-hasta" class="form-label">
+                            <i class="fas fa-calendar-alt me-2"></i>Fecha Hasta
+                        </label>
+                        <input type="date" class="form-control" id="fecha-hasta">
+                    </div>
+                    
+                    <div class="col-md-1 d-flex align-items-end">
+                        <div class="btn-group-vertical w-100">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="aplicarFiltros()">
                                 <i class="fas fa-search me-1"></i>
                                 Buscar
                             </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltros()">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limpiarFiltros()">
                                 <i class="fas fa-eraser me-1"></i>
                                 Limpiar
                             </button>
                         </div>
                     </div>
                 </div>
-                    
-                    <div class="col-md-6 d-flex align-items-end">
+                
+                <div class="row g-3 mt-2">
+                    <div class="col-md-12 d-flex justify-content-between">
+                        <!-- Filtros rápidos por período -->
+                        <div class="btn-group" role="group">
+                            <span class="text-muted me-3 align-self-center small">Períodos rápidos:</span>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarPeriodo('hoy')">Hoy</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarPeriodo('semana')">Esta semana</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarPeriodo('mes')">Este mes</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarPeriodo('actual')">Período actual</button>
+                        </div>
+                        
+                        <!-- Botones de exportar -->
                         <div class="btn-group">
-                            <button type="button" class="btn btn-outline-success" onclick="exportarExcel()">
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="exportarExcel()">
                                 <i class="fas fa-file-excel me-1"></i>
                                 Exportar Excel
                             </button>
-                            <button type="button" class="btn btn-outline-info" onclick="imprimirReporte()">
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="imprimirReporte()">
                                 <i class="fas fa-print me-1"></i>
                                 Imprimir
                             </button>
@@ -278,5 +303,11 @@
     <!-- JavaScript personalizado -->
     <script src="js/novedades_main.js"></script>
     <script src="js/consultar_novedades.js"></script>
+    <script src="js/manual.js"></script>
+    <script src="js/modal_fix.js"></script>
+
+    <!-- Manual de Usuario Modal -->
+    <?php include 'components/manual_modal.php'; ?>
+
 </body>
 </html>
