@@ -13,8 +13,10 @@ class Conexion{
         $this->host_central = $this->envVars['HOST_CENTRAL'];
         $this->database_central = $this->envVars['DATABASE_CENTRAL'];
         $this->host_locales = $this->envVars['HOST_LOCALES'];
+        $this->host_apps = $this->envVars['HOST_APPS'];
         $this->database_locales = $this->envVars['DATABASE_LOCALES'];
         $this->database_tangobis = $this->envVars['DATABASE_TANGOBIS'];
+        $this->database_apps = $this->envVars['DATABASE_APPS'];
         $this->user = $this->envVars['USER'];
         $this->pass = $this->envVars['PASS'];
         $this->pass_locales = $this->envVars['PASS_LOCALES'];
@@ -38,6 +40,8 @@ class Conexion{
             return array($this->host_central, $this->database_uy);
         }elseif($nameServer == 'suc_uy'){
             return array($this->host_locales, $this->database_sucUy);
+        }elseif($nameServer == 'apps'){
+            return array($this->host_apps, $this->database_apps);
         }else{
             return array($_SESSION['conexion_dns'], $_SESSION['base_nombre']);
         }

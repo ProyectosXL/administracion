@@ -27,7 +27,7 @@ class Database {
     private function connect() {
         try {
             // Usar la conexión central por defecto para el sistema de novedades
-            $this->connection = $this->conexion->conectar('central');
+            $this->connection = $this->conexion->conectar('apps');
             
             if (!$this->connection) {
                 throw new Exception("Error de conexión: " . print_r(sqlsrv_errors(), true));

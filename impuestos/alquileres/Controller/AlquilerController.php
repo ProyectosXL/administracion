@@ -53,9 +53,9 @@ switch ($accion) {
         break;
 
     default:
-      
+        http_response_code(400);
+        echo json_encode(['error' => true, 'mensaje' => 'Acción no válida']);
         break;
-
 }
 
 function insertarDetalle () {
@@ -69,8 +69,6 @@ function insertarDetalle () {
     $result = $alquiler->insertarDetalle($data);
 
     return true;
-
-
 }
 
 function actualizarDetalle () {
@@ -86,20 +84,15 @@ function actualizarDetalle () {
     $userName = $_POST['userName'];
     $porcentaje = $_POST['porcentaje'];
 
-
     $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, $userName, $porcentaje);
     
-    
     return true;
-      
-    
 }
 
 function cargarAlquieres ($fecha, $periodo) {
 
     require_once "Class/Alquiler.php";
     require_once "Class/sucursal.php";
-
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -184,12 +177,9 @@ function cargarAlquieres ($fecha, $periodo) {
 
                      foreach ($contratoAlquiler as  $contrato) {
 
-        
-
                             $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
                             $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
                              
-
                             $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
 
                             // Calcula la diferencia en meses
@@ -207,17 +197,15 @@ function cargarAlquieres ($fecha, $periodo) {
 
                             if($contrato['ID_CA_2'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
 
-                                $$total = ($contrato['IMPORTE_2'] / $mesesDiferencia);
+                                $total = ($contrato['IMPORTE_2'] / $mesesDiferencia);
 
                             }
 
                             if($contrato['ID_CA_3'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
 
-                                $$total  = ($contrato['IMPORTE_3'] / $mesesDiferencia);
+                                $total  = ($contrato['IMPORTE_3'] / $mesesDiferencia);
 
                             }
-
-    
                         }
                  
                 }
@@ -235,7 +223,6 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
     require_once "Class/Alquiler.php";
     require_once "Class/sucursal.php";
-
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -552,7 +539,6 @@ function traerDetalleHaceUnAño ($periodoPasado, $now) {
     return $detalles;
 }
 
-
 function execSpAlquileres () {
 
     require_once "../Class/Alquiler.php";
@@ -566,8 +552,6 @@ function execSpAlquileres () {
 
 }
 
-
-
 function verificarProcesado () {
 
     require_once "../Class/Alquiler.php";
@@ -579,8 +563,6 @@ function verificarProcesado () {
     $result = $alquiler->verificarProcesado($fecha);
 
     echo json_encode($result);
-
-
 }
 
 function cerrarPeriodo () {
@@ -594,8 +576,6 @@ function cerrarPeriodo () {
     $result = $alquiler->cerrarPeriodo($periodo);
 
     return $result;
-
-
 }
 
 function abrirPeriodo () {
@@ -609,8 +589,6 @@ function abrirPeriodo () {
     $result = $alquiler->abrirPeriodo($periodo);
 
     return $result;
-
-
 }
 
 function checkCierrePeriodoAnt () {
@@ -624,8 +602,6 @@ function checkCierrePeriodoAnt () {
     $result = $alquiler->checkCierrePeriodoAnt($mesAnterior);
 
     echo json_encode($result);
-
-
 }
 
 function ocultarSucursal () {
@@ -675,58 +651,110 @@ function ocultarSucursal () {
     }
 
     echo json_encode($result);
-
-
 }
 
-/**
- * Actualización del método guardarContratoAlquiler para mejor validación
- */
-function guardarContratoAlquiler($sucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta) {
+function guardarContratoAlquiler() {
+    // Desactivar la visualización de errores
+    error_reporting(0);
+    ini_set('display_errors', 0);
     
-    // Primero verificar si hay solapamiento
-    $verificacion = $this->verificarSolapamientoContrato($sucursal, $desde, $hasta);
+    // Establecer header para respuesta de texto plano
+    header('Content-Type: text/plain');
     
-    if ($verificacion['solapamiento']) {
-        return false; // No permitir guardar si hay solapamiento
-    }
-
-    $sql = "
-        INSERT INTO RO_T_CONTRATOS_ALQUILERES 
-        (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, ID_CA_2, IMPORTE_2, ID_CA_3, IMPORTE_3, VIG_DESDE, VIG_HASTA)
-        VALUES 
-        (GETDATE(), ?, ?, '4', ?, '5', ?, '18', ?, ?, ?)
-    ";
-
     try {
-        $stmt = sqlsrv_prepare($this->cid_central, $sql, [
-            $sucursal,
-            $descSucursal,
-            $valorLlave,
-            $comisiones,
-            $lanzamiento,
-            $desde,
-            $hasta
-        ]);
+        require_once "../Class/Alquiler.php";
 
-        if (!$stmt) {
-            throw new \Exception("Error al preparar la consulta: " . print_r(sqlsrv_errors(), true));
+        $alquiler = new Alquiler();
+
+        // Validar datos POST
+        $campos_requeridos = ['desde', 'hasta', 'idSucursal', 'descSucursal', 'valorLlave', 'comisiones', 'lanzamiento'];
+        
+        foreach ($campos_requeridos as $campo) {
+            if (!isset($_POST[$campo])) {
+                throw new Exception("Campo faltante: $campo");
+            }
         }
 
-        $result = sqlsrv_execute($stmt);
+        $desde = $_POST['desde'];
+        $hasta = $_POST['hasta'];
+        $idSucursal = $_POST['idSucursal'];
+        $descSucursal = $_POST['descSucursal'];
+        $valorLlave = intval($_POST['valorLlave']);
+        $comisiones = intval($_POST['comisiones']);
+        $lanzamiento = intval($_POST['lanzamiento']);
 
-        if (!$result) {
-            throw new \Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
+        // Verificar solapamiento antes de guardar
+        $verificacion = $alquiler->verificarSolapamientoContrato($idSucursal, $desde, $hasta);
+        
+        if ($verificacion['solapamiento']) {
+            // Hay solapamiento, devolver false
+            echo 'false';
+            exit;
         }
 
-        $rowCount = sqlsrv_rows_affected($stmt);
-
-        return $rowCount > 0;
-
+        // Si no hay solapamiento, proceder a guardar
+        $result = $alquiler->guardarContratoAlquiler($idSucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta);
+        
+        if ($result) {
+            echo 'true';
+        } else {
+            echo 'false';
+        }
+        
     } catch (\Throwable $th) {
         error_log("Error al guardar contrato: " . $th->getMessage());
-        throw $th;
+        echo 'false';
     }
+    
+    exit;
+}
+
+function verificarSolapamientoContrato() {
+    // Desactivar la visualización de errores para esta función
+    error_reporting(0);
+    ini_set('display_errors', 0);
+    
+    // Establecer header para JSON
+    header('Content-Type: application/json');
+    
+    try {
+        require_once "../Class/Alquiler.php";
+        
+        $alquiler = new Alquiler();
+        
+        // Validar que los datos POST existen
+        if (!isset($_POST['idSucursal']) || !isset($_POST['desde']) || !isset($_POST['hasta'])) {
+            throw new Exception('Datos incompletos en la solicitud');
+        }
+        
+        $idSucursal = $_POST['idSucursal'];
+        $desde = $_POST['desde'];
+        $hasta = $_POST['hasta'];
+        
+        // Validar que no estén vacíos
+        if (empty($idSucursal) || empty($desde) || empty($hasta)) {
+            throw new Exception('Todos los campos son obligatorios');
+        }
+        
+        $resultado = $alquiler->verificarSolapamientoContrato($idSucursal, $desde, $hasta);
+        
+        // Asegurar que siempre devolvemos un JSON válido
+        echo json_encode($resultado, JSON_UNESCAPED_UNICODE);
+        
+    } catch (\Throwable $th) {
+        // Log del error para debugging
+        error_log("Error en verificarSolapamientoContrato: " . $th->getMessage());
+        
+        // Devolver error en formato JSON
+        echo json_encode([
+            'error' => true,
+            'solapamiento' => false,
+            'mensaje' => 'Error al verificar solapamiento: ' . $th->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+    }
+    
+    // Terminar la ejecución para evitar output adicional
+    exit;
 }
 
 function aplicarAjuste () {
@@ -747,7 +775,6 @@ function aplicarAjuste () {
         die();
 
     }
-
 
     foreach ($data as $key => $value) {
 
@@ -785,215 +812,6 @@ function comprobarAjuste () {
     }
 
     echo ($error);
-
-}
-
-/**
- * Verifica si existe solapamiento de contratos para una sucursal en un rango de fechas
- * @param string $sucursal - Número de sucursal
- * @param string $fechaDesde - Fecha de inicio del nuevo contrato (YYYY-MM-DD)
- * @param string $fechaHasta - Fecha de fin del nuevo contrato (YYYY-MM-DD)
- * @return array - Array con información sobre el solapamiento
- */
-public function verificarSolapamientoContrato($sucursal, $fechaDesde, $fechaHasta) {
-    
-    $sql = "
-        SELECT TOP 1
-            ID,
-            NRO_SUCURS,
-            DESC_SUCURS,
-            VIG_DESDE,
-            VIG_HASTA,
-            ID_CA,
-            IMPORTE,
-            ID_CA_2,
-            IMPORTE_2,
-            ID_CA_3,
-            IMPORTE_3
-        FROM RO_T_CONTRATOS_ALQUILERES
-        WHERE NRO_SUCURS = ?
-        AND (
-            -- Caso 1: El nuevo contrato empieza durante un contrato existente
-            (? BETWEEN VIG_DESDE AND VIG_HASTA)
-            OR
-            -- Caso 2: El nuevo contrato termina durante un contrato existente  
-            (? BETWEEN VIG_DESDE AND VIG_HASTA)
-            OR
-            -- Caso 3: El nuevo contrato engloba completamente a uno existente
-            (? <= VIG_DESDE AND ? >= VIG_HASTA)
-            OR
-            -- Caso 4: Un contrato existente engloba completamente al nuevo
-            (VIG_DESDE <= ? AND VIG_HASTA >= ?)
-        )
-        ORDER BY VIG_DESDE DESC
-    ";
-
-    try {
-        $stmt = sqlsrv_prepare($this->cid_central, $sql, [
-            $sucursal,
-            $fechaDesde,
-            $fechaHasta, 
-            $fechaDesde,
-            $fechaHasta,
-            $fechaDesde,
-            $fechaHasta
-        ]);
-
-        if (!$stmt) {
-            throw new \Exception("Error al preparar la consulta: " . print_r(sqlsrv_errors(), true));
-        }
-
-        $result = sqlsrv_execute($stmt);
-        
-        if (!$result) {
-            throw new \Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
-        }
-
-        $contratoExistente = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-        
-        if ($contratoExistente) {
-            // Formatear las fechas para la respuesta
-            $vigDesde = $contratoExistente['VIG_DESDE'];
-            $vigHasta = $contratoExistente['VIG_HASTA'];
-            
-            // Convertir objetos DateTime a string si es necesario
-            if ($vigDesde instanceof DateTime) {
-                $vigDesde = $vigDesde->format('Y-m-d');
-            }
-            if ($vigHasta instanceof DateTime) {
-                $vigHasta = $vigHasta->format('Y-m-d');
-            }
-
-            return [
-                'solapamiento' => true,
-                'contrato_existente' => [
-                    'ID' => $contratoExistente['ID'],
-                    'NRO_SUCURS' => $contratoExistente['NRO_SUCURS'],
-                    'DESC_SUCURS' => $contratoExistente['DESC_SUCURS'],
-                    'VIG_DESDE' => $vigDesde,
-                    'VIG_HASTA' => $vigHasta,
-                    'IMPORTE_1' => $contratoExistente['IMPORTE'],
-                    'IMPORTE_2' => $contratoExistente['IMPORTE_2'],
-                    'IMPORTE_3' => $contratoExistente['IMPORTE_3']
-                ],
-                'mensaje' => 'Ya existe un contrato para esta sucursal que se solapa con el período seleccionado'
-            ];
-        } else {
-            return [
-                'solapamiento' => false,
-                'mensaje' => 'No hay solapamiento de contratos'
-            ];
-        }
-
-    } catch (\Throwable $th) {
-        error_log("Error en verificarSolapamientoContrato: " . $th->getMessage());
-        throw $th;
-    }
-}
-
-/**
- * Trae los contratos futuros (que aún no han comenzado)
- * @return array - Array de contratos futuros
- */
-function traerContratosFuturos() {
-    $sql = "
-        DECLARE @fecha_actual DATE = GETDATE();
-        
-        WITH CTE AS (
-            SELECT
-                *,
-                ROW_NUMBER() OVER(PARTITION BY NRO_SUCURS ORDER BY VIG_DESDE ASC) AS rn
-            FROM RO_T_CONTRATOS_ALQUILERES
-            WHERE VIG_DESDE > @fecha_actual
-        )
-        
-        SELECT * FROM CTE WHERE rn = 1
-        ORDER BY VIG_DESDE ASC
-    ";
-
-    try {
-        $stmt = sqlsrv_query($this->cid_central, $sql);
-
-        if (!$stmt) {
-            throw new \Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
-        }
-
-        $rows = array();
-        while ($v = sqlsrv_fetch_array($stmt)) {
-            $rows[] = $v;
-        }
-
-        return $rows;
-        
-    } catch (\Throwable $th) {
-        error_log("Error en traerContratosFuturos: " . $th->getMessage());
-        throw $th;
-    }
-}
-
-/**
- * Método adicional para obtener contratos activos de una sucursal
- * @param string $sucursal - Número de sucursal
- * @return array - Contratos activos
- */
-public function obtenerContratosActivosSucursal($sucursal) {
-    
-    $sql = "
-        SELECT 
-            ID,
-            NRO_SUCURS,
-            DESC_SUCURS,
-            VIG_DESDE,
-            VIG_HASTA,
-            ID_CA,
-            IMPORTE,
-            ID_CA_2,
-            IMPORTE_2,
-            ID_CA_3,
-            IMPORTE_3,
-            FECHA_CARGA
-        FROM RO_T_CONTRATOS_ALQUILERES
-        WHERE NRO_SUCURS = ?
-        AND VIG_HASTA >= GETDATE()
-        ORDER BY VIG_DESDE DESC
-    ";
-
-    try {
-        $stmt = sqlsrv_prepare($this->cid_central, $sql, [$sucursal]);
-        
-        if (!$stmt) {
-            throw new \Exception("Error al preparar la consulta: " . print_r(sqlsrv_errors(), true));
-        }
-
-        $result = sqlsrv_execute($stmt);
-        
-        if (!$result) {
-            throw new \Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
-        }
-
-        $contratos = [];
-        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            
-            // Formatear fechas si son objetos DateTime
-            if ($row['VIG_DESDE'] instanceof DateTime) {
-                $row['VIG_DESDE'] = $row['VIG_DESDE']->format('Y-m-d');
-            }
-            if ($row['VIG_HASTA'] instanceof DateTime) {
-                $row['VIG_HASTA'] = $row['VIG_HASTA']->format('Y-m-d');
-            }
-            if ($row['FECHA_CARGA'] instanceof DateTime) {
-                $row['FECHA_CARGA'] = $row['FECHA_CARGA']->format('Y-m-d H:i:s');
-            }
-            
-            $contratos[] = $row;
-        }
-
-        return $contratos;
-
-    } catch (\Throwable $th) {
-        error_log("Error en obtenerContratosActivosSucursal: " . $th->getMessage());
-        throw $th;
-    }
 }
 
 ?>

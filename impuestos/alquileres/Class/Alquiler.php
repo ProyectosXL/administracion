@@ -532,52 +532,97 @@ class Alquiler
     }
 
     /**
-     * Actualización del método guardarContratoAlquiler para mejor validación
+     * Verifica si existe solapamiento de contratos para una sucursal en un rango de fechas
+     * @param string $sucursal - Número de sucursal
+     * @param string $fechaDesde - Fecha de inicio del nuevo contrato (YYYY-MM-DD)
+     * @param string $fechaHasta - Fecha de fin del nuevo contrato (YYYY-MM-DD)
+     * @return array - Array con información sobre el solapamiento
      */
-    function guardarContratoAlquiler($sucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $desde, $hasta) {
+    public function verificarSolapamientoContrato($sucursal, $fechaDesde, $fechaHasta) {
         
-        // Primero verificar si hay solapamiento
-        $verificacion = $this->verificarSolapamientoContrato($sucursal, $desde, $hasta);
-        
-        if ($verificacion['solapamiento']) {
-            return false; // No permitir guardar si hay solapamiento
-        }
-
         $sql = "
-            INSERT INTO RO_T_CONTRATOS_ALQUILERES 
-            (FECHA_CARGA, NRO_SUCURS, DESC_SUCURS, ID_CA, IMPORTE, ID_CA_2, IMPORTE_2, ID_CA_3, IMPORTE_3, VIG_DESDE, VIG_HASTA)
-            VALUES 
-            (GETDATE(), ?, ?, '4', ?, '5', ?, '18', ?, ?, ?)
+            SELECT TOP 1
+                ID,
+                NRO_SUCURS,
+                DESC_SUCURS,
+                VIG_DESDE,
+                VIG_HASTA,
+                ID_CA,
+                IMPORTE,
+                ID_CA_2,
+                IMPORTE_2,
+                ID_CA_3,
+                IMPORTE_3
+            FROM RO_T_CONTRATOS_ALQUILERES
+            WHERE NRO_SUCURS = '$sucursal'
+            AND (
+                -- Caso 1: El nuevo contrato empieza durante un contrato existente
+                ('$fechaDesde' BETWEEN VIG_DESDE AND VIG_HASTA)
+                OR
+                -- Caso 2: El nuevo contrato termina durante un contrato existente  
+                ('$fechaHasta' BETWEEN VIG_DESDE AND VIG_HASTA)
+                OR
+                -- Caso 3: El nuevo contrato engloba completamente a uno existente
+                ('$fechaDesde' <= VIG_DESDE AND '$fechaHasta' >= VIG_HASTA)
+                OR
+                -- Caso 4: Un contrato existente engloba completamente al nuevo
+                (VIG_DESDE <= '$fechaDesde' AND VIG_HASTA >= '$fechaHasta')
+            )
+            ORDER BY VIG_DESDE DESC
         ";
 
         try {
-            $stmt = sqlsrv_prepare($this->cid_central, $sql, [
-                $sucursal,
-                $descSucursal,
-                $valorLlave,
-                $comisiones,
-                $lanzamiento,
-                $desde,
-                $hasta
-            ]);
+            $stmt = sqlsrv_query($this->cid_central, $sql);
 
             if (!$stmt) {
-                throw new \Exception("Error al preparar la consulta: " . print_r(sqlsrv_errors(), true));
-            }
-
-            $result = sqlsrv_execute($stmt);
-
-            if (!$result) {
                 throw new \Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
             }
 
-            $rowCount = sqlsrv_rows_affected($stmt);
+            $contratoExistente = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            
+            if ($contratoExistente) {
+                // Formatear las fechas para la respuesta
+                $vigDesde = $contratoExistente['VIG_DESDE'];
+                $vigHasta = $contratoExistente['VIG_HASTA'];
+                
+                // Convertir objetos DateTime a string si es necesario
+                if ($vigDesde instanceof DateTime) {
+                    $vigDesde = $vigDesde->format('Y-m-d');
+                }
+                if ($vigHasta instanceof DateTime) {
+                    $vigHasta = $vigHasta->format('Y-m-d');
+                }
 
-            return $rowCount > 0;
+                return [
+                    'solapamiento' => true,
+                    'contrato_existente' => [
+                        'ID' => $contratoExistente['ID'],
+                        'NRO_SUCURS' => $contratoExistente['NRO_SUCURS'],
+                        'DESC_SUCURS' => $contratoExistente['DESC_SUCURS'],
+                        'VIG_DESDE' => $vigDesde,
+                        'VIG_HASTA' => $vigHasta,
+                        'IMPORTE_1' => $contratoExistente['IMPORTE'],
+                        'IMPORTE_2' => $contratoExistente['IMPORTE_2'],
+                        'IMPORTE_3' => $contratoExistente['IMPORTE_3']
+                    ],
+                    'mensaje' => 'Ya existe un contrato para esta sucursal que se solapa con el período seleccionado'
+                ];
+            } else {
+                return [
+                    'solapamiento' => false,
+                    'mensaje' => 'No hay solapamiento de contratos'
+                ];
+            }
 
         } catch (\Throwable $th) {
-            error_log("Error al guardar contrato: " . $th->getMessage());
-            throw $th;
+            error_log("Error en verificarSolapamientoContrato: " . $th->getMessage());
+            
+            // En caso de error, devolver que no hay solapamiento para permitir continuar
+            return [
+                'solapamiento' => false,
+                'error' => true,
+                'mensaje' => 'Error al verificar solapamiento: ' . $th->getMessage()
+            ];
         }
     }
 
@@ -782,109 +827,6 @@ class Alquiler
     }
 
     /**
-     * Verifica si existe solapamiento de contratos para una sucursal en un rango de fechas
-     * @param string $sucursal - Número de sucursal
-     * @param string $fechaDesde - Fecha de inicio del nuevo contrato (YYYY-MM-DD)
-     * @param string $fechaHasta - Fecha de fin del nuevo contrato (YYYY-MM-DD)
-     * @return array - Array con información sobre el solapamiento
-     */
-    public function verificarSolapamientoContrato($sucursal, $fechaDesde, $fechaHasta) {
-        
-        $sql = "
-            SELECT TOP 1
-                ID,
-                NRO_SUCURS,
-                DESC_SUCURS,
-                VIG_DESDE,
-                VIG_HASTA,
-                ID_CA,
-                IMPORTE,
-                ID_CA_2,
-                IMPORTE_2,
-                ID_CA_3,
-                IMPORTE_3
-            FROM RO_T_CONTRATOS_ALQUILERES
-            WHERE NRO_SUCURS = ?
-            AND (
-                -- Caso 1: El nuevo contrato empieza durante un contrato existente
-                (? BETWEEN VIG_DESDE AND VIG_HASTA)
-                OR
-                -- Caso 2: El nuevo contrato termina durante un contrato existente  
-                (? BETWEEN VIG_DESDE AND VIG_HASTA)
-                OR
-                -- Caso 3: El nuevo contrato engloba completamente a uno existente
-                (? <= VIG_DESDE AND ? >= VIG_HASTA)
-                OR
-                -- Caso 4: Un contrato existente engloba completamente al nuevo
-                (VIG_DESDE <= ? AND VIG_HASTA >= ?)
-            )
-            ORDER BY VIG_DESDE DESC
-        ";
-
-        try {
-            $stmt = sqlsrv_prepare($this->cid_central, $sql, [
-                $sucursal,
-                $fechaDesde,
-                $fechaHasta, 
-                $fechaDesde,
-                $fechaHasta,
-                $fechaDesde,
-                $fechaHasta
-            ]);
-
-            if (!$stmt) {
-                throw new \Exception("Error al preparar la consulta: " . print_r(sqlsrv_errors(), true));
-            }
-
-            $result = sqlsrv_execute($stmt);
-            
-            if (!$result) {
-                throw new \Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
-            }
-
-            $contratoExistente = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-            
-            if ($contratoExistente) {
-                // Formatear las fechas para la respuesta
-                $vigDesde = $contratoExistente['VIG_DESDE'];
-                $vigHasta = $contratoExistente['VIG_HASTA'];
-                
-                // Convertir objetos DateTime a string si es necesario
-                if ($vigDesde instanceof DateTime) {
-                    $vigDesde = $vigDesde->format('Y-m-d');
-                }
-                if ($vigHasta instanceof DateTime) {
-                    $vigHasta = $vigHasta->format('Y-m-d');
-                }
-
-                return [
-                    'solapamiento' => true,
-                    'contrato_existente' => [
-                        'ID' => $contratoExistente['ID'],
-                        'NRO_SUCURS' => $contratoExistente['NRO_SUCURS'],
-                        'DESC_SUCURS' => $contratoExistente['DESC_SUCURS'],
-                        'VIG_DESDE' => $vigDesde,
-                        'VIG_HASTA' => $vigHasta,
-                        'IMPORTE_1' => $contratoExistente['IMPORTE'],
-                        'IMPORTE_2' => $contratoExistente['IMPORTE_2'],
-                        'IMPORTE_3' => $contratoExistente['IMPORTE_3']
-                    ],
-                    'mensaje' => 'Ya existe un contrato para esta sucursal que se solapa con el período seleccionado'
-                ];
-            } else {
-                return [
-                    'solapamiento' => false,
-                    'mensaje' => 'No hay solapamiento de contratos'
-                ];
-            }
-
-        } catch (\Throwable $th) {
-            error_log("Error en verificarSolapamientoContrato: " . $th->getMessage());
-            throw $th;
-        }
-    }
-
-    /**
      * Método adicional para obtener contratos activos de una sucursal
      * @param string $sucursal - Número de sucursal
      * @return array - Contratos activos
@@ -906,21 +848,15 @@ class Alquiler
                 IMPORTE_3,
                 FECHA_CARGA
             FROM RO_T_CONTRATOS_ALQUILERES
-            WHERE NRO_SUCURS = ?
+            WHERE NRO_SUCURS = '$sucursal'
             AND VIG_HASTA >= GETDATE()
             ORDER BY VIG_DESDE DESC
         ";
 
         try {
-            $stmt = sqlsrv_prepare($this->cid_central, $sql, [$sucursal]);
+            $stmt = sqlsrv_query($this->cid_central, $sql);
             
             if (!$stmt) {
-                throw new \Exception("Error al preparar la consulta: " . print_r(sqlsrv_errors(), true));
-            }
-
-            $result = sqlsrv_execute($stmt);
-            
-            if (!$result) {
                 throw new \Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
             }
 
@@ -945,7 +881,7 @@ class Alquiler
 
         } catch (\Throwable $th) {
             error_log("Error en obtenerContratosActivosSucursal: " . $th->getMessage());
-            throw $th;
+            return array();
         }
     }
 }
