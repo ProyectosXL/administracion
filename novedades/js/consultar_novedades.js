@@ -30,73 +30,6 @@ async function cargarNovedades() {
 }
 
 /**
- * Aplicar filtros a los datos - ACTUALIZADO CON FILTROS DE FECHA
- */
-function aplicarFiltros() {
-    // Obtener valores de los filtros
-    filtrosActivos = {
-        empleado: $('#filtro-empleado').val() || '', // Solo un campo empleado/legajo
-        sucursal: document.getElementById('filtro-sucursal').value,
-        tipo: document.getElementById('filtro-tipo').value,
-        fechaDesde: document.getElementById('fecha-desde').value,
-        fechaHasta: document.getElementById('fecha-hasta').value
-    };
-
-    console.log('Aplicando filtros:', filtrosActivos);
-
-    // Filtrar datos
-    let datosFiltrados = novedadesData.filter(novedad => {
-        // Filtro por empleado/legajo (busca tanto en legajo como en nombre)
-        if (filtrosActivos.empleado) {
-            const empleadoFiltro = filtrosActivos.empleado.toString().toLowerCase();
-            const legajoStr = novedad.legajo.toString();
-            const nombreCompleto = (novedad.nombre + ' ' + novedad.apellido).toLowerCase();
-            
-            if (!legajoStr.includes(empleadoFiltro) && !nombreCompleto.includes(empleadoFiltro)) {
-                return false;
-            }
-        }
-        
-        // Filtro por sucursal
-        if (filtrosActivos.sucursal && novedad.sucursal != filtrosActivos.sucursal) {
-            return false;
-        }
-        
-        // Filtro por tipo de novedad
-        if (filtrosActivos.tipo && novedad.tipo_novedad != filtrosActivos.tipo) {
-            return false;
-        }
-        
-        // Filtro por fecha desde
-        if (filtrosActivos.fechaDesde) {
-            const fechaDesde = new Date(filtrosActivos.fechaDesde);
-            const fechaVigencia = new Date(novedad.fecha_vigencia);
-            if (fechaVigencia < fechaDesde) {
-                return false;
-            }
-        }
-        
-        // Filtro por fecha hasta
-        if (filtrosActivos.fechaHasta) {
-            const fechaHasta = new Date(filtrosActivos.fechaHasta);
-            const fechaVigencia = new Date(novedad.fecha_vigencia);
-            if (fechaVigencia > fechaHasta) {
-                return false;
-            }
-        }
-        
-        return true;
-    });
-
-    // Resetear página actual
-    paginaActual = 1;
-    
-    // Mostrar resultados
-    mostrarResultados(datosFiltrados);
-    actualizarEstadisticasFiltros(datosFiltrados);
-}
-
-/**
  * Inicializar Select2 para búsqueda de empleados - UN SOLO CAMPO
  */
 function inicializarSelect2() {
@@ -252,7 +185,13 @@ function mostrarTabla(datos) {
 
     datos.forEach(novedad => {
         const fechaVigencia = novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '-';
-        const valor = novedad.valor_numerico ? NovedadesApp.formatearValor(novedad.valor_numerico) : '-';
+        const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
+        let valor = '';
+        if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+            valor = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico;
+        } else {
+            valor = '-';
+        }
         const fechaRegistro = NovedadesApp.formatearFecha(novedad.fecha_creacion);
         const estado = obtenerBadgeEstado();
 
@@ -275,9 +214,7 @@ function mostrarTabla(datos) {
                 <td>
                     <small>${fechaVigencia}</small>
                 </td>
-                <td>
-                    <strong class="text-success">${valor}</strong>
-                </td>
+                <td>${valor !== '-' ? `<strong>${valor}</strong>` : '-'}</td>
                 <td>
                     <small>${fechaRegistro}</small>
                 </td>
@@ -314,7 +251,8 @@ function mostrarTarjetas(datos) {
 
     datos.forEach(novedad => {
         const fechaVigencia = novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '';
-        const valor = novedad.valor_numerico ? NovedadesApp.formatearValor(novedad.valor_numerico) : '';
+        const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
+        const valor = (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) ? (NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico) : '';
         const fechaRegistro = NovedadesApp.formatearFecha(novedad.fecha_creacion);
         const estado = obtenerBadgeEstado();
 
@@ -348,7 +286,7 @@ function mostrarTarjetas(datos) {
                         ${valor ? `
                         <div class="mb-2">
                             <strong>Valor:</strong><br>
-                            <span class="h6 text-success">${valor}</span>
+                            <span class="h6">${valor}</span>
                         </div>` : ''}
                         
                         <div class="mb-2">
@@ -443,7 +381,7 @@ function mostrarModalDetalleCompleto(novedad) {
                     <div class="card-body">
                         <table class="table table-sm">
                             <tr><td><strong>Tipo:</strong></td><td><span class="badge bg-primary">${novedad.tipo_descripcion}</span></td></tr>
-                            <tr><td><strong>Período:</strong></td><td>${novedad.periodo_mes}/${novedad.periodo_anio}</td></tr>
+                                                                        <tr><td><strong>Período:</strong></td><td>${(novedad.periodo_mes && novedad.periodo_anio) ? novedad.periodo_mes + '/' + novedad.periodo_anio : 'Período actual'}</td></tr>
                             <tr><td><strong>Fecha Registro:</strong></td><td>${NovedadesApp.formatearFecha(novedad.fecha_creacion)}</td></tr>
                             ${novedad.fecha_vigencia ? `<tr><td><strong>Fecha Vigencia:</strong></td><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
                         </table>
@@ -453,24 +391,194 @@ function mostrarModalDetalleCompleto(novedad) {
         </div>
     `;
 
-    // Información específica según el tipo
-    if (novedad.valor_numerico) {
-        html += `
-            <div class="row mt-3">
+    // Información específica según el tipo de novedad
+    const tipo = parseInt(novedad.tipo_novedad);
+    
+    html += `<div class="row mt-3">`;
+    
+    switch (tipo) {
+        case 1: // Cambio de sucursal
+            html += `
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header bg-warning text-dark">
-                            <h6 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Valor Monetario</h6>
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-building me-2"></i>Detalles del Cambio de Sucursal</h6>
                         </div>
-                        <div class="card-body text-center">
-                            <h3 class="text-success">${NovedadesApp.formatearValor(novedad.valor_numerico)}</h3>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Sucursal Actual:</strong><br>
+                                    <span class="badge bg-secondary">${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-6">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        `;
+                </div>`;
+            break;
+            
+        case 2: // Nuevo puesto
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-briefcase me-2"></i>Detalles del Nuevo Puesto</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Nuevo Puesto:</strong><br>
+                                    <span class="badge bg-success">${novedad.puesto || 'No especificado'}</span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-6">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+            
+        case 3: // Nuevo salario neto
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Nuevo Salario Neto</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : novedad.valor_numerico}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+            
+        case 4: // Ajuste de premios
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Ajuste de Premios</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : novedad.valor_numerico}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+            
+        case 5: // Horas extras
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Horas Extras</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'horas') : novedad.valor_numerico + ' hs'}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+            
+        case 6: // Horas adicionales
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Horas Adicionales</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'horas') : novedad.valor_numerico + ' hs'}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+            
+        case 8: // Cortes
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0"><i class="fas fa-cut me-2"></i>Cortes</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'cortes') : novedad.valor_numerico + ' cortes'}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+            
+        case 9: // Producción 25%
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Producción 25%</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'unidades') : novedad.valor_numerico + ' unidades'}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+            
+        case 10: // Producción 50%
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Producción 50%</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'unidades') : novedad.valor_numerico + ' unidades'}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+            
+        case 11: // Producción 100%
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Producción 100%</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'unidades') : novedad.valor_numerico + ' unidades'}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
     }
+    
+    html += `</div>`;
 
+    // Información de permiso (solo para tipo 7)
     if (novedad.fecha_permiso) {
         html += `
             <div class="row mt-3">
@@ -481,15 +589,11 @@ function mostrarModalDetalleCompleto(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <strong>Fecha:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_permiso)}
                                 </div>
-                                <div class="col-md-4">
-                                    <strong>Tipo:</strong><br>
-                                    <span class="badge bg-secondary">${novedad.tipo_permiso}</span>
-                                </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <strong>Compensa:</strong><br>
                                     <span class="badge ${novedad.compensa ? 'bg-success' : 'bg-danger'}">
                                         ${novedad.compensa ? 'Sí' : 'No'}
@@ -644,12 +748,20 @@ function actualizarEstadisticas() {
     const totalNovedades = novedadesData.length;
     const sucursalesUnicas = new Set(novedadesData.map(n => n.nombre_sucursal || 'Sucursal ' + n.sucursal)).size;
     const empleadosUnicos = new Set(novedadesData.map(n => n.legajo)).size;
-    const valorTotal = novedadesData.reduce((sum, n) => sum + (parseFloat(n.valor_numerico) || 0), 0);
+    
+    // Solo sumar valores monetarios (tipos 3 y 4: salarios y premios)
+    const valorTotal = novedadesData.reduce((sum, n) => {
+        const tipo = parseInt(n.tipo_novedad);
+        if (tipo === 3 || tipo === 4) { // Solo salarios y premios
+            return sum + (parseFloat(n.valor_numerico) || 0);
+        }
+        return sum;
+    }, 0);
 
     document.getElementById('total-resultados').textContent = totalNovedades;
     document.getElementById('total-sucursales-filtro').textContent = sucursalesUnicas;
     document.getElementById('total-empleados-filtro').textContent = empleadosUnicos;
-    document.getElementById('total-valores').textContent = NovedadesApp.formatearValor(valorTotal);
+    document.getElementById('total-valores').textContent = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(valorTotal, 'moneda') : valorTotal;
 }
 
 /**
@@ -747,7 +859,7 @@ function exportarExcel() {
     }
 
     // Crear CSV
-    const headers = ['Legajo', 'Nombre', 'Apellido', 'Sucursal', 'Tipo de Novedad', 'Fecha Vigencia', 'Valor', 'Fecha Permiso', 'Tipo Permiso', 'Compensa', 'Observaciones', 'Fecha Registro'];
+    const headers = ['Legajo', 'Nombre', 'Apellido', 'Sucursal', 'Tipo de Novedad', 'Fecha Vigencia', 'Valor', 'Fecha Permiso', 'Compensa', 'Observaciones', 'Fecha Registro'];
     const csvContent = [
         headers.join(','),
         ...datosFiltrados.map(novedad => [
@@ -756,10 +868,12 @@ function exportarExcel() {
             `"${novedad.apellido}"`,
             novedad.sucursal,
             `"${novedad.tipo_descripcion}"`,
-            novedad.fecha_vigencia || '',
-            novedad.valor_numerico || '',
-            novedad.fecha_permiso || '',
-            novedad.tipo_permiso || '',
+            (novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : ''),
+            (() => { 
+                const ctx = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero'; 
+                return (novedad.valor_numerico && parseFloat(novedad.valor_numerico)!==0) ? (NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, ctx) : novedad.valor_numerico) : ''; 
+            })(),
+            (novedad.fecha_permiso ? NovedadesApp.formatearFecha(novedad.fecha_permiso) : ''),
             novedad.compensa ? 'Sí' : 'No',
             `"${(novedad.observaciones || '').replace(/"/g, '""')}"`,
             NovedadesApp.formatearFecha(novedad.fecha_creacion)
@@ -850,6 +964,7 @@ function imprimirReporte() {
     `;
 
     datosFiltrados.forEach(novedad => {
+        const contexto = NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad));
         html += `
             <tr>
                 <td>${novedad.legajo}</td>
@@ -857,7 +972,7 @@ function imprimirReporte() {
                 <td>${novedad.sucursal}</td>
                 <td>${novedad.tipo_descripcion}</td>
                 <td>${novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '-'}</td>
-                <td>${novedad.valor_numerico ? NovedadesApp.formatearValor(novedad.valor_numerico) : '-'}</td>
+                <td>${novedad.valor_numerico ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : '-'}</td>
                 <td>${NovedadesApp.formatearFecha(novedad.fecha_creacion)}</td>
             </tr>
         `;
@@ -928,7 +1043,7 @@ function imprimirNovedad(id) {
                     <tr><th>Tipo:</th><td>${novedad.tipo_descripcion}</td></tr>
                     <tr><th>Fecha de Registro:</th><td>${NovedadesApp.formatearFecha(novedad.fecha_creacion)}</td></tr>
                     ${novedad.fecha_vigencia ? `<tr><th>Fecha de Vigencia:</th><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
-                    ${novedad.valor_numerico ? `<tr><th>Valor:</th><td>${NovedadesApp.formatearValor(novedad.valor_numerico)}</td></tr>` : ''}
+                    ${novedad.valor_numerico ? `<tr><th>Valor:</th><td>${NovedadesApp.formatearValor(novedad.valor_numerico, NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)))}</td></tr>` : ''}
                 </table>
             </div>
             
@@ -1047,8 +1162,8 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 async function cargarDatosBase() {
     try {
-        // Cargar sucursales
-        const sucursales = await NovedadesApp.request('get_sucursales');
+        // Cargar sucursales con Casa Central
+        const sucursales = await NovedadesApp.request('get_sucursales_con_casa_central');
         const sucursalSelect = document.getElementById('filtro-sucursal');
         sucursalSelect.innerHTML = '<option value="">Todas las sucursales</option>';
         
@@ -1085,10 +1200,18 @@ function actualizarEstadisticasFiltros(datosFiltrados) {
     const totalNovedades = datosFiltrados.length;
     const sucursalesUnicas = new Set(datosFiltrados.map(n => n.sucursal)).size;
     const empleadosUnicos = new Set(datosFiltrados.map(n => n.legajo)).size;
-    const valorTotal = datosFiltrados.reduce((sum, n) => sum + (parseFloat(n.valor_numerico) || 0), 0);
+    
+    // Solo sumar valores monetarios (tipos 3 y 4: salarios y premios)
+    const valorTotal = datosFiltrados.reduce((sum, n) => {
+        const tipo = parseInt(n.tipo_novedad);
+        if (tipo === 3 || tipo === 4) { // Solo salarios y premios
+            return sum + (parseFloat(n.valor_numerico) || 0);
+        }
+        return sum;
+    }, 0);
 
     document.getElementById('total-resultados').textContent = totalNovedades;
     document.getElementById('total-sucursales-filtro').textContent = sucursalesUnicas;
     document.getElementById('total-empleados-filtro').textContent = empleadosUnicos;
-    document.getElementById('total-valores').textContent = NovedadesApp.formatearValor(valorTotal);
+    document.getElementById('total-valores').textContent = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(valorTotal, 'moneda') : valorTotal;
 }

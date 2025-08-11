@@ -106,6 +106,26 @@ class Novedades {
     }
 
     /**
+     * Obtener todas las sucursales incluyendo CASA CENTRAL
+     */
+    public function getSucursalesConCasaCentral() {
+        // Obtener sucursales de la base de datos
+        $sucursales = $this->getSucursales();
+        
+        // Agregar CASA CENTRAL al principio de la lista
+        // Usar 1 como número para compatibilidad con columna INT
+        $casaCentral = [
+            'numero' => 1,
+            'descripcion' => 'CASA CENTRAL'
+        ];
+        
+        // Insertar al principio del array
+        array_unshift($sucursales, $casaCentral);
+        
+        return $sucursales;
+    }
+
+    /**
      * Buscar empleados para Select2 (autocompletado)
      */
     public function buscarEmpleadosSelect2($termino = '', $limit = 10) {
@@ -336,6 +356,10 @@ class Novedades {
             // Adaptar datos según el tipo de novedad y estructura real de tabla
             $datosAdaptados = $this->adaptarDatosParaInsercion($datos);
             
+            // Log para debugging - mostrar fechas procesadas
+            error_log("Fechas procesadas: fecha_vigencia=" . var_export($datosAdaptados['fecha_vigencia'], true) . 
+                     ", fecha_permiso=" . var_export($datosAdaptados['fecha_permiso'], true));
+            
             $sql = "INSERT INTO novedades (
                         legajo, nombre, apellido, sucursal, fecha_vigencia, puesto, 
                         valor_numerico, fecha_permiso, compensa, tipo_permiso,
@@ -358,6 +382,9 @@ class Novedades {
                 $periodo['periodo_anio'],
                 $datosAdaptados['tipo_novedad']
             ];
+
+            // Log para debugging - mostrar parámetros SQL
+            error_log("Parámetros SQL: " . print_r($params, true));
 
             $novedadId = $this->db->insert($sql, $params);
 
@@ -428,95 +455,100 @@ class Novedades {
         // Adaptar según el tipo específico
         switch ($tipoNovedad) {
             case 1: // Cambio de sucursal
-                $datosAdaptados['fecha_vigencia'] = isset($datos['fecha_vigencia']) ? $datos['fecha_vigencia'] : null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Cambio sucursal';
                 if (isset($datos['nueva_sucursal'])) {
-                    $datosAdaptados['observaciones'] .= " - Nueva sucursal: " . $datos['nueva_sucursal'];
+                    // Obtener el nombre de la sucursal en lugar del número
+                    $mapaSucursales = $this->obtenerMapaSucursales();
+                    $nombreSucursal = $mapaSucursales[$datos['nueva_sucursal']] ?? 'Sucursal ' . $datos['nueva_sucursal'];
+                    $datosAdaptados['observaciones'] .= " - Nueva sucursal: " . $nombreSucursal;
                 }
                 break;
 
             case 2: // Nuevo puesto
-                $datosAdaptados['fecha_vigencia'] = isset($datos['fecha_vigencia']) ? $datos['fecha_vigencia'] : null;
-                $datosAdaptados['puesto'] = isset($datos['puesto']) ? substr($datos['puesto'], 0, 50) : '';
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                // Guardar el nuevo puesto en el campo puesto
+                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : '';
+                if (isset($datos['puesto'])) {
+                    $datosAdaptados['observaciones'] .= " - Nuevo puesto: " . $datos['puesto'];
+                }
                 break;
 
             case 3: // Nuevo salario neto
                 $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = isset($datos['fecha_vigencia']) ? $datos['fecha_vigencia'] : null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Ajuste Salario';
                 break;
 
             case 4: // Ajuste de premios
                 $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = isset($datos['fecha_vigencia']) ? $datos['fecha_vigencia'] : null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Premio';
                 break;
 
             case 5: // Horas extras
-                // Convertir horas a valor numérico (ejemplo: $1000 por hora extra)
+                // NO calcular valores monetarios - solo guardar cantidad de horas
                 if (isset($datos['cantidad_horas'])) {
-                    $tarifaHora = 1000;
-                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_horas'] * $tarifaHora;
+                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_horas']; // Solo la cantidad de horas
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_horas']} horas extras";
                 }
-                $datosAdaptados['fecha_vigencia'] = isset($datos['fecha_vigencia']) ? $datos['fecha_vigencia'] : null;
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Horas Extras';
                 break;
 
             case 6: // Horas adicionales
-                // Convertir horas a valor numérico (ejemplo: $800 por hora adicional)
+                // NO calcular valores monetarios - solo guardar cantidad de horas
                 if (isset($datos['cantidad_horas'])) {
-                    $tarifaHora = 800;
-                    $datosAdaptados['valor_numerico'] = (float)$datos['cantidad_horas'] * $tarifaHora;
+                    $datosAdaptados['valor_numerico'] = (float)$datos['cantidad_horas']; // Solo la cantidad de horas
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_horas']} horas adicionales";
                 }
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Horas Adicionales';
                 break;
 
             case 7: // Permisos
-                $datosAdaptados['fecha_permiso'] = isset($datos['fecha_permiso']) ? $datos['fecha_permiso'] : null;
+                $datosAdaptados['fecha_permiso'] = $this->formatearFecha($datos['fecha_permiso'] ?? '');
                 $datosAdaptados['compensa'] = isset($datos['compensa']) ? (bool)$datos['compensa'] : null;
-                $datosAdaptados['tipo_permiso'] = 'personal';
                 $datosAdaptados['puesto'] = 'Permiso';
                 break;
 
             case 8: // Cortes
-                // Convertir cortes a descuento (ejemplo: -$500 por corte)
+                // NO calcular valores monetarios - solo guardar cantidad de cortes
                 if (isset($datos['cantidad_cortes'])) {
-                    $descontoPorCorte = 500;
-                    $datosAdaptados['valor_numerico'] = -(int)$datos['cantidad_cortes'] * $descontoPorCorte;
+                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_cortes']; // Solo la cantidad de cortes
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_cortes']} cortes";
                 }
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Cortes';
                 break;
 
             case 9: // Producción 25%
-                // Convertir unidades a valor (ejemplo: $150 por unidad al 25%)
+                // NO calcular valores monetarios - solo guardar cantidad de unidades
                 if (isset($datos['cantidad_unidades'])) {
-                    $valorUnidad = 150;
-                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades'] * $valorUnidad;
+                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades']; // Solo la cantidad de unidades
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_unidades']} unidades (25%)";
                 }
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Producción 25%';
                 break;
 
             case 10: // Producción 50%
-                // Convertir unidades a valor (ejemplo: $300 por unidad al 50%)
+                // NO calcular valores monetarios - solo guardar cantidad de unidades
                 if (isset($datos['cantidad_unidades'])) {
-                    $valorUnidad = 300;
-                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades'] * $valorUnidad;
+                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades']; // Solo la cantidad de unidades
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_unidades']} unidades (50%)";
                 }
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Producción 50%';
                 break;
 
             case 11: // Producción 100%
-                // Convertir unidades a valor (ejemplo: $500 por unidad al 100%)
+                // NO calcular valores monetarios - solo guardar cantidad de unidades
                 if (isset($datos['cantidad_unidades'])) {
-                    $valorUnidad = 500;
-                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades'] * $valorUnidad;
+                    $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades']; // Solo la cantidad de unidades
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_unidades']} unidades (100%)";
                 }
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Producción 100%';
                 break;
 
@@ -529,19 +561,30 @@ class Novedades {
     }
 
     /**
-     * Obtener novedades del periodo actual - CON NOMBRES DE SUCURSAL REALES
+     * Obtener novedades del periodo actual - CON NOMBRES DE SUCURSAL REALES Y FILTRO POR TIPO DE USUARIO
      */
     public function getNovedadesPeriodoActual($filtros = []) {
         try {
             $periodo = $this->getPeriodoActual();
+            $tipoUsuario = Usuario::getTipoUsuario();
             
-            // Consulta más simple para evitar errores de conversión
+            // Determinar campo de permiso según tipo de usuario
+            $campoPermiso = '';
+            switch($tipoUsuario) {
+                case 1: $campoPermiso = 'user_adm'; break;
+                case 2: $campoPermiso = 'user_com'; break; 
+                case 3: $campoPermiso = 'user_prod'; break;
+                default: $campoPermiso = 'user_adm'; break;
+            }
+            
+            // Consulta con filtro por tipo de usuario
             $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
-                           rle.NOMBRE, rle.APELLIDO
+                           rle.NOMBRE, rle.APELLIDO,
+                           n.periodo_mes, n.periodo_anio
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                     LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
-                    WHERE n.periodo_mes = ? AND n.periodo_anio = ?";
+                    WHERE n.periodo_mes = ? AND n.periodo_anio = ? AND tn.$campoPermiso = 1";
             
             $params = [$periodo['periodo_mes'], $periodo['periodo_anio']];
 
@@ -572,65 +615,102 @@ class Novedades {
                 $sucursalesMap = $this->obtenerMapaSucursales();
                 $novedad['nombre_sucursal'] = $sucursalesMap[$novedad['sucursal']] ?? 'Sucursal ' . $novedad['sucursal'];
                 
-                // Agregar valor display basado en valor_numerico y tipo
+                // Agregar valor display basado en tipo de novedad - SIN valores monetarios ficticios
                 $tipoNovedad = (int)$novedad['tipo_novedad'];
                 $valorNumerico = (float)$novedad['valor_numerico'];
                 
-                if ($valorNumerico != 0) {
-                    if ($tipoNovedad >= 5 && $tipoNovedad <= 6) {
-                        // Horas extras/adicionales - calcular horas desde valor
-                        if ($tipoNovedad == 5) {
-                            $horas = round($valorNumerico / 1000, 2); // $1000 por hora extra
-                            $novedad['valor_display'] = $horas . ' horas extras';
-                        } else {
-                            $horas = round($valorNumerico / 800, 2); // $800 por hora adicional
-                            $novedad['valor_display'] = $horas . ' horas adicionales';
-                        }
-                    } elseif ($tipoNovedad == 8) {
-                        // Cortes - calcular cortes desde valor negativo
-                        $cortes = abs(round($valorNumerico / 500)); // $500 por corte
-                        $novedad['valor_display'] = $cortes . ' cortes';
-                    } elseif ($tipoNovedad >= 9 && $tipoNovedad <= 11) {
-                        // Producción - calcular unidades desde valor
-                        if ($tipoNovedad == 9) {
-                            $unidades = round($valorNumerico / 150); // $150 por unidad 25%
-                            $novedad['valor_display'] = $unidades . ' unidades (25%)';
-                        } elseif ($tipoNovedad == 10) {
-                            $unidades = round($valorNumerico / 300); // $300 por unidad 50%
-                            $novedad['valor_display'] = $unidades . ' unidades (50%)';
-                        } else {
-                            $unidades = round($valorNumerico / 500); // $500 por unidad 100%
-                            $novedad['valor_display'] = $unidades . ' unidades (100%)';
-                        }
-                    } else {
-                        // Valores monetarios (salarios, premios, etc.)
-                        $novedad['valor_display'] = '$' . number_format($valorNumerico, 2);
-                    }
-                } else {
-                    $novedad['valor_display'] = 'N/A';
+                switch ($tipoNovedad) {
+                    case 1: // Cambio de sucursal
+                        $novedad['valor_display'] = 'Cambio de sucursal';
+                        break;
+                    case 2: // Nuevo puesto
+                        $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nuevo puesto';
+                        break;
+                    case 3: // Nuevo salario neto
+                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Ajuste salarial';
+                        break;
+                    case 4: // Ajuste de premios
+                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Premio';
+                        break;
+                    case 5: // Horas extras
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' horas extras' : 'Horas extras';
+                        break;
+                    case 6: // Horas adicionales
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' horas adicionales' : 'Horas adicionales';
+                        break;
+                    case 7: // Permisos
+                        $novedad['valor_display'] = 'Permiso' . ($novedad['compensa'] ? ' (compensa)' : '');
+                        break;
+                    case 8: // Cortes
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' cortes' : 'Cortes';
+                        break;
+                    case 9: // Producción 25%
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (25%)' : 'Producción 25%';
+                        break;
+                    case 10: // Producción 50%
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (50%)' : 'Producción 50%';
+                        break;
+                    case 11: // Producción 100%
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (100%)' : 'Producción 100%';
+                        break;
+                    default:
+                        $novedad['valor_display'] = 'N/A';
+                        break;
                 }
                 
-                // Agregar fecha display
+                // Arreglar fecha display - usar fecha_creacion correctamente formateada
+                $fechaRegistro = null;
+                $fechaVigencia = null;
+                
+                // Procesar fecha_creacion (registro)
+                if (!empty($novedad['fecha_creacion'])) {
+                    try {
+                        if ($novedad['fecha_creacion'] instanceof DateTime) {
+                            $fechaRegistro = $novedad['fecha_creacion']->format('d/m/Y');
+                        } else {
+                            // Manejar string de fecha de SQL Server
+                            $fechaRegistro = date('d/m/Y', strtotime($novedad['fecha_creacion']));
+                        }
+                    } catch (Exception $e) {
+                        $fechaRegistro = 'Fecha inválida';
+                    }
+                }
+                
+                // Procesar fecha_vigencia o fecha_permiso según corresponda
+                $fechaClave = null;
                 if (!empty($novedad['fecha_vigencia'])) {
-                    if ($novedad['fecha_vigencia'] instanceof DateTime) {
-                        $novedad['fecha_display'] = $novedad['fecha_vigencia']->format('d/m/Y');
-                    } else {
-                        $fecha = new DateTime($novedad['fecha_vigencia']);
-                        $novedad['fecha_display'] = $fecha->format('d/m/Y');
+                    try {
+                        if ($novedad['fecha_vigencia'] instanceof DateTime) {
+                            $fechaVigencia = $novedad['fecha_vigencia']->format('d/m/Y');
+                        } else {
+                            $fechaVigencia = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                        }
+                        $fechaClave = $fechaVigencia;
+                    } catch (Exception $e) {
+                        $fechaVigencia = null;
                     }
                 } elseif (!empty($novedad['fecha_permiso'])) {
-                    if ($novedad['fecha_permiso'] instanceof DateTime) {
-                        $novedad['fecha_display'] = $novedad['fecha_permiso']->format('d/m/Y');
-                    } else {
-                        $fecha = new DateTime($novedad['fecha_permiso']);
-                        $novedad['fecha_display'] = $fecha->format('d/m/Y');
+                    try {
+                        if ($novedad['fecha_permiso'] instanceof DateTime) {
+                            $fechaClave = $novedad['fecha_permiso']->format('d/m/Y');
+                        } else {
+                            $fechaClave = date('d/m/Y', strtotime($novedad['fecha_permiso']));
+                        }
+                    } catch (Exception $e) {
+                        $fechaClave = null;
                     }
-                } else {
-                    if ($novedad['fecha_creacion'] instanceof DateTime) {
-                        $novedad['fecha_display'] = $novedad['fecha_creacion']->format('d/m/Y');
-                    } else {
-                        $fecha = new DateTime($novedad['fecha_creacion']);
-                        $novedad['fecha_display'] = $fecha->format('d/m/Y');
+                }
+                
+                // Asignar fechas procesadas
+                $novedad['fecha_registro'] = $fechaRegistro ?: 'N/A';
+                $novedad['fecha_display'] = $fechaClave ?: $fechaRegistro ?: 'N/A';
+
+                // Normalizar campos de fecha crudos a string ISO para JSON limpio
+                foreach (['fecha_creacion','fecha_vigencia','fecha_permiso'] as $campoF) {
+                    if (!empty($novedad[$campoF])) {
+                        if ($novedad[$campoF] instanceof DateTime) {
+                            $novedad[$campoF] = $novedad[$campoF]->format('Y-m-d H:i:s');
+                        }
                     }
                 }
             }
@@ -665,28 +745,221 @@ class Novedades {
                 $mapa[$sucursal['NRO_SUCURSAL']] = $sucursal['DESC_SUCURSAL'];
             }
             
+            // Agregar Casa Central al mapa (usar 1 como identificador numérico)
+            $mapa[1] = 'CASA CENTRAL';
+            
             // Guardar en cache
             $this->sucursalesCache = $mapa;
             return $mapa;
         } catch (Exception $e) {
             error_log("Error obteniendo mapa de sucursales: " . $e->getMessage());
-            // Retornar un mapa básico en caso de error
-            $this->sucursalesCache = [];
-            return [];
+            // Retornar un mapa básico en caso de error (incluye Casa Central con ID 1)
+            $this->sucursalesCache = [1 => 'CASA CENTRAL'];
+            return $this->sucursalesCache;
         }
     }
 
     /**
-     * Obtener novedad por ID
+     * Obtener novedad por ID con detalle completo - RESPETA PERMISOS DE USUARIO
      */
     public function getNovedadById($id) {
-        $sql = "SELECT n.*, tn.descripcion as tipo_descripcion 
+        $tipoUsuario = Usuario::getTipoUsuario();
+        
+        // Determinar campo de permiso según tipo de usuario
+        $campoPermiso = '';
+        switch($tipoUsuario) {
+            case 1: $campoPermiso = 'user_adm'; break;
+            case 2: $campoPermiso = 'user_com'; break; 
+            case 3: $campoPermiso = 'user_prod'; break;
+            default: $campoPermiso = 'user_adm'; break;
+        }
+        
+        $sql = "SELECT n.*, tn.descripcion as tipo_descripcion,
+                       emp.NOMBRE as nombre, emp.APELLIDO as apellido
                 FROM novedades n 
                 INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                WHERE n.id = ?";
-        
+                LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
+                WHERE n.id = ? AND tn.$campoPermiso = 1";
+
         $stmt = $this->db->query($sql, [$id]);
-        return $stmt->fetch();
+        $novedad = $stmt->fetch();
+
+        if ($novedad) {
+            // Nombre sucursal seguro
+            try {
+                $mapa = $this->obtenerMapaSucursales();
+                $novedad['nombre_sucursal'] = $mapa[$novedad['sucursal']] ?? ('Sucursal ' . $novedad['sucursal']);
+            } catch (Exception $e) {
+                $novedad['nombre_sucursal'] = 'Sucursal ' . $novedad['sucursal'];
+            }
+
+            // Fechas seguras - Convertir DateTime a string antes de JSON
+            foreach (['fecha_vigencia','fecha_permiso','fecha_creacion'] as $campoFecha) {
+                if (!empty($novedad[$campoFecha])) {
+                    if ($novedad[$campoFecha] instanceof DateTime) {
+                        $novedad[$campoFecha] = $novedad[$campoFecha]->format('Y-m-d H:i:s');
+                    }
+                    // Formatear para mostrar
+                    $raw = $novedad[$campoFecha];
+                    $str = (string)$raw;
+                    $ts = strtotime($str);
+                    if ($ts) {
+                        $novedad[$campoFecha . '_formateada'] = ($campoFecha === 'fecha_creacion') ? date('d/m/Y H:i', $ts) : date('d/m/Y', $ts);
+                    }
+                }
+            }
+
+            // Agregar información de período
+            $periodo = $this->getPeriodoActual();
+            $novedad['periodo_mes'] = $periodo['mes'];
+            $novedad['periodo_anio'] = $periodo['anio'];
+
+            // Valor display
+            $novedad['valor_display'] = $this->construirValorDisplay((int)$novedad['tipo_novedad'], $novedad['valor_numerico']);
+
+            // Detalle específico
+            $novedad['detalle_especifico'] = $this->generarDetalleEspecifico($novedad);
+        }
+
+        return $novedad;
+    }
+
+    /**
+     * Generar detalle específico según tipo de novedad
+     */
+    private function generarDetalleEspecifico($novedad) {
+        $tipoNovedad = (int)$novedad['tipo_novedad'];
+        $valorNumerico = (float)$novedad['valor_numerico'];
+        $detalle = [];
+
+        switch ($tipoNovedad) {
+            case 1: // Cambio de sucursal
+                $detalle['tipo'] = 'Cambio de sucursal';
+                $detalle['sucursal_actual'] = $novedad['sucursal'];
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                // Extraer nueva sucursal de observaciones si existe
+                if (preg_match('/Nueva sucursal:\s*(.+)/', $novedad['observaciones'], $matches)) {
+                    $detalle['nueva_sucursal'] = trim($matches[1]);
+                }
+                break;
+
+            case 2: // Nuevo puesto
+                $detalle['tipo'] = 'Nuevo puesto';
+                $detalle['nuevo_puesto'] = $novedad['puesto'];
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            case 3: // Nuevo salario neto
+                $detalle['tipo'] = 'Nuevo salario neto';
+                $detalle['nuevo_salario'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            case 4: // Ajuste de premios
+                $detalle['tipo'] = 'Ajuste de premios';
+                $detalle['monto_premio'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            case 5: // Horas extras
+                $detalle['tipo'] = 'Horas extras';
+                $detalle['cantidad_horas'] = $valorNumerico != 0 ? $valorNumerico . ' horas' : 'No especificado';
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            case 6: // Horas adicionales
+                $detalle['tipo'] = 'Horas adicionales';
+                $detalle['cantidad_horas'] = $valorNumerico != 0 ? $valorNumerico . ' horas' : 'No especificado';
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            case 7: // Permisos
+                $detalle['tipo'] = 'Permiso';
+                $detalle['compensa'] = $novedad['compensa'] ? 'Sí' : 'No';
+                if (!empty($novedad['fecha_permiso'])) {
+                    $detalle['fecha_permiso'] = date('d/m/Y', strtotime($novedad['fecha_permiso']));
+                }
+                break;
+
+            case 8: // Cortes
+                $detalle['tipo'] = 'Cortes';
+                $detalle['cantidad_cortes'] = $valorNumerico != 0 ? $valorNumerico . ' cortes' : 'No especificado';
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            case 9: // Producción 25%
+                $detalle['tipo'] = 'Producción 25%';
+                $detalle['cantidad_unidades'] = $valorNumerico != 0 ? $valorNumerico . ' unidades' : 'No especificado';
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            case 10: // Producción 50%
+                $detalle['tipo'] = 'Producción 50%';
+                $detalle['cantidad_unidades'] = $valorNumerico != 0 ? $valorNumerico . ' unidades' : 'No especificado';
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            case 11: // Producción 100%
+                $detalle['tipo'] = 'Producción 100%';
+                $detalle['cantidad_unidades'] = $valorNumerico != 0 ? $valorNumerico . ' unidades' : 'No especificado';
+                if (!empty($novedad['fecha_vigencia'])) {
+                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                }
+                break;
+
+            default:
+                $detalle['tipo'] = 'Novedad general';
+                break;
+        }
+
+        return $detalle;
+    }
+
+    /**
+     * Construir valor display según tipo sin inventar montos
+     */
+    private function construirValorDisplay(int $tipo, $valor) {
+        if ($valor === null || $valor === '' || $valor == 0) {
+            // Para salarios/premios mostrar vacío si 0; para otros también
+            return '';
+        }
+        switch ($tipo) {
+            case 3: // salario
+            case 4: // premio
+                return '$' . number_format((float)$valor, 2, ',', '.');
+            case 5:
+                return $valor . ' horas extras';
+            case 6:
+                return $valor . ' horas adicionales';
+            case 8:
+                return $valor . ' cortes';
+            case 9:
+                return $valor . ' unidades (25%)';
+            case 10:
+                return $valor . ' unidades (50%)';
+            case 11:
+                return $valor . ' unidades (100%)';
+            default:
+                return (string)$valor;
+        }
     }
 
     /**
@@ -715,7 +988,125 @@ class Novedades {
             $errores[] = 'La sucursal es obligatoria';
         }
 
+        // Validaciones específicas por tipo de novedad
+        $tipoNovedad = (int)$datos['tipo_novedad'];
+        
+        switch($tipoNovedad) {
+            case 1: // Cambio de sucursal
+                if (empty($datos['nueva_sucursal'])) {
+                    $errores[] = 'La nueva sucursal es obligatoria';
+                }
+                if (empty($datos['fecha_vigencia'])) {
+                    $errores[] = 'La fecha de vigencia es obligatoria';
+                }
+                break;
+                
+            case 2: // Cambio de puesto
+                if (empty($datos['puesto'])) {
+                    $errores[] = 'El puesto es obligatorio';
+                }
+                if (empty($datos['fecha_vigencia'])) {
+                    $errores[] = 'La fecha de vigencia es obligatoria';
+                }
+                break;
+                
+            case 3: // Nuevo salario neto
+            case 4: // Ajuste de premios
+                if (empty($datos['importe']) || !is_numeric($datos['importe'])) {
+                    $errores[] = 'El importe es obligatorio y debe ser numérico';
+                }
+                if (empty($datos['fecha_vigencia'])) {
+                    $errores[] = 'La fecha de vigencia es obligatoria';
+                }
+                break;
+                
+            case 5: // Horas extras
+            case 6: // Horas adicionales
+                if (empty($datos['cantidad_horas']) || !is_numeric($datos['cantidad_horas'])) {
+                    $errores[] = 'La cantidad de horas es obligatoria y debe ser numérica';
+                }
+                if (empty($datos['fecha_vigencia'])) {
+                    $errores[] = 'La fecha de vigencia es obligatoria';
+                }
+                break;
+                
+            case 7: // Permisos
+                // Log para debugging del caso de permisos
+                error_log("🔍 VALIDACIÓN PERMISOS - Datos recibidos: fecha_permiso=" . 
+                         (isset($datos['fecha_permiso']) ? var_export($datos['fecha_permiso'], true) : 'NO EXISTE') . 
+                         ", empty()=" . (empty($datos['fecha_permiso']) ? 'TRUE' : 'FALSE'));
+                
+                if (empty($datos['fecha_permiso'])) {
+                    $errores[] = 'La fecha del permiso es obligatoria';
+                } else {
+                    // Validar formato de fecha
+                    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datos['fecha_permiso'])) {
+                        $errores[] = 'La fecha del permiso debe tener formato válido (YYYY-MM-DD)';
+                    } else {
+                        // Validar que sea una fecha válida
+                        $fechaPartes = explode('-', $datos['fecha_permiso']);
+                        if (count($fechaPartes) === 3) {
+                            $year = (int)$fechaPartes[0];
+                            $month = (int)$fechaPartes[1];
+                            $day = (int)$fechaPartes[2];
+                            if (!checkdate($month, $day, $year)) {
+                                $errores[] = 'La fecha del permiso no es válida';
+                            }
+                        }
+                    }
+                }
+                break;
+                
+            case 8: // Cortes
+                if (empty($datos['cantidad_cortes']) || !is_numeric($datos['cantidad_cortes'])) {
+                    $errores[] = 'La cantidad de cortes es obligatoria y debe ser numérica';
+                }
+                if (empty($datos['fecha_vigencia'])) {
+                    $errores[] = 'La fecha de vigencia es obligatoria';
+                }
+                break;
+        }
+
         return $errores;
+    }
+
+    /**
+     * Formatear fecha para SQL Server
+     * Convierte fecha HTML (YYYY-MM-DD) a formato compatible con SQL Server
+     * Retorna NULL si la fecha está vacía o es inválida
+     */
+    private function formatearFecha($fecha) {
+        // Si la fecha está vacía o es null, retornar null
+        if (empty($fecha) || $fecha === null) {
+            return null;
+        }
+
+        // Si ya es null, retornarlo
+        if ($fecha === null) {
+            return null;
+        }
+
+        // Validar formato YYYY-MM-DD
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            return null;
+        }
+
+        // Validar que la fecha sea válida
+        $fechaPartes = explode('-', $fecha);
+        if (count($fechaPartes) !== 3) {
+            return null;
+        }
+
+        $year = (int)$fechaPartes[0];
+        $month = (int)$fechaPartes[1];
+        $day = (int)$fechaPartes[2];
+
+        if (!checkdate($month, $day, $year)) {
+            return null;
+        }
+
+        // Retornar en formato ISO que SQL Server acepta
+        return $fecha . ' 00:00:00';
     }
 }
 ?>

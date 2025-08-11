@@ -4,6 +4,10 @@
  * /novedades/controller/novedades_controller.php
  */
 
+// Suprimir warnings que puedan interferir con JSON
+error_reporting(E_ERROR | E_PARSE);
+ini_set('display_errors', 0);
+
 // Configurar headers para CORS y JSON
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -20,6 +24,11 @@ require_once '../class/Novedades.php';
 
 // Función para enviar respuesta JSON
 function sendResponse($success, $data = null, $message = '') {
+    // Limpiar cualquier output previo que pueda interferir con JSON
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    
     echo json_encode([
         'success' => $success,
         'data' => $data,
@@ -53,6 +62,15 @@ try {
                 sendResponse(true, $sucursales);
             } catch (Exception $e) {
                 handleError('Error obteniendo sucursales', $e);
+            }
+            break;
+
+        case 'get_sucursales_con_casa_central':
+            try {
+                $sucursales = $novedades->getSucursalesConCasaCentral();
+                sendResponse(true, $sucursales);
+            } catch (Exception $e) {
+                handleError('Error obteniendo sucursales con casa central', $e);
             }
             break;
 
@@ -119,6 +137,12 @@ try {
                 // Log para debugging
                 error_log("Datos recibidos: " . print_r($datos, true));
                 
+                // Log específico para permisos
+                if (isset($datos['tipo_novedad']) && $datos['tipo_novedad'] == 7) {
+                    error_log("🔍 CONTROLADOR PERMISOS - fecha_permiso: " . 
+                             (isset($datos['fecha_permiso']) ? var_export($datos['fecha_permiso'], true) : 'NO EXISTE'));
+                }
+                
                 // Validar datos
                 $errores = $novedades->validarDatos($datos);
                 if (!empty($errores)) {
@@ -153,12 +177,13 @@ try {
             break;
 
         case 'get_novedad':
-            if (empty($_GET['id'])) {
-                handleError('ID de novedad requerido');
+            if (empty($_GET['id']) || !is_numeric($_GET['id'])) {
+                handleError('ID de novedad requerido y debe ser numérico');
             }
             
             try {
-                $novedad = $novedades->getNovedadById($_GET['id']);
+                $id = (int)$_GET['id'];
+                $novedad = $novedades->getNovedadById($id);
                 if (!$novedad) {
                     handleError('Novedad no encontrada');
                 }
@@ -166,6 +191,15 @@ try {
             } catch (Exception $e) {
                 handleError('Error obteniendo novedad', $e);
             }
+            break;
+
+        case 'test':
+            sendResponse(true, [
+                'message' => 'Endpoint funcionando correctamente',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'php_version' => phpversion(),
+                'correcciones' => 'aplicadas'
+            ]);
             break;
 
         case 'get_periodo_actual':

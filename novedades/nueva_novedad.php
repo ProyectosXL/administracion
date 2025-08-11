@@ -596,10 +596,56 @@
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- JavaScript personalizado -->
-    <script src="js/novedades_main.js"></script>
-    <script src="js/nueva_novedad_form.js"></script>
+    <script src="js/novedades_main.js?v=<?php echo time(); ?>"></script>
+    <script src="js/nueva_novedad_form.js?v=<?php echo time(); ?>"></script>
 
     <script>
+        // Manejar errores no capturados (especialmente de extensiones del navegador)
+        window.addEventListener('error', function(event) {
+            // Filtrar errores conocidos de extensiones que no afectan la funcionalidad
+            const mensaje = event.message || '';
+            if (mensaje.includes('Could not establish connection') || 
+                mensaje.includes('Receiving end does not exist') ||
+                mensaje.includes('Extension context invalidated')) {
+                // Estos son errores de extensiones del navegador, no los mostramos al usuario
+                console.warn('🔔 Error de extensión del navegador ignorado:', mensaje);
+                event.preventDefault();
+                return false;
+            }
+        });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            // Manejar promesas rechazadas no capturadas
+            const razon = event.reason || '';
+            if (typeof razon === 'string' && (razon.includes('Could not establish connection') || 
+                razon.includes('Receiving end does not exist'))) {
+                console.warn('🔔 Promise rejechada por extensión del navegador ignorada:', razon);
+                event.preventDefault();
+                return false;
+            }
+        });
+        
+        // Función helper para acceso seguro a NovedadesApp
+        function getNovedadesApp() {
+            // Priorizar NovedadesApp global
+            if (typeof NovedadesApp !== 'undefined') {
+                return NovedadesApp;
+            }
+            
+            // Fallback a window.NovedadesApp
+            if (typeof window.NovedadesApp !== 'undefined') {
+                return window.NovedadesApp;
+            }
+            
+            // Si no existe ninguno, crear uno básico
+            console.warn('⚠️ NovedadesApp no está disponible, creando instancia mínima');
+            window.NovedadesApp = {
+                empleadoSeleccionado: null
+            };
+            
+            return window.NovedadesApp;
+        }
+        
         // Inicializar Select2 para búsqueda de empleados
         $(document).ready(function() {
             // Configurar Select2 para empleados
@@ -641,57 +687,71 @@
                 }
             });
 
-            // Cuando se selecciona un empleado del Select2 - CON DEBUGGING MEJORADO
+            // Cuando se selecciona un empleado del Select2 - CON MANEJO ROBUSTO DE ERRORES
             $('#empleado-select').on('select2:select', function (e) {
-                var data = e.params.data;
-                console.log('🎯 Select2 seleccionado - datos completos:', data);
-                
-                if (data) {
-                    // Completar campos automáticamente
-                    $('#legajo').val(data.legajo || data.id);
+                try {
+                    var data = e.params.data;
+                    console.log('🎯 Select2 seleccionado - datos completos:', data);
                     
-                    // Remover clases de error
-                    $('#legajo').removeClass('is-invalid').addClass('is-valid');
-                    $(this).removeClass('is-invalid').addClass('is-valid');
-                    
-                    // Asegurar que NovedadesApp existe
-                    if (typeof NovedadesApp === 'undefined') {
-                        console.error('❌ NovedadesApp no está disponible!');
-                        window.NovedadesApp = {};
-                    }
-                    
-                    // Guardar empleado seleccionado (incluyendo nombre y apellido para el backend)
-                    const empleadoData = {
-                        legajo: data.legajo || data.id,
-                        nombre: data.nombre || '',
-                        apellido: data.apellido || ''
-                    };
-                    
-                    // Si nombre/apellido no vienen en el data, extraer del text
-                    if (!empleadoData.nombre || !empleadoData.apellido) {
-                        const textoParts = data.text.match(/^(.+?)\s+(.+?)\s*\((\d+)\)$/);
-                        if (textoParts) {
-                            empleadoData.nombre = textoParts[1].trim();
-                            empleadoData.apellido = textoParts[2].trim();
+                    if (data) {
+                        // Completar campos automáticamente
+                        $('#legajo').val(data.legajo || data.id);
+                        
+                        // Remover clases de error
+                        $('#legajo').removeClass('is-invalid').addClass('is-valid');
+                        $(this).removeClass('is-invalid').addClass('is-valid');
+                        
+                        // Obtener NovedadesApp de forma segura
+                        const app = getNovedadesApp();
+                        
+                        // Guardar empleado seleccionado (incluyendo nombre y apellido para el backend)
+                        const empleadoData = {
+                            legajo: data.legajo || data.id,
+                            nombre: data.nombre || '',
+                            apellido: data.apellido || ''
+                        };
+                        
+                        // Si nombre/apellido no vienen en el data, extraer del text
+                        if (!empleadoData.nombre || !empleadoData.apellido) {
+                            const textoParts = data.text.match(/^(.+?)\s+(.+?)\s*\((\d+)\)$/);
+                            if (textoParts) {
+                                empleadoData.nombre = textoParts[1].trim();
+                                empleadoData.apellido = textoParts[2].trim();
+                            }
+                        }
+                        
+                        // Guardar empleado en la app
+                        app.empleadoSeleccionado = empleadoData;
+                        
+                        console.log('✅ Empleado guardado en NovedadesApp:', empleadoData);
+                        // Verificación segura para el log final
+                        if (app && app.empleadoSeleccionado) {
+                            console.log('🔗 NovedadesApp.empleadoSeleccionado:', app.empleadoSeleccionado);
                         }
                     }
-                    
-                    NovedadesApp.empleadoSeleccionado = empleadoData;
-                    
-                    console.log('✅ Empleado guardado en NovedadesApp:', empleadoData);
-                    console.log('🔗 NovedadesApp.empleadoSeleccionado:', window.NovedadesApp.empleadoSeleccionado);
+                } catch (error) {
+                    console.error('❌ Error en select2:select:', error);
+                    // No relanzar el error para evitar que interrumpa el flujo
                 }
             });
 
             // Cuando se limpia el Select2
             $('#empleado-select').on('select2:clear', function (e) {
-                $('#legajo').val('');
-                
-                $('#legajo').removeClass('is-valid is-invalid');
-                $(this).removeClass('is-valid is-invalid');
-                
-                if (typeof NovedadesApp !== 'undefined') {
-                    NovedadesApp.empleadoSeleccionado = null;
+                try {
+                    $('#legajo').val('');
+                    
+                    $('#legajo').removeClass('is-valid is-invalid');
+                    $(this).removeClass('is-valid is-invalid');
+                    
+                    // Limpiar empleado seleccionado usando función helper
+                    const app = getNovedadesApp();
+                    if (app && app.hasOwnProperty('empleadoSeleccionado')) {
+                        app.empleadoSeleccionado = null;
+                        console.log('🧹 Empleado limpiado de NovedadesApp');
+                    }
+                } catch (error) {
+                    console.error('❌ Error en select2:clear:', error);
+                    // No relanzar el error para evitar que interrumpa el flujo
                 }
             });
 
@@ -732,8 +792,13 @@
                 });
                 
                 // Limpiar empleado seleccionado
-                if (typeof NovedadesApp !== 'undefined') {
-                    NovedadesApp.empleadoSeleccionado = null;
+                try {
+                    const app = getNovedadesApp();
+                    if (app && app.hasOwnProperty('empleadoSeleccionado')) {
+                        app.empleadoSeleccionado = null;
+                    }
+                } catch (error) {
+                    console.error('Error limpiando empleado:', error);
                 }
             }
             
@@ -775,8 +840,13 @@
                 });
                 
                 // Limpiar empleado seleccionado
-                if (typeof NovedadesApp !== 'undefined') {
-                    NovedadesApp.empleadoSeleccionado = null;
+                try {
+                    const app = getNovedadesApp();
+                    if (app && app.hasOwnProperty('empleadoSeleccionado')) {
+                        app.empleadoSeleccionado = null;
+                    }
+                } catch (error) {
+                    console.error('Error limpiando empleado:', error);
                 }
             }
         }

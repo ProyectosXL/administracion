@@ -211,7 +211,7 @@
                                 <th>Empleado</th>
                                 <th>Sucursal</th>
                                 <th>Tipo de Novedad</th>
-                                <th>Fecha Vigencia</th>
+                                <th>Vigencia</th>
                                 <th>Valor</th>
                                 <th>Fecha Registro</th>
                                 <th>Estado</th>
@@ -301,10 +301,10 @@
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- JavaScript personalizado -->
-    <script src="js/novedades_main.js"></script>
-    <script src="js/consultar_novedades.js"></script>
-    <script src="js/manual.js"></script>
-    <script src="js/modal_fix.js"></script>
+    <script src="js/novedades_main.js?v=<?php echo time(); ?>"></script>
+    <script src="js/consultar_novedades.js?v=<?php echo time(); ?>"></script>
+    <script src="js/manual.js?v=<?php echo time(); ?>"></script>
+    <script src="js/modal_fix.js?v=<?php echo time(); ?>"></script>
 
     <!-- Manual de Usuario Modal -->
     <?php include 'components/manual_modal.php'; ?>

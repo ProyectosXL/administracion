@@ -190,10 +190,10 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <!-- JavaScript personalizado -->
-    <script src="js/novedades_main.js"></script>
-    <script src="js/dashboard_index.js"></script>
-    <script src="js/manual.js"></script>
-    <script src="js/modal_fix.js"></script>
+    <script src="js/novedades_main.js?v=<?php echo time(); ?>"></script>
+    <script src="js/dashboard_index.js?v=<?php echo time(); ?>"></script>
+    <script src="js/manual.js?v=<?php echo time(); ?>"></script>
+    <script src="js/modal_fix.js?v=<?php echo time(); ?>"></script>
 
     <!-- Manual de Usuario Modal -->
     <?php include 'components/manual_modal.php'; ?>

@@ -150,8 +150,20 @@ const NovedadesApp = {
      */
     formatearFecha(fecha) {
         if (!fecha) return '';
-        const date = new Date(fecha);
-        return date.toLocaleDateString('es-AR');
+        // Aceptar formatos: 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS'
+        let normalizada = fecha;
+        if (typeof fecha === 'string') {
+            // Quitar fracciones y Z si vienen
+            normalizada = fecha.replace('T', ' ').replace(/\.\d+Z?$/, '');
+            // Si solo viene fecha agregar hora para evitar desfase por timezone
+            if (/^\d{4}-\d{2}-\d{2}$/.test(normalizada)) {
+                normalizada += ' 00:00:00';
+            }
+        }
+        const ts = Date.parse(normalizada);
+        if (isNaN(ts)) return 'Fecha inválida';
+        const d = new Date(ts);
+        return d.toLocaleDateString('es-AR');
     },
 
     /**
@@ -163,17 +175,33 @@ const NovedadesApp = {
         switch (contexto) {
             case 'moneda':
                 return new Intl.NumberFormat('es-AR', {
-                    style: 'currency',
-                    currency: 'ARS'
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
                 }).format(valor);
             case 'horas':
                 return `${valor} hs`;
             case 'unidades':
                 return `${valor} unidades`;
+            case 'cortes':
+                return `${valor} cortes`;
             case 'numero':
                 return valor.toString();
             default:
                 return valor.toString();
+        }
+    },
+
+    contextoDesdeTipo(tipo) {
+        switch (tipo) {
+            case 3: return 'moneda';
+            case 4: return 'moneda';
+            case 5: return 'horas';
+            case 6: return 'horas';
+            case 8: return 'cortes';
+            case 9: return 'unidades';
+            case 10: return 'unidades';
+            case 11: return 'unidades';
+            default: return 'numero';
         }
     },
 
@@ -292,8 +320,8 @@ async function probarSistema() {
 }
 async function cargarDatosIniciales() {
     try {
-        // Cargar sucursales
-        const sucursales = await NovedadesApp.request('get_sucursales');
+        // Cargar sucursales con Casa Central
+        const sucursales = await NovedadesApp.request('get_sucursales_con_casa_central');
         const selectSucursales = document.querySelectorAll('select[name="sucursal"], #filtro-sucursal');
         
         selectSucursales.forEach(select => {

@@ -208,6 +208,17 @@ async function enviarFormulario(event) {
     try {
         // Enviar datos al servidor
         console.log('📤 Enviando datos al servidor...');
+        
+        // Log específico para permisos
+        if (tipoNovedad === 7) {
+            console.log('🔍 DATOS PERMISOS ANTES DEL ENVÍO:', {
+                tipo_novedad: datos.tipo_novedad,
+                fecha_permiso: datos.fecha_permiso,
+                compensa: datos.compensa,
+                datos_completos: datos
+            });
+        }
+        
         await NovedadesApp.request('crear_novedad', datos, 'POST');
         
         // Mostrar modal de confirmación
@@ -305,12 +316,23 @@ function validarConfiguracionTipo(tipoNovedad) {
     // Validar campos requeridos
     config.campos.forEach(campoId => {
         const campo = document.getElementById(campoId);
-        if (campo && !campo.value.trim()) {
-            campo.classList.add('is-invalid');
-            valido = false;
-        } else if (campo) {
-            campo.classList.remove('is-invalid');
-            campo.classList.add('is-valid');
+        if (campo) {
+            let estaVacio = false;
+            
+            // Verificar si el campo está vacío según su tipo
+            if (campo.type === 'date') {
+                estaVacio = !campo.value || campo.value === '';
+            } else {
+                estaVacio = !campo.value.trim();
+            }
+            
+            if (estaVacio) {
+                campo.classList.add('is-invalid');
+                valido = false;
+            } else {
+                campo.classList.remove('is-invalid');
+                campo.classList.add('is-valid');
+            }
         }
     });
 
@@ -345,15 +367,40 @@ function validarConfiguracionTipo(tipoNovedad) {
             break;
 
         case 7: // Permisos
-            const fechaPermiso = new Date(document.getElementById('fecha_permiso').value);
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
+            console.log('🔍 Iniciando validación de PERMISOS...');
+            const fechaPermisoValue = document.getElementById('fecha_permiso').value;
+            const compensaValue = document.getElementById('compensa').value;
             
-            if (fechaPermiso > hoy) {
-                errores.push('La fecha del permiso no puede ser futura');
+            console.log('🔍 Valores obtenidos:', {
+                fecha_permiso: fechaPermisoValue,
+                compensa: compensaValue
+            });
+            
+            // Solo validar que la fecha esté presente - SIN RESTRICCIONES DE FECHA FUTURA
+            if (!fechaPermisoValue) {
+                console.log('❌ Fecha de permiso vacía');
+                errores.push('La fecha del permiso es obligatoria');
                 document.getElementById('fecha_permiso').classList.add('is-invalid');
                 valido = false;
+            } else {
+                console.log('✅ Fecha de permiso presente:', fechaPermisoValue);
+                document.getElementById('fecha_permiso').classList.remove('is-invalid');
+                document.getElementById('fecha_permiso').classList.add('is-valid');
             }
+            
+            // Validar compensa
+            if (!compensaValue) {
+                console.log('❌ Campo compensa vacío');
+                errores.push('Debe indicar si compensa o no');
+                document.getElementById('compensa').classList.add('is-invalid');
+                valido = false;
+            } else {
+                console.log('✅ Campo compensa presente:', compensaValue);
+                document.getElementById('compensa').classList.remove('is-invalid');
+                document.getElementById('compensa').classList.add('is-valid');
+            }
+            
+            console.log('🔍 Fin validación PERMISOS - válido:', valido);
             break;
 
         case 8: // Cortes
@@ -482,8 +529,20 @@ async function recopilarDatosFormulario(tipoNovedad) {
             break;
 
         case 7: // Permisos
-            datos.fecha_permiso = document.getElementById('fecha_permiso').value;
-            datos.compensa = document.getElementById('compensa').value === '1';
+            const fechaPermisoElement = document.getElementById('fecha_permiso');
+            const compensaElement = document.getElementById('compensa');
+            
+            datos.fecha_permiso = fechaPermisoElement ? fechaPermisoElement.value : '';
+            datos.compensa = compensaElement ? compensaElement.value === '1' : false;
+            
+            console.log('🔍 PERMISOS - Datos recopilados:', {
+                fecha_permiso: datos.fecha_permiso,
+                compensa: datos.compensa,
+                elemento_fecha_exists: !!fechaPermisoElement,
+                elemento_compensa_exists: !!compensaElement,
+                fecha_elemento_value: fechaPermisoElement ? fechaPermisoElement.value : 'NO EXISTE',
+                compensa_elemento_value: compensaElement ? compensaElement.value : 'NO EXISTE'
+            });
             break;
 
         case 8: // Cortes
@@ -515,7 +574,7 @@ async function recopilarDatosFormulario(tipoNovedad) {
  */
 async function cargarSucursales() {
     try {
-        const sucursales = await NovedadesApp.request('get_sucursales');
+        const sucursales = await NovedadesApp.request('get_sucursales_con_casa_central');
         
         // Cargar en select principal
         const selectSucursal = document.getElementById('sucursal');
@@ -535,7 +594,7 @@ async function cargarSucursales() {
             });
         }
 
-        console.log('Sucursales cargadas:', sucursales.length);
+        console.log('Sucursales cargadas (incluyendo Casa Central):', sucursales.length);
 
     } catch (error) {
         console.error('Error cargando sucursales:', error);

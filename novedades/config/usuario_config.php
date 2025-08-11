@@ -9,7 +9,7 @@
 // 2 = Comercial (ve solo tipos comerciales)  
 // 3 = Producción (ve solo tipos de producción)
 
-$TIPO_USUARIO_ACTUAL = 3; // ← CAMBIAR AQUÍ
+$TIPO_USUARIO_ACTUAL = 1; // ← CAMBIAR AQUÍ
 
 // Configurar en la clase Usuario
 require_once __DIR__ . '/../class/Usuario.php';
