@@ -76,6 +76,51 @@ function mostrarUltimasNovedades(novedades) {
         const fechaCreacion = NovedadesApp.formatearFecha(novedad.fecha_creacion);
         const estadoBadge = getEstadoBadge(novedad);
         
+        // Obtener información específica según tipo de novedad
+        let tipoDetalle = '';
+        const tipo = parseInt(novedad.tipo_novedad);
+        
+        switch(tipo) {
+            case 1: // Cambio de sucursal
+                // Extraer nueva sucursal de las observaciones
+                if (novedad.observaciones) {
+                    let match = novedad.observaciones.match(/Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/);
+                    if (match) {
+                        tipoDetalle = `<br><small class="text-info">→ ${match[1].trim()}</small>`;
+                    } else {
+                        match = novedad.observaciones.match(/Nueva sucursal:\s*([^-<\n]+)/);
+                        if (match) {
+                            tipoDetalle = `<br><small class="text-info">→ ${match[1].trim()}</small>`;
+                        }
+                    }
+                }
+                break;
+                
+            case 2: // Cambio de puesto
+                // Extraer nuevo puesto de las observaciones
+                if (novedad.observaciones) {
+                    let match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
+                    if (match) {
+                        tipoDetalle = `<br><small class="text-success">→ ${match[1].trim()}</small>`;
+                    } else {
+                        match = novedad.observaciones.match(/Nuevo puesto:\s*([^-<\n]+)/);
+                        if (match) {
+                            tipoDetalle = `<br><small class="text-success">→ ${match[1].trim()}</small>`;
+                        }
+                    }
+                }
+                break;
+                
+            case 3: case 4: // Nuevo salario / Ajuste premios
+                if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0) {
+                    const valor = NovedadesApp.formatearValor ? 
+                        NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : 
+                        `$${parseFloat(novedad.valor_numerico).toLocaleString()}`;
+                    tipoDetalle = `<br><small class="text-warning">${valor}</small>`;
+                }
+                break;
+        }
+        
         html += `
             <tr class="novedad-row" data-id="${novedad.id}">
                 <td>
@@ -83,7 +128,7 @@ function mostrarUltimasNovedades(novedades) {
                     <small class="text-muted">Legajo: ${novedad.legajo}</small>
                 </td>
                 <td>
-                    <span class="badge bg-primary">${novedad.tipo_descripcion}</span>
+                    <span class="badge bg-primary">${novedad.tipo_descripcion}</span>${tipoDetalle}
                 </td>
                 <td>${novedad.nombre_sucursal || novedad.sucursal}</td>
                 <td>

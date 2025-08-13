@@ -183,19 +183,21 @@ class Novedades {
     public function getTiposNovedad() {
         $tipoUsuario = Usuario::getTipoUsuario();
         
-        // Construir la condición WHERE según el tipo de usuario
-        $campoPermiso = '';
-        switch($tipoUsuario) {
-            case 1: $campoPermiso = 'user_adm'; break;
-            case 2: $campoPermiso = 'user_com'; break; 
-            case 3: $campoPermiso = 'user_prod'; break;
-            default: $campoPermiso = 'user_adm'; break;
+        // Si es usuario RRHH, obtiene TODOS los tipos activos
+        if ($tipoUsuario == Usuario::TIPO_RRHH) {
+            $sql = "SELECT id, codigo, descripcion 
+                    FROM tipos_novedad 
+                    WHERE activo = 1 
+                    ORDER BY id";
+        } else {
+            // Para otros tipos de usuario, aplicar filtros dinámicamente
+            $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
+            
+            $sql = "SELECT id, codigo, descripcion 
+                    FROM tipos_novedad 
+                    WHERE activo = 1 AND $campoPermiso = 1 
+                    ORDER BY id";
         }
-        
-        $sql = "SELECT id, codigo, descripcion 
-                FROM tipos_novedad 
-                WHERE activo = 1 AND $campoPermiso = 1 
-                ORDER BY id";
         
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
@@ -223,10 +225,14 @@ class Novedades {
                     fecha_creacion DATETIME DEFAULT GETDATE(),
                     user_adm BIT DEFAULT 0,
                     user_com BIT DEFAULT 0,
-                    user_prod BIT DEFAULT 0
+                    user_prod BIT DEFAULT 0,
+                    user_rrhh BIT DEFAULT 1
                 )";
         
         $this->db->query($sql);
+        
+        // Verificar si existe la columna user_rrhh, si no existe, agregarla
+        $this->agregarColumnaUserRRHH();
         
         // Si la tabla está vacía, insertar tipos básicos
         $checkSql = "SELECT COUNT(*) as count FROM tipos_novedad";
@@ -235,6 +241,68 @@ class Novedades {
         
         if ($row['count'] == 0) {
             $this->insertarTiposNovedad();
+        }
+    }
+    
+    /**
+     * Agregar columna user_rrhh si no existe
+     */
+    private function agregarColumnaUserRRHH() {
+        try {
+            // Verificar si la columna ya existe
+            $sql = "SELECT COUNT(*) as existe 
+                    FROM sys.columns 
+                    WHERE object_id = OBJECT_ID('tipos_novedad') 
+                    AND name = 'user_rrhh'";
+            
+            $result = $this->db->query($sql);
+            $row = $result->fetch();
+            
+            // Si no existe la columna, agregarla con valor por defecto 1 (puede ver todos)
+            if ($row['existe'] == 0) {
+                $sql = "ALTER TABLE tipos_novedad ADD user_rrhh BIT DEFAULT 1";
+                $this->db->query($sql);
+                
+                // Actualizar todos los registros existentes para que RRHH pueda verlos
+                $sql = "UPDATE tipos_novedad SET user_rrhh = 1 WHERE user_rrhh IS NULL";
+                $this->db->query($sql);
+                
+                error_log("Columna user_rrhh agregada exitosamente a tipos_novedad");
+            }
+        } catch (Exception $e) {
+            error_log("Error agregando columna user_rrhh: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Método público para actualizar permisos RRHH en todos los tipos existentes
+     * Útil para ejecutar manualmente si es necesario
+     */
+    public function actualizarPermisosRRHH() {
+        try {
+            // Primero verificar/agregar la columna
+            $this->agregarColumnaUserRRHH();
+            
+            // Luego asegurar que todos los tipos tengan permiso para RRHH
+            $sql = "UPDATE tipos_novedad SET user_rrhh = 1 WHERE user_rrhh IS NULL OR user_rrhh = 0";
+            $result = $this->db->query($sql);
+            
+            // Verificar cuántos registros se actualizaron
+            $sql = "SELECT COUNT(*) as total FROM tipos_novedad WHERE user_rrhh = 1";
+            $result = $this->db->query($sql);
+            $row = $result->fetch();
+            
+            return [
+                'success' => true,
+                'message' => 'Permisos RRHH actualizados correctamente',
+                'tipos_con_permiso' => $row['total']
+            ];
+        } catch (Exception $e) {
+            error_log("Error actualizando permisos RRHH: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error actualizando permisos: ' . $e->getMessage()
+            ];
         }
     }
 
@@ -301,22 +369,24 @@ class Novedades {
      */
     private function insertarTiposNovedad() {
         // Tipos con permisos exactos según tu SQL ejecutado
+        // Formato: [codigo, descripcion, user_adm, user_com, user_prod, user_rrhh]
+        // user_rrhh siempre será 1 (puede ver todos los tipos)
         $tipos = [
-            ['CAMBIO_SUCURSAL', 'Cambio de sucursal', 1, 1, 0],
-            ['NUEVO_PUESTO', 'Nuevo puesto', 1, 1, 0],
-            ['NUEVO_SALARIO', 'Nuevo salario neto', 1, 0, 0],
-            ['AJUSTE_PREMIOS', 'Ajuste de premios', 1, 1, 0],
-            ['HORAS_EXTRAS', 'Horas extras', 1, 1, 1],
-            ['HORAS_ADICIONALES', 'Horas adicionales', 1, 1, 1],
-            ['PERMISOS', 'Permisos', 1, 1, 1],
-            ['CORTES', 'Cortes', 1, 1, 1],
-            ['PRODUCCION_25', 'Producción 25%', 0, 0, 1],
-            ['PRODUCCION_50', 'Producción 50%', 0, 0, 1],
-            ['PRODUCCION_100', 'Producción 100%', 0, 0, 1]
+            ['CAMBIO_SUCURSAL', 'Cambio de sucursal', 1, 1, 0, 1],
+            ['NUEVO_PUESTO', 'Nuevo puesto', 1, 1, 0, 1],
+            ['NUEVO_SALARIO', 'Nuevo salario neto', 1, 0, 0, 1],
+            ['AJUSTE_PREMIOS', 'Ajuste de premios', 1, 1, 0, 1],
+            ['HORAS_EXTRAS', 'Horas extras', 1, 1, 1, 1],
+            ['HORAS_ADICIONALES', 'Horas adicionales', 1, 1, 1, 1],
+            ['PERMISOS', 'Permisos', 1, 1, 1, 1],
+            ['CORTES', 'Cortes', 1, 1, 1, 1],
+            ['PRODUCCION_25', 'Producción 25%', 0, 0, 1, 1],
+            ['PRODUCCION_50', 'Producción 50%', 0, 0, 1, 1],
+            ['PRODUCCION_100', 'Producción 100%', 0, 0, 1, 1]
         ];
 
         foreach ($tipos as $tipo) {
-            $sql = "INSERT INTO tipos_novedad (codigo, descripcion, user_adm, user_com, user_prod) VALUES (?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO tipos_novedad (codigo, descripcion, user_adm, user_com, user_prod, user_rrhh) VALUES (?, ?, ?, ?, ?, ?)";
             $this->db->query($sql, $tipo);
         }
     }
@@ -404,14 +474,24 @@ class Novedades {
     private function validarPermisosTipoNovedad($tipoNovedadId) {
         $tipoUsuario = Usuario::getTipoUsuario();
         
-        // Construir el nombre del campo según el tipo de usuario
-        $campoPermiso = '';
-        switch($tipoUsuario) {
-            case 1: $campoPermiso = 'user_adm'; break;
-            case 2: $campoPermiso = 'user_com'; break;
-            case 3: $campoPermiso = 'user_prod'; break;
-            default: throw new Exception("Tipo de usuario no válido");
+        // Si es usuario RRHH, tiene permisos para TODOS los tipos
+        if ($tipoUsuario == Usuario::TIPO_RRHH) {
+            $sql = "SELECT 1 as tiene_permiso, descripcion 
+                    FROM tipos_novedad 
+                    WHERE id = ? AND activo = 1";
+            
+            $stmt = $this->db->query($sql, [$tipoNovedadId]);
+            $result = $stmt->fetch();
+            
+            if (!$result) {
+                throw new Exception("Tipo de novedad no encontrado");
+            }
+            
+            return true;
         }
+        
+        // Para otros tipos de usuario, validar permisos específicos
+        $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
         
         $sql = "SELECT $campoPermiso as tiene_permiso, descripcion 
                 FROM tipos_novedad 
@@ -432,10 +512,32 @@ class Novedades {
     }
 
     /**
+     * Obtener campo de permiso dinámicamente según tipo de usuario
+     */
+    private function getCampoPermisoUsuario($tipoUsuario) {
+        $mapeoPermisos = [
+            Usuario::TIPO_ADMIN => 'user_adm',
+            Usuario::TIPO_COMERCIAL => 'user_com', 
+            Usuario::TIPO_PRODUCCION => 'user_prod',
+            Usuario::TIPO_RRHH => 'user_rrhh'
+        ];
+        
+        if (!isset($mapeoPermisos[$tipoUsuario])) {
+            throw new Exception("Tipo de usuario no válido: $tipoUsuario");
+        }
+        
+        return $mapeoPermisos[$tipoUsuario];
+    }
+
+    /**
      * Adaptar datos según tipo de novedad a estructura real de tabla
      */
     private function adaptarDatosParaInsercion($datos) {
         $tipoNovedad = (int)$datos['tipo_novedad'];
+        
+        // Limpiar observaciones existentes de datos específicos para evitar duplicación
+        $observacionesBase = isset($datos['observaciones']) ? $datos['observaciones'] : '';
+        $observacionesLimpias = $this->limpiarObservacionesEspecificas($observacionesBase, $tipoNovedad);
         
         $datosAdaptados = [
             'legajo' => $datos['legajo'],
@@ -443,7 +545,7 @@ class Novedades {
             'apellido' => $datos['apellido'],
             'sucursal' => $datos['sucursal'],
             'tipo_novedad' => $tipoNovedad,
-            'observaciones' => isset($datos['observaciones']) ? $datos['observaciones'] : '',
+            'observaciones' => $observacionesLimpias,
             'fecha_vigencia' => null,
             'puesto' => '',
             'valor_numerico' => null,
@@ -561,6 +663,65 @@ class Novedades {
     }
 
     /**
+     * Limpiar observaciones de datos específicos para evitar duplicación al editar
+     */
+    private function limpiarObservacionesEspecificas($observaciones, $tipoNovedad) {
+        if (empty($observaciones)) {
+            return '';
+        }
+
+        // Limpiar etiquetas HTML si las hay
+        $observacionesLimpias = strip_tags($observaciones);
+
+        switch ($tipoNovedad) {
+            case 1: // Cambio de sucursal
+                // Remover cualquier mención de "Nueva sucursal:"
+                $observacionesLimpias = preg_replace('/ - Nueva sucursal: [^-]*/', '', $observacionesLimpias);
+                break;
+
+            case 2: // Nuevo puesto
+                // Remover cualquier mención de "Nuevo puesto:"
+                $observacionesLimpias = preg_replace('/ - Nuevo puesto: [^-]*/', '', $observacionesLimpias);
+                break;
+
+            case 5: // Horas extras
+                // Remover cualquier mención de horas extras
+                $observacionesLimpias = preg_replace('/ - \d+ horas extras/', '', $observacionesLimpias);
+                break;
+
+            case 6: // Horas adicionales
+                // Remover cualquier mención de horas adicionales
+                $observacionesLimpias = preg_replace('/ - \d+ horas adicionales/', '', $observacionesLimpias);
+                break;
+
+            case 8: // Cortes
+                // Remover cualquier mención de cortes
+                $observacionesLimpias = preg_replace('/ - \d+ cortes/', '', $observacionesLimpias);
+                break;
+
+            case 9: // Producción 25%
+                // Remover cualquier mención de unidades 25%
+                $observacionesLimpias = preg_replace('/ - \d+ unidades \(25%\)/', '', $observacionesLimpias);
+                break;
+
+            case 10: // Producción 50%
+                // Remover cualquier mención de unidades 50%
+                $observacionesLimpias = preg_replace('/ - \d+ unidades \(50%\)/', '', $observacionesLimpias);
+                break;
+
+            case 11: // Producción 100%
+                // Remover cualquier mención de unidades 100%
+                $observacionesLimpias = preg_replace('/ - \d+ unidades \(100%\)/', '', $observacionesLimpias);
+                break;
+        }
+
+        // Limpiar espacios múltiples y al final
+        $observacionesLimpias = trim(preg_replace('/\s+/', ' ', $observacionesLimpias));
+
+        return $observacionesLimpias;
+    }
+
+    /**
      * Obtener novedades del periodo actual - CON NOMBRES DE SUCURSAL REALES Y FILTRO POR TIPO DE USUARIO
      */
     public function getNovedadesPeriodoActual($filtros = []) {
@@ -568,23 +729,27 @@ class Novedades {
             $periodo = $this->getPeriodoActual();
             $tipoUsuario = Usuario::getTipoUsuario();
             
-            // Determinar campo de permiso según tipo de usuario
-            $campoPermiso = '';
-            switch($tipoUsuario) {
-                case 1: $campoPermiso = 'user_adm'; break;
-                case 2: $campoPermiso = 'user_com'; break; 
-                case 3: $campoPermiso = 'user_prod'; break;
-                default: $campoPermiso = 'user_adm'; break;
+            // Si es usuario RRHH, puede ver todas las novedades
+            if ($tipoUsuario == Usuario::TIPO_RRHH) {
+                $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
+                               rle.NOMBRE, rle.APELLIDO,
+                               n.periodo_mes, n.periodo_anio
+                        FROM novedades n 
+                        INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
+                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        WHERE n.periodo_mes = ? AND n.periodo_anio = ?";
+            } else {
+                // Para otros tipos de usuario, aplicar filtro específico dinámicamente
+                $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
+                
+                $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
+                               rle.NOMBRE, rle.APELLIDO,
+                               n.periodo_mes, n.periodo_anio
+                        FROM novedades n 
+                        INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
+                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        WHERE n.periodo_mes = ? AND n.periodo_anio = ? AND tn.$campoPermiso = 1";
             }
-            
-            // Consulta con filtro por tipo de usuario
-            $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
-                           rle.NOMBRE, rle.APELLIDO,
-                           n.periodo_mes, n.periodo_anio
-                    FROM novedades n 
-                    INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                    LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
-                    WHERE n.periodo_mes = ? AND n.periodo_anio = ? AND tn.$campoPermiso = 1";
             
             $params = [$periodo['periodo_mes'], $periodo['periodo_anio']];
 
@@ -765,21 +930,25 @@ class Novedades {
     public function getNovedadById($id) {
         $tipoUsuario = Usuario::getTipoUsuario();
         
-        // Determinar campo de permiso según tipo de usuario
-        $campoPermiso = '';
-        switch($tipoUsuario) {
-            case 1: $campoPermiso = 'user_adm'; break;
-            case 2: $campoPermiso = 'user_com'; break; 
-            case 3: $campoPermiso = 'user_prod'; break;
-            default: $campoPermiso = 'user_adm'; break;
+        // Si es usuario RRHH, puede ver cualquier novedad
+        if ($tipoUsuario == Usuario::TIPO_RRHH) {
+            $sql = "SELECT n.*, tn.descripcion as tipo_descripcion,
+                           emp.NOMBRE as nombre, emp.APELLIDO as apellido
+                    FROM novedades n 
+                    INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
+                    LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
+                    WHERE n.id = ?";
+        } else {
+            // Para otros tipos de usuario, validar permisos específicos dinámicamente
+            $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
+            
+            $sql = "SELECT n.*, tn.descripcion as tipo_descripcion,
+                           emp.NOMBRE as nombre, emp.APELLIDO as apellido
+                    FROM novedades n 
+                    INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
+                    LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
+                    WHERE n.id = ? AND tn.$campoPermiso = 1";
         }
-        
-        $sql = "SELECT n.*, tn.descripcion as tipo_descripcion,
-                       emp.NOMBRE as nombre, emp.APELLIDO as apellido
-                FROM novedades n 
-                INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
-                WHERE n.id = ? AND tn.$campoPermiso = 1";
 
         $stmt = $this->db->query($sql, [$id]);
         $novedad = $stmt->fetch();
@@ -1107,6 +1276,275 @@ class Novedades {
 
         // Retornar en formato ISO que SQL Server acepta
         return $fecha . ' 00:00:00';
+    }
+
+    /**
+     * Editar una novedad existente
+     */
+    public function editarNovedad($id, $datos) {
+        try {
+            $this->db->beginTransaction();
+
+            // Verificar que la novedad existe y obtener datos actuales
+            $novedadActual = $this->getNovedadById($id);
+            if (!$novedadActual) {
+                throw new Exception('Novedad no encontrada');
+            }
+
+            // Validar permisos si se cambia el tipo de novedad
+            if (isset($datos['tipo_novedad']) && $datos['tipo_novedad'] != $novedadActual['tipo_novedad']) {
+                $this->validarPermisosTipoNovedad($datos['tipo_novedad']);
+            } else {
+                // Validar permisos para el tipo actual
+                $this->validarPermisosTipoNovedad($novedadActual['tipo_novedad']);
+            }
+
+            // Validar datos
+            $errores = $this->validarDatos($datos);
+            if (!empty($errores)) {
+                throw new Exception('Errores de validación: ' . implode(', ', $errores));
+            }
+
+            // Adaptar datos para la actualización
+            $datosAdaptados = $this->adaptarDatosParaInsercion($datos);
+            $periodo = $this->getPeriodoActual();
+
+            // Preparar SQL de actualización
+            $sql = "UPDATE novedades SET 
+                        legajo = ?, nombre = ?, apellido = ?, sucursal = ?, 
+                        fecha_vigencia = ?, puesto = ?, valor_numerico = ?, 
+                        fecha_permiso = ?, compensa = ?, tipo_permiso = ?,
+                        observaciones = ?, tipo_novedad = ?, fecha_modificacion = GETDATE()
+                    WHERE id = ?";
+
+            $params = [
+                $datosAdaptados['legajo'],
+                $datosAdaptados['nombre'],
+                $datosAdaptados['apellido'],
+                $datosAdaptados['sucursal'],
+                $datosAdaptados['fecha_vigencia'],
+                $datosAdaptados['puesto'],
+                $datosAdaptados['valor_numerico'],
+                $datosAdaptados['fecha_permiso'],
+                $datosAdaptados['compensa'],
+                $datosAdaptados['tipo_permiso'],
+                $datosAdaptados['observaciones'],
+                $datosAdaptados['tipo_novedad'],
+                $id
+            ];
+
+            $this->db->query($sql, $params);
+            $this->db->commit();
+            
+            return ['success' => true, 'id' => $id];
+            
+        } catch (Exception $e) {
+            $this->db->rollback();
+            error_log("Error editando novedad ID $id: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Eliminar una novedad
+     */
+    public function eliminarNovedad($id) {
+        try {
+            $this->db->beginTransaction();
+
+            // Verificar que la novedad existe
+            $novedad = $this->getNovedadById($id);
+            if (!$novedad) {
+                throw new Exception('Novedad no encontrada');
+            }
+
+            // Validar permisos para eliminar este tipo de novedad
+            $this->validarPermisosTipoNovedad($novedad['tipo_novedad']);
+
+            // Eliminar la novedad
+            $sql = "DELETE FROM novedades WHERE id = ?";
+            $this->db->query($sql, [$id]);
+
+            $this->db->commit();
+            
+            return ['success' => true];
+            
+        } catch (Exception $e) {
+            $this->db->rollback();
+            error_log("Error eliminando novedad ID $id: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Verificar si el usuario puede editar/eliminar una novedad específica
+     */
+    public function puedeEditarNovedad($novedadId) {
+        try {
+            $novedad = $this->getNovedadById($novedadId);
+            if (!$novedad) {
+                return false;
+            }
+
+            // Validar permisos según el tipo de novedad
+            $this->validarPermisosTipoNovedad($novedad['tipo_novedad']);
+            return true;
+            
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * GESTIÓN DE TIPOS DE NOVEDAD - SOLO PARA RRHH
+     */
+
+    /**
+     * Obtener todos los tipos de novedad para gestión (solo RRHH)
+     */
+    public function getAllTiposNovedadParaGestion() {
+        // Verificar que sea usuario RRHH
+        if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
+            throw new Exception("Acceso denegado. Solo usuarios RRHH pueden gestionar tipos de novedad.");
+        }
+
+        $sql = "SELECT id, codigo, descripcion, activo, fecha_creacion,
+                       user_adm, user_com, user_prod, user_rrhh,
+                       cierre, corte
+                FROM tipos_novedad 
+                ORDER BY id";
+        
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Actualizar permisos de un tipo de novedad (solo RRHH)
+     */
+    public function actualizarTipoNovedad($id, $datos) {
+        // Verificar que sea usuario RRHH
+        if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
+            throw new Exception("Acceso denegado. Solo usuarios RRHH pueden gestionar tipos de novedad.");
+        }
+
+        try {
+            $sql = "UPDATE tipos_novedad SET 
+                    codigo = ?,
+                    descripcion = ?,
+                    activo = ?,
+                    user_adm = ?,
+                    user_com = ?,
+                    user_prod = ?,
+                    user_rrhh = ?,
+                    cierre = ?,
+                    corte = ?
+                    WHERE id = ?";
+            
+            $params = [
+                $datos['codigo'],
+                $datos['descripcion'],
+                $datos['activo'] ? 1 : 0,
+                $datos['user_adm'] ? 1 : 0,
+                $datos['user_com'] ? 1 : 0,
+                $datos['user_prod'] ? 1 : 0,
+                $datos['user_rrhh'] ? 1 : 0,
+                $datos['cierre'] ?? null,
+                $datos['corte'] ?? null,
+                $id
+            ];
+
+            $stmt = $this->db->query($sql, $params);
+            return $stmt->rowCount() > 0;
+
+        } catch (Exception $e) {
+            error_log("Error actualizando tipo de novedad: " . $e->getMessage());
+            throw new Exception("Error al actualizar el tipo de novedad: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Crear nuevo tipo de novedad (solo RRHH)
+     */
+    public function crearTipoNovedad($datos) {
+        // Verificar que sea usuario RRHH
+        if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
+            throw new Exception("Acceso denegado. Solo usuarios RRHH pueden gestionar tipos de novedad.");
+        }
+
+        try {
+            // Verificar que no exista el código
+            $sqlCheck = "SELECT COUNT(*) as count FROM tipos_novedad WHERE codigo = ?";
+            $stmtCheck = $this->db->query($sqlCheck, [$datos['codigo']]);
+            $result = $stmtCheck->fetch();
+            
+            if ($result['count'] > 0) {
+                throw new Exception("Ya existe un tipo de novedad con el código: " . $datos['codigo']);
+            }
+
+            $sql = "INSERT INTO tipos_novedad (codigo, descripcion, activo, user_adm, user_com, user_prod, user_rrhh, cierre, corte) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $params = [
+                $datos['codigo'],
+                $datos['descripcion'],
+                $datos['activo'] ? 1 : 0,
+                $datos['user_adm'] ? 1 : 0,
+                $datos['user_com'] ? 1 : 0,
+                $datos['user_prod'] ? 1 : 0,
+                $datos['user_rrhh'] ? 1 : 0,
+                $datos['cierre'] ?? null,
+                $datos['corte'] ?? null
+            ];
+
+            // Usar el método insert que maneja SCOPE_IDENTITY() correctamente
+            $nuevoId = $this->db->insert($sql, $params);
+            return $nuevoId;
+
+        } catch (Exception $e) {
+            error_log("Error creando tipo de novedad: " . $e->getMessage());
+            throw new Exception("Error al crear el tipo de novedad: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Eliminar tipo de novedad (solo RRHH) - Solo si no hay novedades asociadas
+     */
+    public function eliminarTipoNovedad($id) {
+        // Verificar que sea usuario RRHH
+        if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
+            throw new Exception("Acceso denegado. Solo usuarios RRHH pueden gestionar tipos de novedad.");
+        }
+
+        try {
+            // Verificar que no tenga novedades asociadas
+            $sqlCheck = "SELECT COUNT(*) as count FROM novedades WHERE tipo_novedad = ?";
+            $stmtCheck = $this->db->query($sqlCheck, [$id]);
+            $result = $stmtCheck->fetch();
+            
+            if ($result['count'] > 0) {
+                throw new Exception("No se puede eliminar el tipo de novedad porque tiene novedades asociadas.");
+            }
+
+            $sql = "DELETE FROM tipos_novedad WHERE id = ?";
+            $stmt = $this->db->query($sql, [$id]);
+            return $stmt->rowCount() > 0;
+
+        } catch (Exception $e) {
+            error_log("Error eliminando tipo de novedad: " . $e->getMessage());
+            throw new Exception("Error al eliminar el tipo de novedad: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener tipos de usuario disponibles
+     */
+    public function getTiposUsuarioDisponibles() {
+        return [
+            'user_adm' => 'Administrador',
+            'user_com' => 'Comercial', 
+            'user_prod' => 'Producción',
+            'user_rrhh' => 'RRHH'
+        ];
     }
 }
 ?>

@@ -435,17 +435,6 @@
 
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cerrar
-                </button>
-                <a href="documentacion/Manual_Usuario.html" target="_blank" class="btn btn-info">
-                    <i class="fas fa-external-link-alt me-2"></i>Manual Completo
-                </a>
-                <button type="button" class="btn btn-primary" onclick="imprimirManual()">
-                    <i class="fas fa-print me-2"></i>Imprimir Manual
-                </button>
-            </div>
         </div>
     </div>
 </div>
@@ -503,26 +492,8 @@
     opacity: 0.5;
 }
 
-/* Asegurar que el modal-footer se muestre SIEMPRE */
-#manualModal .modal-footer {
-    display: flex !important;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0.75rem;
-    border-top: 1px solid #dee2e6;
-    border-bottom-right-radius: calc(0.375rem - 1px);
-    border-bottom-left-radius: calc(0.375rem - 1px);
-    visibility: visible !important;
-}
-
-#manualModal .modal-footer .btn {
-    display: inline-block !important;
-    visibility: visible !important;
-}
-
 @media print {
-    .modal-header, .modal-footer {
+    .modal-header {
         display: none !important;
     }
     

@@ -208,13 +208,54 @@
                     <table class="table table-hover mb-0" id="tabla-novedades">
                         <thead class="table-light">
                             <tr>
-                                <th>Empleado</th>
-                                <th>Sucursal</th>
-                                <th>Tipo de Novedad</th>
-                                <th>Vigencia</th>
-                                <th>Valor</th>
-                                <th>Fecha Registro</th>
-                                <th>Estado</th>
+                                <th class="sortable" data-column="empleado" style="cursor: pointer;">
+                                    Empleado 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-column="sucursal" style="cursor: pointer;">
+                                    Sucursal 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-column="tipo" style="cursor: pointer;">
+                                    Tipo de Novedad 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-column="periodo" style="cursor: pointer;">
+                                    Período 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-column="vigencia" style="cursor: pointer;">
+                                    Vigencia 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-column="valor" style="cursor: pointer;">
+                                    Valor 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-column="fecha_registro" style="cursor: pointer;">
+                                    Fecha Registro 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-column="estado" style="cursor: pointer;">
+                                    Estado 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>

@@ -224,3 +224,48 @@ body {
         transform: translateY(0); 
     }
 }
+
+/* Estilos para ordenamiento de tabla */
+.sortable {
+    user-select: none;
+    transition: background-color 0.2s ease;
+    position: relative;
+}
+
+.sortable:hover {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+.sort-arrow {
+    margin-left: 5px;
+    display: inline-block;
+}
+
+.sortable[data-sort="asc"] .sort-arrow i::before {
+    content: "\f0de"; /* fa-sort-up */
+    color: var(--primary-color) !important;
+}
+
+.sortable[data-sort="desc"] .sort-arrow i::before {
+    content: "\f0dd"; /* fa-sort-down */
+    color: var(--primary-color) !important;
+}
+
+.sortable.sorted {
+    background-color: rgba(0, 123, 255, 0.05) !important;
+}
+
+.table-hover tbody tr:hover td {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Estilos específicos para columnas */
+.tabla-periodo {
+    min-width: 80px;
+    text-align: center;
+}
+
+.badge-periodo {
+    font-size: 0.75em;
+    min-width: 60px;
+}

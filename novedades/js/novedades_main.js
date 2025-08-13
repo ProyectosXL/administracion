@@ -30,7 +30,7 @@ const NovedadesApp = {
         console.log(`🚀 Iniciando petición: ${action}`, { method, data });
         
         try {
-            let url = `${this.baseUrl}?action=${action}`;
+            let url = `${this.baseUrl}?action=${action}&debug=1`;
             let options = {
                 method: method,
                 headers: {
@@ -56,7 +56,17 @@ const NovedadesApp = {
                 throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
             }
 
-            const result = await response.json();
+            const responseText = await response.text();
+            console.log(`📄 Texto de respuesta:`, responseText.substring(0, 200) + '...');
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('❌ Error parseando JSON:', parseError);
+                console.error('📄 Texto completo de respuesta:', responseText);
+                throw new Error(`Error parseando JSON: ${parseError.message}. Respuesta: ${responseText.substring(0, 200)}...`);
+            }
             
             const duration = Date.now() - startTime;
             console.log(`✅ Petición completada en ${duration}ms:`, result);

@@ -10,6 +10,12 @@ let vistaActual = 'tabla';
 let paginaActual = 1;
 const elementosPorPagina = 10;
 
+// Variables para ordenamiento
+let ordenActual = {
+    columna: null,
+    direccion: 'asc'
+};
+
 /**
  * Cargar todas las novedades
  */
@@ -106,7 +112,9 @@ function aplicarFiltros() {
         legajo: $('#filtro-legajo').val() || '', 
         sucursal: document.getElementById('filtro-sucursal').value,
         tipo: document.getElementById('filtro-tipo').value,
-        empleado: $('#filtro-empleado').val() || '' 
+        empleado: $('#filtro-empleado').val() || '',
+        fechaDesde: document.getElementById('fecha-desde').value,
+        fechaHasta: document.getElementById('fecha-hasta').value
     };
 
     console.log('Aplicando filtros:', filtrosActivos);
@@ -131,6 +139,30 @@ function aplicarFiltros() {
         // Filtro por empleado (usando el legajo del select de empleado)
         if (filtrosActivos.empleado && novedad.legajo.toString() !== filtrosActivos.empleado.toString()) {
             return false;
+        }
+        
+        // Filtro por rango de fechas
+        if (filtrosActivos.fechaDesde || filtrosActivos.fechaHasta) {
+            // Extraer la fecha de la fecha_creacion (formato: YYYY-MM-DD HH:MM:SS)
+            let fechaNovedad = '';
+            if (novedad.fecha_creacion) {
+                // Si viene con hora, extraer solo la fecha
+                fechaNovedad = novedad.fecha_creacion.includes(' ') 
+                    ? novedad.fecha_creacion.split(' ')[0] 
+                    : novedad.fecha_creacion;
+            }
+            
+            console.log(`🔍 Comparando fechas - Novedad: ${fechaNovedad}, Desde: ${filtrosActivos.fechaDesde}, Hasta: ${filtrosActivos.fechaHasta}`);
+            
+            if (filtrosActivos.fechaDesde && fechaNovedad && fechaNovedad < filtrosActivos.fechaDesde) {
+                console.log(`❌ Novedad ${novedad.id} filtrada por fecha desde`);
+                return false;
+            }
+            
+            if (filtrosActivos.fechaHasta && fechaNovedad && fechaNovedad > filtrosActivos.fechaHasta) {
+                console.log(`❌ Novedad ${novedad.id} filtrada por fecha hasta`);
+                return false;
+            }
         }
         
         return true;
@@ -194,6 +226,12 @@ function mostrarTabla(datos) {
         }
         const fechaRegistro = NovedadesApp.formatearFecha(novedad.fecha_creacion);
         const estado = obtenerBadgeEstado();
+        
+        // Formatear período
+        let periodoDisplay = '-';
+        if (novedad.periodo_mes && novedad.periodo_anio) {
+            periodoDisplay = `${novedad.periodo_mes}/${novedad.periodo_anio}`;
+        }
 
         html += `
             <tr class="novedad-row" data-id="${novedad.id}">
@@ -211,6 +249,9 @@ function mostrarTabla(datos) {
                 <td>
                     <span class="badge bg-primary">${novedad.tipo_descripcion}</span>
                 </td>
+                <td class="tabla-periodo">
+                    <span class="badge bg-secondary badge-periodo">${periodoDisplay}</span>
+                </td>
                 <td>
                     <small>${fechaVigencia}</small>
                 </td>
@@ -224,6 +265,14 @@ function mostrarTabla(datos) {
                         <button class="btn btn-outline-info btn-sm" onclick="verDetalleNovedad(${novedad.id})" 
                                 title="Ver detalle">
                             <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="editarNovedad(${novedad.id})" 
+                                title="Editar novedad">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="confirmarEliminarNovedad(${novedad.id})" 
+                                title="Eliminar novedad">
+                            <i class="fas fa-trash"></i>
                         </button>
                         <button class="btn btn-outline-primary btn-sm" onclick="imprimirNovedad(${novedad.id})" 
                                 title="Imprimir">
@@ -299,14 +348,18 @@ function mostrarTarjetas(datos) {
                         </div>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <div class="btn-group w-100">
-                            <button class="btn btn-outline-info btn-sm" onclick="verDetalleNovedad(${novedad.id})">
-                                <i class="fas fa-eye me-1"></i>
-                                Ver
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-info btn-sm" onclick="verDetalleNovedad(${novedad.id})" title="Ver detalle">
+                                <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-outline-primary btn-sm" onclick="imprimirNovedad(${novedad.id})">
-                                <i class="fas fa-print me-1"></i>
-                                Imprimir
+                            <button class="btn btn-outline-warning btn-sm" onclick="editarNovedad(${novedad.id})" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="confirmarEliminarNovedad(${novedad.id})" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="imprimirNovedad(${novedad.id})" title="Imprimir">
+                                <i class="fas fa-print"></i>
                             </button>
                         </div>
                     </div>
@@ -398,6 +451,22 @@ function mostrarModalDetalleCompleto(novedad) {
     
     switch (tipo) {
         case 1: // Cambio de sucursal
+            // Extraer nueva sucursal de las observaciones
+            let nuevaSucursalDetalle = '';
+            if (novedad.observaciones) {
+                // Buscar con etiquetas HTML primero
+                let match = novedad.observaciones.match(/Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/);
+                if (match) {
+                    nuevaSucursalDetalle = match[1].trim();
+                } else {
+                    // Buscar sin etiquetas como fallback
+                    match = novedad.observaciones.match(/Nueva sucursal:\s*([^-<\n]+)/);
+                    if (match) {
+                        nuevaSucursalDetalle = match[1].trim();
+                    }
+                }
+            }
+            
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -406,12 +475,16 @@ function mostrarModalDetalleCompleto(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Sucursal Actual:</strong><br>
                                     <span class="badge bg-secondary">${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</span>
                                 </div>
+                                <div class="col-md-4">
+                                    <strong>Nueva Sucursal:</strong><br>
+                                    <span class="badge bg-primary">${nuevaSucursalDetalle || 'No especificada'}</span>
+                                </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Fecha de Vigencia:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
@@ -423,6 +496,26 @@ function mostrarModalDetalleCompleto(novedad) {
             break;
             
         case 2: // Nuevo puesto
+            // Extraer nuevo puesto de las observaciones
+            let nuevoPuestoDetalle = '';
+            if (novedad.observaciones) {
+                // Buscar con etiquetas HTML primero
+                let match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
+                if (match) {
+                    nuevoPuestoDetalle = match[1].trim();
+                } else {
+                    // Buscar sin etiquetas como fallback
+                    match = novedad.observaciones.match(/Nuevo puesto:\s*([^-<\n]+)/);
+                    if (match) {
+                        nuevoPuestoDetalle = match[1].trim();
+                    }
+                }
+            }
+            // Fallback al campo puesto si existe
+            if (!nuevoPuestoDetalle && novedad.puesto) {
+                nuevoPuestoDetalle = novedad.puesto;
+            }
+            
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -433,7 +526,7 @@ function mostrarModalDetalleCompleto(novedad) {
                             <div class="row">
                                 <div class="col-md-6">
                                     <strong>Nuevo Puesto:</strong><br>
-                                    <span class="badge bg-success">${novedad.puesto || 'No especificado'}</span>
+                                    <span class="badge bg-success">${nuevoPuestoDetalle || 'No especificado'}</span>
                                 </div>
                                 ${novedad.fecha_vigencia ? `
                                 <div class="col-md-6">
@@ -669,9 +762,16 @@ function limpiarFiltros() {
  * Filtrar por períodos predefinidos
  */
 function filtrarPeriodo(periodo) {
+    console.log(`🔄 Aplicando filtro de período: ${periodo}`);
+    
     const hoy = new Date();
     const fechaDesde = document.getElementById('fecha-desde');
     const fechaHasta = document.getElementById('fecha-hasta');
+    
+    if (!fechaDesde || !fechaHasta) {
+        console.error('❌ No se encontraron los campos de fecha');
+        return;
+    }
     
     switch(periodo) {
         case 'hoy':
@@ -718,6 +818,8 @@ function filtrarPeriodo(periodo) {
             fechaHasta.value = finPeriodo.toISOString().split('T')[0];
             break;
     }
+    
+    console.log(`📅 Fechas establecidas - Desde: ${fechaDesde.value}, Hasta: ${fechaHasta.value}`);
     
     // Aplicar filtros automáticamente
     aplicarFiltros();
@@ -1154,7 +1256,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 1000);
     
+    // Event listeners para ordenamiento de columnas
+    document.querySelectorAll('.sortable').forEach(columna => {
+        columna.addEventListener('click', function() {
+            const nombreColumna = this.getAttribute('data-column');
+            ordenarPor(nombreColumna);
+        });
+    });
+    
     console.log('Consulta de Novedades - Inicializada correctamente');
+    console.log('🔧 Event listeners de ordenamiento agregados');
 });
 
 /**
@@ -1214,4 +1325,786 @@ function actualizarEstadisticasFiltros(datosFiltrados) {
     document.getElementById('total-sucursales-filtro').textContent = sucursalesUnicas;
     document.getElementById('total-empleados-filtro').textContent = empleadosUnicos;
     document.getElementById('total-valores').textContent = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(valorTotal, 'moneda') : valorTotal;
+}
+
+/**
+ * Editar una novedad existente
+ */
+async function editarNovedad(id) {
+    try {
+        // Obtener los datos actuales de la novedad
+        const novedad = await NovedadesApp.request('get_novedad', { id: id });
+        
+        // Crear formulario de edición modal
+        const modalHtml = `
+            <div class="modal fade" id="modalEditarNovedad" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning text-dark">
+                            <h5 class="modal-title">
+                                <i class="fas fa-edit me-2"></i>
+                                Editar Novedad - ${novedad.nombre} ${novedad.apellido}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="form-editar-novedad" data-id="${id}">
+                                <div id="contenido-formulario-editar">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Cargando formulario...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancelar
+                            </button>
+                            <button type="button" class="btn btn-warning" onclick="guardarEdicionNovedad()">
+                                <i class="fas fa-save me-1"></i>
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remover modal existente si existe
+        const modalExistente = document.getElementById('modalEditarNovedad');
+        if (modalExistente) {
+            modalExistente.remove();
+        }
+        
+        // Agregar modal al DOM
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarNovedad'));
+        modal.show();
+        
+        // Generar formulario con datos actuales
+        await generarFormularioEdicion(novedad);
+        
+    } catch (error) {
+        console.error('Error abriendo formulario de edición:', error);
+        NovedadesApp.mostrarError('Error abriendo formulario de edición');
+    }
+}
+
+/**
+ * Confirmar eliminación de novedad
+ */
+function confirmarEliminarNovedad(id) {
+    if (confirm('¿Está seguro de que desea eliminar esta novedad? Esta acción no se puede deshacer.')) {
+        eliminarNovedad(id);
+    }
+}
+
+/**
+ * Eliminar una novedad
+ */
+async function eliminarNovedad(id) {
+    try {
+        const formData = new FormData();
+        formData.append('id', id);
+        
+        const respuesta = await fetch('controller/novedades_controller.php?action=eliminar_novedad', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const resultado = await respuesta.json();
+        
+        if (resultado.success) {
+            NovedadesApp.mostrarExito('Novedad eliminada exitosamente');
+            await cargarNovedades();
+        } else {
+            NovedadesApp.mostrarError('Error eliminando novedad: ' + resultado.message);
+        }
+        
+    } catch (error) {
+        console.error('Error eliminando novedad:', error);
+        NovedadesApp.mostrarError('Error eliminando novedad');
+    }
+}
+
+/**
+ * Generar formulario de edición con datos actuales
+ */
+async function generarFormularioEdicion(novedad) {
+    try {
+        // Cargar datos necesarios para el formulario
+        const [sucursales, tipos, puestos] = await Promise.all([
+            NovedadesApp.request('get_sucursales'),
+            NovedadesApp.request('get_tipos_novedad'),
+            NovedadesApp.request('get_puestos')
+        ]);
+        
+        const formularioHtml = `
+            <div class="row g-3">
+                <!-- Información del empleado -->
+                <div class="col-md-4">
+                    <label for="edit-legajo" class="form-label">Legajo</label>
+                    <input type="number" class="form-control" id="edit-legajo" value="${novedad.legajo}" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="edit-nombre" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" id="edit-nombre" value="${novedad.nombre}" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="edit-apellido" class="form-label">Apellido</label>
+                    <input type="text" class="form-control" id="edit-apellido" value="${novedad.apellido}" required>
+                </div>
+                
+                <!-- Sucursal y Tipo -->
+                <div class="col-md-6">
+                    <label for="edit-sucursal" class="form-label">Sucursal</label>
+                    <select class="form-select" id="edit-sucursal" required>
+                        ${sucursales.map(s => `
+                            <option value="${s.numero}" ${s.numero == novedad.sucursal ? 'selected' : ''}>
+                                ${s.descripcion}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="edit-tipo-novedad" class="form-label">Tipo de Novedad</label>
+                    <select class="form-select" id="edit-tipo-novedad" required onchange="actualizarFormularioEdicion()">
+                        ${tipos.map(t => `
+                            <option value="${t.id}" ${t.id == novedad.tipo_novedad ? 'selected' : ''}>
+                                ${t.descripcion}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+                
+                <!-- Campos dinámicos según tipo -->
+                <div id="campos-dinamicos-edit">
+                    ${generarCamposDinamicosEdicion(novedad)}
+                </div>
+                
+                <!-- Observaciones -->
+                <div class="col-12">
+                    <label for="edit-observaciones" class="form-label">Observaciones</label>
+                    <textarea class="form-control" id="edit-observaciones" rows="3">${novedad.observaciones || ''}</textarea>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('contenido-formulario-editar').innerHTML = formularioHtml;
+        
+    } catch (error) {
+        console.error('Error generando formulario:', error);
+        document.getElementById('contenido-formulario-editar').innerHTML = 
+            '<div class="alert alert-danger">Error cargando formulario</div>';
+    }
+}
+
+/**
+ * Generar campos dinámicos para edición según tipo de novedad
+ */
+function generarCamposDinamicosEdicion(novedad) {
+    const tipo = parseInt(novedad.tipo_novedad);
+    let campos = '';
+    
+    // Fecha de vigencia (común para varios tipos)
+    if ([1, 2, 3, 4, 5, 6, 8, 9, 10, 11].includes(tipo)) {
+        const fechaVigencia = novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : '';
+        campos += `
+            <div class="col-md-6">
+                <label for="edit-fecha-vigencia" class="form-label">Fecha de Vigencia</label>
+                <input type="date" class="form-control" id="edit-fecha-vigencia" value="${fechaVigencia}" required>
+            </div>
+        `;
+    }
+    
+    // Campos específicos según tipo
+    switch(tipo) {
+        case 1: // Cambio sucursal
+            // Extraer nueva sucursal de las observaciones si existe
+            let nuevaSucursal = '';
+            if (novedad.observaciones) {
+                // Buscar con etiquetas HTML primero
+                let match = novedad.observaciones.match(/Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/);
+                if (match) {
+                    nuevaSucursal = match[1].trim();
+                } else {
+                    // Buscar sin etiquetas como fallback
+                    match = novedad.observaciones.match(/Nueva sucursal:\s*([^-<\n]+)/);
+                    if (match) {
+                        nuevaSucursal = match[1].trim();
+                    }
+                }
+            }
+            
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-nueva-sucursal" class="form-label">Nueva Sucursal</label>
+                    <select class="form-select" id="edit-nueva-sucursal" required>
+                        <option value="">Seleccionar sucursal...</option>
+                        <!-- Se llenarán dinámicamente -->
+                    </select>
+                </div>
+            `;
+            
+            // Cargar sucursales después de renderizar
+            setTimeout(() => cargarSucursalesParaEdicion(nuevaSucursal), 100);
+            break;
+            
+        case 2: // Cambio de puesto
+            // Extraer nuevo puesto de las observaciones si existe
+            let nuevoPuesto = '';
+            if (novedad.observaciones) {
+                // Buscar con etiquetas HTML primero
+                let match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
+                if (match) {
+                    nuevoPuesto = match[1].trim();
+                } else {
+                    // Buscar sin etiquetas como fallback
+                    match = novedad.observaciones.match(/Nuevo puesto:\s*([^-<\n]+)/);
+                    if (match) {
+                        nuevoPuesto = match[1].trim();
+                    }
+                }
+            }
+            
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-puesto" class="form-label">Nuevo Puesto</label>
+                    <select class="form-select" id="edit-puesto" required>
+                        <option value="">Seleccionar puesto...</option>
+                        <!-- Se llenarán dinámicamente -->
+                    </select>
+                </div>
+            `;
+            
+            // Cargar puestos después de renderizar
+            setTimeout(() => cargarPuestosParaEdicion(nuevoPuesto), 100);
+            break;
+            
+        case 3: // Nuevo salario
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-nuevo-salario" class="form-label">Nuevo Salario Neto</label>
+                    <input type="number" class="form-control" id="edit-nuevo-salario" 
+                           value="${novedad.valor_numerico || ''}" step="0.01" required>
+                </div>
+            `;
+            break;
+            
+        case 4: // Ajuste premios
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-monto-ajuste" class="form-label">Monto de Ajuste</label>
+                    <input type="number" class="form-control" id="edit-monto-ajuste" 
+                           value="${novedad.valor_numerico || ''}" step="0.01" required>
+                </div>
+            `;
+            break;
+            
+        case 5: // Horas extras
+        case 6: // Horas adicionales
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-cantidad-horas" class="form-label">Cantidad de Horas</label>
+                    <input type="number" class="form-control" id="edit-cantidad-horas" 
+                           value="${novedad.valor_numerico || ''}" step="0.25" required>
+                </div>
+            `;
+            break;
+            
+        case 7: // Permisos
+            const fechaPermiso = novedad.fecha_permiso ? novedad.fecha_permiso.split(' ')[0] : '';
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-fecha-permiso" class="form-label">Fecha del Permiso</label>
+                    <input type="date" class="form-control" id="edit-fecha-permiso" 
+                           value="${fechaPermiso}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">¿Compensa?</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="edit-compensa" 
+                               id="edit-compensa-si" value="1" ${novedad.compensa ? 'checked' : ''}>
+                        <label class="form-check-label" for="edit-compensa-si">Sí</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="edit-compensa" 
+                               id="edit-compensa-no" value="0" ${!novedad.compensa ? 'checked' : ''}>
+                        <label class="form-check-label" for="edit-compensa-no">No</label>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 8: // Cortes
+        case 9: // Producción 25%
+        case 10: // Producción 50%
+        case 11: // Producción 100%
+            const labelTipo = tipo === 8 ? 'Cantidad de Cortes' : 'Cantidad de Unidades';
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-cantidad-unidades" class="form-label">${labelTipo}</label>
+                    <input type="number" class="form-control" id="edit-cantidad-unidades" 
+                           value="${novedad.valor_numerico || ''}" required>
+                </div>
+            `;
+            break;
+    }
+    
+    return campos;
+}
+
+/**
+ * Actualizar formulario de edición cuando cambia el tipo
+ */
+function actualizarFormularioEdicion() {
+    const tipoSeleccionado = document.getElementById('edit-tipo-novedad').value;
+    if (!tipoSeleccionado) return;
+    
+    // Crear objeto temporal para generar campos dinámicos
+    const novedadTemp = {
+        tipo_novedad: tipoSeleccionado,
+        fecha_vigencia: '',
+        valor_numerico: '',
+        fecha_permiso: '',
+        tipo_permiso: '',
+        compensa: false
+    };
+    
+    document.getElementById('campos-dinamicos-edit').innerHTML = generarCamposDinamicosEdicion(novedadTemp);
+}
+
+/**
+ * Guardar edición de novedad
+ */
+async function guardarEdicionNovedad() {
+    try {
+        const form = document.getElementById('form-editar-novedad');
+        const id = form.dataset.id;
+        
+        // Recopilar datos del formulario
+        const datos = {
+            id: id,
+            legajo: document.getElementById('edit-legajo').value,
+            nombre: document.getElementById('edit-nombre').value,
+            apellido: document.getElementById('edit-apellido').value,
+            sucursal: document.getElementById('edit-sucursal').value,
+            tipo_novedad: document.getElementById('edit-tipo-novedad').value,
+            observaciones: limpiarObservaciones(document.getElementById('edit-observaciones').value, parseInt(document.getElementById('edit-tipo-novedad').value))
+        };
+        
+        // Agregar campos específicos según tipo
+        const tipo = parseInt(datos.tipo_novedad);
+        
+        // Fecha de vigencia
+        const fechaVigencia = document.getElementById('edit-fecha-vigencia');
+        if (fechaVigencia) {
+            datos.fecha_vigencia = fechaVigencia.value;
+            console.log(`📅 Fecha de vigencia capturada:`, fechaVigencia.value);
+        } else {
+            console.error('❌ No se encontró el campo edit-fecha-vigencia');
+        }
+        
+        // Campos específicos por tipo
+        switch(tipo) {
+            case 1: // Cambio de sucursal
+                const nuevaSucursal = document.getElementById('edit-nueva-sucursal');
+                if (nuevaSucursal) {
+                    datos.nueva_sucursal = nuevaSucursal.value;
+                    console.log(`🏪 Nueva sucursal capturada:`, nuevaSucursal.value);
+                }
+                break;
+                
+            case 2: // Cambio de puesto
+                const puesto = document.getElementById('edit-puesto');
+                if (puesto) {
+                    datos.puesto = puesto.value;
+                    console.log(`👔 Puesto capturado:`, puesto.value);
+                }
+                break;
+                
+            case 3: // Nuevo salario
+                const nuevoSalario = document.getElementById('edit-nuevo-salario');
+                if (nuevoSalario) {
+                    datos.importe = nuevoSalario.value; // Backend espera 'importe'
+                    console.log(`💰 Nuevo salario capturado:`, nuevoSalario.value);
+                }
+                break;
+            case 4: // Ajuste premios
+                const montoAjuste = document.getElementById('edit-monto-ajuste');
+                if (montoAjuste) {
+                    datos.importe = montoAjuste.value; // Backend espera 'importe'
+                    console.log(`🎯 Monto ajuste capturado:`, montoAjuste.value);
+                }
+                break;
+            case 5: // Horas extras
+                const cantidadHoras5 = document.getElementById('edit-cantidad-horas');
+                if (cantidadHoras5) {
+                    datos.cantidad_horas = cantidadHoras5.value;
+                    console.log(`⏰ Cantidad horas extras capturada:`, cantidadHoras5.value);
+                }
+                break;
+            case 6: // Horas adicionales
+                const cantidadHoras6 = document.getElementById('edit-cantidad-horas');
+                if (cantidadHoras6) {
+                    datos.cantidad_horas = cantidadHoras6.value;
+                    console.log(`⏰ Cantidad horas adicionales capturada:`, cantidadHoras6.value);
+                }
+                break;
+            case 7: // Permisos
+                datos.fecha_permiso = document.getElementById('edit-fecha-permiso').value;
+                const compensaRadio = document.querySelector('input[name="edit-compensa"]:checked');
+                datos.compensa = compensaRadio ? compensaRadio.value === '1' : false;
+                break;
+            case 8: // Cortes
+                const cantidadCortesElement = document.getElementById('edit-cantidad-unidades');
+                if (cantidadCortesElement) {
+                    datos.cantidad_cortes = cantidadCortesElement.value; // Para cortes usar cantidad_cortes
+                    console.log(`🔢 Cantidad de cortes capturada:`, cantidadCortesElement.value);
+                } else {
+                    console.error('❌ No se encontró el elemento edit-cantidad-unidades para cortes');
+                }
+                break;
+            case 9: case 10: case 11: // Producción
+                const cantidadUnidadesElement = document.getElementById('edit-cantidad-unidades');
+                if (cantidadUnidadesElement) {
+                    datos.cantidad_unidades = cantidadUnidadesElement.value; // Para producción usar cantidad_unidades
+                    console.log(`🔢 Cantidad de unidades capturada para tipo ${tipo}:`, cantidadUnidadesElement.value);
+                } else {
+                    console.error('❌ No se encontró el elemento edit-cantidad-unidades para producción');
+                }
+                break;
+        }
+        
+        console.log('📋 Datos completos a enviar:', datos);
+        
+        // Validar datos requeridos
+        if (!datos.legajo || !datos.nombre || !datos.apellido || !datos.sucursal || !datos.tipo_novedad) {
+            NovedadesApp.mostrarError('Por favor complete todos los campos requeridos');
+            return;
+        }
+        
+        // Enviar actualización usando método POST
+        const respuesta = await NovedadesApp.request('editar_novedad', datos, 'POST');
+        
+        console.log('✅ Respuesta de edición recibida:', respuesta);
+        
+        // Verificar si la respuesta indica éxito
+        if (respuesta && respuesta.success !== false) {
+            NovedadesApp.mostrarExito('Novedad actualizada exitosamente');
+            
+            // Cerrar modal
+            const modalElement = document.getElementById('modalEditarNovedad');
+            if (modalElement) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                    console.log('📕 Modal de edición cerrado');
+                } else {
+                    // Fallback si no hay instancia de Bootstrap
+                    modalElement.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) backdrop.remove();
+                }
+            }
+            
+            // Recargar datos
+            await cargarNovedades();
+        } else {
+            NovedadesApp.mostrarError('Error actualizando novedad');
+        }
+        
+    } catch (error) {
+        console.error('Error guardando edición:', error);
+        NovedadesApp.mostrarError('Error guardando los cambios');
+    }
+}
+
+/**
+ * Ordenar datos por columna
+ */
+function ordenarPor(columna) {
+    console.log(`🔄 Ordenando por columna: ${columna}`);
+    
+    // Si es la misma columna, alternar dirección
+    if (ordenActual.columna === columna) {
+        ordenActual.direccion = ordenActual.direccion === 'asc' ? 'desc' : 'asc';
+    } else {
+        ordenActual.columna = columna;
+        ordenActual.direccion = 'asc';
+    }
+    
+    // Actualizar indicadores visuales
+    actualizarIndicadoresOrden();
+    
+    // Aplicar ordenamiento a datos filtrados
+    let datosParaOrdenar = [...(window.datosFiltrados || novedadesData)]; // Crear copia
+    
+    datosParaOrdenar.sort((a, b) => {
+        let valorA, valorB;
+        let esVacioA = false, esVacioB = false;
+        
+        switch(columna) {
+            case 'empleado':
+                valorA = `${a.nombre || ''} ${a.apellido || ''}`.trim().toLowerCase();
+                valorB = `${b.nombre || ''} ${b.apellido || ''}`.trim().toLowerCase();
+                esVacioA = valorA === '';
+                esVacioB = valorB === '';
+                break;
+                
+            case 'sucursal':
+                valorA = a.nombre_sucursal?.toLowerCase() || '';
+                valorB = b.nombre_sucursal?.toLowerCase() || '';
+                esVacioA = !valorA || valorA === '';
+                esVacioB = !valorB || valorB === '';
+                // Si no hay nombre_sucursal, usar número de sucursal como fallback
+                if (esVacioA) valorA = a.sucursal ? `sucursal ${a.sucursal}` : '';
+                if (esVacioB) valorB = b.sucursal ? `sucursal ${b.sucursal}` : '';
+                esVacioA = valorA === '';
+                esVacioB = valorB === '';
+                break;
+                
+            case 'tipo':
+                valorA = a.tipo_descripcion?.toLowerCase() || '';
+                valorB = b.tipo_descripcion?.toLowerCase() || '';
+                esVacioA = valorA === '';
+                esVacioB = valorB === '';
+                break;
+                
+            case 'periodo':
+                // Ordenar por período (mes/año) - convertir a formato comparable
+                if (a.periodo_mes && a.periodo_anio) {
+                    valorA = a.periodo_anio * 100 + a.periodo_mes; // Ej: 2024*100 + 8 = 202408
+                } else {
+                    valorA = null;
+                }
+                
+                if (b.periodo_mes && b.periodo_anio) {
+                    valorB = b.periodo_anio * 100 + b.periodo_mes;
+                } else {
+                    valorB = null;
+                }
+                
+                esVacioA = valorA === null;
+                esVacioB = valorB === null;
+                break;
+                
+            case 'vigencia':
+                // Ordenar por fecha de vigencia
+                valorA = a.fecha_vigencia || null;
+                valorB = b.fecha_vigencia || null;
+                esVacioA = !valorA || valorA === null;
+                esVacioB = !valorB || valorB === null;
+                break;
+                
+            case 'valor':
+                // Ordenar por valor numérico
+                valorA = a.valor_numerico ? parseFloat(a.valor_numerico) : null;
+                valorB = b.valor_numerico ? parseFloat(b.valor_numerico) : null;
+                esVacioA = valorA === null || isNaN(valorA) || valorA === 0;
+                esVacioB = valorB === null || isNaN(valorB) || valorB === 0;
+                break;
+                
+            case 'fecha_registro':
+                // Ordenar por fecha de creación
+                valorA = a.fecha_creacion || null;
+                valorB = b.fecha_creacion || null;
+                esVacioA = !valorA || valorA === null;
+                esVacioB = !valorB || valorB === null;
+                break;
+                
+            case 'estado':
+                valorA = 'activo'; // Por ahora todos son activos
+                valorB = 'activo';
+                esVacioA = false;
+                esVacioB = false;
+                break;
+                
+            default:
+                return 0;
+        }
+        
+        // Los valores vacíos/null siempre van al final
+        if (esVacioA && esVacioB) return 0; // Ambos vacíos, mantener orden
+        if (esVacioA) return 1;  // A vacío, va al final
+        if (esVacioB) return -1; // B vacío, va al final
+        
+        // Comparar valores no vacíos
+        let resultado = 0;
+        if (typeof valorA === 'string' && typeof valorB === 'string') {
+            resultado = valorA.localeCompare(valorB);
+        } else {
+            resultado = valorA < valorB ? -1 : (valorA > valorB ? 1 : 0);
+        }
+        
+        return ordenActual.direccion === 'desc' ? -resultado : resultado;
+    });
+    
+    // Actualizar datos filtrados
+    window.datosFiltrados = datosParaOrdenar;
+    
+    // Resetear paginación y mostrar resultados
+    paginaActual = 1;
+    mostrarResultados(datosParaOrdenar);
+    actualizarEstadisticasFiltros(datosParaOrdenar);
+    
+    console.log(`✅ Ordenamiento aplicado: ${columna} ${ordenActual.direccion}`);
+    
+    // Log para debugging de valores vacíos
+    const valoresVacios = datosParaOrdenar.filter(item => {
+        switch(columna) {
+            case 'empleado':
+                return !item.nombre || !item.apellido;
+            case 'periodo':
+                return !item.periodo_mes || !item.periodo_anio;
+            case 'vigencia':
+                return !item.fecha_vigencia;
+            case 'valor':
+                return !item.valor_numerico || parseFloat(item.valor_numerico) === 0;
+            default:
+                return false;
+        }
+    });
+    
+    if (valoresVacios.length > 0) {
+        console.log(`📝 ${valoresVacios.length} registros con valores vacíos movidos al final`);
+    }
+}
+
+/**
+ * Actualizar indicadores visuales de ordenamiento
+ */
+function actualizarIndicadoresOrden() {
+    // Limpiar indicadores previos
+    document.querySelectorAll('.sortable').forEach(th => {
+        th.removeAttribute('data-sort');
+        th.classList.remove('sorted');
+    });
+    
+    // Agregar indicador a la columna actual
+    if (ordenActual.columna) {
+        const columnaActual = document.querySelector(`[data-column="${ordenActual.columna}"]`);
+        if (columnaActual) {
+            columnaActual.setAttribute('data-sort', ordenActual.direccion);
+            columnaActual.classList.add('sorted');
+        }
+    }
+}
+
+/**
+ * Limpiar ordenamiento actual
+ */
+function limpiarOrdenamiento() {
+    ordenActual = {
+        columna: null,
+        direccion: 'asc'
+    };
+    actualizarIndicadoresOrden();
+}
+
+/**
+ * Cargar sucursales para el select de edición
+ */
+async function cargarSucursalesParaEdicion(sucursalSeleccionada = '') {
+    try {
+        const sucursales = await NovedadesApp.request('get_sucursales');
+        const select = document.getElementById('edit-nueva-sucursal');
+        
+        if (!select) return;
+        
+        // Limpiar opciones actuales (mantener la primera)
+        select.innerHTML = '<option value="">Seleccionar sucursal...</option>';
+        
+        // Agregar sucursales
+        sucursales.forEach(sucursal => {
+            const option = document.createElement('option');
+            option.value = sucursal.numero;
+            option.textContent = sucursal.descripcion;
+            
+            // Seleccionar si coincide con la sucursal extraída
+            if (sucursalSeleccionada && sucursal.descripcion === sucursalSeleccionada) {
+                option.selected = true;
+            }
+            
+            select.appendChild(option);
+        });
+        
+        console.log('🏪 Sucursales cargadas para edición, seleccionada:', sucursalSeleccionada);
+        
+    } catch (error) {
+        console.error('Error cargando sucursales para edición:', error);
+    }
+}
+
+/**
+ * Cargar puestos para el select de edición
+ */
+async function cargarPuestosParaEdicion(puestoSeleccionado = '') {
+    try {
+        const puestos = await NovedadesApp.request('get_puestos');
+        const select = document.getElementById('edit-puesto');
+        
+        if (!select) return;
+        
+        // Limpiar opciones actuales (mantener la primera)
+        select.innerHTML = '<option value="">Seleccionar puesto...</option>';
+        
+        // Agregar puestos
+        puestos.forEach(puesto => {
+            const option = document.createElement('option');
+            option.value = puesto.nombre_puesto;
+            option.textContent = puesto.nombre_puesto;
+            
+            // Seleccionar si coincide con el puesto extraído
+            if (puestoSeleccionado && puesto.nombre_puesto === puestoSeleccionado) {
+                option.selected = true;
+            }
+            
+            select.appendChild(option);
+        });
+        
+        console.log('👔 Puestos cargados para edición, seleccionado:', puestoSeleccionado);
+        
+    } catch (error) {
+        console.error('Error cargando puestos para edición:', error);
+    }
+}
+
+/**
+ * Limpiar observaciones de datos específicos ya extraídos
+ */
+function limpiarObservaciones(observaciones, tipoNovedad) {
+    if (!observaciones) return observaciones;
+    
+    let observacionesLimpias = observaciones;
+    
+    switch(tipoNovedad) {
+        case 1: // Cambio de sucursal
+            // Remover " - Nueva sucursal: [NOMBRE]" incluyendo etiquetas
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/gi, '');
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nueva sucursal:\s*([^-<\n]+)/gi, '');
+            break;
+            
+        case 2: // Cambio de puesto
+            // Remover " - Nuevo puesto: [NOMBRE]" incluyendo etiquetas
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/gi, '');
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*([^-<\n]+)/gi, '');
+            break;
+    }
+    
+    // Limpiar <OBS> si queda solo
+    observacionesLimpias = observacionesLimpias.replace(/^<OBS>\s*$/gi, '');
+    observacionesLimpias = observacionesLimpias.replace(/^<OBS>\s*-\s*$/gi, '');
+    
+    // Limpiar espacios extra
+    observacionesLimpias = observacionesLimpias.trim();
+    
+    console.log(`🧹 Observaciones limpiadas para tipo ${tipoNovedad}:`, observacionesLimpias);
+    
+    return observacionesLimpias;
 }

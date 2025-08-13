@@ -8,8 +8,9 @@
 // 1 = Administrador (ve todos los tipos permitidos para admin)
 // 2 = Comercial (ve solo tipos comerciales)  
 // 3 = Producción (ve solo tipos de producción)
+// 4 = Recursos Humanos (ve TODOS los tipos de novedad)
 
-$TIPO_USUARIO_ACTUAL = 1; // ← CAMBIAR AQUÍ
+$TIPO_USUARIO_ACTUAL = 4; // ← CAMBIAR AQUÍ
 
 // Configurar en la clase Usuario
 require_once __DIR__ . '/../class/Usuario.php';

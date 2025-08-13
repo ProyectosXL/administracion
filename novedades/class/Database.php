@@ -30,10 +30,18 @@ class Database {
             $this->connection = $this->conexion->conectar('apps');
             
             if (!$this->connection) {
-                throw new Exception("Error de conexión: " . print_r(sqlsrv_errors(), true));
+                $errors = sqlsrv_errors();
+                $errorMsg = "Error de conexión a base de datos 'apps': " . print_r($errors, true);
+                error_log($errorMsg);
+                throw new Exception($errorMsg);
             }
+            
+            // Log conexión exitosa
+            error_log("Conexión a base de datos 'apps' establecida correctamente");
         } catch (Exception $e) {
-            throw new Exception("Error de conexión: " . $e->getMessage());
+            $errorMsg = "Error de conexión: " . $e->getMessage();
+            error_log($errorMsg);
+            throw new Exception($errorMsg);
         }
     }
 
@@ -116,6 +124,20 @@ class DatabaseResult {
             $results[] = $row;
         }
         return $results;
+    }
+
+    /**
+     * Obtener número de filas afectadas (para UPDATE, DELETE, INSERT)
+     */
+    public function rowCount() {
+        return sqlsrv_rows_affected($this->stmt);
+    }
+
+    /**
+     * Verificar si hay resultados
+     */
+    public function hasRows() {
+        return sqlsrv_has_rows($this->stmt);
     }
 }
 ?>
