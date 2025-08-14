@@ -3,6 +3,8 @@
  * Página principal del sistema
  * /novedades/index.php
  */
+require_once 'includes/periodo_helper.php';
+$periodoInfo = PeriodoHelper::getPeriodoActual();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -41,7 +43,7 @@
                 <div class="col-md-4 text-end">
                     <span class="periodo-badge">
                         <i class="fas fa-calendar-alt me-2"></i>
-                        Período Actual: 28/07/2025 - 27/08/2025
+                        <?php echo $periodoInfo['badge']; ?>
                     </span>
                 </div>
             </div>
@@ -55,18 +57,18 @@
             <div class="col-md-4">
                 <div class="card stats-card">
                     <div class="card-body">
-                        <i class="fas fa-plus-circle fa-2x mb-2"></i>
-                        <div class="display-4" id="total-novedades">-</div>
-                        <h6>Novedades del Período</h6>
+                        <i class="fas fa-list-alt fa-2x mb-2"></i>
+                        <div class="display-4" id="total-novedades-todas">-</div>
+                        <h6>Novedades Totales Registradas</h6>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                     <div class="card-body">
-                        <i class="fas fa-clock fa-2x mb-2"></i>
-                        <div class="display-4" id="novedades-pendientes">-</div>
-                        <h6>Pendientes de Revisión</h6>
+                        <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                        <div class="display-4" id="novedades-periodo">-</div>
+                        <h6>Novedades del Período</h6>
                     </div>
                 </div>
             </div>
@@ -166,7 +168,7 @@
                         Información del Período Actual
                     </h6>
                     <p class="mb-0">
-                        <strong>Período de liquidación:</strong> Del 28 de Julio de 2025 al 27 de Agosto de 2025<br>
+                        <strong>Período de liquidación:</strong> Del 28 de cada mes al 27 del mes siguiente<br>
                         <strong>Fecha límite para carga:</strong> Las novedades deben registrarse antes del cierre del período<br>
                         <strong>Estado:</strong> <span class="badge bg-success">Activo</span>
                     </p>

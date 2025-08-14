@@ -3,6 +3,8 @@
  * Página para crear nueva novedad - COMPLETA
  * /novedades/nueva_novedad.php
  */
+require_once 'includes/periodo_helper.php';
+$periodoInfo = PeriodoHelper::getPeriodoActual();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -44,7 +46,7 @@
                 <div class="col-md-4 text-end">
                     <span class="periodo-badge">
                         <i class="fas fa-calendar-alt me-2"></i>
-                        28/07/2025 - 27/08/2025
+                        <?php echo $periodoInfo['badge']; ?>
                     </span>
                 </div>
             </div>
@@ -151,15 +153,23 @@
                 <div class="form-section campo-dinamico" id="config-nuevo-puesto">
                     <h5>
                         <i class="fas fa-briefcase me-2"></i>
-                        Configuración: Nuevo Puesto
+                        Configuración: Cambio de Puesto
                     </h5>
                     <div class="row">
+                        <!-- Puesto Actual -->
+                        <div class="col-md-12 mb-3">
+                            <div class="alert alert-info" id="puesto-actual-info" style="display: none;">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Puesto actual:</strong> <span id="puesto-actual-texto">-</span>
+                            </div>
+                        </div>
+                        
                         <div class="col-md-6">
                             <label for="nuevo_puesto" class="form-label">
-                                Puesto <span class="required">*</span>
+                                Nuevo Puesto <span class="required">*</span>
                             </label>
                             <select class="form-select" id="nuevo_puesto" name="puesto">
-                                <option value="">Seleccione puesto...</option>
+                                <option value="">Buscar y seleccionar puesto...</option>
                             </select>
                             <div class="invalid-feedback">
                                 El puesto es obligatorio
@@ -191,7 +201,7 @@
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" id="importe_salario" 
-                                       name="importe" step="0.01" min="0" placeholder="0.00">
+                                       name="importe" step="0.01" min="0" max="999999999999.99" placeholder="0.00">
                             </div>
                             <div class="invalid-feedback">
                                 El importe es obligatorio
@@ -223,7 +233,7 @@
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" id="importe_premios" 
-                                       name="importe" step="0.01" min="0" placeholder="0.00">
+                                       name="importe" step="0.01" min="0" max="999999999999.99" placeholder="0.00">
                             </div>
                             <div class="invalid-feedback">
                                 El importe es obligatorio
@@ -728,6 +738,13 @@
                         if (app && app.empleadoSeleccionado) {
                             console.log('🔗 NovedadesApp.empleadoSeleccionado:', app.empleadoSeleccionado);
                         }
+                        
+                        // Si está activo el tipo "Cambio de Puesto", actualizar puesto actual
+                        const tipoSelect = document.getElementById('tipo_novedad');
+                        if (tipoSelect && tipoSelect.value === '2') {
+                            console.log('🔄 Tipo Cambio de Puesto activo, actualizando puesto actual...');
+                            configurarCambioPuesto();
+                        }
                     }
                 } catch (error) {
                     console.error('❌ Error en select2:select:', error);
@@ -757,6 +774,57 @@
 
             // Sincronizar cambio manual de legajo con Select2 (deshabilitado porque legajo es readonly)
             // El legajo ahora es readonly, solo se puede cambiar via Select2
+
+            // Configurar Select2 para búsqueda de puestos
+            $('#nuevo_puesto').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Buscar puesto...',
+                allowClear: true,
+                ajax: {
+                    url: 'controller/novedades_controller.php?action=buscar_puestos_select2',
+                    dataType: 'json',
+                    delay: 300,
+                    data: function (params) {
+                        return {
+                            q: params.term,
+                            limit: 20
+                        };
+                    },
+                    processResults: function (data) {
+                        if (data.success) {
+                            return {
+                                results: data.data
+                            };
+                        } else {
+                            console.error('Error en búsqueda de puestos:', data.message);
+                            return {
+                                results: []
+                            };
+                        }
+                    },
+                    cache: true
+                },
+                minimumInputLength: 0, // Permitir búsqueda desde el primer carácter
+                language: {
+                    noResults: function () {
+                        return "No se encontraron puestos";
+                    },
+                    searching: function () {
+                        return "Buscando puestos...";
+                    }
+                }
+            });
+
+            // Manejar selección de puesto
+            $('#nuevo_puesto').on('select2:select', function (e) {
+                console.log('🎯 Puesto seleccionado:', e.params.data);
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            });
+
+            // Manejar limpieza de puesto
+            $('#nuevo_puesto').on('select2:clear', function (e) {
+                $(this).removeClass('is-valid is-invalid');
+            });
         });
 
         // Función para mostrar modal de confirmación de limpieza
@@ -894,6 +962,7 @@
     <!-- Manual JavaScript -->
     <script src="js/manual.js"></script>
     <script src="js/modal_fix.js"></script>
+    <script src="js/periodo_utils.js"></script>
 
     <!-- Manual de Usuario Modal -->
     <?php include 'components/manual_modal.php'; ?>

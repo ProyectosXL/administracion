@@ -6,7 +6,7 @@ require_once 'class/Usuario.php';
 // Verificar que el usuario sea RRHH
 if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
     header('Location: index.php?error=acceso_denegado');
-    exit;
+    exit();
 }
 ?>
 <!DOCTYPE html>
@@ -122,12 +122,6 @@ if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
                     </h1>
                     <p class="lead mb-0">Configure los permisos de acceso por tipo de usuario</p>
                 </div>
-                <div class="col-md-4 text-end">
-                    <button class="btn btn-success btn-lg" onclick="abrirModalNuevoTipo()">
-                        <i class="fas fa-plus me-2"></i>
-                        Nuevo Tipo
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -135,28 +129,40 @@ if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
     <div class="container-fluid">
         <!-- Stats Row -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="stats-card text-center">
                     <div class="stats-number" id="total-tipos">0</div>
                     <div class="text-muted">Total Tipos</div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="stats-card text-center">
                     <div class="stats-number text-success" id="tipos-activos">0</div>
                     <div class="text-muted">Activos</div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="stats-card text-center">
                     <div class="stats-number text-warning" id="tipos-rrhh">0</div>
                     <div class="text-muted">Con RRHH</div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="stats-card text-center">
                     <div class="stats-number text-info" id="tipos-admin">0</div>
-                    <div class="text-muted">Con Admin</div>
+                    <div class="text-muted">Con Administración</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card text-center">
+                    <div class="stats-number text-primary" id="tipos-comercial">0</div>
+                    <div class="text-muted">Con Comercial</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card text-center">
+                    <div class="stats-number text-danger" id="tipos-produccion">0</div>
+                    <div class="text-muted">Con Producción</div>
                 </div>
             </div>
         </div>
@@ -184,7 +190,7 @@ if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
                             <th class="permission-cell">Producción</th>
                             <th class="permission-cell">RRHH</th>
                             <th class="permission-cell">Cierre</th>
-                            <th class="permission-cell">Corte</th>
+                            <th class="permission-cell">Período de Aplicación</th>
                             <th style="width: 200px;">Acciones</th>
                         </tr>
                     </thead>
@@ -235,7 +241,7 @@ if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="checkbox" id="tipo-user-adm" name="user_adm">
                                     <label class="form-check-label" for="tipo-user-adm">
-                                        <i class="fas fa-user-shield me-1"></i> Administrador
+                                        <i class="fas fa-user-shield me-1"></i> Administración
                                     </label>
                                 </div>
                                 
@@ -267,19 +273,22 @@ if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
                                     </label>
                                     <select class="form-select" id="tipo-cierre" name="cierre">
                                         <option value="">-- Seleccionar --</option>
-                                        <option value="24">24</option>
-                                        <option value="Ter día hábil">Ter día hábil</option>
+                                        <?php for ($i = 1; $i <= 31; $i++): ?>
+                                            <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                                        <?php endfor; ?>
+                                        <option value="1er día hábil">1er día hábil</option>
                                     </select>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label for="tipo-corte" class="form-label">
-                                        <i class="fas fa-cut me-1"></i> Corte
+                                        <i class="fas fa-calendar-check me-1"></i> Período de Aplicación
                                     </label>
                                     <select class="form-select" id="tipo-corte" name="corte">
                                         <option value="">-- Seleccionar --</option>
-                                        <option value="Fecha vigencia">Fecha vigencia</option>
                                         <option value="Período">Período</option>
+                                        <option value="Fecha Vigencia">Fecha Vigencia</option>
+                                        <option value="Período siguiente">Período siguiente</option>
                                     </select>
                                 </div>
                             </div>
@@ -333,6 +342,6 @@ if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/manual.js"></script>
-    <script src="js/gestion_tipos_novedad.js"></script>
+    <script src="js/gestion_tipos_novedad.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

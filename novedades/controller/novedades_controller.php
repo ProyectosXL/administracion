@@ -121,6 +121,17 @@ try {
             }
             break;
 
+        case 'buscar_puestos_select2':
+            try {
+                $termino = isset($_GET['q']) ? $_GET['q'] : '';
+                $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 20;
+                $puestos = $novedades->buscarPuestosSelect2($termino, $limit);
+                sendResponse(true, $puestos);
+            } catch (Exception $e) {
+                handleError('Error buscando puestos para select2', $e);
+            }
+            break;
+
         case 'buscar_empleados_select2':
             try {
                 $termino = $_GET['q'] ?? $_GET['term'] ?? '';
@@ -202,6 +213,21 @@ try {
                 sendResponse(true, $novedadesList);
             } catch (Exception $e) {
                 handleError('Error obteniendo novedades', $e);
+            }
+            break;
+
+        case 'get_all_novedades':
+            try {
+                $filtros = [
+                    'legajo' => $_GET['legajo'] ?? '',
+                    'sucursal' => $_GET['sucursal'] ?? '',
+                    'tipo_novedad' => $_GET['tipo_novedad'] ?? ''
+                ];
+                
+                $novedadesList = $novedades->getAllNovedades($filtros);
+                sendResponse(true, $novedadesList);
+            } catch (Exception $e) {
+                handleError('Error obteniendo todas las novedades', $e);
             }
             break;
 

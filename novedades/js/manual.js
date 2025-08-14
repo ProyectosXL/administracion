@@ -12,8 +12,53 @@ function mostrarManualUso() {
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
         
+        // Asegurar que los tabs funcionen correctamente
+        setTimeout(() => {
+            inicializarTabsManual();
+        }, 100);
+        
         // Analytics/tracking opcional
         console.log('Manual de uso abierto');
+    }
+}
+
+/**
+ * Inicializar tabs del manual
+ */
+function inicializarTabsManual() {
+    const tabButtons = document.querySelectorAll('#manualTabs button[data-bs-toggle="tab"]');
+    
+    tabButtons.forEach(button => {
+        // Remover event listeners existentes
+        button.removeEventListener('click', handleTabClick);
+        // Agregar event listener
+        button.addEventListener('click', handleTabClick);
+    });
+}
+
+/**
+ * Manejar clicks en tabs
+ */
+function handleTabClick(event) {
+    event.preventDefault();
+    
+    const clickedTab = event.currentTarget;
+    const targetId = clickedTab.getAttribute('data-bs-target');
+    
+    // Desactivar todos los tabs y contenidos
+    const allTabs = document.querySelectorAll('#manualTabs .nav-link');
+    const allPanes = document.querySelectorAll('#manualTabsContent .tab-pane');
+    
+    allTabs.forEach(tab => tab.classList.remove('active'));
+    allPanes.forEach(pane => {
+        pane.classList.remove('show', 'active');
+    });
+    
+    // Activar el tab clickeado y su contenido
+    clickedTab.classList.add('active');
+    const targetPane = document.querySelector(targetId);
+    if (targetPane) {
+        targetPane.classList.add('show', 'active');
     }
 }
 

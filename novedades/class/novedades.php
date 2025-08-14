@@ -135,7 +135,7 @@ class Novedades {
                     APELLIDO as apellido,
                     CONCAT(NOMBRE, ' ', APELLIDO, ' (', NRO_LEGAJO, ')') as texto_completo
                 FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
-                WHERE 1=1";
+                WHERE 1=1 AND HABILITADO = 'S'";
         
         $params = [];
         
@@ -170,9 +170,9 @@ class Novedades {
         return $resultado;
     }
     public function buscarEmpleado($legajo) {
-        $sql = "SELECT NRO_LEGAJO as legajo, NOMBRE as nombre, APELLIDO as apellido 
+        $sql = "SELECT NRO_LEGAJO as legajo, NOMBRE as nombre, APELLIDO as apellido, TAREA_HABITUAL as puesto_actual 
                 FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
-                WHERE NRO_LEGAJO = ?";
+                WHERE NRO_LEGAJO = ? AND HABILITADO = 'S'";
         $stmt = $this->db->query($sql, [$legajo]);
         return $stmt->fetch();
     }
@@ -185,7 +185,7 @@ class Novedades {
         
         // Si es usuario RRHH, obtiene TODOS los tipos activos
         if ($tipoUsuario == Usuario::TIPO_RRHH) {
-            $sql = "SELECT id, codigo, descripcion 
+            $sql = "SELECT id, codigo, descripcion, cierre, corte
                     FROM tipos_novedad 
                     WHERE activo = 1 
                     ORDER BY id";
@@ -193,7 +193,7 @@ class Novedades {
             // Para otros tipos de usuario, aplicar filtros dinámicamente
             $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
             
-            $sql = "SELECT id, codigo, descripcion 
+            $sql = "SELECT id, codigo, descripcion, cierre, corte
                     FROM tipos_novedad 
                     WHERE activo = 1 AND $campoPermiso = 1 
                     ORDER BY id";
@@ -210,6 +210,43 @@ class Novedades {
         $sql = "SELECT * FROM puestos_disponibles WHERE activo = 1 ORDER BY nombre_puesto";
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Buscar puestos desde TAREA_HABITUAL para Select2
+     */
+    public function buscarPuestosSelect2($termino = '', $limit = 20) {
+        $sql = "SELECT DISTINCT TOP {$limit} 
+                    TAREA_HABITUAL as puesto
+                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
+                WHERE HABILITADO = 'S' 
+                AND TAREA_HABITUAL IS NOT NULL 
+                AND LTRIM(RTRIM(TAREA_HABITUAL)) != ''";
+        
+        $params = [];
+        
+        if (!empty($termino)) {
+            $sql .= " AND TAREA_HABITUAL LIKE ?";
+            $params = ["%{$termino}%"];
+        }
+        
+        $sql .= " ORDER BY TAREA_HABITUAL";
+        
+        $stmt = $this->db->query($sql, $params);
+        $puestos = $stmt->fetchAll();
+        
+        // Formatear para Select2
+        $resultado = [];
+        foreach ($puestos as $puesto) {
+            if (!empty(trim($puesto['puesto']))) {
+                $resultado[] = [
+                    'id' => trim($puesto['puesto']),
+                    'text' => trim($puesto['puesto'])
+                ];
+            }
+        }
+        
+        return $resultado;
     }
 
     /**
@@ -421,7 +458,23 @@ class Novedades {
             $tipoNovedad = (int)$datos['tipo_novedad'];
             $this->validarPermisosTipoNovedad($tipoNovedad);
 
-            $periodo = $this->getPeriodoActual();
+            // Obtener información del tipo de novedad para cálculo correcto de período
+            $tipoNovedadInfo = $this->getTipoNovedadById($tipoNovedad);
+            if (!$tipoNovedadInfo) {
+                throw new Exception("Tipo de novedad no encontrado");
+            }
+
+            // Incluir PeriodoUtils si no está ya incluido
+            if (!class_exists('PeriodoUtils')) {
+                require_once __DIR__ . '/PeriodoUtils.php';
+            }
+
+            // Calcular período según el tipo de novedad (considerando "Período siguiente")
+            $periodo = PeriodoUtils::calcularPeriodoSegunTipoCompleto($tipoNovedadInfo);
+            
+            // Log para debugging del período calculado
+            error_log("Período calculado para tipo {$tipoNovedad}: " . print_r($periodo, true));
+            error_log("Tipo novedad info: " . print_r($tipoNovedadInfo, true));
             
             // Adaptar datos según el tipo de novedad y estructura real de tabla
             $datosAdaptados = $this->adaptarDatosParaInsercion($datos);
@@ -448,12 +501,13 @@ class Novedades {
                 $datosAdaptados['compensa'],
                 $datosAdaptados['tipo_permiso'],
                 $datosAdaptados['observaciones'],
-                $periodo['periodo_mes'],
-                $periodo['periodo_anio'],
+                $periodo['month'], // PeriodoUtils devuelve 'month', no 'periodo_mes'
+                $periodo['year'],  // PeriodoUtils devuelve 'year', no 'periodo_anio'
                 $datosAdaptados['tipo_novedad']
             ];
 
-            // Log para debugging - mostrar parámetros SQL
+            // Log para debugging - mostrar período usado
+            error_log("Período utilizado: mes={$periodo['month']}, año={$periodo['year']}");
             error_log("Parámetros SQL: " . print_r($params, true));
 
             $novedadId = $this->db->insert($sql, $params);
@@ -884,6 +938,171 @@ class Novedades {
             
         } catch (Exception $e) {
             error_log("Error en getNovedadesPeriodoActual: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Obtener TODAS las novedades sin filtro de período (para consulta general)
+     */
+    public function getAllNovedades($filtros = []) {
+        try {
+            $tipoUsuario = Usuario::getTipoUsuario();
+            
+            // Si es usuario RRHH, puede ver todas las novedades
+            if ($tipoUsuario == Usuario::TIPO_RRHH) {
+                $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
+                               rle.NOMBRE, rle.APELLIDO,
+                               n.periodo_mes, n.periodo_anio
+                        FROM novedades n 
+                        INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
+                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        WHERE 1=1";
+            } else {
+                // Para otros tipos de usuario, aplicar filtro específico dinámicamente
+                $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
+                
+                $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
+                               rle.NOMBRE, rle.APELLIDO,
+                               n.periodo_mes, n.periodo_anio
+                        FROM novedades n 
+                        INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
+                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        WHERE tn.$campoPermiso = 1";
+            }
+            
+            $params = [];
+
+            // Filtros adicionales
+            if (!empty($filtros['legajo'])) {
+                $sql .= " AND n.legajo = ?";
+                $params[] = $filtros['legajo'];
+            }
+
+            if (!empty($filtros['sucursal'])) {
+                $sql .= " AND n.sucursal = ?";
+                $params[] = $filtros['sucursal'];
+            }
+
+            if (!empty($filtros['tipo_novedad'])) {
+                $sql .= " AND n.tipo_novedad = ?";
+                $params[] = $filtros['tipo_novedad'];
+            }
+
+            $sql .= " ORDER BY n.fecha_creacion DESC";
+
+            $stmt = $this->db->query($sql, $params);
+            $novedades = $stmt->fetchAll();
+            
+            // Procesar los resultados igual que en getNovedadesPeriodoActual
+            foreach ($novedades as &$novedad) {
+                // Agregar nombre de sucursal
+                $sucursalesMap = $this->obtenerMapaSucursales();
+                $novedad['nombre_sucursal'] = $sucursalesMap[$novedad['sucursal']] ?? 'Sucursal ' . $novedad['sucursal'];
+                
+                // Agregar valor display basado en tipo de novedad
+                $tipoNovedad = (int)$novedad['tipo_novedad'];
+                $valorNumerico = (float)$novedad['valor_numerico'];
+                
+                switch ($tipoNovedad) {
+                    case 1: // Cambio de sucursal
+                        $novedad['valor_display'] = 'Cambio de sucursal';
+                        break;
+                    case 2: // Nuevo puesto
+                        $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nuevo puesto';
+                        break;
+                    case 3: // Nuevo salario neto
+                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Ajuste salarial';
+                        break;
+                    case 4: // Ajuste de premios
+                        $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Premio';
+                        break;
+                    case 5: // Horas extras
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' horas extras' : 'Horas extras';
+                        break;
+                    case 6: // Horas adicionales
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' horas adicionales' : 'Horas adicionales';
+                        break;
+                    case 7: // Permisos
+                        $novedad['valor_display'] = 'Permiso' . ($novedad['compensa'] ? ' (compensa)' : '');
+                        break;
+                    case 8: // Cortes
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' cortes' : 'Cortes';
+                        break;
+                    case 9: // Producción 25%
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (25%)' : 'Producción 25%';
+                        break;
+                    case 10: // Producción 50%
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (50%)' : 'Producción 50%';
+                        break;
+                    case 11: // Producción 100%
+                        $novedad['valor_display'] = $valorNumerico != 0 ? $valorNumerico . ' unidades (100%)' : 'Producción 100%';
+                        break;
+                    default:
+                        $novedad['valor_display'] = 'N/A';
+                        break;
+                }
+                
+                // Procesar fechas igual que en el método original
+                $fechaRegistro = null;
+                $fechaVigencia = null;
+                
+                // Procesar fecha_creacion (registro)
+                if (!empty($novedad['fecha_creacion'])) {
+                    try {
+                        if ($novedad['fecha_creacion'] instanceof DateTime) {
+                            $fechaRegistro = $novedad['fecha_creacion']->format('d/m/Y');
+                        } else {
+                            $fechaRegistro = date('d/m/Y', strtotime($novedad['fecha_creacion']));
+                        }
+                    } catch (Exception $e) {
+                        $fechaRegistro = 'Fecha inválida';
+                    }
+                }
+                
+                // Procesar fecha_vigencia o fecha_permiso según corresponda
+                $fechaClave = null;
+                if (!empty($novedad['fecha_vigencia'])) {
+                    try {
+                        if ($novedad['fecha_vigencia'] instanceof DateTime) {
+                            $fechaVigencia = $novedad['fecha_vigencia']->format('d/m/Y');
+                        } else {
+                            $fechaVigencia = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                        }
+                        $fechaClave = $fechaVigencia;
+                    } catch (Exception $e) {
+                        $fechaVigencia = null;
+                    }
+                } elseif (!empty($novedad['fecha_permiso'])) {
+                    try {
+                        if ($novedad['fecha_permiso'] instanceof DateTime) {
+                            $fechaClave = $novedad['fecha_permiso']->format('d/m/Y');
+                        } else {
+                            $fechaClave = date('d/m/Y', strtotime($novedad['fecha_permiso']));
+                        }
+                    } catch (Exception $e) {
+                        $fechaClave = null;
+                    }
+                }
+                
+                // Asignar fechas procesadas
+                $novedad['fecha_registro'] = $fechaRegistro ?: 'N/A';
+                $novedad['fecha_display'] = $fechaClave ?: $fechaRegistro ?: 'N/A';
+
+                // Normalizar campos de fecha crudos a string ISO para JSON limpio
+                foreach (['fecha_creacion','fecha_vigencia','fecha_permiso'] as $campoF) {
+                    if (!empty($novedad[$campoF])) {
+                        if ($novedad[$campoF] instanceof DateTime) {
+                            $novedad[$campoF] = $novedad[$campoF]->format('Y-m-d H:i:s');
+                        }
+                    }
+                }
+            }
+            
+            return $novedades;
+            
+        } catch (Exception $e) {
+            error_log("Error en getAllNovedades: " . $e->getMessage());
             throw $e;
         }
     }
@@ -1416,6 +1635,20 @@ class Novedades {
         
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtener información completa de un tipo de novedad por ID
+     */
+    public function getTipoNovedadById($tipoId) {
+        $sql = "SELECT id, codigo, descripcion, activo, fecha_creacion,
+                       user_adm, user_com, user_prod, user_rrhh,
+                       cierre, corte
+                FROM tipos_novedad 
+                WHERE id = ?";
+        
+        $stmt = $this->db->query($sql, [$tipoId]);
+        return $stmt->fetch();
     }
 
     /**

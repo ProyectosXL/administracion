@@ -159,7 +159,7 @@ class GestionTiposApp {
                 throw new Error('Tipo no encontrado');
             }
 
-            // Preparar datos para actualización
+            // Preparar datos para actualización - INCLUYENDO CIERRE Y CORTE
             const datosActualizacion = {
                 id: parseInt(tipoId),
                 codigo: tipo.codigo,
@@ -168,7 +168,9 @@ class GestionTiposApp {
                 user_adm: Boolean(tipo.user_adm),
                 user_com: Boolean(tipo.user_com),
                 user_prod: Boolean(tipo.user_prod),
-                user_rrhh: Boolean(tipo.user_rrhh)
+                user_rrhh: Boolean(tipo.user_rrhh),
+                cierre: tipo.cierre || null,
+                corte: tipo.corte || null
             };
 
             // Actualizar el campo específico
@@ -211,8 +213,11 @@ class GestionTiposApp {
                 throw new Error(result.message || 'Error desconocido del servidor');
             }
 
-            // Actualizar datos locales
+            // Actualizar datos locales SOLO con el campo que cambió
             tipo[campo] = nuevoValor;
+            
+            // NO modificar cierre y corte ya que los enviamos correctamente
+            console.log('✅ Datos locales actualizados:', tipo);
 
             // Mostrar feedback visual
             this.mostrarNotificacion('Permiso actualizado correctamente', 'success');
@@ -419,14 +424,25 @@ class GestionTiposApp {
 
     actualizarEstadisticas() {
         const total = this.tipos.length;
-        const activos = this.tipos.filter(t => t.activo).length;
-        const conRRHH = this.tipos.filter(t => t.user_rrhh).length;
-        const conAdmin = this.tipos.filter(t => t.user_adm).length;
+        
+        // Convertir a números para comparación más segura
+        const activos = this.tipos.filter(t => parseInt(t.activo) === 1).length;
+        const conRRHH = this.tipos.filter(t => parseInt(t.user_rrhh) === 1).length;
+        const conAdmin = this.tipos.filter(t => parseInt(t.user_adm) === 1).length;
+        const conComercial = this.tipos.filter(t => parseInt(t.user_com) === 1).length;
+        const conProduccion = this.tipos.filter(t => parseInt(t.user_prod) === 1).length;
+
+        // Debug temporal para verificar
+        console.log('Estadísticas actualizadas:', {
+            total, activos, conRRHH, conAdmin, conComercial, conProduccion
+        });
 
         document.getElementById('total-tipos').textContent = total;
         document.getElementById('tipos-activos').textContent = activos;
         document.getElementById('tipos-rrhh').textContent = conRRHH;
         document.getElementById('tipos-admin').textContent = conAdmin;
+        document.getElementById('tipos-comercial').textContent = conComercial;
+        document.getElementById('tipos-produccion').textContent = conProduccion;
     }
 
     mostrarLoading(mostrar) {

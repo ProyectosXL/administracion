@@ -9,28 +9,26 @@
  */
 async function cargarEstadisticas() {
     try {
-        // Obtener novedades del período actual
-        const novedades = await NovedadesApp.request('get_novedades');
+        // Obtener TODAS las novedades
+        const todasNovedades = await NovedadesApp.request('get_all_novedades');
+        document.getElementById('total-novedades-todas').textContent = todasNovedades.length;
         
-        // Actualizar contadores
-        document.getElementById('total-novedades').textContent = novedades.length;
-        
-        // Simular pendientes (en una implementación real vendría del backend)
-        const pendientes = novedades.filter(n => !n.revisado).length;
-        document.getElementById('novedades-pendientes').textContent = pendientes || 0;
+        // Obtener novedades del período actual solamente
+        const novedadesPeriodo = await NovedadesApp.request('get_novedades');
+        document.getElementById('novedades-periodo').textContent = novedadesPeriodo.length;
 
         // Obtener sucursales
         const sucursales = await NovedadesApp.request('get_sucursales');
         document.getElementById('total-sucursales').textContent = sucursales.length;
 
-        // Mostrar últimas novedades
-        mostrarUltimasNovedades(novedades.slice(0, 5));
+        // Mostrar últimas novedades (usar todas las novedades para mostrar variedad)
+        mostrarUltimasNovedades(todasNovedades.slice(0, 5));
 
     } catch (error) {
         console.error('Error cargando estadísticas:', error);
         // Mostrar valores por defecto en caso de error
-        document.getElementById('total-novedades').textContent = '0';
-        document.getElementById('novedades-pendientes').textContent = '0';
+        document.getElementById('total-novedades-todas').textContent = '0';
+        document.getElementById('novedades-periodo').textContent = '0';
         document.getElementById('total-sucursales').textContent = '0';
     }
 }
@@ -64,7 +62,7 @@ function mostrarUltimasNovedades(novedades) {
                     <th>Empleado</th>
                     <th>Tipo de Novedad</th>
                     <th>Sucursal</th>
-                    <th>Fecha</th>
+                    <th>Fecha de registro</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                 </tr>

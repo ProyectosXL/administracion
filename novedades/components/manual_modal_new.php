@@ -1,7 +1,7 @@
 <?php
 // Determinar si el usuario es RRHH para mostrar contenido específico
-require_once(__DIR__ . '/../config/usuario_config.php');
-$esUsuarioRRHH = ($TIPO_USUARIO_ACTUAL === 4); // 4 = Recursos Humanos
+require_once(__DIR__ . '/../config/permisos.php');
+$esUsuarioRRHH = (isset($_SESSION['TipoUsuario']) && $_SESSION['TipoUsuario'] === 'RRHH');
 ?>
 
 <!-- Modal Manual de Usuario -->
@@ -11,7 +11,7 @@ $esUsuarioRRHH = ($TIPO_USUARIO_ACTUAL === 4); // 4 = Recursos Humanos
             <!-- Header -->
             <div class="modal-header">
                 <h5 class="modal-title" id="manualModalLabel">
-                    <i class="fas fa-book-open me-2"></i>Manual de Usuario - Sistema de Novedades 
+                    <i class="fas fa-book-open me-2"></i>Manual de Usuario - Sistema de Novedades RRHH
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>

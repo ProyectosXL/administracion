@@ -23,7 +23,7 @@ async function cargarNovedades() {
     mostrarLoading(true);
     
     try {
-        novedadesData = await NovedadesApp.request('get_novedades');
+        novedadesData = await NovedadesApp.request('get_all_novedades');
         aplicarFiltros();
         actualizarEstadisticas();
         
@@ -85,28 +85,12 @@ function inicializarSelect2() {
 }
 
 /**
- * Cargar todas las novedades
- */
-async function cargarNovedades() {
-    mostrarLoading(true);
-    
-    try {
-        novedadesData = await NovedadesApp.request('get_novedades');
-        aplicarFiltros();
-        actualizarEstadisticas();
-        
-    } catch (error) {
-        console.error('Error cargando novedades:', error);
-        mostrarSinResultados();
-    } finally {
-        mostrarLoading(false);
-    }
-}
-
-/**
  * Aplicar filtros a los datos - CORREGIDO
  */
 function aplicarFiltros() {
+    // Preservar filtro de período real si existe
+    const periodoRealTemp = filtrosActivos.periodoReal;
+    
     // Obtener valores de los filtros usando Select2
     filtrosActivos = {
         legajo: $('#filtro-legajo').val() || '', 
@@ -116,6 +100,11 @@ function aplicarFiltros() {
         fechaDesde: document.getElementById('fecha-desde').value,
         fechaHasta: document.getElementById('fecha-hasta').value
     };
+    
+    // Restaurar filtro de período real si existía
+    if (periodoRealTemp) {
+        filtrosActivos.periodoReal = periodoRealTemp;
+    }
 
     console.log('Aplicando filtros:', filtrosActivos);
 
@@ -141,8 +130,8 @@ function aplicarFiltros() {
             return false;
         }
         
-        // Filtro por rango de fechas
-        if (filtrosActivos.fechaDesde || filtrosActivos.fechaHasta) {
+        // Filtro por rango de fechas (solo si NO hay filtro de período real activo)
+        if (!filtrosActivos.periodoReal && (filtrosActivos.fechaDesde || filtrosActivos.fechaHasta)) {
             // Extraer la fecha de la fecha_creacion (formato: YYYY-MM-DD HH:MM:SS)
             let fechaNovedad = '';
             if (novedad.fecha_creacion) {
@@ -161,6 +150,20 @@ function aplicarFiltros() {
             
             if (filtrosActivos.fechaHasta && fechaNovedad && fechaNovedad > filtrosActivos.fechaHasta) {
                 console.log(`❌ Novedad ${novedad.id} filtrada por fecha hasta`);
+                return false;
+            }
+        }
+        
+        // Filtro por período real (mes/año de aplicación)
+        if (filtrosActivos.periodoReal) {
+            const periodoNovedad = {
+                mes: parseInt(novedad.periodo_mes),
+                anio: parseInt(novedad.periodo_anio)
+            };
+            
+            if (periodoNovedad.mes !== filtrosActivos.periodoReal.mes || 
+                periodoNovedad.anio !== filtrosActivos.periodoReal.anio) {
+                console.log(`❌ Novedad ${novedad.id} filtrada por período real - Esperado: ${filtrosActivos.periodoReal.mes}/${filtrosActivos.periodoReal.anio}, Actual: ${periodoNovedad.mes}/${periodoNovedad.anio}`);
                 return false;
             }
         }
@@ -751,6 +754,11 @@ function limpiarFiltros() {
     // Limpiar Select2 único
     $('#filtro-empleado').val(null).trigger('change');
     
+    // Limpiar filtros personalizados
+    if (filtrosActivos.periodoReal) {
+        delete filtrosActivos.periodoReal;
+    }
+    
     filtrosActivos = {};
     paginaActual = 1;
     aplicarFiltros();
@@ -763,6 +771,12 @@ function limpiarFiltros() {
  */
 function filtrarPeriodo(periodo) {
     console.log(`🔄 Aplicando filtro de período: ${periodo}`);
+    
+    // Limpiar filtro de período real para usar filtro por fecha de registro
+    if (filtrosActivos.periodoReal) {
+        delete filtrosActivos.periodoReal;
+        console.log('🧹 Limpiado filtro de período real para usar filtro por fecha');
+    }
     
     const hoy = new Date();
     const fechaDesde = document.getElementById('fecha-desde');
@@ -820,8 +834,75 @@ function filtrarPeriodo(periodo) {
     }
     
     console.log(`📅 Fechas establecidas - Desde: ${fechaDesde.value}, Hasta: ${fechaHasta.value}`);
+    console.log('🔍 Filtros activos antes de aplicar:', filtrosActivos);
     
     // Aplicar filtros automáticamente
+    aplicarFiltros();
+}
+
+/**
+ * Filtrar por período real (basado en período_mes y período_anio, no en fecha de registro)
+ */
+function filtrarPorPeriodoReal(tipoPeriodo) {
+    console.log(`🔄 Aplicando filtro por período real: ${tipoPeriodo}`);
+    
+    // Limpiar filtros de fecha de registro para evitar conflictos
+    const fechaDesde = document.getElementById('fecha-desde');
+    const fechaHasta = document.getElementById('fecha-hasta');
+    if (fechaDesde) fechaDesde.value = '';
+    if (fechaHasta) fechaHasta.value = '';
+    
+    const hoy = new Date();
+    let mesObjetivo, anioObjetivo;
+    
+    if (tipoPeriodo === 'actual') {
+        // Calcular período actual basado en la lógica de períodos (28-27)
+        const dia = hoy.getDate();
+        
+        if (dia <= 27) {
+            // Estamos en el período actual
+            mesObjetivo = hoy.getMonth() + 1; // getMonth() devuelve 0-11, necesitamos 1-12
+            anioObjetivo = hoy.getFullYear();
+        } else {
+            // Después del 27, ya estamos en el período siguiente
+            mesObjetivo = hoy.getMonth() + 2;
+            anioObjetivo = hoy.getFullYear();
+            
+            if (mesObjetivo > 12) {
+                mesObjetivo = 1;
+                anioObjetivo++;
+            }
+        }
+        
+    } else if (tipoPeriodo === 'siguiente') {
+        // Calcular período siguiente
+        const dia = hoy.getDate();
+        
+        if (dia <= 27) {
+            // Período siguiente es el próximo mes
+            mesObjetivo = hoy.getMonth() + 2;
+            anioObjetivo = hoy.getFullYear();
+        } else {
+            // Ya estamos en "período siguiente", así que el siguiente es +1 más
+            mesObjetivo = hoy.getMonth() + 3;
+            anioObjetivo = hoy.getFullYear();
+        }
+        
+        if (mesObjetivo > 12) {
+            mesObjetivo = mesObjetivo - 12;
+            anioObjetivo++;
+        }
+    }
+    
+    // Agregar filtro personalizado por período
+    filtrosActivos.periodoReal = {
+        mes: mesObjetivo,
+        anio: anioObjetivo
+    };
+    
+    console.log(`📅 Filtrando por período real: ${mesObjetivo.toString().padStart(2, '0')}/${anioObjetivo}`);
+    
+    // Aplicar filtros
     aplicarFiltros();
 }
 

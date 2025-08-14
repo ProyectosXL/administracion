@@ -6,6 +6,7 @@
     --success-color: #198754;
     --warning-color: #ffc107;
     --danger-color: #dc3545;
+    --info-color: #0dcaf0;
     --light-color: #f8f9fa;
     --dark-color: #212529;
 }
@@ -268,4 +269,71 @@ body {
 .badge-periodo {
     font-size: 0.75em;
     min-width: 60px;
+}
+
+/* Estilos para mensajes de fecha de vigencia */
+.fecha-vigencia-info {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.alert-sm {
+    font-size: 0.85rem;
+    border-radius: 6px;
+}
+
+.fecha-vigencia-info .alert {
+    margin-bottom: 0;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.fecha-vigencia-info .alert-info {
+    background-color: rgba(13, 202, 240, 0.1);
+    border-color: rgba(13, 202, 240, 0.2);
+    color: #055160;
+}
+
+.fecha-vigencia-info .alert-primary {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: rgba(13, 110, 253, 0.2);
+    color: #052c65;
+}
+
+.fecha-vigencia-info .alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.2);
+    color: #664d03;
+}
+
+/* Estilos adicionales para información de período */
+.fecha-vigencia-info .text-success {
+    font-weight: 500;
+}
+
+.fecha-vigencia-info .alert small {
+    line-height: 1.4;
+}
+
+/* Estilos para botones de filtro por período real */
+.btn-outline-success:hover {
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+.btn-outline-warning:hover {
+    background-color: var(--warning-color) !important;
+    border-color: var(--warning-color) !important;
+    color: var(--dark-color) !important;
+}
+
+/* Indicador de filtro activo */
+.filtro-periodo-activo {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

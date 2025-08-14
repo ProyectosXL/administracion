@@ -63,7 +63,7 @@ const tiposNovedadConfig = {
 };
 
 /**
- * Manejar cambio de tipo de novedad - MEJORADO CON LOGS
+ * Manejar cambio de tipo de novedad - MEJORADO CON LOGS Y FECHAS DINÁMICAS
  */
 function onTipoNovedadChange(selectElement) {
     const tipoSeleccionado = parseInt(selectElement.value);
@@ -103,12 +103,24 @@ function onTipoNovedadChange(selectElement) {
                 const campo = document.getElementById(campoId);
                 if (campo) {
                     campo.setAttribute('required', 'required');
+                    
+                    // Si es un campo de fecha de vigencia, configurarlo según el tipo de corte
+                    if (campoId.includes('fecha_vigencia')) {
+                        setTimeout(() => {
+                            configurarFechaVigencia(tipoSeleccionado, campoId);
+                        }, 100); // Pequeño delay para asegurar que el DOM esté listo
+                    }
                 }
             });
 
             // Lógica específica para cambio de sucursal
             if (tipoSeleccionado === 1) {
                 configurarCambioSucursal();
+            }
+            
+            // Lógica específica para cambio de puesto
+            if (tipoSeleccionado === 2) {
+                configurarCambioPuesto();
             }
         }
     } else {
@@ -145,6 +157,10 @@ function limpiarCamposDinamicos() {
             input.value = '';
             input.classList.remove('is-invalid', 'is-valid');
         });
+        
+        // Limpiar mensajes de fecha de vigencia
+        const mensajesFecha = config.querySelectorAll('.fecha-vigencia-info');
+        mensajesFecha.forEach(mensaje => mensaje.remove());
     });
 }
 
@@ -353,6 +369,11 @@ function validarConfiguracionTipo(tipoNovedad) {
             const importe = parseFloat(document.getElementById(tipoNovedad === 3 ? 'importe_salario' : 'importe_premios').value);
             if (importe <= 0) {
                 errores.push('El importe debe ser mayor a cero');
+                valido = false;
+            }
+            // Validar límite máximo (decimal(15,2) permite hasta 999,999,999,999.99)
+            if (importe > 999999999999.99) {
+                errores.push('El importe no puede ser mayor a $999,999,999,999.99');
                 valido = false;
             }
             break;
@@ -626,21 +647,444 @@ async function cargarPuestos() {
 }
 
 /**
- * Cargar tipos de novedad - NUEVO
+ * Cargar tipos de novedad - NUEVO CON INFORMACIÓN DE CORTE
  */
+let tiposNovedadData = {}; // Variable global para almacenar la información completa de tipos
+
+/**
+ * Calcular el primer día hábil del mes usando API de días feriados
+ */
+async function calcularPrimerDiaHabil(year, month) {
+    try {
+        // API para obtener feriados de Argentina
+        const response = await fetch(`https://nolaborables.com.ar/API/v2/feriados/${year}`);
+        const feriados = await response.json();
+        
+        // Crear array de fechas de feriados para el mes específico
+        const feriadosDelMes = feriados
+            .filter(feriado => {
+                const fechaFeriado = new Date(feriado.fecha);
+                return fechaFeriado.getMonth() === month && fechaFeriado.getFullYear() === year;
+            })
+            .map(feriado => new Date(feriado.fecha).getDate());
+        
+        // Buscar el primer día hábil
+        for (let dia = 1; dia <= 31; dia++) {
+            const fecha = new Date(year, month, dia);
+            
+            // Verificar que la fecha sea válida para el mes
+            if (fecha.getMonth() !== month) break;
+            
+            const diaSemana = fecha.getDay(); // 0 = domingo, 6 = sábado
+            
+            // Si no es fin de semana y no es feriado
+            if (diaSemana !== 0 && diaSemana !== 6 && !feriadosDelMes.includes(dia)) {
+                return dia;
+            }
+        }
+        
+        // Fallback: si no se encuentra, retornar día 1
+        return 1;
+        
+    } catch (error) {
+        console.warn('Error obteniendo feriados, usando día 1 como fallback:', error);
+        // Fallback simple: buscar primer día que no sea fin de semana
+        for (let dia = 1; dia <= 7; dia++) {
+            const fecha = new Date(year, month, dia);
+            const diaSemana = fecha.getDay();
+            if (diaSemana !== 0 && diaSemana !== 6) {
+                return dia;
+            }
+        }
+        return 1;
+    }
+}
+
+/**
+ * Obtener día de cierre efectivo (incluyendo cálculo de primer día hábil)
+ */
+async function obtenerDiaCierreEfectivo(valorCierre, year, month) {
+    if (valorCierre === '1er día hábil') {
+        return await calcularPrimerDiaHabil(year, month);
+    }
+    
+    // Si es un número, convertir a entero
+    const diaNumerico = parseInt(valorCierre);
+    if (!isNaN(diaNumerico) && diaNumerico >= 1 && diaNumerico <= 31) {
+        return diaNumerico;
+    }
+    
+    // Fallback
+    return 28;
+}
+
+/**
+ * Calcular período siguiente basado en el día de cierre del tipo de novedad
+ */
+async function calcularPeriodoSiguienteSegunCierre(tipoNovedadId, fechaReferencia = null) {
+    const tipoData = tiposNovedadData[tipoNovedadId];
+    if (!tipoData || !tipoData.cierre) {
+        // Fallback: usar día 28
+        return calcularPeriodoConDiaCierre(28, fechaReferencia, false, true);
+    }
+    
+    const hoy = fechaReferencia ? new Date(fechaReferencia) : new Date();
+    const year = hoy.getFullYear();
+    const month = hoy.getMonth(); // 0-based
+    
+    // Obtener día de cierre efectivo
+    const diaCierre = await obtenerDiaCierreEfectivo(tipoData.cierre, year, month);
+    
+    // Determinar si es "1er día hábil" para aplicar lógica especial
+    const esPrimerDiaHabil = tipoData.cierre === '1er día hábil';
+    
+    return calcularPeriodoConDiaCierre(diaCierre, fechaReferencia, esPrimerDiaHabil, true);
+}
+async function calcularPeriodoSegunCierre(tipoNovedadId, fechaReferencia = null) {
+    const tipoData = tiposNovedadData[tipoNovedadId];
+    if (!tipoData || !tipoData.cierre) {
+        // Fallback: usar día 28
+        return calcularPeriodoConDiaCierre(28, fechaReferencia, false);
+    }
+    
+    const hoy = fechaReferencia ? new Date(fechaReferencia) : new Date();
+    const year = hoy.getFullYear();
+    const month = hoy.getMonth(); // 0-based
+    
+    // Obtener día de cierre efectivo
+    const diaCierre = await obtenerDiaCierreEfectivo(tipoData.cierre, year, month);
+    
+    // Determinar si es "1er día hábil" para aplicar lógica especial
+    const esPrimerDiaHabil = tipoData.cierre === '1er día hábil';
+    
+    return calcularPeriodoConDiaCierre(diaCierre, fechaReferencia, esPrimerDiaHabil);
+}
+
+/**
+ * Calcular período con un día de cierre específico
+ */
+function calcularPeriodoConDiaCierre(diaCierre, fechaReferencia = null, esPrimerDiaHabil = false, esPeriodoSiguiente = false) {
+    const hoy = fechaReferencia ? new Date(fechaReferencia) : new Date();
+    const diaActual = hoy.getDate();
+    
+    let yearPeriodo = hoy.getFullYear();
+    let mesPeriodo = hoy.getMonth(); // 0-based
+    
+    if (esPrimerDiaHabil) {
+        // LÓGICA ESPECIAL PARA "1er día hábil":
+        // Si día actual <= 1er día hábil → período del mes ANTERIOR
+        // Si día actual > 1er día hábil → período del mes ACTUAL
+        if (diaActual <= diaCierre) {
+            mesPeriodo--;
+            
+            // Si se va antes de enero, decrementar año
+            if (mesPeriodo < 0) {
+                mesPeriodo = 11; // diciembre
+                yearPeriodo--;
+            }
+        }
+        // Si diaActual > diaCierre, se queda en el mes actual (no se modifica)
+        
+    } else {
+        // LÓGICA NORMAL PARA DÍAS NUMÉRICOS:
+        // Si día actual > día de cierre → período del mes SIGUIENTE
+        if (diaActual > diaCierre) {
+            mesPeriodo++;
+            
+            // Si se pasa de diciembre, incrementar año
+            if (mesPeriodo > 11) {
+                mesPeriodo = 0;
+                yearPeriodo++;
+            }
+        }
+        // Si diaActual <= diaCierre, se queda en el mes actual (no se modifica)
+    }
+    
+    // Si se solicita período siguiente, avanzar un mes más
+    if (esPeriodoSiguiente) {
+        mesPeriodo++;
+        if (mesPeriodo > 11) {
+            mesPeriodo = 0;
+            yearPeriodo++;
+        }
+    }
+    
+    return {
+        year: yearPeriodo,
+        month: mesPeriodo + 1, // Convertir a 1-based para la BD
+        diaCierre: diaCierre,
+        fechaPeriodo: new Date(yearPeriodo, mesPeriodo, diaCierre),
+        esPrimerDiaHabil: esPrimerDiaHabil,
+        esPeriodoSiguiente: esPeriodoSiguiente,
+        logicaAplicada: esPrimerDiaHabil 
+            ? (diaActual <= diaCierre ? 'mes anterior' : 'mes actual')
+            : (diaActual > diaCierre ? 'mes siguiente' : 'mes actual'),
+        logicaFinal: esPeriodoSiguiente ? 'período siguiente aplicado' : 'período normal'
+    };
+}
+
+/**
+ * Calcular fecha del período para fecha de vigencia
+ * La fecha de vigencia es el día 28 del mes ANTERIOR al período calculado
+ */
+async function calcularFechaPeriodoParaVigencia(tipoNovedadId) {
+    const periodo = await calcularPeriodoSegunCierre(tipoNovedadId);
+    
+    // Calcular el mes anterior al período
+    let mesInicio = periodo.month - 1; // periodo.month ya está en 1-based
+    let yearInicio = periodo.year;
+    
+    // Si el período es enero, el mes anterior es diciembre del año anterior
+    if (mesInicio < 1) {
+        mesInicio = 12;
+        yearInicio--;
+    }
+    
+    // La fecha de vigencia es siempre el día 28 del mes anterior al período
+    const fechaInicioPeriodo = new Date(yearInicio, mesInicio - 1, 28); // mesInicio - 1 porque Date usa 0-based
+    
+    // Formatear como YYYY-MM-DD para input date
+    return fechaInicioPeriodo.toISOString().split('T')[0];
+}
+
+/**
+ * Calcular fecha del período siguiente para fecha de vigencia
+ */
+async function calcularFechaPeriodoSiguienteParaVigencia(tipoNovedadId) {
+    const periodo = await calcularPeriodoSiguienteSegunCierre(tipoNovedadId);
+    
+    // Calcular el mes anterior al período siguiente
+    let mesInicio = periodo.month - 1; // periodo.month ya está en 1-based
+    let yearInicio = periodo.year;
+    
+    // Si el período es enero, el mes anterior es diciembre del año anterior
+    if (mesInicio < 1) {
+        mesInicio = 12;
+        yearInicio--;
+    }
+    
+    // La fecha de vigencia es siempre el día 28 del mes anterior al período
+    const fechaInicioPeriodo = new Date(yearInicio, mesInicio - 1, 28); // mesInicio - 1 porque Date usa 0-based
+    
+    // Formatear como YYYY-MM-DD para input date
+    return fechaInicioPeriodo.toISOString().split('T')[0];
+}
+/**
+ * Configurar fecha de vigencia según tipo de corte
+ */
+async function configurarFechaVigencia(tipoNovedadId, campoFechaId) {
+    const tipoData = tiposNovedadData[tipoNovedadId];
+    const campoFecha = document.getElementById(campoFechaId);
+    
+    if (!tipoData || !campoFecha) return;
+    
+    // Prevenir configuraciones múltiples simultáneas
+    if (campoFecha.hasAttribute('data-configurando')) {
+        console.log('⏳ Configuración en proceso, saltando...');
+        return;
+    }
+    campoFecha.setAttribute('data-configurando', 'true');
+    
+    try {
+        // Buscar contenedor del campo para agregar mensaje
+        const contenedorCampo = campoFecha.closest('.mb-3') || campoFecha.parentElement;
+        
+        // Limpiar TODOS los mensajes anteriores de forma más agresiva
+        const todoElDocumento = document;
+        const todosMensajesGlobales = todoElDocumento.querySelectorAll('.fecha-vigencia-info');
+        todosMensajesGlobales.forEach(mensaje => {
+            if (contenedorCampo.contains(mensaje) || mensaje.closest('.form-group') === contenedorCampo) {
+                mensaje.remove();
+            }
+        });
+    
+    if (tipoData.corte === 'Período') {
+        // Si es Período, calcular fecha basada en día de cierre
+        try {
+            const fechaPeriodo = await calcularFechaPeriodoParaVigencia(tipoNovedadId);
+            const periodo = await calcularPeriodoSegunCierre(tipoNovedadId);
+            
+            campoFecha.value = fechaPeriodo;
+            
+            // Calcular fechas del período para mostrar
+            let mesInicioPeriodo = periodo.month - 1;
+            let yearInicioPeriodo = periodo.year;
+            
+            if (mesInicioPeriodo < 1) {
+                mesInicioPeriodo = 12;
+                yearInicioPeriodo--;
+            }
+            
+            const fechaInicio = `28/${mesInicioPeriodo.toString().padStart(2, '0')}/${yearInicioPeriodo}`;
+            const fechaFin = `27/${periodo.month.toString().padStart(2, '0')}/${periodo.year}`;
+            
+            // Mensaje explicativo con información del período
+            let cierreTexto;
+            
+            if (tipoData.cierre === '1er día hábil') {
+                cierreTexto = `primer día hábil (día ${periodo.diaCierre})`;
+            } else {
+                cierreTexto = `día ${tipoData.cierre}`;
+            }
+                
+            const mensajeInfo = document.createElement('div');
+            mensajeInfo.className = 'fecha-vigencia-info mt-2';
+            mensajeInfo.innerHTML = `
+                <div class="alert alert-info alert-sm py-2">
+                    <i class="fas fa-calendar-check me-2"></i>
+                    <strong>Período:</strong> 
+                    ${periodo.month.toString().padStart(2, '0')}/${periodo.year}
+                    <br>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Rango:</strong> ${fechaInicio} al ${fechaFin} | 
+                        <strong>Cierre:</strong> ${cierreTexto}
+                    </small>
+                    <br>
+                    <small class="text-success">
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        <strong>Fecha de vigencia:</strong> Inicio del período (${fechaInicio})
+                    </small>
+                </div>
+            `;
+            contenedorCampo.appendChild(mensajeInfo);
+            
+        } catch (error) {
+            console.error('Error calculando período:', error);
+            
+            // Fallback al cálculo simple
+            const hoy = new Date();
+            const fechaFallback = new Date(hoy.getFullYear(), hoy.getMonth(), 28);
+            campoFecha.value = fechaFallback.toISOString().split('T')[0];
+            
+            const mensajeInfo = document.createElement('div');
+            mensajeInfo.className = 'fecha-vigencia-info mt-2';
+            mensajeInfo.innerHTML = `
+                <div class="alert alert-warning alert-sm py-2">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Fecha estimada:</strong> Se estableció una fecha aproximada. Verifique y ajuste si es necesario.
+                </div>
+            `;
+            contenedorCampo.appendChild(mensajeInfo);
+        }
+        
+    } else if (tipoData.corte === 'Período siguiente') {
+        // Si es Período siguiente, calcular fecha basada en período siguiente
+        try {
+            const fechaPeriodo = await calcularFechaPeriodoSiguienteParaVigencia(tipoNovedadId);
+            const periodo = await calcularPeriodoSiguienteSegunCierre(tipoNovedadId);
+            
+            campoFecha.value = fechaPeriodo;
+            
+            // Calcular fechas del período siguiente para mostrar
+            let mesInicioPeriodo = periodo.month - 1;
+            let yearInicioPeriodo = periodo.year;
+            
+            if (mesInicioPeriodo < 1) {
+                mesInicioPeriodo = 12;
+                yearInicioPeriodo--;
+            }
+            
+            const fechaInicio = `28/${mesInicioPeriodo.toString().padStart(2, '0')}/${yearInicioPeriodo}`;
+            const fechaFin = `27/${periodo.month.toString().padStart(2, '0')}/${periodo.year}`;
+            
+            // Mensaje explicativo con información del período siguiente
+            let cierreTexto;
+            
+            if (tipoData.cierre === '1er día hábil') {
+                cierreTexto = `primer día hábil (día ${periodo.diaCierre})`;
+            } else {
+                cierreTexto = `día ${tipoData.cierre}`;
+            }
+                
+            const mensajeInfo = document.createElement('div');
+            mensajeInfo.className = 'fecha-vigencia-info mt-2';
+            mensajeInfo.innerHTML = `
+                <div class="alert alert-warning alert-sm py-2">
+                    <i class="fas fa-forward me-2"></i>
+                    <strong>Período Siguiente:</strong> 
+                    ${periodo.month.toString().padStart(2, '0')}/${periodo.year}
+                    <br>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Rango:</strong> ${fechaInicio} al ${fechaFin} | 
+                        <strong>Cierre:</strong> ${cierreTexto}
+                    </small>
+                    <br>
+                    <small class="text-success">
+                        <i class="fas fa-calendar-plus me-1"></i>
+                        <strong>Fecha de vigencia:</strong> Inicio del período siguiente (${fechaInicio})
+                    </small>
+                </div>
+            `;
+            contenedorCampo.appendChild(mensajeInfo);
+            
+        } catch (error) {
+            console.error('Error calculando período siguiente:', error);
+            
+            // Fallback
+            const hoy = new Date();
+            const mesProximo = hoy.getMonth() + 1;
+            const yearProximo = mesProximo > 11 ? hoy.getFullYear() + 1 : hoy.getFullYear();
+            const mesAjustado = mesProximo > 11 ? 0 : mesProximo;
+            const fechaFallback = new Date(yearProximo, mesAjustado, 28);
+            campoFecha.value = fechaFallback.toISOString().split('T')[0];
+            
+            const mensajeInfo = document.createElement('div');
+            mensajeInfo.className = 'fecha-vigencia-info mt-2';
+            mensajeInfo.innerHTML = `
+                <div class="alert alert-warning alert-sm py-2">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Fecha estimada:</strong> Se estableció una fecha aproximada del período siguiente. Verifique y ajuste si es necesario.
+                </div>
+            `;
+            contenedorCampo.appendChild(mensajeInfo);
+        }
+        
+    } else if (tipoData.corte === 'Fecha Vigencia') {
+        // Si es Fecha Vigencia, limpiar campo y permitir selección libre
+        campoFecha.value = '';
+        
+        // Agregar mensaje informativo
+        const mensajeInfo = document.createElement('div');
+        mensajeInfo.className = 'fecha-vigencia-info mt-2';
+        mensajeInfo.innerHTML = `
+            <div class="alert alert-primary alert-sm py-2">
+                <i class="fas fa-calendar-alt me-2"></i>
+                <strong>Fecha de vigencia libre:</strong> Seleccione la fecha específica de entrada en vigencia.
+            </div>
+        `;
+        contenedorCampo.appendChild(mensajeInfo);
+    }
+    
+    } finally {
+        // Remover flag de configuración en proceso
+        campoFecha.removeAttribute('data-configurando');
+    }
+}
+
 async function cargarTiposNovedad() {
     try {
         const tipos = await NovedadesApp.request('get_tipos_novedad');
+        
+        // Almacenar la información completa globalmente
+        tiposNovedadData = {};
+        tipos.forEach(tipo => {
+            tiposNovedadData[tipo.id] = tipo;
+        });
         
         const selectTipo = document.getElementById('tipo_novedad');
         if (selectTipo) {
             selectTipo.innerHTML = '<option value="">Seleccione tipo de novedad...</option>';
             tipos.forEach(tipo => {
-                selectTipo.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
+                if (tipo.activo == 1) { // Solo mostrar tipos activos
+                    selectTipo.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
+                }
             });
         }
 
         console.log('Tipos de novedad cargados:', tipos.length);
+        console.log('Datos de tipos:', tiposNovedadData);
 
     } catch (error) {
         console.error('Error cargando tipos de novedad:', error);
@@ -719,6 +1163,12 @@ function configurarAutocompletadoEmpleado() {
                     }
                     
                     NovedadesApp.mostrarExito('Empleado encontrado automáticamente');
+                    
+                    // Si está activo el tipo "Cambio de Puesto", actualizar puesto actual
+                    const tipoSelect = document.getElementById('tipo_novedad');
+                    if (tipoSelect && tipoSelect.value === '2') {
+                        configurarCambioPuesto();
+                    }
                     
                 } catch (error) {
                     console.log('Empleado no encontrado para autocompletado:', legajo);
@@ -811,3 +1261,49 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('Formulario Nueva Novedad - Inicializado correctamente');
 });
+
+/**
+ * Configurar cambio de puesto - Mostrar puesto actual
+ */
+async function configurarCambioPuesto() {
+    const legajoInput = document.getElementById('legajo');
+    
+    if (!legajoInput || !legajoInput.value) {
+        // Si no hay empleado seleccionado, ocultar el puesto actual
+        const puestoActualInfo = document.getElementById('puesto-actual-info');
+        if (puestoActualInfo) {
+            puestoActualInfo.style.display = 'none';
+        }
+        return;
+    }
+    
+    try {
+        const legajo = legajoInput.value;
+        console.log('🔍 Obteniendo puesto actual para legajo:', legajo);
+        
+        const empleado = await NovedadesApp.request('buscar_empleado', { legajo: legajo });
+        console.log('👤 Datos empleado recibidos:', empleado);
+        
+        const puestoActualInfo = document.getElementById('puesto-actual-info');
+        const puestoActualTexto = document.getElementById('puesto-actual-texto');
+        
+        if (puestoActualInfo && puestoActualTexto) {
+            if (empleado.puesto_actual && empleado.puesto_actual.trim()) {
+                puestoActualTexto.textContent = empleado.puesto_actual.trim();
+                puestoActualInfo.style.display = 'block';
+                console.log('✅ Mostrando puesto actual:', empleado.puesto_actual.trim());
+            } else {
+                puestoActualTexto.textContent = 'No especificado';
+                puestoActualInfo.style.display = 'block';
+                console.log('⚠️ Puesto actual no especificado');
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Error obteniendo puesto actual:', error);
+        const puestoActualInfo = document.getElementById('puesto-actual-info');
+        if (puestoActualInfo) {
+            puestoActualInfo.style.display = 'none';
+        }
+    }
+}

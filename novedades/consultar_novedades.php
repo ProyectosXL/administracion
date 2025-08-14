@@ -3,6 +3,8 @@
  * Página para consultar novedades
  * /novedades/consultar_novedades.php
  */
+require_once 'includes/periodo_helper.php';
+$periodoInfo = PeriodoHelper::getPeriodoActual();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -44,7 +46,7 @@
                 <div class="col-md-4 text-end">
                     <span class="periodo-badge">
                         <i class="fas fa-calendar-alt me-2"></i>
-                        28/07/2025 - 27/08/2025
+                        <?php echo $periodoInfo['badge']; ?>
                     </span>
                 </div>
             </div>
@@ -92,14 +94,14 @@
                     
                     <div class="col-md-2">
                         <label for="fecha-desde" class="form-label">
-                            <i class="fas fa-calendar-alt me-2"></i>Fecha Desde
+                            <i class="fas fa-calendar-alt me-2"></i>Fecha Registro Desde
                         </label>
                         <input type="date" class="form-control" id="fecha-desde">
                     </div>
                     
                     <div class="col-md-2">
                         <label for="fecha-hasta" class="form-label">
-                            <i class="fas fa-calendar-alt me-2"></i>Fecha Hasta
+                            <i class="fas fa-calendar-alt me-2"></i>Fecha Registro Hasta
                         </label>
                         <input type="date" class="form-control" id="fecha-hasta">
                     </div>
@@ -122,11 +124,16 @@
                     <div class="col-md-12 d-flex justify-content-between">
                         <!-- Filtros rápidos por período -->
                         <div class="btn-group" role="group">
-                            <span class="text-muted me-3 align-self-center small">Períodos rápidos:</span>
+                            <span class="text-muted me-3 align-self-center small">Filtros rápidos:</span>
                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarPeriodo('hoy')">Hoy</button>
                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarPeriodo('semana')">Esta semana</button>
                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarPeriodo('mes')">Este mes</button>
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="filtrarPeriodo('actual')">Período actual</button>
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="filtrarPorPeriodoReal('actual')">
+                                <i class="fas fa-calendar-check me-1"></i>Período actual
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="filtrarPorPeriodoReal('siguiente')">
+                                <i class="fas fa-forward me-1"></i>Período siguiente
+                            </button>
                         </div>
                         
                         <!-- Botones de exportar -->
