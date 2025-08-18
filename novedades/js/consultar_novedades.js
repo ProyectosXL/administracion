@@ -4,6 +4,20 @@
  * JavaScript específico para la consulta de novedades
  */
 
+// Mapeo de estados: números del frontend a strings de la base de datos
+const ESTADOS_MAP = {
+    1: 'Enviada',
+    2: 'En Revisión', 
+    3: 'Aprobada',
+    4: 'Rechazada',
+    5: 'Procesada'
+};
+
+// Función para convertir número de estado a string
+function mapearEstado(numeroEstado) {
+    return ESTADOS_MAP[numeroEstado] || 'Enviada';
+}
+
 let novedadesData = [];
 let filtrosActivos = {};
 let vistaActual = 'tabla';
@@ -96,6 +110,7 @@ function aplicarFiltros() {
         legajo: $('#filtro-legajo').val() || '', 
         sucursal: document.getElementById('filtro-sucursal').value,
         tipo: document.getElementById('filtro-tipo').value,
+        estado: document.getElementById('filtro-estado').value,
         empleado: $('#filtro-empleado').val() || '',
         fechaDesde: document.getElementById('fecha-desde').value,
         fechaHasta: document.getElementById('fecha-hasta').value
@@ -122,6 +137,11 @@ function aplicarFiltros() {
         
         // Filtro por tipo de novedad
         if (filtrosActivos.tipo && novedad.tipo_novedad != filtrosActivos.tipo) {
+            return false;
+        }
+        
+        // Filtro por estado - usar estado_numero para comparación
+        if (filtrosActivos.estado && novedad.estado_numero != parseInt(filtrosActivos.estado)) {
             return false;
         }
         
@@ -228,7 +248,8 @@ function mostrarTabla(datos) {
             valor = '-';
         }
         const fechaRegistro = NovedadesApp.formatearFecha(novedad.fecha_creacion);
-        const estado = obtenerBadgeEstado();
+        console.log('📊 Tabla - Novedad ID:', novedad.id, 'estado_numero:', novedad.estado_numero);
+        const estado = obtenerBadgeEstado(novedad.estado_numero || 1);
         
         // Formatear período
         let periodoDisplay = '-';
@@ -269,6 +290,11 @@ function mostrarTabla(datos) {
                                 title="Ver detalle">
                             <i class="fas fa-eye"></i>
                         </button>
+                        ${NovedadesApp.puedeEditarEstados() ? `
+                        <button class="btn btn-outline-secondary btn-sm" onclick="mostrarModalCambiarEstado(${novedad.id}, ${novedad.estado_numero || 1})" 
+                                title="Cambiar estado">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>` : ''}
                         <button class="btn btn-outline-warning btn-sm" onclick="editarNovedad(${novedad.id})" 
                                 title="Editar novedad">
                             <i class="fas fa-edit"></i>
@@ -306,7 +332,8 @@ function mostrarTarjetas(datos) {
         const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
         const valor = (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) ? (NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico) : '';
         const fechaRegistro = NovedadesApp.formatearFecha(novedad.fecha_creacion);
-        const estado = obtenerBadgeEstado();
+        console.log('🎴 Tarjetas - Novedad ID:', novedad.id, 'estado_numero:', novedad.estado_numero);
+        const estado = obtenerBadgeEstado(novedad.estado_numero || 1);
 
         html += `
             <div class="col-md-6 col-lg-4 mb-3">
@@ -355,6 +382,10 @@ function mostrarTarjetas(datos) {
                             <button class="btn btn-outline-info btn-sm" onclick="verDetalleNovedad(${novedad.id})" title="Ver detalle">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            ${NovedadesApp.puedeEditarEstados() ? `
+                            <button class="btn btn-outline-secondary btn-sm" onclick="mostrarModalCambiarEstado(${novedad.id}, ${novedad.estado_numero || 1})" title="Cambiar estado">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>` : ''}
                             <button class="btn btn-outline-warning btn-sm" onclick="editarNovedad(${novedad.id})" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -379,17 +410,22 @@ function mostrarTarjetas(datos) {
 }
 
 /**
- * Obtener badge de estado aleatorio (simulado)
+ * Obtener badge de estado basado en el valor real del estado
  */
-function obtenerBadgeEstado() {
-    const estados = [
-        { texto: 'Registrada', clase: 'bg-info' },
-        { texto: 'En Revisión', clase: 'bg-warning' },
-        { texto: 'Aprobada', clase: 'bg-success' },
-        { texto: 'Procesada', clase: 'bg-secondary' }
-    ];
+function obtenerBadgeEstado(estadoNumero) {
+    console.log('🔍 obtenerBadgeEstado recibió:', estadoNumero, 'tipo:', typeof estadoNumero);
     
-    const estado = estados[Math.floor(Math.random() * estados.length)];
+    const estados = {
+        1: { texto: 'Enviada', clase: 'bg-info text-white' },
+        2: { texto: 'En Revisión', clase: 'bg-warning text-dark' },
+        3: { texto: 'Aprobada', clase: 'bg-success text-white' },
+        4: { texto: 'Rechazada', clase: 'bg-danger text-white' },
+        5: { texto: 'Procesada', clase: 'bg-secondary text-white' }
+    };
+    
+    const estado = estados[estadoNumero] || { texto: 'Estado Desconocido', clase: 'bg-light text-dark' };
+    console.log('🎯 Estado seleccionado:', estado);
+    
     return `<span class="badge ${estado.clase}">${estado.texto}</span>`;
 }
 
@@ -437,7 +473,8 @@ function mostrarModalDetalleCompleto(novedad) {
                     <div class="card-body">
                         <table class="table table-sm">
                             <tr><td><strong>Tipo:</strong></td><td><span class="badge bg-primary">${novedad.tipo_descripcion}</span></td></tr>
-                                                                        <tr><td><strong>Período:</strong></td><td>${(novedad.periodo_mes && novedad.periodo_anio) ? novedad.periodo_mes + '/' + novedad.periodo_anio : 'Período actual'}</td></tr>
+                            <tr><td><strong>Estado:</strong></td><td>${obtenerBadgeEstado(novedad.estado_numero || 1)}</td></tr>
+                            <tr><td><strong>Período:</strong></td><td>${(novedad.periodo_mes && novedad.periodo_anio) ? novedad.periodo_mes + '/' + novedad.periodo_anio : 'Período actual'}</td></tr>
                             <tr><td><strong>Fecha Registro:</strong></td><td>${NovedadesApp.formatearFecha(novedad.fecha_creacion)}</td></tr>
                             ${novedad.fecha_vigencia ? `<tr><td><strong>Fecha Vigencia:</strong></td><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
                         </table>
@@ -519,6 +556,12 @@ function mostrarModalDetalleCompleto(novedad) {
                 nuevoPuestoDetalle = novedad.puesto;
             }
             
+            // Determinar tipo de puesto y fechas
+            const tipoPuesto = novedad.tipo_nuevo_puesto || 'permanente';
+            const esPermanente = tipoPuesto === 'permanente';
+            const iconoTipo = esPermanente ? 'fa-check-circle text-success' : 'fa-clock text-warning';
+            const textTipo = esPermanente ? 'Permanente' : 'Temporario';
+            
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -527,17 +570,40 @@ function mostrarModalDetalleCompleto(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Nuevo Puesto:</strong><br>
                                     <span class="badge bg-success">${nuevoPuestoDetalle || 'No especificado'}</span>
                                 </div>
+                                <div class="col-md-4">
+                                    <strong>Tipo de Cambio:</strong><br>
+                                    <span class="badge ${esPermanente ? 'bg-success' : 'bg-warning text-dark'}">
+                                        <i class="fas ${iconoTipo} me-1"></i>${textTipo}
+                                    </span>
+                                </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-6">
-                                    <strong>Fecha de Vigencia:</strong><br>
+                                <div class="col-md-4">
+                                    <strong>Fecha de Inicio:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
                                 ` : ''}
                             </div>
+                            ${(!esPermanente && novedad.fecha_vigencia_hasta) ? `
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-calendar-times me-2"></i>
+                                        <strong>Fecha de Finalización:</strong> ${(() => {
+                                            console.log('🐛 DEBUG fecha_vigencia_hasta:', novedad.fecha_vigencia_hasta);
+                                            console.log('🐛 DEBUG tipo:', typeof novedad.fecha_vigencia_hasta);
+                                            if (typeof novedad.fecha_vigencia_hasta === 'object') {
+                                                console.log('🐛 DEBUG objeto completo:', JSON.stringify(novedad.fecha_vigencia_hasta));
+                                            }
+                                            return NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta);
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -748,6 +814,7 @@ function limpiarFiltros() {
     // Limpiar selects normales
     document.getElementById('filtro-sucursal').value = '';
     document.getElementById('filtro-tipo').value = '';
+    document.getElementById('filtro-estado').value = '';
     document.getElementById('fecha-desde').value = '';
     document.getElementById('fecha-hasta').value = '';
     
@@ -1029,6 +1096,7 @@ function exportarExcel() {
         if (filtrosActivos.legajo && !novedad.legajo.toString().includes(filtrosActivos.legajo)) return false;
         if (filtrosActivos.sucursal && novedad.sucursal != filtrosActivos.sucursal) return false;
         if (filtrosActivos.tipo && novedad.tipo_novedad != filtrosActivos.tipo) return false;
+        if (filtrosActivos.estado && novedad.estado_numero != parseInt(filtrosActivos.estado)) return false;
         if (filtrosActivos.empleado) {
             const nombreCompleto = `${novedad.nombre} ${novedad.apellido}`.toLowerCase();
             if (!nombreCompleto.includes(filtrosActivos.empleado)) return false;
@@ -1086,6 +1154,7 @@ function imprimirReporte() {
         if (filtrosActivos.legajo && !novedad.legajo.toString().includes(filtrosActivos.legajo)) return false;
         if (filtrosActivos.sucursal && novedad.sucursal != filtrosActivos.sucursal) return false;
         if (filtrosActivos.tipo && novedad.tipo_novedad != filtrosActivos.tipo) return false;
+        if (filtrosActivos.estado && novedad.estado_numero != parseInt(filtrosActivos.estado)) return false;
         if (filtrosActivos.empleado) {
             const nombreCompleto = `${novedad.nombre} ${novedad.apellido}`.toLowerCase();
             if (!nombreCompleto.includes(filtrosActivos.empleado)) return false;
@@ -1311,6 +1380,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners para otros filtros
     const filtroSucursal = document.getElementById('filtro-sucursal');
     const filtroTipo = document.getElementById('filtro-tipo');
+    const filtroEstado = document.getElementById('filtro-estado');
     
     if (filtroSucursal) {
         filtroSucursal.addEventListener('change', aplicarFiltros);
@@ -1320,9 +1390,14 @@ document.addEventListener('DOMContentLoaded', function() {
         filtroTipo.addEventListener('change', aplicarFiltros);
     }
     
+    if (filtroEstado) {
+        filtroEstado.addEventListener('change', aplicarFiltros);
+    }
+    
     // Event listeners para filtros normales
     document.getElementById('filtro-sucursal').addEventListener('change', aplicarFiltros);
     document.getElementById('filtro-tipo').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtro-estado').addEventListener('change', aplicarFiltros);
     
     // Event listeners para Select2 (se configuran después de inicializar)
     setTimeout(() => {
@@ -1413,8 +1488,12 @@ function actualizarEstadisticasFiltros(datosFiltrados) {
  */
 async function editarNovedad(id) {
     try {
+        console.log('🔄 Iniciando edición de novedad ID:', id);
+        
         // Obtener los datos actuales de la novedad
+        console.log('📡 Obteniendo datos de novedad...');
         const novedad = await NovedadesApp.request('get_novedad', { id: id });
+        console.log('✅ Datos obtenidos:', novedad);
         
         // Crear formulario de edición modal
         const modalHtml = `
@@ -1467,11 +1546,26 @@ async function editarNovedad(id) {
         modal.show();
         
         // Generar formulario con datos actuales
-        await generarFormularioEdicion(novedad);
+        try {
+            console.log('🔄 Generando formulario de edición...');
+            await generarFormularioEdicion(novedad);
+            console.log('✅ Formulario generado');
+        } catch (formError) {
+            console.error('❌ Error generando formulario:', formError);
+            document.getElementById('contenido-formulario-editar').innerHTML = `
+                <div class="alert alert-danger">
+                    <h5>Error cargando formulario</h5>
+                    <p>${formError.message}</p>
+                    <button class="btn btn-outline-danger btn-sm" onclick="location.reload()">
+                        Recargar página
+                    </button>
+                </div>
+            `;
+        }
         
     } catch (error) {
-        console.error('Error abriendo formulario de edición:', error);
-        NovedadesApp.mostrarError('Error abriendo formulario de edición');
+        console.error('❌ Error abriendo formulario de edición:', error);
+        NovedadesApp.mostrarError('Error abriendo formulario de edición: ' + error.message);
     }
 }
 
@@ -1652,6 +1746,26 @@ function generarCamposDinamicosEdicion(novedad) {
                 }
             }
             
+            // Fallback al campo puesto si no se encuentra en observaciones
+            if (!nuevoPuesto && novedad.puesto) {
+                nuevoPuesto = novedad.puesto;
+            }
+            
+            // Determinar tipo actual (permanente/temporario)
+            const tipoActual = novedad.tipo_nuevo_puesto || 'permanente';
+            
+            // Extraer fecha de finalización manejando objeto DateTime
+            let fechaHasta = '';
+            if (novedad.fecha_vigencia_hasta) {
+                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
+                    // Es un objeto DateTime de PHP
+                    fechaHasta = novedad.fecha_vigencia_hasta.date.split(' ')[0];
+                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
+                    // Es una cadena
+                    fechaHasta = novedad.fecha_vigencia_hasta.split(' ')[0];
+                }
+            }
+            
             campos += `
                 <div class="col-md-6">
                     <label for="edit-puesto" class="form-label">Nuevo Puesto</label>
@@ -1659,6 +1773,43 @@ function generarCamposDinamicosEdicion(novedad) {
                         <option value="">Seleccionar puesto...</option>
                         <!-- Se llenarán dinámicamente -->
                     </select>
+                </div>
+                
+                <!-- Tipo de Cambio de Puesto -->
+                <div class="col-md-12">
+                    <label class="form-label">Tipo de Cambio</label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edit-tipo-puesto" id="edit-tipo-permanente" 
+                                       value="permanente" ${tipoActual === 'permanente' ? 'checked' : ''} 
+                                       onchange="toggleFechaFinEdicion()">
+                                <label class="form-check-label" for="edit-tipo-permanente">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Permanente</strong>
+                                    <br><small class="text-muted">Cambio definitivo de puesto</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edit-tipo-puesto" id="edit-tipo-temporario" 
+                                       value="temporario" ${tipoActual === 'temporario' ? 'checked' : ''} 
+                                       onchange="toggleFechaFinEdicion()">
+                                <label class="form-check-label" for="edit-tipo-temporario">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    <strong>Temporario</strong>
+                                    <br><small class="text-muted">Cambio temporal con fecha de fin</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Fecha de fin (solo para temporario) -->
+                <div class="col-md-6" id="edit-campo-fecha-fin" style="display: ${tipoActual === 'temporario' ? 'block' : 'none'};">
+                    <label for="edit-fecha-fin" class="form-label">Fecha de Finalización</label>
+                    <input type="date" class="form-control" id="edit-fecha-fin" value="${fechaHasta}">
                 </div>
             `;
             
@@ -1805,6 +1956,31 @@ async function guardarEdicionNovedad() {
                 if (puesto) {
                     datos.puesto = puesto.value;
                     console.log(`👔 Puesto capturado:`, puesto.value);
+                }
+                
+                // Obtener tipo de puesto (permanente/temporario)
+                const tipoPuestoRadios = document.getElementsByName('edit-tipo-puesto');
+                let tipoPuesto = 'permanente'; // default
+                for (let radio of tipoPuestoRadios) {
+                    if (radio.checked) {
+                        tipoPuesto = radio.value;
+                        break;
+                    }
+                }
+                datos.tipo_nuevo_puesto = tipoPuesto;
+                console.log(`🔄 Tipo de puesto capturado:`, tipoPuesto);
+                
+                // Si es temporario, agregar fecha de fin
+                if (tipoPuesto === 'temporario') {
+                    const fechaFin = document.getElementById('edit-fecha-fin');
+                    if (fechaFin && fechaFin.value) {
+                        datos.fecha_vigencia_hasta = fechaFin.value;
+                        console.log(`📅 Fecha de fin capturada:`, fechaFin.value);
+                    }
+                } else {
+                    // Si cambió de temporario a permanente, limpiar fecha de fin
+                    datos.fecha_vigencia_hasta = null;
+                    console.log(`🗑️ Fecha de fin limpiada (cambio a permanente)`);
                 }
                 break;
                 
@@ -2000,10 +2176,11 @@ function ordenarPor(columna) {
                 break;
                 
             case 'estado':
-                valorA = 'activo'; // Por ahora todos son activos
-                valorB = 'activo';
-                esVacioA = false;
-                esVacioB = false;
+                // Ordenar por estado numérico usando estado_numero
+                valorA = parseInt(a.estado_numero) || parseInt(a.estado) || 1;
+                valorB = parseInt(b.estado_numero) || parseInt(b.estado) || 1;
+                esVacioA = !a.estado_numero && !a.estado;
+                esVacioB = !b.estado_numero && !b.estado;
                 break;
                 
             default:
@@ -2188,4 +2365,144 @@ function limpiarObservaciones(observaciones, tipoNovedad) {
     console.log(`🧹 Observaciones limpiadas para tipo ${tipoNovedad}:`, observacionesLimpias);
     
     return observacionesLimpias;
+}
+
+/**
+ * Cambiar el estado de una novedad
+ */
+async function cambiarEstadoNovedad(novedadId, nuevoEstado) {
+    if (!novedadId || !nuevoEstado) {
+        NovedadesApp.mostrarError('Datos de novedad y estado requeridos');
+        return;
+    }
+
+    try {
+        // Convertir el número de estado a string que espera la BD
+        const estadoString = mapearEstado(nuevoEstado);
+        
+        const resultado = await NovedadesApp.request('cambiar_estado_novedad', {
+            novedad_id: novedadId,
+            nuevo_estado: estadoString
+        }, 'POST');
+
+        if (resultado && resultado.success) {
+            NovedadesApp.mostrarExito('Estado cambiado correctamente');
+            // Recargar datos para reflejar el cambio
+            await cargarNovedades();
+        } else {
+            const errorMsg = resultado ? resultado.message : 'Respuesta vacía del servidor';
+            NovedadesApp.mostrarError(errorMsg || 'Error cambiando estado');
+        }
+    } catch (error) {
+        console.error('Error cambiando estado:', error);
+        NovedadesApp.mostrarError('Error de conexión cambiando estado');
+    }
+}
+
+/**
+ * Mostrar modal para cambiar estado de novedad
+ */
+function mostrarModalCambiarEstado(novedadId, estadoActual) {
+    const estados = {
+        1: 'Enviada',
+        2: 'En Revisión', 
+        3: 'Aprobada',
+        4: 'Rechazada',
+        5: 'Procesada'
+    };
+
+    let optionsHtml = '';
+    for (const [id, nombre] of Object.entries(estados)) {
+        const selected = parseInt(id) === parseInt(estadoActual) ? 'selected' : '';
+        optionsHtml += `<option value="${id}" ${selected}>${nombre}</option>`;
+    }
+
+    const modalHtml = `
+        <div class="modal fade" id="modalCambiarEstado" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Cambiar Estado de Novedad</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="selectEstado" class="form-label">Nuevo Estado:</label>
+                            <select class="form-select" id="selectEstado">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" onclick="confirmarCambioEstado(${novedadId})">
+                            Cambiar Estado
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remover modal existente si existe
+    const existingModal = document.getElementById('modalCambiarEstado');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Agregar modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalCambiarEstado'));
+    modal.show();
+}
+
+/**
+ * Confirmar cambio de estado
+ */
+async function confirmarCambioEstado(novedadId) {
+    const nuevoEstado = document.getElementById('selectEstado').value;
+    
+    if (!nuevoEstado) {
+        NovedadesApp.mostrarError('Debe seleccionar un estado');
+        return;
+    }
+
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCambiarEstado'));
+    modal.hide();
+
+    // Cambiar estado
+    await cambiarEstadoNovedad(novedadId, parseInt(nuevoEstado));
+}
+
+/**
+ * Función para mostrar/ocultar campo de fecha de fin en edición
+ */
+function toggleFechaFinEdicion() {
+    const radioTemporario = document.getElementById('edit-tipo-temporario');
+    const campoFechaFin = document.getElementById('edit-campo-fecha-fin');
+    const fechaFinInput = document.getElementById('edit-fecha-fin');
+    
+    if (radioTemporario && radioTemporario.checked) {
+        // Mostrar campo de fecha de fin
+        if (campoFechaFin) {
+            campoFechaFin.style.display = 'block';
+        }
+        if (fechaFinInput) {
+            fechaFinInput.setAttribute('required', 'required');
+        }
+        console.log('📅 Modo temporario activado - mostrando fecha de fin');
+    } else {
+        // Ocultar campo de fecha de fin
+        if (campoFechaFin) {
+            campoFechaFin.style.display = 'none';
+        }
+        if (fechaFinInput) {
+            fechaFinInput.removeAttribute('required');
+            fechaFinInput.value = ''; // Limpiar valor
+        }
+        console.log('✅ Modo permanente activado - ocultando fecha de fin');
+    }
 }

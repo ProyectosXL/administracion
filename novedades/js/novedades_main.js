@@ -6,6 +6,8 @@
 const NovedadesApp = {
     baseUrl: 'controller/novedades_controller.php',
     empleadoSeleccionado: null,
+    tipoUsuario: null,
+    esUsuarioRRHH: false,
     
     // Configuración de tipos de novedad y campos requeridos - ACTUALIZADA
     tiposNovedadConfig: {
@@ -40,7 +42,7 @@ const NovedadesApp = {
 
             if (method === 'POST' && data) {
                 options.body = JSON.stringify(data);
-                console.log('📤 Datos enviados:', data);
+                console.log('📤 Datos enviados como JSON:', data);
             } else if (method === 'GET' && data) {
                 const params = new URLSearchParams(data);
                 url += '&' + params.toString();
@@ -70,6 +72,11 @@ const NovedadesApp = {
             
             const duration = Date.now() - startTime;
             console.log(`✅ Petición completada en ${duration}ms:`, result);
+
+            // Para cambiar_estado_novedad, devolver el objeto completo para acceder a success
+            if (action === 'cambiar_estado_novedad') {
+                return result;
+            }
 
             if (!result.success) {
                 throw new Error(result.message || 'Error en la petición');
@@ -156,24 +163,41 @@ const NovedadesApp = {
     },
 
     /**
-     * Formatear fecha para mostrar
+     * Formatear fecha para mostrar - MEJORADO PARA OBJETOS DATETIME
      */
     formatearFecha(fecha) {
         if (!fecha) return '';
-        // Aceptar formatos: 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS'
-        let normalizada = fecha;
-        if (typeof fecha === 'string') {
-            // Quitar fracciones y Z si vienen
-            normalizada = fecha.replace('T', ' ').replace(/\.\d+Z?$/, '');
-            // Si solo viene fecha agregar hora para evitar desfase por timezone
-            if (/^\d{4}-\d{2}-\d{2}$/.test(normalizada)) {
-                normalizada += ' 00:00:00';
+        
+        try {
+            // Si es un objeto DateTime de PHP serializado, extraer la fecha
+            if (typeof fecha === 'object' && fecha.date) {
+                console.log('🔧 Procesando objeto DateTime:', fecha);
+                fecha = fecha.date;
             }
+            
+            // Aceptar formatos: 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS'
+            let normalizada = fecha;
+            if (typeof fecha === 'string') {
+                // Quitar fracciones y Z si vienen
+                normalizada = fecha.replace('T', ' ').replace(/\.\d+Z?$/, '');
+                // Si solo viene fecha agregar hora para evitar desfase por timezone
+                if (/^\d{4}-\d{2}-\d{2}$/.test(normalizada)) {
+                    normalizada += ' 00:00:00';
+                }
+            }
+            
+            const ts = Date.parse(normalizada);
+            if (isNaN(ts)) {
+                console.warn('❌ Fecha inválida después del procesamiento:', normalizada, 'Original:', fecha);
+                return 'Fecha inválida';
+            }
+            
+            const d = new Date(ts);
+            return d.toLocaleDateString('es-AR');
+        } catch (error) {
+            console.error('❌ Error formateando fecha:', error, 'Fecha original:', fecha);
+            return 'Error en fecha';
         }
-        const ts = Date.parse(normalizada);
-        if (isNaN(ts)) return 'Fecha inválida';
-        const d = new Date(ts);
-        return d.toLocaleDateString('es-AR');
     },
 
     /**
@@ -235,6 +259,34 @@ const NovedadesApp = {
         });
 
         return valido;
+    },
+
+    /**
+     * Inicializar permisos de usuario
+     */
+    async inicializarPermisos() {
+        try {
+            const response = await this.request('get_tipo_usuario');
+            this.tipoUsuario = response.tipo;
+            this.esUsuarioRRHH = response.es_rrhh;
+            console.log('👤 Permisos de usuario cargados:', { 
+                tipo: this.tipoUsuario, 
+                esRRHH: this.esUsuarioRRHH,
+                descripcion: response.descripcion 
+            });
+        } catch (error) {
+            console.error('Error cargando permisos de usuario:', error);
+            // Valores por defecto seguros (sin permisos)
+            this.tipoUsuario = null;
+            this.esUsuarioRRHH = false;
+        }
+    },
+
+    /**
+     * Verificar si el usuario puede cambiar estados
+     */
+    puedeEditarEstados() {
+        return this.esUsuarioRRHH;
     }
 };
 
@@ -404,6 +456,9 @@ function limpiarFormulario(formId = 'form-novedad') {
  */
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Inicializando Sistema de Novedades RRHH...');
+    
+    // Inicializar permisos de usuario
+    await NovedadesApp.inicializarPermisos();
     
     // Primero probar conectividad
     const sistemaOK = await probarSistema();

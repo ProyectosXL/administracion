@@ -148,21 +148,22 @@ function mostrarUltimasNovedades(novedades) {
 }
 
 /**
- * Obtener badge de estado para una novedad
+ * Obtener badge de estado para una novedad basado en el valor real del estado
  */
 function getEstadoBadge(novedad) {
-    // En una implementación real, el estado vendría del backend
-    const estados = ['Registrada', 'En Revisión', 'Aprobada', 'Procesada'];
-    const estado = estados[Math.floor(Math.random() * estados.length)];
-    
-    const clases = {
-        'Registrada': 'bg-info',
-        'En Revisión': 'bg-warning',
-        'Aprobada': 'bg-success',
-        'Procesada': 'bg-secondary'
+    const estados = {
+        1: { texto: 'Enviada', clase: 'bg-info text-white' },
+        2: { texto: 'En Revisión', clase: 'bg-warning text-dark' },
+        3: { texto: 'Aprobada', clase: 'bg-success text-white' },
+        4: { texto: 'Rechazada', clase: 'bg-danger text-white' },
+        5: { texto: 'Procesada', clase: 'bg-secondary text-white' }
     };
-
-    return `<span class="badge ${clases[estado]}">${estado}</span>`;
+    
+    // Usar estado_numero si está disponible, sino intentar parsear estado string
+    const estadoNumero = novedad.estado_numero || parseInt(novedad.estado) || 1;
+    const estado = estados[estadoNumero] || { texto: 'Estado Desconocido', clase: 'bg-light text-dark' };
+    
+    return `<span class="badge ${estado.clase}">${estado.texto}</span>`;
 }
 
 /**
@@ -268,6 +269,12 @@ function mostrarModalDetalle(novedad) {
             break;
             
         case 2: // Nuevo puesto
+            // Determinar tipo de puesto y fechas
+            const tipoPuesto = novedad.tipo_nuevo_puesto || 'permanente';
+            const esPermanente = tipoPuesto === 'permanente';
+            const iconoTipo = esPermanente ? 'fa-check-circle text-success' : 'fa-clock text-warning';
+            const textTipo = esPermanente ? 'Permanente' : 'Temporario';
+            
             modalHtml += `
                 <div class="col-12">
                     <div class="card">
@@ -276,17 +283,33 @@ function mostrarModalDetalle(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Nuevo Puesto:</strong><br>
                                     <span class="badge bg-success">${novedad.puesto || 'No especificado'}</span>
                                 </div>
+                                <div class="col-md-4">
+                                    <strong>Tipo de Cambio:</strong><br>
+                                    <span class="badge ${esPermanente ? 'bg-success' : 'bg-warning text-dark'}">
+                                        <i class="fas ${iconoTipo} me-1"></i>${textTipo}
+                                    </span>
+                                </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-6">
-                                    <strong>Fecha de Vigencia:</strong><br>
+                                <div class="col-md-4">
+                                    <strong>Fecha de Inicio:</strong><br>
                                     ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : novedad.fecha_vigencia}
                                 </div>
                                 ` : ''}
                             </div>
+                            ${(!esPermanente && novedad.fecha_vigencia_hasta) ? `
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-calendar-times me-2"></i>
+                                        <strong>Fecha de Finalización:</strong> ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta) : novedad.fecha_vigencia_hasta}
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>`;

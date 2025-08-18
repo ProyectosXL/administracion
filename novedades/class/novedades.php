@@ -12,6 +12,13 @@ class Novedades {
     private $db;
     private $sucursalesCache = null;
 
+    // Constantes para estados de novedades - STRINGS para compatibilidad con DB
+    const ESTADO_ENVIADA = 'Enviada';
+    const ESTADO_EN_REVISION = 'En Revisión';
+    const ESTADO_APROBADA = 'Aprobada';
+    const ESTADO_RECHAZADA = 'Rechazada';
+    const ESTADO_PROCESADA = 'Procesada';
+
     public function __construct() {
         $this->db = Database::getInstance();
         
@@ -175,6 +182,93 @@ class Novedades {
                 WHERE NRO_LEGAJO = ? AND HABILITADO = 'S'";
         $stmt = $this->db->query($sql, [$legajo]);
         return $stmt->fetch();
+    }
+
+    /**
+     * Obtener información de estado basado en el número de estado
+     */
+    public static function getEstadoInfo($estadoNumero) {
+        $estados = [
+            self::ESTADO_ENVIADA => [
+                'id' => self::ESTADO_ENVIADA,
+                'nombre' => 'Enviada',
+                'clase' => 'bg-info',
+                'texto_clase' => 'text-white'
+            ],
+            self::ESTADO_EN_REVISION => [
+                'id' => self::ESTADO_EN_REVISION,
+                'nombre' => 'En Revisión',
+                'clase' => 'bg-warning',
+                'texto_clase' => 'text-dark'
+            ],
+            self::ESTADO_APROBADA => [
+                'id' => self::ESTADO_APROBADA,
+                'nombre' => 'Aprobada',
+                'clase' => 'bg-success',
+                'texto_clase' => 'text-white'
+            ],
+            self::ESTADO_RECHAZADA => [
+                'id' => self::ESTADO_RECHAZADA,
+                'nombre' => 'Rechazada',
+                'clase' => 'bg-danger',
+                'texto_clase' => 'text-white'
+            ],
+            self::ESTADO_PROCESADA => [
+                'id' => self::ESTADO_PROCESADA,
+                'nombre' => 'Procesada',
+                'clase' => 'bg-secondary',
+                'texto_clase' => 'text-white'
+            ]
+        ];
+
+        return $estados[$estadoNumero] ?? [
+            'id' => $estadoNumero,
+            'nombre' => 'Estado Desconocido',
+            'clase' => 'bg-light',
+            'texto_clase' => 'text-dark'
+        ];
+    }
+
+    /**
+     * Obtener todos los estados disponibles
+     */
+    public static function getAllEstados() {
+        return [
+            self::ESTADO_ENVIADA => self::getEstadoInfo(self::ESTADO_ENVIADA),
+            self::ESTADO_EN_REVISION => self::getEstadoInfo(self::ESTADO_EN_REVISION),
+            self::ESTADO_APROBADA => self::getEstadoInfo(self::ESTADO_APROBADA),
+            self::ESTADO_RECHAZADA => self::getEstadoInfo(self::ESTADO_RECHAZADA),
+            self::ESTADO_PROCESADA => self::getEstadoInfo(self::ESTADO_PROCESADA)
+        ];
+    }
+
+    /**
+     * Generar badge HTML para un estado específico
+     */
+    public static function getBadgeEstado($estadoNumero) {
+        $estado = self::getEstadoInfo($estadoNumero);
+        return "<span class=\"badge {$estado['clase']} {$estado['texto_clase']}\">{$estado['nombre']}</span>";
+    }
+
+    /**
+     * Cambiar estado de una novedad
+     */
+    public function cambiarEstadoNovedad($novedadId, $nuevoEstado) {
+        try {
+            // Validar que el nuevo estado sea válido
+            if (!in_array($nuevoEstado, [self::ESTADO_ENVIADA, self::ESTADO_EN_REVISION, self::ESTADO_APROBADA, self::ESTADO_RECHAZADA, self::ESTADO_PROCESADA])) {
+                throw new Exception("Estado no válido: $nuevoEstado");
+            }
+
+            $sql = "UPDATE novedades SET estado = ? WHERE id = ?";
+            $stmt = $this->db->query($sql, [$nuevoEstado, $novedadId]);
+            
+            // Retornar true siempre si no hay excepción
+            return true;
+        } catch (Exception $e) {
+            error_log("Error cambiando estado de novedad: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**
@@ -394,10 +488,43 @@ class Novedades {
                         periodo_mes TINYINT NOT NULL,
                         periodo_anio SMALLINT NOT NULL,
                         tipo_novedad INT NULL,
+                        estado TINYINT DEFAULT 1 NOT NULL,
                         fecha_creacion DATETIME DEFAULT GETDATE(),
                         fecha_modificacion DATETIME NULL
                     )";
             $this->db->query($sql);
+        } else {
+            // Si existe, verificar y agregar columna estado si no existe
+            $this->agregarColumnaEstado();
+        }
+    }
+
+    /**
+     * Agregar columna estado si no existe
+     */
+    private function agregarColumnaEstado() {
+        try {
+            // Verificar si la columna ya existe
+            $sql = "SELECT COUNT(*) as existe 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'novedades' AND COLUMN_NAME = 'estado'";
+            
+            $result = $this->db->query($sql);
+            $row = $result->fetch();
+            
+            // Si no existe la columna, agregarla con valor por defecto 1 (Enviada)
+            if ($row['existe'] == 0) {
+                $sql = "ALTER TABLE novedades ADD estado TINYINT DEFAULT 1 NOT NULL";
+                $this->db->query($sql);
+                
+                // Actualizar registros existentes para que tengan estado 1 (Enviada)
+                $sql = "UPDATE novedades SET estado = 1 WHERE estado IS NULL";
+                $this->db->query($sql);
+                
+                error_log("Columna 'estado' agregada exitosamente a la tabla novedades");
+            }
+        } catch (Exception $e) {
+            error_log("Error agregando columna estado: " . $e->getMessage());
         }
     }
 
@@ -484,10 +611,10 @@ class Novedades {
                      ", fecha_permiso=" . var_export($datosAdaptados['fecha_permiso'], true));
             
             $sql = "INSERT INTO novedades (
-                        legajo, nombre, apellido, sucursal, fecha_vigencia, puesto, 
-                        valor_numerico, fecha_permiso, compensa, tipo_permiso,
-                        observaciones, periodo_mes, periodo_anio, tipo_novedad
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        legajo, nombre, apellido, sucursal, fecha_vigencia, fecha_vigencia_hasta, puesto, 
+                        valor_numerico, fecha_permiso, compensa, tipo_permiso, tipo_nuevo_puesto,
+                        observaciones, periodo_mes, periodo_anio, tipo_novedad, estado
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $params = [
                 $datosAdaptados['legajo'],
@@ -495,15 +622,18 @@ class Novedades {
                 $datosAdaptados['apellido'],
                 $datosAdaptados['sucursal'],
                 $datosAdaptados['fecha_vigencia'],
+                $datosAdaptados['fecha_vigencia_hasta'],
                 $datosAdaptados['puesto'],
                 $datosAdaptados['valor_numerico'],
                 $datosAdaptados['fecha_permiso'],
                 $datosAdaptados['compensa'],
                 $datosAdaptados['tipo_permiso'],
+                $datosAdaptados['tipo_nuevo_puesto'],
                 $datosAdaptados['observaciones'],
                 $periodo['month'], // PeriodoUtils devuelve 'month', no 'periodo_mes'
                 $periodo['year'],  // PeriodoUtils devuelve 'year', no 'periodo_anio'
-                $datosAdaptados['tipo_novedad']
+                $datosAdaptados['tipo_novedad'],
+                self::ESTADO_ENVIADA // Estado inicial por defecto: Enviada
             ];
 
             // Log para debugging - mostrar período usado
@@ -601,11 +731,13 @@ class Novedades {
             'tipo_novedad' => $tipoNovedad,
             'observaciones' => $observacionesLimpias,
             'fecha_vigencia' => null,
+            'fecha_vigencia_hasta' => null,
             'puesto' => '',
             'valor_numerico' => null,
             'fecha_permiso' => null,
             'compensa' => null,
-            'tipo_permiso' => null
+            'tipo_permiso' => null,
+            'tipo_nuevo_puesto' => null
         ];
 
         // Adaptar según el tipo específico
@@ -623,10 +755,30 @@ class Novedades {
 
             case 2: // Nuevo puesto
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                
+                // Manejar tipo de puesto (permanente/temporario)
+                $tipoPuesto = isset($datos['tipo_nuevo_puesto']) ? $datos['tipo_nuevo_puesto'] : 'permanente';
+                $datosAdaptados['tipo_nuevo_puesto'] = $tipoPuesto;
+                
+                // Si es temporario, agregar fecha de fin
+                if ($tipoPuesto === 'temporario' && isset($datos['fecha_vigencia_hasta'])) {
+                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFecha($datos['fecha_vigencia_hasta']);
+                }
+                
                 // Guardar el nuevo puesto en el campo puesto
                 $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : '';
+                
+                // Agregar detalles en observaciones
                 if (isset($datos['puesto'])) {
-                    $datosAdaptados['observaciones'] .= " - Nuevo puesto: " . $datos['puesto'];
+                    $detalleObservaciones = " - Nuevo puesto: " . $datos['puesto'];
+                    $detalleObservaciones .= " (" . ucfirst($tipoPuesto) . ")";
+                    
+                    if ($tipoPuesto === 'temporario' && isset($datos['fecha_vigencia_hasta'])) {
+                        $fechaFinFormateada = date('d/m/Y', strtotime($datos['fecha_vigencia_hasta']));
+                        $detalleObservaciones .= " hasta " . $fechaFinFormateada;
+                    }
+                    
+                    $datosAdaptados['observaciones'] .= $detalleObservaciones;
                 }
                 break;
 
@@ -787,7 +939,7 @@ class Novedades {
             if ($tipoUsuario == Usuario::TIPO_RRHH) {
                 $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
                                rle.NOMBRE, rle.APELLIDO,
-                               n.periodo_mes, n.periodo_anio
+                               n.periodo_mes, n.periodo_anio, n.estado
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                         LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
@@ -798,7 +950,7 @@ class Novedades {
                 
                 $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
                                rle.NOMBRE, rle.APELLIDO,
-                               n.periodo_mes, n.periodo_anio
+                               n.periodo_mes, n.periodo_anio, n.estado
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                         LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
@@ -932,6 +1084,9 @@ class Novedades {
                         }
                     }
                 }
+                
+                // Agregar estado_numero para compatibilidad con frontend
+                $novedad['estado_numero'] = $this->mapearEstadoANumero($novedad['estado']);
             }
             
             return $novedades;
@@ -943,6 +1098,21 @@ class Novedades {
     }
 
     /**
+     * Mapear estado string de BD a número para frontend
+     */
+    private function mapearEstadoANumero($estadoString) {
+        $mapa = [
+            'Enviada' => 1,
+            'En Revisión' => 2,
+            'Aprobada' => 3,
+            'Rechazada' => 4,
+            'Procesada' => 5
+        ];
+        
+        return $mapa[$estadoString] ?? 1; // Default a "Enviada"
+    }
+
+    /**
      * Obtener TODAS las novedades sin filtro de período (para consulta general)
      */
     public function getAllNovedades($filtros = []) {
@@ -951,9 +1121,12 @@ class Novedades {
             
             // Si es usuario RRHH, puede ver todas las novedades
             if ($tipoUsuario == Usuario::TIPO_RRHH) {
-                $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
-                               rle.NOMBRE, rle.APELLIDO,
-                               n.periodo_mes, n.periodo_anio
+                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.sucursal, n.valor_numerico, 
+                               n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                               n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                               n.periodo_mes, n.periodo_anio, n.estado,
+                               tn.descripcion as tipo_descripcion, 
+                               rle.NOMBRE as nombre, rle.APELLIDO as apellido
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                         LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
@@ -962,9 +1135,12 @@ class Novedades {
                 // Para otros tipos de usuario, aplicar filtro específico dinámicamente
                 $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
                 
-                $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
-                               rle.NOMBRE, rle.APELLIDO,
-                               n.periodo_mes, n.periodo_anio
+                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.sucursal, n.valor_numerico, 
+                               n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                               n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                               n.periodo_mes, n.periodo_anio, n.estado,
+                               tn.descripcion as tipo_descripcion, 
+                               rle.NOMBRE as nombre, rle.APELLIDO as apellido
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                         LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
@@ -1097,6 +1273,9 @@ class Novedades {
                         }
                     }
                 }
+                
+                // Mapear estado string de BD a número para frontend
+                $novedad['estado_numero'] = $this->mapearEstadoANumero($novedad['estado']);
             }
             
             return $novedades;
@@ -1151,7 +1330,11 @@ class Novedades {
         
         // Si es usuario RRHH, puede ver cualquier novedad
         if ($tipoUsuario == Usuario::TIPO_RRHH) {
-            $sql = "SELECT n.*, tn.descripcion as tipo_descripcion,
+            $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.sucursal, n.valor_numerico, 
+                           n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                           n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                           n.periodo_mes, n.periodo_anio, n.estado,
+                           tn.descripcion as tipo_descripcion,
                            emp.NOMBRE as nombre, emp.APELLIDO as apellido
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
@@ -1161,7 +1344,11 @@ class Novedades {
             // Para otros tipos de usuario, validar permisos específicos dinámicamente
             $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
             
-            $sql = "SELECT n.*, tn.descripcion as tipo_descripcion,
+            $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.sucursal, n.valor_numerico, 
+                           n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                           n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                           n.periodo_mes, n.periodo_anio, n.estado,
+                           tn.descripcion as tipo_descripcion,
                            emp.NOMBRE as nombre, emp.APELLIDO as apellido
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
@@ -1207,6 +1394,9 @@ class Novedades {
 
             // Detalle específico
             $novedad['detalle_especifico'] = $this->generarDetalleEspecifico($novedad);
+            
+            // Agregar estado_numero para compatibilidad con frontend
+            $novedad['estado_numero'] = $this->mapearEstadoANumero($novedad['estado']);
         }
 
         return $novedad;
@@ -1531,8 +1721,8 @@ class Novedades {
             // Preparar SQL de actualización
             $sql = "UPDATE novedades SET 
                         legajo = ?, nombre = ?, apellido = ?, sucursal = ?, 
-                        fecha_vigencia = ?, puesto = ?, valor_numerico = ?, 
-                        fecha_permiso = ?, compensa = ?, tipo_permiso = ?,
+                        fecha_vigencia = ?, fecha_vigencia_hasta = ?, puesto = ?, valor_numerico = ?, 
+                        fecha_permiso = ?, compensa = ?, tipo_permiso = ?, tipo_nuevo_puesto = ?,
                         observaciones = ?, tipo_novedad = ?, fecha_modificacion = GETDATE()
                     WHERE id = ?";
 
@@ -1542,11 +1732,13 @@ class Novedades {
                 $datosAdaptados['apellido'],
                 $datosAdaptados['sucursal'],
                 $datosAdaptados['fecha_vigencia'],
+                $datosAdaptados['fecha_vigencia_hasta'],
                 $datosAdaptados['puesto'],
                 $datosAdaptados['valor_numerico'],
                 $datosAdaptados['fecha_permiso'],
                 $datosAdaptados['compensa'],
                 $datosAdaptados['tipo_permiso'],
+                $datosAdaptados['tipo_nuevo_puesto'],
                 $datosAdaptados['observaciones'],
                 $datosAdaptados['tipo_novedad'],
                 $id

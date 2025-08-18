@@ -164,6 +164,38 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </div>
                         </div>
                         
+                        <!-- Tipo de Cambio de Puesto -->
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">
+                                Tipo de Cambio <span class="required">*</span>
+                            </label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_nuevo_puesto" id="tipo_puesto_permanente" value="permanente" checked>
+                                        <label class="form-check-label" for="tipo_puesto_permanente">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <strong>Permanente</strong>
+                                            <br><small class="text-muted">Cambio definitivo de puesto</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_nuevo_puesto" id="tipo_puesto_temporario" value="temporario">
+                                        <label class="form-check-label" for="tipo_puesto_temporario">
+                                            <i class="fas fa-clock text-warning me-2"></i>
+                                            <strong>Temporario</strong>
+                                            <br><small class="text-muted">Cambio temporal con fecha de fin</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback" id="tipo_puesto_error">
+                                Debe seleccionar el tipo de cambio de puesto
+                            </div>
+                        </div>
+                        
                         <div class="col-md-6">
                             <label for="nuevo_puesto" class="form-label">
                                 Nuevo Puesto <span class="required">*</span>
@@ -175,13 +207,25 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 El puesto es obligatorio
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        
+                        <div class="col-md-3">
                             <label for="fecha_vigencia_puesto" class="form-label">
-                                Fecha de entrada en vigencia <span class="required">*</span>
+                                Fecha de inicio <span class="required">*</span>
                             </label>
                             <input type="date" class="form-control" id="fecha_vigencia_puesto" name="fecha_vigencia">
                             <div class="invalid-feedback">
-                                La fecha de vigencia es obligatoria
+                                La fecha de inicio es obligatoria
+                            </div>
+                        </div>
+                        
+                        <!-- Fecha de fin (solo para temporario) -->
+                        <div class="col-md-3" id="campo_fecha_fin" style="display: none;">
+                            <label for="fecha_vigencia_hasta_puesto" class="form-label">
+                                Fecha de fin <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_hasta_puesto" name="fecha_vigencia_hasta">
+                            <div class="invalid-feedback">
+                                La fecha de fin es obligatoria para cambios temporarios
                             </div>
                         </div>
                     </div>

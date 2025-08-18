@@ -4,9 +4,11 @@
  * /novedades/controller/novedades_controller.php
  */
 
-// Iniciar buffer de salida y limpiar cualquier salida previa
+// Iniciar buffer de salida y limpiar cualquier salida previa - MEJORADO
+while (ob_get_level()) {
+    ob_end_clean();
+}
 ob_start();
-ob_clean();
 
 // Suprimir warnings que puedan interferir con JSON
 error_reporting(E_ERROR | E_PARSE);
@@ -25,9 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 }
 
 // Incluir clases necesarias
-require_once '../class/Database.php';
-require_once '../class/Novedades.php';
-require_once '../class/Usuario.php';
+require_once __DIR__ . '/../class/Database.php';
+require_once __DIR__ . '/../class/Novedades.php';
+require_once __DIR__ . '/../class/Usuario.php';
 
 // Función para enviar respuesta JSON
 function sendResponse($success, $data = null, $message = '', $httpCode = null) {
@@ -66,13 +68,33 @@ function handleError($message, $error = null) {
     sendResponse(false, null, $message, 500);
 }
 
+// Función para obtener datos POST - compatible con FormData y JSON
+function getPostData() {
+    // Si hay datos en $_POST, usarlos (FormData)
+    if (!empty($_POST)) {
+        return $_POST;
+    }
+    
+    // Si no hay datos en $_POST, intentar leer JSON desde php://input
+    $rawInput = file_get_contents('php://input');
+    if (!empty($rawInput)) {
+        $jsonData = json_decode($rawInput, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $jsonData;
+        }
+    }
+    
+    // Si no se pudo obtener datos de ninguna forma
+    return [];
+}
+
 try {
     // Inicializar configuración de usuario ANTES de instanciar otras clases
-    require_once '../config/usuario_config.php';
+    require_once __DIR__ . '/../config/usuario_config.php';
     
     // Instanciar base de datos y clase de novedades
     $db = Database::getInstance();
-    $novedades = new Novedades($db);
+    $novedades = new Novedades();
     
     // Obtener acción
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
@@ -168,14 +190,27 @@ try {
             try {
                 // Obtener datos del POST
                 $inputData = file_get_contents('php://input');
+                error_log("📥 Raw input data: " . $inputData);
+                
                 $datos = json_decode($inputData, true);
                 
                 if (!$datos) {
+                    error_log("❌ Error: Datos JSON inválidos - raw input: " . $inputData);
                     handleError('Datos JSON inválidos');
                 }
                 
-                // Log para debugging
-                error_log("Datos recibidos: " . print_r($datos, true));
+                // Log para debugging detallado
+                error_log("📋 Datos recibidos completos: " . print_r($datos, true));
+                
+                // Verificar campos específicos para debugging
+                error_log("🔍 Campos específicos:");
+                error_log("  - legajo: " . (isset($datos['legajo']) ? var_export($datos['legajo'], true) : 'NO EXISTE'));
+                error_log("  - nombre: " . (isset($datos['nombre']) ? var_export($datos['nombre'], true) : 'NO EXISTE'));
+                error_log("  - apellido: " . (isset($datos['apellido']) ? var_export($datos['apellido'], true) : 'NO EXISTE'));
+                error_log("  - sucursal: " . (isset($datos['sucursal']) ? var_export($datos['sucursal'], true) : 'NO EXISTE'));
+                error_log("  - tipo_novedad: " . (isset($datos['tipo_novedad']) ? var_export($datos['tipo_novedad'], true) : 'NO EXISTE'));
+                error_log("  - tipo_nuevo_puesto: " . (isset($datos['tipo_nuevo_puesto']) ? var_export($datos['tipo_nuevo_puesto'], true) : 'NO EXISTE'));
+                error_log("  - fecha_vigencia_hasta: " . (isset($datos['fecha_vigencia_hasta']) ? var_export($datos['fecha_vigencia_hasta'], true) : 'NO EXISTE'));
                 
                 // Log específico para permisos
                 if (isset($datos['tipo_novedad']) && $datos['tipo_novedad'] == 7) {
@@ -186,17 +221,23 @@ try {
                 // Validar datos
                 $errores = $novedades->validarDatos($datos);
                 if (!empty($errores)) {
+                    error_log("❌ Errores de validación: " . implode(', ', $errores));
                     handleError('Errores de validación: ' . implode(', ', $errores));
                 }
 
+                error_log("✅ Iniciando creación de novedad...");
                 $resultado = $novedades->crearNovedad($datos);
                 
                 if ($resultado['success']) {
+                    error_log("✅ Novedad creada exitosamente con ID: " . $resultado['id']);
                     sendResponse(true, ['id' => $resultado['id']], 'Novedad creada exitosamente');
                 } else {
+                    error_log("❌ Error en resultado: " . ($resultado['error'] ?? 'Error desconocido'));
                     handleError($resultado['error']);
                 }
             } catch (Exception $e) {
+                error_log("❌ Excepción en crear_novedad: " . $e->getMessage());
+                error_log("❌ Stack trace: " . $e->getTraceAsString());
                 handleError('Error creando novedad', $e);
             }
             break;
@@ -306,12 +347,63 @@ try {
             }
             break;
 
+        case 'cambiar_estado_novedad':
+            try {
+                // Verificar que solo usuarios RRHH puedan cambiar estados
+                if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
+                    handleError('Solo el personal de RRHH puede cambiar el estado de las novedades');
+                }
+                
+                // Obtener datos POST compatibles con FormData y JSON
+                $postData = getPostData();
+                
+                if (empty($postData['novedad_id']) || !is_numeric($postData['novedad_id'])) {
+                    handleError('ID de novedad requerido y debe ser numérico');
+                }
+                
+                if (empty($postData['nuevo_estado'])) {
+                    handleError('Nuevo estado requerido');
+                }
+                
+                $novedadId = (int)$postData['novedad_id'];
+                $nuevoEstado = $postData['nuevo_estado']; // Mantener como string para BD
+                
+                $resultado = $novedades->cambiarEstadoNovedad($novedadId, $nuevoEstado);
+                
+                if ($resultado) {
+                    sendResponse(true, null, 'Estado cambiado exitosamente');
+                } else {
+                    handleError('No se pudo cambiar el estado de la novedad');
+                }
+            } catch (Exception $e) {
+                handleError('Error cambiando estado de novedad', $e);
+            } catch (Error $e) {
+                handleError('Error fatal cambiando estado de novedad', $e);
+            }
+            break;
+
         case 'get_periodo_actual':
             try {
                 $periodo = $novedades->getPeriodoActual();
                 sendResponse(true, $periodo);
             } catch (Exception $e) {
                 handleError('Error obteniendo período actual', $e);
+            }
+            break;
+            
+        case 'get_tipo_usuario':
+            try {
+                $tipoUsuario = Usuario::getTipoUsuario();
+                $esRRHH = Usuario::esUsuarioRRHH();
+                $descripcion = Usuario::getTipoUsuarioDescripcion();
+                
+                sendResponse(true, [
+                    'tipo' => $tipoUsuario,
+                    'es_rrhh' => $esRRHH,
+                    'descripcion' => $descripcion
+                ]);
+            } catch (Exception $e) {
+                handleError('Error obteniendo tipo de usuario', $e);
             }
             break;
 

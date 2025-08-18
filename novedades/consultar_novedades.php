@@ -65,7 +65,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
             
             <form id="form-filtros">
                 <div class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="filtro-empleado" class="form-label">
                             <i class="fas fa-user me-2"></i>Empleado/Legajo
                         </label>
@@ -89,6 +89,20 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         </label>
                         <select class="form-select" id="filtro-tipo">
                             <option value="">Todos los tipos</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-1">
+                        <label for="filtro-estado" class="form-label">
+                            <i class="fas fa-flag me-2"></i>Estado
+                        </label>
+                        <select class="form-select" id="filtro-estado">
+                            <option value="">Todos los estados</option>
+                            <option value="1">Enviada</option>
+                            <option value="2">En Revisión</option>
+                            <option value="3">Aprobada</option>
+                            <option value="4">Rechazada</option>
+                            <option value="5">Procesada</option>
                         </select>
                     </div>
                     

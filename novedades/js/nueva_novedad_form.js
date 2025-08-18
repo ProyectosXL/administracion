@@ -12,8 +12,8 @@ const tiposNovedadConfig = {
     },
     2: { // Nuevo puesto
         config: 'config-nuevo-puesto',
-        campos: ['nuevo_puesto', 'fecha_vigencia_puesto'],
-        validaciones: ['puesto', 'fecha_vigencia']
+        campos: ['nuevo_puesto', 'fecha_vigencia_puesto', 'tipo_nuevo_puesto'],
+        validaciones: ['puesto', 'fecha_vigencia', 'tipo_nuevo_puesto']
     },
     3: { // Nuevo salario neto
         config: 'config-nuevo-salario',
@@ -456,39 +456,53 @@ function validarConfiguracionTipo(tipoNovedad) {
 async function recopilarDatosFormulario(tipoNovedad) {
     console.log('📦 Iniciando recopilación de datos...');
     
-    // Obtener datos del empleado desde NovedadesApp (almacenado cuando se selecciona)
-    const empleadoSeleccionado = window.NovedadesApp ? window.NovedadesApp.empleadoSeleccionado : null;
-    console.log('👤 Empleado desde NovedadesApp:', empleadoSeleccionado);
+    // Obtener datos del empleado y sucursal
+    const legajo = document.getElementById('legajo').value;
+    const sucursalElement = document.getElementById('sucursal');
+    const sucursalValue = sucursalElement ? sucursalElement.value : '';
     
-    // Fallback: intentar obtener datos del Select2 directamente
     let nombreEmpleado = '';
     let apellidoEmpleado = '';
-    const legajo = document.getElementById('legajo').value;
+    
+    // Método 1: Obtener desde NovedadesApp si está disponible
+    const empleadoSeleccionado = window.NovedadesApp ? window.NovedadesApp.empleadoSeleccionado : null;
+    console.log('👤 Empleado desde NovedadesApp:', empleadoSeleccionado);
     
     if (empleadoSeleccionado && empleadoSeleccionado.nombre && empleadoSeleccionado.apellido) {
         nombreEmpleado = empleadoSeleccionado.nombre;
         apellidoEmpleado = empleadoSeleccionado.apellido;
         console.log('✅ Usando datos almacenados en NovedadesApp');
     } else {
-        // Fallback 1: obtener del Select2 si está disponible
+        // Método 2: Obtener del Select2 directamente
         try {
             const empleadoSelect = $('#empleado-select');
             if (empleadoSelect.length && empleadoSelect.val()) {
                 const selectedData = empleadoSelect.select2('data')[0];
                 console.log('👤 Datos desde Select2:', selectedData);
-                if (selectedData && selectedData.nombre && selectedData.apellido) {
-                    nombreEmpleado = selectedData.nombre;
-                    apellidoEmpleado = selectedData.apellido;
-                    console.log('✅ Usando datos del Select2');
+                
+                if (selectedData) {
+                    // Si viene con nombre y apellido separados
+                    if (selectedData.nombre && selectedData.apellido) {
+                        nombreEmpleado = selectedData.nombre;
+                        apellidoEmpleado = selectedData.apellido;
+                    } else if (selectedData.text) {
+                        // Extraer nombre y apellido del texto "NOMBRE APELLIDO (LEGAJO)"
+                        const match = selectedData.text.match(/^(.+?)\s+(.+?)\s*\(\d+\)$/);
+                        if (match) {
+                            nombreEmpleado = match[1].trim();
+                            apellidoEmpleado = match[2].trim();
+                        }
+                    }
+                    console.log('✅ Extraído del Select2:', { nombreEmpleado, apellidoEmpleado });
                 }
             }
         } catch (e) {
             console.warn('⚠️ Error obteniendo datos del Select2:', e);
         }
         
-        // Fallback 2: buscar empleado por legajo si aún no tenemos datos
+        // Método 3: Buscar por legajo como último recurso
         if ((!nombreEmpleado || !apellidoEmpleado) && legajo) {
-            console.log('� Buscando empleado por legajo:', legajo);
+            console.log('🔍 Buscando empleado por legajo:', legajo);
             try {
                 const empleadoData = await NovedadesApp.request('buscar_empleado', { legajo: legajo }, 'GET');
                 if (empleadoData && empleadoData.nombre && empleadoData.apellido) {
@@ -502,15 +516,21 @@ async function recopilarDatosFormulario(tipoNovedad) {
         }
     }
     
-    console.log('📝 Nombre final:', nombreEmpleado);
-    console.log('📝 Apellido final:', apellidoEmpleado);
+    // Validar que tenemos los datos obligatorios
+    if (!nombreEmpleado || !apellidoEmpleado) {
+        throw new Error('No se pudo obtener el nombre y apellido del empleado seleccionado');
+    }
     
-    // Datos básicos
+    if (!sucursalValue) {
+        throw new Error('Debe seleccionar una sucursal');
+    }
+    
+    // Datos básicos - OBLIGATORIOS
     const datos = {
         legajo: legajo,
         nombre: nombreEmpleado,
         apellido: apellidoEmpleado,
-        sucursal: document.getElementById('sucursal').value,
+        sucursal: sucursalValue,
         tipo_novedad: tipoNovedad,
         observaciones: document.getElementById('observaciones') ? document.getElementById('observaciones').value : ''
     };
@@ -527,6 +547,40 @@ async function recopilarDatosFormulario(tipoNovedad) {
         case 2: // Nuevo puesto
             datos.puesto = document.getElementById('nuevo_puesto').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_puesto').value;
+            
+            // Obtener tipo de puesto (permanente/temporario) - MEJORADO
+            let tipoPuesto = 'permanente'; // default seguro
+            
+            // Verificar radio buttons
+            const radioPermanente = document.getElementById('tipo_puesto_permanente');
+            const radioTemporario = document.getElementById('tipo_puesto_temporario');
+            
+            if (radioTemporario && radioTemporario.checked) {
+                tipoPuesto = 'temporario';
+            } else if (radioPermanente && radioPermanente.checked) {
+                tipoPuesto = 'permanente';
+            }
+            // Si ninguno está seleccionado, queda 'permanente' por defecto
+            
+            datos.tipo_nuevo_puesto = tipoPuesto;
+            
+            // Si es temporario, agregar fecha de fin
+            if (tipoPuesto === 'temporario') {
+                const fechaHasta = document.getElementById('fecha_vigencia_hasta_puesto');
+                datos.fecha_vigencia_hasta = fechaHasta ? fechaHasta.value : '';
+            } else {
+                // Para permanente, asegurar que fecha_vigencia_hasta sea null
+                datos.fecha_vigencia_hasta = null;
+            }
+            
+            console.log('🔍 NUEVO PUESTO - Datos recopilados:', {
+                puesto: datos.puesto,
+                fecha_vigencia: datos.fecha_vigencia,
+                tipo_nuevo_puesto: datos.tipo_nuevo_puesto,
+                fecha_vigencia_hasta: datos.fecha_vigencia_hasta || 'N/A',
+                radioPermanenteChecked: radioPermanente ? radioPermanente.checked : 'no encontrado',
+                radioTemporarioChecked: radioTemporario ? radioTemporario.checked : 'no encontrado'
+            });
             break;
 
         case 3: // Nuevo salario neto
@@ -1299,11 +1353,64 @@ async function configurarCambioPuesto() {
             }
         }
         
+        // Configurar event listeners para tipo de puesto (Permanente/Temporario)
+        configurarTipoPuesto();
+        
     } catch (error) {
         console.error('❌ Error obteniendo puesto actual:', error);
         const puestoActualInfo = document.getElementById('puesto-actual-info');
         if (puestoActualInfo) {
             puestoActualInfo.style.display = 'none';
         }
+    }
+}
+
+/**
+ * Configurar lógica de tipo de puesto (Permanente/Temporario)
+ */
+function configurarTipoPuesto() {
+    const radioPermanente = document.getElementById('tipo_puesto_permanente');
+    const radioTemporario = document.getElementById('tipo_puesto_temporario');
+    const campoFechaFin = document.getElementById('campo_fecha_fin');
+    const fechaHastaCampo = document.getElementById('fecha_vigencia_hasta_puesto');
+    
+    // Event listener para cambio de tipo
+    function manejarCambioTipoPuesto() {
+        if (radioTemporario && radioTemporario.checked) {
+            // Mostrar campo de fecha de fin para temporario
+            if (campoFechaFin) {
+                campoFechaFin.style.display = 'block';
+                campoFechaFin.classList.add('fade-in');
+            }
+            if (fechaHastaCampo) {
+                fechaHastaCampo.setAttribute('required', 'required');
+            }
+            console.log('🕐 Cambio temporario seleccionado - mostrando fecha de fin');
+        } else {
+            // Ocultar campo de fecha de fin para permanente
+            if (campoFechaFin) {
+                campoFechaFin.style.display = 'none';
+                campoFechaFin.classList.remove('fade-in');
+            }
+            if (fechaHastaCampo) {
+                fechaHastaCampo.removeAttribute('required');
+                fechaHastaCampo.value = ''; // Limpiar valor
+            }
+            console.log('✅ Cambio permanente seleccionado - ocultando fecha de fin');
+        }
+    }
+    
+    // Agregar event listeners
+    if (radioPermanente) {
+        radioPermanente.addEventListener('change', manejarCambioTipoPuesto);
+    }
+    if (radioTemporario) {
+        radioTemporario.addEventListener('change', manejarCambioTipoPuesto);
+    }
+    
+    // Configurar estado inicial (permanente por defecto)
+    if (radioPermanente) {
+        radioPermanente.checked = true;
+        manejarCambioTipoPuesto();
     }
 }
