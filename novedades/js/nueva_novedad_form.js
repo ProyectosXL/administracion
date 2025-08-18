@@ -5,7 +5,7 @@
 
 // Configuración de tipos de novedad y sus campos requeridos - CORREGIDA SEGÚN ARTIFACT
 const tiposNovedadConfig = {
-    1: { // Cambio de sucursal
+    1: { // Cambio de centro de costos
         config: 'config-cambio-sucursal',
         campos: ['nueva_sucursal', 'fecha_vigencia_sucursal'],
         validaciones: ['nueva_sucursal', 'fecha_vigencia']
@@ -165,22 +165,84 @@ function limpiarCamposDinamicos() {
 }
 
 /**
- * Configurar opciones específicas para cambio de sucursal
+ * Configurar opciones específicas para cambio de centro de costos
  */
 function configurarCambioSucursal() {
-    const sucursalActual = document.getElementById('sucursal').value;
-    const nuevaSucursalSelect = document.getElementById('nueva_sucursal');
+    const empleadoLegajo = document.getElementById('legajo').value;
     
-    // Filtrar opciones para no mostrar la sucursal actual
-    Array.from(nuevaSucursalSelect.options).forEach(option => {
-        if (option.value === sucursalActual && sucursalActual !== '') {
-            option.style.display = 'none';
-            option.disabled = true;
+    if (empleadoLegajo) {
+        // Cargar información de sucursal actual del empleado
+        cargarSucursalActualEmpleado(empleadoLegajo);
+    }
+    
+    // Cargar sucursales en el select
+    cargarSucursalesEnSelect();
+}
+
+/**
+ * Cargar sucursal actual del empleado basada en su centro de costos
+ * Solo muestra sucursal para centros de costos mapeables (LOC###)
+ */
+async function cargarSucursalActualEmpleado(legajo) {
+    try {
+        // Primero obtener la información del empleado para conseguir su centro de costos
+        const empleado = await NovedadesApp.request('get_empleado_info', { legajo: legajo });
+        
+        if (empleado && empleado.codigo_centro_costos) {
+            const codigoCentroCostos = empleado.codigo_centro_costos;
+            
+            // Solo intentar obtener sucursal si el código comienza con "LOC"
+            if (codigoCentroCostos.startsWith('LOC')) {
+                // Obtener la sucursal asociada al centro de costos usando RO_V_SUCURSALES_CON_CC
+                const sucursalDescripcion = await NovedadesApp.request('get_sucursal_por_centro_costos', { 
+                    codigo: codigoCentroCostos 
+                });
+                
+                if (sucursalDescripcion) {
+                    // Mostrar la sucursal actual
+                    document.getElementById('sucursal_actual').value = codigoCentroCostos;
+                    document.getElementById('sucursal-actual-text').textContent = sucursalDescripcion;
+                    document.getElementById('sucursal-actual-info').style.display = 'block';
+                } else {
+                    // Si no se encuentra mapeo, ocultar sucursal actual
+                    document.getElementById('sucursal-actual-info').style.display = 'none';
+                }
+            } else {
+                // Para departamentos centrales (ADM, COM, FAB, LOG), no mostrar sucursal actual
+                document.getElementById('sucursal-actual-info').style.display = 'none';
+            }
+            
+            // Siempre cargar la lista de sucursales disponibles para seleccionar
+            cargarSucursalesEnSelect();
         } else {
-            option.style.display = 'block';
-            option.disabled = false;
+            console.warn('No se pudo obtener el centro de costos del empleado');
+            document.getElementById('sucursal-actual-info').style.display = 'none';
         }
-    });
+    } catch (error) {
+        console.error('Error cargando sucursal actual del empleado:', error);
+        document.getElementById('sucursal-actual-info').style.display = 'none';
+    }
+}
+
+/**
+ * Cargar sucursales en un select, excluyendo la actual
+ */
+async function cargarSucursalesEnSelect() {
+    try {
+        const sucursales = await NovedadesApp.request('get_sucursales');
+        const nuevaSucursalSelect = document.getElementById('nueva_sucursal');
+        const sucursalActual = document.getElementById('sucursal_actual').value;
+        
+        nuevaSucursalSelect.innerHTML = '<option value="">Seleccione nueva sucursal...</option>';
+        
+        sucursales.forEach(sucursal => {
+            if (sucursal.numero !== sucursalActual) {
+                nuevaSucursalSelect.innerHTML += `<option value="${sucursal.numero}">${sucursal.descripcion}</option>`;
+            }
+        });
+    } catch (error) {
+        console.error('Error cargando sucursales:', error);
+    }
 }
 
 /**
@@ -272,7 +334,7 @@ async function enviarFormulario(event) {
 function validarDatosBasicos() {
     console.log('🔍 Iniciando validación básica...');
     
-    const camposBasicos = ['empleado-select', 'sucursal', 'tipo_novedad'];
+    const camposBasicos = ['empleado-select', 'tipo_novedad'];
     let valido = true;
 
     camposBasicos.forEach(campoId => {
@@ -355,7 +417,7 @@ function validarConfiguracionTipo(tipoNovedad) {
     // Validaciones específicas por tipo
     switch (tipoNovedad) {
         case 1: // Cambio de sucursal
-            const sucursalActual = document.getElementById('sucursal').value;
+            const sucursalActual = document.getElementById('sucursal_actual').value;
             const nuevaSucursal = document.getElementById('nueva_sucursal').value;
             if (sucursalActual === nuevaSucursal) {
                 errores.push('La nueva sucursal debe ser diferente a la actual');
@@ -456,10 +518,8 @@ function validarConfiguracionTipo(tipoNovedad) {
 async function recopilarDatosFormulario(tipoNovedad) {
     console.log('📦 Iniciando recopilación de datos...');
     
-    // Obtener datos del empleado y sucursal
+    // Obtener datos del empleado
     const legajo = document.getElementById('legajo').value;
-    const sucursalElement = document.getElementById('sucursal');
-    const sucursalValue = sucursalElement ? sucursalElement.value : '';
     
     let nombreEmpleado = '';
     let apellidoEmpleado = '';
@@ -521,16 +581,11 @@ async function recopilarDatosFormulario(tipoNovedad) {
         throw new Error('No se pudo obtener el nombre y apellido del empleado seleccionado');
     }
     
-    if (!sucursalValue) {
-        throw new Error('Debe seleccionar una sucursal');
-    }
-    
     // Datos básicos - OBLIGATORIOS
     const datos = {
         legajo: legajo,
         nombre: nombreEmpleado,
         apellido: apellidoEmpleado,
-        sucursal: sucursalValue,
         tipo_novedad: tipoNovedad,
         observaciones: document.getElementById('observaciones') ? document.getElementById('observaciones').value : ''
     };
@@ -1224,6 +1279,11 @@ function configurarAutocompletadoEmpleado() {
                         configurarCambioPuesto();
                     }
                     
+                    // Si está activo el tipo "Cambio de Sucursal", actualizar sucursal actual
+                    if (tipoSelect && tipoSelect.value === '1') {
+                        cargarSucursalActualEmpleado(legajo);
+                    }
+                    
                 } catch (error) {
                     console.log('Empleado no encontrado para autocompletado:', legajo);
                 }
@@ -1412,5 +1472,18 @@ function configurarTipoPuesto() {
     if (radioPermanente) {
         radioPermanente.checked = true;
         manejarCambioTipoPuesto();
+    }
+}
+
+/**
+ * Obtener sucursal asociada a un centro de costos
+ */
+async function obtenerSucursalPorCentroCostos(codigoCentroCostos) {
+    try {
+        const response = await NovedadesApp.request('get_sucursal_por_centro_costos', { codigo: codigoCentroCostos });
+        return response;
+    } catch (error) {
+        console.error('Error obteniendo sucursal por centro de costos:', error);
+        return null;
     }
 }

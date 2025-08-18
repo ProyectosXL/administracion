@@ -17,9 +17,9 @@ async function cargarEstadisticas() {
         const novedadesPeriodo = await NovedadesApp.request('get_novedades');
         document.getElementById('novedades-periodo').textContent = novedadesPeriodo.length;
 
-        // Obtener sucursales
-        const sucursales = await NovedadesApp.request('get_sucursales');
-        document.getElementById('total-sucursales').textContent = sucursales.length;
+        // Obtener centros de costos
+        const centrosCostos = await NovedadesApp.request('get_centros_costos');
+        document.getElementById('total-centros-costos').textContent = centrosCostos.length;
 
         // Mostrar últimas novedades (usar todas las novedades para mostrar variedad)
         mostrarUltimasNovedades(todasNovedades.slice(0, 5));
@@ -29,7 +29,7 @@ async function cargarEstadisticas() {
         // Mostrar valores por defecto en caso de error
         document.getElementById('total-novedades-todas').textContent = '0';
         document.getElementById('novedades-periodo').textContent = '0';
-        document.getElementById('total-sucursales').textContent = '0';
+        document.getElementById('total-centros-costos').textContent = '0';
     }
 }
 
@@ -61,7 +61,7 @@ function mostrarUltimasNovedades(novedades) {
                 <tr>
                     <th>Empleado</th>
                     <th>Tipo de Novedad</th>
-                    <th>Sucursal</th>
+                    <th>Centro de Costos</th>
                     <th>Fecha de registro</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -214,7 +214,7 @@ function mostrarModalDetalle(novedad) {
                                         <table class="table table-sm">
                                             <tr><td><strong>Nombre:</strong></td><td>${novedad.nombre} ${novedad.apellido}</td></tr>
                                             <tr><td><strong>Legajo:</strong></td><td>${novedad.legajo}</td></tr>
-                                            <tr><td><strong>Sucursal:</strong></td><td>${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</td></tr>
+                                            <tr><td><strong>Centro de Costos:</strong></td><td>${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</td></tr>
                                         </table>
                                     </div>
                                 </div>
@@ -244,20 +244,76 @@ function mostrarModalDetalle(novedad) {
     
     switch (tipo) {
         case 1: // Cambio de sucursal
+            // Para cambio de sucursal, obtener información de sucursales
+            let sucursalActualDetalle = 'Cargando...';
+            let nuevaSucursalDetalle = 'No especificado';
+            
+            // Obtener sucursal actual del centro de costos del empleado
+            if (novedad.codigo_centro_costos) {
+                // Usar una función async para obtener la sucursal
+                obtenerSucursalPorCentroCostos(novedad.codigo_centro_costos).then(sucursal => {
+                    if (sucursal) {
+                        // Actualizar el elemento después de cargar
+                        const elemento = document.querySelector(`[data-novedad-dashboard-id="${novedad.id}"] .sucursal-actual-dashboard-text`);
+                        if (elemento) {
+                            elemento.textContent = sucursal;
+                        }
+                    }
+                }).catch(error => {
+                    console.error('Error obteniendo sucursal actual:', error);
+                    const elemento = document.querySelector(`[data-novedad-dashboard-id="${novedad.id}"] .sucursal-actual-dashboard-text`);
+                    if (elemento) {
+                        elemento.textContent = `${novedad.descripcion_centro_costos || novedad.codigo_centro_costos} (Centro de Costos)`;
+                    }
+                });
+                
+                // Mostrar temporalmente el centro de costos
+                sucursalActualDetalle = `${novedad.descripcion_centro_costos || novedad.codigo_centro_costos} (Centro de Costos)`;
+            }
+            
+            // Extraer nueva sucursal de las observaciones
+            if (novedad.observaciones) {
+                // Buscar patrón de nueva sucursal en observaciones
+                let match = novedad.observaciones.match(/Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/);
+                if (match) {
+                    nuevaSucursalDetalle = match[1].trim();
+                } else {
+                    match = novedad.observaciones.match(/Nueva sucursal:\s*([^-<\n]+)/);
+                    if (match) {
+                        nuevaSucursalDetalle = match[1].trim();
+                    } else {
+                        // Fallback: buscar patrón antiguo de centro de costos
+                        match = novedad.observaciones.match(/Nuevo centro de costos:\s*<[^>]*>([^<]+)<[^>]*>/);
+                        if (match) {
+                            nuevaSucursalDetalle = match[1].trim();
+                        } else {
+                            match = novedad.observaciones.match(/Nuevo centro de costos:\s*([^-<\n]+)/);
+                            if (match) {
+                                nuevaSucursalDetalle = match[1].trim();
+                            }
+                        }
+                    }
+                }
+            }
+            
             modalHtml += `
-                <div class="col-12">
+                <div class="col-12" data-novedad-dashboard-id="${novedad.id}">
                     <div class="card">
                         <div class="card-header bg-info text-white">
                             <h6 class="mb-0"><i class="fas fa-building me-2"></i>Detalles del Cambio de Sucursal</h6>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Sucursal Actual:</strong><br>
-                                    <span class="badge bg-secondary">${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</span>
+                                    <span class="badge bg-secondary sucursal-actual-dashboard-text">${sucursalActualDetalle}</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Nueva Sucursal:</strong><br>
+                                    <span class="badge bg-primary">${nuevaSucursalDetalle}</span>
                                 </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <strong>Fecha de Vigencia:</strong><br>
                                     ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : novedad.fecha_vigencia}
                                 </div>
@@ -533,3 +589,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ Dashboard - Inicializado correctamente');
 });
+
+/**
+ * Obtener sucursal asociada a un centro de costos
+ */
+async function obtenerSucursalPorCentroCostos(codigoCentroCostos) {
+    try {
+        const response = await NovedadesApp.request('get_sucursal_por_centro_costos', { codigo: codigoCentroCostos });
+        return response;
+    } catch (error) {
+        console.error('Error obteniendo sucursal por centro de costos:', error);
+        return null;
+    }
+}

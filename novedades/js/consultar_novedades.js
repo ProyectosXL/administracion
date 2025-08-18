@@ -108,7 +108,7 @@ function aplicarFiltros() {
     // Obtener valores de los filtros usando Select2
     filtrosActivos = {
         legajo: $('#filtro-legajo').val() || '', 
-        sucursal: document.getElementById('filtro-sucursal').value,
+        centro_costos: document.getElementById('filtro-centro-costos').value,
         tipo: document.getElementById('filtro-tipo').value,
         estado: document.getElementById('filtro-estado').value,
         empleado: $('#filtro-empleado').val() || '',
@@ -130,8 +130,8 @@ function aplicarFiltros() {
             return false;
         }
         
-        // Filtro por sucursal
-        if (filtrosActivos.sucursal && novedad.sucursal != filtrosActivos.sucursal) {
+        // Filtro por centro de costos
+        if (filtrosActivos.centro_costos && novedad.codigo_centro_costos != filtrosActivos.centro_costos) {
             return false;
         }
         
@@ -268,7 +268,7 @@ function mostrarTabla(datos) {
                     </div>
                 </td>
                 <td>
-                    <span class="badge bg-light text-dark">${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</span>
+                    <span class="badge bg-light text-dark">${novedad.centro_costos_display || (novedad.descripcion_centro_costos || 'Sin centro') + ' (' + (novedad.codigo_centro_costos || '') + ')'}</span>
                 </td>
                 <td>
                     <span class="badge bg-primary">${novedad.tipo_descripcion}</span>
@@ -352,8 +352,8 @@ function mostrarTarjetas(datos) {
                         </div>
                         
                         <div class="mb-2">
-                            <strong>Sucursal:</strong><br>
-                            <span class="badge bg-light text-dark">${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</span>
+                            <strong>Centro de Costos:</strong><br>
+                            <span class="badge bg-light text-dark">${novedad.centro_costos_display || (novedad.descripcion_centro_costos || 'Sin centro') + ' (' + (novedad.codigo_centro_costos || '') + ')'}</span>
                         </div>
                         
                         ${fechaVigencia ? `
@@ -459,7 +459,7 @@ function mostrarModalDetalleCompleto(novedad) {
                         <table class="table table-sm">
                             <tr><td><strong>Nombre:</strong></td><td>${novedad.nombre} ${novedad.apellido}</td></tr>
                             <tr><td><strong>Legajo:</strong></td><td>${novedad.legajo}</td></tr>
-                            <tr><td><strong>Sucursal:</strong></td><td>${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</td></tr>
+                            <tr><td><strong>Centro de Costos:</strong></td><td>${novedad.centro_costos_display || novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td></tr>
                         </table>
                     </div>
                 </div>
@@ -491,24 +491,60 @@ function mostrarModalDetalleCompleto(novedad) {
     
     switch (tipo) {
         case 1: // Cambio de sucursal
+            // Para cambio de sucursal, obtener información de sucursales
+            let sucursalActualDetalle = 'Cargando...';
+            let nuevaSucursalDetalle = 'No especificado';
+            
+            // Obtener sucursal actual del centro de costos del empleado
+            if (novedad.codigo_centro_costos) {
+                // Usar una función async para obtener la sucursal
+                obtenerSucursalPorCentroCostos(novedad.codigo_centro_costos).then(sucursal => {
+                    if (sucursal) {
+                        // Actualizar el elemento después de cargar
+                        const elemento = document.querySelector(`[data-novedad-id="${novedad.id}"] .sucursal-actual-text`);
+                        if (elemento) {
+                            elemento.textContent = sucursal;
+                        }
+                    }
+                }).catch(error => {
+                    console.error('Error obteniendo sucursal actual:', error);
+                    const elemento = document.querySelector(`[data-novedad-id="${novedad.id}"] .sucursal-actual-text`);
+                    if (elemento) {
+                        elemento.textContent = `${novedad.descripcion_centro_costos || novedad.codigo_centro_costos} (Centro de Costos)`;
+                    }
+                });
+                
+                // Mostrar temporalmente el centro de costos
+                sucursalActualDetalle = `${novedad.descripcion_centro_costos || novedad.codigo_centro_costos} (Centro de Costos)`;
+            }
+            
             // Extraer nueva sucursal de las observaciones
-            let nuevaSucursalDetalle = '';
             if (novedad.observaciones) {
-                // Buscar con etiquetas HTML primero
+                // Buscar patrón de nueva sucursal en observaciones
                 let match = novedad.observaciones.match(/Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/);
                 if (match) {
                     nuevaSucursalDetalle = match[1].trim();
                 } else {
-                    // Buscar sin etiquetas como fallback
                     match = novedad.observaciones.match(/Nueva sucursal:\s*([^-<\n]+)/);
                     if (match) {
                         nuevaSucursalDetalle = match[1].trim();
+                    } else {
+                        // Fallback: buscar patrón antiguo de centro de costos
+                        match = novedad.observaciones.match(/Nuevo centro de costos:\s*<[^>]*>([^<]+)<[^>]*>/);
+                        if (match) {
+                            nuevaSucursalDetalle = match[1].trim();
+                        } else {
+                            match = novedad.observaciones.match(/Nuevo centro de costos:\s*([^-<\n]+)/);
+                            if (match) {
+                                nuevaSucursalDetalle = match[1].trim();
+                            }
+                        }
                     }
                 }
             }
             
             html += `
-                <div class="col-12">
+                <div class="col-12" data-novedad-id="${novedad.id}">
                     <div class="card">
                         <div class="card-header bg-info text-white">
                             <h6 class="mb-0"><i class="fas fa-building me-2"></i>Detalles del Cambio de Sucursal</h6>
@@ -517,11 +553,11 @@ function mostrarModalDetalleCompleto(novedad) {
                             <div class="row">
                                 <div class="col-md-4">
                                     <strong>Sucursal Actual:</strong><br>
-                                    <span class="badge bg-secondary">${novedad.nombre_sucursal || 'Sucursal ' + novedad.sucursal}</span>
+                                    <span class="badge bg-secondary sucursal-actual-text">${sucursalActualDetalle}</span>
                                 </div>
                                 <div class="col-md-4">
                                     <strong>Nueva Sucursal:</strong><br>
-                                    <span class="badge bg-primary">${nuevaSucursalDetalle || 'No especificada'}</span>
+                                    <span class="badge bg-primary">${nuevaSucursalDetalle}</span>
                                 </div>
                                 ${novedad.fecha_vigencia ? `
                                 <div class="col-md-4">
@@ -537,23 +573,25 @@ function mostrarModalDetalleCompleto(novedad) {
             
         case 2: // Nuevo puesto
             // Extraer nuevo puesto de las observaciones
+            // Extraer detalle del nuevo puesto - USAR CAMPOS DIRECTOS EN LUGAR DE OBSERVACIONES
             let nuevoPuestoDetalle = '';
-            if (novedad.observaciones) {
-                // Buscar con etiquetas HTML primero
-                let match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
+            
+            // PRIORITARIO: Usar el campo puesto directo si existe
+            if (novedad.puesto && novedad.puesto !== 'Cambio centro de costos' && novedad.puesto !== 'Ajuste Salario' && novedad.puesto !== 'Premio') {
+                nuevoPuestoDetalle = novedad.puesto;
+            } else if (novedad.observaciones) {
+                // Solo como fallback: extraer de observaciones si no hay puesto directo
+                // Buscar el patrón más completo primero
+                let match = novedad.observaciones.match(/Nuevo puesto:\s*([^-]*?)\s*(?:\([^)]*?\))?(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?(?:\s*-|$)/);
                 if (match) {
                     nuevoPuestoDetalle = match[1].trim();
                 } else {
-                    // Buscar sin etiquetas como fallback
-                    match = novedad.observaciones.match(/Nuevo puesto:\s*([^-<\n]+)/);
+                    // Buscar con etiquetas HTML
+                    match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
                     if (match) {
                         nuevoPuestoDetalle = match[1].trim();
                     }
                 }
-            }
-            // Fallback al campo puesto si existe
-            if (!nuevoPuestoDetalle && novedad.puesto) {
-                nuevoPuestoDetalle = novedad.puesto;
             }
             
             // Determinar tipo de puesto y fechas
@@ -812,7 +850,7 @@ function cambiarVista(vista) {
  */
 function limpiarFiltros() {
     // Limpiar selects normales
-    document.getElementById('filtro-sucursal').value = '';
+    document.getElementById('filtro-centro-costos').value = '';
     document.getElementById('filtro-tipo').value = '';
     document.getElementById('filtro-estado').value = '';
     document.getElementById('fecha-desde').value = '';
@@ -996,7 +1034,7 @@ function mostrarSinResultados() {
  */
 function actualizarEstadisticas() {
     const totalNovedades = novedadesData.length;
-    const sucursalesUnicas = new Set(novedadesData.map(n => n.nombre_sucursal || 'Sucursal ' + n.sucursal)).size;
+    const centrosCostosUnicos = new Set(novedadesData.map(n => n.descripcion_centro_costos || 'Centro de Costos ' + n.codigo_centro_costos)).size;
     const empleadosUnicos = new Set(novedadesData.map(n => n.legajo)).size;
     
     // Solo sumar valores monetarios (tipos 3 y 4: salarios y premios)
@@ -1009,7 +1047,7 @@ function actualizarEstadisticas() {
     }, 0);
 
     document.getElementById('total-resultados').textContent = totalNovedades;
-    document.getElementById('total-sucursales-filtro').textContent = sucursalesUnicas;
+    document.getElementById('total-centros-costos-filtro').textContent = centrosCostosUnicos;
     document.getElementById('total-empleados-filtro').textContent = empleadosUnicos;
     document.getElementById('total-valores').textContent = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(valorTotal, 'moneda') : valorTotal;
 }
@@ -1221,7 +1259,7 @@ function imprimirReporte() {
             <tr>
                 <td>${novedad.legajo}</td>
                 <td>${novedad.nombre} ${novedad.apellido}</td>
-                <td>${novedad.sucursal}</td>
+                <td>${novedad.centro_costos_display || novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td>
                 <td>${novedad.tipo_descripcion}</td>
                 <td>${novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '-'}</td>
                 <td>${novedad.valor_numerico ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : '-'}</td>
@@ -1285,7 +1323,7 @@ function imprimirNovedad(id) {
                 <table>
                     <tr><th>Legajo:</th><td>${novedad.legajo}</td></tr>
                     <tr><th>Nombre:</th><td>${novedad.nombre} ${novedad.apellido}</td></tr>
-                    <tr><th>Sucursal:</th><td>${novedad.sucursal}</td></tr>
+                    <tr><th>Centro de Costos:</th><td>${novedad.centro_costos_display || novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td></tr>
                 </table>
             </div>
             
@@ -1378,12 +1416,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Event listeners para otros filtros
-    const filtroSucursal = document.getElementById('filtro-sucursal');
+    const filtroCentroCostos = document.getElementById('filtro-centro-costos');
     const filtroTipo = document.getElementById('filtro-tipo');
     const filtroEstado = document.getElementById('filtro-estado');
     
-    if (filtroSucursal) {
-        filtroSucursal.addEventListener('change', aplicarFiltros);
+    if (filtroCentroCostos) {
+        filtroCentroCostos.addEventListener('change', aplicarFiltros);
     }
     
     if (filtroTipo) {
@@ -1395,7 +1433,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Event listeners para filtros normales
-    document.getElementById('filtro-sucursal').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtro-centro-costos').addEventListener('change', aplicarFiltros);
     document.getElementById('filtro-tipo').addEventListener('change', aplicarFiltros);
     document.getElementById('filtro-estado').addEventListener('change', aplicarFiltros);
     
@@ -1425,20 +1463,20 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Cargar datos base (sucursales y tipos de novedad)
+ * Cargar datos base (centros de costos y tipos de novedad)
  */
 async function cargarDatosBase() {
     try {
-        // Cargar sucursales con Casa Central
-        const sucursales = await NovedadesApp.request('get_sucursales_con_casa_central');
-        const sucursalSelect = document.getElementById('filtro-sucursal');
-        sucursalSelect.innerHTML = '<option value="">Todas las sucursales</option>';
+        // Cargar centros de costos
+        const centrosCostos = await NovedadesApp.request('get_centros_costos');
+        const centroCostosSelect = document.getElementById('filtro-centro-costos');
+        centroCostosSelect.innerHTML = '<option value="">Todos los centros</option>';
         
-        sucursales.forEach(sucursal => {
+        centrosCostos.forEach(centro => {
             const option = document.createElement('option');
-            option.value = sucursal.numero;
-            option.textContent = `${sucursal.numero} - ${sucursal.descripcion}`;
-            sucursalSelect.appendChild(option);
+            option.value = centro.codigo;
+            option.textContent = `${centro.codigo} - ${centro.descripcion}`;
+            centroCostosSelect.appendChild(option);
         });
 
         // Cargar tipos de novedad
@@ -1465,7 +1503,7 @@ async function cargarDatosBase() {
  */
 function actualizarEstadisticasFiltros(datosFiltrados) {
     const totalNovedades = datosFiltrados.length;
-    const sucursalesUnicas = new Set(datosFiltrados.map(n => n.sucursal)).size;
+    const centrosCostosUnicos = new Set(datosFiltrados.map(n => n.codigo_centro_costos)).size;
     const empleadosUnicos = new Set(datosFiltrados.map(n => n.legajo)).size;
     
     // Solo sumar valores monetarios (tipos 3 y 4: salarios y premios)
@@ -1478,7 +1516,7 @@ function actualizarEstadisticasFiltros(datosFiltrados) {
     }, 0);
 
     document.getElementById('total-resultados').textContent = totalNovedades;
-    document.getElementById('total-sucursales-filtro').textContent = sucursalesUnicas;
+    document.getElementById('total-centros-costos-filtro').textContent = centrosCostosUnicos;
     document.getElementById('total-empleados-filtro').textContent = empleadosUnicos;
     document.getElementById('total-valores').textContent = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(valorTotal, 'moneda') : valorTotal;
 }
@@ -1612,42 +1650,53 @@ async function eliminarNovedad(id) {
 async function generarFormularioEdicion(novedad) {
     try {
         // Cargar datos necesarios para el formulario
-        const [sucursales, tipos, puestos] = await Promise.all([
-            NovedadesApp.request('get_sucursales'),
+        const [tipos, puestos] = await Promise.all([
             NovedadesApp.request('get_tipos_novedad'),
             NovedadesApp.request('get_puestos')
         ]);
         
         const formularioHtml = `
             <div class="row g-3">
-                <!-- Información del empleado -->
+                <!-- Información del empleado (solo lectura) -->
                 <div class="col-md-4">
-                    <label for="edit-legajo" class="form-label">Legajo</label>
-                    <input type="number" class="form-control" id="edit-legajo" value="${novedad.legajo}" required>
+                    <label for="edit-legajo-display" class="form-label">Legajo</label>
+                    <div class="form-control-plaintext bg-light p-2 rounded border">
+                        <strong>${novedad.legajo}</strong>
+                    </div>
+                    <!-- Campo oculto para mantener el valor -->
+                    <input type="hidden" id="edit-legajo" value="${novedad.legajo}">
                 </div>
                 <div class="col-md-4">
-                    <label for="edit-nombre" class="form-label">Nombre</label>
-                    <input type="text" class="form-control" id="edit-nombre" value="${novedad.nombre}" required>
+                    <label for="edit-nombre-display" class="form-label">Nombre</label>
+                    <div class="form-control-plaintext bg-light p-2 rounded border">
+                        <strong>${novedad.nombre}</strong>
+                    </div>
+                    <!-- Campo oculto para mantener el valor -->
+                    <input type="hidden" id="edit-nombre" value="${novedad.nombre}">
                 </div>
                 <div class="col-md-4">
-                    <label for="edit-apellido" class="form-label">Apellido</label>
-                    <input type="text" class="form-control" id="edit-apellido" value="${novedad.apellido}" required>
+                    <label for="edit-apellido-display" class="form-label">Apellido</label>
+                    <div class="form-control-plaintext bg-light p-2 rounded border">
+                        <strong>${novedad.apellido}</strong>
+                    </div>
+                    <!-- Campo oculto para mantener el valor -->
+                    <input type="hidden" id="edit-apellido" value="${novedad.apellido}">
                 </div>
                 
-                <!-- Sucursal y Tipo -->
+                <!-- Centro de Costos (solo lectura) -->
                 <div class="col-md-6">
-                    <label for="edit-sucursal" class="form-label">Sucursal</label>
-                    <select class="form-select" id="edit-sucursal" required>
-                        ${sucursales.map(s => `
-                            <option value="${s.numero}" ${s.numero == novedad.sucursal ? 'selected' : ''}>
-                                ${s.descripcion}
-                            </option>
-                        `).join('')}
-                    </select>
+                    <label for="edit-centro-costos" class="form-label">Centro de Costos</label>
+                    <div class="form-control-plaintext bg-light p-2 rounded">
+                        <span class="badge bg-secondary">
+                            ${novedad.centro_costos_display || (novedad.descripcion_centro_costos || 'Sin centro') + ' (' + (novedad.codigo_centro_costos || '') + ')'}
+                        </span>
+                    </div>
                 </div>
+                
+                <!-- Tipo de Novedad -->
                 <div class="col-md-6">
                     <label for="edit-tipo-novedad" class="form-label">Tipo de Novedad</label>
-                    <select class="form-select" id="edit-tipo-novedad" required onchange="actualizarFormularioEdicion()">
+                    <select class="form-select" id="edit-tipo-novedad" required onchange="actualizarFormularioEdicionAsync()">
                         ${tipos.map(t => `
                             <option value="${t.id}" ${t.id == novedad.tipo_novedad ? 'selected' : ''}>
                                 ${t.descripcion}
@@ -1671,10 +1720,69 @@ async function generarFormularioEdicion(novedad) {
         
         document.getElementById('contenido-formulario-editar').innerHTML = formularioHtml;
         
+        // Cargar datos específicos después de generar el formulario
+        await cargarDatosFormularioEdicion(novedad);
+        
     } catch (error) {
         console.error('Error generando formulario:', error);
         document.getElementById('contenido-formulario-editar').innerHTML = 
             '<div class="alert alert-danger">Error cargando formulario</div>';
+    }
+}
+
+/**
+ * Cargar datos específicos en el formulario de edición
+ */
+async function cargarDatosFormularioEdicion(novedad) {
+    const tipo = parseInt(novedad.tipo_novedad);
+    
+    try {
+        // Para cambio de sucursal, cargar lista de sucursales
+        if (tipo === 1) {
+            await cargarSucursalesFormularioEdicion(novedad);
+        }
+        
+        // Para cambio de puesto, cargar lista de puestos
+        if (tipo === 2) {
+            await cargarPuestosFormularioEdicion(novedad);
+        }
+        
+    } catch (error) {
+        console.error('Error cargando datos del formulario:', error);
+    }
+}
+
+/**
+ * Cargar sucursales en el formulario de edición
+ */
+async function cargarSucursalesFormularioEdicion(novedad) {
+    try {
+        const sucursales = await NovedadesApp.request('get_sucursales');
+        const selectSucursal = document.getElementById('edit-nueva-sucursal');
+        const valorActual = document.getElementById('edit-nueva-sucursal-actual')?.value;
+        
+        if (selectSucursal && sucursales) {
+            // Limpiar opciones existentes (excepto la primera)
+            selectSucursal.innerHTML = '<option value="">Seleccionar sucursal...</option>';
+            
+            // Agregar opciones de sucursales
+            sucursales.forEach(sucursal => {
+                const option = document.createElement('option');
+                option.value = sucursal.numero;
+                option.textContent = sucursal.descripcion;
+                
+                // Seleccionar si coincide con el valor actual
+                if (valorActual && (valorActual == sucursal.numero || valorActual.includes(sucursal.descripcion))) {
+                    option.selected = true;
+                }
+                
+                selectSucursal.appendChild(option);
+            });
+            
+            console.log('✅ Sucursales cargadas en formulario de edición');
+        }
+    } catch (error) {
+        console.error('Error cargando sucursales:', error);
     }
 }
 
@@ -1698,20 +1806,19 @@ function generarCamposDinamicosEdicion(novedad) {
     
     // Campos específicos según tipo
     switch(tipo) {
-        case 1: // Cambio sucursal
-            // Extraer nueva sucursal de las observaciones si existe
+        case 1: // Cambio de sucursal
+            // Extraer sucursal nueva desde observaciones o campos específicos
             let nuevaSucursal = '';
-            if (novedad.observaciones) {
-                // Buscar con etiquetas HTML primero
-                let match = novedad.observaciones.match(/Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/);
+            let nuevaSucursalId = '';
+            
+            // Intentar extraer de campos específicos primero
+            if (novedad.sucursal_nueva_id) {
+                nuevaSucursalId = novedad.sucursal_nueva_id;
+            } else if (novedad.observaciones) {
+                // Extraer de observaciones como fallback
+                const match = novedad.observaciones.match(/Nueva sucursal:\s*([^-\n]*)/);
                 if (match) {
                     nuevaSucursal = match[1].trim();
-                } else {
-                    // Buscar sin etiquetas como fallback
-                    match = novedad.observaciones.match(/Nueva sucursal:\s*([^-<\n]+)/);
-                    if (match) {
-                        nuevaSucursal = match[1].trim();
-                    }
                 }
             }
             
@@ -1722,33 +1829,32 @@ function generarCamposDinamicosEdicion(novedad) {
                         <option value="">Seleccionar sucursal...</option>
                         <!-- Se llenarán dinámicamente -->
                     </select>
+                    <!-- Campo oculto para valor actual -->
+                    <input type="hidden" id="edit-nueva-sucursal-actual" value="${nuevaSucursalId || nuevaSucursal}">
                 </div>
             `;
-            
-            // Cargar sucursales después de renderizar
-            setTimeout(() => cargarSucursalesParaEdicion(nuevaSucursal), 100);
             break;
             
         case 2: // Cambio de puesto
-            // Extraer nuevo puesto de las observaciones si existe
+            // PRIORIZAR CAMPOS DIRECTOS: Usar puesto y tipo_nuevo_puesto directamente
             let nuevoPuesto = '';
-            if (novedad.observaciones) {
-                // Buscar con etiquetas HTML primero
-                let match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
+            
+            // PRIORITARIO: Usar el campo puesto directo
+            if (novedad.puesto && novedad.puesto !== 'Cambio centro de costos' && novedad.puesto !== 'Ajuste Salario' && novedad.puesto !== 'Premio') {
+                nuevoPuesto = novedad.puesto;
+            } else if (novedad.observaciones) {
+                // Solo como fallback: extraer de observaciones si no hay puesto directo
+                // Buscar el patrón más completo primero
+                let match = novedad.observaciones.match(/Nuevo puesto:\s*([^-]*?)\s*(?:\([^)]*?\))?(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?(?:\s*-|$)/);
                 if (match) {
                     nuevoPuesto = match[1].trim();
                 } else {
-                    // Buscar sin etiquetas como fallback
-                    match = novedad.observaciones.match(/Nuevo puesto:\s*([^-<\n]+)/);
+                    // Buscar con etiquetas HTML
+                    match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
                     if (match) {
                         nuevoPuesto = match[1].trim();
                     }
                 }
-            }
-            
-            // Fallback al campo puesto si no se encuentra en observaciones
-            if (!nuevoPuesto && novedad.puesto) {
-                nuevoPuesto = novedad.puesto;
             }
             
             // Determinar tipo actual (permanente/temporario)
@@ -1773,6 +1879,8 @@ function generarCamposDinamicosEdicion(novedad) {
                         <option value="">Seleccionar puesto...</option>
                         <!-- Se llenarán dinámicamente -->
                     </select>
+                    <!-- Campo oculto para almacenar el puesto original como fallback -->
+                    <input type="hidden" id="edit-puesto-original" value="${nuevoPuesto || ''}">
                 </div>
                 
                 <!-- Tipo de Cambio de Puesto -->
@@ -1891,9 +1999,18 @@ function generarCamposDinamicosEdicion(novedad) {
 }
 
 /**
+ * Wrapper para actualizarFormularioEdicion que maneja async
+ */
+function actualizarFormularioEdicionAsync() {
+    actualizarFormularioEdicion().catch(error => {
+        console.error('Error actualizando formulario de edición:', error);
+    });
+}
+
+/**
  * Actualizar formulario de edición cuando cambia el tipo
  */
-function actualizarFormularioEdicion() {
+async function actualizarFormularioEdicion() {
     const tipoSeleccionado = document.getElementById('edit-tipo-novedad').value;
     if (!tipoSeleccionado) return;
     
@@ -1908,6 +2025,16 @@ function actualizarFormularioEdicion() {
     };
     
     document.getElementById('campos-dinamicos-edit').innerHTML = generarCamposDinamicosEdicion(novedadTemp);
+    
+    // Cargar datos específicos según el tipo
+    const tipo = parseInt(tipoSeleccionado);
+    if (tipo === 1) {
+        // Para cambio de sucursal, cargar sucursales
+        await cargarSucursalesFormularioEdicion(novedadTemp);
+    } else if (tipo === 2) {
+        // Para cambio de puesto, cargar puestos (si ya existe esa función)
+        // await cargarPuestosFormularioEdicion(novedadTemp);
+    }
 }
 
 /**
@@ -1924,7 +2051,6 @@ async function guardarEdicionNovedad() {
             legajo: document.getElementById('edit-legajo').value,
             nombre: document.getElementById('edit-nombre').value,
             apellido: document.getElementById('edit-apellido').value,
-            sucursal: document.getElementById('edit-sucursal').value,
             tipo_novedad: document.getElementById('edit-tipo-novedad').value,
             observaciones: limpiarObservaciones(document.getElementById('edit-observaciones').value, parseInt(document.getElementById('edit-tipo-novedad').value))
         };
@@ -1945,17 +2071,26 @@ async function guardarEdicionNovedad() {
         switch(tipo) {
             case 1: // Cambio de sucursal
                 const nuevaSucursal = document.getElementById('edit-nueva-sucursal');
-                if (nuevaSucursal) {
-                    datos.nueva_sucursal = nuevaSucursal.value;
-                    console.log(`🏪 Nueva sucursal capturada:`, nuevaSucursal.value);
+                if (nuevaSucursal && nuevaSucursal.value) {
+                    datos.sucursal_nueva_id = nuevaSucursal.value;
+                    console.log(`🏢 Nueva sucursal capturada:`, nuevaSucursal.value);
+                } else {
+                    console.error('❌ No se pudo obtener el valor de la nueva sucursal');
                 }
                 break;
                 
             case 2: // Cambio de puesto
                 const puesto = document.getElementById('edit-puesto');
-                if (puesto) {
+                const puestoOriginal = document.getElementById('edit-puesto-original');
+                
+                if (puesto && puesto.value) {
                     datos.puesto = puesto.value;
-                    console.log(`👔 Puesto capturado:`, puesto.value);
+                    console.log(`👔 Puesto capturado desde select:`, puesto.value);
+                } else if (puestoOriginal && puestoOriginal.value) {
+                    datos.puesto = puestoOriginal.value;
+                    console.log(`👔 Puesto capturado desde fallback:`, puestoOriginal.value);
+                } else {
+                    console.error('❌ No se pudo obtener el valor del puesto - verificar que el campo esté cargado');
                 }
                 
                 // Obtener tipo de puesto (permanente/temporario)
@@ -2039,8 +2174,30 @@ async function guardarEdicionNovedad() {
         
         console.log('📋 Datos completos a enviar:', datos);
         
+        // Validar y truncar campos según límites de BD
+        if (datos.nombre && datos.nombre.length > 50) {
+            console.warn(`⚠️ Truncando nombre de ${datos.nombre.length} a 50 caracteres`);
+            datos.nombre = datos.nombre.substring(0, 50);
+        }
+        if (datos.apellido && datos.apellido.length > 50) {
+            console.warn(`⚠️ Truncando apellido de ${datos.apellido.length} a 50 caracteres`);
+            datos.apellido = datos.apellido.substring(0, 50);
+        }
+        if (datos.puesto && datos.puesto.length > 50) {
+            console.warn(`⚠️ Truncando puesto de ${datos.puesto.length} a 50 caracteres`);
+            datos.puesto = datos.puesto.substring(0, 50);
+        }
+        if (datos.tipo_permiso && datos.tipo_permiso.length > 20) {
+            console.warn(`⚠️ Truncando tipo_permiso de ${datos.tipo_permiso.length} a 20 caracteres`);
+            datos.tipo_permiso = datos.tipo_permiso.substring(0, 20);
+        }
+        if (datos.tipo_nuevo_puesto && datos.tipo_nuevo_puesto.length > 20) {
+            console.warn(`⚠️ Truncando tipo_nuevo_puesto de ${datos.tipo_nuevo_puesto.length} a 20 caracteres`);
+            datos.tipo_nuevo_puesto = datos.tipo_nuevo_puesto.substring(0, 20);
+        }
+        
         // Validar datos requeridos
-        if (!datos.legajo || !datos.nombre || !datos.apellido || !datos.sucursal || !datos.tipo_novedad) {
+        if (!datos.legajo || !datos.nombre || !datos.apellido || !datos.tipo_novedad) {
             NovedadesApp.mostrarError('Por favor complete todos los campos requeridos');
             return;
         }
@@ -2114,14 +2271,14 @@ function ordenarPor(columna) {
                 esVacioB = valorB === '';
                 break;
                 
-            case 'sucursal':
-                valorA = a.nombre_sucursal?.toLowerCase() || '';
-                valorB = b.nombre_sucursal?.toLowerCase() || '';
+            case 'centro_costos':
+                valorA = a.descripcion_centro_costos?.toLowerCase() || '';
+                valorB = b.descripcion_centro_costos?.toLowerCase() || '';
                 esVacioA = !valorA || valorA === '';
                 esVacioB = !valorB || valorB === '';
-                // Si no hay nombre_sucursal, usar número de sucursal como fallback
-                if (esVacioA) valorA = a.sucursal ? `sucursal ${a.sucursal}` : '';
-                if (esVacioB) valorB = b.sucursal ? `sucursal ${b.sucursal}` : '';
+                // Si no hay descripcion_centro_costos, usar código como fallback
+                if (esVacioA) valorA = a.codigo_centro_costos ? `centro ${a.codigo_centro_costos}` : '';
+                if (esVacioB) valorB = b.codigo_centro_costos ? `centro ${b.codigo_centro_costos}` : '';
                 esVacioA = valorA === '';
                 esVacioB = valorB === '';
                 break;
@@ -2266,40 +2423,6 @@ function limpiarOrdenamiento() {
 }
 
 /**
- * Cargar sucursales para el select de edición
- */
-async function cargarSucursalesParaEdicion(sucursalSeleccionada = '') {
-    try {
-        const sucursales = await NovedadesApp.request('get_sucursales');
-        const select = document.getElementById('edit-nueva-sucursal');
-        
-        if (!select) return;
-        
-        // Limpiar opciones actuales (mantener la primera)
-        select.innerHTML = '<option value="">Seleccionar sucursal...</option>';
-        
-        // Agregar sucursales
-        sucursales.forEach(sucursal => {
-            const option = document.createElement('option');
-            option.value = sucursal.numero;
-            option.textContent = sucursal.descripcion;
-            
-            // Seleccionar si coincide con la sucursal extraída
-            if (sucursalSeleccionada && sucursal.descripcion === sucursalSeleccionada) {
-                option.selected = true;
-            }
-            
-            select.appendChild(option);
-        });
-        
-        console.log('🏪 Sucursales cargadas para edición, seleccionada:', sucursalSeleccionada);
-        
-    } catch (error) {
-        console.error('Error cargando sucursales para edición:', error);
-    }
-}
-
-/**
  * Cargar puestos para el select de edición
  */
 async function cargarPuestosParaEdicion(puestoSeleccionado = '') {
@@ -2346,12 +2469,49 @@ function limpiarObservaciones(observaciones, tipoNovedad) {
             // Remover " - Nueva sucursal: [NOMBRE]" incluyendo etiquetas
             observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/gi, '');
             observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nueva sucursal:\s*([^-<\n]+)/gi, '');
+            // Mantener compatibilidad con observaciones existentes que usen "centro de costos"
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo centro de costos:\s*<[^>]*>([^<]+)<[^>]*>/gi, '');
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo centro de costos:\s*([^-<\n]+)/gi, '');
             break;
             
         case 2: // Cambio de puesto
-            // Remover " - Nuevo puesto: [NOMBRE]" incluyendo etiquetas
-            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/gi, '');
-            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*([^-<\n]+)/gi, '');
+            // Remover " - Nuevo puesto: [NOMBRE]" incluyendo etiquetas y detalles completos
+            // Patrón para HTML: - Nuevo puesto: <tag>NOMBRE</tag> (Tipo) hasta DD/MM/YYYY
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>\s*\([^)]*\)(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?/gi, '');
+            // Patrón para texto plano: - Nuevo puesto: NOMBRE (Tipo) hasta DD/MM/YYYY
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*[^-]*?\([^)]*?\)(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?/gi, '');
+            // Patrón para texto simple: - Nuevo puesto: NOMBRE
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*([^-<\n]*?)(?=\s*-|\s*$|<|\n)/gi, '');
+            break;
+            
+        case 5: // Horas extras
+            // Remover " - X horas extras"
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*\d+\s*horas extras/gi, '');
+            break;
+            
+        case 6: // Horas adicionales
+            // Remover " - X horas adicionales"
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*\d+\s*horas adicionales/gi, '');
+            break;
+            
+        case 8: // Cortes
+            // Remover " - X cortes"
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*\d+\s*cortes/gi, '');
+            break;
+            
+        case 9: // Producción 25%
+            // Remover " - X unidades (25%)"
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*\d+\s*unidades\s*\(25%\)/gi, '');
+            break;
+            
+        case 10: // Producción 50%
+            // Remover " - X unidades (50%)"
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*\d+\s*unidades\s*\(50%\)/gi, '');
+            break;
+            
+        case 11: // Producción 100%
+            // Remover " - X unidades (100%)"
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*\d+\s*unidades\s*\(100%\)/gi, '');
             break;
     }
     
@@ -2504,5 +2664,18 @@ function toggleFechaFinEdicion() {
             fechaFinInput.value = ''; // Limpiar valor
         }
         console.log('✅ Modo permanente activado - ocultando fecha de fin');
+    }
+}
+
+/**
+ * Obtener sucursal asociada a un centro de costos
+ */
+async function obtenerSucursalPorCentroCostos(codigoCentroCostos) {
+    try {
+        const response = await NovedadesApp.request('get_sucursal_por_centro_costos', { codigo: codigoCentroCostos });
+        return response;
+    } catch (error) {
+        console.error('Error obteniendo sucursal por centro de costos:', error);
+        return null;
     }
 }

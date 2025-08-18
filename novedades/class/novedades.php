@@ -38,6 +38,36 @@ class Novedades {
     }
     
     /**
+     * Convertir fecha a formato d/m/Y manejando diferentes tipos de entrada
+     */
+    private function formatearFecha($fecha) {
+        if (empty($fecha)) {
+            return '';
+        }
+        
+        // Si es un objeto DateTime
+        if ($fecha instanceof DateTime) {
+            return $fecha->format('d/m/Y');
+        }
+        
+        // Si es un array con propiedad 'date' (formato SQL Server)
+        if (is_array($fecha) && isset($fecha['date'])) {
+            $fechaStr = $fecha['date'];
+            if ($fechaStr instanceof DateTime) {
+                return $fechaStr->format('d/m/Y');
+            }
+            return date('d/m/Y', strtotime($fechaStr));
+        }
+        
+        // Si es un string
+        if (is_string($fecha)) {
+            return date('d/m/Y', strtotime($fecha));
+        }
+        
+        return '';
+    }
+    
+    /**
      * Inicializar todas las tablas necesarias
      */
     private function inicializarTablas() {
@@ -133,6 +163,74 @@ class Novedades {
     }
 
     /**
+     * Obtener información completa de un empleado
+     */
+    public function getEmpleadoInfo($legajo) {
+        try {
+            $sql = "SELECT 
+                        e.NRO_LEGAJO as legajo,
+                        e.NOMBRE as nombre,
+                        e.APELLIDO as apellido,
+                        e.COD_DEPARTAMENTO as codigo_centro_costos,
+                        e.DESC_DEPARTAMENTO as descripcion_centro_costos
+                    FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL e
+                    WHERE e.NRO_LEGAJO = ?";
+            
+            $result = $this->db->query($sql, [$legajo]);
+            $empleado = $result->fetch();
+            
+            if (!$empleado) {
+                throw new Exception("No se encontró empleado con legajo: $legajo");
+            }
+            
+            return $empleado;
+        } catch (Exception $e) {
+            error_log("Error obteniendo información del empleado $legajo: " . $e->getMessage());
+            throw new Exception("Error obteniendo información del empleado");
+        }
+    }
+
+    /**
+     * Obtener sucursal asociada a un centro de costos
+     */
+    public function getSucursalPorCentroCostos($codigoCentroCostos) {
+        try {
+            $sql = "SELECT DESC_SUCURSAL as descripcion 
+                    FROM RO_V_SUCURSALES_CON_CC 
+                    WHERE COD_DEPARTAMENTO = ?";
+            
+            $result = $this->db->query($sql, [$codigoCentroCostos]);
+            $sucursal = $result->fetch();
+            
+            if ($sucursal) {
+                return $sucursal['descripcion'];
+            }
+            
+            return null;
+        } catch (Exception $e) {
+            error_log("❌ Error obteniendo sucursal para centro de costos $codigoCentroCostos: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Obtener todos los centros de costos únicos de empleados activos
+     */
+    public function getCentrosCostos() {
+        $sql = "SELECT DISTINCT COD_DEPARTAMENTO as codigo, DESC_DEPARTAMENTO as descripcion 
+                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
+                WHERE HABILITADO = 'S' 
+                  AND COD_DEPARTAMENTO IS NOT NULL 
+                  AND DESC_DEPARTAMENTO IS NOT NULL
+                  AND COD_DEPARTAMENTO != ''
+                  AND DESC_DEPARTAMENTO != ''
+                ORDER BY DESC_DEPARTAMENTO";
+        
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Buscar empleados para Select2 (autocompletado)
      */
     public function buscarEmpleadosSelect2($termino = '', $limit = 10) {
@@ -140,6 +238,8 @@ class Novedades {
                     NRO_LEGAJO as legajo, 
                     NOMBRE as nombre, 
                     APELLIDO as apellido,
+                    COD_DEPARTAMENTO as cod_centro_costos,
+                    DESC_DEPARTAMENTO as desc_centro_costos,
                     CONCAT(NOMBRE, ' ', APELLIDO, ' (', NRO_LEGAJO, ')') as texto_completo
                 FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
                 WHERE 1=1 AND HABILITADO = 'S'";
@@ -170,14 +270,17 @@ class Novedades {
                 'text' => $empleado['texto_completo'],
                 'legajo' => $empleado['legajo'],
                 'nombre' => $empleado['nombre'],
-                'apellido' => $empleado['apellido']
+                'apellido' => $empleado['apellido'],
+                'cod_centro_costos' => $empleado['cod_centro_costos'],
+                'desc_centro_costos' => $empleado['desc_centro_costos']
             ];
         }
         
         return $resultado;
     }
     public function buscarEmpleado($legajo) {
-        $sql = "SELECT NRO_LEGAJO as legajo, NOMBRE as nombre, APELLIDO as apellido, TAREA_HABITUAL as puesto_actual 
+        $sql = "SELECT NRO_LEGAJO as legajo, NOMBRE as nombre, APELLIDO as apellido, TAREA_HABITUAL as puesto_actual,
+                       COD_DEPARTAMENTO as cod_centro_costos, DESC_DEPARTAMENTO as desc_centro_costos
                 FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
                 WHERE NRO_LEGAJO = ? AND HABILITADO = 'S'";
         $stmt = $this->db->query($sql, [$legajo]);
@@ -477,7 +580,7 @@ class Novedades {
                         legajo INT NOT NULL,
                         nombre VARCHAR(50) NOT NULL,
                         apellido VARCHAR(50) NOT NULL,
-                        sucursal INT NOT NULL,
+                        centro_costos VARCHAR(50) NOT NULL,
                         fecha_vigencia DATE NULL,
                         puesto VARCHAR(50) NOT NULL,
                         valor_numerico DECIMAL(10,2) NULL,
@@ -496,6 +599,8 @@ class Novedades {
         } else {
             // Si existe, verificar y agregar columna estado si no existe
             $this->agregarColumnaEstado();
+            // Agregar columna centro_costos si no existe y migrar datos
+            $this->migrarSucursalACentroCostos();
         }
     }
 
@@ -525,6 +630,45 @@ class Novedades {
             }
         } catch (Exception $e) {
             error_log("Error agregando columna estado: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Migrar de sucursal a centro de costos
+     */
+    private function migrarSucursalACentroCostos() {
+        try {
+            // Verificar si ya existe la columna centro_costos
+            $sql = "SELECT COUNT(*) as existe 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'novedades' AND COLUMN_NAME = 'centro_costos'";
+            
+            $result = $this->db->query($sql);
+            $row = $result->fetch();
+            
+            // Si no existe la columna centro_costos, agregarla
+            if ($row['existe'] == 0) {
+                $sql = "ALTER TABLE novedades ADD centro_costos VARCHAR(10) NULL";
+                $this->db->query($sql);
+                
+                // Migrar datos existentes de sucursal a centro_costos
+                // Obtener el centro de costos de cada empleado por su legajo
+                $sql = "UPDATE n 
+                        SET n.centro_costos = ISNULL(e.COD_DEPARTAMENTO, '0')
+                        FROM novedades n
+                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL e 
+                            ON n.legajo = e.NRO_LEGAJO
+                        WHERE n.centro_costos IS NULL";
+                $this->db->query($sql);
+                
+                // Hacer que la columna centro_costos sea NOT NULL después de la migración
+                $sql = "ALTER TABLE novedades ALTER COLUMN centro_costos VARCHAR(10) NOT NULL";
+                $this->db->query($sql);
+                
+                error_log("Migración de sucursal a centro_costos completada exitosamente");
+            }
+        } catch (Exception $e) {
+            error_log("Error en migración de sucursal a centro de costos: " . $e->getMessage());
         }
     }
 
@@ -611,7 +755,7 @@ class Novedades {
                      ", fecha_permiso=" . var_export($datosAdaptados['fecha_permiso'], true));
             
             $sql = "INSERT INTO novedades (
-                        legajo, nombre, apellido, sucursal, fecha_vigencia, fecha_vigencia_hasta, puesto, 
+                        legajo, nombre, apellido, centro_costos, fecha_vigencia, fecha_vigencia_hasta, puesto, 
                         valor_numerico, fecha_permiso, compensa, tipo_permiso, tipo_nuevo_puesto,
                         observaciones, periodo_mes, periodo_anio, tipo_novedad, estado
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -620,7 +764,7 @@ class Novedades {
                 $datosAdaptados['legajo'],
                 $datosAdaptados['nombre'],
                 $datosAdaptados['apellido'],
-                $datosAdaptados['sucursal'],
+                $datosAdaptados['centro_costos'],
                 $datosAdaptados['fecha_vigencia'],
                 $datosAdaptados['fecha_vigencia_hasta'],
                 $datosAdaptados['puesto'],
@@ -723,11 +867,28 @@ class Novedades {
         $observacionesBase = isset($datos['observaciones']) ? $datos['observaciones'] : '';
         $observacionesLimpias = $this->limpiarObservacionesEspecificas($observacionesBase, $tipoNovedad);
         
+        // Determinar centro_costos según el tipo de novedad
+        $centroCostos = null;
+        if ($tipoNovedad == 1) {
+            // Para cambio de sucursal, usar sucursal_nueva_id del formulario (o nueva_sucursal como fallback)
+            $centroCostos = isset($datos['sucursal_nueva_id']) ? $datos['sucursal_nueva_id'] : 
+                           (isset($datos['nueva_sucursal']) ? $datos['nueva_sucursal'] : null);
+            if (!$centroCostos) {
+                throw new Exception("Para cambio de sucursal debe especificar la nueva sucursal");
+            }
+        } else {
+            // Para otros tipos, obtener centro de costos del empleado
+            $centroCostos = $this->obtenerCentroCostosEmpleado($datos['legajo']);
+            if (!$centroCostos) {
+                throw new Exception("No se pudo obtener el centro de costos del empleado con legajo: " . $datos['legajo']);
+            }
+        }
+        
         $datosAdaptados = [
             'legajo' => $datos['legajo'],
             'nombre' => $datos['nombre'],
             'apellido' => $datos['apellido'],
-            'sucursal' => $datos['sucursal'],
+            'centro_costos' => $centroCostos,
             'tipo_novedad' => $tipoNovedad,
             'observaciones' => $observacionesLimpias,
             'fecha_vigencia' => null,
@@ -743,18 +904,23 @@ class Novedades {
         // Adaptar según el tipo específico
         switch ($tipoNovedad) {
             case 1: // Cambio de sucursal
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Cambio sucursal';
-                if (isset($datos['nueva_sucursal'])) {
+                
+                // Usar sucursal_nueva_id o nueva_sucursal como fallback
+                $nuevaSucursalId = isset($datos['sucursal_nueva_id']) ? $datos['sucursal_nueva_id'] : 
+                                  (isset($datos['nueva_sucursal']) ? $datos['nueva_sucursal'] : null);
+                
+                if ($nuevaSucursalId) {
                     // Obtener el nombre de la sucursal en lugar del número
                     $mapaSucursales = $this->obtenerMapaSucursales();
-                    $nombreSucursal = $mapaSucursales[$datos['nueva_sucursal']] ?? 'Sucursal ' . $datos['nueva_sucursal'];
+                    $nombreSucursal = $mapaSucursales[$nuevaSucursalId] ?? 'Sucursal ' . $nuevaSucursalId;
                     $datosAdaptados['observaciones'] .= " - Nueva sucursal: " . $nombreSucursal;
                 }
                 break;
 
             case 2: // Nuevo puesto
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 
                 // Manejar tipo de puesto (permanente/temporario)
                 $tipoPuesto = isset($datos['tipo_nuevo_puesto']) ? $datos['tipo_nuevo_puesto'] : 'permanente';
@@ -762,7 +928,7 @@ class Novedades {
                 
                 // Si es temporario, agregar fecha de fin
                 if ($tipoPuesto === 'temporario' && isset($datos['fecha_vigencia_hasta'])) {
-                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFecha($datos['fecha_vigencia_hasta']);
+                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
                 }
                 
                 // Guardar el nuevo puesto en el campo puesto
@@ -784,13 +950,13 @@ class Novedades {
 
             case 3: // Nuevo salario neto
                 $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Ajuste Salario';
                 break;
 
             case 4: // Ajuste de premios
                 $datosAdaptados['valor_numerico'] = isset($datos['importe']) ? (float)$datos['importe'] : null;
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Premio';
                 break;
 
@@ -800,7 +966,7 @@ class Novedades {
                     $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_horas']; // Solo la cantidad de horas
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_horas']} horas extras";
                 }
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Horas Extras';
                 break;
 
@@ -810,12 +976,12 @@ class Novedades {
                     $datosAdaptados['valor_numerico'] = (float)$datos['cantidad_horas']; // Solo la cantidad de horas
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_horas']} horas adicionales";
                 }
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Horas Adicionales';
                 break;
 
             case 7: // Permisos
-                $datosAdaptados['fecha_permiso'] = $this->formatearFecha($datos['fecha_permiso'] ?? '');
+                $datosAdaptados['fecha_permiso'] = $this->formatearFechaParaSQL($datos['fecha_permiso'] ?? '');
                 $datosAdaptados['compensa'] = isset($datos['compensa']) ? (bool)$datos['compensa'] : null;
                 $datosAdaptados['puesto'] = 'Permiso';
                 break;
@@ -826,7 +992,7 @@ class Novedades {
                     $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_cortes']; // Solo la cantidad de cortes
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_cortes']} cortes";
                 }
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Cortes';
                 break;
 
@@ -836,7 +1002,7 @@ class Novedades {
                     $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades']; // Solo la cantidad de unidades
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_unidades']} unidades (25%)";
                 }
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Producción 25%';
                 break;
 
@@ -846,7 +1012,7 @@ class Novedades {
                     $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades']; // Solo la cantidad de unidades
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_unidades']} unidades (50%)";
                 }
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Producción 50%';
                 break;
 
@@ -856,7 +1022,7 @@ class Novedades {
                     $datosAdaptados['valor_numerico'] = (int)$datos['cantidad_unidades']; // Solo la cantidad de unidades
                     $datosAdaptados['observaciones'] .= " - {$datos['cantidad_unidades']} unidades (100%)";
                 }
-                $datosAdaptados['fecha_vigencia'] = $this->formatearFecha($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Producción 100%';
                 break;
 
@@ -886,8 +1052,20 @@ class Novedades {
                 break;
 
             case 2: // Nuevo puesto
-                // Remover cualquier mención de "Nuevo puesto:"
-                $observacionesLimpias = preg_replace('/ - Nuevo puesto: [^-]*/', '', $observacionesLimpias);
+                // Remover cualquier mención de "Nuevo puesto:" con todo su contenido
+                // Patrón mejorado para capturar: 
+                // - Nuevo puesto: NOMBRE_PUESTO (Tipo) hasta DD/MM/YYYY
+                // - Nuevo puesto: NOMBRE_PUESTO (Tipo)
+                // - Nuevo puesto: NOMBRE_PUESTO
+                $patterns = [
+                    '/ - Nuevo puesto: [^-]*?\([^)]*?\)\s*hasta\s*\d{2}\/\d{2}\/\d{4}/',  // Con tipo y fecha
+                    '/ - Nuevo puesto: [^-]*?\([^)]*?\)/',                                   // Con tipo sin fecha
+                    '/ - Nuevo puesto: [^-]*?(?=\s*-|\s*$)/'                               // Sin tipo, hasta siguiente - o final
+                ];
+                
+                foreach ($patterns as $pattern) {
+                    $observacionesLimpias = preg_replace($pattern, '', $observacionesLimpias);
+                }
                 break;
 
             case 5: // Horas extras
@@ -937,9 +1115,13 @@ class Novedades {
             
             // Si es usuario RRHH, puede ver todas las novedades
             if ($tipoUsuario == Usuario::TIPO_RRHH) {
-                $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
+                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
+                               n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                               n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                               n.periodo_mes, n.periodo_anio, n.estado,
+                               tn.descripcion as tipo_descripcion, 
                                rle.NOMBRE, rle.APELLIDO,
-                               n.periodo_mes, n.periodo_anio, n.estado
+                               rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                         LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
@@ -948,9 +1130,13 @@ class Novedades {
                 // Para otros tipos de usuario, aplicar filtro específico dinámicamente
                 $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
                 
-                $sql = "SELECT n.*, tn.descripcion as tipo_descripcion, 
+                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
+                               n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
+                               n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
+                               n.periodo_mes, n.periodo_anio, n.estado,
+                               tn.descripcion as tipo_descripcion, 
                                rle.NOMBRE, rle.APELLIDO,
-                               n.periodo_mes, n.periodo_anio, n.estado
+                               rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                         LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
@@ -959,15 +1145,15 @@ class Novedades {
             
             $params = [$periodo['periodo_mes'], $periodo['periodo_anio']];
 
-            // Filtros adicionales
+            // Filtros adicionales para getNovedadesPeriodoActual
             if (!empty($filtros['legajo'])) {
                 $sql .= " AND n.legajo = ?";
                 $params[] = $filtros['legajo'];
             }
 
-            if (!empty($filtros['sucursal'])) {
-                $sql .= " AND n.sucursal = ?";
-                $params[] = $filtros['sucursal'];
+            if (!empty($filtros['centro_costos'])) {
+                $sql .= " AND rle.COD_DEPARTAMENTO = ?";
+                $params[] = $filtros['centro_costos'];
             }
 
             if (!empty($filtros['tipo_novedad'])) {
@@ -982,17 +1168,26 @@ class Novedades {
             
             // Procesar los resultados para agregar campos calculados
             foreach ($novedades as &$novedad) {
-                // Agregar nombre de sucursal
-                $sucursalesMap = $this->obtenerMapaSucursales();
-                $novedad['nombre_sucursal'] = $sucursalesMap[$novedad['sucursal']] ?? 'Sucursal ' . $novedad['sucursal'];
+                // Agregar display de centro de costos
+                $novedad['centro_costos_display'] = '';
+                if (!empty($novedad['descripcion_centro_costos']) && !empty($novedad['codigo_centro_costos'])) {
+                    $novedad['centro_costos_display'] = $novedad['descripcion_centro_costos'] . ' (' . $novedad['codigo_centro_costos'] . ')';
+                } elseif (!empty($novedad['descripcion_centro_costos'])) {
+                    $novedad['centro_costos_display'] = $novedad['descripcion_centro_costos'];
+                } elseif (!empty($novedad['codigo_centro_costos'])) {
+                    $novedad['centro_costos_display'] = 'Centro ' . $novedad['codigo_centro_costos'];
+                }
+                
+                // Mantener compatibilidad con nombre_sucursal para el frontend
+                $novedad['nombre_sucursal'] = $novedad['centro_costos_display'];
                 
                 // Agregar valor display basado en tipo de novedad - SIN valores monetarios ficticios
                 $tipoNovedad = (int)$novedad['tipo_novedad'];
                 $valorNumerico = (float)$novedad['valor_numerico'];
                 
                 switch ($tipoNovedad) {
-                    case 1: // Cambio de sucursal
-                        $novedad['valor_display'] = 'Cambio de sucursal';
+                    case 1: // Cambio de centro de costos
+                        $novedad['valor_display'] = 'Cambio de centro de costos';
                         break;
                     case 2: // Nuevo puesto
                         $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nuevo puesto';
@@ -1121,12 +1316,13 @@ class Novedades {
             
             // Si es usuario RRHH, puede ver todas las novedades
             if ($tipoUsuario == Usuario::TIPO_RRHH) {
-                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.sucursal, n.valor_numerico, 
+                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
                                n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
                                n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
                                n.periodo_mes, n.periodo_anio, n.estado,
                                tn.descripcion as tipo_descripcion, 
-                               rle.NOMBRE as nombre, rle.APELLIDO as apellido
+                               rle.NOMBRE as nombre, rle.APELLIDO as apellido,
+                               rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                         LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
@@ -1135,12 +1331,13 @@ class Novedades {
                 // Para otros tipos de usuario, aplicar filtro específico dinámicamente
                 $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
                 
-                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.sucursal, n.valor_numerico, 
+                $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
                                n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
                                n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
                                n.periodo_mes, n.periodo_anio, n.estado,
                                tn.descripcion as tipo_descripcion, 
-                               rle.NOMBRE as nombre, rle.APELLIDO as apellido
+                               rle.NOMBRE as nombre, rle.APELLIDO as apellido,
+                               rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                         LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
@@ -1149,15 +1346,15 @@ class Novedades {
             
             $params = [];
 
-            // Filtros adicionales
+            // Filtros adicionales para getAllNovedades
             if (!empty($filtros['legajo'])) {
                 $sql .= " AND n.legajo = ?";
                 $params[] = $filtros['legajo'];
             }
 
-            if (!empty($filtros['sucursal'])) {
-                $sql .= " AND n.sucursal = ?";
-                $params[] = $filtros['sucursal'];
+            if (!empty($filtros['centro_costos'])) {
+                $sql .= " AND rle.COD_DEPARTAMENTO = ?";
+                $params[] = $filtros['centro_costos'];
             }
 
             if (!empty($filtros['tipo_novedad'])) {
@@ -1172,17 +1369,26 @@ class Novedades {
             
             // Procesar los resultados igual que en getNovedadesPeriodoActual
             foreach ($novedades as &$novedad) {
-                // Agregar nombre de sucursal
-                $sucursalesMap = $this->obtenerMapaSucursales();
-                $novedad['nombre_sucursal'] = $sucursalesMap[$novedad['sucursal']] ?? 'Sucursal ' . $novedad['sucursal'];
+                // Agregar display de centro de costos
+                $novedad['centro_costos_display'] = '';
+                if (!empty($novedad['descripcion_centro_costos']) && !empty($novedad['codigo_centro_costos'])) {
+                    $novedad['centro_costos_display'] = $novedad['descripcion_centro_costos'] . ' (' . $novedad['codigo_centro_costos'] . ')';
+                } elseif (!empty($novedad['descripcion_centro_costos'])) {
+                    $novedad['centro_costos_display'] = $novedad['descripcion_centro_costos'];
+                } elseif (!empty($novedad['codigo_centro_costos'])) {
+                    $novedad['centro_costos_display'] = 'Centro ' . $novedad['codigo_centro_costos'];
+                }
+                
+                // Mantener compatibilidad con nombre_sucursal para el frontend
+                $novedad['nombre_sucursal'] = $novedad['centro_costos_display'];
                 
                 // Agregar valor display basado en tipo de novedad
                 $tipoNovedad = (int)$novedad['tipo_novedad'];
                 $valorNumerico = (float)$novedad['valor_numerico'];
                 
                 switch ($tipoNovedad) {
-                    case 1: // Cambio de sucursal
-                        $novedad['valor_display'] = 'Cambio de sucursal';
+                    case 1: // Cambio de centro de costos
+                        $novedad['valor_display'] = 'Cambio de centro de costos';
                         break;
                     case 2: // Nuevo puesto
                         $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nuevo puesto';
@@ -1330,12 +1536,14 @@ class Novedades {
         
         // Si es usuario RRHH, puede ver cualquier novedad
         if ($tipoUsuario == Usuario::TIPO_RRHH) {
-            $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.sucursal, n.valor_numerico, 
+            $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
                            n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
                            n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
                            n.periodo_mes, n.periodo_anio, n.estado,
                            tn.descripcion as tipo_descripcion,
-                           emp.NOMBRE as nombre, emp.APELLIDO as apellido
+                           emp.NOMBRE as nombre, emp.APELLIDO as apellido,
+                           emp.COD_DEPARTAMENTO as codigo_centro_costos,
+                           emp.DESC_DEPARTAMENTO as descripcion_centro_costos
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                     LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
@@ -1344,12 +1552,14 @@ class Novedades {
             // Para otros tipos de usuario, validar permisos específicos dinámicamente
             $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
             
-            $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.sucursal, n.valor_numerico, 
+            $sql = "SELECT n.id, n.legajo, n.tipo_novedad, n.valor_numerico, 
                            n.puesto, n.fecha_vigencia, n.fecha_vigencia_hasta, n.fecha_permiso, n.compensa, 
                            n.observaciones, n.fecha_creacion, n.fecha_modificacion, n.tipo_nuevo_puesto,
                            n.periodo_mes, n.periodo_anio, n.estado,
                            tn.descripcion as tipo_descripcion,
-                           emp.NOMBRE as nombre, emp.APELLIDO as apellido
+                           emp.NOMBRE as nombre, emp.APELLIDO as apellido,
+                           emp.COD_DEPARTAMENTO as codigo_centro_costos,
+                           emp.DESC_DEPARTAMENTO as descripcion_centro_costos
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
                     LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
@@ -1360,13 +1570,13 @@ class Novedades {
         $novedad = $stmt->fetch();
 
         if ($novedad) {
-            // Nombre sucursal seguro
-            try {
-                $mapa = $this->obtenerMapaSucursales();
-                $novedad['nombre_sucursal'] = $mapa[$novedad['sucursal']] ?? ('Sucursal ' . $novedad['sucursal']);
-            } catch (Exception $e) {
-                $novedad['nombre_sucursal'] = 'Sucursal ' . $novedad['sucursal'];
-            }
+            // Centro de costos en lugar de sucursal
+            $novedad['centro_costos_display'] = !empty($novedad['descripcion_centro_costos']) 
+                ? $novedad['descripcion_centro_costos'] . ' (' . $novedad['codigo_centro_costos'] . ')'
+                : 'Centro ' . ($novedad['codigo_centro_costos'] ?? $novedad['sucursal']);
+
+            // Mantener compatibilidad con campos de sucursal por ahora
+            $novedad['nombre_sucursal'] = $novedad['centro_costos_display'];
 
             // Fechas seguras - Convertir DateTime a string antes de JSON
             foreach (['fecha_vigencia','fecha_permiso','fecha_creacion'] as $campoFecha) {
@@ -1386,11 +1596,18 @@ class Novedades {
 
             // Agregar información de período
             $periodo = $this->getPeriodoActual();
-            $novedad['periodo_mes'] = $periodo['mes'];
-            $novedad['periodo_anio'] = $periodo['anio'];
+            $novedad['periodo_mes'] = $periodo['periodo_mes'];
+            $novedad['periodo_anio'] = $periodo['periodo_anio'];
 
-            // Valor display
-            $novedad['valor_display'] = $this->construirValorDisplay((int)$novedad['tipo_novedad'], $novedad['valor_numerico']);
+            // Valor display - MEJORADO para tipo 2
+            if ((int)$novedad['tipo_novedad'] === 2) {
+                // Para nuevo puesto, construir display desde campos directos
+                $puestoDisplay = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nuevo puesto';
+                $tipoPuesto = isset($novedad['tipo_nuevo_puesto']) ? ucfirst($novedad['tipo_nuevo_puesto']) : 'Permanente';
+                $novedad['valor_display'] = $puestoDisplay . ' (' . $tipoPuesto . ')';
+            } else {
+                $novedad['valor_display'] = $this->construirValorDisplay((int)$novedad['tipo_novedad'], $novedad['valor_numerico']);
+            }
 
             // Detalle específico
             $novedad['detalle_especifico'] = $this->generarDetalleEspecifico($novedad);
@@ -1413,9 +1630,10 @@ class Novedades {
         switch ($tipoNovedad) {
             case 1: // Cambio de sucursal
                 $detalle['tipo'] = 'Cambio de sucursal';
-                $detalle['sucursal_actual'] = $novedad['sucursal'];
+                // Ya no usamos el campo sucursal, se maneja desde centro_costos
+                $detalle['sucursal_actual'] = $novedad['centro_costos'] ?? 'N/A';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 // Extraer nueva sucursal de observaciones si existe
                 if (preg_match('/Nueva sucursal:\s*(.+)/', $novedad['observaciones'], $matches)) {
@@ -1426,8 +1644,15 @@ class Novedades {
             case 2: // Nuevo puesto
                 $detalle['tipo'] = 'Nuevo puesto';
                 $detalle['nuevo_puesto'] = $novedad['puesto'];
+                $detalle['tipo_puesto'] = isset($novedad['tipo_nuevo_puesto']) ? ucfirst($novedad['tipo_nuevo_puesto']) : 'Permanente';
+                
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
+                }
+                
+                // Si es temporario, agregar fecha de finalización
+                if (isset($novedad['tipo_nuevo_puesto']) && $novedad['tipo_nuevo_puesto'] === 'temporario' && !empty($novedad['fecha_vigencia_hasta'])) {
+                    $detalle['fecha_vigencia_hasta'] = $this->formatearFecha($novedad['fecha_vigencia_hasta']);
                 }
                 break;
 
@@ -1435,7 +1660,7 @@ class Novedades {
                 $detalle['tipo'] = 'Nuevo salario neto';
                 $detalle['nuevo_salario'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
@@ -1443,7 +1668,7 @@ class Novedades {
                 $detalle['tipo'] = 'Ajuste de premios';
                 $detalle['monto_premio'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
@@ -1451,7 +1676,7 @@ class Novedades {
                 $detalle['tipo'] = 'Horas extras';
                 $detalle['cantidad_horas'] = $valorNumerico != 0 ? $valorNumerico . ' horas' : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
@@ -1459,7 +1684,7 @@ class Novedades {
                 $detalle['tipo'] = 'Horas adicionales';
                 $detalle['cantidad_horas'] = $valorNumerico != 0 ? $valorNumerico . ' horas' : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
@@ -1467,7 +1692,7 @@ class Novedades {
                 $detalle['tipo'] = 'Permiso';
                 $detalle['compensa'] = $novedad['compensa'] ? 'Sí' : 'No';
                 if (!empty($novedad['fecha_permiso'])) {
-                    $detalle['fecha_permiso'] = date('d/m/Y', strtotime($novedad['fecha_permiso']));
+                    $detalle['fecha_permiso'] = $this->formatearFecha($novedad['fecha_permiso']);
                 }
                 break;
 
@@ -1475,7 +1700,7 @@ class Novedades {
                 $detalle['tipo'] = 'Cortes';
                 $detalle['cantidad_cortes'] = $valorNumerico != 0 ? $valorNumerico . ' cortes' : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
@@ -1483,7 +1708,7 @@ class Novedades {
                 $detalle['tipo'] = 'Producción 25%';
                 $detalle['cantidad_unidades'] = $valorNumerico != 0 ? $valorNumerico . ' unidades' : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
@@ -1491,7 +1716,7 @@ class Novedades {
                 $detalle['tipo'] = 'Producción 50%';
                 $detalle['cantidad_unidades'] = $valorNumerico != 0 ? $valorNumerico . ' unidades' : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
@@ -1499,7 +1724,7 @@ class Novedades {
                 $detalle['tipo'] = 'Producción 100%';
                 $detalle['cantidad_unidades'] = $valorNumerico != 0 ? $valorNumerico . ' unidades' : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
-                    $detalle['fecha_vigencia'] = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
+                    $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
 
@@ -1562,8 +1787,10 @@ class Novedades {
             $errores[] = 'El apellido es obligatorio';
         }
 
-        if (empty($datos['sucursal'])) {
-            $errores[] = 'La sucursal es obligatoria';
+        // Validar sucursal solo para cambio de sucursal (tipo 1)
+        $tipoNovedad = (int)$datos['tipo_novedad'];
+        if ($tipoNovedad == 1 && empty($datos['nueva_sucursal']) && empty($datos['sucursal_nueva_id'])) {
+            $errores[] = 'La nueva sucursal es obligatoria para cambio de sucursal';
         }
 
         // Validaciones específicas por tipo de novedad
@@ -1571,7 +1798,7 @@ class Novedades {
         
         switch($tipoNovedad) {
             case 1: // Cambio de sucursal
-                if (empty($datos['nueva_sucursal'])) {
+                if (empty($datos['nueva_sucursal']) && empty($datos['sucursal_nueva_id'])) {
                     $errores[] = 'La nueva sucursal es obligatoria';
                 }
                 if (empty($datos['fecha_vigencia'])) {
@@ -1653,7 +1880,7 @@ class Novedades {
      * Convierte fecha HTML (YYYY-MM-DD) a formato compatible con SQL Server
      * Retorna NULL si la fecha está vacía o es inválida
      */
-    private function formatearFecha($fecha) {
+    private function formatearFechaParaSQL($fecha) {
         // Si la fecha está vacía o es null, retornar null
         if (empty($fecha) || $fecha === null) {
             return null;
@@ -1720,7 +1947,7 @@ class Novedades {
 
             // Preparar SQL de actualización
             $sql = "UPDATE novedades SET 
-                        legajo = ?, nombre = ?, apellido = ?, sucursal = ?, 
+                        legajo = ?, nombre = ?, apellido = ?, centro_costos = ?, 
                         fecha_vigencia = ?, fecha_vigencia_hasta = ?, puesto = ?, valor_numerico = ?, 
                         fecha_permiso = ?, compensa = ?, tipo_permiso = ?, tipo_nuevo_puesto = ?,
                         observaciones = ?, tipo_novedad = ?, fecha_modificacion = GETDATE()
@@ -1730,7 +1957,7 @@ class Novedades {
                 $datosAdaptados['legajo'],
                 $datosAdaptados['nombre'],
                 $datosAdaptados['apellido'],
-                $datosAdaptados['sucursal'],
+                $datosAdaptados['centro_costos'],
                 $datosAdaptados['fecha_vigencia'],
                 $datosAdaptados['fecha_vigencia_hasta'],
                 $datosAdaptados['puesto'],
@@ -1957,6 +2184,28 @@ class Novedades {
         } catch (Exception $e) {
             error_log("Error eliminando tipo de novedad: " . $e->getMessage());
             throw new Exception("Error al eliminar el tipo de novedad: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener centro de costos de un empleado específico
+     */
+    private function obtenerCentroCostosEmpleado($legajo) {
+        try {
+            $sql = "SELECT COD_DEPARTAMENTO FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL WHERE NRO_LEGAJO = ?";
+            $result = $this->db->query($sql, [$legajo]);
+            $resultado = $result->fetch();
+            
+            if ($resultado && !empty($resultado['COD_DEPARTAMENTO'])) {
+                error_log("✅ Centro de costos encontrado para legajo {$legajo}: " . $resultado['COD_DEPARTAMENTO']);
+                return $resultado['COD_DEPARTAMENTO'];
+            }
+            
+            error_log("❌ No se encontró centro de costos para empleado con legajo: " . $legajo);
+            throw new Exception("No se encontró centro de costos para el empleado con legajo: $legajo");
+        } catch (Exception $e) {
+            error_log("❌ Error obteniendo centro de costos para empleado {$legajo}: " . $e->getMessage());
+            throw $e;
         }
     }
 

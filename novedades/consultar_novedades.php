@@ -75,11 +75,11 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                     
                     <div class="col-md-2">
-                        <label for="filtro-sucursal" class="form-label">
-                            <i class="fas fa-building me-2"></i>Sucursal
+                        <label for="filtro-centro-costos" class="form-label">
+                            <i class="fas fa-building me-2"></i>Centro de Costos
                         </label>
-                        <select class="form-select" id="filtro-sucursal">
-                            <option value="">Todas las sucursales</option>
+                        <select class="form-select" id="filtro-centro-costos">
+                            <option value="">Todos los centros</option>
                         </select>
                     </div>
                     
@@ -181,8 +181,8 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                 <div class="card text-center border-success">
                     <div class="card-body">
                         <i class="fas fa-building fa-2x text-success mb-2"></i>
-                        <h4 class="text-success mb-0" id="total-sucursales-filtro">0</h4>
-                        <small class="text-muted">Sucursales</small>
+                        <h4 class="text-success mb-0" id="total-centros-costos-filtro">0</h4>
+                        <small class="text-muted">Centros de Costos</small>
                     </div>
                 </div>
             </div>
@@ -200,7 +200,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     <div class="card-body">
                         <i class="fas fa-dollar-sign fa-2x text-info mb-2"></i>
                         <h4 class="text-info mb-0" id="total-valores">$0</h4>
-                        <small class="text-muted">Valores Totales</small>
+                        <small class="text-muted">Valores Monetarios Totales</small>
                     </div>
                 </div>
             </div>
@@ -235,8 +235,8 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>
                                 </th>
-                                <th class="sortable" data-column="sucursal" style="cursor: pointer;">
-                                    Sucursal 
+                                <th class="sortable" data-column="centro_costos" style="cursor: pointer;">
+                                    Centro de Costos 
                                     <span class="sort-arrow">
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>

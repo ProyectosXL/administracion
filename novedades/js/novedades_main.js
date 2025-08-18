@@ -312,7 +312,12 @@ async function buscarEmpleado() {
         document.getElementById('empleado-nombre').textContent = empleado.nombre || '';
         document.getElementById('empleado-apellido').textContent = empleado.apellido || '';
         document.getElementById('empleado-legajo').textContent = empleado.legajo || '';
-        document.getElementById('empleado-sucursal').textContent = empleado.sucursal || '';
+        
+        // Mostrar centro de costos en lugar de sucursal
+        const centroCostosTexto = empleado.desc_centro_costos 
+            ? `${empleado.desc_centro_costos} (${empleado.cod_centro_costos})`
+            : 'No definido';
+        document.getElementById('empleado-centro-costos').textContent = centroCostosTexto;
 
         document.getElementById('resultado-empleado').style.display = 'block';
         document.getElementById('btn-seleccionar-empleado').style.display = 'inline-block';
@@ -338,7 +343,7 @@ function seleccionarEmpleado() {
         'legajo': empleado.legajo,
         'nombre': empleado.nombre,
         'apellido': empleado.apellido,
-        'sucursal': empleado.sucursal
+        'centro_costos': empleado.cod_centro_costos
     };
 
     Object.keys(campos).forEach(campo => {
@@ -370,9 +375,9 @@ async function probarSistema() {
         const tipos = await NovedadesApp.request('get_tipos_novedad');
         console.log('✅ Tipos de novedad cargados:', tipos.length, 'tipos');
         
-        // Probar carga de sucursales
-        const sucursales = await NovedadesApp.request('get_sucursales');
-        console.log('✅ Sucursales cargadas:', sucursales.length, 'sucursales');
+        // Probar carga de centros de costos
+        const centrosCostos = await NovedadesApp.request('get_centros_costos');
+        console.log('✅ Centros de costos cargados:', centrosCostos.length, 'centros');
         
         return true;
     } catch (error) {
@@ -382,15 +387,15 @@ async function probarSistema() {
 }
 async function cargarDatosIniciales() {
     try {
-        // Cargar sucursales con Casa Central
-        const sucursales = await NovedadesApp.request('get_sucursales_con_casa_central');
-        const selectSucursales = document.querySelectorAll('select[name="sucursal"], #filtro-sucursal');
+        // Cargar centros de costos para filtros
+        const centrosCostos = await NovedadesApp.request('get_centros_costos');
+        const selectCentrosCostos = document.querySelectorAll('#filtro-centro-costos');
         
-        selectSucursales.forEach(select => {
+        selectCentrosCostos.forEach(select => {
             if (select) {
-                select.innerHTML = '<option value="">Seleccione sucursal...</option>';
-                sucursales.forEach(sucursal => {
-                    select.innerHTML += `<option value="${sucursal.numero}">${sucursal.descripcion}</option>`;
+                select.innerHTML = '<option value="">Todos los centros</option>';
+                centrosCostos.forEach(centro => {
+                    select.innerHTML += `<option value="${centro.codigo}">${centro.descripcion}</option>`;
                 });
             }
         });
@@ -408,7 +413,7 @@ async function cargarDatosIniciales() {
             }
         });
 
-        console.log('Datos iniciales cargados:', { sucursales: sucursales.length, tipos: tipos.length });
+        console.log('Datos iniciales cargados:', { centrosCostos: centrosCostos.length, tipos: tipos.length });
 
     } catch (error) {
         console.error('Error cargando datos iniciales:', error);

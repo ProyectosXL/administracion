@@ -116,9 +116,6 @@ class GestionTiposApp {
                     <button class="btn btn-outline-primary btn-action" onclick="app.editarTipo(${tipo.id})" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-outline-success btn-action" onclick="app.duplicarTipo(${tipo.id})" title="Duplicar">
-                        <i class="fas fa-copy"></i>
-                    </button>
                     <button class="btn btn-outline-danger btn-action" onclick="app.eliminarTipo(${tipo.id})" title="Eliminar">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -256,32 +253,6 @@ class GestionTiposApp {
         document.getElementById('tipo-id').value = tipo.id;
         document.getElementById('tipo-codigo').value = tipo.codigo;
         document.getElementById('tipo-descripcion').value = tipo.descripcion;
-        document.getElementById('tipo-activo').checked = tipo.activo;
-        document.getElementById('tipo-user-adm').checked = tipo.user_adm;
-        document.getElementById('tipo-user-com').checked = tipo.user_com;
-        document.getElementById('tipo-user-prod').checked = tipo.user_prod;
-        document.getElementById('tipo-user-rrhh').checked = tipo.user_rrhh;
-        document.getElementById('tipo-cierre').value = tipo.cierre || '';
-        document.getElementById('tipo-corte').value = tipo.corte || '';
-
-        const modal = new bootstrap.Modal(document.getElementById('modalTipo'));
-        modal.show();
-    }
-
-    duplicarTipo(id) {
-        const tipo = this.tipos.find(t => t.id == id);
-        if (!tipo) {
-            this.mostrarError('Tipo no encontrado');
-            return;
-        }
-
-        this.tipoEditando = null;
-        document.getElementById('modalTipoTitulo').textContent = 'Duplicar Tipo de Novedad';
-        
-        // Llenar formulario con datos del tipo original (excepto ID y código)
-        document.getElementById('tipo-id').value = '';
-        document.getElementById('tipo-codigo').value = tipo.codigo + '_COPY';
-        document.getElementById('tipo-descripcion').value = tipo.descripcion + ' (Copia)';
         document.getElementById('tipo-activo').checked = tipo.activo;
         document.getElementById('tipo-user-adm').checked = tipo.user_adm;
         document.getElementById('tipo-user-com').checked = tipo.user_com;

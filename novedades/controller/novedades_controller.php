@@ -116,12 +116,47 @@ try {
             }
             break;
 
+        case 'get_empleado_info':
+            try {
+                $legajo = $_GET['legajo'] ?? null;
+                if (!$legajo) {
+                    throw new Exception('Legajo es requerido');
+                }
+                $empleadoInfo = $novedades->getEmpleadoInfo($legajo);
+                sendResponse(true, $empleadoInfo);
+            } catch (Exception $e) {
+                handleError('Error obteniendo información del empleado', $e);
+            }
+            break;
+
+        case 'get_sucursal_por_centro_costos':
+            try {
+                $codigoCentroCostos = $_GET['codigo'] ?? null;
+                if (!$codigoCentroCostos) {
+                    throw new Exception('Código de centro de costos es requerido');
+                }
+                $sucursal = $novedades->getSucursalPorCentroCostos($codigoCentroCostos);
+                sendResponse(true, $sucursal);
+            } catch (Exception $e) {
+                handleError('Error obteniendo sucursal por centro de costos', $e);
+            }
+            break;
+
         case 'get_sucursales_con_casa_central':
             try {
                 $sucursales = $novedades->getSucursalesConCasaCentral();
                 sendResponse(true, $sucursales);
             } catch (Exception $e) {
                 handleError('Error obteniendo sucursales con casa central', $e);
+            }
+            break;
+
+        case 'get_centros_costos':
+            try {
+                $centrosCostos = $novedades->getCentrosCostos();
+                sendResponse(true, $centrosCostos);
+            } catch (Exception $e) {
+                handleError('Error obteniendo centros de costos', $e);
             }
             break;
 
@@ -246,7 +281,7 @@ try {
             try {
                 $filtros = [
                     'legajo' => $_GET['legajo'] ?? '',
-                    'sucursal' => $_GET['sucursal'] ?? '',
+                    'centro_costos' => $_GET['centro_costos'] ?? '',
                     'tipo_novedad' => $_GET['tipo_novedad'] ?? ''
                 ];
                 
@@ -261,7 +296,7 @@ try {
             try {
                 $filtros = [
                     'legajo' => $_GET['legajo'] ?? '',
-                    'sucursal' => $_GET['sucursal'] ?? '',
+                    'centro_costos' => $_GET['centro_costos'] ?? '',
                     'tipo_novedad' => $_GET['tipo_novedad'] ?? ''
                 ];
                 
@@ -273,12 +308,25 @@ try {
             break;
 
         case 'get_novedad':
-            if (empty($_GET['id']) || !is_numeric($_GET['id'])) {
+            // Extraer el ID numérico del REQUEST_URI si hay múltiples parámetros id
+            $id = null;
+            if (isset($_GET['id'])) {
+                if (is_numeric($_GET['id'])) {
+                    $id = (int)$_GET['id'];
+                } else {
+                    // Si hay múltiples IDs, buscar el numérico en la URI
+                    if (preg_match('/[?&]id=(\d+)/', $_SERVER['REQUEST_URI'], $matches)) {
+                        $id = (int)$matches[1];
+                    }
+                }
+            }
+            
+            if (!$id || !is_numeric($id)) {
                 handleError('ID de novedad requerido y debe ser numérico');
             }
             
             try {
-                $id = (int)$_GET['id'];
+                // El $id ya está definido arriba como entero
                 $novedad = $novedades->getNovedadById($id);
                 if (!$novedad) {
                     handleError('Novedad no encontrada');

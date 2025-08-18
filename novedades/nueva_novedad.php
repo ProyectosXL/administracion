@@ -81,15 +81,13 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
 
                 <div class="row mt-3">
                     <div class="col-md-6">
-                        <label for="sucursal" class="form-label">
-                            Sucursal <span class="required">*</span>
+                        <label class="form-label">
+                            <i class="fas fa-building me-2"></i>Centro de Costos
                         </label>
-                        <select class="form-select" id="sucursal" name="sucursal" required>
-                            <option value="">Seleccione sucursal...</option>
-                        </select>
-                        <div class="invalid-feedback">
-                            La sucursal es obligatoria
+                        <div class="form-control-plaintext" id="empleado-centro-costos">
+                            Seleccione un empleado para ver su centro de costos
                         </div>
+                        <input type="hidden" id="centro_costos" name="centro_costos">
                     </div>
                 </div>
             </div>
@@ -126,6 +124,13 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         Configuración: Cambio de Sucursal
                     </h5>
                     <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="alert alert-info" id="sucursal-actual-info" style="display: none;">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Sucursal Actual del Empleado:</strong> <span id="sucursal-actual-text">-</span>
+                                <input type="hidden" id="sucursal_actual" value="">
+                            </div>
+                        </div>
                         <div class="col-md-6">
                             <label for="nueva_sucursal" class="form-label">
                                 Nueva Sucursal <span class="required">*</span>
@@ -137,7 +142,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 La nueva sucursal es obligatoria
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label for="fecha_vigencia_sucursal" class="form-label">
                                 Fecha de entrada en vigencia <span class="required">*</span>
                             </label>
@@ -762,7 +767,9 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         const empleadoData = {
                             legajo: data.legajo || data.id,
                             nombre: data.nombre || '',
-                            apellido: data.apellido || ''
+                            apellido: data.apellido || '',
+                            cod_centro_costos: data.cod_centro_costos || '',
+                            desc_centro_costos: data.desc_centro_costos || ''
                         };
                         
                         // Si nombre/apellido no vienen en el data, extraer del text
@@ -772,6 +779,23 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 empleadoData.nombre = textoParts[1].trim();
                                 empleadoData.apellido = textoParts[2].trim();
                             }
+                        }
+                        
+                        // Mostrar centro de costos automáticamente
+                        try {
+                            if (empleadoData.cod_centro_costos && empleadoData.desc_centro_costos) {
+                                const centroCostosDisplay = `${empleadoData.desc_centro_costos} (${empleadoData.cod_centro_costos})`;
+                                $('#empleado-centro-costos').text(centroCostosDisplay);
+                                $('#centro_costos').val(empleadoData.cod_centro_costos);
+                                console.log('🏢 Centro de costos asignado:', centroCostosDisplay);
+                            } else {
+                                $('#empleado-centro-costos').text('Centro de costos no definido');
+                                $('#centro_costos').val('');
+                                console.log('⚠️ Centro de costos no encontrado para el empleado');
+                            }
+                        } catch (ccError) {
+                            console.error('❌ Error asignando centro de costos:', ccError);
+                            $('#empleado-centro-costos').text('Error obteniendo centro de costos');
                         }
                         
                         // Guardar empleado en la app
@@ -792,6 +816,10 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     }
                 } catch (error) {
                     console.error('❌ Error en select2:select:', error);
+                    // Mostrar mensaje de error más informativo
+                    if (error.message && error.message.includes('Could not establish connection')) {
+                        console.warn('🔗 Error de conexión detectado - posible interferencia de extensión del navegador');
+                    }
                     // No relanzar el error para evitar que interrumpa el flujo
                 }
             });
@@ -800,6 +828,8 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
             $('#empleado-select').on('select2:clear', function (e) {
                 try {
                     $('#legajo').val('');
+                    $('#centro_costos').val('');
+                    $('#empleado-centro-costos').text('Seleccione un empleado para ver su centro de costos');
                     
                     $('#legajo').removeClass('is-valid is-invalid');
                     $(this).removeClass('is-valid is-invalid');
@@ -808,7 +838,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     const app = getNovedadesApp();
                     if (app && app.hasOwnProperty('empleadoSeleccionado')) {
                         app.empleadoSeleccionado = null;
-                        console.log('🧹 Empleado limpiado de NovedadesApp');
+                        console.log('🧹 Empleado y centro de costos limpiados');
                     }
                 } catch (error) {
                     console.error('❌ Error en select2:clear:', error);

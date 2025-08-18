@@ -75,9 +75,9 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
             <div class="col-md-4">
                 <div class="card stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                     <div class="card-body">
-                        <i class="fas fa-building fa-2x mb-2"></i>
-                        <div class="display-4" id="total-sucursales">-</div>
-                        <h6>Sucursales Activas</h6>
+                        <i class="fas fa-sitemap fa-2x mb-2"></i>
+                        <div class="display-4" id="total-centros-costos">-</div>
+                        <h6>Centros de Costos</h6>
                     </div>
                 </div>
             </div>
