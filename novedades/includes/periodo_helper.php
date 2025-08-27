@@ -1,6 +1,6 @@
 <?php
 /**
- * Helper para mostrar información del período actual
+ * Helper para mostrar información del período actual - ACTUALIZADO
  * /novedades/includes/periodo_helper.php
  */
 
@@ -15,12 +15,24 @@ class PeriodoHelper {
         $periodo = PeriodoUtils::calcularPeriodoConDiaCierre($diaCierre);
         $info = PeriodoUtils::obtenerInfoCompletaPeriodo($periodo);
         
+        // NUEVO: Formatear como "Mes Año (MM/YY)"
+        $meses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        
+        $mesNombre = $meses[$periodo['month']] ?? 'Mes';
+        $yearCorto = substr($periodo['year'], -2);
+        $periodoFormateado = "{$mesNombre} {$periodo['year']} ({$periodo['month']}/{$yearCorto})";
+        
         return [
-            'periodo' => $info['periodoString'],
-            'rango' => $info['rangoPeriodo'],
+            'periodo' => $info['periodoString'], // Mantener formato original para BD
+            'rango' => $info['rangoPeriodo'], // Mantener rango original
             'fechaInicio' => $info['fechaInicio'],
             'fechaFin' => $info['fechaFin'],
-            'badge' => "Período " . $info['periodoString'] . " | " . $info['rangoPeriodo']
+            'badge' => "Período {$periodoFormateado}",
+            'periodoFormateado' => $periodoFormateado // NUEVO: solo mes y año
         ];
     }
     
@@ -36,12 +48,24 @@ class PeriodoHelper {
         $periodo = PeriodoUtils::calcularPeriodoConDiaCierre($diaCierre, null, true);
         $info = PeriodoUtils::obtenerInfoCompletaPeriodo($periodo);
         
+        // NUEVO: Formatear como "Mes Año (MM/YY)"
+        $meses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        
+        $mesNombre = $meses[$periodo['month']] ?? 'Mes';
+        $yearCorto = substr($periodo['year'], -2);
+        $periodoFormateado = "{$mesNombre} {$periodo['year']} ({$periodo['month']}/{$yearCorto})";
+        
         return [
             'periodo' => $info['periodoString'],
             'rango' => $info['rangoPeriodo'],
             'fechaInicio' => $info['fechaInicio'],
             'fechaFin' => $info['fechaFin'],
-            'badge' => "Período " . $info['periodoString'] . " | " . $info['rangoPeriodo'] . " (1er día hábil: " . $diaCierre . ")"
+            'badge' => "Período {$periodoFormateado} (1er día hábil: {$diaCierre})",
+            'periodoFormateado' => $periodoFormateado
         ];
     }
     
@@ -54,5 +78,13 @@ class PeriodoHelper {
             : self::getPeriodoActual($diaCierre);
             
         return $info['badge'];
+    }
+    
+    /**
+     * NUEVO: Obtener solo el formato de mes y año
+     */
+    public static function getPeriodoFormateado($diaCierre = 28) {
+        $info = self::getPeriodoActual($diaCierre);
+        return $info['periodoFormateado'];
     }
 }

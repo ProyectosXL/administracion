@@ -237,22 +237,6 @@ try {
                 // Log para debugging detallado
                 error_log("📋 Datos recibidos completos: " . print_r($datos, true));
                 
-                // Verificar campos específicos para debugging
-                error_log("🔍 Campos específicos:");
-                error_log("  - legajo: " . (isset($datos['legajo']) ? var_export($datos['legajo'], true) : 'NO EXISTE'));
-                error_log("  - nombre: " . (isset($datos['nombre']) ? var_export($datos['nombre'], true) : 'NO EXISTE'));
-                error_log("  - apellido: " . (isset($datos['apellido']) ? var_export($datos['apellido'], true) : 'NO EXISTE'));
-                error_log("  - sucursal: " . (isset($datos['sucursal']) ? var_export($datos['sucursal'], true) : 'NO EXISTE'));
-                error_log("  - tipo_novedad: " . (isset($datos['tipo_novedad']) ? var_export($datos['tipo_novedad'], true) : 'NO EXISTE'));
-                error_log("  - tipo_nuevo_puesto: " . (isset($datos['tipo_nuevo_puesto']) ? var_export($datos['tipo_nuevo_puesto'], true) : 'NO EXISTE'));
-                error_log("  - fecha_vigencia_hasta: " . (isset($datos['fecha_vigencia_hasta']) ? var_export($datos['fecha_vigencia_hasta'], true) : 'NO EXISTE'));
-                
-                // Log específico para permisos
-                if (isset($datos['tipo_novedad']) && $datos['tipo_novedad'] == 7) {
-                    error_log("🔍 CONTROLADOR PERMISOS - fecha_permiso: " . 
-                             (isset($datos['fecha_permiso']) ? var_export($datos['fecha_permiso'], true) : 'NO EXISTE'));
-                }
-                
                 // Validar datos
                 $errores = $novedades->validarDatos($datos);
                 if (!empty($errores)) {
@@ -261,7 +245,9 @@ try {
                 }
 
                 error_log("✅ Iniciando creación de novedad...");
-                $resultado = $novedades->crearNovedad($datos);
+                
+                // USAR EL MÉTODO ACTUALIZADO
+                $resultado = $novedades->crearNovedadActualizada($datos);
                 
                 if ($resultado['success']) {
                     error_log("✅ Novedad creada exitosamente con ID: " . $resultado['id']);
@@ -285,7 +271,8 @@ try {
                     'tipo_novedad' => $_GET['tipo_novedad'] ?? ''
                 ];
                 
-                $novedadesList = $novedades->getNovedadesPeriodoActual($filtros);
+                // USAR EL MÉTODO ACTUALIZADO
+                $novedadesList = $novedades->getNovedadesPeriodoActualActualizado($filtros);
                 sendResponse(true, $novedadesList);
             } catch (Exception $e) {
                 handleError('Error obteniendo novedades', $e);

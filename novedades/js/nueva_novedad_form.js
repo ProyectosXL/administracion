@@ -4,7 +4,7 @@
  */
 
 // Configuración de tipos de novedad y sus campos requeridos - CORREGIDA SEGÚN ARTIFACT
-const tiposNovedadConfig = {
+const tiposNovedadConfigActualizada = {
     1: { // Cambio de centro de costos
         config: 'config-cambio-sucursal',
         campos: ['nueva_sucursal', 'fecha_vigencia_sucursal'],
@@ -59,13 +59,48 @@ const tiposNovedadConfig = {
         config: 'config-produccion-100',
         campos: ['cantidad_unidades_100', 'fecha_vigencia_produccion_100'], // AGREGADA FECHA
         validaciones: ['cantidad_unidades', 'fecha_vigencia']
+    },
+    12: { // Plus de caja
+        config: 'config-plus-caja',
+        campos: ['tipo_plus_caja', 'importe_plus_caja', 'fecha_vigencia_plus_caja'],
+        validaciones: ['tipo_plus_caja', 'fecha_vigencia']
+    },
+    13: { // Plus de Sub-Encargada
+        config: 'config-plus-sub-encargada',
+        campos: ['tiene_importe_sub', 'fecha_vigencia_plus_sub'],
+        validaciones: ['fecha_vigencia']
+    },
+    14: { // Plus de Encargada
+        config: 'config-plus-encargada',
+        campos: ['tiene_importe_enc', 'fecha_vigencia_plus_enc'],
+        validaciones: ['fecha_vigencia']
+    },
+    15: { // Premio Local
+        config: 'config-premio-local',
+        campos: ['importe_premio_local', 'fecha_vigencia_premio_local', 'aplica_vendedora', 'aplica_sub_encargada'],
+        validaciones: ['importe', 'fecha_vigencia']
+    },
+    16: { // Comisión Individual
+        config: 'config-comision-individual',
+        campos: ['tiene_tope_individual', 'fecha_vigencia_comision_individual'],
+        validaciones: ['fecha_vigencia']
+    },
+    17: { // Comisión sobre Local
+        config: 'config-comision-local',
+        campos: ['tiene_tope_local', 'fecha_vigencia_comision_local'],
+        validaciones: ['fecha_vigencia']
+    },
+    18: { // Premios - Ajuste General
+        config: 'config-premios-ajuste',
+        campos: ['importe_ajuste_general', 'fecha_vigencia_ajuste'],
+        validaciones: ['importe', 'fecha_vigencia']
     }
 };
 
 /**
  * Manejar cambio de tipo de novedad - MEJORADO CON LOGS Y FECHAS DINÁMICAS
  */
-function onTipoNovedadChange(selectElement) {
+function onTipoNovedadChangeActualizado(selectElement) {
     const tipoSeleccionado = parseInt(selectElement.value);
     
     console.log('onTipoNovedadChange called:', {
@@ -126,6 +161,18 @@ function onTipoNovedadChange(selectElement) {
     } else {
         // Ocultar la sección de configuración
         document.getElementById('configuracion-novedad').style.display = 'none';
+    }
+
+    if (tipoSeleccionado === 12) { // Plus de caja
+        setTimeout(() => configurarCamposPlusCaja(), 100);
+    } else if (tipoSeleccionado === 13) { // Plus Sub-Encargada
+        setTimeout(() => configurarCamposPlusConImporte('sub'), 100);
+    } else if (tipoSeleccionado === 14) { // Plus Encargada
+        setTimeout(() => configurarCamposPlusConImporte('enc'), 100);
+    } else if (tipoSeleccionado === 16) { // Comisión Individual
+        setTimeout(() => configurarCamposComision('individual'), 100);
+    } else if (tipoSeleccionado === 17) { // Comisión Local
+        setTimeout(() => configurarCamposComision('local'), 100);
     }
 }
 
@@ -379,15 +426,15 @@ function validarDatosBasicos() {
 }
 
 /**
- * Validar configuración específica según tipo de novedad
+ * Validar configuración específica según tipo de novedad - ACTUALIZADO
  */
-function validarConfiguracionTipo(tipoNovedad) {
-    if (!tiposNovedadConfig[tipoNovedad]) {
+function validarConfiguracionTipoActualizado(tipoNovedad) {
+    if (!tiposNovedadConfigActualizada[tipoNovedad]) {
         NovedadesApp.mostrarError('Tipo de novedad no válido');
         return false;
     }
 
-    const config = tiposNovedadConfig[tipoNovedad];
+    const config = tiposNovedadConfigActualizada[tipoNovedad];
     const errores = [];
     let valido = true;
 
@@ -397,14 +444,16 @@ function validarConfiguracionTipo(tipoNovedad) {
         if (campo) {
             let estaVacio = false;
             
-            // Verificar si el campo está vacío según su tipo
             if (campo.type === 'date') {
                 estaVacio = !campo.value || campo.value === '';
+            } else if (campo.type === 'checkbox') {
+                // Los checkboxes no son obligatorios por defecto
+                estaVacio = false;
             } else {
                 estaVacio = !campo.value.trim();
             }
             
-            if (estaVacio) {
+            if (estaVacio && config.validaciones.includes(campoId.replace(/_(plus_caja|sub|enc|premio_local|individual|local|ajuste).*/, ''))) {
                 campo.classList.add('is-invalid');
                 valido = false;
             } else {
@@ -503,6 +552,101 @@ function validarConfiguracionTipo(tipoNovedad) {
                 valido = false;
             }
             break;
+
+        case 12: // Plus de caja
+            const tipoPlusCaja = document.getElementById('tipo_plus_caja').value;
+            if (!tipoPlusCaja) {
+                errores.push('Debe seleccionar el tipo de plus de caja');
+                valido = false;
+            }
+            
+            // Solo validar importe si el tipo lo requiere (premio requiere importe, recibo puede ser opcional)
+            if (tipoPlusCaja === 'premio') {
+                const importePlusCaja = parseFloat(document.getElementById('importe_plus_caja').value);
+                if (!importePlusCaja || importePlusCaja <= 0) {
+                    errores.push('El importe es obligatorio para premios de caja');
+                    valido = false;
+                }
+            }
+            break;
+
+        case 13: // Plus de Sub-Encargada
+            const tieneImporteSub = document.getElementById('tiene_importe_sub').value;
+            if (tieneImporteSub === '1') {
+                const importeSub = parseFloat(document.getElementById('importe_sub_encargada').value);
+                if (!importeSub || importeSub <= 0) {
+                    errores.push('Debe especificar el importe cuando selecciona "Sí"');
+                    valido = false;
+                }
+            }
+            break;
+
+        case 14: // Plus de Encargada
+            const tieneImporteEnc = document.getElementById('tiene_importe_enc').value;
+            if (tieneImporteEnc === '1') {
+                const importeEnc = parseFloat(document.getElementById('importe_encargada').value);
+                if (!importeEnc || importeEnc <= 0) {
+                    errores.push('Debe especificar el importe cuando selecciona "Sí"');
+                    valido = false;
+                }
+            }
+            break;
+
+        case 15: // Premio Local
+            const importePremioLocal = parseFloat(document.getElementById('importe_premio_local').value);
+            if (!importePremioLocal || importePremioLocal <= 0) {
+                errores.push('El importe del premio es obligatorio');
+                valido = false;
+            }
+            
+            // Validar que al menos una aplicación esté seleccionada
+            const aplicaVendedora = document.getElementById('aplica_vendedora').checked;
+            const aplicaSubEncargada = document.getElementById('aplica_sub_encargada').checked;
+            
+            if (!aplicaVendedora && !aplicaSubEncargada) {
+                errores.push('Debe seleccionar al menos a quién aplica el premio');
+                valido = false;
+            }
+            break;
+
+        case 16: // Comisión Individual
+        case 17: // Comisión sobre Local
+            const tieneTope = document.getElementById(`tiene_tope_${tipoNovedad === 16 ? 'individual' : 'local'}`).value;
+            
+            if (tieneTope === '1') {
+                // Con tope: validar dos porcentajes
+                const porcentaje1 = parseFloat(document.getElementById(`porcentaje_1_${tipoNovedad === 16 ? 'individual' : 'local'}`).value);
+                const porcentaje2 = parseFloat(document.getElementById(`porcentaje_2_${tipoNovedad === 16 ? 'individual' : 'local'}`).value);
+                
+                if (!porcentaje1 || porcentaje1 <= 0 || porcentaje1 > 1) {
+                    errores.push('El primer porcentaje debe estar entre 0.01% y 1%');
+                    valido = false;
+                }
+                if (!porcentaje2 || porcentaje2 <= 0 || porcentaje2 > 1) {
+                    errores.push('El segundo porcentaje debe estar entre 0.01% y 1%');
+                    valido = false;
+                }
+            } else if (tieneTope === '0') {
+                // Sin tope: validar un porcentaje
+                const porcentajeUnico = parseFloat(document.getElementById(`porcentaje_unico_${tipoNovedad === 16 ? 'individual' : 'local'}`).value);
+                
+                if (!porcentajeUnico || porcentajeUnico <= 0 || porcentajeUnico > 1) {
+                    errores.push('El porcentaje debe estar entre 0.01% y 1%');
+                    valido = false;
+                }
+            } else {
+                errores.push('Debe indicar si la comisión tiene tope o no');
+                valido = false;
+            }
+            break;
+
+        case 18: // Premios - Ajuste General
+            const importeAjuste = parseFloat(document.getElementById('importe_ajuste_general').value);
+            if (!importeAjuste || importeAjuste <= 0) {
+                errores.push('El importe del ajuste es obligatorio');
+                valido = false;
+            }
+            break;
     }
 
     if (errores.length > 0) {
@@ -515,7 +659,7 @@ function validarConfiguracionTipo(tipoNovedad) {
 /**
  * Recopilar datos del formulario según el tipo de novedad - CON DEBUGGING Y FALLBACK MEJORADO
  */
-async function recopilarDatosFormulario(tipoNovedad) {
+async function recopilarDatosFormularioActualizado(tipoNovedad) {
     console.log('📦 Iniciando recopilación de datos...');
     
     // Obtener datos del empleado
@@ -694,7 +838,79 @@ async function recopilarDatosFormulario(tipoNovedad) {
             datos.cantidad_unidades = parseInt(document.getElementById('cantidad_unidades_100').value);
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_produccion_100').value;
             break;
-    }
+
+        case 12: // Plus de caja
+            datos.tipo_plus_caja = document.getElementById('tipo_plus_caja').value;
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_plus_caja').value;
+            
+            // Solo incluir importe si se especifica
+            const importePlusCaja = document.getElementById('importe_plus_caja');
+            if (importePlusCaja && importePlusCaja.value) {
+                datos.importe = parseFloat(importePlusCaja.value);
+            }
+            break;
+
+        case 13: // Plus de Sub-Encargada
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_plus_sub').value;
+            datos.tiene_importe = document.getElementById('tiene_importe_sub').value;
+            
+            if (datos.tiene_importe === '1') {
+                const importeSub = document.getElementById('importe_sub_encargada');
+                if (importeSub && importeSub.value) {
+                    datos.importe = parseFloat(importeSub.value);
+                }
+            }
+            break;
+
+        case 14: // Plus de Encargada
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_plus_enc').value;
+            datos.tiene_importe = document.getElementById('tiene_importe_enc').value;
+            
+            if (datos.tiene_importe === '1') {
+                const importeEnc = document.getElementById('importe_encargada');
+                if (importeEnc && importeEnc.value) {
+                    datos.importe = parseFloat(importeEnc.value);
+                }
+            }
+            break;
+
+        case 15: // Premio Local
+            datos.importe = parseFloat(document.getElementById('importe_premio_local').value);
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_premio_local').value;
+            datos.aplica_vendedora = document.getElementById('aplica_vendedora').checked;
+            datos.aplica_sub_encargada = document.getElementById('aplica_sub_encargada').checked;
+            break;
+
+        case 16: // Comisión Individual
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_comision_individual').value;
+            datos.tiene_tope = document.getElementById('tiene_tope_individual').value === '1';
+            
+            if (datos.tiene_tope) {
+                datos.porcentaje_1 = parseFloat(document.getElementById('porcentaje_1_individual').value);
+                datos.porcentaje_2 = parseFloat(document.getElementById('porcentaje_2_individual').value);
+            } else {
+                datos.porcentaje_unico = parseFloat(document.getElementById('porcentaje_unico_individual').value);
+            }
+            break;
+
+        case 17: // Comisión sobre Local
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_comision_local').value;
+            datos.tiene_tope = document.getElementById('tiene_tope_local').value === '1';
+            
+            if (datos.tiene_tope) {
+                datos.porcentaje_1 = parseFloat(document.getElementById('porcentaje_1_local').value);
+                datos.porcentaje_2 = parseFloat(document.getElementById('porcentaje_2_local').value);
+            } else {
+                datos.porcentaje_unico = parseFloat(document.getElementById('porcentaje_unico_local').value);
+            }
+            break;
+
+        case 18: // Premios - Ajuste General
+            datos.importe = parseFloat(document.getElementById('importe_ajuste_general').value);
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_ajuste').value;
+            break;
+        }
+    
 
     return datos;
 }
@@ -1290,6 +1506,126 @@ function configurarAutocompletadoEmpleado() {
             }
         }, 1000);
     });
+}
+
+/**
+ * Configurar campos dinámicos para comisiones
+ */
+function configurarCamposComision(tipoComision) {
+    const sufijo = tipoComision === 'individual' ? 'individual' : 'local';
+    
+    // Event listener para cambio de "tiene tope"
+    const tienTopeSelect = document.getElementById(`tiene_tope_${sufijo}`);
+    const camposSinTope = document.getElementById(`campos_sin_tope_${sufijo}`);
+    const camposConTope = document.getElementById(`campos_con_tope_${sufijo}`);
+    
+    if (tienTopeSelect) {
+        tienTopeSelect.addEventListener('change', function() {
+            const tieneTope = this.value === '1';
+            
+            if (tieneTope) {
+                // Mostrar campos con tope, ocultar sin tope
+                if (camposConTope) {
+                    camposConTope.style.display = 'block';
+                    camposConTope.querySelectorAll('input').forEach(input => {
+                        input.setAttribute('required', 'required');
+                    });
+                }
+                if (camposSinTope) {
+                    camposSinTope.style.display = 'none';
+                    camposSinTope.querySelectorAll('input').forEach(input => {
+                        input.removeAttribute('required');
+                        input.value = '';
+                    });
+                }
+            } else if (this.value === '0') {
+                // Mostrar campos sin tope, ocultar con tope
+                if (camposSinTope) {
+                    camposSinTope.style.display = 'block';
+                    camposSinTope.querySelectorAll('input').forEach(input => {
+                        input.setAttribute('required', 'required');
+                    });
+                }
+                if (camposConTope) {
+                    camposConTope.style.display = 'none';
+                    camposConTope.querySelectorAll('input').forEach(input => {
+                        input.removeAttribute('required');
+                        input.value = '';
+                    });
+                }
+            } else {
+                // Si no hay selección, ocultar ambos
+                if (camposSinTope) camposSinTope.style.display = 'none';
+                if (camposConTope) camposConTope.style.display = 'none';
+            }
+        });
+    }
+}
+
+/**
+ * Configurar campos para plus con importe opcional
+ */
+function configurarCamposPlusConImporte(tipo) {
+    const sufijo = tipo === 'sub' ? 'sub' : 'enc';
+    const tieneImporteSelect = document.getElementById(`tiene_importe_${sufijo}`);
+    const campoImporte = document.getElementById(`campo_importe_${sufijo === 'sub' ? 'sub_encargada' : 'encargada'}`);
+    
+    if (tieneImporteSelect && campoImporte) {
+        tieneImporteSelect.addEventListener('change', function() {
+            if (this.value === '1') {
+                // Mostrar campo de importe
+                campoImporte.style.display = 'block';
+                const inputImporte = campoImporte.querySelector('input[type="number"]');
+                if (inputImporte) {
+                    inputImporte.setAttribute('required', 'required');
+                }
+            } else {
+                // Ocultar campo de importe
+                campoImporte.style.display = 'none';
+                const inputImporte = campoImporte.querySelector('input[type="number"]');
+                if (inputImporte) {
+                    inputImporte.removeAttribute('required');
+                    inputImporte.value = '';
+                }
+            }
+        });
+    }
+}
+
+/**
+ * Configurar campos para plus de caja
+ */
+function configurarCamposPlusCaja() {
+    const tipoSelect = document.getElementById('tipo_plus_caja');
+    const campoImporte = document.getElementById('campo_importe_plus_caja');
+    
+    if (tipoSelect && campoImporte) {
+        tipoSelect.addEventListener('change', function() {
+            if (this.value === 'premio') {
+                // Para premios, el importe es obligatorio
+                campoImporte.style.display = 'block';
+                const inputImporte = campoImporte.querySelector('input[type="number"]');
+                if (inputImporte) {
+                    inputImporte.setAttribute('required', 'required');
+                }
+            } else if (this.value === 'recibo') {
+                // Para recibos, el importe es opcional
+                campoImporte.style.display = 'block';
+                const inputImporte = campoImporte.querySelector('input[type="number"]');
+                if (inputImporte) {
+                    inputImporte.removeAttribute('required');
+                }
+            } else {
+                // Sin selección, ocultar importe
+                campoImporte.style.display = 'none';
+                const inputImporte = campoImporte.querySelector('input[type="number"]');
+                if (inputImporte) {
+                    inputImporte.removeAttribute('required');
+                    inputImporte.value = '';
+                }
+            }
+        });
+    }
 }
 
 /**

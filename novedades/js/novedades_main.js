@@ -288,6 +288,51 @@ const NovedadesApp = {
     puedeEditarEstados() {
         return this.esUsuarioRRHH;
     }
+    
+};
+
+/**
+ * Utilidad para mostrar períodos en formato "Mes Año (MM/YY)"
+ * Se agrega al archivo js/novedades_main.js existente
+ */
+
+// Agregar estas funciones al objeto NovedadesApp existente:
+
+NovedadesApp.formatearPeriodoDisplay = function(periodoMes, periodoAnio) {
+    const meses = [
+        '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    
+    if (!periodoMes || !periodoAnio) return 'Período no definido';
+    
+    const mesNombre = meses[parseInt(periodoMes)] || 'Mes';
+    const yearCorto = periodoAnio.toString().substr(-2);
+    
+    return `${mesNombre} ${periodoAnio} (${periodoMes.toString().padStart(2, '0')}/${yearCorto})`;
+};
+
+// Función para actualizar todos los elementos de período en la página
+NovedadesApp.actualizarPeriodosEnPagina = function() {
+    // Actualizar badges de período
+    document.querySelectorAll('[data-periodo-mes][data-periodo-anio]').forEach(elemento => {
+        const mes = elemento.getAttribute('data-periodo-mes');
+        const anio = elemento.getAttribute('data-periodo-anio');
+        
+        if (mes && anio) {
+            elemento.textContent = this.formatearPeriodoDisplay(mes, anio);
+        }
+    });
+    
+    // Actualizar spans de período específicos
+    document.querySelectorAll('.periodo-display').forEach(elemento => {
+        const mes = elemento.getAttribute('data-mes');
+        const anio = elemento.getAttribute('data-anio');
+        
+        if (mes && anio) {
+            elemento.textContent = this.formatearPeriodoDisplay(mes, anio);
+        }
+    });
 };
 
 /**

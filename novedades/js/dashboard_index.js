@@ -155,7 +155,7 @@ function getEstadoBadge(novedad) {
         1: { texto: 'Enviada', clase: 'bg-info text-white' },
         2: { texto: 'En Revisión', clase: 'bg-warning text-dark' },
         3: { texto: 'Aprobada', clase: 'bg-success text-white' },
-        4: { texto: 'Rechazada', clase: 'bg-danger text-white' },
+        4: { texto: 'A Revisar', clase: 'bg-danger text-white' },
         5: { texto: 'Procesada', clase: 'bg-secondary text-white' }
     };
     

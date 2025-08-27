@@ -521,6 +521,392 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                 </div>
 
+                <!-- 12. Plus de caja -->
+                <div class="form-section campo-dinamico" id="config-plus-caja">
+                    <h5>
+                        <i class="fas fa-cash-register me-2"></i>
+                        Configuración: Plus de Caja
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tipo_plus_caja" class="form-label">
+                                Tipo de Plus <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tipo_plus_caja" name="tipo_plus_caja">
+                                <option value="">Seleccione tipo...</option>
+                                <option value="recibo">Recibo</option>
+                                <option value="premio">Premio</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                El tipo de plus es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="campo_importe_plus_caja" style="display: none;">
+                            <label for="importe_plus_caja" class="form-label">
+                                Importe
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_plus_caja" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_plus_caja" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_plus_caja" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 13. Plus de Sub-Encargada -->
+                <div class="form-section campo-dinamico" id="config-plus-sub-encargada">
+                    <h5>
+                        <i class="fas fa-user-tie me-2"></i>
+                        Configuración: Plus de Sub-Encargada
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tiene_importe_sub" class="form-label">
+                                ¿Tiene importe específico? <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tiene_importe_sub" name="tiene_importe">
+                                <option value="">Seleccione...</option>
+                                <option value="1">Sí</option>
+                                <option value="0">No</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Debe indicar si tiene importe específico
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="campo_importe_sub_encargada" style="display: none;">
+                            <label for="importe_sub_encargada" class="form-label">
+                                Importe <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_sub_encargada" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_plus_sub" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_plus_sub" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 14. Plus de Encargada -->
+                <div class="form-section campo-dinamico" id="config-plus-encargada">
+                    <h5>
+                        <i class="fas fa-user-cog me-2"></i>
+                        Configuración: Plus de Encargada
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tiene_importe_enc" class="form-label">
+                                ¿Tiene importe específico? <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tiene_importe_enc" name="tiene_importe">
+                                <option value="">Seleccione...</option>
+                                <option value="1">Sí</option>
+                                <option value="0">No</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Debe indicar si tiene importe específico
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="campo_importe_encargada" style="display: none;">
+                            <label for="importe_encargada" class="form-label">
+                                Importe <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_encargada" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_plus_enc" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_plus_enc" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 15. Premio Local -->
+                <div class="form-section campo-dinamico" id="config-premio-local">
+                    <h5>
+                        <i class="fas fa-trophy me-2"></i>
+                        Configuración: Premio Local
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="importe_premio_local" class="form-label">
+                                Importe del Premio <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_premio_local" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe del premio es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_premio_local" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_premio_local" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                Aplica a <span class="required">*</span>
+                            </label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="aplica_vendedora" name="aplica_vendedora" value="1">
+                                <label class="form-check-label" for="aplica_vendedora">
+                                    <i class="fas fa-user me-2"></i>Vendedora
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="aplica_sub_encargada" name="aplica_sub_encargada" value="1">
+                                <label class="form-check-label" for="aplica_sub_encargada">
+                                    <i class="fas fa-user-tie me-2"></i>Sub-Encargada
+                                </label>
+                            </div>
+                            <div class="invalid-feedback">
+                                Debe seleccionar al menos una opción
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 16. Comisión Individual -->
+                <div class="form-section campo-dinamico" id="config-comision-individual">
+                    <h5>
+                        <i class="fas fa-percentage me-2"></i>
+                        Configuración: Comisión Individual
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tiene_tope_individual" class="form-label">
+                                Estructura de Comisión <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tiene_tope_individual" name="tiene_tope">
+                                <option value="">Seleccione...</option>
+                                <option value="0">Sin tope (un porcentaje)</option>
+                                <option value="1">Con tope (dos porcentajes)</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Debe seleccionar la estructura de comisión
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_comision_individual" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_comision_individual" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para sin tope -->
+                    <div class="row mt-3" id="campos_sin_tope_individual" style="display: none;">
+                        <div class="col-md-4">
+                            <label for="porcentaje_unico_individual" class="form-label">
+                                Porcentaje Único <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_unico_individual" 
+                                    name="porcentaje_unico" step="0.01" min="0.01" max="1" placeholder="0.50">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Máximo 1%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe estar entre 0.01% y 1%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para con tope -->
+                    <div class="row mt-3" id="campos_con_tope_individual" style="display: none;">
+                        <div class="col-md-3">
+                            <label for="porcentaje_1_individual" class="form-label">
+                                Primer Porcentaje <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_1_individual" 
+                                    name="porcentaje_1" step="0.01" min="0.01" max="1" placeholder="0.75">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Máximo 1%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe estar entre 0.01% y 1%
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="porcentaje_2_individual" class="form-label">
+                                Segundo Porcentaje <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_2_individual" 
+                                    name="porcentaje_2" step="0.01" min="0.01" max="1" placeholder="0.25">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Máximo 1%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe estar entre 0.01% y 1%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 17. Comisión sobre el Local -->
+                <div class="form-section campo-dinamico" id="config-comision-local">
+                    <h5>
+                        <i class="fas fa-building me-2"></i>
+                        Configuración: Comisión sobre el Local
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tiene_tope_local" class="form-label">
+                                Estructura de Comisión <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tiene_tope_local" name="tiene_tope">
+                                <option value="">Seleccione...</option>
+                                <option value="0">Sin tope (un porcentaje)</option>
+                                <option value="1">Con tope (dos porcentajes)</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Debe seleccionar la estructura de comisión
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_comision_local" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_comision_local" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para sin tope -->
+                    <div class="row mt-3" id="campos_sin_tope_local" style="display: none;">
+                        <div class="col-md-4">
+                            <label for="porcentaje_unico_local" class="form-label">
+                                Porcentaje Único <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_unico_local" 
+                                    name="porcentaje_unico" step="0.01" min="0.01" max="1" placeholder="0.50">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Máximo 1%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe estar entre 0.01% y 1%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para con tope -->
+                    <div class="row mt-3" id="campos_con_tope_local" style="display: none;">
+                        <div class="col-md-3">
+                            <label for="porcentaje_1_local" class="form-label">
+                                Primer Porcentaje <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_1_local" 
+                                    name="porcentaje_1" step="0.01" min="0.01" max="1" placeholder="0.75">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Máximo 1%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe estar entre 0.01% y 1%
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="porcentaje_2_local" class="form-label">
+                                Segundo Porcentaje <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_2_local" 
+                                    name="porcentaje_2" step="0.01" min="0.01" max="1" placeholder="0.25">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Máximo 1%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe estar entre 0.01% y 1%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 18. Premios - Ajuste General -->
+                <div class="form-section campo-dinamico" id="config-premios-ajuste">
+                    <h5>
+                        <i class="fas fa-adjust me-2"></i>
+                        Configuración: Premios - Ajuste General
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="importe_ajuste_general" class="form-label">
+                                Importe del Ajuste <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_ajuste_general" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe del ajuste es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_ajuste" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_ajuste" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                
+
             </div>
 
             <!-- Campo: Observaciones -->
