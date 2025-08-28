@@ -2699,34 +2699,30 @@ class Novedades {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
                 break;
-
             case 15: // Premio Local
                 $detalle['tipo'] = 'Premio Local';
-                $detalle['importe'] = $valorNumerico != 0 ? ' . number_format($valorNumerico, 2) : 'No especificado';
+                $detalle['importe'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
-                
                 // Mostrar aplicaciones
                 $aplicaciones = [];
-                if ($novedad['aplica_vendedora']) $aplicaciones[] = 'Vendedora';
-                if ($novedad['aplica_sub_encargada']) $aplicaciones[] = 'Sub-Encargada';
+                if (!empty($novedad['aplica_vendedora'])) $aplicaciones[] = 'Vendedora';
+                if (!empty($novedad['aplica_sub_encargada'])) $aplicaciones[] = 'Sub-Encargada';
                 $detalle['aplica_a'] = !empty($aplicaciones) ? implode(', ', $aplicaciones) : 'No especificado';
                 break;
 
             case 16: // Comisión Individual
                 $detalle['tipo'] = 'Comisión Individual';
                 $detalle['tipo_comision'] = 'Individual';
-                
-                if ($novedad['tiene_tope']) {
+                if (!empty($novedad['tiene_tope'])) {
                     $detalle['estructura'] = 'Con tope';
-                    $detalle['porcentaje_1'] = $novedad['porcentaje_1'] ? number_format($novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
-                    $detalle['porcentaje_2'] = $novedad['porcentaje_2'] ? number_format($novedad['porcentaje_2'] * 100, 2) . '%' : '0%';
+                    $detalle['porcentaje_1'] = !empty($novedad['porcentaje_1']) ? number_format($novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
+                    $detalle['porcentaje_2'] = !empty($novedad['porcentaje_2']) ? number_format($novedad['porcentaje_2'] * 100, 2) . '%' : '0%';
                 } else {
                     $detalle['estructura'] = 'Sin tope';
-                    $detalle['porcentaje_unico'] = $novedad['porcentaje_1'] ? number_format($novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
+                    $detalle['porcentaje_unico'] = !empty($novedad['porcentaje_1']) ? number_format($novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
                 }
-                
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
@@ -2735,16 +2731,14 @@ class Novedades {
             case 17: // Comisión sobre Local
                 $detalle['tipo'] = 'Comisión sobre el Local';
                 $detalle['tipo_comision'] = 'Sobre el Local';
-                
-                if ($novedad['tiene_tope']) {
+                if (!empty($novedad['tiene_tope'])) {
                     $detalle['estructura'] = 'Con tope';
-                    $detalle['porcentaje_1'] = $novedad['porcentaje_1'] ? number_format($novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
-                    $detalle['porcentaje_2'] = $novedad['porcentaje_2'] ? number_format($novedad['porcentaje_2'] * 100, 2) . '%' : '0%';
+                    $detalle['porcentaje_1'] = !empty($novedad['porcentaje_1']) ? number_format($novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
+                    $detalle['porcentaje_2'] = !empty($novedad['porcentaje_2']) ? number_format($novedad['porcentaje_2'] * 100, 2) . '%' : '0%';
                 } else {
                     $detalle['estructura'] = 'Sin tope';
-                    $detalle['porcentaje_unico'] = $novedad['porcentaje_1'] ? number_format($novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
+                    $detalle['porcentaje_unico'] = !empty($novedad['porcentaje_1']) ? number_format($novedad['porcentaje_1'] * 100, 2) . '%' : '0%';
                 }
-                
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
@@ -2752,7 +2746,7 @@ class Novedades {
 
             case 18: // Premios - Ajuste General
                 $detalle['tipo'] = 'Premios - Ajuste General';
-                $detalle['importe'] = $valorNumerico != 0 ? ' . number_format($valorNumerico, 2) : 'No especificado';
+                $detalle['importe'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'No especificado';
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
                 }
@@ -2761,7 +2755,7 @@ class Novedades {
             default:
                 $detalle['tipo'] = 'Novedad general';
                 break;
-        }
+    }
 
         return $detalle;
 }

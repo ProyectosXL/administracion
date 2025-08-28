@@ -4,6 +4,74 @@
  * /novedades/controller/novedades_controller.php
  */
 
+// DEBUG TEMPORAL - ACTIVAR ERRORES
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+
+echo "DEBUG: Controlador iniciando...\n";
+
+try {
+    echo "DEBUG: Incluyendo archivos...\n";
+    
+    // Verificar que los includes no fallen
+    if (file_exists(__DIR__ . '/../class/Database.php')) {
+        require_once __DIR__ . '/../class/Database.php';
+        echo "DEBUG: Database.php incluido correctamente\n";
+    } else {
+        die("ERROR: No se encuentra Database.php");
+    }
+    
+    if (file_exists(__DIR__ . '/../class/Novedades.php')) {
+        require_once __DIR__ . '/../class/Novedades.php';
+        echo "DEBUG: Novedades.php incluido correctamente\n";
+    } else {
+        die("ERROR: No se encuentra Novedades.php");
+    }
+    
+    if (file_exists(__DIR__ . '/../class/Usuario.php')) {
+        require_once __DIR__ . '/../class/Usuario.php';
+        echo "DEBUG: Usuario.php incluido correctamente\n";
+    } else {
+        die("ERROR: No se encuentra Usuario.php");
+    }
+    
+    echo "DEBUG: Verificando clases...\n";
+    
+    if (!class_exists('Database')) {
+        die("ERROR: Clase Database no existe");
+    }
+    echo "DEBUG: Clase Database existe\n";
+    
+    if (!class_exists('Novedades')) {
+        die("ERROR: Clase Novedades no existe");
+    }
+    echo "DEBUG: Clase Novedades existe\n";
+    
+    if (!class_exists('Usuario')) {
+        die("ERROR: Clase Usuario no existe");
+    }
+    echo "DEBUG: Clase Usuario existe\n";
+    
+    echo "DEBUG: Inicializando configuración...\n";
+    require_once __DIR__ . '/../config/usuario_config.php';
+    echo "DEBUG: usuario_config.php incluido\n";
+    
+    echo "DEBUG: Creando instancias...\n";
+    $db = Database::getInstance();
+    echo "DEBUG: Database instanciada\n";
+    
+    $novedades = new Novedades();
+    echo "DEBUG: Novedades instanciada\n";
+    
+    echo "DEBUG: Todo correcto hasta aquí\n";
+    
+} catch (Error $e) {
+    die("ERROR FATAL: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+} catch (Exception $e) {
+    die("EXCEPCIÓN: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
+}
+
 // Iniciar buffer de salida y limpiar cualquier salida previa - MEJORADO
 while (ob_get_level()) {
     ob_end_clean();
@@ -245,7 +313,7 @@ try {
                 }
 
                 error_log("✅ Iniciando creación de novedad...");
-                
+
                 // USAR EL MÉTODO ACTUALIZADO
                 $resultado = $novedades->crearNovedadActualizada($datos);
                 
@@ -426,11 +494,50 @@ try {
             }
             break;
             
+        # Reemplazar TEMPORALMENTE el case 'get_tipo_usuario' en novedades_controller.php por esto:
+
         case 'get_tipo_usuario':
             try {
+                // Debug paso a paso
+                error_log("🔧 DEBUG: Iniciando get_tipo_usuario");
+                
+                // Verificar si la clase existe
+                if (!class_exists('Usuario')) {
+                    error_log("❌ DEBUG: Clase Usuario no existe");
+                    throw new Exception("Clase Usuario no encontrada");
+                }
+                
+                error_log("✅ DEBUG: Clase Usuario existe");
+                
+                // Verificar cada método individualmente
+                if (!method_exists('Usuario', 'getTipoUsuario')) {
+                    error_log("❌ DEBUG: Método getTipoUsuario no existe");
+                    throw new Exception("Método getTipoUsuario no existe");
+                }
+                
+                error_log("✅ DEBUG: Método getTipoUsuario existe");
                 $tipoUsuario = Usuario::getTipoUsuario();
+                error_log("✅ DEBUG: getTipoUsuario() retornó: " . $tipoUsuario);
+                
+                if (!method_exists('Usuario', 'esUsuarioRRHH')) {
+                    error_log("❌ DEBUG: Método esUsuarioRRHH no existe");
+                    throw new Exception("Método esUsuarioRRHH no existe");
+                }
+                
+                error_log("✅ DEBUG: Método esUsuarioRRHH existe");
                 $esRRHH = Usuario::esUsuarioRRHH();
+                error_log("✅ DEBUG: esUsuarioRRHH() retornó: " . ($esRRHH ? 'true' : 'false'));
+                
+                if (!method_exists('Usuario', 'getTipoUsuarioDescripcion')) {
+                    error_log("❌ DEBUG: Método getTipoUsuarioDescripcion no existe");
+                    throw new Exception("Método getTipoUsuarioDescripcion no existe");
+                }
+                
+                error_log("✅ DEBUG: Método getTipoUsuarioDescripcion existe");
                 $descripcion = Usuario::getTipoUsuarioDescripcion();
+                error_log("✅ DEBUG: getTipoUsuarioDescripcion() retornó: " . $descripcion);
+                
+                error_log("✅ DEBUG: Todos los métodos funcionaron correctamente");
                 
                 sendResponse(true, [
                     'tipo' => $tipoUsuario,
@@ -438,6 +545,8 @@ try {
                     'descripcion' => $descripcion
                 ]);
             } catch (Exception $e) {
+                error_log("❌ DEBUG: Excepción capturada: " . $e->getMessage());
+                error_log("❌ DEBUG: Stack trace: " . $e->getTraceAsString());
                 handleError('Error obteniendo tipo de usuario', $e);
             }
             break;
