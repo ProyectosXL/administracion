@@ -58,7 +58,7 @@ class OrdenDeCompra
                     --          ) A 
                     --        )
                         --AND FEC_GENER >=GETDATE()-1200
-                        AND COD_PROVEE like '%$proveedor'
+                        AND COD_PROVEE like '%$proveedor' AND N_ORDEN_CO NOT IN (SELECT ORDEN_COMPRA FROM RO_T_IMPORTACIONES_ENCABEZADO)
                         ";
     
             $rows = $this->retornarArray($sql);
