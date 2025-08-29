@@ -30,8 +30,9 @@
           <div class="table-responsive" id="tableIndex">
             <table class="table table-hover table-condensed table-striped text-center" id="tableScn">
               <thead class="thead-dark" style="font-size: small;">
-                <th scope="col" style="width: 5%">ARTICULO</th>
-                <th scope="col" style="width: 8%">RUBRO</th>
+                <th scope="col" >ARTICULO</th>
+                <th scope="col" >RUBRO</th>
+                <th scope="col" >ORDEN DE COMPRA</th>
               </thead>
 
               <tbody id="tableCn" style="font-size: small;">

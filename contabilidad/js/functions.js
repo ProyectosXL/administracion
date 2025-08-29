@@ -850,7 +850,6 @@ const pintarPasos = (periodo) => {
 
 const rellenarModal3 = (obj)=>{
 
-
   let tableModal =  document.querySelector("#tableCn");
   tableModal.innerHTML = "";
 
@@ -860,13 +859,19 @@ const rellenarModal3 = (obj)=>{
 
     let td1=document.createElement('td');
     let td2=document.createElement('td');
+    let td3=document.createElement('td');
+    
     let text1=document.createTextNode(obj[x]['COD_ARTICU']);
     let text2=document.createTextNode(obj[x]['RUBRO']);
+    let text3=document.createTextNode(obj[x]['N_ORDEN_CO'] || '');
     
     td1.appendChild(text1);
     td2.appendChild(text2);
+    td3.appendChild(text3);
+    
     tr.appendChild(td1);
     tr.appendChild(td2);
+    tr.appendChild(td3);
 
     tableModal.appendChild(tr);
   }
