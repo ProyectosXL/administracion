@@ -740,6 +740,11 @@ function ejecutarPasos() {
         )
         .then((respuesta) => respuesta.json())
         .then((perfil) => { 
+
+          console.log("Paso:", pasoActual); // Agrega este log
+          console.log("Perfil data:", perfil); // Agrega este log
+          console.log("Perfil length:", perfil.length); // Agrega este log
+
             if (perfil.length == 0 || pasosDirectos.includes(pasoActual) == true ) {
 
               spinner.classList.remove('loading');
@@ -779,6 +784,7 @@ function ejecutarPasos() {
               
             }else{
               
+              console.log("Entrando al switch para mostrar modal"); // Agrega este log
               spinner.classList.remove('loading');
 
               switch (pasoActual) {

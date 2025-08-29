@@ -140,42 +140,33 @@ class Paso
     public function ejecutarPaso3($desde, $hasta)
     {  
         try {
-
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
             if (session_status() == PHP_SESSION_NONE) {
                 session_start();
             }
-    
-    
+
             if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
                 $cid_central  = $cid->conectar('uy');
             }else{
                 $cid_central = $cid->conectar('central');
-    
             }
 
             $sql = "EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta' ;";
 
             $stmt = sqlsrv_query($cid_central, $sql);
 
-            $next_result = sqlsrv_next_result($stmt);
-
-            $v = [];
-
+                $v = [];
             while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
-
                 $v[] = $row;
-
             }
 
             return $v;
-          
+        
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
     }
-
 
   
     public function ejecutarPaso4($desde, $hasta)
