@@ -10,12 +10,13 @@ class PeriodoHelper {
     
     /**
      * Obtener información del período actual basado en día de cierre por defecto (día 28)
+     * ACTUALIZADO: Ahora siempre devuelve el mes calendario actual
      */
     public static function getPeriodoActual($diaCierre = 28) {
         $periodo = PeriodoUtils::calcularPeriodoConDiaCierre($diaCierre);
         $info = PeriodoUtils::obtenerInfoCompletaPeriodo($periodo);
         
-        // NUEVO: Formatear como "Mes Año (MM/YY)"
+        // Formatear como "Mes Año (MM/YY)"
         $meses = [
             1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
             5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
@@ -32,7 +33,7 @@ class PeriodoHelper {
             'fechaInicio' => $info['fechaInicio'],
             'fechaFin' => $info['fechaFin'],
             'badge' => "Período {$periodoFormateado}",
-            'periodoFormateado' => $periodoFormateado // NUEVO: solo mes y año
+            'periodoFormateado' => $periodoFormateado // Solo mes y año
         ];
     }
     

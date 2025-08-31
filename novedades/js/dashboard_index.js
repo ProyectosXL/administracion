@@ -498,6 +498,194 @@ function mostrarModalDetalle(novedad) {
                     </div>`;
             }
             break;
+
+        case 12: // Plus de caja (compatibilidad)
+        case 32: // Plus de caja
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                modalHtml += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-cash-register me-2"></i>Plus de Caja</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</h3>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+
+        case 13: // Plus de Sub-Encargada (compatibilidad)
+        case 33: // Plus de Sub-Encargada
+            modalHtml += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>Plus de Sub-Encargada</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <strong>Tipo de Plus:</strong><br>
+                                    <span class="badge ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0 ? 'bg-success' : 'bg-info'}">
+                                        ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0 ? 'Con importe fijo' : 'Sin importe fijo'}
+                                    </span>
+                                </div>
+                                ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0 ? `
+                                <div class="col-md-6 text-center">
+                                    <strong>Importe:</strong><br>
+                                    <h4 class="text-success">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</h4>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 14: // Plus de Encargada (compatibilidad)
+        case 34: // Plus de Encargada
+            modalHtml += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fas fa-user-cog me-2"></i>Plus de Encargada</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <strong>Tipo de Plus:</strong><br>
+                                    <span class="badge ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0 ? 'bg-success' : 'bg-info'}">
+                                        ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0 ? 'Con importe fijo' : 'Sin importe fijo'}
+                                    </span>
+                                </div>
+                                ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0 ? `
+                                <div class="col-md-6 text-center">
+                                    <strong>Importe:</strong><br>
+                                    <h4 class="text-primary">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</h4>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 15: // Premio Local (compatibilidad)
+        case 35: // Premio Local
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                modalHtml += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Premio Local</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 text-center">
+                                        <strong>Importe del Premio:</strong><br>
+                                        <h4 class="text-warning">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</h4>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Aplicable a:</strong><br>
+                                        <div class="mt-2">
+                                            ${(Boolean(novedad.aplica_vendedora) && novedad.aplica_vendedora !== 0 && novedad.aplica_vendedora !== '0') ? '<span class="badge bg-success me-1"><i class="fas fa-check me-1"></i>Vendedora</span>' : '<span class="badge bg-secondary me-1"><i class="fas fa-times me-1"></i>Vendedora</span>'}
+                                            ${(Boolean(novedad.aplica_sub_encargada) && novedad.aplica_sub_encargada !== 0 && novedad.aplica_sub_encargada !== '0') ? '<span class="badge bg-success me-1"><i class="fas fa-check me-1"></i>Sub-Encargada</span>' : '<span class="badge bg-secondary me-1"><i class="fas fa-times me-1"></i>Sub-Encargada</span>'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
+
+        case 16: // Comisión Individual (compatibilidad)
+        case 36: // Comisión Individual
+            modalHtml += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-percent me-2"></i>Comisión Individual</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Tipo de Comisión:</strong><br>
+                                    <span class="badge bg-info">Individual</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Configuración:</strong><br>
+                                    <span class="badge ${novedad.tiene_tope ? 'bg-warning text-dark' : 'bg-success'}">
+                                        ${novedad.tiene_tope ? 'Con tope' : 'Sin tope'}
+                                    </span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Porcentaje${novedad.tiene_tope ? 's' : ''}:</strong><br>
+                                    ${novedad.tiene_tope ? 
+                                        `<span class="badge bg-primary">${parseFloat(novedad.porcentaje_1 || 0)}%</span> / 
+                                         <span class="badge bg-warning text-dark">${parseFloat(novedad.porcentaje_2 || 0)}%</span>` :
+                                        `<span class="badge bg-primary">${parseFloat(novedad.porcentaje_1 || 0)}%</span>`
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 17: // Comisión sobre Local (compatibilidad)
+        case 37: // Comisión sobre Local
+            modalHtml += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-purple text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <h6 class="mb-0"><i class="fas fa-store me-2"></i>Comisión sobre Local</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Tipo de Comisión:</strong><br>
+                                    <span class="badge" style="background: #667eea;">Sobre Local</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Configuración:</strong><br>
+                                    <span class="badge ${novedad.tiene_tope ? 'bg-warning text-dark' : 'bg-success'}">
+                                        ${novedad.tiene_tope ? 'Con tope' : 'Sin tope'}
+                                    </span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Porcentaje${novedad.tiene_tope ? 's' : ''}:</strong><br>
+                                    ${novedad.tiene_tope ? 
+                                        `<span class="badge bg-primary">${parseFloat(novedad.porcentaje_1 || 0)}%</span> / 
+                                         <span class="badge bg-warning text-dark">${parseFloat(novedad.porcentaje_2 || 0)}%</span>` :
+                                        `<span class="badge bg-primary">${parseFloat(novedad.porcentaje_1 || 0)}%</span>`
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 18: // Premios - Ajuste General (compatibilidad)
+        case 38: // Premios - Ajuste General
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                modalHtml += `
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Premios - Ajuste General</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <h3>${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</h3>
+                                <p class="text-muted mb-0">Ajuste general de premios</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            break;
     }
     
     modalHtml += `</div>`;

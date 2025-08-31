@@ -42,10 +42,15 @@ class PeriodoUtils {
     
     /**
      * Obtener información completa del período incluyendo fechas
+     * ACTUALIZADO: Ahora calcula fechas para período mensual (1er día - último día del mes)
      */
     public static function obtenerInfoCompletaPeriodo($periodo) {
-        $fechaInicio = self::calcularFechaInicioPeriodo($periodo);
-        $fechaFin = new DateTime($periodo['year'] . "-" . str_pad($periodo['month'], 2, '0', STR_PAD_LEFT) . "-27");
+        // Fecha de inicio: primer día del mes del período
+        $fechaInicio = new DateTime($periodo['year'] . "-" . str_pad($periodo['month'], 2, '0', STR_PAD_LEFT) . "-01");
+        
+        // Fecha de fin: último día del mes del período
+        $fechaFin = new DateTime($periodo['year'] . "-" . str_pad($periodo['month'], 2, '0', STR_PAD_LEFT) . "-01");
+        $fechaFin->modify('last day of this month');
         
         return [
             'periodo' => $periodo,
@@ -116,6 +121,7 @@ class PeriodoUtils {
     
     /**
      * Calcular período basado en día de cierre
+     * ACTUALIZADO: Ahora devuelve el MES actual independientemente del día de cierre
      */
     public static function calcularPeriodoConDiaCierre($diaCierre, $fechaReferencia = null, $esPrimerDiaHabil = false) {
         $hoy = $fechaReferencia ? new DateTime($fechaReferencia) : new DateTime();
@@ -124,37 +130,10 @@ class PeriodoUtils {
         $yearPeriodo = (int)$hoy->format('Y');
         $mesPeriodo = (int)$hoy->format('m');
         
-        if ($esPrimerDiaHabil) {
-            // LÓGICA ESPECIAL PARA "1er día hábil":
-            // Si día actual <= 1er día hábil → período del mes ANTERIOR
-            // Si día actual > 1er día hábil → período del mes ACTUAL
-            if ($diaActual <= $diaCierre) {
-                $mesPeriodo--;
-                
-                // Si se va antes de enero, decrementar año
-                if ($mesPeriodo < 1) {
-                    $mesPeriodo = 12; // diciembre
-                    $yearPeriodo--;
-                }
-            }
-            // Si diaActual > diaCierre, se queda en el mes actual (no se modifica)
-            
-        } else {
-            // LÓGICA NORMAL PARA DÍAS NUMÉRICOS:
-            // Si día actual > día de cierre → período del mes SIGUIENTE
-            if ($diaActual > $diaCierre) {
-                $mesPeriodo++;
-                
-                // Si se pasa de diciembre, incrementar año
-                if ($mesPeriodo > 12) {
-                    $mesPeriodo = 1;
-                    $yearPeriodo++;
-                }
-            }
-            // Si diaActual <= diaCierre, se queda en el mes actual (no se modifica)
-        }
+        // NUEVA LÓGICA: Siempre devolver el mes actual
+        // Independientemente del día de cierre, el período es el mes calendario actual
         
-        $fechaPeriodo = new DateTime("$yearPeriodo-" . str_pad($mesPeriodo, 2, '0', STR_PAD_LEFT) . "-" . str_pad($diaCierre, 2, '0', STR_PAD_LEFT));
+        $fechaPeriodo = new DateTime("$yearPeriodo-" . str_pad($mesPeriodo, 2, '0', STR_PAD_LEFT) . "-01");
         
         return [
             'year' => $yearPeriodo,
@@ -162,9 +141,7 @@ class PeriodoUtils {
             'diaCierre' => $diaCierre,
             'fechaPeriodo' => $fechaPeriodo,
             'esPrimerDiaHabil' => $esPrimerDiaHabil,
-            'logicaAplicada' => $esPrimerDiaHabil 
-                ? ($diaActual <= $diaCierre ? 'mes anterior' : 'mes actual')
-                : ($diaActual > $diaCierre ? 'mes siguiente' : 'mes actual'),
+            'logicaAplicada' => 'mes calendario actual',
             'periodoString' => str_pad($mesPeriodo, 2, '0', STR_PAD_LEFT) . '/' . $yearPeriodo
         ];
     }
@@ -199,20 +176,11 @@ class PeriodoUtils {
     
     /**
      * Calcular fecha de inicio del período (fecha de vigencia)
-     * La fecha de vigencia es el día 28 del mes ANTERIOR al período calculado
+     * ACTUALIZADO: Ahora es el primer día del mes del período
      */
     public static function calcularFechaInicioPeriodo($periodo) {
-        $mesInicio = $periodo['month'] - 1;
-        $yearInicio = $periodo['year'];
-        
-        // Si el período es enero, el mes anterior es diciembre del año anterior
-        if ($mesInicio < 1) {
-            $mesInicio = 12;
-            $yearInicio--;
-        }
-        
-        // La fecha de vigencia es siempre el día 28 del mes anterior al período
-        $fechaInicio = new DateTime("$yearInicio-" . str_pad($mesInicio, 2, '0', STR_PAD_LEFT) . "-28");
+        // La fecha de inicio es el primer día del mes del período
+        $fechaInicio = new DateTime($periodo['year'] . "-" . str_pad($periodo['month'], 2, '0', STR_PAD_LEFT) . "-01");
         
         return $fechaInicio;
     }

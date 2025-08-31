@@ -53,9 +53,56 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
         </div>
     </div>
 
+    <!-- Indicador de modo activo -->
+    <div id="modo-activo-indicator" class="modo-activo-indicator" style="display: none;">
+        <i class="fas fa-info-circle me-2"></i>
+        <span id="modo-activo-text"></span>
+    </div>
+
     <!-- Contenido principal -->
     <div class="container">
-        <form id="form-novedad" novalidate>
+        <!-- Sección: Modo de Carga -->
+        <div class="form-section" id="modo-carga-section">
+            <h5>
+                <i class="fas fa-list-ol me-2"></i>
+                Modo de Carga
+            </h5>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <p class="mb-4">Seleccione el modo de carga de novedades:</p>
+                            <div class="row justify-content-center">
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-primary btn-lg w-100 modo-carga-btn" id="modo-unica" data-modo="unica">
+                                        <i class="fas fa-file-alt fa-2x mb-2 d-block"></i>
+                                        <strong>Cargar 1 novedad</strong>
+                                        <br><small class="text-muted">Modo tradicional</small>
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-success btn-lg w-100 modo-carga-btn" id="modo-multiple" data-modo="multiple">
+                                        <i class="fas fa-files fa-2x mb-2 d-block"></i>
+                                        <strong>Cargar varias novedades</strong>
+                                        <br><small class="text-muted">Para el mismo empleado</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="form-novedad" novalidate style="display: none;">
+            
+            <!-- Botón cambiar modo (arriba del formulario) -->
+            <div class="mb-3">
+                <button type="button" class="btn btn-outline-info btn-sm" id="btn-cambiar-modo-top" onclick="volverSeleccionModo()" style="display: none;">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    Cambiar Modo
+                </button>
+            </div>
             
             <!-- Sección: Datos del Empleado -->
             <div class="form-section">
@@ -92,8 +139,51 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                 </div>
             </div>
 
-            <!-- Sección: Tipo de Novedad -->
-            <div class="form-section">
+            <!-- Sección: Configuración Global (solo para modo múltiple) -->
+            <div class="form-section" id="configuracion-global-section" style="display: none;">
+                <h5>
+                    <i class="fas fa-cog me-2"></i>
+                    Configuración Global
+                    <small class="text-muted">(Aplicable a todas las novedades)</small>
+                </h5>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="periodo_mes_global" class="form-label">
+                            Período - Mes <span class="required">*</span>
+                        </label>
+                        <select class="form-select" id="periodo_mes_global" name="periodo_mes_global">
+                            <option value="">Seleccionar mes...</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            El mes es obligatorio para el modo múltiple
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="periodo_anio_global" class="form-label">
+                            Período - Año <span class="required">*</span>
+                        </label>
+                        <select class="form-select" id="periodo_anio_global" name="periodo_anio_global">
+                            <option value="">Seleccionar año...</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            El año es obligatorio para el modo múltiple
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="fecha_vigencia_global" class="form-label">
+                            Fecha de entrada en vigencia <span class="required">*</span>
+                        </label>
+                        <input type="date" class="form-control" id="fecha_vigencia_global" name="fecha_vigencia_global">
+                        <div class="invalid-feedback">
+                            La fecha de vigencia es obligatoria para el modo múltiple
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección: Tipo de Novedad (Modo único) -->
+            <div class="form-section" id="tipo-novedad-unica">
                 <h5>
                     <i class="fas fa-tags me-2"></i>
                     Tipo de Novedad
@@ -114,7 +204,28 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                 </div>
             </div>
 
-            <!-- Configuración específica por tipo de novedad -->
+            <!-- Contenedor de Novedades Múltiples -->
+            <div id="novedades-multiples-container" style="display: none;">
+                <div class="form-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5>
+                            <i class="fas fa-layer-group me-2"></i>
+                            Novedades para el Empleado
+                        </h5>
+                        <button type="button" class="btn btn-success" id="agregar-novedad-btn">
+                            <i class="fas fa-plus me-2"></i>
+                            Agregar otra novedad
+                        </button>
+                    </div>
+                    
+                    <!-- Contenedor dinámico para las cards de novedades -->
+                    <div id="novedades-cards-container">
+                        <!-- Las cards se generarán dinámicamente aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración específica por tipo de novedad (Modo único) -->
             <div id="configuracion-novedad" style="display: none;">
                 
                 <!-- 1. Cambio de sucursal -->
@@ -716,17 +827,20 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </h5>
                     <div class="row">
                         <div class="col-md-4">
-                            <label for="tiene_tope_individual" class="form-label">
-                                Estructura de Comisión <span class="required">*</span>
+                            <label for="porcentaje_individual" class="form-label">
+                                Porcentaje de Comisión <span class="required">*</span>
                             </label>
-                            <select class="form-select" id="tiene_tope_individual" name="tiene_tope">
-                                <option value="">Seleccione...</option>
-                                <option value="0">Sin tope (un porcentaje)</option>
-                                <option value="1">Con tope (dos porcentajes)</option>
-                            </select>
-                            <div class="invalid-feedback">
-                                Debe seleccionar la estructura de comisión
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_individual" 
+                                    name="porcentaje_individual" step="0.01" min="0.01" max="0.99" placeholder="0.15">
+                                <span class="input-group-text">%</span>
                             </div>
+                            <div class="invalid-feedback">
+                                El porcentaje de comisión es obligatorio
+                            </div>
+                            <small class="form-text text-muted">
+                                Ejemplo: 0.15 para 0.15%
+                            </small>
                         </div>
                         <div class="col-md-4">
                             <label for="fecha_vigencia_comision_individual" class="form-label">
@@ -735,56 +849,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             <input type="date" class="form-control" id="fecha_vigencia_comision_individual" name="fecha_vigencia">
                             <div class="invalid-feedback">
                                 La fecha de vigencia es obligatoria
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Campos para sin tope -->
-                    <div class="row mt-3" id="campos_sin_tope_individual" style="display: none;">
-                        <div class="col-md-4">
-                            <label for="porcentaje_unico_individual" class="form-label">
-                                Porcentaje Único <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="porcentaje_unico_individual" 
-                                    name="porcentaje_unico" step="0.01" min="0.01" max="1" placeholder="0.50">
-                                <span class="input-group-text">%</span>
-                            </div>
-                            <small class="form-text text-muted">Máximo 1%</small>
-                            <div class="invalid-feedback">
-                                El porcentaje debe estar entre 0.01% y 1%
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Campos para con tope -->
-                    <div class="row mt-3" id="campos_con_tope_individual" style="display: none;">
-                        <div class="col-md-3">
-                            <label for="porcentaje_1_individual" class="form-label">
-                                Primer Porcentaje <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="porcentaje_1_individual" 
-                                    name="porcentaje_1" step="0.01" min="0.01" max="1" placeholder="0.75">
-                                <span class="input-group-text">%</span>
-                            </div>
-                            <small class="form-text text-muted">Máximo 1%</small>
-                            <div class="invalid-feedback">
-                                El porcentaje debe estar entre 0.01% y 1%
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="porcentaje_2_individual" class="form-label">
-                                Segundo Porcentaje <span class="required">*</span>
-                            </label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="porcentaje_2_individual" 
-                                    name="porcentaje_2" step="0.01" min="0.01" max="1" placeholder="0.25">
-                                <span class="input-group-text">%</span>
-                            </div>
-                            <small class="form-text text-muted">Máximo 1%</small>
-                            <div class="invalid-feedback">
-                                El porcentaje debe estar entre 0.01% y 1%
                             </div>
                         </div>
                     </div>
@@ -829,12 +893,12 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="porcentaje_unico_local" 
-                                    name="porcentaje_unico" step="0.01" min="0.01" max="1" placeholder="0.50">
+                                    name="porcentaje_unico" step="0.01" min="0.01" max="0.99" placeholder="0.50">
                                 <span class="input-group-text">%</span>
                             </div>
-                            <small class="form-text text-muted">Máximo 1%</small>
+                            <small class="form-text text-muted">Ejemplo: 0.50 para 0.50%</small>
                             <div class="invalid-feedback">
-                                El porcentaje debe estar entre 0.01% y 1%
+                                El porcentaje debe ser mayor a 0.01
                             </div>
                         </div>
                     </div>
@@ -847,12 +911,12 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="porcentaje_1_local" 
-                                    name="porcentaje_1" step="0.01" min="0.01" max="1" placeholder="0.75">
+                                    name="porcentaje_1" step="0.01" min="0.01" max="0.99" placeholder="0.75">
                                 <span class="input-group-text">%</span>
                             </div>
-                            <small class="form-text text-muted">Máximo 1%</small>
+                            <small class="form-text text-muted">Ejemplo: 0.75 para 0.75%</small>
                             <div class="invalid-feedback">
-                                El porcentaje debe estar entre 0.01% y 1%
+                                El porcentaje debe ser mayor a 0.01
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -861,12 +925,12 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="porcentaje_2_local" 
-                                    name="porcentaje_2" step="0.01" min="0.01" max="1" placeholder="0.25">
+                                    name="porcentaje_2" step="0.01" min="0.01" max="0.99" placeholder="0.25">
                                 <span class="input-group-text">%</span>
                             </div>
-                            <small class="form-text text-muted">Máximo 1%</small>
+                            <small class="form-text text-muted">Ejemplo: 0.25 para 0.25%</small>
                             <div class="invalid-feedback">
-                                El porcentaje debe estar entre 0.01% y 1%
+                                El porcentaje debe ser mayor a 0.01
                             </div>
                         </div>
                     </div>
@@ -909,8 +973,8 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
 
             </div>
 
-            <!-- Campo: Observaciones -->
-            <div class="form-section">
+            <!-- Campo: Observaciones (solo modo único) -->
+            <div class="form-section" id="observaciones-section">
                 <h5>
                     <i class="fas fa-comment me-2"></i>
                     Observaciones
@@ -937,10 +1001,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         <button type="button" class="btn btn-outline-secondary" onclick="limpiarFormularioManual()">
                             <i class="fas fa-eraser me-2"></i>
                             Limpiar
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="window.history.back()">
-                            <i class="fas fa-arrow-left me-2"></i>
-                            Volver
                         </button>
                         <button type="submit" class="btn btn-success btn-lg" id="btn-guardar">
                             <i class="fas fa-save me-2"></i>
@@ -980,8 +1040,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </p>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Próximos pasos:</strong> La novedad será incluida en la liquidación 
-                                del período 28/07/2025 - 27/08/2025.
+                                <strong>Próximos pasos:</strong> La novedad será incluida en la liquidación mensual.
                             </div>
                         </div>
                     </div>
@@ -1043,6 +1102,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     <!-- JavaScript personalizado -->
     <script src="js/novedades_main.js?v=<?php echo time(); ?>"></script>
     <script src="js/nueva_novedad_form.js?v=<?php echo time(); ?>"></script>
+    <script src="js/nueva_novedad_init.js?v=<?php echo time(); ?>"></script>
 
     <script>
         // Manejar errores no capturados (especialmente de extensiones del navegador)

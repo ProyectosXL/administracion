@@ -8,79 +8,13 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
-
-echo "DEBUG: Controlador iniciando...\n";
-
-try {
-    echo "DEBUG: Incluyendo archivos...\n";
-    
-    // Verificar que los includes no fallen
-    if (file_exists(__DIR__ . '/../class/Database.php')) {
-        require_once __DIR__ . '/../class/Database.php';
-        echo "DEBUG: Database.php incluido correctamente\n";
-    } else {
-        die("ERROR: No se encuentra Database.php");
-    }
-    
-    if (file_exists(__DIR__ . '/../class/Novedades.php')) {
-        require_once __DIR__ . '/../class/Novedades.php';
-        echo "DEBUG: Novedades.php incluido correctamente\n";
-    } else {
-        die("ERROR: No se encuentra Novedades.php");
-    }
-    
-    if (file_exists(__DIR__ . '/../class/Usuario.php')) {
-        require_once __DIR__ . '/../class/Usuario.php';
-        echo "DEBUG: Usuario.php incluido correctamente\n";
-    } else {
-        die("ERROR: No se encuentra Usuario.php");
-    }
-    
-    echo "DEBUG: Verificando clases...\n";
-    
-    if (!class_exists('Database')) {
-        die("ERROR: Clase Database no existe");
-    }
-    echo "DEBUG: Clase Database existe\n";
-    
-    if (!class_exists('Novedades')) {
-        die("ERROR: Clase Novedades no existe");
-    }
-    echo "DEBUG: Clase Novedades existe\n";
-    
-    if (!class_exists('Usuario')) {
-        die("ERROR: Clase Usuario no existe");
-    }
-    echo "DEBUG: Clase Usuario existe\n";
-    
-    echo "DEBUG: Inicializando configuración...\n";
-    require_once __DIR__ . '/../config/usuario_config.php';
-    echo "DEBUG: usuario_config.php incluido\n";
-    
-    echo "DEBUG: Creando instancias...\n";
-    $db = Database::getInstance();
-    echo "DEBUG: Database instanciada\n";
-    
-    $novedades = new Novedades();
-    echo "DEBUG: Novedades instanciada\n";
-    
-    echo "DEBUG: Todo correcto hasta aquí\n";
-    
-} catch (Error $e) {
-    die("ERROR FATAL: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
-} catch (Exception $e) {
-    die("EXCEPCIÓN: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
-}
+ini_set('error_log', __DIR__ . '/debug.log');
 
 // Iniciar buffer de salida y limpiar cualquier salida previa - MEJORADO
 while (ob_get_level()) {
     ob_end_clean();
 }
 ob_start();
-
-// Suprimir warnings que puedan interferir con JSON
-error_reporting(E_ERROR | E_PARSE);
-ini_set('display_errors', 0);
 
 // Configurar headers para CORS y JSON
 header('Content-Type: application/json; charset=utf-8');
@@ -409,13 +343,18 @@ try {
             try {
                 // Obtener datos del POST
                 $inputData = file_get_contents('php://input');
+                error_log("Datos recibidos para editar_novedad: " . $inputData);
+                
                 $datos = json_decode($inputData, true);
+                error_log("Datos decodificados: " . print_r($datos, true));
                 
                 if (!$datos || !isset($datos['id']) || !is_numeric($datos['id'])) {
+                    error_log("Error: ID de novedad requerido y debe ser numérico. Datos recibidos: " . print_r($datos, true));
                     handleError('ID de novedad requerido y debe ser numérico');
                 }
 
                 $resultado = $novedades->editarNovedad($datos['id'], $datos);
+                error_log("Resultado edición: " . print_r($resultado, true));
                 
                 if ($resultado['success']) {
                     sendResponse(true, ['id' => $datos['id']], 'Novedad actualizada exitosamente');
@@ -423,6 +362,7 @@ try {
                     handleError($resultado['error']);
                 }
             } catch (Exception $e) {
+                error_log("Excepción en editar_novedad: " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
                 handleError('Error editando novedad', $e);
             }
             break;

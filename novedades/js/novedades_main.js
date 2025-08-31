@@ -1,4 +1,4 @@
-// /novedades/js/novedades_main.js
+// /novedades/js/novedades_main.js - CORREGIDO
 
 /**
  * Configuración global y utilidades
@@ -8,21 +8,6 @@ const NovedadesApp = {
     empleadoSeleccionado: null,
     tipoUsuario: null,
     esUsuarioRRHH: false,
-    
-    // Configuración de tipos de novedad y campos requeridos - ACTUALIZADA
-    tiposNovedadConfig: {
-        1: ['nueva_sucursal', 'fecha_vigencia'],          // Cambio de sucursal
-        2: ['puesto', 'fecha_vigencia'],                  // Nuevo puesto
-        3: ['importe'],                                   // Nuevo salario neto
-        4: ['importe'],                                   // Ajuste de premios
-        5: ['cantidad_horas'],                            // Horas extras
-        6: ['cantidad_horas'],                            // Horas adicionales
-        7: ['fecha_permiso', 'compensa'],                 // Permisos
-        8: ['cantidad_cortes'],                           // Cortes
-        9: ['cantidad_unidades'],                         // Producción 25%
-        10: ['cantidad_unidades'],                        // Producción 50%
-        11: ['cantidad_unidades']                         // Producción 100%
-    },
 
     /**
      * Realizar petición AJAX - MEJORADO CON DEBUGGING
@@ -73,7 +58,6 @@ const NovedadesApp = {
             const duration = Date.now() - startTime;
             console.log(`✅ Petición completada en ${duration}ms:`, result);
 
-            // Para cambiar_estado_novedad, devolver el objeto completo para acceder a success
             if (action === 'cambiar_estado_novedad') {
                 return result;
             }
@@ -125,11 +109,9 @@ const NovedadesApp = {
             </div>
         `;
 
-        // Insertar en contenedor de alertas o al inicio del body
         const contenedor = document.getElementById('alertas-container') || document.body;
         contenedor.insertAdjacentHTML('afterbegin', alerta);
 
-        // Auto-remover después de 5 segundos
         setTimeout(() => {
             const alertaElement = document.getElementById(alertaId);
             if (alertaElement) {
@@ -169,18 +151,14 @@ const NovedadesApp = {
         if (!fecha) return '';
         
         try {
-            // Si es un objeto DateTime de PHP serializado, extraer la fecha
             if (typeof fecha === 'object' && fecha.date) {
                 console.log('🔧 Procesando objeto DateTime:', fecha);
                 fecha = fecha.date;
             }
             
-            // Aceptar formatos: 'YYYY-MM-DD', 'YYYY-MM-DD HH:MM:SS'
             let normalizada = fecha;
             if (typeof fecha === 'string') {
-                // Quitar fracciones y Z si vienen
                 normalizada = fecha.replace('T', ' ').replace(/\.\d+Z?$/, '');
-                // Si solo viene fecha agregar hora para evitar desfase por timezone
                 if (/^\d{4}-\d{2}-\d{2}$/.test(normalizada)) {
                     normalizada += ' 00:00:00';
                 }
@@ -276,7 +254,6 @@ const NovedadesApp = {
             });
         } catch (error) {
             console.error('Error cargando permisos de usuario:', error);
-            // Valores por defecto seguros (sin permisos)
             this.tipoUsuario = null;
             this.esUsuarioRRHH = false;
         }
@@ -288,16 +265,11 @@ const NovedadesApp = {
     puedeEditarEstados() {
         return this.esUsuarioRRHH;
     }
-    
 };
 
 /**
- * Utilidad para mostrar períodos en formato "Mes Año (MM/YY)"
- * Se agrega al archivo js/novedades_main.js existente
+ * Formatear período en formato "Mes Año (MM/YY)"
  */
-
-// Agregar estas funciones al objeto NovedadesApp existente:
-
 NovedadesApp.formatearPeriodoDisplay = function(periodoMes, periodoAnio) {
     const meses = [
         '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -312,9 +284,10 @@ NovedadesApp.formatearPeriodoDisplay = function(periodoMes, periodoAnio) {
     return `${mesNombre} ${periodoAnio} (${periodoMes.toString().padStart(2, '0')}/${yearCorto})`;
 };
 
-// Función para actualizar todos los elementos de período en la página
+/**
+ * Actualizar períodos en la página
+ */
 NovedadesApp.actualizarPeriodosEnPagina = function() {
-    // Actualizar badges de período
     document.querySelectorAll('[data-periodo-mes][data-periodo-anio]').forEach(elemento => {
         const mes = elemento.getAttribute('data-periodo-mes');
         const anio = elemento.getAttribute('data-periodo-anio');
@@ -324,7 +297,6 @@ NovedadesApp.actualizarPeriodosEnPagina = function() {
         }
     });
     
-    // Actualizar spans de período específicos
     document.querySelectorAll('.periodo-display').forEach(elemento => {
         const mes = elemento.getAttribute('data-mes');
         const anio = elemento.getAttribute('data-anio');
@@ -334,6 +306,61 @@ NovedadesApp.actualizarPeriodosEnPagina = function() {
         }
     });
 };
+
+/**
+ * Función para manejar cambio de tipo de novedad - CORREGIDA
+ */
+function onTipoNovedadChange(selectElement) {
+    console.log('🔄 onTipoNovedadChange llamada desde main:', selectElement.value);
+    
+    // Buscar la función específica en nueva_novedad_form.js
+    if (typeof window.onTipoNovedadChangeSpecific === 'function') {
+        window.onTipoNovedadChangeSpecific(selectElement);
+    } else {
+        console.warn('⚠️ Función específica onTipoNovedadChangeSpecific no encontrada');
+        // Fallback básico
+        basicTipoNovedadHandler(selectElement);
+    }
+}
+
+/**
+ * Fallback básico para cambio de tipo de novedad
+ */
+function basicTipoNovedadHandler(selectElement) {
+    const tipoSeleccionado = parseInt(selectElement.value);
+    
+    // Ocultar todas las configuraciones
+    const configuraciones = document.querySelectorAll('.campo-dinamico');
+    configuraciones.forEach(config => {
+        config.style.display = 'none';
+    });
+    
+    if (tipoSeleccionado) {
+        // Mapeo básico de tipos
+        const configMap = {
+            1: 'config-cambio-sucursal',
+            2: 'config-nuevo-puesto',
+            3: 'config-nuevo-salario',
+            4: 'config-ajuste-premios',
+            5: 'config-horas-extras',
+            6: 'config-horas-adicionales',
+            7: 'config-permisos',
+            8: 'config-cortes',
+            9: 'config-produccion-25',
+            10: 'config-produccion-50',
+            11: 'config-produccion-100'
+        };
+        
+        const configId = configMap[tipoSeleccionado];
+        if (configId) {
+            const configElement = document.getElementById(configId);
+            if (configElement) {
+                document.getElementById('configuracion-novedad').style.display = 'block';
+                configElement.style.display = 'block';
+            }
+        }
+    }
+}
 
 /**
  * Funciones para búsqueda de empleados
@@ -353,12 +380,10 @@ async function buscarEmpleado() {
 
         const empleado = await NovedadesApp.request('buscar_empleado', { legajo });
 
-        // Mostrar datos del empleado
         document.getElementById('empleado-nombre').textContent = empleado.nombre || '';
         document.getElementById('empleado-apellido').textContent = empleado.apellido || '';
         document.getElementById('empleado-legajo').textContent = empleado.legajo || '';
         
-        // Mostrar centro de costos en lugar de sucursal
         const centroCostosTexto = empleado.desc_centro_costos 
             ? `${empleado.desc_centro_costos} (${empleado.cod_centro_costos})`
             : 'No definido';
@@ -383,7 +408,6 @@ function seleccionarEmpleado() {
 
     const empleado = NovedadesApp.empleadoSeleccionado;
 
-    // Llenar campos del formulario principal
     const campos = {
         'legajo': empleado.legajo,
         'nombre': empleado.nombre,
@@ -398,7 +422,6 @@ function seleccionarEmpleado() {
         }
     });
 
-    // Cerrar modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('modalBuscarEmpleado'));
     modal.hide();
 
@@ -406,21 +429,18 @@ function seleccionarEmpleado() {
 }
 
 /**
- * Probar conectividad del sistema - NUEVA FUNCIÓN
+ * Probar conectividad del sistema
  */
 async function probarSistema() {
     console.log('🔧 Iniciando pruebas del sistema...');
     
     try {
-        // Probar endpoint de test
         const testResult = await NovedadesApp.request('test');
         console.log('✅ Test del controlador exitoso:', testResult);
         
-        // Probar carga de tipos de novedad
         const tipos = await NovedadesApp.request('get_tipos_novedad');
         console.log('✅ Tipos de novedad cargados:', tipos.length, 'tipos');
         
-        // Probar carga de centros de costos
         const centrosCostos = await NovedadesApp.request('get_centros_costos');
         console.log('✅ Centros de costos cargados:', centrosCostos.length, 'centros');
         
@@ -430,6 +450,10 @@ async function probarSistema() {
         return false;
     }
 }
+
+/**
+ * Cargar datos iniciales del sistema
+ */
 async function cargarDatosIniciales() {
     try {
         // Cargar centros de costos para filtros
@@ -447,12 +471,17 @@ async function cargarDatosIniciales() {
 
         // Cargar tipos de novedad
         const tipos = await NovedadesApp.request('get_tipos_novedad');
+        
+        // Filtrar duplicados por descripción (para eliminar duplicados específicos)
+        const tiposUnicos = tipos.filter((tipo, index, arr) => 
+            arr.findIndex(t => t.descripcion === tipo.descripcion) === index
+        );
         const selectTipos = document.querySelectorAll('select[name="tipo_novedad"], #filtro-tipo, #tipo_novedad');
         
         selectTipos.forEach(select => {
             if (select) {
                 select.innerHTML = '<option value="">Seleccione tipo de novedad...</option>';
-                tipos.forEach(tipo => {
+                tiposUnicos.forEach(tipo => {
                     select.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
                 });
             }
@@ -467,17 +496,6 @@ async function cargarDatosIniciales() {
 }
 
 /**
- * Manejar cambio de tipo de novedad (función global actualizada)
- */
-function onTipoNovedadChange(selectElement) {
-    // Esta función ahora está implementada específicamente en nueva_novedad_form.js
-    // Mantener esta referencia para compatibilidad
-    if (typeof window.onTipoNovedadChangeSpecific === 'function') {
-        window.onTipoNovedadChangeSpecific(selectElement);
-    }
-}
-
-/**
  * Limpiar formulario
  */
 function limpiarFormulario(formId = 'form-novedad') {
@@ -485,13 +503,11 @@ function limpiarFormulario(formId = 'form-novedad') {
     if (form) {
         form.reset();
         
-        // Ocultar campos dinámicos
         const camposDinamicos = form.querySelectorAll('.campo-dinamico');
         camposDinamicos.forEach(campo => {
             campo.style.display = 'none';
         });
 
-        // Remover clases de validación
         const campos = form.querySelectorAll('.form-control');
         campos.forEach(campo => {
             campo.classList.remove('is-invalid', 'is-valid');
@@ -510,7 +526,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Inicializar permisos de usuario
     await NovedadesApp.inicializarPermisos();
     
-    // Primero probar conectividad
+    // Probar conectividad
     const sistemaOK = await probarSistema();
     
     if (sistemaOK) {
@@ -531,14 +547,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Manejar cambios en tipo de novedad
+    // Configurar el listener para tipo de novedad solo si el elemento existe
     const tipoNovedadSelect = document.getElementById('tipo_novedad');
     if (tipoNovedadSelect) {
+        console.log('🎯 Configurando listener para tipo_novedad');
         tipoNovedadSelect.addEventListener('change', function() {
-            console.log('🔄 Cambio de tipo de novedad:', this.value);
+            console.log('🔄 Cambio de tipo de novedad detectado:', this.value);
             onTipoNovedadChange(this);
         });
+    } else {
+        console.log('ℹ️ Elemento tipo_novedad no encontrado en esta página');
     }
 
     console.log('✅ Sistema de Novedades RRHH - Inicializado correctamente');
 });
+
+/**
+ * Exponer funciones globalmente para compatibilidad
+ */
+window.NovedadesApp = NovedadesApp;
+window.onTipoNovedadChange = onTipoNovedadChange;
+window.buscarEmpleado = buscarEmpleado;
+window.seleccionarEmpleado = seleccionarEmpleado;
+window.limpiarFormulario = limpiarFormulario;
+// Al final del archivo, agregar:
+window.onTipoNovedadChangeSpecific = onTipoNovedadChange;
