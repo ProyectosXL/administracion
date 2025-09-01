@@ -37,7 +37,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar empleado selector
     configurarEmpleadoSelector();
     
+    // Ocultar todos los botones de información después de que todo esté cargado
+    setTimeout(() => {
+        ocultarTodosBotonesInfo();
+    }, 500);
+    
     console.log('✅ Formulario inicializado correctamente');
+});
+
+// También ejecutar cuando la ventana esté completamente cargada
+window.addEventListener('load', function() {
+    console.log('🪟 Ventana completamente cargada, ocultando botones...');
+    setTimeout(() => {
+        ocultarTodosBotonesInfo();
+    }, 100);
 });
 
 /**
@@ -56,6 +69,15 @@ function configurarFormularioOriginal() {
                     window.onTipoNovedadChangeSpecific(this);
                 } else {
                     console.warn('⚠️ Función de cambio de tipo de novedad no encontrada');
+                }
+                
+                // Toggle del botón de información (con verificación de función)
+                if (typeof toggleInfoButton === 'function') {
+                    toggleInfoButton(this, 'unica');
+                } else if (typeof window.toggleInfoButton === 'function') {
+                    window.toggleInfoButton(this, 'unica');
+                } else {
+                    console.warn('⚠️ Función toggleInfoButton no encontrada');
                 }
             }
         });
@@ -290,4 +312,39 @@ if (!window.NovedadesApp) {
             alert(mensaje); // Fallback simple
         }
     };
+}
+
+/**
+ * Función para ocultar todos los botones de información al inicio
+ */
+function ocultarTodosBotonesInfo() {
+    console.log('🫥 Ocultando todos los botones de información...');
+    
+    // Buscar todos los botones de información
+    const botones = document.querySelectorAll('.tipo-novedad-info-btn');
+    console.log(`🔍 Botones encontrados: ${botones.length}`);
+    
+    botones.forEach((boton, index) => {
+        console.log(`🫥 Procesando botón ${index + 1}:`, {
+            id: boton.id,
+            clases: boton.className,
+            display: boton.style.display,
+            visibility: boton.style.visibility,
+            tieneClaseActive: boton.classList.contains('active')
+        });
+        
+        // Forzar ocultación completa
+        boton.style.display = 'none';
+        boton.style.visibility = 'hidden';
+        boton.style.opacity = '0';
+        boton.classList.remove('active');
+        
+        console.log(`✅ Botón ${index + 1} procesado:`, {
+            display: boton.style.display,
+            visibility: boton.style.visibility,
+            tieneClaseActive: boton.classList.contains('active')
+        });
+    });
+    
+    console.log(`🫥 ${botones.length} botones de información procesados`);
 }

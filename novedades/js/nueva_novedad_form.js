@@ -146,7 +146,7 @@ const tiposNovedadConfigActualizada = {
 };
 
 /**
- * Manejar cambio de tipo de novedad - MEJORADO CON LOGS Y FECHAS DINÁMICAS
+ * Manejar cambio de tipo de novedad - MEJORADO CON LOGS Y FECHAS DINÁMICAS + PERÍODO SELECCIONABLE
  */
 function onTipoNovedadChangeActualizado(selectElement) {
     const tipoSeleccionado = parseInt(selectElement.value);
@@ -157,6 +157,17 @@ function onTipoNovedadChangeActualizado(selectElement) {
         configuracionDisponible: !!tiposNovedadConfigActualizada[tipoSeleccionado],
         configKeys: Object.keys(tiposNovedadConfigActualizada)
     });
+
+    // Toggle del botón de información (con verificación)
+    try {
+        if (typeof window.toggleInfoButton === 'function') {
+            window.toggleInfoButton(selectElement, 'unica');
+        } else if (typeof toggleInfoButton === 'function') {
+            toggleInfoButton(selectElement, 'unica');
+        }
+    } catch (error) {
+        console.warn('Error al ejecutar toggleInfoButton:', error);
+    }
     
     // Ocultar todas las configuraciones
     ocultarTodasLasConfiguraciones();
@@ -215,9 +226,18 @@ function onTipoNovedadChangeActualizado(selectElement) {
                 configurarCambioPuesto();
             }
         }
+        
+        // Mostrar y configurar el período de aplicación SOLO en modo único
+        if (window.modoActual === 'unica' || (!window.modoActual && modoActual === 'unica')) {
+            mostrarPeriodoAplicacion(tipoSeleccionado);
+        }
     } else {
         // Ocultar la sección de configuración
         document.getElementById('configuracion-novedad').style.display = 'none';
+        // Ocultar también el período de aplicación (solo en modo único)
+        if (window.modoActual === 'unica' || (!window.modoActual && modoActual === 'unica')) {
+            ocultarPeriodoAplicacion();
+        }
     }
 
     if (tipoSeleccionado === 12 || tipoSeleccionado === 32) { // Plus de caja
@@ -379,9 +399,33 @@ async function enviarFormulario(event) {
     
     console.log('✅ Validación de configuración exitosa');
 
+    // Validar período de aplicación (solo en modo único)
+    const modoActivo = window.modoActual || modoActual;
+    if (modoActivo === 'unica') {
+        const validacionPeriodo = validarPeriodoAplicacionFormulario();
+        if (!validacionPeriodo.valido) {
+            console.error('❌ Validación de período falló:', validacionPeriodo.error);
+            NovedadesApp.mostrarError(validacionPeriodo.error);
+            return;
+        }
+        console.log('✅ Validación de período exitosa');
+    }
+
     // Recopilar datos del formulario (ahora es async)
     const datos = await recopilarDatosFormularioActualizado(tipoNovedad);
     console.log('📦 Datos recopilados:', datos);
+    
+    // Log específico para período
+    if (datos.periodo_mes && datos.periodo_anio) {
+        console.log('🔍 PERÍODO EN DATOS FINALES:', {
+            periodo_mes: datos.periodo_mes,
+            periodo_anio: datos.periodo_anio,
+            tipo_mes: typeof datos.periodo_mes,
+            tipo_anio: typeof datos.periodo_anio
+        });
+    } else {
+        console.warn('⚠️ NO SE ENCONTRÓ PERÍODO EN LOS DATOS FINALES');
+    }
 
     // Mostrar loading en botón
     const btnGuardar = document.getElementById('btn-guardar');
@@ -1002,9 +1046,50 @@ async function recopilarDatosFormularioActualizado(tipoNovedad) {
             datos.importe = parseFloat(document.getElementById('importe_ajuste_general').value);
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_ajuste').value;
             break;
-        }
+    }
     
+    // Agregar período de aplicación seleccionado (solo en modo único)
+    const modoActivo = window.modoActual || modoActual;
+    console.log('🔍 Modo detectado para período:', { window: window.modoActual, local: modoActual, activo: modoActivo });
+    
+    if (modoActivo === 'unica') {
+        console.log('🔍 Iniciando validación de período...');
+        const validacionPeriodo = validarPeriodoAplicacionFormulario();
+        console.log('🔍 Validación período completa:', validacionPeriodo);
+        
+        // También verificar directamente el select
+        const select = document.getElementById('periodo_aplicacion');
+        if (select) {
+            console.log('🔍 Valor directo del select:', {
+                value: select.value,
+                selectedIndex: select.selectedIndex,
+                selectedOption: select.options[select.selectedIndex]?.text
+            });
+        } else {
+            console.error('❌ No se encontró el select de período de aplicación');
+        }
+        
+        if (!validacionPeriodo.valido) {
+            throw new Error(validacionPeriodo.error || 'Error en el período de aplicación');
+        }
+        
+        if (validacionPeriodo.periodo) {
+            datos.periodo_mes = validacionPeriodo.periodo.mes;
+            datos.periodo_anio = validacionPeriodo.periodo.año;
+            console.log('📅 Período agregado a los datos:', {
+                mes: datos.periodo_mes,
+                año: datos.periodo_anio,
+                valorOriginal: validacionPeriodo.periodo.value,
+                texto: validacionPeriodo.periodo.text
+            });
+        } else {
+            console.warn('⚠️ No se encontró información de período en la validación');
+        }
+    } else {
+        console.log('ℹ️ No se procesa período - modo actual:', modoActivo);
+    }
 
+    console.log('📦 Datos finales recopilados:', datos);
     return datos;
 }
 
@@ -1334,7 +1419,7 @@ async function configurarFechaVigencia(tipoNovedadId, campoFechaId) {
             mensajeInfo.innerHTML = `
                 <div class="alert alert-info alert-sm py-2">
                     <i class="fas fa-calendar-check me-2"></i>
-                    <strong>Período:</strong> 
+                    <strong>Período sugerido:</strong> 
                     ${periodo.month.toString().padStart(2, '0')}/${periodo.year}
                     <br>
                     <small class="text-muted">
@@ -1345,7 +1430,7 @@ async function configurarFechaVigencia(tipoNovedadId, campoFechaId) {
                     <br>
                     <small class="text-success">
                         <i class="fas fa-calendar-alt me-1"></i>
-                        <strong>Fecha de vigencia:</strong> Primer día del mes (${fechaInicio})
+                        <strong>Fecha de vigencia sugerida:</strong> Primer día del mes (${fechaInicio})
                     </small>
                 </div>
             `;
@@ -1987,19 +2072,34 @@ function seleccionarModoCarga(modo) {
     actualizarIndicadorModo(modo);
     
     // Ocultar sección de selección de modo
-    document.getElementById('modo-carga-section').style.display = 'none';
+    const modoSection = document.getElementById('modo-carga-section');
+    if (modoSection) {
+        modoSection.style.display = 'none';
+        console.log('👁️ Sección de modo ocultada');
+    }
     
     // Mostrar formulario
-    document.getElementById('form-novedad').style.display = 'block';
+    const formNovedad = document.getElementById('form-novedad');
+    if (formNovedad) {
+        formNovedad.style.display = 'block';
+        console.log('📋 Formulario mostrado');
+    }
     
     // Mostrar botón de cambiar modo
-    document.getElementById('btn-cambiar-modo-top').style.display = 'inline-block';
+    const btnCambiarModo = document.getElementById('btn-cambiar-modo-top');
+    if (btnCambiarModo) {
+        btnCambiarModo.style.display = 'inline-block';
+    }
     
     if (modo === 'unica') {
+        console.log('🔄 Configurando modo único...');
         configurarModoUnico();
     } else if (modo === 'multiple') {
+        console.log('🔄 Configurando modo múltiple...');
         configurarModoMultiple();
     }
+    
+    console.log('✅ Selección de modo completada:', modo);
 }
 
 /**
@@ -2065,12 +2165,23 @@ function volverSeleccionModo() {
         }
     }
     
-    // Limpiar novedades múltiples
+    // Limpiar novedades múltiples PERO MANTENER LA ESTRUCTURA
     window.novedadesData = [];
     window.contadorNovedades = 0;
-    const container = document.getElementById('novedades-multiples-container');
-    if (container) {
-        container.innerHTML = '';
+    const cardsContainer = document.getElementById('novedades-cards-container');
+    if (cardsContainer) {
+        cardsContainer.innerHTML = ''; // Solo limpiar las cards, no todo el contenedor
+    }
+    
+    // Ocultar elementos específicos del modo múltiple SIN destruir la estructura
+    const multiplesContainer = document.getElementById('novedades-multiples-container');
+    if (multiplesContainer) {
+        multiplesContainer.style.display = 'none';
+    }
+    
+    const configGlobal = document.getElementById('configuracion-global-section');
+    if (configGlobal) {
+        configGlobal.style.display = 'none';
     }
     
     // Ocultar formulario y mostrar selección de modo
@@ -2107,6 +2218,11 @@ function configurarModoUnico() {
     document.getElementById('configuracion-global-section').style.display = 'none';
     document.getElementById('novedades-multiples-container').style.display = 'none';
     
+    // Mostrar período de aplicación inmediatamente en modo único
+    setTimeout(() => {
+        mostrarPeriodoAplicacion();
+    }, 200);
+    
     // Inicializar funcionalidad original
     if (typeof inicializarFormularioOriginal === 'function') {
         inicializarFormularioOriginal();
@@ -2117,32 +2233,115 @@ function configurarModoUnico() {
  * Configurar modo múltiple
  */
 function configurarModoMultiple() {
-    console.log('📚 Configurando modo múltiple');
+    console.log('📚 Configurando modo múltiple - INICIO');
     
     // Inicializar contador de novedades
     window.contadorNovedades = 0;
     window.novedadesData = [];
     
+    console.log('🔢 Contadores inicializados');
+    
     // Ocultar elementos del modo único
-    document.getElementById('tipo-novedad-unica').style.display = 'none';
-    document.getElementById('configuracion-novedad').style.display = 'none';
-    document.getElementById('observaciones-section').style.display = 'none'; // Ocultar observaciones generales
+    const tipoUnica = document.getElementById('tipo-novedad-unica');
+    const configNovedad = document.getElementById('configuracion-novedad');
+    const observacionesSection = document.getElementById('observaciones-section');
+    
+    if (tipoUnica) tipoUnica.style.display = 'none';
+    if (configNovedad) configNovedad.style.display = 'none';
+    if (observacionesSection) observacionesSection.style.display = 'none';
+    
+    console.log('👁️ Elementos de modo único ocultados');
+    
+    // Ocultar el período de aplicación (específico del modo único)
+    if (typeof ocultarPeriodoAplicacion === 'function') {
+        ocultarPeriodoAplicacion();
+    }
     
     // Mostrar elementos del modo múltiple
-    document.getElementById('configuracion-global-section').style.display = 'block';
-    document.getElementById('novedades-multiples-container').style.display = 'block';
+    const configGlobal = document.getElementById('configuracion-global-section');
+    const multiplesContainer = document.getElementById('novedades-multiples-container');
+    
+    console.log('🔍 Elementos múltiples encontrados:', {
+        configGlobal: !!configGlobal,
+        multiplesContainer: !!multiplesContainer
+    });
+    
+    if (configGlobal) {
+        configGlobal.style.display = 'block';
+        console.log('✅ ConfigGlobal mostrado');
+    } else {
+        console.error('❌ ConfigGlobal no encontrado');
+    }
+    
+    if (multiplesContainer) {
+        multiplesContainer.style.display = 'block';
+        console.log('✅ MultiplesContainer mostrado');
+    } else {
+        console.error('❌ MultiplesContainer no encontrado');
+    }
+    
+    // Verificar y asegurar que la estructura del contenedor múltiple esté correcta
+    if (multiplesContainer) {
+        // Buscar o crear el contenedor de cards
+        let cardsContainer = document.getElementById('novedades-cards-container');
+        if (!cardsContainer) {
+            console.warn('⚠️ novedades-cards-container no existe, creándolo...');
+            // Recrear la estructura si no existe
+            multiplesContainer.innerHTML = `
+                <div class="form-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5>
+                            <i class="fas fa-layer-group me-2"></i>
+                            Novedades para el Empleado
+                        </h5>
+                        <button type="button" class="btn btn-success" id="agregar-novedad-btn">
+                            <i class="fas fa-plus me-2"></i>
+                            Agregar otra novedad
+                        </button>
+                    </div>
+                    
+                    <!-- Contenedor dinámico para las cards de novedades -->
+                    <div id="novedades-cards-container">
+                        <!-- Las cards se generarán dinámicamente aquí -->
+                    </div>
+                </div>
+            `;
+            
+            // Reconfigurar el event listener del botón agregar
+            const btnAgregarNovedad = document.getElementById('agregar-novedad-btn');
+            if (btnAgregarNovedad) {
+                btnAgregarNovedad.addEventListener('click', agregarNuevaNovedadCard);
+                console.log('🔄 Event listener del botón agregar reconfigurado');
+            }
+            
+            cardsContainer = document.getElementById('novedades-cards-container');
+        }
+    }
     
     // Limpiar contenedor de cards
     const container = document.getElementById('novedades-cards-container');
+    console.log('📦 Container cards encontrado:', !!container);
+    
     if (container) {
         container.innerHTML = '';
+        console.log('🧹 Container limpiado');
     }
     
     // Inicializar configuración global
-    inicializarConfiguracionGlobal();
+    if (typeof inicializarConfiguracionGlobal === 'function') {
+        inicializarConfiguracionGlobal();
+        console.log('⚙️ Configuración global inicializada');
+    }
     
     // Agregar primera card de novedad
-    agregarNuevaNovedadCard();
+    console.log('➕ Agregando primera card...');
+    if (typeof agregarNuevaNovedadCard === 'function') {
+        agregarNuevaNovedadCard();
+    } else {
+        console.error('❌ agregarNuevaNovedadCard no está definida');
+    }
+    
+    console.log('📚 Configurando modo múltiple - FIN');
 }
 
 /**
@@ -2201,25 +2400,38 @@ function cargarOpcionesPeriodo() {
         selectAnio.appendChild(optionAnio);
     }
     
-    // Establecer valores por defecto: mes siguiente y año actual
-    const mesSiguiente = mesActual + 2; // +1 para siguiente, +1 para base-1
-    if (mesSiguiente > 12) {
-        selectMes.value = mesSiguiente - 12; // Enero del siguiente año
-        selectAnio.value = anioActual + 1;
-    } else {
-        selectMes.value = mesSiguiente;
-        selectAnio.value = anioActual;
-    }
+    // Establecer valores por defecto: mes actual
+    // Esto corresponde al período actual del sistema
+    const mesActualParaBD = mesActual + 1; // +1 para convertir de base-0 a base-1
+    selectMes.value = mesActualParaBD;
+    selectAnio.value = anioActual;
+    
+    console.log('📅 Período auto-seleccionado:', {
+        mes: selectMes.value,
+        año: selectAnio.value,
+        descripcion: 'Período actual del sistema'
+    });
 }
 
 /**
  * Agregar nueva card de novedad
  */
 function agregarNuevaNovedadCard() {
+    console.log('🔄 Iniciando agregarNuevaNovedadCard...');
+    console.log('Current contadorNovedades:', window.contadorNovedades);
+    
     window.contadorNovedades++;
     
     const cardId = `novedad-card-${window.contadorNovedades}`;
     const container = document.getElementById('novedades-cards-container');
+    
+    console.log('📦 Container encontrado:', !!container);
+    console.log('🆔 Card ID:', cardId);
+    
+    if (!container) {
+        console.error('❌ Container novedades-cards-container no encontrado');
+        return;
+    }
     
     const cardHtml = `
         <div class="card mb-3 novedad-card" id="${cardId}" data-novedad-id="${window.contadorNovedades}">
@@ -2238,15 +2450,23 @@ function agregarNuevaNovedadCard() {
                 <!-- Tipo de novedad -->
                 <div class="row mb-3">
                     <div class="col-md-8">
-                        <label for="tipo_novedad_${window.contadorNovedades}" class="form-label">
-                            Tipo de novedad <span class="required">*</span>
-                        </label>
-                        <select class="form-select tipo-novedad-multiple" id="tipo_novedad_${window.contadorNovedades}" 
-                                name="tipo_novedad_${window.contadorNovedades}" data-card-id="${cardId}" required>
-                            <option value="">Seleccione tipo de novedad...</option>
-                        </select>
-                        <div class="invalid-feedback">
-                            El tipo de novedad es obligatorio
+                        <div class="position-relative">
+                            <label for="tipo_novedad_${window.contadorNovedades}" class="form-label">
+                                Tipo de novedad <span class="required">*</span>
+                            </label>
+                            <select class="form-select tipo-novedad-multiple" id="tipo_novedad_${window.contadorNovedades}" 
+                                    name="tipo_novedad_${window.contadorNovedades}" data-card-id="${cardId}" required>
+                                <option value="">Seleccione tipo de novedad...</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                El tipo de novedad es obligatorio
+                            </div>
+                            <!-- Botón de información -->
+                            <button type="button" class="tipo-novedad-info-btn" id="infoBtn-${window.contadorNovedades}" 
+                                    onclick="mostrarInfoTipoNovedad('${window.contadorNovedades}')" title="Información sobre este tipo de novedad"
+                                    style="display: none;">
+                                <i class="fas fa-info"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2273,14 +2493,29 @@ function agregarNuevaNovedadCard() {
     
     container.insertAdjacentHTML('beforeend', cardHtml);
     
+    console.log('📝 HTML de card insertado');
+    console.log('🔄 Cargando tipos de novedad...');
+    
     // Cargar tipos de novedad en el nuevo select
     cargarTiposNovedadEnSelect(`tipo_novedad_${window.contadorNovedades}`);
     
     // Agregar event listener para el cambio de tipo
     const selectTipoNovedad = document.getElementById(`tipo_novedad_${window.contadorNovedades}`);
+    console.log('📋 Select encontrado:', !!selectTipoNovedad);
+    
     if (selectTipoNovedad) {
         selectTipoNovedad.addEventListener('change', function() {
+            console.log('🎯 Cambio en select múltiple detectado');
             onTipoNovedadChangeMultiple(this, window.contadorNovedades);
+            
+            // Llamar a toggleInfoButton si existe
+            if (typeof window.toggleInfoButton === 'function') {
+                window.toggleInfoButton(this, window.contadorNovedades);
+            } else if (typeof toggleInfoButton === 'function') {
+                toggleInfoButton(this, window.contadorNovedades);
+            } else {
+                console.warn('toggleInfoButton no está disponible');
+            }
         });
     }
     
@@ -2316,6 +2551,17 @@ function onTipoNovedadChangeMultiple(selectElement, novedadId) {
         tipoSeleccionado,
         configContainer: !!configContainer
     });
+
+    // Toggle del botón de información para modo múltiple (con verificación)
+    try {
+        if (typeof window.toggleInfoButton === 'function') {
+            window.toggleInfoButton(selectElement, novedadId);
+        } else if (typeof toggleInfoButton === 'function') {
+            toggleInfoButton(selectElement, novedadId);
+        }
+    } catch (error) {
+        console.warn('Error al ejecutar toggleInfoButton:', error);
+    }
     
     if (!configContainer) return;
     
@@ -2396,18 +2642,55 @@ function generarConfiguracionEspecificaMultiple(tipoNovedad, novedadId) {
  * Cargar tipos de novedad en un select específico
  */
 async function cargarTiposNovedadEnSelect(selectId) {
+    console.log('🔄 Cargando tipos de novedad para select:', selectId);
+    
     try {
-        const tipos = await NovedadesApp.request('get_tipos_novedad');
         const select = document.getElementById(selectId);
+        console.log('📋 Select encontrado:', !!select);
+        
+        if (!select) {
+            console.error('❌ Select no encontrado:', selectId);
+            return;
+        }
+        
+        // Verificar si NovedadesApp está disponible
+        if (typeof NovedadesApp === 'undefined' || !NovedadesApp.request) {
+            console.warn('⚠️ NovedadesApp no disponible, usando fetch directo');
+            
+            // Fallback usando fetch directo
+            const response = await fetch('controller/novedades_controller.php?accion=get_tipos_novedad');
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                select.innerHTML = '<option value="">Seleccione tipo de novedad...</option>';
+                data.data.forEach(tipo => {
+                    select.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
+                });
+                console.log('✅ Tipos de novedad cargados (fallback):', data.data.length);
+            } else {
+                console.error('❌ Error en respuesta de tipos de novedad:', data);
+            }
+            return;
+        }
+        
+        const tipos = await NovedadesApp.request('get_tipos_novedad');
+        console.log('📦 Tipos recibidos:', tipos);
         
         if (select && tipos) {
             select.innerHTML = '<option value="">Seleccione tipo de novedad...</option>';
             tipos.forEach(tipo => {
                 select.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
             });
+            console.log('✅ Tipos de novedad cargados:', tipos.length);
         }
     } catch (error) {
-        console.error('Error cargando tipos de novedad:', error);
+        console.error('❌ Error cargando tipos de novedad:', error);
+        
+        // Mensaje de error para el usuario
+        const select = document.getElementById(selectId);
+        if (select) {
+            select.innerHTML = '<option value="">Error cargando tipos de novedad</option>';
+        }
     }
 }
 
@@ -3458,6 +3741,172 @@ function limpiarFormularioMultiple() {
     }
 }
 
+/**
+ * Funciones para manejo del período de aplicación
+ */
+
+/**
+ * Mostrar el período de aplicación para modo único
+ */
+function mostrarPeriodoAplicacion(tipoNovedadId = null) {
+    console.log('📅 Mostrando período de aplicación para tipo:', tipoNovedadId);
+    
+    // Solo mostrar en modo único (revisar tanto modoActual como window.modoActual)
+    const modoActivo = window.modoActual || modoActual;
+    if (modoActivo && modoActivo !== 'unica') {
+        console.log('📅 No se muestra período personalizado - modo múltiple usa configuración global');
+        return;
+    }
+    
+    const seccionPeriodo = document.getElementById('periodo-aplicacion-section');
+    const contenedorPeriodo = document.getElementById('periodo-aplicacion-container');
+    
+    if (!seccionPeriodo || !contenedorPeriodo) {
+        console.error('📅 No se encontraron elementos del período de aplicación');
+        console.error('seccionPeriodo:', seccionPeriodo);
+        console.error('contenedorPeriodo:', contenedorPeriodo);
+        return;
+    }
+    
+    // Mostrar la sección
+    seccionPeriodo.style.display = 'block';
+    
+    // Insertar el select de período directamente
+    if (typeof crearSelectPeriodo !== 'undefined') {
+        // Limpiar contenedor
+        contenedorPeriodo.innerHTML = '';
+        
+        // Obtener período sugerido según el tipo de novedad
+        const periodoSugerido = tipoNovedadId && typeof obtenerPeriodoSugerido !== 'undefined' ? 
+            obtenerPeriodoSugerido(tipoNovedadId) : 
+            null;
+        
+        // Insertar el select usando la función del archivo periodo_seleccionable.js
+        contenedorPeriodo.innerHTML = crearSelectPeriodo(periodoSugerido);
+        
+        // Aplicar Select2 si está disponible
+        setTimeout(() => {
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                const selectElement = $('#periodo_aplicacion');
+                if (selectElement.length) {
+                    selectElement.select2({
+                        theme: 'bootstrap-5',
+                        placeholder: 'Seleccione período...',
+                        allowClear: false
+                    });
+                }
+            }
+        }, 100);
+        
+        console.log('📅 Período de aplicación insertado correctamente');
+    } else {
+        console.error('📅 Función crearSelectPeriodo no disponible, usando fallback');
+        // Fallback: crear select básico
+        contenedorPeriodo.innerHTML = crearSelectPeriodoBasico();
+    }
+}
+
+/**
+ * Ocultar el período de aplicación
+ */
+function ocultarPeriodoAplicacion() {
+    console.log('📅 Ocultando período de aplicación');
+    
+    const seccionPeriodo = document.getElementById('periodo-aplicacion-section');
+    if (seccionPeriodo) {
+        seccionPeriodo.style.display = 'none';
+    }
+}
+
+/**
+ * Crear select de período básico como fallback
+ */
+function crearSelectPeriodoBasico() {
+    const fechaActual = new Date();
+    const mesActual = fechaActual.getMonth() + 1;
+    const añoActual = fechaActual.getFullYear();
+    
+    let html = `
+        <div class="form-group mb-3" id="periodo-aplicacion-group">
+            <label for="periodo_aplicacion" class="form-label">
+                <i class="fas fa-calendar-alt me-2"></i>
+                Período de Aplicación
+            </label>
+            <select class="form-select" id="periodo_aplicacion" name="periodo_aplicacion" required>
+    `;
+    
+    // Generar opciones de -1 a +11 meses
+    for (let i = -1; i <= 11; i++) {
+        const fecha = new Date(añoActual, mesActual - 1 + i, 1);
+        const mes = fecha.getMonth() + 1;
+        const año = fecha.getFullYear();
+        const value = `${mes}-${año}`;
+        const selected = i === 0 ? 'selected' : '';
+        const nombreMes = obtenerNombreMesBasico(mes);
+        
+        html += `<option value="${value}" ${selected}>${nombreMes} ${año}</option>`;
+    }
+    
+    html += `
+            </select>
+            <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Por defecto se aplica el período en curso, antes de la fecha de corte, pero puede modificarse.
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+/**
+ * Obtener nombre del mes básico
+ */
+function obtenerNombreMesBasico(numeroMes) {
+    const meses = [
+        '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return meses[numeroMes] || 'Mes inválido';
+}
+
+/**
+ * Validar período de aplicación antes de enviar formulario
+ */
+function validarPeriodoAplicacionFormulario() {
+    // Solo validar en modo único
+    const modoActivo = window.modoActual || modoActual;
+    if (modoActivo !== 'unica') {
+        return { valido: true };
+    }
+    
+    // Intentar usar la función avanzada primero
+    if (typeof validarPeriodoSeleccionado !== 'undefined') {
+        return validarPeriodoSeleccionado();
+    }
+    
+    // Fallback: validación básica
+    const select = document.getElementById('periodo_aplicacion');
+    if (!select) {
+        return { valido: false, error: 'No se encontró el campo de período' };
+    }
+    
+    const valor = select.value;
+    if (!valor) {
+        return { valido: false, error: 'Debe seleccionar un período de aplicación' };
+    }
+    
+    const [mes, año] = valor.split('-').map(Number);
+    if (!mes || !año || mes < 1 || mes > 12) {
+        return { valido: false, error: 'Formato de período inválido' };
+    }
+    
+    return {
+        valido: true,
+        periodo: { mes: mes, año: año, value: valor }
+    };
+}
+
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
     initializarModosCarga();
@@ -3475,5 +3924,229 @@ window.initializarModosCarga = initializarModosCarga;
 window.seleccionarModoCarga = seleccionarModoCarga;
 window.agregarNuevaNovedadCard = agregarNuevaNovedadCard;
 window.eliminarNovedadCard = eliminarNovedadCard;
+
+/**
+ * Funcionalidad del botón de información de tipo de novedad
+ */
+
+// Objeto con información de cada tipo de novedad (para futuras actualizaciones)
+const tiposNovedadInfo = {
+    1: {
+        nombre: "Cambio de Centro de Costos",
+        descripcion: "Información sobre cambio de centro de costos será agregada próximamente."
+    },
+    2: {
+        nombre: "Nuevo Puesto",
+        descripcion: "Información sobre cambio de puesto será agregada próximamente."
+    },
+    3: {
+        nombre: "Nuevo Salario Neto",
+        descripcion: "Información sobre ajuste de salario neto será agregada próximamente."
+    },
+    4: {
+        nombre: "Ajuste de Premios",
+        descripcion: "Información sobre ajuste de premios será agregada próximamente."
+    },
+    5: {
+        nombre: "Horas Extras",
+        descripcion: "Información sobre horas extras será agregada próximamente."
+    },
+    6: {
+        nombre: "Horas Adicionales",
+        descripcion: "Información sobre horas adicionales será agregada próximamente."
+    },
+    7: {
+        nombre: "Permisos",
+        descripcion: "Información sobre permisos será agregada próximamente."
+    },
+    8: {
+        nombre: "Cortes",
+        descripcion: "Información sobre cortes será agregada próximamente."
+    },
+    9: {
+        nombre: "Producción 25%",
+        descripcion: "Información sobre producción 25% será agregada próximamente."
+    },
+    10: {
+        nombre: "Producción 50%",
+        descripcion: "Información sobre producción 50% será agregada próximamente."
+    },
+    11: {
+        nombre: "Producción 100%",
+        descripción: "Información sobre producción 100% será agregada próximamente."
+    },
+    12: {
+        nombre: "Plus de Caja",
+        descripcion: "Información sobre plus de caja será agregada próximamente."
+    },
+    13: {
+        nombre: "Plus de Sub-Encargada",
+        descripcion: "Información sobre plus de sub-encargada será agregada próximamente."
+    },
+    14: {
+        nombre: "Plus de Encargada",
+        descripcion: "Información sobre plus de encargada será agregada próximamente."
+    },
+    15: {
+        nombre: "Premio Local",
+        descripcion: "Información sobre premio local será agregada próximamente."
+    },
+    16: {
+        nombre: "Comisión Individual",
+        descripcion: "Información sobre comisión individual será agregada próximamente."
+    },
+    17: {
+        nombre: "Comisión sobre Local",
+        descripcion: "Información sobre comisión sobre local será agregada próximamente."
+    },
+    18: {
+        nombre: "Comisión sobre Región",
+        descripcion: "Información sobre comisión sobre región será agregada próximamente."
+    }
+};
+
+/**
+ * Mostrar/ocultar botón de información según selección de tipo - VERSIÓN ROBUSTA
+ */
+function toggleInfoButton(selectElement, mode) {
+    try {
+        if (!selectElement) {
+            console.warn('⚠️ toggleInfoButton: selectElement no proporcionado');
+            return;
+        }
+        
+        const selectedValue = selectElement.value;
+        const infoBtn = document.getElementById(`infoBtn-${mode}`);
+        
+        console.log('🔄 toggleInfoButton llamado:', {
+            mode: mode,
+            selectedValue: selectedValue,
+            btnFound: !!infoBtn
+        });
+        
+        if (infoBtn) {
+            if (selectedValue && selectedValue !== '') {
+                infoBtn.classList.add('active');
+                
+                // FORZAR TODOS LOS ESTILOS VIA JAVASCRIPT
+                infoBtn.style.position = 'absolute';
+                infoBtn.style.top = '8px';
+                infoBtn.style.right = '8px';
+                infoBtn.style.width = '30px';
+                infoBtn.style.height = '30px';
+                infoBtn.style.borderRadius = '50%';
+                infoBtn.style.border = 'none';
+                infoBtn.style.background = 'linear-gradient(135deg, #0d6efd, #4285f4)';
+                infoBtn.style.color = 'white';
+                infoBtn.style.display = 'flex';
+                infoBtn.style.alignItems = 'center';
+                infoBtn.style.justifyContent = 'center';
+                infoBtn.style.fontSize = '0.8rem';
+                infoBtn.style.cursor = 'pointer';
+                infoBtn.style.zIndex = '100'; // Z-index bajo para no interferir con modales (Bootstrap modales usan 1000+)
+                infoBtn.style.boxShadow = '0 3px 10px rgba(13, 110, 253, 0.4)';
+                infoBtn.style.fontWeight = '600';
+                infoBtn.style.visibility = 'visible';
+                infoBtn.style.opacity = '1';
+                
+                // Asegurar que el contenedor padre tenga position relative
+                const parentContainer = selectElement.closest('.position-relative') || 
+                                     selectElement.closest('.col-md-8') || 
+                                     selectElement.parentElement;
+                if (parentContainer) {
+                    parentContainer.style.position = 'relative';
+                }
+                
+                console.log('✅ Botón de info activado para modo:', mode);
+                
+                // Verificar si el botón es realmente visible
+                setTimeout(() => {
+                    const computedStyle = window.getComputedStyle(infoBtn);
+                    console.log('🔍 Estilos computados del botón:', {
+                        display: computedStyle.display,
+                        visibility: computedStyle.visibility,
+                        opacity: computedStyle.opacity,
+                        position: computedStyle.position,
+                        zIndex: computedStyle.zIndex
+                    });
+                }, 100);
+                
+            } else {
+                infoBtn.classList.remove('active');
+                infoBtn.style.display = 'none';
+                infoBtn.style.visibility = 'hidden';
+                infoBtn.style.opacity = '0';
+                console.log('❌ Botón de info desactivado para modo:', mode);
+            }
+        } else {
+            console.warn(`⚠️ Botón de info no encontrado para modo: ${mode}`);
+        }
+    } catch (error) {
+        console.error('❌ Error en toggleInfoButton:', error);
+    }
+}
+
+/**
+ * Mostrar modal con información del tipo de novedad
+ */
+function mostrarInfoTipoNovedad(mode) {
+    let tipoSeleccionado;
+    
+    if (mode === 'unica') {
+        const selectUnica = document.getElementById('tipo_novedad');
+        tipoSeleccionado = selectUnica ? selectUnica.value : null;
+    } else {
+        const selectMultiple = document.getElementById(`tipo_novedad_${mode}`);
+        tipoSeleccionado = selectMultiple ? selectMultiple.value : null;
+    }
+    
+    if (!tipoSeleccionado || tipoSeleccionado === '') {
+        mostrarAlerta('Por favor, seleccione un tipo de novedad primero.', 'warning');
+        return;
+    }
+    
+    // Obtener información del tipo
+    const infoTipo = tiposNovedadInfo[tipoSeleccionado];
+    
+    // Actualizar contenido del modal
+    const modalTitulo = document.getElementById('modalTipoNovedadInfoLabel');
+    const tipoNombre = document.getElementById('tipoNovedadNombre');
+    const tipoDescripcion = document.getElementById('tipoNovedadDescripcion');
+    
+    if (modalTitulo) {
+        modalTitulo.innerHTML = `
+            <i class="fas fa-info-circle me-2"></i>
+            Información del Tipo de Novedad
+        `;
+    }
+    
+    if (tipoNombre && infoTipo) {
+        tipoNombre.textContent = infoTipo.nombre;
+    }
+    
+    if (tipoDescripcion) {
+        tipoDescripcion.innerHTML = `
+            <div class="info-content-placeholder">
+                <i class="fas fa-edit fa-2x mb-3 d-block"></i>
+                <p class="mb-2"><strong>Información no disponible</strong></p>
+                <p class="mb-0">${infoTipo ? infoTipo.descripcion : 'El contenido para este tipo de novedad será agregado próximamente.'}</p>
+                <small class="text-muted d-block mt-2">Espacio reservado para información detallada sobre este tipo de novedad.</small>
+            </div>
+        `;
+    }
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalTipoNovedadInfo'));
+    modal.show();
+}
+
+// Hacer funciones disponibles globalmente
+window.mostrarInfoTipoNovedad = mostrarInfoTipoNovedad;
+window.toggleInfoButton = toggleInfoButton;
 window.limpiarFormularioMultiple = limpiarFormularioMultiple;
 window.enviarFormularioMultiple = enviarFormularioMultiple;
+window.mostrarPeriodoAplicacion = mostrarPeriodoAplicacion;
+window.ocultarPeriodoAplicacion = ocultarPeriodoAplicacion;
+window.validarPeriodoAplicacionFormulario = validarPeriodoAplicacionFormulario;
+window.crearSelectPeriodoBasico = crearSelectPeriodoBasico;
+window.obtenerNombreMesBasico = obtenerNombreMesBasico;

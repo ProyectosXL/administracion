@@ -239,6 +239,19 @@ try {
                 // Log para debugging detallado
                 error_log("📋 Datos recibidos completos: " . print_r($datos, true));
                 
+                // Log específico de período para debugging
+                if (isset($datos['periodo_mes']) && isset($datos['periodo_anio'])) {
+                    error_log("📅 Período detectado en datos: mes={$datos['periodo_mes']}, año={$datos['periodo_anio']}");
+                } else {
+                    error_log("⚠️ No se detectó período personalizado en los datos");
+                    if (isset($datos['periodo_mes'])) {
+                        error_log("📅 Solo se encontró periodo_mes: {$datos['periodo_mes']}");
+                    }
+                    if (isset($datos['periodo_anio'])) {
+                        error_log("📅 Solo se encontró periodo_anio: {$datos['periodo_anio']}");
+                    }
+                }
+                
                 // Validar datos
                 $errores = $novedades->validarDatos($datos);
                 if (!empty($errores)) {
@@ -654,6 +667,28 @@ try {
                 sendResponse(true, $tipos);
             } catch (Exception $e) {
                 handleError('Error obteniendo tipos de usuario', $e);
+            }
+            break;
+
+        case 'get_opciones_periodo':
+            try {
+                require_once __DIR__ . '/../includes/periodo_frontend_helper.php';
+                $opciones = PeriodoFrontendHelper::getOpcionesPeriodo();
+                sendResponse(true, $opciones);
+            } catch (Exception $e) {
+                handleError('Error obteniendo opciones de período', $e);
+            }
+            break;
+
+        case 'get_periodo_sugerido':
+            try {
+                require_once __DIR__ . '/../includes/periodo_frontend_helper.php';
+                $tipoNovedadId = $_GET['tipo_novedad'] ?? null;
+                $fechaReferencia = $_GET['fecha_referencia'] ?? null;
+                $periodo = PeriodoFrontendHelper::getPeriodoSugerido($tipoNovedadId, $fechaReferencia);
+                sendResponse(true, $periodo);
+            } catch (Exception $e) {
+                handleError('Error obteniendo período sugerido', $e);
             }
             break;
 

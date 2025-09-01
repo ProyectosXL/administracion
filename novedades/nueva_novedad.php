@@ -180,6 +180,16 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         </div>
                     </div>
                 </div>
+                
+                <!-- Información sobre período -->
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Por defecto se aplica el período en curso, antes de la fecha de corte, pero puede modificarse.
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Sección: Tipo de Novedad (Modo único) -->
@@ -191,14 +201,22 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                 
                 <div class="row">
                     <div class="col-md-8">
-                        <label for="tipo_novedad" class="form-label">
-                            Seleccione el tipo de novedad <span class="required">*</span>
-                        </label>
-                        <select class="form-select" id="tipo_novedad" name="tipo_novedad" required>
-                            <option value="">Seleccione tipo de novedad...</option>
-                        </select>
-                        <div class="invalid-feedback">
-                            El tipo de novedad es obligatorio
+                        <div class="position-relative">
+                            <label for="tipo_novedad" class="form-label">
+                                Seleccione el tipo de novedad <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tipo_novedad" name="tipo_novedad" required>
+                                <option value="">Seleccione tipo de novedad...</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                El tipo de novedad es obligatorio
+                            </div>
+                            <!-- Botón de información -->
+                            <button type="button" class="tipo-novedad-info-btn" id="infoBtn-unica" 
+                                    onclick="mostrarInfoTipoNovedad('unica')" title="Información sobre este tipo de novedad"
+                                    style="display: none;">
+                                <i class="fas fa-info"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -973,6 +991,17 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
 
             </div>
 
+            <!-- Período de Aplicación (solo modo único) -->
+            <div class="form-section" id="periodo-aplicacion-section">
+                <h5>
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    Período de Aplicación
+                </h5>
+                <div id="periodo-aplicacion-container">
+                    <!-- El select se insertará aquí dinámicamente -->
+                </div>
+            </div>
+
             <!-- Campo: Observaciones (solo modo único) -->
             <div class="form-section" id="observaciones-section">
                 <h5>
@@ -1100,9 +1129,111 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- JavaScript personalizado -->
+    <script src="js/periodo_seleccionable.js?v=<?php echo time(); ?>"></script>
     <script src="js/novedades_main.js?v=<?php echo time(); ?>"></script>
     <script src="js/nueva_novedad_form.js?v=<?php echo time(); ?>"></script>
     <script src="js/nueva_novedad_init.js?v=<?php echo time(); ?>"></script>
+
+    <script>
+        // Inicializar período de aplicación inmediatamente al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pequeño delay para asegurar que todo esté cargado
+            setTimeout(function() {
+                // Inicializar selects de período para modo múltiple
+                inicializarSelectsPeriodoMultiple();
+                
+                // Insertar select de período básico inmediatamente para modo único
+                const contenedorPeriodo = document.getElementById('periodo-aplicacion-container');
+                if (contenedorPeriodo && typeof crearSelectPeriodoBasico !== 'undefined') {
+                    contenedorPeriodo.innerHTML = crearSelectPeriodoBasico();
+                    console.log('📅 Período de aplicación inicializado al cargar la página');
+                } else if (contenedorPeriodo) {
+                    // Fallback manual si las funciones no están cargadas aún
+                    const fechaActual = new Date();
+                    const mesActual = fechaActual.getMonth() + 1;
+                    const añoActual = fechaActual.getFullYear();
+                    
+                    let html = `
+                        <div class="form-group mb-3" id="periodo-aplicacion-group">
+                            <label for="periodo_aplicacion" class="form-label">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Período de Aplicación
+                            </label>
+                            <select class="form-select" id="periodo_aplicacion" name="periodo_aplicacion" required>
+                    `;
+                    
+                    const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                                 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                    
+                    // Generar opciones de -1 a +11 meses
+                    for (let i = -1; i <= 11; i++) {
+                        const fecha = new Date(añoActual, mesActual - 1 + i, 1);
+                        const mes = fecha.getMonth() + 1;
+                        const año = fecha.getFullYear();
+                        const value = `${mes}-${año}`;
+                        const selected = i === 0 ? 'selected' : '';
+                        
+                        html += `<option value="${value}" ${selected}>${meses[mes]} ${año}</option>`;
+                    }
+                    
+                    html += `
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Por defecto se aplica el período en curso, antes de la fecha de corte, pero puede modificarse.
+                            </div>
+                        </div>
+                    `;
+                    
+                    contenedorPeriodo.innerHTML = html;
+                    console.log('📅 Período de aplicación inicializado con fallback');
+                }
+            }, 500);
+        });
+        
+        // Función para inicializar los selects de período en modo múltiple
+        function inicializarSelectsPeriodoMultiple() {
+            const fechaActual = new Date();
+            const mesActual = fechaActual.getMonth() + 1;
+            const añoActual = fechaActual.getFullYear();
+            
+            // Cargar opciones de mes
+            const selectMes = document.getElementById('periodo_mes_global');
+            if (selectMes) {
+                const meses = [
+                    '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                ];
+                
+                selectMes.innerHTML = '<option value="">Seleccionar mes...</option>';
+                
+                // Generar opciones de -1 a +11 meses
+                for (let i = -1; i <= 11; i++) {
+                    const fecha = new Date(añoActual, mesActual - 1 + i, 1);
+                    const mes = fecha.getMonth() + 1;
+                    const selected = i === 0 ? 'selected' : '';
+                    
+                    selectMes.innerHTML += `<option value="${mes}" ${selected}>${meses[mes]}</option>`;
+                }
+                
+                console.log('📅 Select de mes inicializado con mes actual:', mesActual);
+            }
+            
+            // Cargar opciones de año
+            const selectAño = document.getElementById('periodo_anio_global');
+            if (selectAño) {
+                selectAño.innerHTML = '<option value="">Seleccionar año...</option>';
+                
+                // Generar años desde 2020 hasta 2030
+                for (let año = 2020; año <= 2030; año++) {
+                    const selected = año === añoActual ? 'selected' : '';
+                    selectAño.innerHTML += `<option value="${año}" ${selected}>${año}</option>`;
+                }
+                
+                console.log('📅 Select de año inicializado con año actual:', añoActual);
+            }
+        }
+    </script>
 
     <script>
         // Manejar errores no capturados (especialmente de extensiones del navegador)
@@ -1486,6 +1617,52 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
 
     <!-- Manual de Usuario Modal -->
     <?php include 'components/manual_modal.php'; ?>
+
+    <!-- Modal de Información de Tipo de Novedad -->
+    <div class="modal fade modal-tipo-novedad" id="modalTipoNovedadInfo" tabindex="-1" aria-labelledby="modalTipoNovedadInfoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTipoNovedadInfoLabel">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información del Tipo de Novedad
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-bold text-primary mb-3" id="tipoNovedadNombre">
+                                <!-- Nombre del tipo de novedad se mostrará aquí -->
+                            </h6>
+                            <div id="tipoNovedadDescripcion" class="info-content-editable">
+                                <div class="info-content-placeholder">
+                                    <i class="fas fa-edit fa-2x mb-3 d-block"></i>
+                                    <p class="mb-2"><strong>Información no disponible</strong></p>
+                                    <p class="mb-0">El contenido para este tipo de novedad será agregado próximamente.</p>
+                                    <small class="text-muted d-block mt-2">Espacio reservado para información detallada sobre este tipo de novedad.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Nota:</strong> Esta información será actualizada con detalles específicos sobre cada tipo de novedad.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>

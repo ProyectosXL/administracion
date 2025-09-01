@@ -757,16 +757,45 @@ class Novedades {
                 throw new Exception("Tipo de novedad no encontrado");
             }
 
-            // Incluir PeriodoUtils si no está ya incluido
-            if (!class_exists('PeriodoUtils')) {
-                require_once __DIR__ . '/PeriodoUtils.php';
-            }
-
-            // Calcular período según el tipo de novedad (considerando "Período siguiente")
-            $periodo = PeriodoUtils::calcularPeriodoSegunTipoCompleto($tipoNovedadInfo);
+            // Determinar el período a usar: personalizado o calculado automáticamente
+            $periodo = null;
             
-            // Log para debugging del período calculado
-            error_log("Período calculado para tipo {$tipoNovedad}: " . print_r($periodo, true));
+            // Si se proporciona período personalizado (desde el frontend), usarlo
+            if (isset($datos['periodo_mes']) && isset($datos['periodo_anio'])) {
+                $periodoMes = (int)$datos['periodo_mes'];
+                $periodoAnio = (int)$datos['periodo_anio'];
+                
+                error_log("🔍 DEBUG PERÍODO: Datos recibidos - mes={$periodoMes}, año={$periodoAnio}");
+                error_log("🔍 DEBUG PERÍODO: Datos originales - periodo_mes='{$datos['periodo_mes']}', periodo_anio='{$datos['periodo_anio']}'");
+                
+                // Validar que el período esté en un rango razonable
+                if ($periodoMes >= 1 && $periodoMes <= 12 && $periodoAnio >= 2020 && $periodoAnio <= 2030) {
+                    $periodo = [
+                        'month' => $periodoMes,
+                        'year' => $periodoAnio
+                    ];
+                    error_log("✅ Usando período personalizado CONFIRMADO: mes={$periodoMes}, año={$periodoAnio}");
+                } else {
+                    error_log("❌ Período personalizado inválido: mes={$periodoMes}, año={$periodoAnio} (fuera de rango válido)");
+                }
+            } else {
+                error_log("⚠️ No se detectaron datos de período personalizado en el backend");
+            }
+            
+            // Si no hay período personalizado válido, calcular según el tipo de novedad
+            if (!$periodo) {
+                // Incluir PeriodoUtils si no está ya incluido
+                if (!class_exists('PeriodoUtils')) {
+                    require_once __DIR__ . '/PeriodoUtils.php';
+                }
+
+                // Calcular período según el tipo de novedad (considerando "Período siguiente")
+                $periodo = PeriodoUtils::calcularPeriodoSegunTipoCompleto($tipoNovedadInfo);
+                error_log("Usando período calculado automáticamente según tipo de novedad");
+            }
+            
+            // Log para debugging del período final
+            error_log("Período final para tipo {$tipoNovedad}: " . print_r($periodo, true));
             error_log("Tipo novedad info: " . print_r($tipoNovedadInfo, true));
             
             // Adaptar datos según el tipo de novedad y estructura real de tabla
@@ -1548,7 +1577,7 @@ class Novedades {
             $this->sucursalesCache = [1 => 'CASA CENTRAL'];
             return $this->sucursalesCache;
         }
-    }
+    }       
     
     /**
      * Obtener nombre de sucursal por número
@@ -1632,10 +1661,12 @@ class Novedades {
                 }
             }
 
-            // Agregar información de período
-            $periodo = $this->getPeriodoActual();
-            $novedad['periodo_mes'] = $periodo['periodo_mes'];
-            $novedad['periodo_anio'] = $periodo['periodo_anio'];
+            // Agregar información de período SOLO SI NO ESTÁ EN LA BASE DE DATOS
+            if (empty($novedad['periodo_mes']) || empty($novedad['periodo_anio'])) {
+                $periodo = $this->getPeriodoActual();
+                $novedad['periodo_mes'] = $novedad['periodo_mes'] ?: $periodo['periodo_mes'];
+                $novedad['periodo_anio'] = $novedad['periodo_anio'] ?: $periodo['periodo_anio'];
+            }
 
             // Valor display - MEJORADO para tipo 2
             if ((int)$novedad['tipo_novedad'] === 2) {
@@ -2015,6 +2046,42 @@ class Novedades {
                     $errores[] = 'La fecha de vigencia es obligatoria';
                 }
                 break;
+        }
+
+        // Validar período personalizado si se proporciona
+        if (isset($datos['periodo_mes']) || isset($datos['periodo_anio'])) {
+            if (!isset($datos['periodo_mes']) || !isset($datos['periodo_anio'])) {
+                $errores[] = 'Si se especifica un período personalizado, tanto el mes como el año son obligatorios';
+            } else {
+                $mes = (int)$datos['periodo_mes'];
+                $año = (int)$datos['periodo_anio'];
+                
+                // Validar rango del mes
+                if ($mes < 1 || $mes > 12) {
+                    $errores[] = 'El mes del período debe estar entre 1 y 12';
+                }
+                
+                // Validar rango del año
+                if ($año < 2020 || $año > 2030) {
+                    $errores[] = 'El año del período debe estar entre 2020 y 2030';
+                }
+                
+                // Validar que el período esté dentro del rango permitido
+                if ($mes >= 1 && $mes <= 12 && $año >= 2020 && $año <= 2030) {
+                    $fechaActual = new DateTime();
+                    $fechaPeriodo = new DateTime("{$año}-{$mes}-01");
+                    
+                    $fechaMinima = clone $fechaActual;
+                    $fechaMinima->modify('-1 month');
+                    
+                    $fechaMaxima = clone $fechaActual;
+                    $fechaMaxima->modify('+11 months');
+                    
+                    if ($fechaPeriodo < $fechaMinima || $fechaPeriodo > $fechaMaxima) {
+                        $errores[] = 'El período seleccionado está fuera del rango permitido (desde el mes anterior hasta 11 meses en adelante)';
+                    }
+                }
+            }
         }
 
         return $errores;
