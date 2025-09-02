@@ -101,7 +101,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             <option value="1">Enviada</option>
                             <option value="2">En Revisión</option>
                             <option value="3">Aprobada</option>
-                            <option value="4">Rechazada</option>
+                            <option value="4">A Revisar</option>
                             <option value="5">Procesada</option>
                         </select>
                     </div>
@@ -367,6 +367,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     <script src="js/consultar_novedades.js?v=<?php echo time(); ?>"></script>
     <script src="js/manual.js?v=<?php echo time(); ?>"></script>
     <script src="js/modal_fix.js?v=<?php echo time(); ?>"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <!-- Manual de Usuario Modal -->
     <?php include 'components/manual_modal.php'; ?>

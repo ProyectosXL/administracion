@@ -4,15 +4,17 @@
  * /novedades/controller/novedades_controller.php
  */
 
+// DEBUG TEMPORAL - ACTIVAR ERRORES
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/debug.log');
+
 // Iniciar buffer de salida y limpiar cualquier salida previa - MEJORADO
 while (ob_get_level()) {
     ob_end_clean();
 }
 ob_start();
-
-// Suprimir warnings que puedan interferir con JSON
-error_reporting(E_ERROR | E_PARSE);
-ini_set('display_errors', 0);
 
 // Configurar headers para CORS y JSON
 header('Content-Type: application/json; charset=utf-8');
@@ -237,20 +239,17 @@ try {
                 // Log para debugging detallado
                 error_log("📋 Datos recibidos completos: " . print_r($datos, true));
                 
-                // Verificar campos específicos para debugging
-                error_log("🔍 Campos específicos:");
-                error_log("  - legajo: " . (isset($datos['legajo']) ? var_export($datos['legajo'], true) : 'NO EXISTE'));
-                error_log("  - nombre: " . (isset($datos['nombre']) ? var_export($datos['nombre'], true) : 'NO EXISTE'));
-                error_log("  - apellido: " . (isset($datos['apellido']) ? var_export($datos['apellido'], true) : 'NO EXISTE'));
-                error_log("  - sucursal: " . (isset($datos['sucursal']) ? var_export($datos['sucursal'], true) : 'NO EXISTE'));
-                error_log("  - tipo_novedad: " . (isset($datos['tipo_novedad']) ? var_export($datos['tipo_novedad'], true) : 'NO EXISTE'));
-                error_log("  - tipo_nuevo_puesto: " . (isset($datos['tipo_nuevo_puesto']) ? var_export($datos['tipo_nuevo_puesto'], true) : 'NO EXISTE'));
-                error_log("  - fecha_vigencia_hasta: " . (isset($datos['fecha_vigencia_hasta']) ? var_export($datos['fecha_vigencia_hasta'], true) : 'NO EXISTE'));
-                
-                // Log específico para permisos
-                if (isset($datos['tipo_novedad']) && $datos['tipo_novedad'] == 7) {
-                    error_log("🔍 CONTROLADOR PERMISOS - fecha_permiso: " . 
-                             (isset($datos['fecha_permiso']) ? var_export($datos['fecha_permiso'], true) : 'NO EXISTE'));
+                // Log específico de período para debugging
+                if (isset($datos['periodo_mes']) && isset($datos['periodo_anio'])) {
+                    error_log("📅 Período detectado en datos: mes={$datos['periodo_mes']}, año={$datos['periodo_anio']}");
+                } else {
+                    error_log("⚠️ No se detectó período personalizado en los datos");
+                    if (isset($datos['periodo_mes'])) {
+                        error_log("📅 Solo se encontró periodo_mes: {$datos['periodo_mes']}");
+                    }
+                    if (isset($datos['periodo_anio'])) {
+                        error_log("📅 Solo se encontró periodo_anio: {$datos['periodo_anio']}");
+                    }
                 }
                 
                 // Validar datos
@@ -261,7 +260,9 @@ try {
                 }
 
                 error_log("✅ Iniciando creación de novedad...");
-                $resultado = $novedades->crearNovedad($datos);
+
+                // USAR EL MÉTODO ACTUALIZADO
+                $resultado = $novedades->crearNovedadActualizada($datos);
                 
                 if ($resultado['success']) {
                     error_log("✅ Novedad creada exitosamente con ID: " . $resultado['id']);
@@ -285,7 +286,8 @@ try {
                     'tipo_novedad' => $_GET['tipo_novedad'] ?? ''
                 ];
                 
-                $novedadesList = $novedades->getNovedadesPeriodoActual($filtros);
+                // USAR EL MÉTODO ACTUALIZADO
+                $novedadesList = $novedades->getNovedadesPeriodoActualActualizado($filtros);
                 sendResponse(true, $novedadesList);
             } catch (Exception $e) {
                 handleError('Error obteniendo novedades', $e);
@@ -354,13 +356,18 @@ try {
             try {
                 // Obtener datos del POST
                 $inputData = file_get_contents('php://input');
+                error_log("Datos recibidos para editar_novedad: " . $inputData);
+                
                 $datos = json_decode($inputData, true);
+                error_log("Datos decodificados: " . print_r($datos, true));
                 
                 if (!$datos || !isset($datos['id']) || !is_numeric($datos['id'])) {
+                    error_log("Error: ID de novedad requerido y debe ser numérico. Datos recibidos: " . print_r($datos, true));
                     handleError('ID de novedad requerido y debe ser numérico');
                 }
 
                 $resultado = $novedades->editarNovedad($datos['id'], $datos);
+                error_log("Resultado edición: " . print_r($resultado, true));
                 
                 if ($resultado['success']) {
                     sendResponse(true, ['id' => $datos['id']], 'Novedad actualizada exitosamente');
@@ -368,6 +375,7 @@ try {
                     handleError($resultado['error']);
                 }
             } catch (Exception $e) {
+                error_log("Excepción en editar_novedad: " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
                 handleError('Error editando novedad', $e);
             }
             break;
@@ -439,11 +447,50 @@ try {
             }
             break;
             
+        # Reemplazar TEMPORALMENTE el case 'get_tipo_usuario' en novedades_controller.php por esto:
+
         case 'get_tipo_usuario':
             try {
+                // Debug paso a paso
+                error_log("🔧 DEBUG: Iniciando get_tipo_usuario");
+                
+                // Verificar si la clase existe
+                if (!class_exists('Usuario')) {
+                    error_log("❌ DEBUG: Clase Usuario no existe");
+                    throw new Exception("Clase Usuario no encontrada");
+                }
+                
+                error_log("✅ DEBUG: Clase Usuario existe");
+                
+                // Verificar cada método individualmente
+                if (!method_exists('Usuario', 'getTipoUsuario')) {
+                    error_log("❌ DEBUG: Método getTipoUsuario no existe");
+                    throw new Exception("Método getTipoUsuario no existe");
+                }
+                
+                error_log("✅ DEBUG: Método getTipoUsuario existe");
                 $tipoUsuario = Usuario::getTipoUsuario();
+                error_log("✅ DEBUG: getTipoUsuario() retornó: " . $tipoUsuario);
+                
+                if (!method_exists('Usuario', 'esUsuarioRRHH')) {
+                    error_log("❌ DEBUG: Método esUsuarioRRHH no existe");
+                    throw new Exception("Método esUsuarioRRHH no existe");
+                }
+                
+                error_log("✅ DEBUG: Método esUsuarioRRHH existe");
                 $esRRHH = Usuario::esUsuarioRRHH();
+                error_log("✅ DEBUG: esUsuarioRRHH() retornó: " . ($esRRHH ? 'true' : 'false'));
+                
+                if (!method_exists('Usuario', 'getTipoUsuarioDescripcion')) {
+                    error_log("❌ DEBUG: Método getTipoUsuarioDescripcion no existe");
+                    throw new Exception("Método getTipoUsuarioDescripcion no existe");
+                }
+                
+                error_log("✅ DEBUG: Método getTipoUsuarioDescripcion existe");
                 $descripcion = Usuario::getTipoUsuarioDescripcion();
+                error_log("✅ DEBUG: getTipoUsuarioDescripcion() retornó: " . $descripcion);
+                
+                error_log("✅ DEBUG: Todos los métodos funcionaron correctamente");
                 
                 sendResponse(true, [
                     'tipo' => $tipoUsuario,
@@ -451,6 +498,8 @@ try {
                     'descripcion' => $descripcion
                 ]);
             } catch (Exception $e) {
+                error_log("❌ DEBUG: Excepción capturada: " . $e->getMessage());
+                error_log("❌ DEBUG: Stack trace: " . $e->getTraceAsString());
                 handleError('Error obteniendo tipo de usuario', $e);
             }
             break;
@@ -618,6 +667,28 @@ try {
                 sendResponse(true, $tipos);
             } catch (Exception $e) {
                 handleError('Error obteniendo tipos de usuario', $e);
+            }
+            break;
+
+        case 'get_opciones_periodo':
+            try {
+                require_once __DIR__ . '/../includes/periodo_frontend_helper.php';
+                $opciones = PeriodoFrontendHelper::getOpcionesPeriodo();
+                sendResponse(true, $opciones);
+            } catch (Exception $e) {
+                handleError('Error obteniendo opciones de período', $e);
+            }
+            break;
+
+        case 'get_periodo_sugerido':
+            try {
+                require_once __DIR__ . '/../includes/periodo_frontend_helper.php';
+                $tipoNovedadId = $_GET['tipo_novedad'] ?? null;
+                $fechaReferencia = $_GET['fecha_referencia'] ?? null;
+                $periodo = PeriodoFrontendHelper::getPeriodoSugerido($tipoNovedadId, $fechaReferencia);
+                sendResponse(true, $periodo);
+            } catch (Exception $e) {
+                handleError('Error obteniendo período sugerido', $e);
             }
             break;
 

@@ -9,7 +9,7 @@ const ESTADOS_MAP = {
     1: 'Enviada',
     2: 'En Revisión', 
     3: 'Aprobada',
-    4: 'Rechazada',
+    4: 'A Revisar',
     5: 'Procesada'
 };
 
@@ -419,7 +419,7 @@ function obtenerBadgeEstado(estadoNumero) {
         1: { texto: 'Enviada', clase: 'bg-info text-white' },
         2: { texto: 'En Revisión', clase: 'bg-warning text-dark' },
         3: { texto: 'Aprobada', clase: 'bg-success text-white' },
-        4: { texto: 'Rechazada', clase: 'bg-danger text-white' },
+        4: { texto: 'A Revisar', clase: 'bg-danger text-white' },
         5: { texto: 'Procesada', clase: 'bg-secondary text-white' }
     };
     
@@ -774,59 +774,433 @@ function mostrarModalDetalleCompleto(novedad) {
                     </div>`;
             }
             break;
-    }
-    
-    html += `</div>`;
 
-    // Información de permiso (solo para tipo 7)
-    if (novedad.fecha_permiso) {
-        html += `
-            <div class="row mt-3">
+        case 12: // Plus de caja (compatibilidad)
+        case 32: // Plus de caja (ID real BD)
+            // Extraer tipo de plus de observaciones
+            let tipoPlusCaja = 'No especificado';
+            if (novedad.observaciones) {
+                const match = novedad.observaciones.match(/Tipo:\s*(.+)/);
+                if (match) {
+                    tipoPlusCaja = match[1].trim();
+                }
+            }
+            
+            html += `
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="fas fa-calendar-times me-2"></i>Información del Permiso</h6>
+                            <h6 class="mb-0"><i class="fas fa-cash-register me-2"></i>Detalles del Plus de Caja</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Tipo de Plus:</strong><br>
+                                    <span class="badge bg-primary">${tipoPlusCaja}</span>
+                                </div>
+                                ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? `
+                                <div class="col-md-4">
+                                    <strong>Importe:</strong><br>
+                                    <span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>
+                                </div>
+                                ` : ''}
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 13: // Plus de Sub-Encargada (compatibilidad)
+        case 33: // Plus de Sub-Encargada (ID real BD)
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>Detalles del Plus de Sub-Encargada</h6>
                         </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <strong>Fecha:</strong><br>
-                                    ${NovedadesApp.formatearFecha(novedad.fecha_permiso)}
+                                    <strong>Plus de Sub-Encargada</strong><br>
+                                    ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? 
+                                        `<span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>` : 
+                                        '<span class="text-muted">Sin importe específico</span>'
+                                    }
                                 </div>
+                                ${novedad.fecha_vigencia ? `
                                 <div class="col-md-6">
-                                    <strong>Compensa:</strong><br>
-                                    <span class="badge ${novedad.compensa ? 'bg-success' : 'bg-danger'}">
-                                        ${novedad.compensa ? 'Sí' : 'No'}
-                                    </span>
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 14: // Plus de Encargada (compatibilidad)
+        case 34: // Plus de Encargada (ID real BD)
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="fas fa-user-cog me-2"></i>Detalles del Plus de Encargada</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Plus de Encargada</strong><br>
+                                    ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? 
+                                        `<span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>` : 
+                                        '<span class="text-muted">Sin importe específico</span>'
+                                    }
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-6">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 15: // Premio Local (compatibilidad)
+        case 35: // Premio Local (ID real BD)
+            // Construir lista de aplicaciones - SOLO vendedora y sub-encargada
+            let aplicacionesPremio = [];
+            
+            // DEBUG EXTENSIVO - Ver EXACTAMENTE qué valores llegan desde el backend
+            console.log('🏆 DEBUG PREMIO LOCAL ========================================');
+            console.log('🏆 aplica_vendedora RAW:', novedad.aplica_vendedora, 'TIPO:', typeof novedad.aplica_vendedora);
+            console.log('🏆 aplica_sub_encargada RAW:', novedad.aplica_sub_encargada, 'TIPO:', typeof novedad.aplica_sub_encargada);
+            
+            // Verificación robusta para TODOS los posibles valores de campos BIT desde SQL Server
+            const aplicaVendedora = Boolean(novedad.aplica_vendedora) && novedad.aplica_vendedora !== 0 && novedad.aplica_vendedora !== '0' && novedad.aplica_vendedora !== false;
+            const aplicaSubEncargada = Boolean(novedad.aplica_sub_encargada) && novedad.aplica_sub_encargada !== 0 && novedad.aplica_sub_encargada !== '0' && novedad.aplica_sub_encargada !== false;
+            
+            console.log('🏆 aplicaVendedora FINAL:', aplicaVendedora);
+            console.log('🏆 aplicaSubEncargada FINAL:', aplicaSubEncargada);
+            
+            if (aplicaVendedora) aplicacionesPremio.push('Vendedora');
+            if (aplicaSubEncargada) aplicacionesPremio.push('Sub-Encargada');
+            const aplicaTexto = aplicacionesPremio.length > 0 ? aplicacionesPremio.join(', ') : 'No especificado';
+            
+            console.log('🏆 aplicaTexto FINAL:', aplicaTexto);
+            
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Detalles del Premio Local</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Importe del Premio:</strong><br>
+                                    ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? 
+                                        `<span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>` : 
+                                        '<span class="text-muted">No especificado</span>'
+                                    }
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Aplica a:</strong><br>
+                                    <span class="badge bg-info">${aplicaTexto}</span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 16: // Comisión Individual (compatibilidad)
+        case 36: // Comisión Individual (ID real BD)
+            // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
+            const porcentajeIndividualDetalle = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
+            
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fas fa-user me-2"></i>Detalles de Comisión Individual</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Tipo de Comisión:</strong><br>
+                                    <span class="badge bg-primary">Individual</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Porcentaje:</strong><br>
+                                    <span class="h5">${porcentajeIndividualDetalle}%</span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 17: // Comisión sobre Local (compatibilidad)
+        case 37: // Comisión sobre Local (ID real BD)
+            // COMISIÓN SOBRE LOCAL: Con estructura de tope
+            const tieneTopeLocalDetalle = novedad.tiene_tope;
+            const colorComisionDetalle = tieneTopeLocalDetalle ? 'bg-warning text-dark' : 'bg-info text-white';
+            const iconoComisionDetalle = 'fa-building';
+            const tipoComisionTextoDetalle = 'sobre el Local';
+            const estructuraComisionDetalle = tieneTopeLocalDetalle ? 'Con tope' : 'Sin tope';
+            
+            let porcentajesTextoDetalle = '';
+            if (tieneTopeLocalDetalle) {
+                const p1 = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
+                const p2 = novedad.porcentaje_2 ? parseFloat(novedad.porcentaje_2) : 0;
+                porcentajesTextoDetalle = `Primer porcentaje: ${p1}%, Segundo porcentaje: ${p2}%`;
+            } else {
+                const p = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
+                porcentajesTextoDetalle = `Porcentaje único: ${p}%`;
+            }
+            
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header ${colorComisionDetalle}">
+                            <h6 class="mb-0"><i class="fas ${iconoComisionDetalle} me-2"></i>Detalles de Comisión ${tipoComisionTextoDetalle}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Tipo de Comisión:</strong><br>
+                                    <span class="badge bg-secondary">${tipoComisionTextoDetalle}</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Estructura:</strong><br>
+                                    <span class="detalle-estructura-comision badge ${novedad.tiene_tope ? 'bg-warning text-dark' : 'bg-success'}">${estructuraComisionDetalle}</span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <div class="alert alert-info detalle-porcentajes-comision">
+                                        <i class="fas fa-percentage me-2"></i>
+                                        <strong>Porcentajes:</strong> ${porcentajesTextoDetalle}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        `;
-    }
+                </div>`;
+            break;
 
-    if (novedad.observaciones) {
+        case 18: // Premios - Ajuste General (compatibilidad)
+        case 38: // Premios - Ajuste General (ID real BD)
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="mb-0"><i class="fas fa-adjust me-2"></i>Detalles del Ajuste General</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Importe del Ajuste:</strong><br>
+                                    ${novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? 
+                                        `<span class="h5">${NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico}</span>` : 
+                                        '<span class="text-muted">No especificado</span>'
+                                    }
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-6">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 16: // Comisión Individual (compatibilidad)
+        case 36: // Comisión Individual (ID real BD)
+            // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
+            const porcentajeIndividual = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
+            
+            camposHTML = `
+                <div class="col-md-6">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fas fa-user me-2"></i>Comisión Individual</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="edit_porcentaje_individual" class="form-label">Porcentaje Individual</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="edit_porcentaje_individual" 
+                                            value="${porcentajeIndividual}" step="0.01" min="0.01">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="edit_fecha_vigencia_comision_individual" class="form-label">Fecha Vigencia</label>
+                                    <input type="date" class="form-control" id="edit_fecha_vigencia_comision_individual" 
+                                        value="${novedad.fecha_vigencia || ''}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 17: // Comisión sobre Local (compatibilidad)
+        case 37: // Comisión sobre Local (ID real BD)
+            // COMISIÓN SOBRE LOCAL: Con estructura de tope
+            const tieneTopeLocal = novedad.tiene_tope;
+            
+            camposHTML = `
+                <div class="col-md-12">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-building me-2"></i>Comisión sobre el Local</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="edit-tiene-tope-local" class="form-label">Estructura</label>
+                                    <select class="form-select" id="edit-tiene-tope-local">
+                                        <option value="0" ${!tieneTopeLocal ? 'selected' : ''}>Sin tope</option>
+                                        <option value="1" ${tieneTopeLocal ? 'selected' : ''}>Con tope</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="edit_fecha_vigencia_comision_local" class="form-label">Fecha Vigencia</label>
+                                    <input type="date" class="form-control" id="edit_fecha_vigencia_comision_local" 
+                                        value="${novedad.fecha_vigencia || ''}">
+                                </div>
+                            </div>`;
+            
+            if (tieneTopeLocal) {
+                const p1 = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
+                const p2 = novedad.porcentaje_2 ? parseFloat(novedad.porcentaje_2) : 0;
+                camposHTML += `
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label for="edit-porcentaje-1-local" class="form-label">Primer Porcentaje</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="edit-porcentaje-1-local" 
+                                            value="${p1}" step="0.01" min="0.01">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="edit-porcentaje-2-local" class="form-label">Segundo Porcentaje</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="edit-porcentaje-2-local" 
+                                            value="${p2}" step="0.01" min="0.01">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                            </div>`;
+            } else {
+                const p = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
+                camposHTML += `
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label for="edit-porcentaje-unico-local" class="form-label">Porcentaje Único</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="edit-porcentaje-unico-local" 
+                                            value="${p}" step="0.01" min="0.01">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                            </div>`;
+            }
+            
+            camposHTML += `
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 18: // Premios - Ajuste General (compatibilidad)
+        case 38: // Premios - Ajuste General (ID real BD)
+            camposHTML = `
+                <div class="col-md-6">
+                    <div class="card border-secondary">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="mb-0"><i class="fas fa-adjust me-2"></i>Premios - Ajuste General</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="edit-importe-ajuste-general" class="form-label">Importe del Ajuste</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="edit-importe-ajuste-general" 
+                                            value="${novedad.valor_numerico || ''}" step="0.01" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="edit_fecha_vigencia_ajuste" class="form-label">Fecha Vigencia</label>
+                                    <input type="date" class="form-control" id="edit_fecha_vigencia_ajuste" 
+                                        value="${novedad.fecha_vigencia || ''}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+    }
+    
+    // Cerrar la fila de detalles específicos
+    html += `</div>`;
+    
+    // Agregar observaciones si existen
+    if (novedad.observaciones && novedad.observaciones.trim() !== '') {
         html += `
             <div class="row mt-3">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-secondary text-white">
-                            <h6 class="mb-0"><i class="fas fa-comment me-2"></i>Observaciones</h6>
+                            <h6 class="mb-0"><i class="fas fa-comment-alt me-2"></i>Observaciones</h6>
                         </div>
                         <div class="card-body">
                             <p class="mb-0">${novedad.observaciones}</p>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
-
+    
+    // Establecer el contenido en el modal
     contenido.innerHTML = html;
     
-    // Mostrar modal
+    // Mostrar el modal
     const modal = new bootstrap.Modal(document.getElementById('modalDetalleNovedad'));
     modal.show();
 }
@@ -1037,10 +1411,11 @@ function actualizarEstadisticas() {
     const centrosCostosUnicos = new Set(novedadesData.map(n => n.descripcion_centro_costos || 'Centro de Costos ' + n.codigo_centro_costos)).size;
     const empleadosUnicos = new Set(novedadesData.map(n => n.legajo)).size;
     
-    // Solo sumar valores monetarios (tipos 3 y 4: salarios y premios)
+    // Solo sumar valores monetarios (tipos 3, 4 y los nuevos tipos 32-38)
     const valorTotal = novedadesData.reduce((sum, n) => {
         const tipo = parseInt(n.tipo_novedad);
-        if (tipo === 3 || tipo === 4) { // Solo salarios y premios
+        // Tipos con valores monetarios: 3, 4 (salarios y premios) y 32-38 (nuevos tipos)
+        if (tipo === 3 || tipo === 4 || (tipo >= 32 && tipo <= 38)) {
             return sum + (parseFloat(n.valor_numerico) || 0);
         }
         return sum;
@@ -1147,16 +1522,17 @@ function exportarExcel() {
         return;
     }
 
-    // Crear CSV
+
+    // Crear datos para XLSX
     const headers = ['Legajo', 'Nombre', 'Apellido', 'Sucursal', 'Tipo de Novedad', 'Fecha Vigencia', 'Valor', 'Fecha Permiso', 'Compensa', 'Observaciones', 'Fecha Registro'];
-    const csvContent = [
-        headers.join(','),
+    const data = [
+        headers,
         ...datosFiltrados.map(novedad => [
             novedad.legajo,
-            `"${novedad.nombre}"`,
-            `"${novedad.apellido}"`,
+            novedad.nombre,
+            novedad.apellido,
             novedad.sucursal,
-            `"${novedad.tipo_descripcion}"`,
+            novedad.tipo_descripcion,
             (novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : ''),
             (() => { 
                 const ctx = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero'; 
@@ -1164,23 +1540,24 @@ function exportarExcel() {
             })(),
             (novedad.fecha_permiso ? NovedadesApp.formatearFecha(novedad.fecha_permiso) : ''),
             novedad.compensa ? 'Sí' : 'No',
-            `"${(novedad.observaciones || '').replace(/"/g, '""')}"`,
+            (novedad.observaciones || ''),
             NovedadesApp.formatearFecha(novedad.fecha_creacion)
-        ].join(','))
-    ].join('\n');
+        ])
+    ];
 
-    // Descargar archivo
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `novedades_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Usar SheetJS (xlsx) para generar el archivo
+    if (typeof XLSX === 'undefined') {
+        NovedadesApp.mostrarError('No se encontró la librería XLSX. Por favor, incluya SheetJS (xlsx.full.min.js) en la página.');
+        return;
+    }
 
-    NovedadesApp.mostrarExito('Archivo exportado correctamente');
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Novedades');
+    const fecha = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `novedades_${fecha}.xlsx`);
+
+    NovedadesApp.mostrarExito('Archivo XLSX exportado correctamente');
 }
 
 /**
@@ -1292,6 +1669,15 @@ function imprimirReporte() {
  * Imprimir novedad individual
  */
 function imprimirNovedad(id) {
+    console.log('🔍 Iniciando verDetalle para ID:', id);
+    
+    if (!id) {
+        console.error('❌ ID de novedad no válido:', id);
+        mostrarAlerta('Error: ID de novedad no válido', 'danger');
+        return;
+    }
+
+    // Buscar la novedad en los datos actuales
     const novedad = novedadesData.find(n => n.id == id);
     if (!novedad) return;
 
@@ -1506,10 +1892,11 @@ function actualizarEstadisticasFiltros(datosFiltrados) {
     const centrosCostosUnicos = new Set(datosFiltrados.map(n => n.codigo_centro_costos)).size;
     const empleadosUnicos = new Set(datosFiltrados.map(n => n.legajo)).size;
     
-    // Solo sumar valores monetarios (tipos 3 y 4: salarios y premios)
+    // Solo sumar valores monetarios (tipos 3, 4 y los nuevos tipos 32-38)
     const valorTotal = datosFiltrados.reduce((sum, n) => {
         const tipo = parseInt(n.tipo_novedad);
-        if (tipo === 3 || tipo === 4) { // Solo salarios y premios
+        // Tipos con valores monetarios: 3, 4 (salarios y premios) y 32-38 (nuevos tipos)
+        if (tipo === 3 || tipo === 4 || (tipo >= 32 && tipo <= 38)) {
             return sum + (parseFloat(n.valor_numerico) || 0);
         }
         return sum;
@@ -1791,10 +2178,11 @@ async function cargarSucursalesFormularioEdicion(novedad) {
  */
 function generarCamposDinamicosEdicion(novedad) {
     const tipo = parseInt(novedad.tipo_novedad);
+    console.log('🔍 generarCamposDinamicosEdicion - Tipo novedad:', tipo, 'Novedad completa:', novedad);
     let campos = '';
     
     // Fecha de vigencia (común para varios tipos)
-    if ([1, 2, 3, 4, 5, 6, 8, 9, 10, 11].includes(tipo)) {
+    if ([1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 32, 33, 34, 35, 36, 37, 38].includes(tipo)) {
         const fechaVigencia = novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : '';
         campos += `
             <div class="col-md-6">
@@ -1993,6 +2381,218 @@ function generarCamposDinamicosEdicion(novedad) {
                 </div>
             `;
             break;
+
+        case 12: // Plus de caja (compatibilidad)
+        case 32: // Plus de caja (ID real BD)
+        // Extraer tipo de plus de observaciones
+        let tipoPlusCajaEdit = 'recibo'; // default
+        if (novedad.observaciones) {
+            const match = novedad.observaciones.match(/Tipo:\s*(.+)/);
+            if (match) {
+                tipoPlusCajaEdit = match[1].trim().toLowerCase();
+            }
+        }
+        
+        campos += `
+            <div class="col-md-4">
+                <label for="edit-tipo-plus-caja" class="form-label">Tipo de Plus</label>
+                <select class="form-select" id="edit-tipo-plus-caja" required>
+                    <option value="">Seleccione tipo...</option>
+                    <option value="recibo" ${tipoPlusCajaEdit === 'recibo' ? 'selected' : ''}>Recibo</option>
+                    <option value="premio" ${tipoPlusCajaEdit === 'premio' ? 'selected' : ''}>Premio</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="edit-importe-plus-caja" class="form-label">Importe</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" id="edit-importe-plus-caja" 
+                        value="${novedad.valor_numerico || ''}" step="0.01" min="0">
+                </div>
+            </div>
+        `;
+        break;
+
+        case 13: // Plus de Sub-Encargada (compatibilidad)
+        case 33: // Plus de Sub-Encargada (ID real BD)
+            const tieneImporteSub = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? '1' : '0';
+            
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-tiene-importe-sub" class="form-label">¿Tiene importe específico?</label>
+                    <select class="form-select" id="edit-tiene-importe-sub" required onchange="toggleImporteEdicion('sub')">
+                        <option value="1" ${tieneImporteSub === '1' ? 'selected' : ''}>Sí</option>
+                        <option value="0" ${tieneImporteSub === '0' ? 'selected' : ''}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-6" id="edit-campo-importe-sub" style="display: ${tieneImporteSub === '1' ? 'block' : 'none'}">
+                    <label for="edit-importe-sub" class="form-label">Importe</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="edit-importe-sub" 
+                            value="${novedad.valor_numerico || ''}" step="0.01" min="0">
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 14: // Plus de Encargada (compatibilidad)
+        case 34: // Plus de Encargada (ID real BD)
+            const tieneImporteEnc = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0 ? '1' : '0';
+            
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-tiene-importe-enc" class="form-label">¿Tiene importe específico?</label>
+                    <select class="form-select" id="edit-tiene-importe-enc" required onchange="toggleImporteEdicion('enc')">
+                        <option value="1" ${tieneImporteEnc === '1' ? 'selected' : ''}>Sí</option>
+                        <option value="0" ${tieneImporteEnc === '0' ? 'selected' : ''}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-6" id="edit-campo-importe-enc" style="display: ${tieneImporteEnc === '1' ? 'block' : 'none'}">
+                    <label for="edit-importe-enc" class="form-label">Importe</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="edit-importe-enc" 
+                            value="${novedad.valor_numerico || ''}" step="0.01" min="0">
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 15: // Premio Local (compatibilidad)
+        case 35: // Premio Local (ID real BD)
+            // Determinar cuál opción debe estar seleccionada basado en campos booleanos
+            let aplicaSeleccionado = '';
+            const vendedora = novedad.aplica_vendedora === true || novedad.aplica_vendedora === 1 || novedad.aplica_vendedora === '1';
+            const subEncargada = novedad.aplica_sub_encargada === true || novedad.aplica_sub_encargada === 1 || novedad.aplica_sub_encargada === '1';
+            
+            if (vendedora) {
+                aplicaSeleccionado = 'vendedora';
+            } else if (subEncargada) {
+                aplicaSeleccionado = 'sub_encargada';
+            }
+            
+            campos += `
+                <div class="col-md-4">
+                    <label for="edit-importe-premio-local" class="form-label">Importe del Premio</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="edit-importe-premio-local" 
+                            value="${novedad.valor_numerico || ''}" step="0.01" min="0" required>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Aplica a</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="edit-aplica-vendedora" 
+                            name="edit-aplica-a" value="vendedora" ${aplicaSeleccionado === 'vendedora' ? 'checked' : ''}>
+                        <label class="form-check-label" for="edit-aplica-vendedora">
+                            <i class="fas fa-user me-2"></i>Vendedora
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="edit-aplica-sub-encargada" 
+                            name="edit-aplica-a" value="sub_encargada" ${aplicaSeleccionado === 'sub_encargada' ? 'checked' : ''}>
+                        <label class="form-check-label" for="edit-aplica-sub-encargada">
+                            <i class="fas fa-user-tie me-2"></i>Sub-Encargada
+                        </label>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 16: // Comisión Individual (compatibilidad)
+        case 36: // Comisión Individual (ID real BD)
+            // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
+            const porcentajeIndividualEdit = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
+            console.log('🔍 Generando campos para Comisión Individual - porcentaje:', porcentajeIndividualEdit);
+            
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit_porcentaje_individual" class="form-label">Porcentaje Individual</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="edit_porcentaje_individual" 
+                            value="${porcentajeIndividualEdit}" step="0.01" min="0.01" max="100" required>
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label for="edit_fecha_vigencia_comision_individual" class="form-label">Fecha Vigencia</label>
+                    <input type="date" class="form-control" id="edit_fecha_vigencia_comision_individual" 
+                        value="${novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : ''}" required>
+                </div>
+            `;
+            break;
+
+        case 17: // Comisión sobre Local (compatibilidad)
+        case 37: // Comisión sobre Local (ID real BD)
+            // COMISIÓN SOBRE LOCAL: Con estructura de tope
+            const tieneTopeLocalEdit = novedad.tiene_tope;
+            const porcentaje1Edit = novedad.porcentaje_1 ? parseFloat(novedad.porcentaje_1) : 0;
+            const porcentaje2Edit = novedad.porcentaje_2 ? parseFloat(novedad.porcentaje_2) : 0;
+            console.log('🔍 Generando campos para Comisión sobre Local - tiene_tope:', tieneTopeLocalEdit, 'p1:', porcentaje1Edit, 'p2:', porcentaje2Edit);
+            
+            campos += `
+                <div class="col-md-4">
+                    <label for="edit-tiene-tope-local" class="form-label">Estructura</label>
+                    <select class="form-select" id="edit-tiene-tope-local" required onchange="toggleCamposComisionLocalEdicion()">
+                        <option value="0" ${!tieneTopeLocalEdit ? 'selected' : ''}>Sin tope</option>
+                        <option value="1" ${tieneTopeLocalEdit ? 'selected' : ''}>Con tope</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="edit_fecha_vigencia_comision_local" class="form-label">Fecha Vigencia</label>
+                    <input type="date" class="form-control" id="edit_fecha_vigencia_comision_local" 
+                        value="${novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : ''}" required>
+                </div>
+                
+                <!-- Campos para sin tope -->
+                <div class="col-md-4" id="edit-campos-sin-tope-local" style="display: ${!tieneTopeLocalEdit ? 'block' : 'none'}">
+                    <label for="edit-porcentaje-unico-local" class="form-label">Porcentaje Único</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="edit-porcentaje-unico-local" 
+                            value="${!tieneTopeLocalEdit ? porcentaje1Edit : ''}" step="0.01" min="0.01" max="100">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+                
+                <!-- Campos para con tope -->
+                <div class="col-md-8" id="edit-campos-con-tope-local" style="display: ${tieneTopeLocalEdit ? 'block' : 'none'}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="edit-porcentaje-1-local" class="form-label">Primer Porcentaje</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="edit-porcentaje-1-local" 
+                                    value="${tieneTopeLocalEdit ? porcentaje1Edit : ''}" step="0.01" min="0.01" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit-porcentaje-2-local" class="form-label">Segundo Porcentaje</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="edit-porcentaje-2-local" 
+                                    value="${tieneTopeLocalEdit ? porcentaje2Edit : ''}" step="0.01" min="0.01" max="100">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 18: // Premios - Ajuste General (compatibilidad)
+        case 38: // Premios - Ajuste General (ID real BD)
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-importe-ajuste-general" class="form-label">Importe del Ajuste</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="edit-importe-ajuste-general" 
+                            value="${novedad.valor_numerico || ''}" step="0.01" min="0" required>
+                    </div>
+                </div>
+            `;
+            break;
     }
     
     return campos;
@@ -2170,9 +2770,134 @@ async function guardarEdicionNovedad() {
                     console.error('❌ No se encontró el elemento edit-cantidad-unidades para producción');
                 }
                 break;
+            
+            case 12: // Plus de caja (compatibilidad)
+            case 32: // Plus de caja (ID real BD)
+                datos.tipo_plus_caja = document.getElementById('edit-tipo-plus-caja')?.value;
+                const importePlusCaja = document.getElementById('edit-importe-plus-caja');
+                if (importePlusCaja && importePlusCaja.value) {
+                    datos.importe = parseFloat(importePlusCaja.value);
+                }
+                break;
+
+            case 13: // Plus de Sub-Encargada (compatibilidad)
+            case 33: // Plus de Sub-Encargada (ID real BD)
+                datos.tiene_importe = document.getElementById('edit-tiene-importe-sub')?.value;
+                if (datos.tiene_importe === '1') {
+                    const importeSub = document.getElementById('edit-importe-sub');
+                    if (importeSub && importeSub.value) {
+                        datos.importe = parseFloat(importeSub.value);
+                    }
+                }
+                break;
+
+            case 14: // Plus de Encargada (compatibilidad)
+            case 34: // Plus de Encargada (ID real BD)
+                datos.tiene_importe = document.getElementById('edit-tiene-importe-enc')?.value;
+                if (datos.tiene_importe === '1') {
+                    const importeEnc = document.getElementById('edit-importe-enc');
+                    if (importeEnc && importeEnc.value) {
+                        datos.importe = parseFloat(importeEnc.value);
+                    }
+                }
+                break;
+
+            case 15: // Premio Local (compatibilidad)
+            case 35: // Premio Local (ID real BD)
+                const importePremioLocal = document.getElementById('edit-importe-premio-local');
+                if (importePremioLocal && importePremioLocal.value) {
+                    datos.importe = parseFloat(importePremioLocal.value);
+                }
+                // Obtener el valor del radio button seleccionado y convertir a campos booleanos
+                const aplicaRadio = document.querySelector('input[name="edit-aplica-a"]:checked');
+                if (aplicaRadio) {
+                    datos.aplica_vendedora = aplicaRadio.value === 'vendedora';
+                    datos.aplica_sub_encargada = aplicaRadio.value === 'sub_encargada';
+                }
+                break;
+
+            case 16: // Comisión Individual (compatibilidad)
+            case 36: // Comisión Individual (ID real BD)
+                // COMISIÓN INDIVIDUAL: Solo un porcentaje simple
+                const porcentajeIndEdit = document.getElementById('edit_porcentaje_individual');
+                console.log('🔍 Debug Comisión Individual - elemento encontrado:', porcentajeIndEdit);
+                console.log('🔍 Debug Comisión Individual - valor:', porcentajeIndEdit ? porcentajeIndEdit.value : 'ELEMENTO NO ENCONTRADO');
+                
+                if (porcentajeIndEdit) {
+                    datos.porcentaje_individual = parseFloat(porcentajeIndEdit.value) || 0;
+                    console.log('✅ Porcentaje individual agregado:', datos.porcentaje_individual);
+                } else {
+                    console.error('❌ Elemento edit_porcentaje_individual no encontrado en el DOM');
+                }
+                
+                // Agregar fecha de vigencia específica para comisión individual
+                const fechaVigenciaComisionInd = document.getElementById('edit_fecha_vigencia_comision_individual');
+                if (fechaVigenciaComisionInd && fechaVigenciaComisionInd.value) {
+                    datos.fecha_vigencia = fechaVigenciaComisionInd.value;
+                }
+                break;
+
+            case 17: // Comisión sobre Local (compatibilidad)
+            case 37: // Comisión sobre Local (ID real BD)
+                // COMISIÓN SOBRE LOCAL: Con estructura de tope
+                const tieneTopeLocal = document.getElementById('edit-tiene-tope-local');
+                
+                if (tieneTopeLocal) {
+                    datos.tiene_tope = tieneTopeLocal.value === '1';
+                    
+                    if (datos.tiene_tope) {
+                        // Con tope: dos porcentajes
+                        const p1 = document.getElementById('edit-porcentaje-1-local');
+                        const p2 = document.getElementById('edit-porcentaje-2-local');
+                        if (p1) datos.porcentaje_1 = parseFloat(p1.value) || 0;
+                        if (p2) datos.porcentaje_2 = parseFloat(p2.value) || 0;
+                    } else {
+                        // Sin tope: un porcentaje
+                        const pUnico = document.getElementById('edit-porcentaje-unico-local');
+                        if (pUnico) datos.porcentaje_unico = parseFloat(pUnico.value) || 0;
+                    }
+                }
+                
+                // Agregar fecha de vigencia específica para comisión sobre local
+                const fechaVigenciaComisionLocal = document.getElementById('edit_fecha_vigencia_comision_local');
+                if (fechaVigenciaComisionLocal && fechaVigenciaComisionLocal.value) {
+                    datos.fecha_vigencia = fechaVigenciaComisionLocal.value;
+                }
+                break;
+
+            case 18: // Premios - Ajuste General (compatibilidad)
+            case 38: // Premios - Ajuste General (ID real BD)
+                const importeAjuste = document.getElementById('edit-importe-ajuste-general');
+                if (importeAjuste && importeAjuste.value) {
+                    datos.importe = parseFloat(importeAjuste.value);
+                }
+                break;
         }
         
         console.log('📋 Datos completos a enviar:', datos);
+        
+        // DEBUG: Mostrar datos específicos para depuración
+        console.group('🔍 Debug - Datos de edición por tipo');
+        console.log('Tipo de novedad:', tipo);
+        console.log('Legajo:', datos.legajo);
+        console.log('Nombre:', datos.nombre);
+        console.log('Apellido:', datos.apellido);
+        console.log('Fecha vigencia:', datos.fecha_vigencia);
+        console.log('Observaciones:', datos.observaciones);
+        
+        if (tipo >= 12 && tipo <= 18 || tipo >= 32 && tipo <= 38) {
+            console.log('📝 Datos para tipos 12-18/32-38:');
+            console.log('- Importe:', datos.importe);
+            console.log('- Tipo plus caja:', datos.tipo_plus_caja);
+            console.log('- Tiene importe:', datos.tiene_importe);
+            console.log('- Aplica vendedora:', datos.aplica_vendedora);
+            console.log('- Aplica sub encargada:', datos.aplica_sub_encargada);
+            console.log('- Tiene tope:', datos.tiene_tope);
+            console.log('- Porcentaje 1:', datos.porcentaje_1);
+            console.log('- Porcentaje 2:', datos.porcentaje_2);
+            console.log('- Porcentaje único:', datos.porcentaje_unico);
+        }
+        console.groupEnd();
         
         // Validar y truncar campos según límites de BD
         if (datos.nombre && datos.nombre.length > 50) {
@@ -2513,6 +3238,32 @@ function limpiarObservaciones(observaciones, tipoNovedad) {
             // Remover " - X unidades (100%)"
             observacionesLimpias = observacionesLimpias.replace(/\s*-\s*\d+\s*unidades\s*\(100%\)/gi, '');
             break;
+            
+        case 12: // Plus de caja
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Plus de caja:\s*[^-<\n]+/gi, '');
+            break;
+
+        case 13: // Plus de Sub-Encargada
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Plus Sub-Encargada:\s*[^-<\n]+/gi, '');
+            break;
+
+        case 14: // Plus de Encargada
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Plus Encargada:\s*[^-<\n]+/gi, '');
+            break;
+
+        case 15: // Premio Local
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Premio Local:\s*[^-<\n]+/gi, '');
+            break;
+
+        case 16: // Comisión Individual
+        case 17: // Comisión sobre Local
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Comisión:\s*[^-<\n]+/gi, '');
+            break;
+
+        case 18: // Premios - Ajuste General
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Ajuste General:\s*[^-<\n]+/gi, '');
+            break;
+        
     }
     
     // Limpiar <OBS> si queda solo
@@ -2567,7 +3318,7 @@ function mostrarModalCambiarEstado(novedadId, estadoActual) {
         1: 'Enviada',
         2: 'En Revisión', 
         3: 'Aprobada',
-        4: 'Rechazada',
+        4: 'A Revisar',
         5: 'Procesada'
     };
 
@@ -2677,5 +3428,135 @@ async function obtenerSucursalPorCentroCostos(codigoCentroCostos) {
     } catch (error) {
         console.error('Error obteniendo sucursal por centro de costos:', error);
         return null;
+    }
+}
+
+/**
+ * Toggle campos de importe en edición
+ */
+function toggleImporteEdicion(tipo) {
+    const select = document.getElementById(`edit-tiene-importe-${tipo}`);
+    const campoImporte = document.getElementById(`edit-campo-importe-${tipo}`);
+    
+    if (select && campoImporte) {
+        if (select.value === '1') {
+            campoImporte.style.display = 'block';
+            const input = campoImporte.querySelector('input');
+            if (input) input.setAttribute('required', 'required');
+        } else {
+            campoImporte.style.display = 'none';
+            const input = campoImporte.querySelector('input');
+            if (input) {
+                input.removeAttribute('required');
+                input.value = '';
+            }
+        }
+    }
+}
+
+/**
+ * Toggle campos de comisión en edición
+ */
+function toggleCamposComisionEdicion(sufijo) {
+    const selectTope = document.getElementById(`edit-tiene-tope-${sufijo}`);
+    const camposSinTope = document.getElementById(`edit-campos-sin-tope-${sufijo}`);
+    const camposConTope = document.getElementById(`edit-campos-con-tope-${sufijo}`);
+    
+    if (selectTope.value === '1') {
+        // Con tope
+        if (camposConTope) {
+            camposConTope.style.display = 'block';
+            camposConTope.querySelectorAll('input').forEach(input => {
+                input.setAttribute('required', 'required');
+            });
+        }
+        if (camposSinTope) {
+            camposSinTope.style.display = 'none';
+            camposSinTope.querySelectorAll('input').forEach(input => {
+                input.removeAttribute('required');
+                input.value = '';
+            });
+        }
+    } else if (selectTope.value === '0') {
+        // Sin tope
+        if (camposSinTope) {
+            camposSinTope.style.display = 'block';
+            camposSinTope.querySelectorAll('input').forEach(input => {
+                input.setAttribute('required', 'required');
+            });
+        }
+        if (camposConTope) {
+            camposConTope.style.display = 'none';
+            camposConTope.querySelectorAll('input').forEach(input => {
+                input.removeAttribute('required');
+                input.value = '';
+            });
+        }
+    }
+    
+    // Actualizar el detalle visible inmediatamente
+    actualizarDetalleComisionEnTiempoReal(sufijo);
+}
+
+/**
+ * Actualizar detalle de comisión en tiempo real cuando cambia la estructura
+ */
+function actualizarDetalleComisionEnTiempoReal(sufijo) {
+    const selectTope = document.getElementById(`edit-tiene-tope-${sufijo}`);
+    const estructuraElement = document.querySelector('.detalle-estructura-comision');
+    const porcentajesElement = document.querySelector('.detalle-porcentajes-comision');
+    
+    if (estructuraElement && porcentajesElement) {
+        const tieneTopeNuevo = selectTope.value === '1';
+        
+        // Actualizar estructura
+        estructuraElement.innerHTML = `<span class="badge ${tieneTopeNuevo ? 'bg-warning text-dark' : 'bg-success'}">${tieneTopeNuevo ? 'Con tope' : 'Sin tope'}</span>`;
+        
+        // Actualizar porcentajes en tiempo real
+        if (tieneTopeNuevo) {
+            porcentajesElement.innerHTML = '<i class="fas fa-percentage me-2"></i><strong>Porcentajes:</strong> Se actualizarán al guardar';
+        } else {
+            porcentajesElement.innerHTML = '<i class="fas fa-percentage me-2"></i><strong>Porcentajes:</strong> Se actualizarán al guardar';
+        }
+    }
+}
+/**
+ * Función para alternar campos de comisión sobre local en modal de edición
+ */
+function toggleCamposComisionLocalEdicion() {
+    const selectTope = document.getElementById('edit-tiene-tope-local');
+    const camposSinTope = document.getElementById('edit-campos-sin-tope-local');
+    const camposConTope = document.getElementById('edit-campos-con-tope-local');
+    
+    if (!selectTope || !camposSinTope || !camposConTope) {
+        console.error('No se encontraron los elementos necesarios para toggle de comisión local');
+        return;
+    }
+    
+    const tieneTopeNuevo = selectTope.value === '1';
+    console.log('Cambiando estructura de comisión local - Con tope:', tieneTopeNuevo);
+    
+    if (tieneTopeNuevo) {
+        // Mostrar campos con tope (dos porcentajes)
+        camposSinTope.style.display = 'none';
+        camposConTope.style.display = 'block';
+        
+        // Limpiar campos sin tope
+        const porcentajeUnico = document.getElementById('edit-porcentaje-unico-local');
+        if (porcentajeUnico) porcentajeUnico.value = '';
+        
+        console.log('Mostrando campos CON tope');
+    } else {
+        // Mostrar campo sin tope (un porcentaje)
+        camposSinTope.style.display = 'block';
+        camposConTope.style.display = 'none';
+        
+        // Limpiar campos con tope
+        const porcentaje1 = document.getElementById('edit-porcentaje-1-local');
+        const porcentaje2 = document.getElementById('edit-porcentaje-2-local');
+        if (porcentaje1) porcentaje1.value = '';
+        if (porcentaje2) porcentaje2.value = '';
+        
+        console.log('Mostrando campos SIN tope');
     }
 }

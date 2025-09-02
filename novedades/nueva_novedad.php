@@ -53,9 +53,56 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
         </div>
     </div>
 
+    <!-- Indicador de modo activo -->
+    <div id="modo-activo-indicator" class="modo-activo-indicator" style="display: none;">
+        <i class="fas fa-info-circle me-2"></i>
+        <span id="modo-activo-text"></span>
+    </div>
+
     <!-- Contenido principal -->
     <div class="container">
-        <form id="form-novedad" novalidate>
+        <!-- Sección: Modo de Carga -->
+        <div class="form-section" id="modo-carga-section">
+            <h5>
+                <i class="fas fa-list-ol me-2"></i>
+                Modo de Carga
+            </h5>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <p class="mb-4">Seleccione el modo de carga de novedades:</p>
+                            <div class="row justify-content-center">
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-primary btn-lg w-100 modo-carga-btn" id="modo-unica" data-modo="unica">
+                                        <i class="fas fa-file-alt fa-2x mb-2 d-block"></i>
+                                        <strong>Cargar 1 novedad</strong>
+                                        <br><small class="text-muted">Modo tradicional</small>
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-outline-success btn-lg w-100 modo-carga-btn" id="modo-multiple" data-modo="multiple">
+                                        <i class="fas fa-files fa-2x mb-2 d-block"></i>
+                                        <strong>Cargar varias novedades</strong>
+                                        <br><small class="text-muted">Para el mismo empleado</small>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="form-novedad" novalidate style="display: none;">
+            
+            <!-- Botón cambiar modo (arriba del formulario) -->
+            <div class="mb-3">
+                <button type="button" class="btn btn-outline-info btn-sm" id="btn-cambiar-modo-top" onclick="volverSeleccionModo()" style="display: none;">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    Cambiar Modo
+                </button>
+            </div>
             
             <!-- Sección: Datos del Empleado -->
             <div class="form-section">
@@ -92,8 +139,61 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                 </div>
             </div>
 
-            <!-- Sección: Tipo de Novedad -->
-            <div class="form-section">
+            <!-- Sección: Configuración Global (solo para modo múltiple) -->
+            <div class="form-section" id="configuracion-global-section" style="display: none;">
+                <h5>
+                    <i class="fas fa-cog me-2"></i>
+                    Configuración Global
+                    <small class="text-muted">(Aplicable a todas las novedades)</small>
+                </h5>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="periodo_mes_global" class="form-label">
+                            Período - Mes <span class="required">*</span>
+                        </label>
+                        <select class="form-select" id="periodo_mes_global" name="periodo_mes_global">
+                            <option value="">Seleccionar mes...</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            El mes es obligatorio para el modo múltiple
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="periodo_anio_global" class="form-label">
+                            Período - Año <span class="required">*</span>
+                        </label>
+                        <select class="form-select" id="periodo_anio_global" name="periodo_anio_global">
+                            <option value="">Seleccionar año...</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            El año es obligatorio para el modo múltiple
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="fecha_vigencia_global" class="form-label">
+                            Fecha de entrada en vigencia <span class="required">*</span>
+                        </label>
+                        <input type="date" class="form-control" id="fecha_vigencia_global" name="fecha_vigencia_global">
+                        <div class="invalid-feedback">
+                            La fecha de vigencia es obligatoria para el modo múltiple
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información sobre período -->
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Por defecto se aplica el período en curso, antes de la fecha de corte, pero puede modificarse.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección: Tipo de Novedad (Modo único) -->
+            <div class="form-section" id="tipo-novedad-unica">
                 <h5>
                     <i class="fas fa-tags me-2"></i>
                     Tipo de Novedad
@@ -101,20 +201,49 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                 
                 <div class="row">
                     <div class="col-md-8">
-                        <label for="tipo_novedad" class="form-label">
-                            Seleccione el tipo de novedad <span class="required">*</span>
-                        </label>
-                        <select class="form-select" id="tipo_novedad" name="tipo_novedad" required>
-                            <option value="">Seleccione tipo de novedad...</option>
-                        </select>
-                        <div class="invalid-feedback">
-                            El tipo de novedad es obligatorio
+                        <div class="position-relative">
+                            <label for="tipo_novedad" class="form-label">
+                                Seleccione el tipo de novedad <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tipo_novedad" name="tipo_novedad" required>
+                                <option value="">Seleccione tipo de novedad...</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                El tipo de novedad es obligatorio
+                            </div>
+                            <!-- Botón de información -->
+                            <button type="button" class="tipo-novedad-info-btn" id="infoBtn-unica" 
+                                    onclick="mostrarInfoTipoNovedad('unica')" title="Información sobre este tipo de novedad"
+                                    style="display: none;">
+                                <i class="fas fa-info"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Configuración específica por tipo de novedad -->
+            <!-- Contenedor de Novedades Múltiples -->
+            <div id="novedades-multiples-container" style="display: none;">
+                <div class="form-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5>
+                            <i class="fas fa-layer-group me-2"></i>
+                            Novedades para el Empleado
+                        </h5>
+                        <button type="button" class="btn btn-success" id="agregar-novedad-btn">
+                            <i class="fas fa-plus me-2"></i>
+                            Agregar otra novedad
+                        </button>
+                    </div>
+                    
+                    <!-- Contenedor dinámico para las cards de novedades -->
+                    <div id="novedades-cards-container">
+                        <!-- Las cards se generarán dinámicamente aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración específica por tipo de novedad (Modo único) -->
             <div id="configuracion-novedad" style="display: none;">
                 
                 <!-- 1. Cambio de sucursal -->
@@ -521,10 +650,360 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                 </div>
 
+                <!-- 12. Plus de caja -->
+                <div class="form-section campo-dinamico" id="config-plus-caja">
+                    <h5>
+                        <i class="fas fa-cash-register me-2"></i>
+                        Configuración: Plus de Caja
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tipo_plus_caja" class="form-label">
+                                Tipo de Plus <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tipo_plus_caja" name="tipo_plus_caja">
+                                <option value="">Seleccione tipo...</option>
+                                <option value="recibo">Recibo</option>
+                                <option value="premio">Premio</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                El tipo de plus es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="campo_importe_plus_caja" style="display: none;">
+                            <label for="importe_plus_caja" class="form-label">
+                                Importe
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_plus_caja" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_plus_caja" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_plus_caja" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 13. Plus de Sub-Encargada -->
+                <div class="form-section campo-dinamico" id="config-plus-sub-encargada">
+                    <h5>
+                        <i class="fas fa-user-tie me-2"></i>
+                        Configuración: Plus de Sub-Encargada
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tiene_importe_sub" class="form-label">
+                                ¿Tiene importe específico? <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tiene_importe_sub" name="tiene_importe">
+                                <option value="">Seleccione...</option>
+                                <option value="1">Sí</option>
+                                <option value="0">No</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Debe indicar si tiene importe específico
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="campo_importe_sub_encargada" style="display: none;">
+                            <label for="importe_sub_encargada" class="form-label">
+                                Importe <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_sub_encargada" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_plus_sub" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_plus_sub" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 14. Plus de Encargada -->
+                <div class="form-section campo-dinamico" id="config-plus-encargada">
+                    <h5>
+                        <i class="fas fa-user-cog me-2"></i>
+                        Configuración: Plus de Encargada
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tiene_importe_enc" class="form-label">
+                                ¿Tiene importe específico? <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tiene_importe_enc" name="tiene_importe">
+                                <option value="">Seleccione...</option>
+                                <option value="1">Sí</option>
+                                <option value="0">No</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Debe indicar si tiene importe específico
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="campo_importe_encargada" style="display: none;">
+                            <label for="importe_encargada" class="form-label">
+                                Importe <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_encargada" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_plus_enc" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_plus_enc" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 15. Premio Local -->
+                <div class="form-section campo-dinamico" id="config-premio-local">
+                    <h5>
+                        <i class="fas fa-trophy me-2"></i>
+                        Configuración: Premio Local
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="importe_premio_local" class="form-label">
+                                Importe del Premio <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_premio_local" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe del premio es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_premio_local" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_premio_local" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">
+                                Aplica a <span class="required">*</span>
+                            </label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="aplica_vendedora" name="aplica_vendedora" value="1">
+                                <label class="form-check-label" for="aplica_vendedora">
+                                    <i class="fas fa-user me-2"></i>Vendedora
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="aplica_sub_encargada" name="aplica_sub_encargada" value="1">
+                                <label class="form-check-label" for="aplica_sub_encargada">
+                                    <i class="fas fa-user-tie me-2"></i>Sub-Encargada
+                                </label>
+                            </div>
+                            <div class="invalid-feedback">
+                                Debe seleccionar al menos una opción
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 16. Comisión Individual -->
+                <div class="form-section campo-dinamico" id="config-comision-individual">
+                    <h5>
+                        <i class="fas fa-percentage me-2"></i>
+                        Configuración: Comisión Individual
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="porcentaje_individual" class="form-label">
+                                Porcentaje de Comisión <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_individual" 
+                                    name="porcentaje_individual" step="0.01" min="0.01" max="0.99" placeholder="0.15">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="invalid-feedback">
+                                El porcentaje de comisión es obligatorio
+                            </div>
+                            <small class="form-text text-muted">
+                                Ejemplo: 0.15 para 0.15%
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_comision_individual" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_comision_individual" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 17. Comisión sobre el Local -->
+                <div class="form-section campo-dinamico" id="config-comision-local">
+                    <h5>
+                        <i class="fas fa-building me-2"></i>
+                        Configuración: Comisión sobre el Local
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="tiene_tope_local" class="form-label">
+                                Estructura de Comisión <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="tiene_tope_local" name="tiene_tope">
+                                <option value="">Seleccione...</option>
+                                <option value="0">Sin tope (un porcentaje)</option>
+                                <option value="1">Con tope (dos porcentajes)</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Debe seleccionar la estructura de comisión
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_comision_local" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_comision_local" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para sin tope -->
+                    <div class="row mt-3" id="campos_sin_tope_local" style="display: none;">
+                        <div class="col-md-4">
+                            <label for="porcentaje_unico_local" class="form-label">
+                                Porcentaje Único <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_unico_local" 
+                                    name="porcentaje_unico" step="0.01" min="0.01" max="0.99" placeholder="0.50">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Ejemplo: 0.50 para 0.50%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe ser mayor a 0.01
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para con tope -->
+                    <div class="row mt-3" id="campos_con_tope_local" style="display: none;">
+                        <div class="col-md-3">
+                            <label for="porcentaje_1_local" class="form-label">
+                                Primer Porcentaje <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_1_local" 
+                                    name="porcentaje_1" step="0.01" min="0.01" max="0.99" placeholder="0.75">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Ejemplo: 0.75 para 0.75%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe ser mayor a 0.01
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="porcentaje_2_local" class="form-label">
+                                Segundo Porcentaje <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_2_local" 
+                                    name="porcentaje_2" step="0.01" min="0.01" max="0.99" placeholder="0.25">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="form-text text-muted">Ejemplo: 0.25 para 0.25%</small>
+                            <div class="invalid-feedback">
+                                El porcentaje debe ser mayor a 0.01
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 18. Premios - Ajuste General -->
+                <div class="form-section campo-dinamico" id="config-premios-ajuste">
+                    <h5>
+                        <i class="fas fa-adjust me-2"></i>
+                        Configuración: Premios - Ajuste General
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="importe_ajuste_general" class="form-label">
+                                Importe del Ajuste <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="importe_ajuste_general" 
+                                    name="importe" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El importe del ajuste es obligatorio
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_ajuste" class="form-label">
+                                Fecha de entrada en vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_ajuste" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                
+
             </div>
 
-            <!-- Campo: Observaciones -->
-            <div class="form-section">
+            <!-- Período de Aplicación (solo modo único) -->
+            <div class="form-section" id="periodo-aplicacion-section">
+                <h5>
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    Período de Aplicación
+                </h5>
+                <div id="periodo-aplicacion-container">
+                    <!-- El select se insertará aquí dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Campo: Observaciones (solo modo único) -->
+            <div class="form-section" id="observaciones-section">
                 <h5>
                     <i class="fas fa-comment me-2"></i>
                     Observaciones
@@ -551,10 +1030,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         <button type="button" class="btn btn-outline-secondary" onclick="limpiarFormularioManual()">
                             <i class="fas fa-eraser me-2"></i>
                             Limpiar
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="window.history.back()">
-                            <i class="fas fa-arrow-left me-2"></i>
-                            Volver
                         </button>
                         <button type="submit" class="btn btn-success btn-lg" id="btn-guardar">
                             <i class="fas fa-save me-2"></i>
@@ -594,8 +1069,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </p>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Próximos pasos:</strong> La novedad será incluida en la liquidación 
-                                del período 28/07/2025 - 27/08/2025.
+                                <strong>Próximos pasos:</strong> La novedad será incluida en la liquidación mensual.
                             </div>
                         </div>
                     </div>
@@ -655,8 +1129,111 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- JavaScript personalizado -->
+    <script src="js/periodo_seleccionable.js?v=<?php echo time(); ?>"></script>
     <script src="js/novedades_main.js?v=<?php echo time(); ?>"></script>
     <script src="js/nueva_novedad_form.js?v=<?php echo time(); ?>"></script>
+    <script src="js/nueva_novedad_init.js?v=<?php echo time(); ?>"></script>
+
+    <script>
+        // Inicializar período de aplicación inmediatamente al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pequeño delay para asegurar que todo esté cargado
+            setTimeout(function() {
+                // Inicializar selects de período para modo múltiple
+                inicializarSelectsPeriodoMultiple();
+                
+                // Insertar select de período básico inmediatamente para modo único
+                const contenedorPeriodo = document.getElementById('periodo-aplicacion-container');
+                if (contenedorPeriodo && typeof crearSelectPeriodoBasico !== 'undefined') {
+                    contenedorPeriodo.innerHTML = crearSelectPeriodoBasico();
+                    console.log('📅 Período de aplicación inicializado al cargar la página');
+                } else if (contenedorPeriodo) {
+                    // Fallback manual si las funciones no están cargadas aún
+                    const fechaActual = new Date();
+                    const mesActual = fechaActual.getMonth() + 1;
+                    const añoActual = fechaActual.getFullYear();
+                    
+                    let html = `
+                        <div class="form-group mb-3" id="periodo-aplicacion-group">
+                            <label for="periodo_aplicacion" class="form-label">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Período de Aplicación
+                            </label>
+                            <select class="form-select" id="periodo_aplicacion" name="periodo_aplicacion" required>
+                    `;
+                    
+                    const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                                 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                    
+                    // Generar opciones de -1 a +11 meses
+                    for (let i = -1; i <= 11; i++) {
+                        const fecha = new Date(añoActual, mesActual - 1 + i, 1);
+                        const mes = fecha.getMonth() + 1;
+                        const año = fecha.getFullYear();
+                        const value = `${mes}-${año}`;
+                        const selected = i === 0 ? 'selected' : '';
+                        
+                        html += `<option value="${value}" ${selected}>${meses[mes]} ${año}</option>`;
+                    }
+                    
+                    html += `
+                            </select>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Por defecto se aplica el período en curso, antes de la fecha de corte, pero puede modificarse.
+                            </div>
+                        </div>
+                    `;
+                    
+                    contenedorPeriodo.innerHTML = html;
+                    console.log('📅 Período de aplicación inicializado con fallback');
+                }
+            }, 500);
+        });
+        
+        // Función para inicializar los selects de período en modo múltiple
+        function inicializarSelectsPeriodoMultiple() {
+            const fechaActual = new Date();
+            const mesActual = fechaActual.getMonth() + 1;
+            const añoActual = fechaActual.getFullYear();
+            
+            // Cargar opciones de mes
+            const selectMes = document.getElementById('periodo_mes_global');
+            if (selectMes) {
+                const meses = [
+                    '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                ];
+                
+                selectMes.innerHTML = '<option value="">Seleccionar mes...</option>';
+                
+                // Generar opciones de -1 a +11 meses
+                for (let i = -1; i <= 11; i++) {
+                    const fecha = new Date(añoActual, mesActual - 1 + i, 1);
+                    const mes = fecha.getMonth() + 1;
+                    const selected = i === 0 ? 'selected' : '';
+                    
+                    selectMes.innerHTML += `<option value="${mes}" ${selected}>${meses[mes]}</option>`;
+                }
+                
+                console.log('📅 Select de mes inicializado con mes actual:', mesActual);
+            }
+            
+            // Cargar opciones de año
+            const selectAño = document.getElementById('periodo_anio_global');
+            if (selectAño) {
+                selectAño.innerHTML = '<option value="">Seleccionar año...</option>';
+                
+                // Generar años desde 2020 hasta 2030
+                for (let año = 2020; año <= 2030; año++) {
+                    const selected = año === añoActual ? 'selected' : '';
+                    selectAño.innerHTML += `<option value="${año}" ${selected}>${año}</option>`;
+                }
+                
+                console.log('📅 Select de año inicializado con año actual:', añoActual);
+            }
+        }
+    </script>
 
     <script>
         // Manejar errores no capturados (especialmente de extensiones del navegador)
@@ -1040,6 +1617,52 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
 
     <!-- Manual de Usuario Modal -->
     <?php include 'components/manual_modal.php'; ?>
+
+    <!-- Modal de Información de Tipo de Novedad -->
+    <div class="modal fade modal-tipo-novedad" id="modalTipoNovedadInfo" tabindex="-1" aria-labelledby="modalTipoNovedadInfoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTipoNovedadInfoLabel">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información del Tipo de Novedad
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-bold text-primary mb-3" id="tipoNovedadNombre">
+                                <!-- Nombre del tipo de novedad se mostrará aquí -->
+                            </h6>
+                            <div id="tipoNovedadDescripcion" class="info-content-editable">
+                                <div class="info-content-placeholder">
+                                    <i class="fas fa-edit fa-2x mb-3 d-block"></i>
+                                    <p class="mb-2"><strong>Información no disponible</strong></p>
+                                    <p class="mb-0">El contenido para este tipo de novedad será agregado próximamente.</p>
+                                    <small class="text-muted d-block mt-2">Espacio reservado para información detallada sobre este tipo de novedad.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Nota:</strong> Esta información será actualizada con detalles específicos sobre cada tipo de novedad.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>

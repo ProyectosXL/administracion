@@ -337,3 +337,380 @@ body {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ===== ESTILOS PARA MODO MÚLTIPLE ===== */
+
+/* Botones de selección de modo */
+.modo-carga-btn {
+    padding: 1.5rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.modo-carga-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.modo-carga-btn.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.modo-carga-btn.btn-outline-success:hover {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+}
+
+/* Cards de novedades múltiples */
+.novedad-card {
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.novedad-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.novedad-card .card-header {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: var(--primary-color);
+    border-bottom: 1px solid rgba(13, 110, 253, 0.2);
+    font-weight: 600;
+}
+
+.novedad-card .card-header h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Configuración global en modo múltiple */
+#configuracion-global-section {
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.1), rgba(32, 201, 151, 0.1));
+    border-radius: 10px;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+}
+
+#configuracion-global-section h5 {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+/* Contenedor de novedades múltiples */
+#novedades-multiples-container {
+    background-color: rgba(248, 249, 250, 0.5);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+/* Botón agregar novedad */
+#agregar-novedad-btn {
+    border-radius: 25px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(25, 135, 84, 0.3);
+    transition: all 0.3s ease;
+}
+
+#agregar-novedad-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(25, 135, 84, 0.4);
+}
+
+/* Configuración específica en cards múltiples */
+.configuracion-novedad-multiple {
+    background-color: rgba(13, 110, 253, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+/* Animaciones para cards */
+.novedad-card {
+    animation: slideInUp 0.5s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estilos responsivos para modo múltiple */
+@media (max-width: 768px) {
+    .modo-carga-btn {
+        margin-bottom: 1rem;
+    }
+    
+    .novedad-card {
+        margin-bottom: 1rem;
+    }
+    
+    #configuracion-global-section .row > div {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Badge para número de novedades */
+.numero-novedades-badge {
+    background-color: var(--success-color);
+    color: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+/* Indicador de modo activo */
+.modo-activo-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: var(--info-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+/* COMENTADO TEMPORALMENTE PARA EVITAR CONFLICTOS
+.tipo-novedad-info-btn {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    background: linear-gradient(135deg, #0d6efd, #4285f4) !important;
+    color: white !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.8rem !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    z-index: 100 !important;
+    box-shadow: 0 3px 10px rgba(13, 110, 253, 0.3) !important;
+    font-weight: 600 !important;
+    outline: none !important;
+}
+
+.tipo-novedad-info-btn:hover {
+    background: linear-gradient(135deg, #0b5ed7, #3367d6) !important;
+    transform: translateY(-2px) scale(1.1) !important;
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.5) !important;
+}
+
+.tipo-novedad-info-btn.active {
+    display: flex !important;
+    animation: fadeInScale 0.3s ease-out !important;
+}
+FIN COMENTARIO TEMPORAL */
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Contenedor con posición relativa para los selectores - MÁXIMA ESPECIFICIDAD */
+body .position-relative,
+body #tipo-novedad-unica .col-md-8,
+body .novedad-card .col-md-8,
+body .form-section .col-md-8,
+body .tipo-novedad-multiple-container,
+html body .position-relative,
+html body #tipo-novedad-unica .col-md-8 {
+    position: relative !important;
+    min-height: 80px !important;
+}
+
+/* Forzar posición relativa en contenedores específicos */
+#tipo-novedad-unica,
+.novedad-card,
+.form-section,
+#form-novedad {
+    position: relative !important;
+}
+.position-relative {
+    position: relative !important;
+}
+
+/* Estilos para el contenedor del selector */
+.select-container-with-info {
+    position: relative;
+    border: 1px solid rgba(13, 110, 253, 0.1);
+    border-radius: 8px;
+    padding: 8px;
+    background-color: rgba(13, 110, 253, 0.02);
+    transition: all 0.3s ease;
+}
+
+.select-container-with-info:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    border-color: rgba(13, 110, 253, 0.2);
+}
+
+/* Modal de información de tipo de novedad */
+.modal-tipo-novedad .modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-tipo-novedad .modal-header {
+    background: linear-gradient(135deg, var(--info-color), #0bb8d4);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+}
+
+.modal-tipo-novedad .modal-title {
+    font-weight: 600;
+}
+
+.modal-tipo-novedad .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+.modal-tipo-novedad .modal-body {
+    padding: 2rem;
+    min-height: 200px;
+}
+
+.info-content-placeholder {
+    background-color: var(--light-color);
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    color: var(--secondary-color);
+    font-style: italic;
+    margin: 1rem 0;
+}
+
+.info-content-editable {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    min-height: 120px;
+    line-height: 1.6;
+    margin: 1rem 0;
+}
+
+/* FORZAR OCULTACIÓN INICIAL DE BOTONES - MÁXIMA ESPECIFICIDAD */
+html body .form-section .tipo-novedad-info-btn:not(.active),
+html body .novedad-card .tipo-novedad-info-btn:not(.active),
+html body button.tipo-novedad-info-btn:not(.active),
+html body div .tipo-novedad-info-btn:not(.active),
+html body #infoBtn-unica:not(.active) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+/* Específicamente para el botón del modo único */
+#infoBtn-unica {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+/* Solo mostrar cuando tenga la clase active */
+html body .form-section .tipo-novedad-info-btn.active,
+html body .novedad-card .tipo-novedad-info-btn.active,
+html body button.tipo-novedad-info-btn.active,
+html body div .tipo-novedad-info-btn.active,
+html body #infoBtn-unica.active {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* BOTÓN DE INFORMACIÓN - DEFINICIÓN COMPLETA Y LIMPIA */
+.tipo-novedad-info-btn {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    background: linear-gradient(135deg, #0d6efd, #4285f4) !important;
+    color: white !important;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.8rem !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    z-index: 100 !important;
+    box-shadow: 0 3px 10px rgba(13, 110, 253, 0.3) !important;
+    font-weight: 600 !important;
+    outline: none !important;
+}
+
+.tipo-novedad-info-btn:hover {
+    background: linear-gradient(135deg, #0b5ed7, #3367d6) !important;
+    transform: translateY(-2px) scale(1.1) !important;
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.5) !important;
+}
+
+/* BOTÓN DE INFORMACIÓN - VISIBLE SOLO CUANDO ACTIVO */
+.tipo-novedad-info-btn.active {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* RESETEO SIMPLE Y EFECTIVO PARA EL BOTÓN */
+#infoBtn-unica {
+    display: none !important;
+}
+
+#infoBtn-unica.active {
+    display: flex !important;
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    background: linear-gradient(135deg, #0d6efd, #4285f4) !important;
+    color: white !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.8rem !important;
+    cursor: pointer !important;
+    z-index: 500 !important;
+    box-shadow: 0 3px 10px rgba(13, 110, 253, 0.4) !important;
+}

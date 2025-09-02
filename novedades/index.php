@@ -1,6 +1,6 @@
 <?php
 /**
- * Página principal del sistema
+ * Página principal del sistema - ACTUALIZADA
  * /novedades/index.php
  */
 require_once 'includes/periodo_helper.php';
@@ -95,11 +95,12 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                     <div class="card-body d-flex flex-column">
                         <p class="card-text flex-grow-1">
-                            Registre una nueva novedad que impacte en la liquidación de sueldos. 
-                            Complete los datos del empleado y seleccione el tipo de novedad correspondiente.
+                            Registre una o varias novedades que impacten en la liquidación de sueldos. 
+                            Seleccione un empleado y elija entre carga individual o múltiple.
                         </p>
                         <div class="mt-auto">
-                            <a href="nueva_novedad.php" class="btn btn-primary btn-lg w-100">
+                            <!-- ACTUALIZADO: Enlace al selector -->
+                            <a href="nueva_novedad_selector.php" class="btn btn-primary btn-lg w-100">
                                 <i class="fas fa-plus me-2"></i>
                                 Crear Nueva Novedad
                             </a>
@@ -168,8 +169,8 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         Información del Período Actual
                     </h6>
                     <p class="mb-0">
-                        <strong>Período de liquidación:</strong> Del 28 de cada mes al 27 del mes siguiente<br>
-                        <strong>Fecha límite para carga:</strong> Las novedades deben registrarse antes del cierre del período<br>
+                        <strong>Período de liquidación:</strong> Mensual<br>
+                        <strong>Fecha límite para carga:</strong> Las novedades deben registrarse antes del cierre de cada tipo<br>
                         <strong>Estado:</strong> <span class="badge bg-success">Activo</span>
                     </p>
                 </div>

@@ -1,4 +1,4 @@
-<!-- /novedades/components/navbar.php -->
+<!-- /novedades/components/navbar.php - ACTUALIZADA -->
 <?php
 // Incluir la configuración de usuario para verificar permisos
 require_once __DIR__ . '/../config/usuario_config.php';
@@ -6,6 +6,10 @@ require_once __DIR__ . '/../class/Usuario.php';
 
 // Determinar si mostrar el enlace de gestión de tipos de novedad
 $mostrarGestionTipos = (Usuario::getTipoUsuario() === Usuario::TIPO_RRHH);
+
+// Obtener período formateado para mostrar
+require_once __DIR__ . '/../includes/periodo_helper.php';
+$periodoFormateado = PeriodoHelper::getPeriodoFormateado();
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container-fluid px-4">
@@ -66,7 +70,8 @@ $mostrarGestionTipos = (Usuario::getTipoUsuario() === Usuario::TIPO_RRHH);
                     <i class="fas fa-calendar-alt me-2"></i>
                     <div class="small">
                         <div class="fw-semibold d-none d-md-block">Período Actual</div>
-                        <span id="periodo-actual" class="badge bg-light text-primary">28/07 - 27/08/2025</span>
+                        <!-- ACTUALIZADO: Mostrar formato Mes Año -->
+                        <span id="periodo-actual" class="badge bg-light text-primary"><?php echo $periodoFormateado; ?></span>
                     </div>
                 </div>
             </div>
