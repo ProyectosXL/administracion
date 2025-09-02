@@ -135,6 +135,10 @@ $locales = $sucursal->traerLocales();
                 max-width: 25%;
             }
         }
+
+        .btn-group .btn {
+            min-width: 40px;
+        }
     </style>
 </head>
 <body>
@@ -192,6 +196,7 @@ $locales = $sucursal->traerLocales();
                                 <th>PRECINTO</th>
                                 <th>RECIBIDO</th>
                                 <th>CONTROLADO</th>
+                                <th>CARGADO</th>
                                 <th>OBSERVACIONES</th>
                                 <th>ACCIONES</th>
                                 <th hidden>COD_CUENTA</th>  <!-- Columna oculta -->
@@ -232,6 +237,11 @@ $locales = $sucursal->traerLocales();
                                                 <input type="checkbox" class="form-check-input checkbox-lg" onclick="marcarControlado(this)">
                                             <?php endif; ?>
                                         </td>
+                                        <td class="text-center">
+                                            <?php if($gasto['VINCULADO'] == 1): ?>
+                                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <textarea class="form-control" rows="1" <?= $gasto['OBSERVACIONES'] ? 'disabled' : '' ?>><?= $gasto['OBSERVACIONES'] ?></textarea>
                                         </td>
@@ -242,9 +252,11 @@ $locales = $sucursal->traerLocales();
                                                         <i class="bi bi-save"></i>
                                                     </button>
                                                 <?php endif; ?>
+                                                <?php if($gasto['VINCULADO'] == 0): ?>
                                                 <button class="btn btn-info btn-sm" onclick="vincularRecibo(this)" title="Vincular Recibo">
                                                     <i class="bi bi-link-45deg"></i>
                                                 </button>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                         <td hidden><?= $gasto['COD_CTA'] ?></td>

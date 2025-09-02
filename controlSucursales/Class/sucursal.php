@@ -396,20 +396,46 @@ class Sucursal
    
     public function traerDatosControlRecepcion ($desde, $hasta, $estado) 
     {   
-        $sql = "SELECT A.*, CASE WHEN C.N_COMP IS NULL THEN 0 ELSE 1 END DESPACHADO, FECHA_DESP, A.N_COMP, B.RECIBIDO, B.CTROL_TESORERIA, PRECINTO, B.OBSERVACIONES
+        $sql = "
+            SELECT
+                A.*,
+                CASE WHEN C.N_COMP IS NULL THEN 0 ELSE 1 END AS DESPACHADO,
+                C.FECHA_DESP,
+                A.N_COMP,
+                B.RECIBIDO,
+                B.CTROL_TESORERIA,
+                C.PRECINTO,
+                B.OBSERVACIONES,
+                CASE WHEN V.id IS NULL THEN 0 ELSE 1 END AS VINCULADO
+            FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A
+            LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B
+                ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN
+                AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN
+                AND A.NRO_SUCURS = B.NRO_SUCURSAL
+                AND B.RECIBIDO LIKE ?
+            LEFT JOIN (
+                SELECT FECHA_REG AS FECHA_DESP, B.N_COMP, B.T_COMP, B.NRO_SUCURS, A.PRECINTO
+                FROM RO_ENC_GUIA_RETIROS_SUC A
+                INNER JOIN RO_EGRESOS_GUIA_RETIROS_SUC B ON A.NRO_REGISTRO = B.NRO_REGISTRO AND A.NRO_SUCURS = B.NRO_SUCURS
+            ) C
+                ON A.N_COMP = C.N_COMP COLLATE Latin1_General_BIN
+                AND A.COD_COMP = C.T_COMP COLLATE Latin1_General_BIN
+                AND A.NRO_SUCURS = C.NRO_SUCURS
+            LEFT JOIN RO_T_RECIBOS_VINCULADOS V
+                ON A.COD_COMP = V.original_cod_comp
+                AND A.N_COMP = V.original_n_comp
+            WHERE
+                A.COD_CTA = '100100'
+                AND A.FECHA BETWEEN ? AND ?
+        ";
 
-        FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
-        LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
-            ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL  
-            AND B.RECIBIDO LIKE '%$estado%'
-        LEFT JOIN (SELECT FECHA_REG FECHA_DESP, B.FECHA_COMP, B.T_COMP, B.N_COMP, B.NRO_SUCURS, PRECINTO FROM RO_ENC_GUIA_RETIROS_SUC A 
-                   INNER JOIN RO_EGRESOS_GUIA_RETIROS_SUC B ON A.NRO_REGISTRO = B.NRO_REGISTRO AND A.NRO_SUCURS = B.NRO_SUCURS) C 
-            ON A.N_COMP = C.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = C.T_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURS
-        WHERE COD_CTA = '100100' 
-            AND A.FECHA BETWEEN '$desde' AND '$hasta'";
+        $params = [$estado, $desde, $hasta];
+
         if($estado == "0"){
-            $sql = $sql."AND (B.RECIBIDO IS NULL)";
+            $sql .= " AND (B.RECIBIDO IS NULL)";
         }
+
+        $sql .= " ORDER BY A.FECHA DESC";
         
         try{
             $stmt = sqlsrv_query($this->cid_central, $sql);

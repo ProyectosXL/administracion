@@ -23,12 +23,12 @@ const marcarRecibido = async (e) => {
             },
             error: function(xhr, status, error) {
                 console.error('Error:', error);
-                alert('Error al marcar como recibido');
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Error al marcar como recibido' });
             }
         });
     } catch (error) {
         console.error('Error al marcar como recibido:', error);
-        alert('Ocurrió un error al marcar como recibido');
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al marcar como recibido' });
     }
 };
 
@@ -57,13 +57,13 @@ const marcarControlado = async (e) => {
             },
             error: function(xhr, status, error) {
                 console.error('Error:', error);
-                alert('Error al marcar como controlado');
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Error al marcar como controlado' });
                 console.log('Datos enviados:', data); // Para debugging
             }
         });
     } catch (error) {
         console.error('Error al marcar como controlado:', error);
-        alert('Ocurrió un error al marcar como controlado');
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al marcar como controlado' });
     }
 };
 
@@ -74,7 +74,14 @@ const guardarObservaciones = async (btn) => {
         const textarea = cells[10].querySelector('textarea');
         
         if (!textarea.value.trim()) {
-            alert('Por favor, ingrese una observación');
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'warning',
+                title: 'Por favor, ingrese una observación',
+                showConfirmButton: false,
+                timer: 3000
+            });
             return;
         }
 
@@ -94,12 +101,12 @@ const guardarObservaciones = async (btn) => {
             },
             error: function(xhr, status, error) {
                 console.error('Error:', error);
-                alert('Error al guardar las observaciones');
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Error al guardar las observaciones' });
             }
         });
     } catch (error) {
         console.error('Error al guardar observaciones:', error);
-        alert('Ocurrió un error al guardar las observaciones');
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al guardar las observaciones' });
     }
 };
 
@@ -111,7 +118,7 @@ document.getElementById('btnFiltrarControlRecepcion').addEventListener('click', 
     const estado = document.getElementById('selectEstado').value;
 
     if (!desde || !hasta) {
-        alert('Por favor, seleccione fechas válidas');
+        Swal.fire({ icon: 'warning', title: 'Atención', text: 'Por favor, seleccione fechas válidas' });
         return;
     }
 
@@ -169,11 +176,13 @@ const buscarRecibos = async (searchTerm = '') => {
             const fecha = new Date(recibo.FECHA.date);
             const formattedDate = fecha.toLocaleDateString('es-ES');
 
+            const formattedAmount = recibo.CANT_MONE.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+
             tr.innerHTML = `
                 <td>${formattedDate}</td>
                 <td>${recibo.COD_COMP}</td>
                 <td>${recibo.N_COMP}</td>
-                <td>${recibo.CANT_MONE}</td>
+                <td>${formattedAmount}</td>
                 <td>${recibo.LEYENDA}</td>
                 <td>
                     <button class="btn btn-success btn-sm" onclick="seleccionarRecibo('${recibo.COD_COMP}', '${recibo.N_COMP}', ${recibo.CANT_MONE})">
@@ -193,43 +202,70 @@ const buscarRecibos = async (searchTerm = '') => {
 
 const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculado) => {
     if (currentRowData.monto !== montoVinculado) {
-        alert('El monto del recibo seleccionado no coincide con el monto del comprobante original.');
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: 'Los montos no coinciden',
+            showConfirmButton: false,
+            timer: 3000
+        });
         return;
     }
 
-    const data = new FormData();
-    data.append('original_cod_comp', currentRowData.codComp);
-    data.append('original_n_comp', currentRowData.nComp);
-    data.append('vinculado_cod_comp', codCompVinculado);
-    data.append('vinculado_n_comp', nCompVinculado);
+    Swal.fire({
+        title: '¿Confirmar Vinculación?',
+        text: `¿Está seguro de que desea vincular el comprobante ${currentRowData.nComp} con el recibo ${nCompVinculado}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, vincular',
+        cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            const data = new FormData();
+            data.append('original_cod_comp', currentRowData.codComp);
+            data.append('original_n_comp', currentRowData.nComp);
+            data.append('vinculado_cod_comp', codCompVinculado);
+            data.append('vinculado_n_comp', nCompVinculado);
 
-    try {
-        const response = await fetch('Controller/ControlEgresosController.php?accion=vincularRecibo', {
-            method: 'POST',
-            body: data
-        });
+            try {
+                const response = await fetch('Controller/ControlEgresosController.php?accion=vincularRecibo', {
+                    method: 'POST',
+                    body: data
+                });
+                const result = await response.json();
 
-        const result = await response.json();
+                if (result.success) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Vinculado correctamente',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
 
-        if (result.success) {
-            alert(result.message);
-            // Opcional: Deshabilitar el botón de la fila para indicar que ya está vinculado
-            const row = document.querySelector(`td[data-ncomp='${currentRowData.nComp}']`);
-            if (row) {
-                const btn = row.closest('tr').querySelector('.btn-info');
-                btn.disabled = true;
-                btn.classList.remove('btn-info');
-                btn.classList.add('btn-secondary');
+                    // Actualizar UI
+                    const rowElement = document.querySelector(`td[data-ncomp='${currentRowData.nComp}']`).closest('tr');
+                    if (rowElement) {
+                        const vincularBtn = rowElement.querySelector('.btn-info');
+                        if(vincularBtn) vincularBtn.style.display = 'none';
+
+                        const cargadoCell = rowElement.children[10]; // Asumiendo que es la 11a columna
+                        cargadoCell.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
+                    }
+                } else {
+                    Swal.fire('Error', result.message || 'Ocurrió un error al vincular.', 'error');
+                }
+            } catch (error) {
+                console.error('Error al vincular el recibo:', error);
+                Swal.fire('Error', 'Ocurrió un error de comunicación al intentar vincular el recibo.', 'error');
+            } finally {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalVincularRecibo'));
+                modal.hide();
             }
-        } else {
-            alert(result.message || 'Ocurrió un error al vincular.');
         }
-
-    } catch (error) {
-        console.error('Error al vincular el recibo:', error);
-        alert('Ocurrió un error de comunicación al intentar vincular el recibo.');
-    } finally {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalVincularRecibo'));
-        modal.hide();
-    }
+    });
 };
