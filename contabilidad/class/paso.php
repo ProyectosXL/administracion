@@ -153,14 +153,15 @@ class Paso
             }
 
             $sql = "EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta' ;";
-
+      
             $stmt = sqlsrv_query($cid_central, $sql);
-
-                $v = [];
-            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
-                $v[] = $row;
-            }
-
+   
+            $v = [];
+            do {
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                    $v[] = $row;
+                }
+            } while (sqlsrv_next_result($stmt));
             return $v;
         
         } catch (Exception $e) {
