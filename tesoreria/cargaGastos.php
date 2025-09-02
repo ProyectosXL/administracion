@@ -25,6 +25,7 @@ $gastos = $gasto->traerGastos($desde, $hasta);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style/cargaGastosMobile.css">
     <style>
         body {
             background-color: #f8f9fa;
@@ -75,40 +76,68 @@ $gastos = $gasto->traerGastos($desde, $hasta);
                 </div>
             </div>
         </form>
-        <table id="gastosTable" class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>FECHA</th>
-                    <th>COD_COMP</th>
-                    <th>N_COMP</th>
-                    <th>COD_CTA</th>
-                    <th>DESC_CUENTA</th>
-                    <th>MONTO</th>
-                    <th>USUARIO</th>
-                    <th>LEYENDA</th>
-                    <th>IMAGENES</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($gastos as $gasto): ?>
-                <tr>
-                    <td><?php echo $gasto['FECHA']->format("Y-m-d"); ?></td>
-                    <td><?php echo $gasto['COD_COMP']; ?></td>
-                    <td><?php echo $gasto['N_COMP']; ?></td>
-                    <td><?php echo $gasto['COD_CTA']; ?></td>
-                    <td><?php echo $gasto['DESC_CUENTA']; ?></td>
-                    <td>$<?php echo number_format($gasto['MONTO'], 0, ',', '.'); ?></td>
-                    <td><?php echo $gasto['USUARIO']; ?></td>
-                    <td><?php echo $gasto['LEYENDA']; ?></td>
-                    <td>
-                        <button class="btn btn-primary btn-icon"><i class="fas fa-upload"></i></button>
-                        <button class="btn btn-warning btn-icon"><i class="fas fa-eye"></i></button>
-                        <button class="btn btn-success btn-icon"><i class="fas fa-save"></i></button>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+
+        <!-- Vista de Tabla para Escritorio -->
+        <div class="table-view">
+            <table id="gastosTable" class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>FECHA</th>
+                        <th>COD_COMP</th>
+                        <th>N_COMP</th>
+                        <th>COD_CTA</th>
+                        <th>DESC_CUENTA</th>
+                        <th>MONTO</th>
+                        <th>USUARIO</th>
+                        <th>LEYENDA</th>
+                        <th>IMAGENES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($gastos as $gasto): ?>
+                    <tr class="gasto-row">
+                        <td><?php echo $gasto['FECHA']->format("Y-m-d"); ?></td>
+                        <td><?php echo $gasto['COD_COMP']; ?></td>
+                        <td><?php echo $gasto['N_COMP']; ?></td>
+                        <td><?php echo $gasto['COD_CTA']; ?></td>
+                        <td><?php echo $gasto['DESC_CUENTA']; ?></td>
+                        <td>$<?php echo number_format($gasto['MONTO'], 0, ',', '.'); ?></td>
+                        <td><?php echo $gasto['USUARIO']; ?></td>
+                        <td><?php echo $gasto['LEYENDA']; ?></td>
+                        <td>
+                            <button class="btn btn-primary btn-icon"><i class="fas fa-upload"></i></button>
+                            <button class="btn btn-warning btn-icon"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-success btn-icon"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Vista de Tarjetas para Móviles -->
+        <div class="card-view">
+            <?php foreach ($gastos as $gasto): ?>
+            <div class="gasto-card">
+                <div class="card-header">
+                    <?php echo $gasto['DESC_CUENTA']; ?>
+                </div>
+                <div class="card-body">
+                    <p><strong>Fecha:</strong> <?php echo $gasto['FECHA']->format("Y-m-d"); ?></p>
+                    <p><strong>Comprobante:</strong> <span class="cod-comp"><?php echo $gasto['COD_COMP']; ?></span>-<span class="n-comp"><?php echo $gasto['N_COMP']; ?></span></p>
+                    <p><strong>Monto:</strong> $<?php echo number_format($gasto['MONTO'], 0, ',', '.'); ?></p>
+                    <p><strong>Usuario:</strong> <?php echo $gasto['USUARIO']; ?></p>
+                    <p><strong>Leyenda:</strong> <?php echo $gasto['LEYENDA']; ?></p>
+                    <p style="display:none;"><strong>COD_CTA:</strong> <span class="cod-cta"><?php echo $gasto['COD_CTA']; ?></span></p>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-icon"><i class="fas fa-upload"></i></button>
+                    <button class="btn btn-warning btn-icon"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-success btn-icon"><i class="fas fa-save"></i></button>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
