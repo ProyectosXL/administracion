@@ -1,0 +1,47 @@
+/* Ocultar la vista de tarjetas por defecto */
+.card-view {
+    display: none;
+}
+
+/* Estilos para las tarjetas de gastos */
+.gasto-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.gasto-card .card-header {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.gasto-card .card-body p {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.gasto-card .card-body strong {
+    color: #555;
+}
+
+.gasto-card .card-footer {
+    margin-top: 15px;
+    text-align: right;
+}
+
+/* Media query para pantallas pequeñas (móviles) */
+@media (max-width: 768px) {
+    /* Ocultar la tabla en vista móvil */
+    .table-view {
+        display: none;
+    }
+    /* Mostrar las tarjetas en vista móvil */
+    .card-view {
+        display: block;
+    }
+}
