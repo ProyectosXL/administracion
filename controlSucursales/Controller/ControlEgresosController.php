@@ -68,6 +68,7 @@ function traerRecibosParaVincular($sucursal) {
 }
 
 function vincularRecibo($sucursal) {
+    ob_start();
     session_start();
     $usuario = isset($_SESSION['user']) ? $_SESSION['user'] : 'Desconocido';
 
@@ -78,6 +79,7 @@ function vincularRecibo($sucursal) {
 
     $resultado = $sucursal->vincularReciboDb($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario);
 
+    ob_end_clean();
     header('Content-Type: application/json');
     if ($resultado) {
         echo json_encode(['success' => true, 'message' => 'Recibo vinculado correctamente.']);

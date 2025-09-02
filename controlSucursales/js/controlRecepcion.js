@@ -138,7 +138,15 @@ const vincularRecibo = (btn) => {
         nComp: cells[4].textContent, // No usar trim() aquí
         monto: parseFloat(cells[5].textContent.replace(/[$.]/g, '').replace(',', '.')),
         codCta: cells[12].textContent.trim(),
+        montoFormateado: cells[5].textContent.trim()
     };
+
+    const infoDiv = document.getElementById('infoComprobanteSeleccionado');
+    infoDiv.innerHTML = `
+        <strong>Comprobante a vincular:</strong><br>
+        Fecha: ${currentRowData.fecha} | Comp: ${currentRowData.codComp}-${currentRowData.nComp} | Monto: ${currentRowData.montoFormateado}
+    `;
+    infoDiv.style.display = 'block';
 
     const modal = new bootstrap.Modal(document.getElementById('modalVincularRecibo'));
     modal.show();

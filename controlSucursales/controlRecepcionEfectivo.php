@@ -194,9 +194,9 @@ $locales = $sucursal->traerLocales();
                                 <th>MONTO</th>
                                 <th>DESPACHADO</th>
                                 <th>PRECINTO</th>
-                                <th title="Recibido"><i class="bi bi-box-arrow-in-down"></i></th>
-                                <th title="Controlado"><i class="bi bi-check-square"></i></th>
-                                <th title="Cargado"><i class="bi bi-cloud-arrow-up-fill"></i></th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top" title="Recibido"><i class="bi bi-box-arrow-in-down"></i></th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top" title="Controlado"><i class="bi bi-check-square"></i></th>
+                                <th data-bs-toggle="tooltip" data-bs-placement="top" title="Cargado"><i class="bi bi-cloud-arrow-up-fill"></i></th>
                                 <th>OBSERVACIONES</th>
                                 <th>ACCIONES</th>
                                 <th hidden>COD_CUENTA</th>  <!-- Columna oculta -->
@@ -280,6 +280,9 @@ $locales = $sucursal->traerLocales();
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div id="infoComprobanteSeleccionado" class="alert alert-primary" role="alert" style="display: none;">
+                        <!-- La información del comprobante se insertará aquí -->
+                    </div>
                     <div class="mb-3">
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
