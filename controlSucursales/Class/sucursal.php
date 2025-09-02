@@ -394,25 +394,35 @@ class Sucursal
         }
     }
    
-    public function traerDatosControlRecepcion ($desde, $hasta, $estado) 
-    {   
-        $sql = "SELECT A.*, CASE WHEN C.N_COMP IS NULL THEN 0 ELSE 1 END DESPACHADO, FECHA_DESP, A.N_COMP, B.RECIBIDO, B.CTROL_TESORERIA, PRECINTO, B.OBSERVACIONES
-
-        FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A 
-        LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B 
-            ON A.N_COMP = B.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL  
+    public function traerDatosControlRecepcion ($desde, $hasta, $estado)
+    {
+        $sql = "SELECT A.*, CASE WHEN C.N_COMP IS NULL THEN 0 ELSE 1 END DESPACHADO, C.FECHA_DESP, A.N_COMP, B.RECIBIDO, B.CTROL_TESORERIA, C.PRECINTO, B.OBSERVACIONES,
+                CASE WHEN V.id IS NULL THEN 0 ELSE 1 END AS VINCULADO
+        FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A
+        LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B
+            ON RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(B.N_COMP)) COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL
             AND B.RECIBIDO LIKE '%$estado%'
-        LEFT JOIN (SELECT FECHA_REG FECHA_DESP, B.FECHA_COMP, B.T_COMP, B.N_COMP, B.NRO_SUCURS, PRECINTO FROM RO_ENC_GUIA_RETIROS_SUC A 
-                   INNER JOIN RO_EGRESOS_GUIA_RETIROS_SUC B ON A.NRO_REGISTRO = B.NRO_REGISTRO AND A.NRO_SUCURS = B.NRO_SUCURS) C 
-            ON A.N_COMP = C.N_COMP COLLATE Latin1_General_BIN AND A.COD_COMP = C.T_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURS
-        WHERE COD_CTA = '100100' 
+        LEFT JOIN (SELECT FECHA_REG AS FECHA_DESP, B.N_COMP, B.T_COMP, B.NRO_SUCURS, A.PRECINTO
+                   FROM RO_ENC_GUIA_RETIROS_SUC A
+                   INNER JOIN RO_EGRESOS_GUIA_RETIROS_SUC B ON A.NRO_REGISTRO = B.NRO_REGISTRO AND A.NRO_SUCURS = B.NRO_SUCURS) C
+            ON RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(C.N_COMP)) COLLATE Latin1_General_BIN AND A.COD_COMP = C.T_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURS
+        LEFT JOIN RO_T_RECIBOS_VINCULADOS V
+            ON A.COD_COMP = V.original_cod_comp COLLATE Latin1_General_BIN
+            AND RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(V.original_n_comp)) COLLATE Latin1_General_BIN
+        WHERE A.COD_CTA = '100100'
             AND A.FECHA BETWEEN '$desde' AND '$hasta'";
         if($estado == "0"){
             $sql = $sql."AND (B.RECIBIDO IS NULL)";
         }
-        
+        $sql = $sql." ORDER BY A.FECHA DESC";
+
         try{
             $stmt = sqlsrv_query($this->cid_central, $sql);
+            if ($stmt === false) {
+                error_log("SQL query failed in traerDatosControlRecepcion: " . print_r(sqlsrv_errors(), true));
+                error_log("Failing SQL: " . $sql);
+                return [];
+            }
 
             $v = [];
             while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
@@ -561,6 +571,88 @@ class Sucursal
           
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+        }
+    }
+
+    public function traerRecibosParaVincular($searchTerm = '')
+    {
+        $sql = "
+            SELECT
+                CAST(s.FECHA AS DATE) AS FECHA,
+                s.COD_COMP,
+                s.N_COMP,
+                CAST(s.CANT_MONE AS FLOAT) AS CANT_MONE,
+                s.LEYENDA
+            FROM SBA05 s
+            LEFT JOIN RO_T_RECIBOS_VINCULADOS v
+                ON s.COD_COMP = v.vinculado_cod_comp collate Latin1_General_BIN
+                AND s.N_COMP = v.vinculado_n_comp collate Latin1_General_BIN
+            WHERE
+                s.COD_CTA = '100101'
+                AND s.FECHA >= GETDATE() - 30
+                AND s.D_H = 'D'
+                AND v.id IS NULL -- Excluir recibos ya vinculados
+        ";
+
+        $params = [];
+        if (!empty($searchTerm)) {
+            $sql .= " AND (s.N_COMP LIKE ? OR s.LEYENDA LIKE ?)";
+            $searchTermWithWildcards = '%' . $searchTerm . '%';
+            $params[] = $searchTermWithWildcards;
+            $params[] = $searchTermWithWildcards;
+        }
+
+        $sql .= " ORDER BY s.FECHA DESC";
+
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            if ($stmt === false) {
+                // Manejo de errores de SQL Server
+                $errors = sqlsrv_errors();
+                error_log("Error en la consulta SQL de traerRecibosParaVincular: " . print_r($errors, true));
+                return []; // Retornar un array vacío en caso de error
+            }
+
+            $v = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $v[] = $row;
+            }
+            return $v;
+        } catch (Exception $e) {
+            error_log('Excepción capturada en traerRecibosParaVincular: ' . $e->getMessage());
+            return []; // Retornar un array vacío en caso de excepción
+        }
+    }
+
+    public function vincularReciboDb($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario)
+    {
+        $sql = "
+            INSERT INTO RO_T_RECIBOS_VINCULADOS
+                (original_cod_comp, original_n_comp, vinculado_cod_comp, vinculado_n_comp, usuario)
+            VALUES
+                (?, ?, ?, ?, ?)
+        ";
+
+        $params = array($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario);
+
+        try {
+            $stmt = sqlsrv_prepare($this->cid_central, $sql, $params);
+            if (!$stmt) {
+                $errors = sqlsrv_errors();
+                error_log("Error en la preparación de la consulta de vincularReciboDb: " . print_r($errors, true));
+                return false;
+            }
+
+            if (sqlsrv_execute($stmt)) {
+                return true;
+            } else {
+                $errors = sqlsrv_errors();
+                error_log("Error en la ejecución de la consulta de vincularReciboDb: " . print_r($errors, true));
+                return false;
+            }
+        } catch (Exception $e) {
+            error_log('Excepción capturada en vincularReciboDb: ' . $e->getMessage());
+            return false;
         }
     }
 }
