@@ -401,20 +401,16 @@ class Sucursal
         FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES A
         LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B
             ON RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(B.N_COMP)) COLLATE Latin1_General_BIN AND A.COD_COMP = B.TIPO_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = B.NRO_SUCURSAL
-            AND B.RECIBIDO LIKE '%$estado%'
         LEFT JOIN (SELECT FECHA_REG AS FECHA_DESP, B.N_COMP, B.T_COMP, B.NRO_SUCURS, A.PRECINTO
-                   FROM RO_ENC_GUIA_RETIROS_SUC A
-                   INNER JOIN RO_EGRESOS_GUIA_RETIROS_SUC B ON A.NRO_REGISTRO = B.NRO_REGISTRO AND A.NRO_SUCURS = B.NRO_SUCURS) C
+                FROM RO_ENC_GUIA_RETIROS_SUC A
+                INNER JOIN RO_EGRESOS_GUIA_RETIROS_SUC B ON A.NRO_REGISTRO = B.NRO_REGISTRO AND A.NRO_SUCURS = B.NRO_SUCURS) C
             ON RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(C.N_COMP)) COLLATE Latin1_General_BIN AND A.COD_COMP = C.T_COMP COLLATE Latin1_General_BIN AND A.NRO_SUCURS = C.NRO_SUCURS
         LEFT JOIN RO_T_RECIBOS_VINCULADOS V
             ON A.COD_COMP = V.original_cod_comp COLLATE Latin1_General_BIN
             AND RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(V.original_n_comp)) COLLATE Latin1_General_BIN
         WHERE A.COD_CTA = '100100'
-            AND A.FECHA BETWEEN '$desde' AND '$hasta'";
-        if($estado == "0"){
-            $sql = $sql."AND (B.RECIBIDO IS NULL)";
-        }
-        $sql = $sql." ORDER BY A.FECHA DESC";
+            AND A.FECHA BETWEEN '$desde' AND '$hasta'
+        ORDER BY A.FECHA DESC";
 
         try{
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -428,6 +424,28 @@ class Sucursal
             while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
                 $v[] = $row;
             }
+            
+            // Aplicar filtro después de obtener los datos
+            if($estado != "todos" && !empty($v)){
+                $dataFiltrada = [];
+                foreach($v as $gasto){
+                    $incluir = false;
+                    
+                    if($estado == "pendiente_recibir"){
+                        $incluir = ($gasto['RECIBIDO'] != 1);
+                    } elseif($estado == "pendiente_control"){
+                        $incluir = ($gasto['RECIBIDO'] == 1 && $gasto['CTROL_TESORERIA'] != 1);
+                    } elseif($estado == "pendiente_cargar"){
+                        $incluir = ($gasto['RECIBIDO'] == 1 && $gasto['CTROL_TESORERIA'] == 1 && $gasto['VINCULADO'] != 1);
+                    }
+                    
+                    if($incluir){
+                        $dataFiltrada[] = $gasto;
+                    }
+                }
+                $v = $dataFiltrada;
+            }
+            
             return $v;
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";

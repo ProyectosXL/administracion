@@ -1,0 +1,318 @@
+
+/* ===== ESTILOS PARA CONTROL RECEPCIÓN EFECTIVO ===== */
+
+/* Modal de Ayuda */
+.controlRecepcion_modal-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+.controlRecepcion_modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.controlRecepcion_modal-footer {
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+}
+
+/* Secciones de Ayuda */
+.controlRecepcion_help-section {
+    padding: 1rem 0;
+}
+
+.controlRecepcion_section-title {
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.controlRecepcion_help-text {
+    color: #6c757d;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+/* Cajas de Información */
+.controlRecepcion_info-box {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border: 1px solid #bbdefb;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.controlRecepcion_info-box h6 {
+    color: #1565c0;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+}
+
+/* Listas de Proceso */
+.controlRecepcion_process-list {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.controlRecepcion_process-list li {
+    margin-bottom: 0.6rem;
+    line-height: 1.5;
+}
+
+.controlRecepcion_process-list li strong {
+    color: #0d6efd;
+}
+
+/* Grid de Filtros */
+.controlRecepcion_filter-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.controlRecepcion_filter-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.controlRecepcion_filter-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.3rem;
+}
+
+.controlRecepcion_filter-desc {
+    color: #6c757d;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Flujo de Trabajo */
+.controlRecepcion_workflow {
+    margin-top: 1rem;
+}
+
+.controlRecepcion_workflow-step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.controlRecepcion_workflow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 22px;
+    top: 50px;
+    width: 2px;
+    height: 30px;
+    background: #dee2e6;
+}
+
+.controlRecepcion_step-number {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.controlRecepcion_step-content {
+    flex: 1;
+}
+
+.controlRecepcion_step-content h6 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.controlRecepcion_step-content p {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.controlRecepcion_step-indicator {
+    background: #e8f4fd;
+    color: #0d6efd;
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Grid de Acciones */
+.controlRecepcion_action-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.controlRecepcion_action-item {
+    display: flex;
+    align-items: flex-start;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.controlRecepcion_action-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.controlRecepcion_action-icon {
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.controlRecepcion_action-icon i {
+    font-size: 2rem;
+}
+
+.controlRecepcion_action-content h6 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.controlRecepcion_action-content p {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.controlRecepcion_action-content small {
+    font-style: italic;
+}
+
+/* Grid de Iconos */
+.controlRecepcion_icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.controlRecepcion_icon-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.controlRecepcion_icon-item i {
+    flex-shrink: 0;
+}
+
+.controlRecepcion_icon-item span {
+    flex: 1;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Lista de Tips */
+.controlRecepcion_tips-list {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.controlRecepcion_tips-list li {
+    margin-bottom: 0.5rem;
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+/* Tabs personalizados */
+#controlRecepcion_tabsAyuda .nav-link {
+    border: none;
+    border-radius: 8px 8px 0 0;
+    color: #6c757d;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#controlRecepcion_tabsAyuda .nav-link:hover {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+}
+
+#controlRecepcion_tabsAyuda .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .controlRecepcion_filter-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .controlRecepcion_action-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .controlRecepcion_icon-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .controlRecepcion_workflow-step {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .controlRecepcion_workflow-step::after {
+        display: none;
+    }
+    
+    .controlRecepcion_step-number {
+        margin: 0 auto 1rem auto;
+    }
+    
+    .controlRecepcion_action-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .controlRecepcion_action-icon {
+        margin: 0 0 1rem 0;
+    }
+}
+
+@media (min-width: 992px) {
+    .controlRecepcion_filter-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .controlRecepcion_action-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+        .icon{
+            font-size:1.2rem;
+        }

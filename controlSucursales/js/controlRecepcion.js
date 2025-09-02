@@ -141,11 +141,16 @@ const vincularRecibo = (btn) => {
         montoFormateado: cells[5].textContent.trim()
     };
 
+    // Obtener el nombre de la sucursal desde la tercera columna de la fila
+    const nombreSucursal = cells[2].textContent.trim();
+
     const infoDiv = document.getElementById('infoComprobanteSeleccionado');
     infoDiv.innerHTML = `
         <strong>Comprobante a vincular:</strong><br>
+        Sucursal: ${currentRowData.nroSucursal} - ${nombreSucursal}<br>
         Fecha: ${currentRowData.fecha} | Comp: ${currentRowData.codComp}-${currentRowData.nComp} | Monto: ${currentRowData.montoFormateado}
     `;
+    
     infoDiv.style.display = 'block';
 
     const modal = new bootstrap.Modal(document.getElementById('modalVincularRecibo'));
