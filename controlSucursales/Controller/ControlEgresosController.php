@@ -48,8 +48,41 @@ switch ($accion) {
         guardarObservaciones($sucursal);
         break;
     
+    case 'traerRecibosParaVincular':
+        traerRecibosParaVincular($sucursal);
+        break;
+
+    case 'vincularRecibo':
+        vincularRecibo($sucursal);
+        break;
+
     default:
         break;
+}
+
+function traerRecibosParaVincular($sucursal) {
+    $recibos = $sucursal->traerRecibosParaVincular();
+    header('Content-Type: application/json');
+    echo json_encode($recibos);
+}
+
+function vincularRecibo($sucursal) {
+    session_start();
+    $usuario = isset($_SESSION['user']) ? $_SESSION['user'] : 'Desconocido';
+
+    $original_cod_comp = $_POST['original_cod_comp'];
+    $original_n_comp = $_POST['original_n_comp'];
+    $vinculado_cod_comp = $_POST['vinculado_cod_comp'];
+    $vinculado_n_comp = $_POST['vinculado_n_comp'];
+
+    $resultado = $sucursal->vincularReciboDb($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario);
+
+    header('Content-Type: application/json');
+    if ($resultado) {
+        echo json_encode(['success' => true, 'message' => 'Recibo vinculado correctamente.']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error al vincular el recibo.']);
+    }
 }
 
 function marcarFacturado ($sucursal) {

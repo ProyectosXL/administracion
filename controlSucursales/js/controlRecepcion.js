@@ -117,3 +117,93 @@ document.getElementById('btnFiltrarControlRecepcion').addEventListener('click', 
 
     window.location.href = `?desde=${desde}&hasta=${hasta}&selectEstado=${estado}`;
 });
+
+let currentRowData = null;
+
+const vincularRecibo = async (btn) => {
+    const row = btn.closest('tr');
+    const cells = row.querySelectorAll('td');
+    currentRowData = {
+        fecha: cells[0].textContent.trim(),
+        nroSucursal: cells[1].textContent.trim(),
+        codComp: cells[3].textContent.trim(),
+        nComp: cells[4].textContent.trim(),
+        monto: parseFloat(cells[5].textContent.replace(/[$.]/g, '').replace(',', '.')),
+        codCta: cells[12].textContent.trim(),
+    };
+
+    try {
+        const response = await fetch('Controller/ControlEgresosController.php?accion=traerRecibosParaVincular');
+        const recibos = await response.json();
+
+        const tablaBody = document.querySelector('#tablaRecibosVincular tbody');
+        tablaBody.innerHTML = ''; // Limpiar tabla
+
+        recibos.forEach(recibo => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${recibo.FECHA}</td>
+                <td>${recibo.COD_COMP}</td>
+                <td>${recibo.N_COMP}</td>
+                <td>${recibo.CANT_MONE}</td>
+                <td>${recibo.LEYENDA}</td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="seleccionarRecibo('${recibo.COD_COMP}', '${recibo.N_COMP}', ${recibo.CANT_MONE})">
+                        Seleccionar
+                    </button>
+                </td>
+            `;
+            tablaBody.appendChild(tr);
+        });
+
+        const modal = new bootstrap.Modal(document.getElementById('modalVincularRecibo'));
+        modal.show();
+
+    } catch (error) {
+        console.error('Error al traer recibos para vincular:', error);
+        alert('No se pudieron cargar los recibos para vincular.');
+    }
+};
+
+const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculado) => {
+    if (currentRowData.monto !== montoVinculado) {
+        alert('El monto del recibo seleccionado no coincide con el monto del comprobante original.');
+        return;
+    }
+
+    const data = new FormData();
+    data.append('original_cod_comp', currentRowData.codComp);
+    data.append('original_n_comp', currentRowData.nComp);
+    data.append('vinculado_cod_comp', codCompVinculado);
+    data.append('vinculado_n_comp', nCompVinculado);
+
+    try {
+        const response = await fetch('Controller/ControlEgresosController.php?accion=vincularRecibo', {
+            method: 'POST',
+            body: data
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(result.message);
+            // Opcional: Deshabilitar el botón de la fila para indicar que ya está vinculado
+            const row = document.querySelector(`td[data-ncomp='${currentRowData.nComp}']`);
+            if (row) {
+                const btn = row.closest('tr').querySelector('.btn-info');
+                btn.disabled = true;
+                btn.classList.remove('btn-info');
+                btn.classList.add('btn-secondary');
+            }
+        } else {
+            alert(result.message || 'Ocurrió un error al vincular.');
+        }
+
+    } catch (error) {
+        console.error('Error al vincular el recibo:', error);
+        alert('Ocurrió un error de comunicación al intentar vincular el recibo.');
+    } finally {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalVincularRecibo'));
+        modal.hide();
+    }
+};

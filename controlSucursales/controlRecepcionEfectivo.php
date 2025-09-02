@@ -114,16 +114,42 @@ $locales = $sucursal->traerLocales();
                 padding: 10px;
             }
         }
+
+        /* Medium devices (tablets, 768px and up) */
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            .filters-section .row {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            .filters-section .col-md-3 {
+                flex: 0 0 50%;
+                max-width: 50%;
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* Large devices (desktops, 992px and up) */
+        @media (min-width: 992px) and (max-width: 1199.98px) {
+            .filters-section .col-md-3 {
+                flex: 0 0 25%;
+                max-width: 25%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container-fluid py-4">
         <div class="card">
             <div class="card-header">
-                <h4 class="mb-0">
-                    <i class="bi bi-cash me-2"></i>
-                    Control recepción efectivo de sucursales
-                </h4>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-cash me-2"></i>
+                        Control recepción efectivo de sucursales
+                    </h4>
+                    <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalAyuda">
+                        <i class="bi bi-question-circle-fill me-1"></i> Ayuda
+                    </button>
+                </div>
             </div>
             
             <div class="card-body">
@@ -188,7 +214,7 @@ $locales = $sucursal->traerLocales();
                                         <td><?= $gasto['NRO_SUCURS'] ?></td>
                                         <td><?= $sucursal ?></td>
                                         <td><?= $gasto['COD_COMP'] ?></td>
-                                        <td data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>"><?= $gasto['N_COMP'] ?></td>
+                                        <td data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" data-ncomp="<?= $gasto['N_COMP'] ?>"><?= $gasto['N_COMP'] ?></td>
                                         <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
                                         <td><?= $gasto['DESPACHADO'] == 1 ? ($gasto['FECHA_DESP'])->format("d/m/Y H:i") : '' ?></td>
                                         <td><?= $gasto['PRECINTO'] > 1 ? $gasto['PRECINTO'] : '' ?></td>
@@ -210,11 +236,16 @@ $locales = $sucursal->traerLocales();
                                             <textarea class="form-control" rows="1" <?= $gasto['OBSERVACIONES'] ? 'disabled' : '' ?>><?= $gasto['OBSERVACIONES'] ?></textarea>
                                         </td>
                                         <td>
-                                            <?php if($gasto['OBSERVACIONES'] == NULL): ?>
-                                                <button class="btn btn-primary btn-sm" onclick="guardarObservaciones(this)">
-                                                    <i class="bi bi-save"></i>
+                                            <div class="btn-group" role="group" aria-label="Acciones">
+                                                <?php if($gasto['OBSERVACIONES'] == NULL): ?>
+                                                    <button class="btn btn-primary btn-sm" onclick="guardarObservaciones(this)" title="Guardar Observaciones">
+                                                        <i class="bi bi-save me-1"></i> Guardar
+                                                    </button>
+                                                <?php endif; ?>
+                                                <button class="btn btn-info btn-sm" onclick="vincularRecibo(this)" title="Vincular Recibo">
+                                                    <i class="bi bi-link-45deg"></i> Vincular
                                                 </button>
-                                            <?php endif; ?>
+                                            </div>
                                         </td>
                                         <td hidden><?= $gasto['COD_CTA'] ?></td>
                                         <td hidden><?= $gasto['DESC_CUENTA'] ?></td>
@@ -223,6 +254,109 @@ $locales = $sucursal->traerLocales();
                             <?php endif; ?>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para vincular recibos -->
+    <div class="modal fade" id="modalVincularRecibo" tabindex="-1" aria-labelledby="modalVincularReciboLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalVincularReciboLabel">Vincular Recibo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Seleccione un recibo para vincular:</p>
+                    <div class="table-responsive">
+                        <table id="tablaRecibosVincular" class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tipo Comp.</th>
+                                    <th>Comprobante</th>
+                                    <th>Monto</th>
+                                    <th>Leyenda</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Los datos se cargarán aquí mediante JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Ayuda -->
+    <div class="modal fade" id="modalAyuda" tabindex="-1" aria-labelledby="modalAyudaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAyudaLabel">Ayuda</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">General</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="acciones-tab" data-bs-toggle="tab" data-bs-target="#acciones" type="button" role="tab" aria-controls="acciones" aria-selected="false">Acciones</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="myTabContent">
+                        <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                            <div class="accordion mt-3" id="accordionGeneral">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingOne">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                            ¿Qué muestra esta pantalla?
+                                        </button>
+                                    </h2>
+                                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionGeneral">
+                                        <div class="accordion-body">
+                                            Esta pantalla muestra los registros de recepción de efectivo de las sucursales. Puede filtrar los registros por fecha y estado (Pendiente o Todos).
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="acciones" role="tabpanel" aria-labelledby="acciones-tab">
+                            <div class="accordion mt-3" id="accordionAcciones">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingTwo">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                            Vincular Recibo
+                                        </button>
+                                    </h2>
+                                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionAcciones">
+                                        <div class="accordion-body">
+                                            El botón "Vincular" permite asociar un comprobante de la tabla con un recibo de tesorería. Al hacer clic, se abrirá una ventana para seleccionar el recibo a vincular. Los montos deben coincidir para poder realizar la vinculación.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingThree">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                            Guardar Observaciones
+                                        </button>
+                                    </h2>
+                                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionAcciones">
+                                        <div class="accordion-body">
+                                            Puede agregar observaciones en la columna "OBSERVACIONES" y luego hacer clic en el botón "Guardar" para almacenarlas.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,96 +1,73 @@
 
 $(document).ready(function() {
-    inicializarEventos();
+    $('body').append('<input type="file" id="fileInput" multiple style="display: none;" />');
+    inicializarSubidaFotos();
+    inicializarBotones();
 });
 
-const inicializarEventos = () => {
-    // Para la vista de tabla
-    $('.table-view').on('click', '.btn-primary', function() {
-        const row = $(this).closest('.gasto-row');
-        const data = obtenerDatos(row, 'table');
-        manejarSubida(data);
+
+const inicializarBotones = () => {
+    // Botón de subir fotos
+    $('.btn-primary').on('click', function() {
+        const row = $(this).closest('tr');
+        const codComp = row.find('td:eq(1)').text().trim();
+        const nComp = row.find('td:eq(2)').text().trim();
+        const codCta = row.find('td:eq(3)').text().trim();
+        subirFotos(this, codComp, nComp, codCta);
     });
 
-    $('.table-view').on('click', '.btn-warning', function() {
-        const row = $(this).closest('.gasto-row');
-        const data = obtenerDatos(row, 'table');
-        mostrarFotos(data.codComp, data.nComp, data.codCta);
+    // Botón de ver fotos
+    $('.btn-warning').on('click', function() {
+        const row = $(this).closest('tr');
+        const codComp = row.find('td:eq(1)').text().trim();
+        const nComp = row.find('td:eq(2)').text().trim();
+        const codCta = row.find('td:eq(3)').text().trim();
+        mostrarFotos(codComp, nComp, codCta);
     });
 
-    $('.table-view').on('click', '.btn-success', function() {
-        const row = $(this).closest('.gasto-row');
-        const data = obtenerDatos(row, 'table');
-        guardarRegistro(data.codComp, data.nComp, data.codCta, row);
+    // Botón de guardar
+    $('.btn-success').on('click', function() {
+        const row = $(this).closest('tr');
+        const codComp = row.find('td:eq(1)').text().trim();
+        // Usamos .text() sin .trim() para N_COMP para preservar el espacio inicial
+        const nComp = row.find('td:eq(2)').text();
+        const codCta = row.find('td:eq(3)').text().trim();
+        guardarRegistro(codComp, nComp, codCta, row);
     });
-
-    // Para la vista de tarjetas
-    $('.card-view').on('click', '.btn-primary', function() {
-        const card = $(this).closest('.gasto-card');
-        const data = obtenerDatos(card, 'card');
-        manejarSubida(data);
-    });
-
-    $('.card-view').on('click', '.btn-warning', function() {
-        const card = $(this).closest('.gasto-card');
-        const data = obtenerDatos(card, 'card');
-        mostrarFotos(data.codComp, data.nComp, data.codCta);
-    });
-
-    $('.card-view').on('click', '.btn-success', function() {
-        const card = $(this).closest('.gasto-card');
-        const data = obtenerDatos(card, 'card');
-        guardarRegistro(data.codComp, data.nComp, data.codCta, card);
-    });
-
     // Inicialmente, ocultar botones de ver y guardar
     $('.btn-warning, .btn-success').hide();
 
-    // Verificar estado inicial de cada fila/tarjeta
-    $('.gasto-row').each(function() {
+    // Verificar estado inicial de cada fila
+    $('table tbody tr').each(function() {
         const row = $(this);
-        const data = obtenerDatos(row, 'table');
-        verificarEstadoFila(data.codComp, data.nComp, data.codCta, row);
-    });
-
-    $('.gasto-card').each(function() {
-        const card = $(this);
-        const data = obtenerDatos(card, 'card');
-        verificarEstadoFila(data.codComp, data.nComp, data.codCta, card);
+        const codComp = row.find('td:eq(1)').text().trim();
+        const nComp = row.find('td:eq(2)').text().trim();
+        const codCta = row.find('td:eq(3)').text().trim();
+        verificarEstadoFila(codComp, nComp, codCta, row);
     });
 };
 
-const obtenerDatos = (elemento, tipo) => {
-    if (tipo === 'table') {
-        return {
-            codComp: elemento.find('td:eq(1)').text().trim(),
-            nComp: elemento.find('td:eq(2)').text().trim(),
-            codCta: elemento.find('td:eq(3)').text().trim()
-        };
-    } else { // card
-        return {
-            codComp: elemento.find('.cod-comp').text().trim(),
-            nComp: elemento.find('.n-comp').text().trim(),
-            codCta: elemento.find('.cod-cta').text().trim()
-        };
-    }
-};
 
-const manejarSubida = (data) => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.multiple = true;
-    fileInput.accept = 'image/*,.pdf';
-    // Para móviles, sugiere usar la cámara
-    if (/Mobi|Android/i.test(navigator.userAgent)) {
-        fileInput.capture = 'camera';
-    }
-    fileInput.style.display = 'none';
-    fileInput.addEventListener('change', function() {
-        subirFotos(this, data.codComp, data.nComp, data.codCta);
+const inicializarSubidaFotos = () => {
+    $('.btn-icon.btn-primary').off('click').on('click', function(e) {
+        e.preventDefault();
+        const row = $(this).closest('tr');
+        const codComp = row.find('td:eq(1)').text().trim();
+        const nComp = row.find('td:eq(2)').text().trim();
+        const codCta = row.find('td:eq(3)').text().trim();
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.multiple = true;
+        fileInput.accept = '.jpg,.jpeg,.png,.pdf';
+        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', function() {
+            subirFotos(this, codComp, nComp, codCta);
+        });
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
     });
-    document.body.appendChild(fileInput);
-    fileInput.click();
-    document.body.removeChild(fileInput);
 };
 
 
