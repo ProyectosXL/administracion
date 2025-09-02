@@ -84,6 +84,7 @@ function vincularRecibo($sucursal) {
     } else {
         echo json_encode(['success' => false, 'message' => 'Error al vincular el recibo.']);
     }
+    exit();
 }
 
 function marcarFacturado ($sucursal) {

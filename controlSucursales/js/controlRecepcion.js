@@ -135,7 +135,7 @@ const vincularRecibo = (btn) => {
         fecha: cells[0].textContent.trim(),
         nroSucursal: cells[1].textContent.trim(),
         codComp: cells[3].textContent.trim(),
-        nComp: cells[4].textContent.trim(),
+        nComp: cells[4].textContent, // No usar trim() aquí
         monto: parseFloat(cells[5].textContent.replace(/[$.]/g, '').replace(',', '.')),
         codCta: cells[12].textContent.trim(),
     };

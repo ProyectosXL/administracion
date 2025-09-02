@@ -194,9 +194,9 @@ $locales = $sucursal->traerLocales();
                                 <th>MONTO</th>
                                 <th>DESPACHADO</th>
                                 <th>PRECINTO</th>
-                                <th>RECIBIDO</th>
-                                <th>CONTROLADO</th>
-                                <th>CARGADO</th>
+                                <th title="Recibido"><i class="bi bi-box-arrow-in-down"></i></th>
+                                <th title="Controlado"><i class="bi bi-check-square"></i></th>
+                                <th title="Cargado"><i class="bi bi-cloud-arrow-up-fill"></i></th>
                                 <th>OBSERVACIONES</th>
                                 <th>ACCIONES</th>
                                 <th hidden>COD_CUENTA</th>  <!-- Columna oculta -->
