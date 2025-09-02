@@ -239,11 +239,11 @@ $locales = $sucursal->traerLocales();
                                             <div class="btn-group" role="group" aria-label="Acciones">
                                                 <?php if($gasto['OBSERVACIONES'] == NULL): ?>
                                                     <button class="btn btn-primary btn-sm" onclick="guardarObservaciones(this)" title="Guardar Observaciones">
-                                                        <i class="bi bi-save me-1"></i> Guardar
+                                                        <i class="bi bi-save"></i>
                                                     </button>
                                                 <?php endif; ?>
                                                 <button class="btn btn-info btn-sm" onclick="vincularRecibo(this)" title="Vincular Recibo">
-                                                    <i class="bi bi-link-45deg"></i> Vincular
+                                                    <i class="bi bi-link-45deg"></i>
                                                 </button>
                                             </div>
                                         </td>
@@ -268,7 +268,12 @@ $locales = $sucursal->traerLocales();
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Seleccione un recibo para vincular:</p>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Buscar por Nro. Comprobante o Leyenda...">
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table id="tablaRecibosVincular" class="table table-striped table-hover">
                             <thead>

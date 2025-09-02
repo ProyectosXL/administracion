@@ -119,8 +119,9 @@ document.getElementById('btnFiltrarControlRecepcion').addEventListener('click', 
 });
 
 let currentRowData = null;
+let debounceTimer;
 
-const vincularRecibo = async (btn) => {
+const vincularRecibo = (btn) => {
     const row = btn.closest('tr');
     const cells = row.querySelectorAll('td');
     currentRowData = {
@@ -132,36 +133,61 @@ const vincularRecibo = async (btn) => {
         codCta: cells[12].textContent.trim(),
     };
 
+    const modal = new bootstrap.Modal(document.getElementById('modalVincularRecibo'));
+    modal.show();
+
+    const searchInput = document.getElementById('searchInput');
+    searchInput.value = ''; // Limpiar búsqueda anterior
+
+    // Cargar resultados iniciales (sin término de búsqueda)
+    buscarRecibos();
+
+    searchInput.addEventListener('keyup', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            buscarRecibos(searchInput.value);
+        }, 500); // Espera 500ms después de que el usuario deja de escribir
+    });
+};
+
+const buscarRecibos = async (searchTerm = '') => {
     try {
-        const response = await fetch('Controller/ControlEgresosController.php?accion=traerRecibosParaVincular');
+        const response = await fetch(`Controller/ControlEgresosController.php?accion=traerRecibosParaVincular&search=${encodeURIComponent(searchTerm)}`);
         const recibos = await response.json();
 
         const tablaBody = document.querySelector('#tablaRecibosVincular tbody');
         tablaBody.innerHTML = ''; // Limpiar tabla
 
+        if (recibos.length === 0) {
+            tablaBody.innerHTML = '<tr><td colspan="6" class="text-center">No se encontraron recibos.</td></tr>';
+            return;
+        }
+
         recibos.forEach(recibo => {
             const tr = document.createElement('tr');
+            // Formatear la fecha
+            const fecha = new Date(recibo.FECHA.date);
+            const formattedDate = fecha.toLocaleDateString('es-ES');
+
             tr.innerHTML = `
-                <td>${recibo.FECHA}</td>
+                <td>${formattedDate}</td>
                 <td>${recibo.COD_COMP}</td>
                 <td>${recibo.N_COMP}</td>
                 <td>${recibo.CANT_MONE}</td>
                 <td>${recibo.LEYENDA}</td>
                 <td>
                     <button class="btn btn-success btn-sm" onclick="seleccionarRecibo('${recibo.COD_COMP}', '${recibo.N_COMP}', ${recibo.CANT_MONE})">
-                        Seleccionar
+                        <i class="bi bi-check-circle"></i>
                     </button>
                 </td>
             `;
             tablaBody.appendChild(tr);
         });
 
-        const modal = new bootstrap.Modal(document.getElementById('modalVincularRecibo'));
-        modal.show();
-
     } catch (error) {
-        console.error('Error al traer recibos para vincular:', error);
-        alert('No se pudieron cargar los recibos para vincular.');
+        console.error('Error al buscar recibos:', error);
+        const tablaBody = document.querySelector('#tablaRecibosVincular tbody');
+        tablaBody.innerHTML = '<tr><td colspan="6" class="text-center">Error al cargar los recibos.</td></tr>';
     }
 };
 

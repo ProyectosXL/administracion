@@ -61,7 +61,8 @@ switch ($accion) {
 }
 
 function traerRecibosParaVincular($sucursal) {
-    $recibos = $sucursal->traerRecibosParaVincular();
+    $searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
+    $recibos = $sucursal->traerRecibosParaVincular($searchTerm);
     header('Content-Type: application/json');
     echo json_encode($recibos);
 }

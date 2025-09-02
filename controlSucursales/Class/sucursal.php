@@ -564,7 +564,7 @@ class Sucursal
         }
     }
 
-    public function traerRecibosParaVincular()
+    public function traerRecibosParaVincular($searchTerm = '')
     {
         $sql = "
             SELECT
@@ -582,11 +582,20 @@ class Sucursal
                 AND s.FECHA >= GETDATE() - 30
                 AND s.D_H = 'D'
                 AND v.id IS NULL -- Excluir recibos ya vinculados
-            ORDER BY s.FECHA DESC
         ";
 
+        $params = [];
+        if (!empty($searchTerm)) {
+            $sql .= " AND (s.N_COMP LIKE ? OR s.LEYENDA LIKE ?)";
+            $searchTermWithWildcards = '%' . $searchTerm . '%';
+            $params[] = $searchTermWithWildcards;
+            $params[] = $searchTermWithWildcards;
+        }
+
+        $sql .= " ORDER BY s.FECHA DESC";
+
         try {
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             if ($stmt === false) {
                 // Manejo de errores de SQL Server
                 $errors = sqlsrv_errors();
