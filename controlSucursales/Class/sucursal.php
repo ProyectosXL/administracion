@@ -352,7 +352,7 @@ class Sucursal
         $sql = "EXEC RO_SP_CARGA_GASTOS_CAJA_SUCURSALES '$desde', '$hasta'";
         
         try{
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
 
             $v = [];
             sqlsrv_next_result($stmt);
@@ -438,7 +438,7 @@ class Sucursal
         $sql .= " ORDER BY A.FECHA DESC";
         
         try{
-            $stmt = sqlsrv_query($this->cid_central, $sql);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
 
             $v = [];
             while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
@@ -601,8 +601,8 @@ class Sucursal
                 s.LEYENDA
             FROM SBA05 s
             LEFT JOIN RO_T_RECIBOS_VINCULADOS v
-                ON s.COD_COMP = v.vinculado_cod_comp
-                AND s.N_COMP = v.vinculado_n_comp
+                ON s.COD_COMP = v.vinculado_cod_comp collate Latin1_General_BIN
+                AND s.N_COMP = v.vinculado_n_comp collate Latin1_General_BIN
             WHERE
                 s.COD_CTA = '100101'
                 AND s.FECHA >= GETDATE() - 30
