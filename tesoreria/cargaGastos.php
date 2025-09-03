@@ -1,4 +1,3 @@
-
 <?php
 require_once 'Class/gasto.php';
 
@@ -24,6 +23,7 @@ $gastos = $gasto->traerGastos($desde, $hasta);
     ?>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
@@ -62,65 +62,70 @@ $gastos = $gasto->traerGastos($desde, $hasta);
         <h3 class="mb-4"><i class="fas fa-cash-register me-2"></i>Egresos de caja Tesorería</h3>
         <form id="filtroForm" method="GET" action="">
             <div class="row mb-3">
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
                     <label for="desde">Desde:</label>
                     <input type="date" id="desde" name="desde" class="form-control" value="<?php echo $desde; ?>">
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
                     <label for="hasta">Hasta:</label>
                     <input type="date" id="hasta" name="hasta" class="form-control" value="<?php echo $hasta; ?>">
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" id="filtrar" class="btn btn-primary"><i class="fas fa-filter me-2"></i>Filtrar</button>
+                <div class="col-lg-3 col-md-4 col-sm-12 mb-3 d-flex align-items-end">
+                    <button type="submit" id="filtrar" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Filtrar</button>
                 </div>
             </div>
         </form>
-        <table id="gastosTable" class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>FECHA</th>
-                    <th>COD_COMP</th>
-                    <th>N_COMP</th>
-                    <th>COD_CTA</th>
-                    <th>DESC_CUENTA</th>
-                    <th>MONTO</th>
-                    <th>USUARIO</th>
-                    <th>LEYENDA</th>
-                    <th>IMAGENES</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($gastos as $gasto): ?>
-                <tr>
-                    <td><?php echo $gasto['FECHA']->format("Y-m-d"); ?></td>
-                    <td><?php echo $gasto['COD_COMP']; ?></td>
-                    <td><?php echo $gasto['N_COMP']; ?></td>
-                    <td><?php echo $gasto['COD_CTA']; ?></td>
-                    <td><?php echo $gasto['DESC_CUENTA']; ?></td>
-                    <td>$<?php echo number_format($gasto['MONTO'], 0, ',', '.'); ?></td>
-                    <td><?php echo $gasto['USUARIO']; ?></td>
-                    <td><?php echo $gasto['LEYENDA']; ?></td>
-                    <td>
-                        <button class="btn btn-primary btn-icon"><i class="fas fa-upload"></i></button>
-                        <button class="btn btn-warning btn-icon"><i class="fas fa-eye"></i></button>
-                        <button class="btn btn-success btn-icon"><i class="fas fa-save"></i></button>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table id="gastosTable" class="table table-striped table-bordered w-100">
+                <thead>
+                    <tr>
+                        <th>FECHA</th>
+                        <th>COD_COMP</th>
+                        <th>N_COMP</th>
+                        <th>COD_CTA</th>
+                        <th>DESC_CUENTA</th>
+                        <th>MONTO</th>
+                        <th>USUARIO</th>
+                        <th>LEYENDA</th>
+                        <th>IMAGENES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($gastos as $gasto): ?>
+                    <tr>
+                        <td><?php echo $gasto['FECHA']->format("Y-m-d"); ?></td>
+                        <td><?php echo $gasto['COD_COMP']; ?></td>
+                        <td><?php echo $gasto['N_COMP']; ?></td>
+                        <td><?php echo $gasto['COD_CTA']; ?></td>
+                        <td><?php echo $gasto['DESC_CUENTA']; ?></td>
+                        <td>$<?php echo number_format($gasto['MONTO'], 0, ',', '.'); ?></td>
+                        <td><?php echo $gasto['USUARIO']; ?></td>
+                        <td><?php echo $gasto['LEYENDA']; ?></td>
+                        <td>
+                            <button class="btn btn-primary btn-icon"><i class="fas fa-upload"></i></button>
+                            <button class="btn btn-warning btn-icon"><i class="fas fa-eye"></i></button>
+                            <button class="btn btn-success btn-icon"><i class="fas fa-save"></i></button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/cargaGastos.js"></script>
     <script>
 
         $(document).ready(function() {
             $('#gastosTable').DataTable({
+                responsive: true,
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
                 },
