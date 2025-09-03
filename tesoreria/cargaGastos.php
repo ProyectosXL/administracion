@@ -22,8 +22,6 @@ $gastos = $gasto->traerGastos($desde, $hasta);
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
     ?>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
@@ -39,21 +37,28 @@ $gastos = $gasto->traerGastos($desde, $hasta);
         h3 {
             color: #6c757d;
         }
-        .dataTables_wrapper {
-            margin-top: 20px;
+        .gasto-card {
+            border-left: 5px solid #0d6efd;
+            margin-bottom: 1rem;
         }
-        .btn-icon {
-            width: 30px;
-            height: 30px;
-            padding: 6px 0;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 12px;
-            line-height: 1.428571429;
-            margin: 2px;
+        .gasto-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
         }
-        .table {
+        .gasto-fecha {
             font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .gasto-card .card-body {
+            padding: 1rem;
+        }
+        .gasto-card-actions {
+            text-align: right;
+        }
+        .gasto-card p {
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
@@ -75,65 +80,38 @@ $gastos = $gasto->traerGastos($desde, $hasta);
                 </div>
             </div>
         </form>
-        <div class="table-responsive">
-            <table id="gastosTable" class="table table-striped table-bordered w-100">
-                <thead>
-                    <tr>
-                        <th>FECHA</th>
-                        <th>COD_COMP</th>
-                        <th>N_COMP</th>
-                        <th>COD_CTA</th>
-                        <th>DESC_CUENTA</th>
-                        <th>MONTO</th>
-                        <th>USUARIO</th>
-                        <th>LEYENDA</th>
-                        <th>IMAGENES</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($gastos as $gasto): ?>
-                    <tr>
-                        <td><?php echo $gasto['FECHA']->format("Y-m-d"); ?></td>
-                        <td><?php echo $gasto['COD_COMP']; ?></td>
-                        <td><?php echo $gasto['N_COMP']; ?></td>
-                        <td><?php echo $gasto['COD_CTA']; ?></td>
-                        <td><?php echo $gasto['DESC_CUENTA']; ?></td>
-                        <td>$<?php echo number_format($gasto['MONTO'], 0, ',', '.'); ?></td>
-                        <td><?php echo $gasto['USUARIO']; ?></td>
-                        <td><?php echo $gasto['LEYENDA']; ?></td>
-                        <td>
-                            <button class="btn btn-primary btn-icon"><i class="fas fa-upload"></i></button>
-                            <button class="btn btn-warning btn-icon"><i class="fas fa-eye"></i></button>
-                            <button class="btn btn-success btn-icon"><i class="fas fa-save"></i></button>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+
+        <div id="gastos-container" class="row">
+            <?php foreach ($gastos as $gasto): ?>
+                <div class="col-lg-4 col-md-6 col-sm-12">
+                    <div class="card gasto-card"
+                         data-cod-comp="<?php echo $gasto['COD_COMP']; ?>"
+                         data-n-comp="<?php echo $gasto['N_COMP']; ?>"
+                         data-cod-cta="<?php echo $gasto['COD_CTA']; ?>">
+                        <div class="card-body">
+                            <div class="gasto-card-header">
+                                <h5 class="card-title">Gasto #<?php echo $gasto['N_COMP']; ?></h5>
+                                <span class="gasto-fecha"><?php echo $gasto['FECHA']->format("d/m/Y"); ?></span>
+                            </div>
+                            <p class="card-text"><strong>Cuenta:</strong> <?php echo $gasto['DESC_CUENTA']; ?> (<?php echo $gasto['COD_CTA']; ?>)</p>
+                            <p class="card-text"><strong>Monto:</strong> $<?php echo number_format($gasto['MONTO'], 0, ',', '.'); ?></p>
+                            <p class="card-text"><strong>Usuario:</strong> <?php echo $gasto['USUARIO']; ?></p>
+                            <p class="card-text"><strong>Leyenda:</strong> <?php echo $gasto['LEYENDA']; ?></p>
+                            <div class="gasto-card-actions">
+                                <button class="btn btn-primary btn-icon btn-upload"><i class="fas fa-upload"></i></button>
+                                <button class="btn btn-warning btn-icon btn-view"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-success btn-icon btn-save"><i class="fas fa-save"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/cargaGastos.js"></script>
-    <script>
-
-        $(document).ready(function() {
-            $('#gastosTable').DataTable({
-                responsive: true,
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
-                },
-                pageLength: 100,
-                order: [[0, 'desc']]
-            });
-        });
-
-    </script>
 </body>
 </html>

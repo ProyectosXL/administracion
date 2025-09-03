@@ -1,92 +1,134 @@
 $(document).ready(function() {
-    $('body').append('<input type="file" id="fileInput" multiple style="display: none;" />');
-    inicializarSubidaFotos();
-    inicializarBotones();
+    initializeGastoActions();
 });
 
-const isMobile = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
+const initializeGastoActions = () => {
+    const container = $('#gastos-container');
 
-const inicializarBotones = () => {
-    // Botón de ver fotos
-    $('.btn-warning').on('click', function() {
-        const row = $(this).closest('tr');
-        const codComp = row.find('td:eq(1)').text().trim();
-        const nComp = row.find('td:eq(2)').text().trim();
-        const codCta = row.find('td:eq(3)').text().trim();
+    container.on('click', '.btn-upload', function() {
+        const card = $(this).closest('.gasto-card');
+        const codComp = card.data('cod-comp');
+        const nComp = card.data('n-comp');
+        const codCta = card.data('cod-cta');
+        handleFileUpload(codComp, nComp, codCta);
+    });
+
+    container.on('click', '.btn-view', function() {
+        const card = $(this).closest('.gasto-card');
+        const codComp = card.data('cod-comp');
+        const nComp = card.data('n-comp');
+        const codCta = card.data('cod-cta');
         mostrarFotos(codComp, nComp, codCta);
     });
 
-    // Botón de guardar
-    $('.btn-success').on('click', function() {
-        const row = $(this).closest('tr');
-        const codComp = row.find('td:eq(1)').text().trim();
-        const nComp = row.find('td:eq(2)').text();
-        const codCta = row.find('td:eq(3)').text().trim();
-        guardarRegistro(codComp, nComp, codCta, row);
+    container.on('click', '.btn-save', function() {
+        const card = $(this).closest('.gasto-card');
+        const codComp = card.data('cod-comp');
+        const nComp = card.data('n-comp');
+        const codCta = card.data('cod-cta');
+        guardarRegistro(codComp, nComp, codCta, card);
     });
-    // Inicialmente, ocultar botones de ver y guardar
-    $('.btn-warning, .btn-success').hide();
 
-    // Verificar estado inicial de cada fila
-    $('table tbody tr').each(function() {
-        const row = $(this);
-        const codComp = row.find('td:eq(1)').text().trim();
-        const nComp = row.find('td:eq(2)').text().trim();
-        const codCta = row.find('td:eq(3)').text().trim();
-        verificarEstadoFila(codComp, nComp, codCta, row);
+    $('.gasto-card').each(function() {
+        const card = $(this);
+        const codComp = card.data('cod-comp');
+        const nComp = card.data('n-comp');
+        const codCta = card.data('cod-cta');
+        verificarEstadoCard(codComp, nComp, codCta, card);
     });
 };
 
-
-const inicializarSubidaFotos = () => {
-    $('.btn-icon.btn-primary').off('click').on('click', function(e) {
-        e.preventDefault();
-        const row = $(this).closest('tr');
-        const codComp = row.find('td:eq(1)').text().trim();
-        const nComp = row.find('td:eq(2)').text().trim();
-        const codCta = row.find('td:eq(3)').text().trim();
-
-        const triggerFileInput = (capture) => {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.multiple = true;
-            if (capture) {
-                fileInput.accept = 'image/*';
-                fileInput.capture = 'environment';
-            } else {
-                fileInput.accept = 'image/*,application/pdf';
-            }
-            fileInput.style.display = 'none';
-            fileInput.addEventListener('change', function() {
-                subirFotos(this, codComp, nComp, codCta);
-                document.body.removeChild(fileInput);
-            });
-            document.body.appendChild(fileInput);
-            fileInput.click();
-        };
-
-        if (isMobile()) {
-            Swal.fire({
-                title: 'Seleccionar acción',
-                text: '¿Deseas tomar una foto o seleccionar un archivo?',
-                showDenyButton: true,
-                confirmButtonText: `Tomar Foto`,
-                denyButtonText: `Elegir Archivo`,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    triggerFileInput(true);
-                } else if (result.isDenied) {
-                    triggerFileInput(false);
-                }
-            })
+const handleFileUpload = (codComp, nComp, codCta) => {
+    const triggerFileInput = (capture) => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.multiple = true;
+        if (capture) {
+            fileInput.accept = 'image/*';
+            fileInput.capture = 'environment';
         } else {
-            triggerFileInput(false);
+            fileInput.accept = 'image/*,application/pdf';
+        }
+        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', function() {
+            subirFotos(this, codComp, nComp, codCta);
+            document.body.removeChild(fileInput);
+        });
+        document.body.appendChild(fileInput);
+        fileInput.click();
+    };
+
+    const handleCamera = () => {
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'camera' }).then(permissionStatus => {
+                if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
+                    triggerFileInput(true);
+                } else if (permissionStatus.state === 'denied') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Permiso de cámara denegado',
+                        text: 'Has bloqueado el acceso a la cámara. Por favor, habilítalo en la configuración de tu navegador para poder tomar fotos.',
+                    });
+                }
+            });
+        } else {
+            triggerFileInput(true);
+        }
+    };
+
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        Swal.fire({
+            title: 'Seleccionar acción',
+            text: '¿Deseas tomar una foto o seleccionar un archivo?',
+            showDenyButton: true,
+            confirmButtonText: `Tomar Foto`,
+            denyButtonText: `Elegir Archivo`,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                handleCamera();
+            } else if (result.isDenied) {
+                triggerFileInput(false);
+            }
+        })
+    } else {
+        triggerFileInput(false);
+    }
+};
+
+const verificarEstadoCard = (codComp, nComp, codCta, card) => {
+    $.ajax({
+        url: 'controller/egresoCajaController.php?accion=verificarEstado',
+        type: 'GET',
+        data: { codComp: codComp, nComp: nComp, codCta: codCta },
+        success: function(response) {
+            const result = JSON.parse(response);
+            actualizarBotonesCard(card, result.tieneFotos, result.estaGuardado);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al verificar el estado de la card:', error);
         }
     });
 };
 
+const actualizarBotonesCard = (card, tieneFotos, estaGuardado) => {
+    const btnSubir = card.find('.btn-upload');
+    const btnVer = card.find('.btn-view');
+    const btnGuardar = card.find('.btn-save');
+
+    if (estaGuardado) {
+        btnSubir.hide();
+        btnGuardar.hide();
+        btnVer.show();
+    } else if (tieneFotos) {
+        btnSubir.hide();
+        btnGuardar.show();
+        btnVer.show();
+    } else {
+        btnSubir.show();
+        btnGuardar.hide();
+        btnVer.hide();
+    }
+};
 
 const subirFotos = (input, codComp, nComp, codCta) => {
     const formData = new FormData();
@@ -127,57 +169,17 @@ const subirFotos = (input, codComp, nComp, codCta) => {
     });
 };
 
-
-const verificarEstadoFila = (codComp, nComp, codCta, row) => {
-    $.ajax({
-        url: 'controller/egresoCajaController.php?accion=verificarEstado',
-        type: 'GET',
-        data: { codComp: codComp, nComp: nComp, codCta: codCta },
-        success: function(response) {
-            console.log("Respuesta de verificarEstado:", response);
-            const result = JSON.parse(response);
-            actualizarBotones(row, result.tieneFotos, result.estaGuardado);
-        },
-        error: function(xhr, status, error) {
-            console.error('Error al verificar el estado de la fila:', error);
-            console.log('Respuesta del servidor:', xhr.responseText);
-        }
-    });
-};
-
-const actualizarBotones = (row, tieneFotos, estaGuardado) => {
-    const btnSubir = row.find('.btn-primary');
-    const btnVer = row.find('.btn-warning');
-    const btnGuardar = row.find('.btn-success');
-
-    if (estaGuardado) {
-        btnSubir.hide();
-        btnGuardar.hide();
-        btnVer.show();
-    } else if (tieneFotos) {
-        btnSubir.hide();
-        btnGuardar.show();
-        btnVer.show();
-    } else {
-        btnSubir.show();
-        btnGuardar.hide();
-        btnVer.hide();
-    }
-};
-
-
-const guardarRegistro = (codComp, nComp, codCta, row) => {
+const guardarRegistro = (codComp, nComp, codCta, card) => {
     $.ajax({
         url: 'controller/egresoCajaController.php?accion=guardarRegistro',
         type: 'POST',
         data: { codComp: codComp, nComp: nComp, codCta: codCta },
         success: function(response) {
-            console.log("Respuesta de guardarRegistro:", response);
             try {
                 const result = JSON.parse(response);
                 if (result.success) {
                     Swal.fire('Éxito', 'Registro guardado correctamente', 'success');
-                    verificarEstadoFila(codComp, nComp, codCta, row);
+                    verificarEstadoCard(codComp, nComp, codCta, card);
                 } else {
                     let errorMsg = 'No se pudo guardar el registro';
                     if (result.error) {
@@ -188,21 +190,16 @@ const guardarRegistro = (codComp, nComp, codCta, row) => {
                         }
                     }
                     Swal.fire('Error', errorMsg, 'error');
-                    console.error('Error detallado:', result.error);
                 }
             } catch (e) {
-                console.error('Error al parsear la respuesta:', e);
                 Swal.fire('Error', 'Respuesta del servidor inválida', 'error');
             }
         },
-        error: function(xhr, status, error) {
-            console.error('Error al guardar el registro:', error);
-            console.log('Respuesta del servidor:', xhr.responseText);
+        error: function() {
             Swal.fire('Error', 'Hubo un problema al comunicarse con el servidor', 'error');
         }
     });
 };
-
 
 const mostrarFotos = (codComp, nComp, codCta) => {
     $.ajax({
@@ -230,7 +227,6 @@ const mostrarFotos = (codComp, nComp, codCta) => {
         }
     });
 };
-
 
 const crearCarrusel = (archivos, codComp, nComp, codCta, estaGuardado) => {
     const totalArchivos = archivos.length;
@@ -293,45 +289,7 @@ const crearCarrusel = (archivos, codComp, nComp, codCta, estaGuardado) => {
         showCloseButton: true,
         showConfirmButton: false,
         didOpen: (modal) => {
-            // Inicializar el carrusel de Bootstrap
             new bootstrap.Carousel(modal.querySelector(`#carrusel-${codComp}-${nComp}-${codCta}`));
-
-            // Añadir estilos personalizados para las flechas y el carrusel
-            const style = document.createElement('style');
-            style.textContent = `
-                .carousel-control-prev, .carousel-control-next {
-                    width: 10%;
-                    opacity: 0.7;
-                }
-                .carousel-control-prev-icon, .carousel-control-next-icon {
-                    background-color: rgba(0, 0, 0, 0.5);
-                    border-radius: 50%;
-                    padding: 20px;
-                }
-                .carousel-item img {
-                    max-height: 70vh;
-                    object-fit: contain;
-                }
-                .swal2-modal {
-                    padding-bottom: 30px;
-                }
-                .delete-photo {
-                    position: absolute;
-                    bottom: 10px;
-                    right: 10px;
-                }
-                .image-counter {
-                    position: relative;
-                    top: 5px;
-                    left: 10px;
-                    color: black;
-                    padding: 5px 10px;
-                    border-radius: 5px;
-                    font-size: 18px;
-                    font-weight: bold;
-                }
-            `;
-            document.head.appendChild(style);
         }
     });
 };
@@ -361,7 +319,6 @@ const eliminarArchivo = (foto, codComp, nComp, codCta) => {
                             text: 'La foto ha sido eliminada.',
                             allowOutsideClick: false
                         }).then(() => {
-                            // Recargar la página
                             location.reload();
                         });
                     } else {
