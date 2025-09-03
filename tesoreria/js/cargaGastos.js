@@ -9,16 +9,6 @@ const isMobile = () => {
 }
 
 const inicializarBotones = () => {
-    // Botón de subir fotos
-    $('.btn-primary').on('click', function() {
-        const row = $(this).closest('tr');
-        const codComp = row.find('td:eq(1)').text().trim();
-        const nComp = row.find('td:eq(2)').text().trim();
-        const codCta = row.find('td:eq(3)').text().trim();
-        // The actual file input is triggered by inicializarSubidaFotos, not here.
-        // This handler might be redundant now, but we'll leave it for now.
-    });
-
     // Botón de ver fotos
     $('.btn-warning').on('click', function() {
         const row = $(this).closest('tr');
