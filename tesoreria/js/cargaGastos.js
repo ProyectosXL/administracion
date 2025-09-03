@@ -52,9 +52,11 @@ const inicializarSubidaFotos = () => {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.multiple = true;
-            fileInput.accept = 'image/*,application/pdf';
             if (capture) {
+                fileInput.accept = 'image/*';
                 fileInput.capture = 'environment';
+            } else {
+                fileInput.accept = 'image/*,application/pdf';
             }
             fileInput.style.display = 'none';
             fileInput.addEventListener('change', function() {
