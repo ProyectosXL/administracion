@@ -1,44 +1,124 @@
 $(document).ready(function() {
+    // Determine which view to render based on screen size
+    if (window.matchMedia("(max-width: 768px)").matches) {
+        renderCards(gastosData);
+    } else {
+        renderTable(gastosData);
+    }
+
+    // Initialize actions for both views
     initializeGastoActions();
 });
 
-const initializeGastoActions = () => {
-    const container = $('#gastos-container');
-
-    container.on('click', '.btn-upload', function() {
-        const card = $(this).closest('.gasto-card');
-        const codComp = card.data('cod-comp');
-        const nComp = card.data('n-comp');
-        const codCta = card.data('cod-cta');
-        handleFileUpload(codComp, nComp, codCta);
-    });
-
-    container.on('click', '.btn-view', function() {
-        const card = $(this).closest('.gasto-card');
-        const codComp = card.data('cod-comp');
-        const nComp = card.data('n-comp');
-        const codCta = card.data('cod-cta');
-        mostrarFotos(codComp, nComp, codCta);
-    });
-
-    container.on('click', '.btn-save', function() {
-        const card = $(this).closest('.gasto-card');
-        const codComp = card.data('cod-comp');
-        const nComp = card.data('n-comp');
-        const codCta = card.data('cod-cta');
-        guardarRegistro(codComp, nComp, codCta, card);
-    });
-
-    $('.gasto-card').each(function() {
-        const card = $(this);
-        const codComp = card.data('cod-comp');
-        const nComp = card.data('n-comp');
-        const codCta = card.data('cod-cta');
-        verificarEstadoCard(codComp, nComp, codCta, card);
+const renderCards = (data) => {
+    const container = $('#gastos-container-mobile');
+    container.empty(); // Clear previous content
+    data.forEach(gasto => {
+        const cardHtml = `
+            <div class="col-12">
+                <div class="card gasto-card"
+                     data-cod-comp="${gasto.COD_COMP}"
+                     data-n-comp="${gasto.N_COMP}"
+                     data-cod-cta="${gasto.COD_CTA}">
+                    <div class="card-body">
+                        <div class="gasto-card-header">
+                            <h5 class="card-title">Gasto #${gasto.N_COMP}</h5>
+                            <span class="gasto-fecha">${gasto.FECHA_CARD}</span>
+                        </div>
+                        <p class="card-text"><strong>Cuenta:</strong> ${gasto.DESC_CUENTA} (${gasto.COD_CTA})</p>
+                        <p class="card-text"><strong>Monto:</strong> $${gasto.MONTO}</p>
+                        <p class="card-text"><strong>Usuario:</strong> ${gasto.USUARIO}</p>
+                        <p class="card-text"><strong>Leyenda:</strong> ${gasto.LEYENDA}</p>
+                        <div class="gasto-card-actions">
+                            <button class="btn btn-primary btn-icon btn-upload"><i class="fas fa-upload"></i></button>
+                            <button class="btn btn-warning btn-icon btn-view"><i class="fas fa-eye"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.append(cardHtml);
     });
 };
 
-const handleFileUpload = (codComp, nComp, codCta) => {
+const renderTable = (data) => {
+    const tableBody = $('#gastosTable tbody');
+    tableBody.empty(); // Clear previous content
+    data.forEach(gasto => {
+        const rowHtml = `
+            <tr data-cod-comp="${gasto.COD_COMP}"
+                data-n-comp="${gasto.N_COMP}"
+                data-cod-cta="${gasto.COD_CTA}">
+                <td>${gasto.FECHA_TABLE}</td>
+                <td>${gasto.COD_COMP}</td>
+                <td>${gasto.N_COMP}</td>
+                <td>${gasto.COD_CTA}</td>
+                <td>${gasto.DESC_CUENTA}</td>
+                <td>$${gasto.MONTO}</td>
+                <td>${gasto.USUARIO}</td>
+                <td>${gasto.LEYENDA}</td>
+                <td>
+                    <button class="btn btn-primary btn-icon btn-upload"><i class="fas fa-upload"></i></button>
+                    <button class="btn btn-warning btn-icon btn-view"><i class="fas fa-eye"></i></button>
+                </td>
+            </tr>
+        `;
+        tableBody.append(rowHtml);
+    });
+
+    // Initialize DataTables
+    $('#gastosTable').DataTable({
+        responsive: true,
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
+        },
+        order: [[0, 'desc']]
+    });
+};
+
+const initializeGastoActions = () => {
+    const container = $('.container-fluid');
+
+    container.on('click', '.btn-upload', function() {
+        const element = $(this).closest('[data-cod-comp]');
+        handleFileUpload(element);
+    });
+
+    container.on('click', '.btn-view', function() {
+        const element = $(this).closest('[data-cod-comp]');
+        const codComp = element.data('cod-comp');
+        const nComp = element.data('n-comp');
+        const codCta = element.data('cod-cta');
+        mostrarFotos(codComp, nComp, codCta);
+    });
+
+    $('[data-cod-comp]').each(function() {
+        const element = $(this);
+        const codComp = element.data('cod-comp');
+        const nComp = element.data('n-comp');
+        const codCta = element.data('cod-cta');
+        verificarEstado(codComp, nComp, codCta, element);
+    });
+
+    $('#mobileSearch').on('keyup', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        $('.gasto-card').each(function() {
+            const card = $(this);
+            const cardText = card.text().toLowerCase();
+            if (cardText.includes(searchTerm)) {
+                card.closest('.col-12').show();
+            } else {
+                card.closest('.col-12').hide();
+            }
+        });
+    });
+};
+
+const handleFileUpload = (element) => {
+    const codComp = element.data('cod-comp');
+    const nComp = element.data('n-comp');
+    const codCta = element.data('cod-cta');
+
     const triggerFileInput = (capture) => {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -51,7 +131,7 @@ const handleFileUpload = (codComp, nComp, codCta) => {
         }
         fileInput.style.display = 'none';
         fileInput.addEventListener('change', function() {
-            subirFotos(this, codComp, nComp, codCta);
+            subirFotos(this, element);
             document.body.removeChild(fileInput);
         });
         document.body.appendChild(fileInput);
@@ -95,42 +175,42 @@ const handleFileUpload = (codComp, nComp, codCta) => {
     }
 };
 
-const verificarEstadoCard = (codComp, nComp, codCta, card) => {
+const verificarEstado = (codComp, nComp, codCta, element) => {
     $.ajax({
         url: 'controller/egresoCajaController.php?accion=verificarEstado',
         type: 'GET',
         data: { codComp: codComp, nComp: nComp, codCta: codCta },
         success: function(response) {
             const result = JSON.parse(response);
-            actualizarBotonesCard(card, result.tieneFotos, result.estaGuardado);
+            actualizarBotones(element, result.tieneFotos, result.estaGuardado);
         },
         error: function(xhr, status, error) {
-            console.error('Error al verificar el estado de la card:', error);
+            console.error('Error al verificar el estado:', error);
         }
     });
 };
 
-const actualizarBotonesCard = (card, tieneFotos, estaGuardado) => {
-    const btnSubir = card.find('.btn-upload');
-    const btnVer = card.find('.btn-view');
-    const btnGuardar = card.find('.btn-save');
+const actualizarBotones = (element, tieneFotos, estaGuardado) => {
+    const btnSubir = element.find('.btn-upload');
+    const btnVer = element.find('.btn-view');
 
     if (estaGuardado) {
         btnSubir.hide();
-        btnGuardar.hide();
         btnVer.show();
     } else if (tieneFotos) {
         btnSubir.hide();
-        btnGuardar.show();
         btnVer.show();
     } else {
         btnSubir.show();
-        btnGuardar.hide();
         btnVer.hide();
     }
 };
 
-const subirFotos = (input, codComp, nComp, codCta) => {
+const subirFotos = (input, element) => {
+    const codComp = element.data('cod-comp');
+    const nComp = element.data('n-comp');
+    const codCta = element.data('cod-cta');
+
     const formData = new FormData();
     const files = input.files;
 
@@ -148,16 +228,7 @@ const subirFotos = (input, codComp, nComp, codCta) => {
         processData: false,
         contentType: false,
         success: function(response) {
-            Swal.fire({
-                icon: 'success',
-                title: '¡Éxito!',
-                text: response,
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    location.reload();
-                }
-            });
+            guardarRegistro(codComp, nComp, codCta, element);
         },
         error: function() {
             Swal.fire({
@@ -169,7 +240,7 @@ const subirFotos = (input, codComp, nComp, codCta) => {
     });
 };
 
-const guardarRegistro = (codComp, nComp, codCta, card) => {
+const guardarRegistro = (codComp, nComp, codCta, element) => {
     $.ajax({
         url: 'controller/egresoCajaController.php?accion=guardarRegistro',
         type: 'POST',
@@ -178,17 +249,13 @@ const guardarRegistro = (codComp, nComp, codCta, card) => {
             try {
                 const result = JSON.parse(response);
                 if (result.success) {
-                    Swal.fire('Éxito', 'Registro guardado correctamente', 'success');
-                    verificarEstadoCard(codComp, nComp, codCta, card);
+                    Swal.fire('¡Éxito!', 'La foto ha sido subida y el registro guardado correctamente.', 'success').then(() => {
+                        location.reload();
+                    });
                 } else {
-                    let errorMsg = 'No se pudo guardar el registro';
-                    if (result.error) {
-                        if (typeof result.error === 'string') {
-                            errorMsg += ': ' + result.error;
-                        } else if (Array.isArray(result.error)) {
-                            errorMsg += ': ' + result.error.map(e => e.message).join(', ');
-                        }
-                    }
+                    let errorMsg = result.error === 'El registro ya existe en la tabla de destino'
+                                 ? 'Este registro ya fue guardado previamente.'
+                                 : 'No se pudo guardar el registro.';
                     Swal.fire('Error', errorMsg, 'error');
                 }
             } catch (e) {
@@ -196,7 +263,7 @@ const guardarRegistro = (codComp, nComp, codCta, card) => {
             }
         },
         error: function() {
-            Swal.fire('Error', 'Hubo un problema al comunicarse con el servidor', 'error');
+            Swal.fire('Error', 'Hubo un problema al comunicarse con el servidor para guardar.', 'error');
         }
     });
 };

@@ -15,7 +15,7 @@ class Gasto
     {
 
   
-        $sql = "SELECT * FROM RO_V_GASTOS_TESORERIA WHERE FECHA BETWEEN '$desde' AND '$hasta'";
+        $sql = "SELECT * FROM RO_V_GASTOS_TESORERIA WHERE FECHA BETWEEN '$desde' AND '$hasta' ORDER BY FECHA DESC";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
 
@@ -35,7 +35,7 @@ class Gasto
 
     }
 
-    private $directorioFotos = '../../image/gastosTesoreria/';
+    private $directorioFotos = __DIR__.'/../../../image/gastosTesoreria/';
 
     public function subirFotos($codComp, $nComp, $codCta, $fotos) {
         $resultados = [];
