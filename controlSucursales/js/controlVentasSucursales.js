@@ -92,7 +92,7 @@ $(document).ready(function() {
         $.each(data, function(index, fila) {
             const estadoBadge = fila.ESTADO === 'OK' 
                 ? '<span class="badge badge-success">OK</span>' 
-                : '<span class="badge badge-danger">Diferencia</span>';
+                : `<span class="badge badge-danger">${fila.ESTADO}</span>`;
             
             let refreshedDate = 'N/A';
             if(fila.REFRESHED_AT && fila.REFRESHED_AT.date){
