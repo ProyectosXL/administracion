@@ -6,7 +6,7 @@ $(document).ready(function() {
         renderTable(gastosData);
     }
 
-    // Initialize actions for both views
+    // Initialize actions that are independent of rendering
     initializeGastoActions();
 });
 
@@ -37,7 +37,9 @@ const renderCards = (data) => {
                 </div>
             </div>
         `;
-        container.append(cardHtml);
+        const cardElement = $(cardHtml);
+        container.append(cardElement);
+        verificarEstado(gasto.COD_COMP, gasto.N_COMP, gasto.COD_CTA, cardElement.find('.gasto-card'));
     });
 };
 
@@ -72,7 +74,18 @@ const renderTable = (data) => {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
         },
-        order: [[0, 'desc']]
+        order: [[0, 'desc']],
+        drawCallback: function(settings) {
+            $('#gastosTable tbody tr').each(function() {
+                const row = $(this);
+                const codComp = row.data('cod-comp');
+                const nComp = row.data('n-comp');
+                const codCta = row.data('cod-cta');
+                if(codComp) { // Ensure row has data
+                    verificarEstado(codComp, nComp, codCta, row);
+                }
+            });
+        }
     });
 };
 
@@ -90,14 +103,6 @@ const initializeGastoActions = () => {
         const nComp = element.data('n-comp');
         const codCta = element.data('cod-cta');
         mostrarFotos(codComp, nComp, codCta);
-    });
-
-    $('[data-cod-comp]').each(function() {
-        const element = $(this);
-        const codComp = element.data('cod-comp');
-        const nComp = element.data('n-comp');
-        const codCta = element.data('cod-cta');
-        verificarEstado(codComp, nComp, codCta, element);
     });
 
     $('#mobileSearch').on('keyup', function() {
