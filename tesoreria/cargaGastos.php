@@ -10,6 +10,21 @@ $hasta = isset($_GET['hasta']) && $_GET['hasta'] != "" ? $_GET['hasta'] : date('
 // Obtener los gastos filtrados
 $gastos = $gasto->traerGastos($desde, $hasta);
 
+// Prepare data for JSON encoding
+$gastos_json = array();
+foreach ($gastos as $g) {
+    $gastos_json[] = array(
+        'COD_COMP' => $g['COD_COMP'],
+        'N_COMP' => $g['N_COMP'],
+        'COD_CTA' => $g['COD_CTA'],
+        'FECHA_CARD' => $g['FECHA']->format('d/m/Y'),
+        'FECHA_TABLE' => $g['FECHA']->format('Y-m-d'),
+        'DESC_CUENTA' => $g['DESC_CUENTA'],
+        'MONTO' => number_format($g['MONTO'], 0, ',', '.'),
+        'USUARIO' => $g['USUARIO'],
+        'LEYENDA' => $g['LEYENDA'],
+    );
+}
 ?>
 
 <!DOCTYPE html>
@@ -22,6 +37,8 @@ $gastos = $gasto->traerGastos($desde, $hasta);
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
     ?>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
@@ -60,6 +77,18 @@ $gastos = $gasto->traerGastos($desde, $hasta);
         .gasto-card p {
             margin-bottom: 0.5rem;
         }
+
+        /* View-switching styles */
+        .card-view-container, .mobile-search-container { display: none; }
+        .table-view-container { display: block; }
+
+        @media (max-width: 768px) {
+            .card-view-container, .mobile-search-container { display: block; }
+            .table-view-container { display: none; }
+        }
+         .mobile-search-container {
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -81,37 +110,53 @@ $gastos = $gasto->traerGastos($desde, $hasta);
             </div>
         </form>
 
-        <div id="gastos-container" class="row">
-            <?php foreach ($gastos as $gasto): ?>
-                <div class="col-lg-4 col-md-6 col-sm-12">
-                    <div class="card gasto-card"
-                         data-cod-comp="<?php echo $gasto['COD_COMP']; ?>"
-                         data-n-comp="<?php echo $gasto['N_COMP']; ?>"
-                         data-cod-cta="<?php echo $gasto['COD_CTA']; ?>">
-                        <div class="card-body">
-                            <div class="gasto-card-header">
-                                <h5 class="card-title">Gasto #<?php echo $gasto['N_COMP']; ?></h5>
-                                <span class="gasto-fecha"><?php echo $gasto['FECHA']->format("d/m/Y"); ?></span>
-                            </div>
-                            <p class="card-text"><strong>Cuenta:</strong> <?php echo $gasto['DESC_CUENTA']; ?> (<?php echo $gasto['COD_CTA']; ?>)</p>
-                            <p class="card-text"><strong>Monto:</strong> $<?php echo number_format($gasto['MONTO'], 0, ',', '.'); ?></p>
-                            <p class="card-text"><strong>Usuario:</strong> <?php echo $gasto['USUARIO']; ?></p>
-                            <p class="card-text"><strong>Leyenda:</strong> <?php echo $gasto['LEYENDA']; ?></p>
-                            <div class="gasto-card-actions">
-                                <button class="btn btn-primary btn-icon btn-upload"><i class="fas fa-upload"></i></button>
-                                <button class="btn btn-warning btn-icon btn-view"><i class="fas fa-eye"></i></button>
-                                <button class="btn btn-success btn-icon btn-save"><i class="fas fa-save"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
+        <!-- Mobile Search -->
+        <div class="mobile-search-container">
+            <input type="text" id="mobileSearch" class="form-control" placeholder="Buscar gastos...">
+        </div>
+
+        <!-- Card View for Mobile -->
+        <div class="card-view-container">
+            <div id="gastos-container-mobile" class="row">
+                <!-- Cards will be rendered here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Table View for Desktop -->
+        <div class="table-view-container">
+            <div class="table-responsive">
+                <table id="gastosTable" class="table table-striped table-bordered w-100">
+                    <thead>
+                        <tr>
+                            <th>FECHA</th>
+                            <th>COD_COMP</th>
+                            <th>N_COMP</th>
+                            <th>COD_CTA</th>
+                            <th>DESC_CUENTA</th>
+                            <th>MONTO</th>
+                            <th>USUARIO</th>
+                            <th>LEYENDA</th>
+                            <th>IMAGENES</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table rows will be rendered here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const gastosData = <?php echo json_encode($gastos_json); ?>;
+    </script>
     <script src="js/cargaGastos.js"></script>
 </body>
 </html>
