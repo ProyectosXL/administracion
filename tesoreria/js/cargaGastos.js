@@ -1,10 +1,12 @@
-
 $(document).ready(function() {
     $('body').append('<input type="file" id="fileInput" multiple style="display: none;" />');
     inicializarSubidaFotos();
     inicializarBotones();
 });
 
+const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
 
 const inicializarBotones = () => {
     // Botón de subir fotos
@@ -13,7 +15,8 @@ const inicializarBotones = () => {
         const codComp = row.find('td:eq(1)').text().trim();
         const nComp = row.find('td:eq(2)').text().trim();
         const codCta = row.find('td:eq(3)').text().trim();
-        subirFotos(this, codComp, nComp, codCta);
+        // The actual file input is triggered by inicializarSubidaFotos, not here.
+        // This handler might be redundant now, but we'll leave it for now.
     });
 
     // Botón de ver fotos
@@ -29,7 +32,6 @@ const inicializarBotones = () => {
     $('.btn-success').on('click', function() {
         const row = $(this).closest('tr');
         const codComp = row.find('td:eq(1)').text().trim();
-        // Usamos .text() sin .trim() para N_COMP para preservar el espacio inicial
         const nComp = row.find('td:eq(2)').text();
         const codCta = row.find('td:eq(3)').text().trim();
         guardarRegistro(codComp, nComp, codCta, row);
@@ -56,17 +58,40 @@ const inicializarSubidaFotos = () => {
         const nComp = row.find('td:eq(2)').text().trim();
         const codCta = row.find('td:eq(3)').text().trim();
 
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.multiple = true;
-        fileInput.accept = '.jpg,.jpeg,.png,.pdf';
-        fileInput.style.display = 'none';
-        fileInput.addEventListener('change', function() {
-            subirFotos(this, codComp, nComp, codCta);
-        });
-        document.body.appendChild(fileInput);
-        fileInput.click();
-        document.body.removeChild(fileInput);
+        const triggerFileInput = (capture) => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.accept = 'image/*,application/pdf';
+            if (capture) {
+                fileInput.capture = 'environment';
+            }
+            fileInput.style.display = 'none';
+            fileInput.addEventListener('change', function() {
+                subirFotos(this, codComp, nComp, codCta);
+                document.body.removeChild(fileInput);
+            });
+            document.body.appendChild(fileInput);
+            fileInput.click();
+        };
+
+        if (isMobile()) {
+            Swal.fire({
+                title: 'Seleccionar acción',
+                text: '¿Deseas tomar una foto o seleccionar un archivo?',
+                showDenyButton: true,
+                confirmButtonText: `Tomar Foto`,
+                denyButtonText: `Elegir Archivo`,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    triggerFileInput(true);
+                } else if (result.isDenied) {
+                    triggerFileInput(false);
+                }
+            })
+        } else {
+            triggerFileInput(false);
+        }
     });
 };
 
