@@ -113,7 +113,7 @@ $locales = $sucursal->traerLocales();
                                         <td><?= $gasto['NRO_SUCURS'] ?></td>
                                         <td><?= $sucursal ?></td>
                                         <td><?= $gasto['COD_COMP'] ?></td>
-                                        <td data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" data-ncomp="<?= $gasto['N_COMP'] ?>"><?= $gasto['N_COMP'] ?></td>
+                                        <td data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" data-ncomp="<?= $gasto['N_COMP'] ?>" data-ncomp-original="<?= htmlspecialchars($gasto['N_COMP']) ?>"><?= $gasto['N_COMP'] ?></td>
                                         <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
                                         <td><?= $gasto['DESPACHADO'] == 1 ? ($gasto['FECHA_DESP'])->format("d/m/Y H:i") : '' ?></td>
                                         <td><?= $gasto['PRECINTO'] > 1 ? $gasto['PRECINTO'] : '' ?></td>

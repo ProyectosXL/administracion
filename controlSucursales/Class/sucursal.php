@@ -319,18 +319,47 @@ class Sucursal
     }
 
     public function controlTesoreria($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto)
-    {
-        $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CTROL_TESORERIA = 1, FECHA_CTROL_TESOR = GETDATE() WHERE N_COMP = '$nroComprobante' 
-        AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante' AND COD_CUENTA = '$codCuenta' AND MONTO = $monto AND FECHA = '$fecha'";
- 
-        try{
-            $stmt = sqlsrv_query($this->cid_central, $sql);
-            return true;
-        } catch (\Throwable $th){
-            print_r($th);
+{
+    // Debug: Log de los parámetros recibidos
+    error_log("=== DEBUG controlTesoreria ===");
+    error_log("fecha: '" . $fecha . "'");
+    error_log("nroSucursal: '" . $nroSucursal . "'");
+    error_log("tipoComprobante: '" . $tipoComprobante . "'");
+    error_log("nroComprobante: '" . $nroComprobante . "' (length: " . strlen($nroComprobante) . ")");
+    error_log("codCuenta: '" . $codCuenta . "'");
+    error_log("descripcionCuenta: '" . $descripcionCuenta . "'");
+    error_log("monto: '" . $monto . "'");
+    
+    $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES 
+            SET CTROL_TESORERIA = 1, FECHA_CTROL_TESOR = GETDATE() 
+            WHERE N_COMP = '$nroComprobante' 
+            AND NRO_SUCURSAL = '$nroSucursal' 
+            AND TIPO_COMP = '$tipoComprobante' 
+            AND COD_CUENTA = '$codCuenta' 
+            AND MONTO = $monto 
+            AND FECHA = '$fecha'";
+    
+    error_log("SQL Query: " . $sql);
+    
+    try{
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+        if($stmt === false) {
+            $errors = sqlsrv_errors();
+            error_log("SQL Error: " . print_r($errors, true));
+            return false;
         }
-    } 
-
+        
+        $rowsAffected = sqlsrv_rows_affected($stmt);
+        error_log("Filas afectadas: " . $rowsAffected);
+        
+        return $rowsAffected > 0;
+        
+    } catch (\Throwable $th){
+        error_log("Exception: " . print_r($th, true));
+        return false;
+    }
+}
     public function guardarObservaciones ($observaciones, $nroSucursal, $nroComprobante)
     {
         $sql = " UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET OBSERVACIONES = '$observaciones' WHERE N_COMP = '$nroComprobante' AND NRO_SUCURSAL = '$nroSucursal'";
@@ -606,8 +635,8 @@ class Sucursal
                 ON s.COD_COMP = v.vinculado_cod_comp collate Latin1_General_BIN
                 AND s.N_COMP = v.vinculado_n_comp collate Latin1_General_BIN
             WHERE
-                s.COD_CTA = '100101'
-                AND s.FECHA >= GETDATE() - 30
+                s.COD_CTA IN ('100101')
+                AND s.FECHA >= GETDATE() - 15
                 AND s.D_H = 'D'
                 AND v.id IS NULL -- Excluir recibos ya vinculados
         ";

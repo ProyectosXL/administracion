@@ -32,39 +32,47 @@ const marcarRecibido = async (e) => {
     }
 };
 
-const marcarControlado = async (e) => {
-    try {
-        const row = e.closest('tr');
-        const cells = row.querySelectorAll('td');
-        
-        const data = {
-            fecha: cells[0].textContent,
-            nroSucursal: cells[1].textContent,
-            tipoComprobante: cells[3].textContent,
-            nroComprobante: cells[4].textContent,
-            monto: cells[5].textContent.replace(/[$.]/g, ''),
-            codCuenta: cells[12].textContent,      // Nueva columna oculta
-            descripcionCuenta: cells[13].textContent, // Nueva columna oculta
-            observaciones: cells[10].querySelector('textarea')?.value || ''
-        };
+const marcarControlado = (e) => {
+    const row = e.closest('tr');
+    const cells = row.querySelectorAll('td');
+    
+    const data = {
+        fecha: cells[0].textContent.trim(),
+        nroSucursal: cells[1].textContent.trim(),
+        tipoComprobante: cells[3].textContent.trim(),
+        nroComprobante: cells[4].getAttribute('data-ncomp-original') || cells[4].textContent,
+        codCuenta: cells[13].textContent.trim(),
+        descripcionCuenta: cells[14].textContent.trim(), 
+        monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
+        observaciones: cells[10].querySelector('textarea')?.value || ''
+    };
 
-        $.ajax({
-            type: 'POST',
-            url: 'Controller/ControlEgresosController.php?accion=controlTesoreria',
-            data: data,
-            success: function(response) {
+    console.log('Datos enviados:', data);
+
+    $.ajax({
+        type: 'POST',
+        url: 'Controller/ControlEgresosController.php?accion=controlTesoreria',
+        data: data,
+        success: function(response) {
+            console.log('Respuesta completa del servidor:', response);
+            
+            if(response.success) {
                 cells[9].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
-            },
-            error: function(xhr, status, error) {
-                console.error('Error:', error);
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Error al marcar como controlado' });
-                console.log('Datos enviados:', data); // Para debugging
+                Swal.fire({ icon: 'success', title: 'Éxito', text: 'Marcado como controlado correctamente' });
+            } else {
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Error', 
+                    text: response.message,
+                    footer: response.debug ? JSON.stringify(response.debug) : ''
+                });
             }
-        });
-    } catch (error) {
-        console.error('Error al marcar como controlado:', error);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al marcar como controlado' });
-    }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error completo:', {xhr, status, error, responseText: xhr.responseText});
+            Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'Error al comunicarse con el servidor' });
+        }
+    });
 };
 
 const guardarObservaciones = async (btn) => {

@@ -156,6 +156,10 @@ function marcarRecibido ($sucursal){
 }
 
 function controlTesoreria($sucursal){
+    // Debug: Log de los datos POST recibidos
+    error_log("=== DEBUG Controller controlTesoreria ===");
+    error_log("POST data: " . print_r($_POST, true));
+    
     $fecha = $_POST['fecha'];
     $nroSucursal = $_POST['nroSucursal'];
     $tipoComprobante = $_POST['tipoComprobante'];
@@ -164,9 +168,33 @@ function controlTesoreria($sucursal){
     $descripcionCuenta = $_POST['descripcionCuenta'];
     $monto = $_POST['monto'];
 
+    error_log("Parámetros procesados:");
+    error_log("- fecha: '$fecha'");
+    error_log("- nroSucursal: '$nroSucursal'");
+    error_log("- tipoComprobante: '$tipoComprobante'");
+    error_log("- nroComprobante: '$nroComprobante'");
+    error_log("- codCuenta: '$codCuenta'");
+    error_log("- monto: '$monto'");
+
     $result = $sucursal->controlTesoreria($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto);
     
-    echo $result;
+    error_log("Resultado del método controlTesoreria: " . ($result ? 'TRUE' : 'FALSE'));
+    
+    // Respuesta detallada
+    $response = [
+        'success' => $result, 
+        'message' => $result ? 'Controlado correctamente' : 'Error al controlar',
+        'debug' => [
+            'fecha' => $fecha,
+            'nroSucursal' => $nroSucursal,
+            'nroComprobante' => $nroComprobante,
+            'result' => $result
+        ]
+    ];
+    
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    exit;
 }
 
 function contarFotosEnCarpeta() {
