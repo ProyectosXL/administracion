@@ -31,7 +31,7 @@ foreach ($gastos as $g) {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Egresos de caja Tesorería</title>
     <?php
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
@@ -40,56 +40,8 @@ foreach ($gastos as $g) {
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .container-fluid {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-top: 20px;
-        }
-        h3 {
-            color: #6c757d;
-        }
-        .gasto-card {
-            border-left: 5px solid #0d6efd;
-            margin-bottom: 1rem;
-        }
-        .gasto-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        .gasto-fecha {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-        .gasto-card .card-body {
-            padding: 1rem;
-        }
-        .gasto-card-actions {
-            text-align: right;
-        }
-        .gasto-card p {
-            margin-bottom: 0.5rem;
-        }
+    <link rel="stylesheet" href="style/cargaGastos.css" class="rel">
 
-        /* View-switching styles */
-        .card-view-container, .mobile-search-container { display: none; }
-        .table-view-container { display: block; }
-
-        @media (max-width: 768px) {
-            .card-view-container, .mobile-search-container { display: block; }
-            .table-view-container { display: none; }
-        }
-         .mobile-search-container {
-            margin-bottom: 1rem;
-        }
-    </style>
 </head>
 <body>
     <div class="container-fluid">

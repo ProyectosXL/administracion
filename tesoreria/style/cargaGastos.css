@@ -1,0 +1,212 @@
+
+body {
+            background-color: #f8f9fa;
+        }
+        .container-fluid {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-top: 20px;
+        }
+        h3 {
+            color: #6c757d;
+        }
+        .gasto-card {
+            border-left: 5px solid #0d6efd;
+            margin-bottom: 1rem;
+        }
+        .gasto-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .gasto-fecha {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .gasto-card .card-body {
+            padding: 1rem;
+        }
+        .gasto-card-actions {
+            text-align: right;
+        }
+        .gasto-card p {
+            margin-bottom: 0.5rem;
+        }
+
+        /* View-switching styles */
+        .card-view-container, .mobile-search-container { display: none; }
+        .table-view-container { display: block; }
+
+        @media (max-width: 768px) {
+            .card-view-container, .mobile-search-container { display: block; }
+            .table-view-container { display: none; }
+        }
+         .mobile-search-container {
+            margin-bottom: 1rem;
+        }
+
+        /* CSS para modal responsive - Agregar en el <style> de cargaGastos.php */
+
+/* Estilos para el modal de fotos */
+.swal2-popup.modal-fotos {
+    width: 95% !important;
+    max-width: 800px !important;
+    padding: 10px !important;
+}
+
+.swal2-popup.modal-fotos .swal2-title {
+    font-size: 1.2rem !important;
+    margin-bottom: 10px !important;
+    word-break: break-word;
+}
+
+/* Carrusel responsive */
+.carousel-responsive {
+    width: 100%;
+    max-height: 70vh;
+    overflow: hidden;
+}
+
+.carousel-responsive .carousel-inner {
+    border-radius: 8px;
+}
+
+.carousel-responsive .carousel-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    position: relative;
+}
+
+.carousel-responsive .carousel-item img {
+    max-width: 100%;
+    max-height: 60vh;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.carousel-responsive .carousel-item embed {
+    width: 100%;
+    height: 50vh;
+    min-height: 300px;
+    border-radius: 4px;
+}
+
+/* Botón eliminar responsive */
+.carousel-responsive .btn-danger {
+    margin-top: 10px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+/* Contador de imágenes */
+.image-counter {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* Controles del carrusel */
+.carousel-responsive .carousel-control-prev,
+.carousel-responsive .carousel-control-next {
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.carousel-responsive .carousel-control-prev {
+    left: 10px;
+}
+
+.carousel-responsive .carousel-control-next {
+    right: 10px;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+    .swal2-popup.modal-fotos {
+        width: 98% !important;
+        max-width: none !important;
+        margin: 10px !important;
+        padding: 8px !important;
+    }
+    
+    .swal2-popup.modal-fotos .swal2-title {
+        font-size: 1rem !important;
+        line-height: 1.2;
+    }
+    
+    .carousel-responsive {
+        max-height: 60vh;
+    }
+    
+    .carousel-responsive .carousel-item {
+        min-height: 250px;
+    }
+    
+    .carousel-responsive .carousel-item img {
+        max-height: 50vh;
+    }
+    
+    .carousel-responsive .carousel-item embed {
+        height: 40vh;
+        min-height: 250px;
+    }
+    
+    .carousel-responsive .btn-danger {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .image-counter {
+        font-size: 0.7rem;
+        padding: 3px 8px;
+    }
+    
+    .carousel-responsive .carousel-control-prev,
+    .carousel-responsive .carousel-control-next {
+        width: 35px;
+        height: 35px;
+    }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .swal2-popup.modal-fotos {
+        width: 100% !important;
+        margin: 5px !important;
+        padding: 5px !important;
+    }
+    
+    .carousel-responsive {
+        max-height: 55vh;
+    }
+    
+    .carousel-responsive .carousel-item {
+        min-height: 200px;
+    }
+    
+    .carousel-responsive .carousel-item img {
+        max-height: 45vh;
+    }
+    
+    .carousel-responsive .carousel-item embed {
+        height: 35vh;
+        min-height: 200px;
+    }
+}

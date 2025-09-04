@@ -2,12 +2,28 @@
 
 class Gasto
 {
+    private $cid_central;
+    private $directorioFotos;
+
     function __construct(){
-
-        require_once __DIR__.'/../../class/conexion.php';
-        $cid = new Conexion();
-        $this->cid_central = $cid->conectar('central');
-
+        try {
+            require_once __DIR__.'/../../class/conexion.php';
+            $cid = new Conexion();
+            $this->cid_central = $cid->conectar('central');
+            
+            // Validar que la conexión se estableció correctamente
+            if (!$this->cid_central) {
+                error_log("Error: No se pudo establecer conexión a la base de datos central");
+                throw new Exception("Error de conexión a base de datos");
+            }
+            
+            // Ruta relativa corregida - desde tesoreria/Class/ ir a administracion/image/gastosTesoreria/
+            $this->directorioFotos = __DIR__.'/../../image/gastosTesoreria/';
+            
+        } catch (Exception $e) {
+            error_log("Error en constructor de Gasto: " . $e->getMessage());
+            throw $e;
+        }
     } 
 
     public function traerGastos($desde, $hasta)
@@ -26,77 +42,254 @@ class Gasto
         }
     }
 
-    private $directorioFotos = __DIR__.'/../../../image/gastosTesoreria/';
-
     public function subirFotos($codComp, $nComp, $codCta, $fotos) {
-        $codComp = trim($codComp);
-        $nComp = trim($nComp);
-        $codCta = trim($codCta);
+        try {
+            $codComp = trim($codComp);
+            $nComp = trim($nComp);
+            $codCta = trim($codCta);
 
-        $resultados = [];
-        $numFoto = $this->obtenerUltimoNumeroFoto($codComp, $nComp, $codCta) + 1;
-    
-        if (!file_exists($this->directorioFotos)) {
-            mkdir($this->directorioFotos, 0777, true);
-        }
-    
-        foreach ($fotos['tmp_name'] as $key => $tmpName) {
-            $extension = strtolower(pathinfo($fotos['name'][$key], PATHINFO_EXTENSION));
-            $nombreArchivo = $codComp . '_' . $nComp . '_' . $codCta . '_' . $numFoto . '.' . $extension;
-            $rutaCompleta = $this->directorioFotos . $nombreArchivo;
-    
-            if (in_array($extension, ['jpg', 'jpeg', 'png', 'pdf'])) {
-                if (move_uploaded_file($tmpName, $rutaCompleta)) {
-                    $resultados[] = "Archivo $nombreArchivo subido con exito.";
-                    $numFoto++;
-                } else {
-                    $resultados[] = "Error al subir el archivo $nombreArchivo: " . error_get_last()['message'];
-                }
-            } else {
-                $resultados[] = "Tipo de archivo no permitido: $extension";
+            error_log("=== INICIO SUBIR FOTOS ===");
+            error_log("Parámetros: $codComp, $nComp, $codCta");
+            error_log("Directorio: " . $this->directorioFotos);
+            error_log("Directorio absoluto: " . realpath($this->directorioFotos));
+
+            // Validar que se recibieron archivos
+            if (!isset($fotos['tmp_name']) || !is_array($fotos['tmp_name'])) {
+                error_log("Error: No se recibieron archivos válidos");
+                return ['success' => false, 'error' => 'No se recibieron archivos válidos'];
             }
+
+            $resultados = [];
+            $numFoto = $this->obtenerUltimoNumeroFoto($codComp, $nComp, $codCta) + 1;
+            $archivosSubidos = 0;
+
+            // Crear directorio si no existe
+            if (!file_exists($this->directorioFotos)) {
+                if (!mkdir($this->directorioFotos, 0755, true)) {
+                    error_log("Error: No se pudo crear el directorio: " . $this->directorioFotos);
+                    return ['success' => false, 'error' => 'No se pudo crear el directorio de fotos'];
+                }
+                error_log("Directorio creado: " . $this->directorioFotos);
+            }
+
+            // Verificar permisos de escritura
+            if (!is_writable($this->directorioFotos)) {
+                error_log("Error: El directorio no tiene permisos de escritura: " . $this->directorioFotos);
+                return ['success' => false, 'error' => 'El directorio no tiene permisos de escritura'];
+            }
+
+            error_log("Número de foto inicial: $numFoto");
+
+            foreach ($fotos['tmp_name'] as $key => $tmpName) {
+                error_log("Procesando archivo $key: $tmpName");
+                
+                // Verificar que el archivo temporal existe y no hay errores
+                if (empty($tmpName) || !file_exists($tmpName)) {
+                    $resultados[] = "Archivo temporal no encontrado para {$fotos['name'][$key]}";
+                    error_log("Archivo temporal no encontrado: $tmpName");
+                    continue;
+                }
+
+                if ($fotos['error'][$key] !== UPLOAD_ERR_OK) {
+                    $error = $this->getUploadError($fotos['error'][$key]);
+                    $resultados[] = "Error en el archivo {$fotos['name'][$key]}: $error";
+                    error_log("Error de upload: $error");
+                    continue;
+                }
+
+                $extension = strtolower(pathinfo($fotos['name'][$key], PATHINFO_EXTENSION));
+                $nombreArchivo = $codComp . '_' . $nComp . '_' . $codCta . '_' . $numFoto . '.' . $extension;
+                $rutaCompleta = $this->directorioFotos . $nombreArchivo;
+
+                error_log("Extensión: $extension");
+                error_log("Nombre archivo: $nombreArchivo");
+                error_log("Ruta completa: $rutaCompleta");
+
+                if (in_array($extension, ['jpg', 'jpeg', 'png', 'pdf'])) {
+                    $fileSize = filesize($tmpName);
+                    error_log("Tamaño archivo original: $fileSize bytes");
+
+                    if (move_uploaded_file($tmpName, $rutaCompleta)) {
+                        if (file_exists($rutaCompleta)) {
+                            $finalSize = filesize($rutaCompleta);
+                            error_log("Archivo subido exitosamente. Tamaño final: $finalSize bytes");
+                            $resultados[] = "Archivo $nombreArchivo subido con éxito.";
+                            $numFoto++;
+                            $archivosSubidos++;
+                        } else {
+                            error_log("El archivo no existe después de move_uploaded_file");
+                            $resultados[] = "Error: El archivo no se guardó correctamente: $nombreArchivo";
+                        }
+                    } else {
+                        $error = error_get_last();
+                        $errorMsg = $error ? $error['message'] : 'Error desconocido en move_uploaded_file';
+                        error_log("Error en move_uploaded_file: $errorMsg");
+                        $resultados[] = "Error al subir el archivo $nombreArchivo: $errorMsg";
+                    }
+                } else {
+                    $resultados[] = "Tipo de archivo no permitido: $extension";
+                    error_log("Extensión no permitida: $extension");
+                }
+            }
+
+            error_log("Archivos subidos exitosamente: $archivosSubidos");
+            error_log("=== FIN SUBIR FOTOS ===");
+
+            return [
+                'success' => $archivosSubidos > 0,
+                'archivos_subidos' => $archivosSubidos,
+                'mensajes' => $resultados,
+                'directorio' => $this->directorioFotos
+            ];
+
+        } catch (Exception $e) {
+            error_log("Exception en subirFotos: " . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'archivos_subidos' => 0
+            ];
         }
-    
-        return $resultados;
+    }
+
+    private function getUploadError($errorCode) {
+        switch ($errorCode) {
+            case UPLOAD_ERR_INI_SIZE:
+                return 'El archivo excede el tamaño máximo permitido en php.ini';
+            case UPLOAD_ERR_FORM_SIZE:
+                return 'El archivo excede el tamaño máximo permitido en el formulario';
+            case UPLOAD_ERR_PARTIAL:
+                return 'El archivo se subió parcialmente';
+            case UPLOAD_ERR_NO_FILE:
+                return 'No se subió ningún archivo';
+            case UPLOAD_ERR_NO_TMP_DIR:
+                return 'Falta la carpeta temporal';
+            case UPLOAD_ERR_CANT_WRITE:
+                return 'Error al escribir el archivo en disco';
+            case UPLOAD_ERR_EXTENSION:
+                return 'Subida detenida por extensión';
+            default:
+                return 'Error desconocido';
+        }
     }
     
     public function obtenerFotos($codComp, $nComp, $codCta) {
-        $codComp = trim($codComp);
-        $nComp = trim($nComp);
-        $codCta = trim($codCta);
-        $patron = $codComp . '_' . $nComp . '_' . $codCta . '_*.*';
-        $archivos = glob($this->directorioFotos . $patron);
-        return array_map('basename', $archivos);
+        try {
+            $codComp = trim($codComp);
+            $nComp = trim($nComp);
+            $codCta = trim($codCta);
+            
+            $patron = $codComp . '_' . $nComp . '_' . $codCta . '_*.*';
+            $rutaBusqueda = $this->directorioFotos . $patron;
+            
+            error_log("Buscando fotos con patrón: $rutaBusqueda");
+            
+            $archivos = glob($rutaBusqueda);
+            
+            if ($archivos === false) {
+                error_log("Error en glob() para patrón: $rutaBusqueda");
+                return [];
+            }
+            
+            $fotosEncontradas = array_map('basename', $archivos);
+            
+            // Verificar que los archivos realmente existan y tengan contenido válido
+            $fotosValidas = [];
+            foreach ($fotosEncontradas as $foto) {
+                $rutaCompleta = $this->directorioFotos . $foto;
+                if (file_exists($rutaCompleta)) {
+                    $tamaño = filesize($rutaCompleta);
+                    // Archivo debe existir y tener al menos 100 bytes (no estar vacío o corrupto)
+                    if ($tamaño > 100) {
+                        $fotosValidas[] = $foto;
+                        error_log("Foto válida: $foto (Tamaño: $tamaño bytes)");
+                    } else {
+                        error_log("Foto inválida (muy pequeña): $foto (Tamaño: $tamaño bytes)");
+                        // Eliminar archivos corruptos o vacíos
+                        unlink($rutaCompleta);
+                        error_log("Archivo corrupto eliminado: $foto");
+                    }
+                }
+            }
+            
+            error_log("Fotos encontradas: " . count($fotosEncontradas) . ", Fotos válidas: " . count($fotosValidas));
+            
+            return $fotosValidas;
+            
+        } catch (Exception $e) {
+            error_log("Error en obtenerFotos: " . $e->getMessage());
+            return [];
+        }
     }
 
     private function obtenerUltimoNumeroFoto($codComp, $nComp, $codCta) {
-        $codComp = trim($codComp);
-        $nComp = trim($nComp);
-        $codCta = trim($codCta);
-        $patron = $codComp . '_' . $nComp . '_' . $codCta . '_*.*';
-        $archivos = glob($this->directorioFotos . $patron);
-        $ultimoNumero = 0;
-    
-        foreach ($archivos as $archivo) {
-            $partes = explode('_', basename($archivo));
-            if (isset($partes[3])) {
-                $numero = (int)pathinfo($partes[3], PATHINFO_FILENAME);
-                if ($numero > $ultimoNumero) {
-                    $ultimoNumero = $numero;
+        try {
+            $codComp = trim($codComp);
+            $nComp = trim($nComp);
+            $codCta = trim($codCta);
+            
+            $patron = $codComp . '_' . $nComp . '_' . $codCta . '_*.*';
+            $archivos = glob($this->directorioFotos . $patron);
+            
+            if ($archivos === false) {
+                return 0;
+            }
+            
+            $ultimoNumero = 0;
+
+            foreach ($archivos as $archivo) {
+                $nombreArchivo = basename($archivo);
+                $partes = explode('_', $nombreArchivo);
+                
+                if (count($partes) >= 4) {
+                    $numeroConExtension = $partes[3];
+                    $numero = (int)pathinfo($numeroConExtension, PATHINFO_FILENAME);
+                    
+                    if ($numero > $ultimoNumero) {
+                        $ultimoNumero = $numero;
+                    }
                 }
             }
+
+            return $ultimoNumero;
+            
+        } catch (Exception $e) {
+            error_log("Error en obtenerUltimoNumeroFoto: " . $e->getMessage());
+            return 0;
         }
-    
-        return $ultimoNumero;
     }
 
     public function eliminarFoto($foto, $codComp, $nComp) {
         $rutaFoto = $this->directorioFotos . trim($foto);
-        if (file_exists($rutaFoto) && unlink($rutaFoto)) {
-            return ['success' => true];
+        
+        error_log("Intentando eliminar foto: $rutaFoto");
+        
+        if (file_exists($rutaFoto)) {
+            if (unlink($rutaFoto)) {
+                error_log("Foto eliminada exitosamente: $rutaFoto");
+                
+                // Verificar si quedan más fotos válidas para este registro
+                $codCta = $this->extraerCodCtaDeNombreArchivo($foto);
+                if ($codCta) {
+                    $fotosRestantes = $this->obtenerFotos($codComp, $nComp, $codCta);
+                    error_log("Fotos restantes después de eliminar: " . count($fotosRestantes));
+                }
+                
+                return ['success' => true, 'mensaje' => 'Archivo eliminado correctamente'];
+            } else {
+                error_log("No se pudo eliminar el archivo: $rutaFoto");
+                return ['success' => false, 'error' => 'No se pudo eliminar el archivo.'];
+            }
         } else {
-            return ['success' => false, 'error' => 'No se pudo encontrar o eliminar el archivo.'];
+            error_log("Archivo no encontrado: $rutaFoto");
+            return ['success' => false, 'error' => 'El archivo no existe.'];
         }
+    }
+
+    // Método auxiliar para extraer COD_CTA del nombre del archivo
+    private function extraerCodCtaDeNombreArchivo($nombreArchivo) {
+        $partes = explode('_', $nombreArchivo);
+        return (count($partes) >= 3) ? $partes[2] : null;
     }
 
     public function verificarEnVista($codComp, $nComp, $codCta) {
@@ -152,25 +345,66 @@ class Gasto
     }
 
     public function verificarEstado($codComp, $nComp, $codCta) {
-        $tieneFotos = count($this->obtenerFotos($codComp, $nComp, $codCta)) > 0;
-        $estaGuardado = $this->verificarRegistroGuardado($codComp, $nComp, $codCta);
-        
-        return [
-            'tieneFotos' => $tieneFotos,
-            'estaGuardado' => $estaGuardado
-        ];
+        try {
+            if (!$this->cid_central) {
+                throw new Exception("No hay conexión a base de datos");
+            }
+            
+            $fotos = $this->obtenerFotos($codComp, $nComp, $codCta);
+            $tieneFotos = false;
+            
+            if (count($fotos) > 0) {
+                foreach ($fotos as $foto) {
+                    $rutaCompleta = $this->directorioFotos . $foto;
+                    if (file_exists($rutaCompleta) && filesize($rutaCompleta) > 0) {
+                        $tieneFotos = true;
+                        break;
+                    }
+                }
+            }
+            
+            $estaGuardado = $this->verificarRegistroGuardado($codComp, $nComp, $codCta);
+            
+            return [
+                'tieneFotos' => $tieneFotos,
+                'estaGuardado' => $estaGuardado,
+                'numeroFotos' => count($fotos)
+            ];
+        } catch (Exception $e) {
+            error_log("Error en verificarEstado: " . $e->getMessage());
+            return [
+                'tieneFotos' => false,
+                'estaGuardado' => false,
+                'numeroFotos' => 0,
+                'error' => $e->getMessage()
+            ];
+        }
     }
     
     public function verificarRegistroGuardado($codComp, $nComp, $codCta) {
-        $sql = "SELECT COUNT(*) as count FROM RO_T_GASTOS_TESORERIA WHERE COD_COMP = ? AND LTRIM(RTRIM(N_COMP)) = ? AND COD_CTA = ?";
-        $params = array(trim($codComp), trim($nComp), trim($codCta));
-        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-        if ($stmt === false) {
+        try {
+            if (!$this->cid_central) {
+                throw new Exception("No hay conexión a base de datos");
+            }
+            
+            $sql = "SELECT COUNT(*) as count FROM RO_T_GASTOS_TESORERIA WHERE COD_COMP = ? AND LTRIM(RTRIM(N_COMP)) = ? AND COD_CTA = ?";
+            $params = array(trim($codComp), trim($nComp), trim($codCta));
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("Error en verificarRegistroGuardado: " . print_r($errors, true));
+                return false;
+            }
+            
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            return $row['count'] > 0;
+        } catch (Exception $e) {
+            error_log("Error en verificarRegistroGuardado: " . $e->getMessage());
             return false;
         }
-        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-        return $row['count'] > 0;
     }
+
     public function listarEgresosEfectivo($nroSucurs) {
         try {
             require_once __DIR__.'/../../Class/conexion.php';
@@ -179,7 +413,6 @@ class Gasto
             $cid_local = $conexion->conectar('');
 
             if(!$cid_local){
-
                 $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA29
                         WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
                         AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
@@ -198,12 +431,10 @@ class Gasto
                     $resultados[] = $row;
                 }
 
-
             }else{
                 $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM SBA05
                 WHERE COD_CTA = '100100' AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
                 ORDER BY N_COMP DESC";
-
 
                 $stmt = sqlsrv_query($cid_local, $sql);
 
@@ -227,7 +458,6 @@ class Gasto
                 }
 
                 return $resultados;
-
             }
 
             return $resultados;
@@ -238,7 +468,6 @@ class Gasto
     }
 
     public function traerEgresosCentral ($nroSucurs) {
-
         $sql = "SELECT N_COMP COLLATE Latin1_General_BIN as remitos FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_SUCURS = $nroSucurs";
         $stmt = sqlsrv_query($this->cid_central, $sql);
         if ($stmt === false) {
@@ -255,7 +484,6 @@ class Gasto
     }
 
     public function limpiarEgresos($nroRegistro, $nroSucurs){
-
         try {
             $sql = "DELETE FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NR_SUCURS = $nroSucurs";
             $params = [$nroRegistro];
@@ -268,12 +496,10 @@ class Gasto
             error_log("Error en limpiarEgresos: " . $e->getMessage());
             return false;
         }
-
     }
 
     public function insertarEgresos($nroRegistro, $fecha, $tComp, $nComp, $nroSucursal) {
         try {
-
             $sql = "INSERT INTO RO_EGRESOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_COMP, T_COMP, N_COMP, NRO_SUCURS)
                     VALUES (?, ?, ?, ?, ?)";
 
@@ -316,7 +542,6 @@ class Gasto
         }
 
         return $resultados;
-
     }
 }
 ?>
