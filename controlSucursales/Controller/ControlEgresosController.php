@@ -141,18 +141,47 @@ function uncheckControl ($sucursal){
 }
 
 function marcarRecibido ($sucursal){
-    $fecha = $_POST['fecha'];
-    $nroSucursal = $_POST['nroSucursal'];
-    $tipoComprobante = $_POST['tipoComprobante'];
-    $nroComprobante = $_POST['nroComprobante'];
-    $codCuenta = $_POST['codCuenta'];
-    $descripcionCuenta = $_POST['descripcionCuenta'];
-    $monto = $_POST['monto'];
-    $observaciones = $_POST['observaciones'];
+    try {
+        // Debug: Log de los datos POST recibidos
+        error_log("=== DEBUG Controller marcarRecibido ===");
+        error_log("POST data: " . print_r($_POST, true));
+        
+        $fecha = $_POST['fecha'];
+        $nroSucursal = $_POST['nroSucursal'];
+        $tipoComprobante = $_POST['tipoComprobante'];
+        $nroComprobante = $_POST['nroComprobante'];
+        $codCuenta = $_POST['codCuenta'];
+        $descripcionCuenta = $_POST['descripcionCuenta'];
+        $monto = $_POST['monto'];
+        $observaciones = $_POST['observaciones'];
 
-    $result = $sucursal->marcarRecibido($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $observaciones);
-    
-    echo $result;
+        $result = $sucursal->marcarRecibido(
+            $fecha, 
+            $nroSucursal, 
+            $tipoComprobante, 
+            $nroComprobante, 
+            $codCuenta, 
+            $descripcionCuenta, 
+            $monto, 
+            $observaciones
+        );
+        
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => $result,
+            'message' => $result ? 'Marcado como recibido correctamente' : 'Error al marcar como recibido'
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("Error en marcarRecibido: " . $e->getMessage());
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error al marcar como recibido',
+            'error' => $e->getMessage()
+        ]);
+    }
 }
 
 function controlTesoreria($sucursal){

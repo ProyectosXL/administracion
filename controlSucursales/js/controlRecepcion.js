@@ -1,50 +1,128 @@
 
+const validarFlujo = (row, accion) => {
+    const cells = row.querySelectorAll('td');
+    const recibidoCell = cells[8];
+    const controladoCell = cells[9];
+    const cargadoCell = cells[10];
+
+    const estaRecibido = recibidoCell.querySelector('.bi-check-circle-fill') !== null;
+    const estaControlado = controladoCell.querySelector('.bi-check-circle-fill') !== null;
+    const estaCargado = cargadoCell.querySelector('.bi-check-circle-fill') !== null;
+
+    switch(accion) {
+        case 'recibido':
+            // Recibido siempre se puede marcar si no está marcado
+            return true;
+        case 'controlado':
+            if (!estaRecibido) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Acción no permitida',
+                    text: 'Primero debe marcar como recibido'
+                });
+                return false;
+            }
+            return true;
+        case 'cargado':
+            if (!estaRecibido || !estaControlado) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Acción no permitida',
+                    text: 'Debe marcar como recibido y controlado antes de cargar'
+                });
+                return false;
+            }
+            return true;
+        default:
+            return false;
+    }
+};
+
 const marcarRecibido = async (e) => {
     try {
+        // Desmarcar el checkbox si la validación falla
+        if (!validarFlujo(e.closest('tr'), 'recibido')) {
+            e.checked = false;
+            return;
+        }
+
         const row = e.closest('tr');
         const cells = row.querySelectorAll('td');
+
+        // Convertir fecha de dd/mm/yyyy a yyyy-mm-dd
+        const fechaParts = cells[0].textContent.trim().split('/');
+        const fechaFormateada = `${fechaParts[2]}-${fechaParts[1]}-${fechaParts[0]}`;
+        
         const data = {
-            fecha: cells[0].textContent,
-            nroSucursal: cells[1].textContent,
-            tipoComprobante: cells[3].textContent,
-            nroComprobante: cells[4].textContent,
-            monto: cells[5].textContent.replace(/[$.]/g, ''),
-            codCuenta: cells[12].textContent,      // Nueva columna oculta
-            descripcionCuenta: cells[13].textContent, // Nueva columna oculta
-            observaciones: cells[10].querySelector('textarea')?.value || ''
+            fecha: fechaFormateada,
+            nroSucursal: cells[1].textContent.trim(),
+            tipoComprobante: cells[3].textContent.trim(),
+            nroComprobante: cells[4].getAttribute('data-ncomp-original') || cells[4].textContent.trim(),
+            monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
+            codCuenta: cells[12].textContent.trim(),
+            descripcionCuenta: cells[13].textContent.trim(),
+            observaciones: cells[11].querySelector('textarea')?.value || ''
         };
+
+        console.log('Datos enviados para marcar como recibido:', data);
 
         $.ajax({
             type: 'POST',
             url: 'Controller/ControlEgresosController.php?accion=marcarRecibido',
             data: data,
             success: function(response) {
+                console.log('Respuesta del servidor:', response);
                 cells[8].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Marcado como recibido correctamente',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
             },
             error: function(xhr, status, error) {
-                console.error('Error:', error);
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Error al marcar como recibido' });
+                e.checked = false; // Desmarcar el checkbox si hay error
+                console.error('Error completo:', {xhr, status, error, responseText: xhr.responseText});
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Error', 
+                    text: 'Error al marcar como recibido',
+                    footer: xhr.responseText || ''
+                });
             }
         });
     } catch (error) {
+        e.checked = false; // Desmarcar el checkbox si hay error
         console.error('Error al marcar como recibido:', error);
         Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al marcar como recibido' });
     }
 };
 
 const marcarControlado = (e) => {
+    // Validar el flujo antes de proceder
+    if (!validarFlujo(e.closest('tr'), 'controlado')) {
+        e.checked = false;
+        return;
+    }
+
     const row = e.closest('tr');
     const cells = row.querySelectorAll('td');
     
+    // Convertir fecha de dd/mm/yyyy a yyyy-mm-dd
+    const fechaParts = cells[0].textContent.trim().split('/');
+    const fechaFormateada = `${fechaParts[2]}-${fechaParts[1]}-${fechaParts[0]}`;
+    
     const data = {
-        fecha: cells[0].textContent.trim(),
+        fecha: fechaFormateada,
         nroSucursal: cells[1].textContent.trim(),
         tipoComprobante: cells[3].textContent.trim(),
-        nroComprobante: cells[4].getAttribute('data-ncomp-original') || cells[4].textContent,
-        codCuenta: cells[13].textContent.trim(),
-        descripcionCuenta: cells[14].textContent.trim(), 
+        nroComprobante: cells[4].getAttribute('data-ncomp-original') || cells[4].textContent.trim(),
+        codCuenta: cells[12].textContent.trim(),
+        descripcionCuenta: cells[13].textContent.trim(),
         monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
-        observaciones: cells[10].querySelector('textarea')?.value || ''
+        observaciones: cells[11].querySelector('textarea')?.value || ''
     };
 
     console.log('Datos enviados:', data);
@@ -222,6 +300,11 @@ const buscarRecibos = async (searchTerm = '') => {
 };
 
 const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculado) => {
+    // Validar el flujo antes de proceder
+    if (!validarFlujo(document.querySelector(`td[data-ncomp='${currentRowData.nComp}']`).closest('tr'), 'cargado')) {
+        return;
+    }
+
     if (currentRowData.monto !== montoVinculado) {
         Swal.fire({
             toast: true,

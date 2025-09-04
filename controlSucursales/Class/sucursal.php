@@ -297,24 +297,67 @@ class Sucursal
         }
     }
 
-    public function marcarRecibido ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $observaciones) 
+    public function marcarRecibido($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $observaciones) 
     {
-        $sql = "
-        IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = '$nroComprobante'  AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante')
-        BEGIN
-            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET RECIBIDO = 1,FECHA_RECIBIDO = '$fecha', OBSERVACIONES = '$observaciones'  WHERE N_COMP  = $nroComprobante AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante'
-        END
-        ELSE
-        BEGIN
-            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, FECHA_RECIBIDO, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, RECIBIDO, OBSERVACIONES) VALUES ('$fecha',GETDATE(),$nroSucursal,'$tipoComprobante','$nroComprobante','$codCuenta','$descripcionCuenta','$monto','1', '$observaciones')
-        END
-        ";
+        error_log("=== DEBUG marcarRecibido ===");
+        error_log("fecha: '$fecha'");
+        error_log("nroSucursal: '$nroSucursal'");
+        error_log("tipoComprobante: '$tipoComprobante'");
+        error_log("nroComprobante: '$nroComprobante'");
+        error_log("codCuenta: '$codCuenta'");
+        error_log("monto: '$monto'");
 
-        try{
-            $stmt = sqlsrv_query($this->cid_central, $sql);
-            return true;
-        } catch (\Throwable $th){
-            print_r($th);
+        try {
+            // Primero verificamos si existe el registro
+            $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_GASTOS_CAJA_SUCURSALES 
+                        WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
+            
+            $params = array($nroComprobante, $nroSucursal, $tipoComprobante);
+            $stmt = sqlsrv_query($this->cid_central, $sqlCheck, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error checking record existence");
+            }
+            
+            $row = sqlsrv_fetch_array($stmt);
+            
+            if ($row['count'] > 0) {
+                // El registro existe, actualizamos
+                $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES 
+                        SET RECIBIDO = 1,
+                            FECHA_RECIBIDO = GETDATE(),
+                            OBSERVACIONES = ?
+                        WHERE N_COMP = ? 
+                        AND NRO_SUCURSAL = ? 
+                        AND TIPO_COMP = ?";
+                
+                $params = array($observaciones, $nroComprobante, $nroSucursal, $tipoComprobante);
+            } else {
+                // El registro no existe, lo insertamos
+                $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES 
+                        (FECHA, FECHA_RECIBIDO, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, RECIBIDO, OBSERVACIONES) 
+                        VALUES (?, GETDATE(), ?, ?, ?, ?, ?, ?, 1, ?)";
+                
+                $params = array($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $observaciones);
+            }
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("SQL Error en marcarRecibido: " . print_r($errors, true));
+                throw new Exception("Error executing SQL");
+            }
+            
+            $rowsAffected = sqlsrv_rows_affected($stmt);
+            error_log("Filas afectadas en marcarRecibido: " . $rowsAffected);
+            
+            return $rowsAffected > 0;
+            
+        } catch (\Throwable $th) {
+            error_log("Exception en marcarRecibido: " . $th->getMessage());
+            error_log($th->getTraceAsString());
+            throw $th;
         }
     }
 
@@ -330,19 +373,40 @@ class Sucursal
     error_log("descripcionCuenta: '" . $descripcionCuenta . "'");
     error_log("monto: '" . $monto . "'");
     
-    $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES 
-            SET CTROL_TESORERIA = 1, FECHA_CTROL_TESOR = GETDATE() 
-            WHERE N_COMP = '$nroComprobante' 
-            AND NRO_SUCURSAL = '$nroSucursal' 
-            AND TIPO_COMP = '$tipoComprobante' 
-            AND COD_CUENTA = '$codCuenta' 
-            AND MONTO = $monto 
-            AND FECHA = '$fecha'";
+    // Primero verificamos si existe el registro
+    $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_GASTOS_CAJA_SUCURSALES 
+                WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
     
-    error_log("SQL Query: " . $sql);
-    
-    try{
-        $stmt = sqlsrv_query($this->cid_central, $sql);
+    try {
+        $params = array($nroComprobante, $nroSucursal, $tipoComprobante);
+        $stmt = sqlsrv_query($this->cid_central, $sqlCheck, $params);
+        
+        if ($stmt === false) {
+            throw new Exception("Error checking record existence");
+        }
+        
+        $row = sqlsrv_fetch_array($stmt);
+        
+        if ($row['count'] > 0) {
+            // El registro existe, actualizamos
+            $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES 
+                    SET CTROL_TESORERIA = 1, 
+                        FECHA_CTROL_TESOR = GETDATE()
+                    WHERE N_COMP = ? 
+                    AND NRO_SUCURSAL = ? 
+                    AND TIPO_COMP = ?";
+            
+            $params = array($nroComprobante, $nroSucursal, $tipoComprobante);
+        } else {
+            // El registro no existe, lo insertamos
+            $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES 
+                    (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, CTROL_TESORERIA, FECHA_CTROL_TESOR) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 1, GETDATE())";
+            
+            $params = array($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto);
+        }
+        
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
         
         if($stmt === false) {
             $errors = sqlsrv_errors();
