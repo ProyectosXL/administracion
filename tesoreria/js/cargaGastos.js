@@ -6,7 +6,7 @@ $(document).ready(function() {
         renderTable(gastosData);
     }
 
-    // Initialize actions that are independent of rendering
+    // Initialize actions for both views
     initializeGastoActions();
 });
 
@@ -65,7 +65,8 @@ const renderTable = (data) => {
                 </td>
             </tr>
         `;
-        tableBody.append(rowHtml);
+        const rowElement = $(rowHtml);
+        tableBody.append(rowElement);
     });
 
     // Initialize DataTables
@@ -120,10 +121,6 @@ const initializeGastoActions = () => {
 };
 
 const handleFileUpload = (element) => {
-    const codComp = element.data('cod-comp');
-    const nComp = element.data('n-comp');
-    const codCta = element.data('cod-cta');
-
     const triggerFileInput = (capture) => {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -211,38 +208,61 @@ const actualizarBotones = (element, tieneFotos, estaGuardado) => {
     }
 };
 
-const subirFotos = (input, element) => {
+const subirFotos = async (input, element) => {
     const codComp = element.data('cod-comp');
     const nComp = element.data('n-comp');
     const codCta = element.data('cod-cta');
-
-    const formData = new FormData();
     const files = input.files;
 
-    for (let i = 0; i < files.length; i++) {
-        formData.append('fotos[]', files[i]);
+    const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true
     }
+
+    const formData = new FormData();
     formData.append('codComp', codComp);
     formData.append('nComp', nComp);
     formData.append('codCta', codCta);
 
-    $.ajax({
-        url: 'controller/egresoCajaController.php?accion=subirFotos',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            guardarRegistro(codComp, nComp, codCta, element);
-        },
-        error: function() {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Error al subir los archivos.'
-            });
+    const compressionPromises = Array.from(files).map(file => {
+        if (file.type.startsWith('image/')) {
+            return imageCompression(file, options);
         }
+        return Promise.resolve(file); // Return non-image files as is
     });
+
+    try {
+        const compressedFiles = await Promise.all(compressionPromises);
+        compressedFiles.forEach(file => {
+            formData.append('fotos[]', file, file.name);
+        });
+
+        $.ajax({
+            url: 'controller/egresoCajaController.php?accion=subirFotos',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                guardarRegistro(codComp, nComp, codCta, element);
+            },
+            error: function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al subir los archivos.'
+                });
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de Compresión',
+            text: 'Hubo un error al comprimir las imágenes.'
+        });
+    }
 };
 
 const guardarRegistro = (codComp, nComp, codCta, element) => {
