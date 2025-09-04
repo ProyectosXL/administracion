@@ -855,32 +855,141 @@ const pintarPasos = (periodo) => {
 };
 
 const rellenarModal3 = (obj)=>{
-
-  let tableModal =  document.querySelector("#tableCn");
+  let tableModal = document.querySelector("#tableCn");
   tableModal.innerHTML = "";
 
   for (let x = 0; x < obj.length ; x++) {
+    let tr = document.createElement('tr');
 
-    let tr=document.createElement('tr');
-
-    let td1=document.createElement('td');
-    let td2=document.createElement('td');
-    let td3=document.createElement('td');
+    let td1 = document.createElement('td');
+    let td2 = document.createElement('td');
+    let td3 = document.createElement('td');
+    let td4 = document.createElement('td');
+    let td5 = document.createElement('td');
     
-    let text1=document.createTextNode(obj[x]['COD_ARTICU']);
-    let text2=document.createTextNode(obj[x]['RUBRO']);
-    let text3=document.createTextNode(obj[x]['N_ORDEN_CO'] || '');
+    // Input para el costo de nacionalización
+    let inputCosto = document.createElement('input');
+    inputCosto.type = 'number';
+    inputCosto.className = 'form-control costo-nac';
+    inputCosto.step = '0.01';
+    inputCosto.placeholder = 'Ingrese costo';
+    
+    // Botón guardar
+    let btnGuardar = document.createElement('button');
+    btnGuardar.className = 'btn btn-primary btn-sm';
+    btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar';
+    btnGuardar.onclick = function() {
+      guardarCostoNacionalizacion(
+        obj[x]['COD_ARTICU'],
+        inputCosto.value
+      );
+    };
+    
+    let text1 = document.createTextNode(obj[x]['COD_ARTICU']);
+    let text2 = document.createTextNode(obj[x]['RUBRO']);
+    let text3 = document.createTextNode(obj[x]['N_ORDEN_CO'] || '');
     
     td1.appendChild(text1);
     td2.appendChild(text2);
     td3.appendChild(text3);
+    td4.appendChild(inputCosto);
+    td5.appendChild(btnGuardar);
     
     tr.appendChild(td1);
     tr.appendChild(td2);
     tr.appendChild(td3);
+    tr.appendChild(td4);
+    tr.appendChild(td5);
 
     tableModal.appendChild(tr);
   }
+};
+
+const guardarCostoNacionalizacion = (codArticulo, costoNac) => {
+  console.log('Iniciando guardarCostoNacionalizacion', { codArticulo, costoNac });
+  
+  // Convertir y validar el costo
+  const costoNumerico = parseFloat(costoNac.toString().replace(',', '.'));
+  
+  if (isNaN(costoNumerico) || costoNumerico <= 0) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ingrese un costo de nacionalización válido'
+    });
+    return;
+  }
+
+  // Obtener la fecha del primer día del mes seleccionado
+  const mes = document.getElementById('mes').value;
+  const anio = document.getElementById('selectAño').value;
+  const fecha = `${anio}-${mes}-01`;
+
+  // Crear objeto con los datos a enviar
+  const datos = {
+    codArticulo: codArticulo.trim(),
+    costoNac: costoNumerico.toFixed(6), // Aseguramos precisión para tipo real
+    fecha: fecha
+  };
+
+  console.log('Datos a enviar:', datos);
+
+  $.ajax({
+    url: 'Controller/guardarCostoNac.php',
+    method: 'POST',
+    data: {
+      codArticulo: codArticulo,
+      costoNac: costoNac,
+      fecha: fecha
+    },
+    dataType: 'json',
+    success: function(response) {
+      if (response.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Éxito',
+          text: 'Costo de nacionalización guardado correctamente',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          // Recargar solo la tabla del modal
+          $('#modalCn').modal('hide');
+          ejecutarPasos();
+        });
+      } else {
+        console.error('Error del servidor:', response.error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: response.error || 'Error al guardar el costo de nacionalización'
+        });
+      }
+    },
+    error: function(xhr, status, error) {
+      let errorMsg = 'Error al guardar el costo de nacionalización';
+      
+      try {
+        const response = JSON.parse(xhr.responseText);
+        if (response.error) {
+          errorMsg = response.error;
+        }
+      } catch (e) {
+        console.error('Error al parsear la respuesta:', xhr.responseText);
+      }
+
+      console.error('Error en la solicitud:', {
+        status: status,
+        error: error,
+        response: xhr.responseText
+      });
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMsg
+      });
+    }
+  });
 };
 
 const rellenarModal4 = (obj) => {
