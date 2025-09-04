@@ -13,7 +13,9 @@ function limpiarNombre($nombre) {
 }
 
 require_once 'Class/sucursal.php';
+require_once 'Class/gasto.php';
 $guiaRetiro = new Sucursal();
+$gasto = new Gasto();
 
 $id = $_GET['id'];
 $datosGuia = $guiaRetiro->traerDatosGuiaRetiro($id, $nroSucurs);
@@ -26,7 +28,7 @@ foreach ($remitos as $key => $remito) {
     
 }
 
-$egresos = $guiaRetiro->listarEgresosPorGuia($id, $nroSucurs);
+$egresos = $gasto->listarEgresosPorGuia($id, $nroSucurs);
 
 ?>
 

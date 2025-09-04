@@ -157,6 +157,7 @@ foreach ($gastos as $g) {
     <script>
         const gastosData = <?php echo json_encode($gastos_json); ?>;
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <script src="js/cargaGastos.js"></script>
 </body>
 </html>

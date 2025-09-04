@@ -16,7 +16,9 @@ function limpiarNombre($nombre) {
 
 
 require_once 'Class/sucursal.php';
+require_once 'Class/gasto.php';
 $guiaRetiro = new Sucursal();
+$gasto = new Gasto();
 
 
 if (!isset($_GET['id']) || empty($_GET['id'])) {
@@ -37,7 +39,7 @@ $datosGuia = $datosGuia[0];
 
 
 $remitosCargados = $guiaRetiro->listarRemitosPorGuia($id, $nroSucurs);
-$egresosCargados = $guiaRetiro->listarEgresosPorGuia($id, $nroSucurs);
+$egresosCargados = $gasto->listarEgresosPorGuia($id, $nroSucurs);
 ?>
 
 <!DOCTYPE html>
@@ -204,7 +206,7 @@ $egresosCargados = $guiaRetiro->listarEgresosPorGuia($id, $nroSucurs);
                 <option value="">Seleccione un egreso</option>
                 <?php
                 try {
-                    $egresos = $guiaRetiro->listarEgresosEfectivo($nroSucurs);
+                    $egresos = $gasto->listarEgresosEfectivo($nroSucurs);
                     foreach ($egresos as $egreso) {
                         $valor = json_encode([
                             'comprobante' => $egreso['N_COMP'],

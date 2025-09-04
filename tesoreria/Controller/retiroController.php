@@ -2,10 +2,12 @@
 session_start();
 header('Content-Type: application/json');
 require_once '../Class/sucursal.php';
+require_once '../Class/gasto.php';
 
 $accion = $_GET['accion'] ?? '';
 
-$sucursal = new Sucursal(); 
+$sucursal = new Sucursal();
+$gasto = new Gasto();
 
 switch ($accion) {
     case 'registrar':
@@ -86,10 +88,10 @@ function registrarRetiro() {
 
         if(isset($datos['egresos']) && count($datos['egresos']) > 0){
 
-            $sucursal->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
+            $gasto->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
 
             foreach ($datos['egresos'] as $egreso) {
-                $sucursal->insertarEgresos($datos['numeroRegistro'], $egreso['fecha'], $egreso['tipo'], $egreso['comprobante'], $nroSucursal);                
+                $gasto->insertarEgresos($datos['numeroRegistro'], $egreso['fecha'], $egreso['tipo'], $egreso['comprobante'], $nroSucursal);
             }
         }
 
@@ -138,10 +140,10 @@ function actualizarRetiro() {
 
     if(isset($datos['egresos']) && count($datos['egresos']) > 0){
 
-        $sucursal->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
+        $gasto->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
 
         foreach ($datos['egresos'] as $egreso) {
-            $sucursal->insertarEgresos($datos['numeroRegistro'], $egreso['fecha'], $egreso['tipo'], $egreso['comprobante'], $nroSucursal);                
+            $gasto->insertarEgresos($datos['numeroRegistro'], $egreso['fecha'], $egreso['tipo'], $egreso['comprobante'], $nroSucursal);
         }
     }
     echo true;

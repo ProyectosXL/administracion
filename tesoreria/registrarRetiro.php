@@ -2,8 +2,10 @@
 <?php
 session_start();
 require_once 'Class/sucursal.php';
+require_once 'Class/gasto.php';
 
 $sucursal = new Sucursal();
+$gasto = new Gasto();
 
 $ultimoRegistro = $sucursal->ultimoRegistro($_SESSION['numsuc']);
 
@@ -191,7 +193,7 @@ function limpiarNombre($nombre) {
                                 <option value="">Seleccione un egreso</option>
                                 <?php
                                 try {
-                                    $egresos = $data->listarEgresosEfectivo($nroSucurs);
+                                    $egresos = $gasto->listarEgresosEfectivo($nroSucurs);
                            
                                     foreach ($egresos as $egreso) {
                                         $valor = json_encode([
