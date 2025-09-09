@@ -81,10 +81,10 @@ foreach ($dataDetalle as $value) {
                 <div class="row ps-2"><?=$dataEncabezado['DESPACHO'] ?></div>
                 <div class="row ps-2"><?=$dataEncabezado['MATERIAL'] ?></div>
                 <div class="row ps-2"><?=$dataEncabezado['ORIGEN'] ?></div>
-                <div class="row ps-2"><?=$dataEncabezado['FECHA_EMB']->format('d/m/Y') ?></div>
-                <div class="row ps-2"><?=$dataEncabezado['FECHA_ARR']->format('d/m/Y') ?></div>
+                <div class="row ps-2"><?= $dataEncabezado['FECHA_EMB'] ? $dataEncabezado['FECHA_EMB']->format('d/m/Y') : '' ?></div>
+                <div class="row ps-2"><?= $dataEncabezado['FECHA_ARR'] ? $dataEncabezado['FECHA_ARR']->format('d/m/Y') : '' ?></div>
                 <div class="row ps-2"><?=$dataEncabezado['FACTURA'] ?></div>
-                <div class="row ps-2"><?=$dataEncabezado['FECHA_FACT']->format('d/m/Y') ?></div>
+                <div class="row ps-2"><?= $dataEncabezado['FECHA_FACT'] ? $dataEncabezado['FECHA_FACT']->format('d/m/Y') : '' ?></div>
                 <div class="row ps-2"><?=$dataEncabezado['ORDEN_COMPRA'] ?></div>
                 <div class="row ps-2"><?=$dataEncabezado['FORMA_PAGO'] ?></div>
                 <div class="row ps-2"><br></div>
