@@ -200,7 +200,7 @@ const enviarData = (formData) => {
     });
 
     $.ajax({
-        url: 'Controller/alquilerController.php?accion=guardarContratoAlquiler',
+        url: 'Controller/AlquilerController.php?accion=guardarContratoAlquiler',
         type: 'POST',
         data: {
             desde: formData.desde,
@@ -240,15 +240,17 @@ function verificarSolapamientoContratos(formData) {
     });
 
     $.ajax({
-        url: 'Controller/alquilerController.php?accion=verificarSolapamientoContrato',
+        url: 'Controller/AlquilerController.php?accion=verificarSolapamientoContrato',
         type: 'POST',
+        dataType: 'json',
+        headers: { 'Accept': 'application/json' },
         data: {
             idSucursal: formData.idSucursal,
             desde: formData.desde,
             hasta: formData.hasta
         },
-        success: function(response) {
-            handleSolapamientoResponse(response, formData);
+        success: function(response, textStatus, jqXHR) {
+            handleSolapamientoResponse(response, formData, jqXHR);
         },
         error: function(xhr, status, error) {
             console.error('Error al verificar solapamiento:', error);
@@ -268,9 +270,38 @@ function verificarSolapamientoContratos(formData) {
  * @param {*} response - Respuesta del servidor
  * @param {Object} formData - Datos del formulario
  */
-function handleSolapamientoResponse(response, formData) {
+function handleSolapamientoResponse(response, formData, jqXHR) {
     try {
-        const resultado = JSON.parse(response);
+        // Debug: inspeccionar qué llega realmente
+        try {
+            console.debug('Solapamiento response typeof:', typeof response);
+            console.debug('Solapamiento response value:', response);
+            if (jqXHR) {
+                console.debug('jqXHR.responseJSON:', jqXHR.responseJSON);
+                console.debug('jqXHR.responseText (preview):', typeof jqXHR.responseText === 'string' ? jqXHR.responseText.slice(0, 200) : jqXHR.responseText);
+            }
+        } catch(e) { /* ignore console issues */ }
+
+        // Utilidad local para verificar objeto
+        const isObj = (v) => v !== null && typeof v === 'object';
+
+        // Preferir el objeto ya parseado
+        let resultado = isObj(response) ? response : null;
+
+        // Fallback: usar jqXHR.responseJSON si existe
+        if (!resultado && jqXHR && isObj(jqXHR.responseJSON)) {
+            resultado = jqXHR.responseJSON;
+        }
+
+        // Fallback adicional: si vino como string, intentar parsear
+        if (!resultado && typeof response === 'string') {
+            try { resultado = JSON.parse(response); } catch (e) { /* ignore */ }
+        }
+
+        // Si la respuesta no es objeto en este punto, considerarla inválida
+        if (!isObj(resultado)) {
+            throw new Error('La respuesta no es un objeto JSON válido');
+        }
         
         if (resultado.solapamiento) {
             // Hay solapamiento, mostrar detalles del conflicto
