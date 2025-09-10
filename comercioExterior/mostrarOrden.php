@@ -200,6 +200,11 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
                                                 onclick="imprimir('<?= $orden['ID'] ?>')">
                                             <i class="bi bi-download"></i>
                                         </button>
+                                        <button class="action-btn btn-delete" 
+                                                title="Eliminar despacho"
+                                                onclick="eliminarDespacho('<?= $orden['ID'] ?>', '<?= addslashes($orden['DESPACHO']) ?>')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -228,6 +233,73 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
 
         const imprimir = (id) => {
             window.location = `imprimir.php?idEncabezado=${id}`;
+        }
+
+        const eliminarDespacho = (id, numeroDespacho) => {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: `Se eliminará permanentemente el despacho N° ${numeroDespacho}. Esta acción no se puede deshacer.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Eliminando...',
+                        text: 'Por favor espera mientras se elimina el despacho',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        willOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Realizar la eliminación
+                    $.ajax({
+                        url: 'controller/eliminarDespacho.php',
+                        type: 'POST',
+                        data: {
+                            id: id
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Eliminado',
+                                    text: response.message,
+                                    icon: 'success',
+                                    confirmButtonColor: '#059669'
+                                }).then(() => {
+                                    // Recargar la página para actualizar la tabla
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error',
+                                    text: response.message,
+                                    icon: 'error',
+                                    confirmButtonColor: '#dc2626'
+                                });
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                title: 'Error de conexión',
+                                text: 'No se pudo conectar con el servidor. Por favor, inténtalo nuevamente.',
+                                icon: 'error',
+                                confirmButtonColor: '#dc2626'
+                            });
+                            console.error('Error AJAX:', error);
+                        }
+                    });
+                }
+            });
         }
 
         // Configuración de DataTables

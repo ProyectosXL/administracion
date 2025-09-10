@@ -244,6 +244,17 @@
             box-shadow: var(--shadow-md);
         }
 
+        .btn-delete {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #b91c1c;
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+        }
+
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 50px;

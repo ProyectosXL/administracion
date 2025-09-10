@@ -150,4 +150,29 @@ class Orden{
 
     }
 
+    public function eliminarDespacho($id) {
+        try {
+            // Primero eliminar los detalles
+            $sqlDetalle = "DELETE FROM RO_T_IMPORTACIONES_DETALLE WHERE ID_MG = ?";
+            $stmtDetalle = sqlsrv_prepare($this->cid_central, $sqlDetalle, array(&$id));
+            
+            if (!sqlsrv_execute($stmtDetalle)) {
+                throw new Exception("Error al eliminar detalles del despacho");
+            }
+            
+            // Luego eliminar el encabezado
+            $sqlEncabezado = "DELETE FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ID = ?";
+            $stmtEncabezado = sqlsrv_prepare($this->cid_central, $sqlEncabezado, array(&$id));
+            
+            if (!sqlsrv_execute($stmtEncabezado)) {
+                throw new Exception("Error al eliminar encabezado del despacho");
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            return 'Error: ' . $e->getMessage();
+        }
+    }
+
 }
