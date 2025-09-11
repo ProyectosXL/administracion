@@ -8,7 +8,7 @@ $(document).ready(function() {
     // Configuración inicial de Select2
     $("#selectSucursal").select2({
         placeholder: "Seleccione una sucursal",
-        allowClear: false,
+        allowClear: true,
         width: '100%'
     });
     
@@ -25,8 +25,16 @@ function adjustToggleStyles() {
     const toggleOff = document.querySelector(".toggle-off");
     
     if (toggle) toggle.style.width = "80px";
-    if (toggleOn) toggleOn.style.fontSize = "0";
-    if (toggleOff) toggleOff.style.fontSize = "0";
+    
+    // Asegurar que el texto sea visible en el toggle
+    if (toggleOn) {
+        toggleOn.style.fontSize = "12px";
+        toggleOn.style.fontWeight = "bold";
+    }
+    if (toggleOff) {
+        toggleOff.style.fontSize = "12px"; 
+        toggleOff.style.fontWeight = "bold";
+    }
 }
 
 /**
@@ -272,39 +280,38 @@ function verificarSolapamientoContratos(formData) {
  */
 function handleSolapamientoResponse(response, formData, jqXHR) {
     try {
-        // Debug: inspeccionar qué llega realmente
-        try {
-            console.debug('Solapamiento response typeof:', typeof response);
-            console.debug('Solapamiento response value:', response);
-            if (jqXHR) {
-                console.debug('jqXHR.responseJSON:', jqXHR.responseJSON);
-                console.debug('jqXHR.responseText (preview):', typeof jqXHR.responseText === 'string' ? jqXHR.responseText.slice(0, 200) : jqXHR.responseText);
-            }
-        } catch(e) { /* ignore console issues */ }
-
+        console.debug('Solapamiento response:', response);
+        
         // Utilidad local para verificar objeto
         const isObj = (v) => v !== null && typeof v === 'object';
 
-        // Preferir el objeto ya parseado
-        let resultado = isObj(response) ? response : null;
-
-        // Fallback: usar jqXHR.responseJSON si existe
-        if (!resultado && jqXHR && isObj(jqXHR.responseJSON)) {
+        // Determinar la respuesta correcta
+        let resultado = null;
+        
+        if (isObj(response)) {
+            resultado = response;
+        } else if (jqXHR && isObj(jqXHR.responseJSON)) {
             resultado = jqXHR.responseJSON;
+        } else if (typeof response === 'string') {
+            try { 
+                resultado = JSON.parse(response); 
+            } catch (e) {
+                console.error('Error parsing response:', e);
+            }
         }
 
-        // Fallback adicional: si vino como string, intentar parsear
-        if (!resultado && typeof response === 'string') {
-            try { resultado = JSON.parse(response); } catch (e) { /* ignore */ }
-        }
-
-        // Si la respuesta no es objeto en este punto, considerarla inválida
-        if (!isObj(resultado)) {
-            throw new Error('La respuesta no es un objeto JSON válido');
+        // Verificar que tenemos un objeto válido con la estructura esperada
+        if (!isObj(resultado) || typeof resultado.solapamiento !== 'boolean') {
+            throw new Error('Respuesta inválida del servidor');
         }
         
-        if (resultado.solapamiento) {
+        console.log('Resultado procesado:', resultado);
+        console.log('¿Hay solapamiento?', resultado.solapamiento);
+        
+        if (resultado.solapamiento === true) {
             // Hay solapamiento, mostrar detalles del conflicto
+            const contratoExistente = resultado.contrato_existente || {};
+            
             Swal.fire({
                 icon: 'warning',
                 title: 'Conflicto de contratos detectado',
@@ -313,8 +320,8 @@ function handleSolapamientoResponse(response, formData, jqXHR) {
                         <p><strong>Ya existe un contrato para esta sucursal que se solapa con el período seleccionado:</strong></p>
                         <br>
                         <p><strong>Contrato existente:</strong></p>
-                        <p>• Sucursal: ${resultado.contrato_existente.DESC_SUCURS}</p>
-                        <p>• Vigencia: ${formatearFecha(resultado.contrato_existente.VIG_DESDE)} - ${formatearFecha(resultado.contrato_existente.VIG_HASTA)}</p>
+                        <p>• Sucursal: ${contratoExistente.DESC_SUCURS || 'N/A'}</p>
+                        <p>• Vigencia: ${formatearFecha(contratoExistente.VIG_DESDE)} - ${formatearFecha(contratoExistente.VIG_HASTA)}</p>
                         <br>
                         <p><strong>Período que intenta cargar:</strong></p>
                         <p>• Desde: ${formatearFecha(formData.desde)} - Hasta: ${formatearFecha(formData.hasta)}</p>
@@ -328,14 +335,18 @@ function handleSolapamientoResponse(response, formData, jqXHR) {
             });
         } else {
             // No hay solapamiento, proceder con la validación de importes
+            console.log('No hay solapamiento, procediendo...');
             proceedWithAmountValidation(formData);
         }
+        
     } catch (error) {
-        console.error('Error al parsear respuesta:', error);
+        console.error('Error al parsear respuesta de solapamiento:', error);
+        console.error('Response original:', response);
+        
         Swal.fire({
             icon: 'error',
             title: 'Error de procesamiento',
-            text: 'Hubo un error al procesar la verificación. Intente nuevamente.',
+            text: 'Hubo un error al procesar la verificación de solapamiento. Intente nuevamente.',
             confirmButtonText: "Entendido",
             confirmButtonColor: "#e74c3c"
         });
@@ -531,7 +542,11 @@ const parseNumber = (input) => {
  * @param {HTMLElement} toggle - Elemento toggle
  */
 const cambiarEntorno = (toggle) => {
-    const entorno = toggle.getAttribute("data-off") === "ARG" ? 0 : 1;
+    // Determinar el entorno basado en si el toggle está marcado
+    // checked = true significa Argentina (central), false significa Uruguay (uy)
+    const entorno = toggle.checked ? 0 : 1;
+    
+    console.log('Toggle checked:', toggle.checked, 'Entorno:', entorno);
     
     // Mostrar indicador de carga
     Swal.fire({
@@ -549,9 +564,23 @@ const cambiarEntorno = (toggle) => {
         url: "Controller/cambiarEntorno.php",
         method: "POST",
         data: { entorno: entorno },
+        dataType: 'json',
         success: function(data) {
-            // Recargar página después de cambiar entorno
-            location.reload();
+            console.log('Respuesta cambio entorno:', data);
+            if (data.success) {
+                // Recargar página después de cambiar entorno
+                setTimeout(() => {
+                    location.reload();
+                }, 100);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al cambiar entorno',
+                    text: data.message || 'Error desconocido',
+                    confirmButtonText: "Entendido",
+                    confirmButtonColor: "#e74c3c"
+                });
+            }
         },
         error: function(xhr, status, error) {
             console.error('Error al cambiar entorno:', error);
@@ -575,21 +604,35 @@ $(document).ready(function() {
         desdeInput.value = today;
     }
     
-    // Validación en tiempo real para fechas
+    // Validación en tiempo real para fechas (con debounce)
     const hastaInput = document.querySelector("#hasta");
     if (hastaInput) {
-        hastaInput.addEventListener('change', function() {
+        let timeoutId;
+        hastaInput.addEventListener('input', function() {
+            // Limpiar timeout anterior
+            clearTimeout(timeoutId);
+            
+            // Solo validar después de 1 segundo sin escribir
+            timeoutId = setTimeout(() => {
+                const desde = document.querySelector("#desde").value;
+                if (desde && this.value && new Date(desde) >= new Date(this.value)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Fechas inválidas',
+                        text: 'La fecha de finalización debe ser posterior a la fecha de inicio',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                }
+            }, 1000); // Esperar 1 segundo después de dejar de escribir
+        });
+        
+        // Validación más suave en blur (cuando pierde el foco)
+        hastaInput.addEventListener('blur', function() {
             const desde = document.querySelector("#desde").value;
             if (desde && this.value && new Date(desde) >= new Date(this.value)) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Fechas inválidas',
-                    text: 'La fecha de finalización debe ser posterior a la fecha de inicio',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
                 this.focus();
             }
         });

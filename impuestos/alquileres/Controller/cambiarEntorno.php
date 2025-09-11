@@ -1,19 +1,40 @@
 <?php 
+header('Content-Type: application/json');
 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+try {
+    if (!isset($_POST['entorno'])) {
+        throw new Exception('No se recibió el valor del entorno');
+    }
 
-if($_POST['entorno'] == 0){
+    $entorno = (string)$_POST['entorno'];
+    
+    if ($entorno === '0') {
+        $_SESSION['entorno'] = 'central';
+        $nombrePais = 'Argentina';
+    } else if ($entorno === '1') {
+        $_SESSION['entorno'] = 'uy'; 
+        $nombrePais = 'Uruguay';
+    } else {
+        throw new Exception('Valor de entorno inválido');
+    }
 
-    $_SESSION['entorno'] = 'central';
+    error_log('Cambiando entorno: ' . $entorno . ' -> ' . $_SESSION['entorno']);
+    
+    echo json_encode([
+        'success' => true,
+        'entorno' => $_SESSION['entorno'],
+        'pais' => $nombrePais
+    ]);
 
-}else{
-
-    $_SESSION['entorno'] = 'uy';
-
+} catch (Exception $e) {
+    error_log('Error al cambiar entorno: ' . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
 }
-echo true;
-
 ?>

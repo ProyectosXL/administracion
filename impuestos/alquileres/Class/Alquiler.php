@@ -827,6 +827,71 @@ class Alquiler
     }
 
     /**
+     * Guarda un nuevo contrato de alquiler
+     * @param string $nroSucursal - Número de sucursal
+     * @param string $descSucursal - Descripción de la sucursal  
+     * @param int $valorLlave - Valor llave
+     * @param int $comisiones - Comisiones
+     * @param int $lanzamiento - FPC Lanzamiento
+     * @param string $vigDesde - Fecha de inicio (YYYY-MM-DD)
+     * @param string $vigHasta - Fecha de fin (YYYY-MM-DD)
+     * @return bool - True si se guardó correctamente, false en caso contrario
+     */
+    public function guardarContratoAlquiler($nroSucursal, $descSucursal, $valorLlave, $comisiones, $lanzamiento, $vigDesde, $vigHasta) {
+        
+        $sql = "
+            INSERT INTO RO_T_CONTRATOS_ALQUILERES (
+                NRO_SUCURS, 
+                DESC_SUCURS, 
+                VIG_DESDE, 
+                VIG_HASTA, 
+                ID_CA, 
+                IMPORTE, 
+                ID_CA_2, 
+                IMPORTE_2, 
+                ID_CA_3, 
+                IMPORTE_3,
+                FECHA_CARGA
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE()
+            )
+        ";
+
+        try {
+            $params = [
+                $nroSucursal,
+                $descSucursal, 
+                $vigDesde,
+                $vigHasta,
+                4, // ID_CA para Valor Llave
+                $valorLlave,
+                5, // ID_CA_2 para Comisiones  
+                $comisiones,
+                18, // ID_CA_3 para FPC Lanzamiento
+                $lanzamiento
+            ];
+
+            $stmt = sqlsrv_prepare($this->cid_central, $sql, $params);
+            
+            if (!$stmt) {
+                throw new \Exception("Error al preparar la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $result = sqlsrv_execute($stmt);
+            
+            if (!$result) {
+                throw new \Exception("Error al ejecutar la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            return true;
+
+        } catch (\Throwable $th) {
+            error_log("Error en guardarContratoAlquiler: " . $th->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Método adicional para obtener contratos activos de una sucursal
      * @param string $sucursal - Número de sucursal
      * @return array - Contratos activos

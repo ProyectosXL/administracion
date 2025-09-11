@@ -25,10 +25,13 @@
     }
         
     $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
-    $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
-    $imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
-    $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
+    $dataOnValue = 'ARG';
+    $dataOffValue = 'UY';
+    
+    // Imagen de la bandera que se mostrará al lado del toggle
+    $imagenBandera = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
+    
+    $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
 ?>
 
 <!DOCTYPE html>
@@ -51,32 +54,95 @@
     
     <style>
 
+        /* Toggle simple sin banderas */
         .toggle-on, .toggle-off {
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            height: 30px;
-            width: 30px;
-            border-radius: 4px;
-        }
-
-        .toggle-on {
-            background-image: url('<?= $imageOn ?>');
-        }
-
-        .toggle-off {
-            background-image: url('<?= $imageOff ?>');
+            font-size: 12px !important;
+            font-weight: bold !important;
+            color: white !important;
+            text-shadow: none !important;
+            line-height: 30px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
         /* Custom toggle styles */
         .toggle.btn {
             height: 38px !important;
-            min-width: 80px !important;
+            min-width: 90px !important;
             border-radius: 6px !important;
+            padding: 0 !important;
         }
 
-        .toggle-on, .toggle-off {
-            font-size: 0 !important;
+        /* Colores específicos para cada estado */
+        .toggle-on {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+            color: white !important;
+        }
+        
+        .toggle-off {
+            background-color: #6c757d !important;
+            border-color: #6c757d !important;
+            color: white !important;
+        }
+
+        /* Bandera al lado del toggle */
+        .flag-indicator {
+            width: 40px;
+            height: 30px;
+            margin-left: 10px;
+            border-radius: 4px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .environment-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .country-label {
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Asegurar que el toggle tenga colores correctos y no sean sobreescritos */
+        .toggle.off .toggle-off {
+            background-color: #6c757d !important;
+            border-color: #6c757d !important;
+            color: white !important;
+        }
+        
+        .toggle:not(.off) .toggle-on {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+            color: white !important;
+        }
+
+        /* Forzar estilos del texto del toggle */
+        .toggle .toggle-handle {
+            background-color: white !important;
+            border: 1px solid #ccc !important;
+        }
+
+        /* Header title styling */
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 24px;
         }
 
     </style>
@@ -95,10 +161,14 @@
             </div>
             
             <div class="environment-toggle">
-                <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
-                       data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
-                       class="custom-toggle" onchange="cambiarEntorno(this)" 
-                       id="checkEntorno">
+                <div class="environment-controls">
+                    <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
+                           data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
+                           class="custom-toggle" onchange="cambiarEntorno(this)" 
+                           id="checkEntorno">
+                    <div class="flag-indicator" style="background-image: url('<?= $imagenBandera ?>');" title="<?= $nombrePais ?>"></div>
+                    <span class="country-label"><?= $nombrePais ?></span>
+                </div>
             </div>
         </div>
 
@@ -117,6 +187,7 @@
                     <div class="form-group">
                         <label for="selectSucursal" class="form-label">Sucursal</label>
                         <select name="selectSucursal" id="selectSucursal" class="form-control">
+                            <option value="">Seleccione una sucursal...</option>
                             <?php foreach ($locales as $value): ?>
                                 <option value="<?= $value['NRO_SUCURSAL'] ?>-<?= $value['DESC_SUCURSAL'] ?>">
                                     <?= $value['DESC_SUCURSAL'] ?>
@@ -195,20 +266,40 @@
             // Initialize Select2
             $("#selectSucursal").select2({
                 placeholder: "Seleccione una sucursal",
-                allowClear: false
+                allowClear: true,
+                width: '100%'
             });
 
             // Style adjustments after initialization
             setTimeout(() => {
                 const toggle = document.querySelector(".toggle");
                 if (toggle) {
-                    toggle.style.width = "80px";
+                    toggle.style.width = "90px";
+                    toggle.style.height = "38px";
                 }
                 
+                // Asegurar que el toggle muestre texto blanco y centrado
                 const toggleOn = document.querySelector(".toggle-on");
                 const toggleOff = document.querySelector(".toggle-off");
-                if (toggleOn) toggleOn.style.fontSize = "0";
-                if (toggleOff) toggleOff.style.fontSize = "0";
+                
+                if (toggleOn) {
+                    toggleOn.style.fontSize = "12px";
+                    toggleOn.style.fontWeight = "bold";
+                    toggleOn.style.color = "white";
+                    toggleOn.style.display = "flex";
+                    toggleOn.style.alignItems = "center";
+                    toggleOn.style.justifyContent = "center";
+                    toggleOn.style.textShadow = "none";
+                }
+                if (toggleOff) {
+                    toggleOff.style.fontSize = "12px";
+                    toggleOff.style.fontWeight = "bold";
+                    toggleOff.style.color = "white";
+                    toggleOff.style.display = "flex";
+                    toggleOff.style.alignItems = "center";
+                    toggleOff.style.justifyContent = "center";
+                    toggleOff.style.textShadow = "none";
+                }
             }, 100);
         });
     </script>
