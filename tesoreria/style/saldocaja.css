@@ -1,0 +1,361 @@
+
+body {
+    background-color: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.container-fluid {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+    margin: 20px auto;
+    max-width: 1400px;
+}
+
+.page-header {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+}
+
+.page-title {
+    color: #495057;
+    font-weight: 600;
+    margin: 0;
+    font-size: 1.75rem;
+}
+
+.page-subtitle {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+/* Filtros */
+.filters-card {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.filters-card .form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 6px;
+}
+
+.form-control, .btn {
+    border-radius: 6px;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Estadísticas */
+.stats-container {
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 1.5rem;
+}
+
+.stat-icon.ingreso {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.stat-icon.egreso {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.stat-icon.saldo {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Saldo actual destacado */
+.saldo-actual-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    margin-bottom: 24px;
+}
+
+.saldo-actual-card .stat-icon {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.saldo-actual-card .stat-value {
+    color: white;
+    font-size: 2rem;
+}
+
+.saldo-actual-card .stat-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Tabla */
+.table-container {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 12px;
+    white-space: nowrap;
+}
+
+.table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Tipos de movimiento */
+.tipo-ingreso {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.tipo-egreso {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.tipo-saldo {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Montos */
+.monto-positivo {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.monto-negativo {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.monto-neutral {
+    color: #6c757d;
+}
+
+/* Botones */
+.btn-foto {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-foto:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+    color: white;
+    transform: scale(1.05);
+}
+
+.btn-foto:disabled {
+    background-color: #e9ecef;
+    border-color: #e9ecef;
+    color: #6c757d;
+}
+
+/* Loading states */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container-fluid {
+        margin: 10px;
+        padding: 16px;
+        border-radius: 8px;
+    }
+    
+    .page-title {
+        font-size: 1.5rem;
+    }
+    
+    .filters-card {
+        padding: 16px;
+    }
+    
+    .stat-card {
+        margin-bottom: 16px;
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .saldo-actual-card .stat-value {
+        font-size: 1.75rem;
+    }
+    
+    .table thead th,
+    .table tbody td {
+        padding: 8px;
+        font-size: 0.875rem;
+    }
+    
+    .btn-foto {
+        padding: 2px 6px;
+        font-size: 0.7rem;
+    }
+}
+
+/* DataTables customization */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 6px 12px;
+    margin: 0 2px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #007bff;
+    border-color: #007bff;
+    color: white !important;
+}
+
+/* Modal de fotos - reutilizando estilos de cargaGastos.css */
+.swal2-popup.modal-fotos {
+    width: 95% !important;
+    max-width: 800px !important;
+    padding: 10px !important;
+}
+
+.carousel-responsive {
+    width: 100%;
+    max-height: 70vh;
+    overflow: hidden;
+}
+
+.carousel-responsive .carousel-inner {
+    border-radius: 8px;
+}
+
+.carousel-responsive .carousel-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    position: relative;
+}
+
+.carousel-responsive .carousel-item img {
+    max-width: 100%;
+    max-height: 60vh;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.image-counter {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
