@@ -77,12 +77,13 @@ function obtenerMovimientos() {
             'movimientos' => $movimientosFormateados,
             'saldoActual' => number_format($saldoActual, 2, '.', ''),
             'saldoActualDisplay' => number_format($saldoActual, 0, ',', '.'),
+            // En la función obtenerMovimientos(), reemplaza la sección de estadísticas:
             'estadisticas' => [
-                'totalMovimientos' => $estadisticas['TOTAL_MOVIMIENTOS'] ?? 0,
-                'totalIngresos' => number_format($estadisticas['TOTAL_INGRESOS'] ?? 0, 0, ',', '.'),
-                'totalEgresos' => number_format($estadisticas['TOTAL_EGRESOS'] ?? 0, 0, ',', '.'),
-                'cantIngresos' => $estadisticas['CANT_INGRESOS'] ?? 0,
-                'cantEgresos' => $estadisticas['CANT_EGRESOS'] ?? 0
+                'totalMovimientos' => isset($estadisticas['TOTAL_MOVIMIENTOS']) ? $estadisticas['TOTAL_MOVIMIENTOS'] : 0,
+                'totalIngresos' => isset($estadisticas['TOTAL_INGRESOS']) ? number_format($estadisticas['TOTAL_INGRESOS'], 0, ',', '.') : '0',
+                'totalEgresos' => isset($estadisticas['TOTAL_EGRESOS']) ? number_format($estadisticas['TOTAL_EGRESOS'], 0, ',', '.') : '0',
+                'cantIngresos' => isset($estadisticas['CANT_INGRESOS']) ? $estadisticas['CANT_INGRESOS'] : 0,
+                'cantEgresos' => isset($estadisticas['CANT_EGRESOS']) ? $estadisticas['CANT_EGRESOS'] : 0
             ]
         ]);
 

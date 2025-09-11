@@ -1,4 +1,3 @@
-
 $(document).ready(function() {
     // Cargar datos iniciales
     cargarMovimientos();
@@ -41,6 +40,7 @@ function cargarMovimientos() {
         data: { desde: desde, hasta: hasta },
         dataType: 'json',
         success: function(response) {
+            console.log('Respuesta del servidor:', response); // Debug
             if (response.success) {
                 actualizarEstadisticas(response.estadisticas, response.saldoActualDisplay);
                 renderizarTabla(response.movimientos);
@@ -54,6 +54,7 @@ function cargarMovimientos() {
         },
         error: function(xhr, status, error) {
             console.error('Error AJAX:', error);
+            console.error('Respuesta completa:', xhr.responseText); // Debug
             Swal.fire({
                 icon: 'error',
                 title: 'Error de comunicación',
@@ -67,21 +68,35 @@ function cargarMovimientos() {
 }
 
 function actualizarEstadisticas(stats, saldoActual) {
+    console.log('Actualizando estadísticas:', stats, saldoActual); // Debug
+    
     // Actualizar saldo actual
-    $('#saldo-actual').text('$' + saldoActual);
+    $('#saldo-actual').text('$' + (saldoActual || '0'));
     
-    // Actualizar estadísticas
-    $('#total-ingresos').text('$' + stats.totalIngresos);
-    $('#cant-ingresos').text(stats.cantIngresos + ' movimientos');
-    
-    $('#total-egresos').text('$' + stats.totalEgresos);
-    $('#cant-egresos').text(stats.cantEgresos + ' movimientos');
-    
-    $('#total-movimientos').text(stats.totalMovimientos);
-    $('#periodo-movimientos').text('movimientos en el período');
+    // Actualizar estadísticas - agregar verificación de existencia
+    if (stats) {
+        $('#total-ingresos').text('$' + (stats.totalIngresos || '0'));
+        $('#cant-ingresos').text((stats.cantIngresos || 0) + ' movimientos');
+        
+        $('#total-egresos').text('$' + (stats.totalEgresos || '0'));
+        $('#cant-egresos').text((stats.cantEgresos || 0) + ' movimientos');
+        
+        $('#total-movimientos').text(stats.totalMovimientos || 0);
+        $('#periodo-movimientos').text('movimientos en el período');
+    } else {
+        console.error('Stats es null o undefined');
+        // Valores por defecto si no hay estadísticas
+        $('#total-ingresos').text('$0');
+        $('#cant-ingresos').text('0 movimientos');
+        $('#total-egresos').text('$0');
+        $('#cant-egresos').text('0 movimientos');
+        $('#total-movimientos').text('0');
+    }
 }
 
 function renderizarTabla(movimientos) {
+    console.log('Renderizando tabla con', movimientos.length, 'movimientos'); // Debug
+    
     // Destruir DataTable existente si existe
     if ($.fn.DataTable.isDataTable('#movimientosTable')) {
         $('#movimientosTable').DataTable().destroy();
@@ -122,9 +137,9 @@ function renderizarTabla(movimientos) {
                 <td>${mov.N_COMP || ''}</td>
                 <td><span class="${tipoClass}">${mov.TIPO || ''}</span></td>
                 <td>${mov.LEYENDA || ''}</td>
-                <td class="text-end"><span class="${montoClass}">${mov.DEBE_DISPLAY}</span></td>
-                <td class="text-end"><span class="${montoClass}">${mov.HABER_DISPLAY}</span></td>
-                <td class="text-end"><strong>${mov.SALDO_DISPLAY}</strong></td>
+                <td class="text-end"><span class="${montoClass}">$${mov.DEBE_DISPLAY}</span></td>
+                <td class="text-end"><span class="${montoClass}">$${mov.HABER_DISPLAY}</span></td>
+                <td class="text-end"><strong>$${mov.SALDO_DISPLAY}</strong></td>
                 <td class="text-center">${iconoFoto}</td>
             </tr>
         `;
@@ -138,10 +153,14 @@ function renderizarTabla(movimientos) {
             url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
         },
         responsive: true,
-        order: [[0, 'desc']], // Ordenar por fecha descendente
+        order: [[0, 'asc']], // Ordenar por fecha ASCENDENTE (primera fecha arriba)
         pageLength: 50,
         lengthMenu: [[25, 50, 100, -1], [25, 50, 100, "Todos"]],
         columnDefs: [
+            {
+                targets: [0], // Columna de fecha
+                type: 'date'
+            },
             {
                 targets: [5, 6, 7], // Columnas de montos
                 className: 'text-end'
