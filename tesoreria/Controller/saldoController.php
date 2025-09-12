@@ -66,7 +66,11 @@ function obtenerMovimientos() {
                 'MONTO_DISPLAY' => number_format($mov['MONTO'], 0, ',', '.'),
                 'DEBE_DISPLAY' => number_format($mov['DEBE'], 0, ',', '.'),
                 'HABER_DISPLAY' => number_format($mov['HABER'], 0, ',', '.'),
-                'SALDO_DISPLAY' => number_format($mov['SALDO'], 0, ',', '.')
+                'SALDO_DISPLAY' => number_format($mov['SALDO'], 0, ',', '.'),
+                // Incluir información de fotos
+                'TIENE_FOTOS' => isset($mov['TIENE_FOTOS']) ? $mov['TIENE_FOTOS'] : false,
+                'ESTA_GUARDADO' => isset($mov['ESTA_GUARDADO']) ? $mov['ESTA_GUARDADO'] : false,
+                'COD_CTA_CONTRAPARTIDA' => isset($mov['COD_CTA_CONTRAPARTIDA']) ? $mov['COD_CTA_CONTRAPARTIDA'] : null
             ];
             $movimientosFormateados[] = $movFormateado;
         }

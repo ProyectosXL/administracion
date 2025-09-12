@@ -121,9 +121,20 @@ function renderizarTabla(movimientos) {
             montoClass = 'monto-negativo';
             // Solo mostrar botón de foto para egresos que no sean saldo inicial
             if (mov.COD_COMP !== 'SALDO_INI' && mov.N_COMP) {
-                iconoFoto = `<button class="btn btn-foto btn-sm" onclick="mostrarFotosEgreso('${mov.COD_COMP}', '${mov.N_COMP}')">
-                    <i class="fas fa-camera"></i>
-                </button>`;
+                if (mov.ESTA_GUARDADO && mov.TIENE_FOTOS) {
+                    // 🟡👁️ Botón amarillo con ojo para egresos CON fotos
+                    iconoFoto = `<button class="btn btn-foto-disponible btn-sm" onclick="mostrarFotosEgreso('${mov.COD_COMP}', '${mov.N_COMP}')" data-bs-toggle="tooltip" title="Ver fotos disponibles">
+                        <i class="fas fa-eye"></i>
+                    </button>`;
+                } else if (mov.ESTA_GUARDADO && !mov.TIENE_FOTOS) {
+                    // ⚫📷 Botón gris con cámara para egresos SIN fotos
+                    iconoFoto = `<button class="btn btn-foto-no-disponible btn-sm" disabled data-bs-toggle="tooltip" title="Sin fotos disponibles">
+                        <i class="fas fa-camera"></i>
+                    </button>`;
+                } else {
+                    // Para egresos no guardados, no mostrar botón
+                    iconoFoto = '';
+                }
             }
         } else {
             tipoClass = 'tipo-saldo';
@@ -172,8 +183,7 @@ function renderizarTabla(movimientos) {
             }
         ],
         drawCallback: function() {
-            // Verificar estado de egresos después de cada redibujado
-            verificarEstadosEgresos();
+            // La información de fotos ya viene desde el servidor, no necesitamos verificaciones adicionales
             
             // Inicializar tooltips de Bootstrap
             setTimeout(function() {
@@ -191,7 +201,8 @@ function renderizarTabla(movimientos) {
 }
 
 function verificarEstadosEgresos() {
-    // Ya no necesitamos hacer verificaciones adicionales porque la información viene del servidor
+    // Esta función ya no es necesaria porque la información de fotos 
+    // viene directamente desde el servidor en la respuesta de obtenerMovimientos
     console.log('Los estados de egresos ya vienen desde el servidor');
 }
 
