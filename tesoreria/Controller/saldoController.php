@@ -1,4 +1,3 @@
-
 <?php
 // Configurar el manejo de errores para evitar que aparezcan en la respuesta JSON
 error_reporting(E_ALL);
@@ -77,13 +76,12 @@ function obtenerMovimientos() {
             'movimientos' => $movimientosFormateados,
             'saldoActual' => number_format($saldoActual, 2, '.', ''),
             'saldoActualDisplay' => number_format($saldoActual, 0, ',', '.'),
-            // En la función obtenerMovimientos(), reemplaza la sección de estadísticas:
             'estadisticas' => [
-                'totalMovimientos' => isset($estadisticas['TOTAL_MOVIMIENTOS']) ? $estadisticas['TOTAL_MOVIMIENTOS'] : 0,
-                'totalIngresos' => isset($estadisticas['TOTAL_INGRESOS']) ? number_format($estadisticas['TOTAL_INGRESOS'], 0, ',', '.') : '0',
-                'totalEgresos' => isset($estadisticas['TOTAL_EGRESOS']) ? number_format($estadisticas['TOTAL_EGRESOS'], 0, ',', '.') : '0',
-                'cantIngresos' => isset($estadisticas['CANT_INGRESOS']) ? $estadisticas['CANT_INGRESOS'] : 0,
-                'cantEgresos' => isset($estadisticas['CANT_EGRESOS']) ? $estadisticas['CANT_EGRESOS'] : 0
+                'totalMovimientos' => $estadisticas['TOTAL_MOVIMIENTOS'] ?? 0,
+                'totalIngresos' => number_format($estadisticas['TOTAL_INGRESOS'] ?? 0, 0, ',', '.'),
+                'totalEgresos' => number_format($estadisticas['TOTAL_EGRESOS'] ?? 0, 0, ',', '.'),
+                'cantIngresos' => $estadisticas['CANT_INGRESOS'] ?? 0,
+                'cantEgresos' => $estadisticas['CANT_EGRESOS'] ?? 0
             ]
         ]);
 
@@ -106,16 +104,27 @@ function obtenerFotosEgreso() {
         $saldo = new Saldo();
         $codComp = $_GET['codComp'];
         $nComp = $_GET['nComp'];
-        $codCta = isset($_GET['codCta']) ? $_GET['codCta'] : '100101';
 
-        $fotos = $saldo->verificarFotosEgreso($codComp, $nComp, $codCta);
-        $estaGuardado = $saldo->verificarRegistroGuardado($codComp, $nComp, $codCta);
+        // Primero obtener información del gasto guardado para conseguir COD_CTA
+        $infoGasto = $saldo->obtenerInfoFotosEgreso($codComp, $nComp);
+        
+        if (!$infoGasto['esta_guardado']) {
+            enviarRespuestaJSON([
+                'success' => false,
+                'error' => 'Este egreso no está guardado en la tabla de gastos',
+                'archivos' => [],
+                'estaGuardado' => false,
+                'tieneFotos' => false
+            ]);
+            return;
+        }
 
         enviarRespuestaJSON([
             'success' => true,
-            'archivos' => $fotos,
-            'estaGuardado' => $estaGuardado,
-            'tieneFotos' => count($fotos) > 0
+            'archivos' => $infoGasto['archivos'] ?? [],
+            'estaGuardado' => $infoGasto['esta_guardado'],
+            'tieneFotos' => $infoGasto['tiene_fotos'],
+            'codCta' => $infoGasto['cod_cta']
         ]);
 
     } catch (Exception $e) {

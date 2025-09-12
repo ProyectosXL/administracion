@@ -174,22 +174,25 @@ function renderizarTabla(movimientos) {
         drawCallback: function() {
             // Verificar estado de egresos después de cada redibujado
             verificarEstadosEgresos();
+            
+            // Inicializar tooltips de Bootstrap
+            setTimeout(function() {
+                // Destruir tooltips existentes
+                $('[data-bs-toggle="tooltip"]').tooltip('dispose');
+                
+                // Inicializar nuevos tooltips
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }, 100);
         }
     });
 }
 
 function verificarEstadosEgresos() {
-    // Verificar el estado de cada egreso para mostrar/ocultar botones
-    $('#movimientosTable tbody tr').each(function() {
-        const fila = $(this);
-        const codComp = fila.find('td:eq(1)').text().trim();
-        const nComp = fila.find('td:eq(2)').text().trim();
-        const tipo = fila.find('td:eq(3) span').text().trim();
-        
-        if (tipo === 'EGRESO' && codComp && nComp && codComp !== 'SALDO_INI') {
-            verificarEstadoEgreso(codComp, nComp, fila);
-        }
-    });
+    // Ya no necesitamos hacer verificaciones adicionales porque la información viene del servidor
+    console.log('Los estados de egresos ya vienen desde el servidor');
 }
 
 function verificarEstadoEgreso(codComp, nComp, fila) {

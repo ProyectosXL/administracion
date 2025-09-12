@@ -1,4 +1,3 @@
-
 body {
     background-color: #f8f9fa;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -222,6 +221,51 @@ body {
     background-color: #e9ecef;
     border-color: #e9ecef;
     color: #6c757d;
+}
+
+/* Botón para fotos disponibles - amarillo con ojo */
+.btn-foto-disponible {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #212529 !important;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-foto-disponible:hover {
+    background-color: #e0a800 !important;
+    border-color: #d39e00 !important;
+    color: #212529 !important;
+    transform: scale(1.05);
+}
+
+.btn-foto-disponible:focus {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #212529 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.5) !important;
+}
+
+/* Botón para sin fotos - gris con cámara */
+.btn-foto-no-disponible {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: #fff !important;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    cursor: not-allowed !important;
+}
+
+.btn-foto-no-disponible:hover,
+.btn-foto-no-disponible:focus,
+.btn-foto-no-disponible:active {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: #fff !important;
+    transform: none !important;
 }
 
 /* Loading states */

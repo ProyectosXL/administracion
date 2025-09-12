@@ -1,4 +1,3 @@
-
 <?php
 
 class Saldo
@@ -40,6 +39,18 @@ class Saldo
 
             $movimientos = array();
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                // Agregar información de fotos para egresos
+                if ($row['TIPO'] === 'EGRESO' && $row['COD_COMP'] !== 'SALDO_INI' && $row['N_COMP']) {
+                    $infoFotos = $this->obtenerInfoFotosEgreso($row['COD_COMP'], $row['N_COMP']);
+                    $row['TIENE_FOTOS'] = $infoFotos['tiene_fotos'];
+                    $row['COD_CTA_CONTRAPARTIDA'] = $infoFotos['cod_cta'];
+                    $row['ESTA_GUARDADO'] = $infoFotos['esta_guardado'];
+                } else {
+                    $row['TIENE_FOTOS'] = false;
+                    $row['COD_CTA_CONTRAPARTIDA'] = null;
+                    $row['ESTA_GUARDADO'] = false;
+                }
+                
                 $movimientos[] = $row;
             }
             
@@ -48,6 +59,43 @@ class Saldo
         } catch (Exception $e) {
             error_log("Error en obtenerMovimientosCaja: " . $e->getMessage());
             throw $e;
+        }
+    }
+
+    public function obtenerInfoFotosEgreso($codComp, $nComp)
+    {
+        try {
+            // Buscar en gastos guardados para obtener el COD_CTA
+            $sql = "SELECT COD_CTA FROM RO_T_GASTOS_TESORERIA 
+                    WHERE COD_COMP = ? AND LTRIM(RTRIM(N_COMP)) = ?";
+            
+            $params = array(trim($codComp), trim($nComp));
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                error_log("Error en consulta de gastos guardados: " . print_r(sqlsrv_errors(), true));
+                return ['tiene_fotos' => false, 'cod_cta' => null, 'esta_guardado' => false];
+            }
+            
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            
+            if ($row) {
+                $codCta = $row['COD_CTA'];
+                $fotos = $this->verificarFotosEgreso($codComp, $nComp, $codCta);
+                
+                return [
+                    'tiene_fotos' => count($fotos) > 0,
+                    'cod_cta' => $codCta,
+                    'esta_guardado' => true,
+                    'archivos' => $fotos
+                ];
+            } else {
+                return ['tiene_fotos' => false, 'cod_cta' => null, 'esta_guardado' => false];
+            }
+            
+        } catch (Exception $e) {
+            error_log("Error en obtenerInfoFotosEgreso: " . $e->getMessage());
+            return ['tiene_fotos' => false, 'cod_cta' => null, 'esta_guardado' => false];
         }
     }
 
@@ -143,7 +191,8 @@ class Saldo
     public function obtenerEstadisticasMovimientos($desde, $hasta)
     {
         try {
-            $sql = "SELECT 
+            $sql = "SET DATEFORMAT YMD
+                    SELECT 
                         COUNT(*) as TOTAL_MOVIMIENTOS,
                         COALESCE(SUM(CASE WHEN D_H = 'D' THEN MONTO ELSE 0 END), 0) AS TOTAL_INGRESOS,
                         COALESCE(SUM(CASE WHEN D_H = 'H' THEN MONTO ELSE 0 END), 0) AS TOTAL_EGRESOS,
