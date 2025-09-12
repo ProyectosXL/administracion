@@ -142,6 +142,72 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
             border: 1px solid #ccc !important;
         }
 
+        /* Estilos para botones de acción */
+        .btn-edit {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 0.25rem;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-edit:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+        }
+
+        .btn-edit:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+
+        /* Estilos para el modal */
+        .modal-header.bg-primary {
+            background-color: #007bff !important;
+        }
+
+        .modal-body {
+            background-color: #f8f9fa;
+        }
+
+        .form-group label {
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+
+        .input-group-text {
+            background-color: #e9ecef;
+            border-color: #ced4da;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        /* Mejoras en la tabla */
+        .contracts-table tbody tr:hover {
+            background-color: rgba(0,123,255,0.05);
+        }
+
+        .contracts-table .btn-edit {
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        .contracts-table tbody tr:hover .btn-edit {
+            opacity: 1;
+        }
+
     </style>
 </head>
 
@@ -273,6 +339,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                                 <th><i class="bi bi-rocket"></i> FPC Lanzamiento</th>
                                 <th><i class="bi bi-calendar3"></i> Meses</th>
                                 <th><i class="bi bi-info-circle"></i> Estado</th>
+                                <th><i class="bi bi-gear-fill"></i> Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -340,10 +407,143 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                                         <?= $estadoContrato ?>
                                     </span>
                                 </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-primary btn-edit" 
+                                            onclick="editarContrato(<?= $contrato['ID'] ?>, '<?= $contrato['NRO_SUCURS'] ?>', '<?= addslashes($contrato['DESC_SUCURS']) ?>', '<?= $vigDesde->format('Y-m-d') ?>', '<?= $vigHasta->format('Y-m-d') ?>', <?= $contrato['IMPORTE'] ?>, <?= $contrato['IMPORTE_2'] ?>, <?= $contrato['IMPORTE_3'] ?>)"
+                                            title="Editar contrato">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                </td>
                             </tr>
                             <?php } ?>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar contrato -->
+    <div class="modal fade" id="editarContratoModal" tabindex="-1" role="dialog" aria-labelledby="editarContratoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editarContratoModalLabel">
+                        <i class="bi bi-pencil-square"></i> Editar Contrato de Alquiler
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditarContrato">
+                        <input type="hidden" id="editContratoId" name="contratoId">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editNroSucursal" class="font-weight-bold">
+                                        <i class="bi bi-hash text-primary"></i> N° Sucursal:
+                                    </label>
+                                    <input type="text" class="form-control" id="editNroSucursal" name="nroSucursal" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editDescSucursal" class="font-weight-bold">
+                                        <i class="bi bi-building text-primary"></i> Descripción Sucursal:
+                                    </label>
+                                    <input type="text" class="form-control" id="editDescSucursal" name="descSucursal" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editVigDesde" class="font-weight-bold">
+                                        <i class="bi bi-calendar-event text-success"></i> Vigencia Desde:
+                                    </label>
+                                    <input type="date" class="form-control" id="editVigDesde" name="vigDesde" required>
+                                    <small class="form-text text-muted">Fecha de inicio del contrato</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editVigHasta" class="font-weight-bold">
+                                        <i class="bi bi-calendar-x text-danger"></i> Vigencia Hasta:
+                                    </label>
+                                    <input type="date" class="form-control" id="editVigHasta" name="vigHasta" required>
+                                    <small class="form-text text-muted">Fecha de finalización del contrato</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="editValorLlave" class="font-weight-bold">
+                                        <i class="bi bi-key-fill text-warning"></i> Valor Llave:
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">$</span>
+                                        </div>
+                                        <input type="number" class="form-control" id="editValorLlave" name="valorLlave" 
+                                               min="0" step="0.01" placeholder="0">
+                                    </div>
+                                    <small class="form-text text-muted">Opcional - Dejar vacío para 0</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="editComisiones" class="font-weight-bold">
+                                        <i class="bi bi-percent text-info"></i> Comisiones:
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">$</span>
+                                        </div>
+                                        <input type="number" class="form-control" id="editComisiones" name="comisiones" 
+                                               min="0" step="0.01" placeholder="0">
+                                    </div>
+                                    <small class="form-text text-muted">Opcional - Dejar vacío para 0</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="editLanzamiento" class="font-weight-bold">
+                                        <i class="bi bi-rocket text-success"></i> FPC Lanzamiento:
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">$</span>
+                                        </div>
+                                        <input type="number" class="form-control" id="editLanzamiento" name="lanzamiento" 
+                                               min="0" step="0.01" placeholder="0">
+                                    </div>
+                                    <small class="form-text text-muted">Opcional - Dejar vacío para 0</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Información:</strong> Solo las fechas son obligatorias. Los importes son opcionales y se asignarán como 0 si se dejan vacíos.
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarEdicion">
+                        <i class="bi bi-check-lg"></i> Guardar Cambios
+                    </button>
                 </div>
             </div>
         </div>
@@ -389,12 +589,17 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 "order": [[2, "desc"]], // Ordenar por fecha desde (más recientes primero)
                 "columnDefs": [
                     {
-                        "targets": [0, 2, 3, 7, 8],
+                        "targets": [0, 2, 3, 7, 8, 9], // Incluir la columna de acciones
                         "className": "text-center"
                     },
                     {
                         "targets": [4, 5, 6],
                         "className": "text-right"
+                    },
+                    {
+                        "targets": [9], // Columna de acciones
+                        "orderable": false, // No permitir ordenar por acciones
+                        "searchable": false // No incluir en la búsqueda
                     }
                 ],
                 "drawCallback": function(settings) {
@@ -517,6 +722,144 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 confirmButtonText: 'Entendido'
             });
         };
+
+        // Función para abrir el modal de edición
+        const editarContrato = (id, nroSucursal, descSucursal, vigDesde, vigHasta, valorLlave, comisiones, lanzamiento) => {
+            // Llenar los campos del modal
+            document.getElementById('editContratoId').value = id;
+            document.getElementById('editNroSucursal').value = nroSucursal;
+            document.getElementById('editDescSucursal').value = descSucursal;
+            document.getElementById('editVigDesde').value = vigDesde;
+            document.getElementById('editVigHasta').value = vigHasta;
+            
+            // Para los importes, mostrar vacío si el valor es 0
+            document.getElementById('editValorLlave').value = valorLlave == 0 ? '' : valorLlave;
+            document.getElementById('editComisiones').value = comisiones == 0 ? '' : comisiones;
+            document.getElementById('editLanzamiento').value = lanzamiento == 0 ? '' : lanzamiento;
+            
+            // Mostrar el modal
+            $('#editarContratoModal').modal('show');
+        };
+
+        // Función para validar las fechas
+        const validarFechas = () => {
+            const vigDesde = new Date(document.getElementById('editVigDesde').value);
+            const vigHasta = new Date(document.getElementById('editVigHasta').value);
+            
+            if (vigDesde >= vigHasta) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error en las fechas',
+                    text: 'La fecha "Hasta" debe ser posterior a la fecha "Desde"',
+                    confirmButtonText: 'Entendido'
+                });
+                return false;
+            }
+            
+            return true;
+        };
+
+        // Función para validar los importes
+        const validarImportes = () => {
+            const valorLlaveInput = document.getElementById('editValorLlave');
+            const comisionesInput = document.getElementById('editComisiones');
+            const lanzamientoInput = document.getElementById('editLanzamiento');
+            
+            // Convertir valores vacíos a 0
+            const valorLlave = valorLlaveInput.value === '' ? 0 : parseFloat(valorLlaveInput.value);
+            const comisiones = comisionesInput.value === '' ? 0 : parseFloat(comisionesInput.value);
+            const lanzamiento = lanzamientoInput.value === '' ? 0 : parseFloat(lanzamientoInput.value);
+            
+            // Actualizar los valores en los inputs (convertir vacíos a 0 para el envío)
+            if (valorLlaveInput.value === '') valorLlaveInput.value = '0';
+            if (comisionesInput.value === '') comisionesInput.value = '0';
+            if (lanzamientoInput.value === '') lanzamientoInput.value = '0';
+            
+            if (valorLlave < 0 || comisiones < 0 || lanzamiento < 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error en los importes',
+                    text: 'Los importes no pueden ser negativos',
+                    confirmButtonText: 'Entendido'
+                });
+                return false;
+            }
+            
+            return true;
+        };
+
+        // Función para guardar los cambios
+        const guardarCambiosContrato = () => {
+            // Validaciones
+            if (!validarFechas() || !validarImportes()) {
+                return;
+            }
+            
+            // Recopilar datos del formulario
+            const formData = new FormData(document.getElementById('formEditarContrato'));
+            
+            // Mostrar loading
+            Swal.fire({
+                title: 'Guardando cambios',
+                text: 'Por favor espere...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Enviar datos al controlador
+            $.ajax({
+                url: 'Controller/actualizarContrato.php',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Éxito!',
+                            text: response.message || 'Contrato actualizado correctamente',
+                            confirmButtonText: 'Aceptar',
+                            confirmButtonColor: '#28a745'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Cerrar modal y recargar página
+                                $('#editarContratoModal').modal('hide');
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error al actualizar',
+                            text: response.message || 'No se pudo actualizar el contrato',
+                            confirmButtonText: 'Entendido',
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error AJAX:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de conexión',
+                        text: 'No se pudo conectar con el servidor. Intente nuevamente.',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            });
+        };
+
+        // Event listener para el botón guardar
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('btnGuardarEdicion').addEventListener('click', guardarCambiosContrato);
+        });
     </script>
 </body>
 </html>
