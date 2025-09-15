@@ -43,21 +43,23 @@ switch ($accion) {
 }
 
 function registrarRetiro() {
-    $datos = $_POST['datos'] ?? null;
-    $firma = $_POST['firma'] ?? null;
-    $remitos = $_POST['remitos'] ?? [];
-    $nroSucursal = $_POST['nroSucursal'] ?? null;
-    $estado = $_POST['estado'] ?? null;
-    
-    if($estado != 1 ){
+    try {
+        $datos = $_POST['datos'] ?? null;
+        $firma = $_POST['firma'] ?? null;
+        $remitos = $_POST['remitos'] ?? [];
+        $nroSucursal = $_POST['nroSucursal'] ?? null;
+        $estado = $_POST['estado'] ?? null;
+        
+        if($estado != 1 ){
 
-        if (empty($datos) || empty($firma)) {
-            echo json_encode(['success' => false, 'message' => 'Datos no proporcionados.']);
-            exit;
+            if (empty($datos) || empty($firma)) {
+                echo json_encode(['success' => false, 'message' => 'Datos no proporcionados.']);
+                exit;
+            }
+
         }
-
-    }
-    $sucursal = new Sucursal();
+        $sucursal = new Sucursal();
+        $gasto = new Gasto();
 
     // --- VALIDATION START ---
     // Check for existing record with the same NRO_REGISTRO and NRO_SUCURS
@@ -95,26 +97,31 @@ function registrarRetiro() {
             }
         }
 
-        echo true;
+        echo json_encode(['success' => true, 'message' => 'Registro guardado correctamente']);
 
-    }else{
-        echo false;
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Error al guardar el registro']);
     }
 
+    } catch (Exception $e) {
+        error_log("Error en registrarRetiro: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error interno del servidor: ' . $e->getMessage()]);
+    }
 }
 
 function actualizarRetiro() {
-    $datos = $_POST['datos'] ?? null;
-    $firma = $_POST['firma'] ?? null;
-    $remitos = $_POST['remitos'] ?? null;
-    $nroSucursal = $_POST['nroSucursal'] ?? null;
-    $estado = $_POST['estado'] ?? null;
-    $egresos = $_POST['egresos'] ?? null;
-    
-    
-    if($estado != 1 ){
+    try {
+        $datos = $_POST['datos'] ?? null;
+        $firma = $_POST['firma'] ?? null;
+        $remitos = $_POST['remitos'] ?? null;
+        $nroSucursal = $_POST['nroSucursal'] ?? null;
+        $estado = $_POST['estado'] ?? null;
+        $egresos = $_POST['egresos'] ?? null;
+        
+        
+        if($estado != 1 ){
 
-        if (empty($datos) || empty($firma)) {
+            if (empty($datos) || empty($firma)) {
             echo json_encode(['success' => false, 'message' => 'Datos no proporcionados.']);
             exit;
         }
@@ -146,8 +153,10 @@ function actualizarRetiro() {
             $gasto->insertarEgresos($datos['numeroRegistro'], $egreso['fecha'], $egreso['tipo'], $egreso['comprobante'], $nroSucursal);
         }
     }
-    echo true;
+    echo json_encode(['success' => true, 'message' => 'Registro actualizado correctamente']);
 
-
-
+    } catch (Exception $e) {
+        error_log("Error en actualizarRetiro: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error interno del servidor: ' . $e->getMessage()]);
+    }
 }

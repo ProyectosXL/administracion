@@ -415,10 +415,10 @@ class Gasto
             if(!$cid_local){
                 $sql = "SELECT CAST(FECHA AS DATE) FECHA, COD_COMP, N_COMP, CANT_MONE FROM [LAKERBIS].LOCALES_LAKERS.DBO.CTA29
                         WHERE COD_CTA = '100100' AND NRO_SUCURS = ? AND FECHA >= DATEADD(day, -45, GETDATE()) AND D_H = 'D'
-                        AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC)
+                        AND N_COMP COLLATE Latin1_General_BIN NOT IN (SELECT N_COMP COLLATE Latin1_General_BIN FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_SUCURS = ?)
                         ORDER BY N_COMP DESC";
 
-                $params = array($nroSucurs);
+                $params = array($nroSucurs, $nroSucurs);
                 $stmt = sqlsrv_query($this->cid_central, $sql, $params);
 
                 if ($stmt === false) {
@@ -468,8 +468,9 @@ class Gasto
     }
 
     public function traerEgresosCentral ($nroSucurs) {
-        $sql = "SELECT N_COMP COLLATE Latin1_General_BIN as remitos FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_SUCURS = $nroSucurs";
-        $stmt = sqlsrv_query($this->cid_central, $sql);
+        $sql = "SELECT N_COMP COLLATE Latin1_General_BIN as remitos FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_SUCURS = ?";
+        $params = array($nroSucurs);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
         if ($stmt === false) {
             throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
         }
@@ -485,8 +486,8 @@ class Gasto
 
     public function limpiarEgresos($nroRegistro, $nroSucurs){
         try {
-            $sql = "DELETE FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NR_SUCURS = $nroSucurs";
-            $params = [$nroRegistro];
+            $sql = "DELETE FROM RO_EGRESOS_GUIA_RETIROS_SUC WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
+            $params = [$nroRegistro, $nroSucurs];
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));

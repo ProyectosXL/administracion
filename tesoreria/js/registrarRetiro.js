@@ -330,26 +330,7 @@ document.getElementById('clear').addEventListener('click', function () {
 
 
 const registrar = async () => {
-    
-
-    const datos = obtenerDatosFormulario();
-
-    let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
-    let nroSucursal = document.querySelector("#numSucurs").textContent;
-    
-    const response = await fetch('Controller/upload_image.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            firma: firmaBase64,
-            nro_registro: datos.datos.numeroRegistro,
-            sucursal: document.querySelector("#numSucurs").textContent}),
-        });
-        
-        const respuestaDatos = await response.json();
-        
-        let firma = (respuestaDatos.filePath);
-
+    // Validar formulario primero
     if (!(await validarFormulario())) {
         return;
     }
@@ -362,6 +343,24 @@ const registrar = async () => {
         );
         
         if (!confirmar) return;
+
+        const datos = obtenerDatosFormulario();
+
+        let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
+        let nroSucursal = document.querySelector("#numSucurs").textContent;
+        
+        const response = await fetch('Controller/upload_image.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                firma: firmaBase64,
+                nro_registro: datos.datos.numeroRegistro,
+                sucursal: document.querySelector("#numSucurs").textContent}),
+            });
+            
+            const respuestaDatos = await response.json();
+            
+            let firma = (respuestaDatos.filePath);
         
      
 
@@ -391,14 +390,14 @@ const registrar = async () => {
                             window.location.href = 'listarRetiros.php';
                         }
                     });
-    
-    
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error AJAX:', error);
+                    console.error('Response:', xhr.responseText);
+                    mostrarAlerta('Error', 'Error al registrar: ' + error);
                 }
-            })
+            });
             
-     
-            // Aquí iría el código para registrar los datos
-    
         } catch (error) {
             console.error('Error:', error);
             await mostrarAlerta('Error', 'Error al registrar el formulario: ' + error.message);
@@ -539,6 +538,11 @@ async function guardarFormulario() {
                         window.location = 'listarRetiros.php';
                     }
                 });
+            },
+            error: function (xhr, status, error) {
+                console.error('Error AJAX:', error);
+                console.error('Response:', xhr.responseText);
+                mostrarAlerta('Error', 'Error al guardar: ' + error);
             }
         });
 
