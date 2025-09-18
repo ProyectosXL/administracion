@@ -10,7 +10,7 @@ class Email {
         $this->to = $to;
         $this->subject = $subject;
         $this->htmlContent = $htmlContent;
-        $this->apiUrl = "http://app.xl.com.ar:6002/api/email/";
+        $this->apiUrl = "https://8057978d2f46.ngrok-free.app/api/email/";
     }
 
  
