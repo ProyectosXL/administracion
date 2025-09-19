@@ -125,20 +125,20 @@ $egresos = $gasto->listarEgresosPorGuia($id, $nroSucurs);
                             </tr>
                         </thead>
                         <tbody id="bodyEgresos">
-    <?php if (!empty($egresos)): ?>
-        <?php foreach ($egresos as $egreso): ?>
-            <tr>
-                <td><?php echo htmlspecialchars($egreso['T_COMP']); ?></td>
-                <td><?php echo htmlspecialchars($egreso['N_COMP']); ?></td>
-                <td><?php echo $egreso['FECHA_COMP']->format("d/m/Y");; ?></td>
-            </tr>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <tr>
-            <td colspan="3">No hay egresos asociados.</td>
-        </tr>
-    <?php endif; ?>
-</tbody>
+                            <?php if (!empty($egresos)): ?>
+                                <?php foreach ($egresos as $egreso): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($egreso['T_COMP']); ?></td>
+                                        <td><?php echo htmlspecialchars($egreso['N_COMP']); ?></td>
+                                        <td><?php echo $egreso['FECHA_COMP']->format("d/m/Y");; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="3">No hay egresos asociados.</td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
 
                         </table>
                     </div>
@@ -185,19 +185,19 @@ $egresos = $gasto->listarEgresosPorGuia($id, $nroSucurs);
                     </div>
 
                     <div class="mb-3">
-    <label for="firma" class="form-label"><i class="bi bi-pen"></i> Firma</label>
-    <div class="firma-container">
-        <?php if (!empty($datosGuia['FIRMA'])): ?>
-            <?php 
-                // Convertir la ruta absoluta en una ruta relativa para el navegador
-                $urlFirma = str_replace('C:/xampp/htdocs', '', $datosGuia['FIRMA']);
-            ?>
-            <img src="<?php echo htmlspecialchars($urlFirma); ?>" alt="Firma" class="img-fluid">
-        <?php else: ?>
-            <p class="text-muted">No hay firma registrada.</p>
-        <?php endif; ?>
-    </div>
-</div>
+                        <label for="firma" class="form-label"><i class="bi bi-pen"></i> Firma</label>
+                        <div class="firma-container">
+                            <?php if (!empty($datosGuia['FIRMA'])): ?>
+                                <?php 
+                                    // Convertir la ruta absoluta en una ruta relativa para el navegador
+                                    $urlFirma = str_replace('C:/xampp/htdocs', '', $datosGuia['FIRMA']);
+                                ?>
+                                <img src="<?php echo htmlspecialchars($urlFirma); ?>" alt="Firma" class="img-fluid">
+                            <?php else: ?>
+                                <p class="text-muted">No hay firma registrada.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
 
                     
