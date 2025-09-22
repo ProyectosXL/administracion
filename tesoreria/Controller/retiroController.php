@@ -49,7 +49,7 @@ function registrarRetiro() {
         $remitos = $_POST['remitos'] ?? [];
         $nroSucursal = $_POST['nroSucursal'] ?? null;
         $estado = $_POST['estado'] ?? null;
-        
+   
         if($estado != 1 ){
 
             if (empty($datos) || empty($firma)) {
@@ -75,12 +75,12 @@ function registrarRetiro() {
     $resultado = $sucursal->insertarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
     
     if ($resultado['success']) {
-
+    
         if((count($remitos) > 0) ){
 
             $sucursal->limpiarRemitos($datos['numeroRegistro'], $nroSucursal);
 
-            foreach ($remitos as $remito) {    
+            foreach ($remitos as $remito) {   
                 $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos'], $nroSucursal);
                 
             }
@@ -93,7 +93,9 @@ function registrarRetiro() {
             $gasto->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
 
             foreach ($datos['egresos'] as $egreso) {
-                $gasto->insertarEgresos($datos['numeroRegistro'], $egreso['fecha'], $egreso['tipo'], $egreso['comprobante'], $nroSucursal);
+                $fechaObj = DateTime::createFromFormat('d/m/Y', $egreso['fecha']);
+                $fechaConvertida = $fechaObj->format('Y-m-d'); 
+                $gasto->insertarEgresos($datos['numeroRegistro'], $fechaConvertida, $egreso['tipo'], $egreso['comprobante'], $nroSucursal);
             }
         }
 
