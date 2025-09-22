@@ -692,17 +692,18 @@ class Sucursal
                 CAST(s.FECHA AS DATE) AS FECHA,
                 s.COD_COMP,
                 s.N_COMP,
-                CAST(s.CANT_MONE AS FLOAT) AS CANT_MONE,
+				CASE WHEN s.COD_CTA = '100901' THEN CAST(s.CANT_MONE * S.COTIZ_MONE AS FLOAT)
+				     ELSE CAST(s.CANT_MONE AS FLOAT) END AS CANT_MONE,
                 s.LEYENDA
             FROM SBA05 s
             LEFT JOIN RO_T_RECIBOS_VINCULADOS v
                 ON s.COD_COMP = v.vinculado_cod_comp collate Latin1_General_BIN
                 AND s.N_COMP = v.vinculado_n_comp collate Latin1_General_BIN
             WHERE
-                s.COD_CTA IN ('100101')
+                s.COD_CTA IN ('100101','100901')
                 AND s.FECHA >= GETDATE() - 15
                 AND s.D_H = 'D'
-                AND v.id IS NULL -- Excluir recibos ya vinculados
+                AND v.id IS NULL 
         ";
 
         $params = [];
