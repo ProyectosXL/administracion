@@ -29,6 +29,7 @@ class Saldo
     public function obtenerMovimientosCaja($desde, $hasta)
     {
         try {
+            // Ejecutar SP original para obtener movimientos base
             $sql = "EXEC RO_SP_MAYOR_CTA_100101 ?, ?";
             $params = array($desde, $hasta);
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
@@ -39,6 +40,16 @@ class Saldo
 
             $movimientos = array();
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                // Obtener información de control si existe ID_SBA05
+                if (isset($row['ID_SBA05']) && $row['ID_SBA05']) {
+                    $controlInfo = $this->obtenerControlMovimiento($row['ID_SBA05']);
+                    $row['CONTROLADO'] = $controlInfo['CONTROLADO'];
+                    $row['FECHA_CONTROL'] = $controlInfo['FECHA_CONTROL'];
+                } else {
+                    $row['CONTROLADO'] = 0;
+                    $row['FECHA_CONTROL'] = null;
+                }
+                
                 // Agregar información de fotos para egresos
                 if ($row['TIPO'] === 'EGRESO' && $row['COD_COMP'] !== 'SALDO_INI' && $row['N_COMP']) {
                     $infoFotos = $this->obtenerInfoFotosEgreso($row['COD_COMP'], $row['N_COMP']);
@@ -215,6 +226,142 @@ class Saldo
         } catch (Exception $e) {
             error_log("Error en obtenerEstadisticasMovimientos: " . $e->getMessage());
             return [];
+        }
+    }
+
+    public function obtenerUltimaFechaControl($desde, $hasta)
+    {
+        try {
+            // Por ahora, voy a usar un enfoque más directo
+            // Buscar directamente en los datos ya obtenidos por obtenerMovimientosCaja
+            
+            error_log("obtenerUltimaFechaControl - Iniciando consulta - Rango: $desde a $hasta");
+            
+            // Obtener los movimientos del período y buscar la fecha de control más reciente
+            $movimientos = $this->obtenerMovimientosCaja($desde, $hasta);
+            
+            $ultimaFechaControl = null;
+            
+            foreach ($movimientos as $mov) {
+                if (isset($mov['CONTROLADO']) && $mov['CONTROLADO'] && 
+                    isset($mov['FECHA_CONTROL']) && $mov['FECHA_CONTROL']) {
+                    
+                    if (!$ultimaFechaControl || $mov['FECHA_CONTROL'] > $ultimaFechaControl) {
+                        $ultimaFechaControl = $mov['FECHA_CONTROL'];
+                    }
+                }
+            }
+            
+            error_log("obtenerUltimaFechaControl - Total movimientos en rango: " . count($movimientos));
+            error_log("obtenerUltimaFechaControl - Resultado: " . ($ultimaFechaControl ? $ultimaFechaControl->format('Y-m-d H:i:s') : 'NULL'));
+            
+            return $ultimaFechaControl;
+            
+        } catch (Exception $e) {
+            error_log("Error en obtenerUltimaFechaControl: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function obtenerControlMovimiento($idSba05)
+    {
+        try {
+            if (!$this->cid_central) {
+                return ['CONTROLADO' => 0, 'FECHA_CONTROL' => null];
+            }
+            
+            $sql = "SELECT CONTROLADO, FECHA_CONTROL FROM RO_T_MOV_CAJA_TESORERIA WHERE ID_SBA05 = ?";
+            $stmt = sqlsrv_query($this->cid_central, $sql, array($idSba05));
+            
+            if ($stmt === false) {
+                error_log("Error en obtenerControlMovimiento: " . print_r(sqlsrv_errors(), true));
+                return ['CONTROLADO' => 0, 'FECHA_CONTROL' => null];
+            }
+            
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            
+            if ($row) {
+                return [
+                    'CONTROLADO' => $row['CONTROLADO'],
+                    'FECHA_CONTROL' => $row['FECHA_CONTROL']
+                ];
+            } else {
+                return ['CONTROLADO' => 0, 'FECHA_CONTROL' => null];
+            }
+            
+        } catch (Exception $e) {
+            error_log("Error en obtenerControlMovimiento: " . $e->getMessage());
+            return ['CONTROLADO' => 0, 'FECHA_CONTROL' => null];
+        }
+    }
+
+    public function actualizarControlMovimiento($idSba05, $controlado)
+    {
+        try {
+            if (!$this->cid_central) {
+                throw new Exception("No hay conexión a base de datos");
+            }
+            
+            // Verificar si ya existe el registro
+            $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_MOV_CAJA_TESORERIA WHERE ID_SBA05 = ?";
+            $stmtCheck = sqlsrv_query($this->cid_central, $sqlCheck, array($idSba05));
+            
+            if ($stmtCheck === false) {
+                throw new Exception("Error verificando registro: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $row = sqlsrv_fetch_array($stmtCheck, SQLSRV_FETCH_ASSOC);
+            $existe = $row['count'] > 0;
+            
+            if ($existe) {
+                // Actualizar registro existente
+                $sql = "UPDATE RO_T_MOV_CAJA_TESORERIA 
+                        SET CONTROLADO = ?, FECHA_CONTROL = GETDATE() 
+                        WHERE ID_SBA05 = ?";
+                $params = array($controlado ? 1 : 0, $idSba05);
+            } else {
+                // Insertar nuevo registro
+                $sql = "INSERT INTO RO_T_MOV_CAJA_TESORERIA (ID_SBA05, CONTROLADO, FECHA_CONTROL) 
+                        VALUES (?, ?, GETDATE())";
+                $params = array($idSba05, $controlado ? 1 : 0);
+            }
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error actualizando control: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error en actualizarControlMovimiento: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function actualizarControlMasivo($idsSba05, $controlado)
+    {
+        try {
+            if (!$this->cid_central || empty($idsSba05)) {
+                throw new Exception("Parámetros inválidos");
+            }
+            
+            $exitos = 0;
+            foreach ($idsSba05 as $idSba05) {
+                try {
+                    $this->actualizarControlMovimiento($idSba05, $controlado);
+                    $exitos++;
+                } catch (Exception $e) {
+                    error_log("Error actualizando ID $idSba05: " . $e->getMessage());
+                }
+            }
+            
+            return $exitos;
+            
+        } catch (Exception $e) {
+            error_log("Error en actualizarControlMasivo: " . $e->getMessage());
+            throw $e;
         }
     }
 }
