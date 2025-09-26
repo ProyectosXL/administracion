@@ -47,6 +47,579 @@ body {
     margin-bottom: 6px;
 }
 
+/* Estilos para controles de estado - CORREGIDO PARA EVITAR SUPERPOSICIONES */
+.checkbox-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 8px 4px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.control-checkbox-custom {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 4px;
+    position: relative !important;
+    transform: none !important;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    background-color: #fff;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.control-checkbox-custom:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.control-checkbox-custom:checked::after {
+    content: '✓' !important;
+    color: white !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    line-height: 1 !important;
+}
+
+.control-checkbox-custom:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.control-cell {
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    padding: 8px 4px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    box-sizing: border-box;
+    overflow: visible;
+}
+
+/* Nuevo diseño del header de control - SIN superposiciones */
+.control-header-column {
+    min-width: 120px !important;
+    padding: 12px 8px !important;
+    vertical-align: middle !important;
+    position: relative;
+}
+
+.control-header-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 100%;
+    min-height: 60px;
+}
+
+.control-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #495057;
+    margin: 0;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.control-checkbox-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #f8f9fa;
+    padding: 6px 10px;
+    border-radius: 15px;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: 65px;
+}
+
+.control-checkbox-wrapper:hover {
+    background: #e9ecef;
+    border-color: #0d6efd;
+    box-shadow: 0 1px 3px rgba(13, 110, 253, 0.2);
+}
+
+.check-all-master {
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer;
+    border: 2px solid #6c757d !important;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    background-color: #fff;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    position: relative !important;
+}
+
+.check-all-master:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.check-all-master:checked::after {
+    content: '✓' !important;
+    color: white !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    line-height: 1 !important;
+}
+
+.check-all-master:indeterminate {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+}
+
+.check-all-master:indeterminate::after {
+    content: '–' !important;
+    color: white !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    line-height: 1 !important;
+}
+
+.control-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #6c757d;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+}
+
+.control-checkbox-wrapper:hover .control-label {
+    color: #0d6efd;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.4em 0.8em;
+}
+
+.badge.bg-success {
+    background-color: #28a745 !important;
+    color: white;
+}
+
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+    color: white;
+}
+
+/* Tooltip para checkboxes */
+.form-check-input[title] {
+    cursor: pointer;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    padding: 10px 8px;
+}
+
+/* Ajustes responsivos para nuevas columnas */
+@media (max-width: 1200px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    .control-checkbox-custom {
+        width: 16px !important;
+        height: 16px !important;
+    }
+    
+
+    
+    .checkbox-container {
+        padding: 6px 3px;
+    }
+    
+    .check-all-master {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    
+    .control-cell {
+        width: 75px !important;
+        min-width: 75px !important;
+        max-width: 75px !important;
+        padding: 6px 3px !important;
+    }
+    
+    .control-header-column {
+        min-width: 100px !important;
+        padding: 10px 6px !important;
+    }
+    
+    .control-header-container {
+        gap: 8px;
+        min-height: 50px;
+    }
+    
+    .control-title {
+        font-size: 0.8rem;
+    }
+    
+    .control-checkbox-wrapper {
+        padding: 4px 8px;
+        min-width: 55px;
+    }
+    
+    .check-all-master {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    
+    .control-label {
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .control-checkbox-custom {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    
+    .checkbox-container {
+        padding: 4px 2px;
+    }
+    
+    .check-all-master {
+        width: 12px !important;
+        height: 12px !important;
+    }
+    
+    .control-cell {
+        width: 65px !important;
+        min-width: 65px !important;
+        max-width: 65px !important;
+        padding: 4px 2px !important;
+    }
+    
+    .control-header-column {
+        min-width: 80px !important;
+        padding: 8px 4px !important;
+    }
+    
+    .control-header-container {
+        gap: 6px;
+        min-height: 45px;
+    }
+    
+    .control-title {
+        font-size: 0.75rem;
+    }
+    
+    .control-checkbox-wrapper {
+        padding: 3px 6px;
+        gap: 4px;
+        min-width: 50px;
+    }
+    
+    .check-all-master {
+        width: 12px !important;
+        height: 12px !important;
+    }
+    
+    .control-label {
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .control-checkbox-custom {
+        width: 12px !important;
+        height: 12px !important;
+        border-width: 1px !important;
+    }
+    
+    .checkbox-container {
+        padding: 3px 1px;
+    }
+    
+    .control-cell {
+        width: 50px !important;
+        min-width: 50px !important;
+        max-width: 50px !important;
+        padding: 3px 1px !important;
+    }
+    
+    .control-header-column {
+        min-width: 60px !important;
+        padding: 6px 2px !important;
+    }
+    
+    .control-checkbox-wrapper {
+        padding: 2px 4px;
+        gap: 2px;
+        min-width: 40px;
+    }
+    
+    .check-all-master {
+        width: 10px !important;
+        height: 10px !important;
+        border-width: 1px !important;
+    }
+    
+    .control-label {
+        font-size: 0.55rem;
+    }
+    
+    .control-title {
+        font-size: 0.7rem;
+    }
+}
+
+/* Estado hover para checkboxes */
+.control-checkbox-custom:hover:not(:disabled) {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: #0d6efd;
+}
+
+.check-all-master:hover:not(:disabled) {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: #0d6efd;
+}
+
+/* Mejoras en el header de la tabla */
+.table thead th {
+    vertical-align: middle;
+    padding: 12px 8px;
+    border-bottom: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+    position: relative;
+}
+
+/* Centrar contenido de columnas de control */
+.table thead th.text-center {
+    text-align: center !important;
+}
+
+/* Reset de estilos que puedan causar conflictos */
+.control-header-column *, 
+.control-cell * {
+    box-sizing: border-box;
+}
+
+/* Estilos base para nuestros checkboxes personalizados */
+.control-header-column .check-all-master,
+.control-cell .control-checkbox-custom {
+    margin: 0 !important;
+    float: none !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+}
+
+/* Asegurar que los contenedores no tengan overflow */
+.control-header-container,
+.checkbox-container {
+    overflow: visible;
+    position: relative;
+}
+
+/* Eliminar cualquier transformación que pueda causar superposición */
+.control-header-column .check-all-master,
+.control-cell .control-checkbox-custom {
+    transform: none !important;
+    z-index: auto !important;
+}
+
+
+
+/* Eliminar estilos conflictivos de DataTables o Bootstrap */
+.table .control-cell .control-checkbox-custom {
+    background-image: none !important;
+    background-position: center !important;
+    background-size: contain !important;
+}
+
+/* Asegurar que las celdas tengan el tamaño correcto */
+.table tbody .control-cell {
+    white-space: nowrap;
+    overflow: visible;
+}
+
+/* CORRECCIÓN ESPECÍFICA PARA DATATABLES RESPONSIVE - SOLUCIÓN DIRECTA */
+
+/* En modo responsive, reemplazar el header complejo con uno simple */
+@media (max-width: 767px) {
+    /* Ocultar completamente el contenedor complejo en responsive */
+    .dtr-inline.collapsed .control-header-container {
+        display: none !important;
+    }
+    
+    /* Reemplazar con contenido simple */
+    .dtr-inline.collapsed .control-header-column {
+        position: relative !important;
+    }
+    
+    .dtr-inline.collapsed .control-header-column::after {
+        content: "Control";
+        display: block !important;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #495057;
+        white-space: nowrap;
+        z-index: 10;
+    }
+    
+    /* Asegurar que en responsive no se muestre el checkbox del header */
+    .dtr-inline.collapsed .check-all-master,
+    .dtr-inline.collapsed .control-checkbox-wrapper,
+    .dtr-inline.collapsed .control-title {
+        display: none !important;
+        visibility: hidden !important;
+    }
+}
+
+/* Para pantallas muy pequeñas, usar solo abreviación */
+@media (max-width: 575px) {
+    .dtr-inline.collapsed .control-header-column::after {
+        content: "Ctrl";
+        font-size: 0.75rem;
+    }
+    
+    .dtr-inline.collapsed .control-header-column {
+        width: 50px !important;
+        min-width: 50px !important;
+        max-width: 50px !important;
+    }
+}
+
+/* Mejorar el aspecto del detalle expandido */
+.dtr-inline.collapsed tbody tr.child {
+    background-color: #f8f9fa !important;
+    border-left: 3px solid #007bff !important;
+}
+
+.dtr-inline.collapsed tbody tr.child td {
+    border: none !important;
+    padding: 12px 20px !important;
+}
+
+.dtr-inline.collapsed tbody tr.child ul.dtr-details {
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+}
+
+.dtr-inline.collapsed tbody tr.child ul.dtr-details li {
+    border-bottom: 1px solid #e9ecef !important;
+    padding: 8px 0 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.dtr-inline.collapsed tbody tr.child ul.dtr-details li:last-child {
+    border-bottom: none !important;
+}
+
+.dtr-inline.collapsed tbody tr.child span.dtr-title {
+    font-weight: 600 !important;
+    color: #495057 !important;
+    min-width: 100px !important;
+    flex-shrink: 0 !important;
+}
+
+.dtr-inline.collapsed tbody tr.child span.dtr-data {
+    margin-left: 15px !important;
+    flex-grow: 1 !important;
+}
+
+/* FORZAR que el header complejo NO aparezca en el detalle responsive */
+.dtr-inline.collapsed tbody tr.child .control-header-container,
+.dtr-inline.collapsed tbody tr.child .control-checkbox-wrapper,
+.dtr-inline.collapsed tbody tr.child .check-all-master {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+}
+
+/* Asegurar que solo el checkbox individual aparezca en responsive */
+.dtr-inline.collapsed tbody tr.child .checkbox-container,
+.dtr-inline.collapsed tbody tr.child .control-checkbox-custom {
+    display: flex !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+}
+
+/* Limpiar cualquier contenido duplicado en responsive */
+.dtr-inline.collapsed tbody tr.child span.dtr-data .control-title {
+    display: none !important;
+}
+
+/* Asegurar que los checkboxes estén centrados perfectamente */
+.table tbody tr td.control-cell {
+    vertical-align: middle !important;
+    text-align: center !important;
+}
+
+/* Focus states para accesibilidad */
+.control-checkbox-custom:focus,
+.check-all-master:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Estados de checkbox indeterminado mejorado */
+.check-all-master:indeterminate::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 2px;
+    background: white;
+}
+
 .form-control, .btn {
     border-radius: 6px;
 }
@@ -99,6 +672,26 @@ body {
 .stat-icon.saldo {
     background-color: #d1ecf1;
     color: #0c5460;
+}
+
+.stat-icon.control {
+    background-color: #e2e3f1;
+    color: #6f42c1;
+}
+
+/* Ajuste para 5 tarjetas perfectamente distribuidas */
+@media (min-width: 1200px) {
+    .stats-container .col-xl {
+        flex: 0 0 20%;
+        max-width: 20%;
+    }
+}
+
+@media (min-width: 1400px) {
+    .stats-container .col-xxl {
+        flex: 0 0 20%;
+        max-width: 20%;
+    }
 }
 
 .stat-value {

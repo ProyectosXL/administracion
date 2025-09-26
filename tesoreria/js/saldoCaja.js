@@ -42,7 +42,7 @@ function cargarMovimientos() {
         success: function(response) {
             console.log('Respuesta del servidor:', response); // Debug
             if (response.success) {
-                actualizarEstadisticas(response.estadisticas, response.saldoActualDisplay);
+                actualizarEstadisticas(response.estadisticas, response.saldoActualDisplay, response.ultimaFechaControl);
                 renderizarTabla(response.movimientos);
             } else {
                 Swal.fire({
@@ -67,8 +67,8 @@ function cargarMovimientos() {
     });
 }
 
-function actualizarEstadisticas(stats, saldoActual) {
-    console.log('Actualizando estadísticas:', stats, saldoActual); // Debug
+function actualizarEstadisticas(stats, saldoActual, ultimaFechaControl) {
+    console.log('Actualizando estadísticas:', stats, saldoActual, ultimaFechaControl); // Debug
     
     // Actualizar saldo actual
     $('#saldo-actual').text('$' + (saldoActual || '0'));
@@ -91,6 +91,14 @@ function actualizarEstadisticas(stats, saldoActual) {
         $('#total-egresos').text('$0');
         $('#cant-egresos').text('0 movimientos');
         $('#total-movimientos').text('0');
+    }
+    
+    // Actualizar última fecha controlada
+    console.log('Última fecha control recibida:', ultimaFechaControl); // Debug
+    if (ultimaFechaControl) {
+        $('#ultima-fecha-control').text(ultimaFechaControl);
+    } else {
+        $('#ultima-fecha-control').text('Sin controles');
     }
 }
 
@@ -141,9 +149,35 @@ function renderizarTabla(movimientos) {
             montoClass = 'monto-neutral';
         }
         
+        // Determinar estado de control
+        let estadoControl = '';
+        let checkboxControl = '';
+        
+        if (mov.ID_SBA05) {
+            if (mov.CONTROLADO) {
+                estadoControl = '<span class="badge bg-success">CONTROLADO</span>';
+                checkboxControl = `<div class="checkbox-container">
+                                    <input type="checkbox" class="control-checkbox-custom" 
+                                           data-id="${mov.ID_SBA05}" checked 
+                                           title="Desmarcar como controlado">
+                                   </div>`;
+            } else {
+                estadoControl = '<span class="badge bg-secondary">NO CONTROLADO</span>';
+                checkboxControl = `<div class="checkbox-container">
+                                    <input type="checkbox" class="control-checkbox-custom" 
+                                           data-id="${mov.ID_SBA05}" 
+                                           title="Marcar como controlado">
+                                   </div>`;
+            }
+        } else {
+            // Si no tiene ID_SBA05, no se puede controlar
+            estadoControl = '<span class="badge bg-light text-muted">N/A</span>';
+            checkboxControl = '<div class="checkbox-container"><span class="text-muted">-</span></div>';
+        }
+
         const fila = `
             <tr>
-                <td>${mov.FECHA_DISPLAY}</td>
+                <td data-order="${mov.FECHA}">${mov.FECHA_DISPLAY}</td>
                 <td>${mov.COD_COMP || ''}</td>
                 <td>${mov.N_COMP || ''}</td>
                 <td><span class="${tipoClass}">${mov.TIPO || ''}</span></td>
@@ -152,6 +186,8 @@ function renderizarTabla(movimientos) {
                 <td class="text-end"><span class="${montoClass}">$${mov.HABER_DISPLAY}</span></td>
                 <td class="text-end"><strong>$${mov.SALDO_DISPLAY}</strong></td>
                 <td class="text-center">${iconoFoto}</td>
+                <td class="text-center">${estadoControl}</td>
+                <td class="text-center control-cell">${checkboxControl}</td>
             </tr>
         `;
         
@@ -163,7 +199,18 @@ function renderizarTabla(movimientos) {
         language: {
             url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
         },
-        responsive: true,
+        responsive: {
+            breakpoints: [
+                { name: 'desktop', width: Infinity },
+                { name: 'tablet', width: 1024 },
+                { name: 'mobile', width: 768 },
+                { name: 'phone', width: 480 }
+            ],
+            details: {
+                type: 'column',
+                target: 'tr'
+            }
+        },
         order: [[0, 'asc']], // Ordenar por fecha ASCENDENTE (primera fecha arriba)
         pageLength: 50,
         lengthMenu: [[25, 50, 100, -1], [25, 50, 100, "Todos"]],
@@ -177,13 +224,37 @@ function renderizarTabla(movimientos) {
                 className: 'text-end'
             },
             {
-                targets: [8], // Columna de acciones
+                targets: [8, 9], // Columnas de fotos y estado
                 orderable: false,
                 className: 'text-center'
+            },
+            {
+                targets: [10], // Columna de control
+                orderable: false,
+                className: 'text-center control-cell',
+                responsivePriority: 1 // Alta prioridad para mantener visible
             }
         ],
         drawCallback: function() {
             // La información de fotos ya viene desde el servidor, no necesitamos verificaciones adicionales
+            
+            // Event listeners para checkboxes individuales
+            $('.control-checkbox-custom').off('change').on('change', function() {
+                const checkbox = $(this);
+                const idSba05 = checkbox.data('id');
+                const controlado = checkbox.is(':checked');
+                
+                actualizarControlIndividual(idSba05, controlado, checkbox);
+            });
+            
+            // Event listener para "check all"
+            $('#checkAll').off('change').on('change', function() {
+                const checkAll = $(this).is(':checked');
+                actualizarControlMasivo(checkAll);
+            });
+            
+            // Actualizar estado del check all basado en checkboxes individuales
+            actualizarEstadoCheckAll();
             
             // Inicializar tooltips de Bootstrap
             setTimeout(function() {
@@ -412,4 +483,215 @@ function formatearMonto(monto) {
 
 function formatearFecha(fecha) {
     return new Date(fecha).toLocaleDateString('es-AR');
+}
+
+// Funciones de control
+function actualizarControlIndividual(idSba05, controlado, checkbox) {
+    // Deshabilitar checkbox mientras se procesa
+    checkbox.prop('disabled', true);
+    
+    $.ajax({
+        url: 'Controller/saldoController.php?accion=actualizarControl',
+        type: 'POST',
+        data: {
+            idSba05: idSba05,
+            controlado: controlado
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                // Actualizar badge de estado
+                const fila = checkbox.closest('tr');
+                const estadoCell = fila.find('td:nth-child(10)'); // Columna de estado
+                
+                if (controlado) {
+                    estadoCell.html('<span class="badge bg-success">CONTROLADO</span>');
+                    checkbox.attr('title', 'Desmarcar como controlado');
+                } else {
+                    estadoCell.html('<span class="badge bg-secondary">NO CONTROLADO</span>');
+                    checkbox.attr('title', 'Marcar como controlado');
+                }
+                
+                // Actualizar estado del check all
+                actualizarEstadoCheckAll();
+                
+                // Mostrar mensaje de éxito sutil
+                mostrarNotificacion('success', 'Control actualizado', 1500);
+            } else {
+                // Revertir checkbox en caso de error
+                checkbox.prop('checked', !controlado);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: response.error || 'Error al actualizar el control',
+                    timer: 3000
+                });
+            }
+        },
+        error: function() {
+            // Revertir checkbox en caso de error
+            checkbox.prop('checked', !controlado);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo actualizar el control',
+                timer: 3000
+            });
+        },
+        complete: function() {
+            // Rehabilitar checkbox
+            checkbox.prop('disabled', false);
+        }
+    });
+}
+
+function actualizarControlMasivo(controlado) {
+    // Obtener todos los IDs visibles en la tabla actual
+    const checkboxes = $('.control-checkbox-custom:visible');
+    const idsSba05 = [];
+    
+    checkboxes.each(function() {
+        const id = $(this).data('id');
+        if (id) {
+            idsSba05.push(id);
+        }
+    });
+    
+    if (idsSba05.length === 0) {
+        mostrarNotificacion('warning', 'No hay registros para actualizar');
+        return;
+    }
+    
+    // Confirmar acción
+    const mensaje = controlado ? 
+        `¿Desea marcar como CONTROLADOS los ${idsSba05.length} registros visibles?` :
+        `¿Desea marcar como NO CONTROLADOS los ${idsSba05.length} registros visibles?`;
+    
+    Swal.fire({
+        title: 'Confirmar acción masiva',
+        text: mensaje,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, continuar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            ejecutarControlMasivo(idsSba05, controlado, checkboxes);
+        } else {
+            // Revertir check all si se cancela
+            $('#checkAll').prop('checked', false);
+        }
+    });
+}
+
+function ejecutarControlMasivo(idsSba05, controlado, checkboxes) {
+    // Mostrar loading
+    Swal.fire({
+        title: 'Actualizando registros...',
+        text: `Procesando ${idsSba05.length} registros`,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Deshabilitar todos los checkboxes
+    checkboxes.prop('disabled', true);
+    $('#checkAll').prop('disabled', true);
+    
+    $.ajax({
+        url: 'Controller/saldoController.php?accion=actualizarControlMasivo',
+        type: 'POST',
+        data: {
+            idsSba05: JSON.stringify(idsSba05),
+            controlado: controlado
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                // Actualizar todos los checkboxes y badges
+                checkboxes.each(function() {
+                    const checkbox = $(this);
+                    const fila = checkbox.closest('tr');
+                    const estadoCell = fila.find('td:nth-child(10)'); // Columna de estado
+                    
+                    checkbox.prop('checked', controlado);
+                    
+                    if (controlado) {
+                        estadoCell.html('<span class="badge bg-success">CONTROLADO</span>');
+                        checkbox.attr('title', 'Desmarcar como controlado');
+                    } else {
+                        estadoCell.html('<span class="badge bg-secondary">NO CONTROLADO</span>');
+                        checkbox.attr('title', 'Marcar como controlado');
+                    }
+                });
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Actualización completada',
+                    text: response.message,
+                    timer: 3000
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: response.error || 'Error en la actualización masiva'
+                });
+            }
+        },
+        error: function() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo realizar la actualización masiva'
+            });
+        },
+        complete: function() {
+            // Rehabilitar checkboxes
+            checkboxes.prop('disabled', false);
+            $('#checkAll').prop('disabled', false);
+            actualizarEstadoCheckAll();
+        }
+    });
+}
+
+function actualizarEstadoCheckAll() {
+    const checkboxes = $('.control-checkbox-custom:visible');
+    const checkedBoxes = $('.control-checkbox-custom:visible:checked');
+    
+    if (checkboxes.length === 0) {
+        $('#checkAll').prop('checked', false).prop('indeterminate', false);
+        return;
+    }
+    
+    if (checkedBoxes.length === 0) {
+        $('#checkAll').prop('checked', false).prop('indeterminate', false);
+    } else if (checkedBoxes.length === checkboxes.length) {
+        $('#checkAll').prop('checked', true).prop('indeterminate', false);
+    } else {
+        $('#checkAll').prop('checked', false).prop('indeterminate', true);
+    }
+}
+
+function mostrarNotificacion(tipo, mensaje, duracion = 3000) {
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: duracion,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+
+    Toast.fire({
+        icon: tipo,
+        title: mensaje
+    });
 }

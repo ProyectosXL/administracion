@@ -77,8 +77,8 @@ $hasta = isset($_GET['hasta']) && $_GET['hasta'] != "" ? $_GET['hasta'] : $hasta
 
         <!-- Estadísticas -->
         <div class="stats-container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 mb-3">
+            <div class="row justify-content-center">
+                <div class="col-xxl col-xl col-lg-3 col-md-4 col-sm-6 mb-3">
                     <div class="stat-card">
                         <div class="stat-icon ingreso">
                             <i class="fas fa-arrow-up"></i>
@@ -87,7 +87,7 @@ $hasta = isset($_GET['hasta']) && $_GET['hasta'] != "" ? $_GET['hasta'] : $hasta
                         <div class="stat-label" id="cant-ingresos">0 movimientos</div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-3">
+                <div class="col-xxl col-xl col-lg-3 col-md-4 col-sm-6 mb-3">
                     <div class="stat-card">
                         <div class="stat-icon egreso">
                             <i class="fas fa-arrow-down"></i>
@@ -96,7 +96,7 @@ $hasta = isset($_GET['hasta']) && $_GET['hasta'] != "" ? $_GET['hasta'] : $hasta
                         <div class="stat-label" id="cant-egresos">0 movimientos</div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-3">
+                <div class="col-xxl col-xl col-lg-3 col-md-4 col-sm-6 mb-3">
                     <div class="stat-card">
                         <div class="stat-icon saldo">
                             <i class="fas fa-list"></i>
@@ -105,13 +105,22 @@ $hasta = isset($_GET['hasta']) && $_GET['hasta'] != "" ? $_GET['hasta'] : $hasta
                         <div class="stat-label" id="periodo-movimientos">movimientos en el período</div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6 mb-3">
+                <div class="col-xxl col-xl col-lg-3 col-md-4 col-sm-6 mb-3">
                     <div class="stat-card">
                         <div class="stat-icon saldo">
                             <i class="fas fa-calendar-day"></i>
                         </div>
                         <div class="stat-value"><?php echo date('d/m/Y'); ?></div>
                         <div class="stat-label">Fecha de Consulta</div>
+                    </div>
+                </div>
+                <div class="col-xxl col-xl col-lg-3 col-md-4 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-icon control">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-value" id="ultima-fecha-control">-</div>
+                        <div class="stat-label">Fecha Último Control</div>
                     </div>
                 </div>
             </div>
@@ -132,6 +141,16 @@ $hasta = isset($_GET['hasta']) && $_GET['hasta'] != "" ? $_GET['hasta'] : $hasta
                             <th>Haber</th>
                             <th>Saldo</th>
                             <th>Fotos</th>
+                            <th>Estado</th>
+                            <th class="text-center control-header-column">
+                                <div class="control-header-container">
+                                    <div class="control-title">Control</div>
+                                    <div class="control-checkbox-wrapper">
+                                        <input type="checkbox" id="checkAll" class="check-all-master" title="Controlar/Descontrolar todos">
+                                        <label for="checkAll" class="control-label">Todos</label>
+                                    </div>
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>

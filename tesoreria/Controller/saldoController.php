@@ -29,6 +29,12 @@ switch ($accion) {
     case 'obtenerEstadisticas':
         obtenerEstadisticas();
         break;
+    case 'actualizarControl':
+        actualizarControl();
+        break;
+    case 'actualizarControlMasivo':
+        actualizarControlMasivo();
+        break;
     default:
         enviarRespuestaJSON(['error' => 'Acción no reconocida']);
         break;
@@ -48,6 +54,7 @@ function obtenerMovimientos() {
         $movimientos = $saldo->obtenerMovimientosCaja($desde, $hasta);
         $saldoActual = $saldo->obtenerSaldoActual($hasta);
         $estadisticas = $saldo->obtenerEstadisticasMovimientos($desde, $hasta);
+        $ultimaFechaControl = $saldo->obtenerUltimaFechaControl($desde, $hasta);
 
         // Formatear los movimientos para JSON
         $movimientosFormateados = [];
@@ -70,7 +77,11 @@ function obtenerMovimientos() {
                 // Incluir información de fotos
                 'TIENE_FOTOS' => isset($mov['TIENE_FOTOS']) ? $mov['TIENE_FOTOS'] : false,
                 'ESTA_GUARDADO' => isset($mov['ESTA_GUARDADO']) ? $mov['ESTA_GUARDADO'] : false,
-                'COD_CTA_CONTRAPARTIDA' => isset($mov['COD_CTA_CONTRAPARTIDA']) ? $mov['COD_CTA_CONTRAPARTIDA'] : null
+                'COD_CTA_CONTRAPARTIDA' => isset($mov['COD_CTA_CONTRAPARTIDA']) ? $mov['COD_CTA_CONTRAPARTIDA'] : null,
+                // Incluir información de control
+                'ID_SBA05' => $mov['ID_SBA05'],
+                'CONTROLADO' => isset($mov['CONTROLADO']) ? (bool)$mov['CONTROLADO'] : false,
+                'FECHA_CONTROL' => isset($mov['FECHA_CONTROL']) && $mov['FECHA_CONTROL'] ? $mov['FECHA_CONTROL']->format('d/m/Y H:i') : null
             ];
             $movimientosFormateados[] = $movFormateado;
         }
@@ -86,7 +97,8 @@ function obtenerMovimientos() {
                 'totalEgresos' => number_format($estadisticas['TOTAL_EGRESOS'] ?? 0, 0, ',', '.'),
                 'cantIngresos' => $estadisticas['CANT_INGRESOS'] ?? 0,
                 'cantEgresos' => $estadisticas['CANT_EGRESOS'] ?? 0
-            ]
+            ],
+            'ultimaFechaControl' => $ultimaFechaControl ? $ultimaFechaControl->format('d/m/Y H:i') : null
         ]);
 
     } catch (Exception $e) {
@@ -198,6 +210,67 @@ function obtenerEstadisticas() {
 
     } catch (Exception $e) {
         error_log("Error en obtenerEstadisticas controller: " . $e->getMessage());
+        enviarRespuestaJSON([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+function actualizarControl() {
+    try {
+        if (!isset($_POST['idSba05']) || !isset($_POST['controlado'])) {
+            enviarRespuestaJSON(['error' => 'Faltan parámetros requeridos']);
+            return;
+        }
+
+        $saldo = new Saldo();
+        $idSba05 = $_POST['idSba05'];
+        $controlado = $_POST['controlado'] === 'true' || $_POST['controlado'] === '1';
+
+        $resultado = $saldo->actualizarControlMovimiento($idSba05, $controlado);
+
+        enviarRespuestaJSON([
+            'success' => $resultado,
+            'message' => 'Control actualizado correctamente'
+        ]);
+
+    } catch (Exception $e) {
+        error_log("Error en actualizarControl controller: " . $e->getMessage());
+        enviarRespuestaJSON([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+function actualizarControlMasivo() {
+    try {
+        if (!isset($_POST['idsSba05']) || !isset($_POST['controlado'])) {
+            enviarRespuestaJSON(['error' => 'Faltan parámetros requeridos']);
+            return;
+        }
+
+        $saldo = new Saldo();
+        $idsSba05 = json_decode($_POST['idsSba05'], true);
+        $controlado = $_POST['controlado'] === 'true' || $_POST['controlado'] === '1';
+
+        if (!is_array($idsSba05) || empty($idsSba05)) {
+            enviarRespuestaJSON(['error' => 'IDs inválidos']);
+            return;
+        }
+
+        $exitos = $saldo->actualizarControlMasivo($idsSba05, $controlado);
+
+        enviarRespuestaJSON([
+            'success' => true,
+            'message' => "Se actualizaron $exitos registros correctamente",
+            'procesados' => $exitos,
+            'total' => count($idsSba05)
+        ]);
+
+    } catch (Exception $e) {
+        error_log("Error en actualizarControlMasivo controller: " . $e->getMessage());
         enviarRespuestaJSON([
             'success' => false,
             'error' => $e->getMessage()

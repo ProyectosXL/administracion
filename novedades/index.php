@@ -100,7 +100,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         </p>
                         <div class="mt-auto">
                             <!-- ACTUALIZADO: Enlace al selector -->
-                            <a href="nueva_novedad_selector.php" class="btn btn-primary btn-lg w-100">
+                            <a href="nueva_novedad.php" class="btn btn-primary btn-lg w-100">
                                 <i class="fas fa-plus me-2"></i>
                                 Crear Nueva Novedad
                             </a>
