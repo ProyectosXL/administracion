@@ -20,7 +20,9 @@ try {
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#007bff">
     <link rel="icon" href="../../image/icono.jpg" type="image/jpg">
     <title>Carga Contratos Alquiler Franquicias</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
@@ -65,30 +67,63 @@ try {
                 </div>
             </div>
             
-            <h5 class="mt-4">Contrato Comercial</h5>
-            <div class="mb-3 file-input-group">
-                <input type="file" class="form-control" id="contratoComercial" name="contratoComercial" accept=".pdf">
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-primary btn-sm view-file"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-danger btn-sm delete-file"><i class="fas fa-trash"></i></button>
+            <h5 class="mt-4">Contrato Comercial <span class="text-danger">*</span></h5>
+            <div class="mb-3">
+                <div class="file-input-group">
+                    <input type="file" class="form-control" id="contratoComercial" name="contratoComercial" accept=".pdf" required>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary view-file" title="Ver archivo"><i class="fas fa-eye"></i></button>
+                        <button type="button" class="btn btn-danger delete-file" title="Eliminar archivo"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="file-size-info" id="sizeInfoComercial"></div>
+                <div class="compression-status" id="compressionComercial">
+                    <i class="fas fa-compress-alt status-icon"></i> Archivo comprimido automáticamente
+                </div>
+                <div class="upload-progress" id="progressComercial">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar"></div>
+                    </div>
                 </div>
             </div>
 
             <h5 class="mt-4">Contrato Locación</h5>
-            <div class="mb-3 file-input-group">
-                <input type="file" class="form-control" id="contratoLocacion" name="contratoLocacion" accept=".pdf">
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-primary btn-sm view-file"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-danger btn-sm delete-file"><i class="fas fa-trash"></i></button>
+            <div class="mb-3">
+                <div class="file-input-group">
+                    <input type="file" class="form-control" id="contratoLocacion" name="contratoLocacion" accept=".pdf">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary view-file" title="Ver archivo"><i class="fas fa-eye"></i></button>
+                        <button type="button" class="btn btn-danger delete-file" title="Eliminar archivo"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="file-size-info" id="sizeInfoLocacion"></div>
+                <div class="compression-status" id="compressionLocacion">
+                    <i class="fas fa-compress-alt status-icon"></i> Archivo comprimido automáticamente
+                </div>
+                <div class="upload-progress" id="progressLocacion">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar"></div>
+                    </div>
                 </div>
             </div>
 
             <h5 class="mt-4">Habilitación Local</h5>
-            <div class="mb-3 file-input-group">
-                <input type="file" class="form-control" id="habilitacion" name="habilitacion" accept=".pdf">
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-primary btn-sm view-file"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-danger btn-sm delete-file"><i class="fas fa-trash"></i></button>
+            <div class="mb-3">
+                <div class="file-input-group">
+                    <input type="file" class="form-control" id="habilitacion" name="habilitacion" accept=".pdf">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary view-file" title="Ver archivo"><i class="fas fa-eye"></i></button>
+                        <button type="button" class="btn btn-danger delete-file" title="Eliminar archivo"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="file-size-info" id="sizeInfoHabilitacion"></div>
+                <div class="compression-status" id="compressionHabilitacion">
+                    <i class="fas fa-compress-alt status-icon"></i> Archivo comprimido automáticamente
+                </div>
+                <div class="upload-progress" id="progressHabilitacion">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar"></div>
+                    </div>
                 </div>
             </div>
             

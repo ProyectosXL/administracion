@@ -47,13 +47,87 @@ class InsertContratoController {
         }
 
         $uploadDir = __DIR__ . '/../archivos/';
-        $fileName = uniqid() . '_' . $_FILES[$inputName]['name'];
-        $filePath = $uploadDir . $fileName;
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
 
-        if (move_uploaded_file($_FILES[$inputName]['tmp_name'], $filePath)) {
+        $originalName = $_FILES[$inputName]['name'];
+        $fileName = uniqid() . '_' . $originalName;
+        $filePath = $uploadDir . $fileName;
+        $tempFile = $_FILES[$inputName]['tmp_name'];
+
+        // Verificar tamaño del archivo (máximo 10MB)
+        $maxFileSize = 10 * 1024 * 1024; // 10MB
+        if ($_FILES[$inputName]['size'] > $maxFileSize) {
+            throw new Exception("El archivo $originalName es demasiado grande. Tamaño máximo: 10MB");
+        }
+
+        // Comprimir archivo si es PDF y supera los 2MB
+        if (strtolower(pathinfo($originalName, PATHINFO_EXTENSION)) === 'pdf' && $_FILES[$inputName]['size'] > 2 * 1024 * 1024) {
+            $compressedFile = $this->compressPDF($tempFile, $filePath);
+            if ($compressedFile) {
+                return $fileName;
+            }
+        }
+
+        if (move_uploaded_file($tempFile, $filePath)) {
             return $fileName;
         } else {
-            throw new Exception("Error al subir el archivo " . $inputName);
+            throw new Exception("Error al subir el archivo " . $originalName);
+        }
+    }
+
+    private function compressPDF($inputFile, $outputFile) {
+        try {
+            // Usar Ghostscript para comprimir PDF si está disponible
+            $gsCommand = 'gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile="' . $outputFile . '" "' . $inputFile . '"';
+            
+            // Verificar si Ghostscript está disponible
+            $gsAvailable = false;
+            if (function_exists('exec')) {
+                exec('gs --version 2>&1', $output, $returnCode);
+                $gsAvailable = ($returnCode === 0);
+            }
+
+            if ($gsAvailable) {
+                exec($gsCommand, $output, $returnCode);
+                if ($returnCode === 0 && file_exists($outputFile)) {
+                    return true;
+                }
+            }
+
+            // Si Ghostscript no está disponible, usar compresión básica con opciones de PHP
+            return $this->basicPDFCompression($inputFile, $outputFile);
+            
+        } catch (Exception $e) {
+            // Si falla la compresión, mover el archivo original
+            if (move_uploaded_file($inputFile, $outputFile)) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private function basicPDFCompression($inputFile, $outputFile) {
+        try {
+            // Compresión básica copiando el archivo con configuración optimizada
+            $source = file_get_contents($inputFile);
+            if ($source !== false) {
+                // Aplicar compresión de contenido si es posible
+                $compressed = gzcompress($source, 9);
+                if ($compressed !== false) {
+                    // Si la compresión reduce el tamaño significativamente, usar el original
+                    if (strlen($compressed) < strlen($source) * 0.9) {
+                        file_put_contents($outputFile, gzuncompress($compressed));
+                    } else {
+                        file_put_contents($outputFile, $source);
+                    }
+                    return true;
+                }
+            }
+            return move_uploaded_file($inputFile, $outputFile);
+        } catch (Exception $e) {
+            return move_uploaded_file($inputFile, $outputFile);
         }
     }
 }

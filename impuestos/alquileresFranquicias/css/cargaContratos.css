@@ -1,42 +1,222 @@
 
-
 body { 
-    background-color: #f8f9fa; 
+    background-color: #f8f9fa;
+    font-size: 14px;
 }
+
 .container { 
-    max-width: 800px; 
+    max-width: 800px;
+    padding: 15px;
 }
+
 .card { 
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); 
 }
+
 .form-control, .form-select { 
-    border-radius: 0.5rem; 
+    border-radius: 0.5rem;
+    min-height: 44px; /* Mejor accesibilidad táctil */
 }
+
 .btn-primary { 
     background-color: #007bff; 
-    border-color: #007bff; 
+    border-color: #007bff;
+    min-height: 44px;
+    font-weight: 500;
 }
+
 .btn-primary:hover { 
     background-color: #0056b3; 
     border-color: #0056b3; 
 }
+
 .select2-container--bootstrap-5 .select2-selection { 
-    height: auto; 
+    height: auto;
+    min-height: 44px;
 }
+
 #spinner { 
     display: none; 
 }
+
 .file-actions { 
     display: none; 
 }
+
 .file-input-group {
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    gap: 8px;
 }
+
 .file-input-group .form-control {
     flex-grow: 1;
-    margin-right: 10px;
 }
+
 .file-input-group .btn-group {
     flex-shrink: 0;
+    display: flex;
+}
+
+.file-input-group .btn {
+    min-width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-size-info {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+.compression-status {
+    font-size: 12px;
+    color: #28a745;
+    margin-top: 4px;
+    display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        font-size: 16px; /* Previene zoom automático en iOS */
+    }
+    
+    .container {
+        padding: 10px;
+        margin-top: 20px;
+    }
+    
+    h3 {
+        font-size: 1.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    h5 {
+        font-size: 1.2rem;
+        margin-top: 2rem !important;
+        margin-bottom: 1rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .file-input-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .file-input-group .btn-group {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .file-input-group .btn {
+        flex: 1;
+        max-width: 120px;
+    }
+    
+    .row.mb-3 {
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .col-md-6 {
+        margin-bottom: 1rem;
+    }
+    
+    .btn.w-100 {
+        padding: 12px;
+        font-size: 1.1rem;
+        margin-top: 2rem;
+    }
+    
+    /* Mejorar select2 en móvil */
+    .select2-container {
+        width: 100% !important;
+    }
+    
+    .select2-dropdown {
+        font-size: 16px;
+    }
+    
+    .select2-search__field {
+        min-height: 44px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding: 8px;
+        margin-top: 15px;
+    }
+    
+    h3 {
+        font-size: 1.3rem;
+    }
+    
+    .file-input-group .btn {
+        min-width: 50px;
+        font-size: 0.9rem;
+    }
+    
+    .mb-3 {
+        margin-bottom: 1.5rem !important;
+    }
+}
+
+/* Mejoras para accesibilidad táctil */
+@media (hover: none) {
+    .btn:hover {
+        transform: none;
+    }
+    
+    .btn:active {
+        transform: scale(0.98);
+    }
+}
+
+/* Estados de carga y progreso */
+.upload-progress {
+    display: none;
+    margin-top: 8px;
+}
+
+.progress {
+    height: 6px;
+}
+
+.file-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.status-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Animaciones suaves */
+.btn, .form-control, .form-select {
+    transition: all 0.2s ease;
+}
+
+.compression-status.show {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
