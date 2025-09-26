@@ -273,7 +273,8 @@ class Alquiler
     }
     public function actualizarDetalle($periodo, $idSucursal, $idConcepto, $importe, $userName, $porcentaje )
     {
-        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe', USUARIO = '$userName', FECHA_MODIF = GETDATE(), PORCENTAJE_APLICADO = '$porcentaje' WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$idSucursal' AND ID_CA = '$idConcepto'";
+        $userNameClause = $userName ? ", USUARIO = '$userName'" : "";
+        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe'" . $userNameClause . ", FECHA_MODIF = GETDATE(), PORCENTAJE_APLICADO = '$porcentaje' WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$idSucursal' AND ID_CA = '$idConcepto'";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
        
@@ -333,36 +334,157 @@ class Alquiler
 
     function execSpAlquileres ($periodo) 
     {
+        // Calculamos la fecha del último día del mes para verificación
+        $partes = explode('-', $periodo);
+        if (count($partes) == 2) {
+            $mes = str_pad($partes[0], 2, '0', STR_PAD_LEFT);
+            $anio = $partes[1];
+            $fechaUltimoDia = date('Y-m-d', strtotime("last day of $anio-$mes"));
+        } else {
+            $fechaUltimoDia = null;
+        }
+        
+        // Verificamos usando la misma lógica que el SP
+        // El SP verifica contra PERIODO (que se graba como "4-2025") y FECHA (último día del mes)
+        if ($fechaUltimoDia) {
+            $verificarSql = "SELECT CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM RO_T_INTEGRAL_TANGO_2 
+                    WHERE MODULO = 'ALQUILERES' 
+                    AND (FECHA = '$fechaUltimoDia' OR PERIODO = '$periodo')
+                ) THEN 1
+                ELSE 0
+            END AS RegistroExiste;";
+            
+            try {
+                $stmtVerif = sqlsrv_query($this->cid_central, $verificarSql);
+                if ($stmtVerif) {
+                    $resultVerif = sqlsrv_fetch_array($stmtVerif);
+                    if ($resultVerif && $resultVerif['RegistroExiste'] == 1) {
+                        echo json_encode([
+                            'status' => 'error',
+                            'code' => 1,
+                            'message' => 'El período ya se encuentra procesado',
+                            'periodo' => $periodo,
+                            'fecha_verificada' => $fechaUltimoDia
+                        ]);
+                        return;
+                    }
+                }
+            } catch (\Throwable $th) {
+                // Si hay error en la verificación, continúa con el SP para obtener el mensaje apropiado
+                error_log("Error en verificación previa: " . $th->getMessage());
+            }
+        }
+        
+        // Enviamos el período original al SP (el SP maneja internamente el formato)
         $sql = " EXEC RO_SP_INTEGRAL_ALQUILERES '$periodo';";
  
         try {
 
             $stmt = sqlsrv_query($this->cid_central, $sql);
+            
+            if (!$stmt) {
+                $errors = sqlsrv_errors();
+                echo json_encode([
+                    'status' => 'error',
+                    'code' => 3,
+                    'message' => 'Error al ejecutar el stored procedure',
+                    'sql_errors' => $errors,
+                    'periodo' => $periodo
+                ]);
+                return;
+            }
 
             $rows = array();
     
             while ($v = sqlsrv_fetch_array($stmt)) {
                 $rows[] = $v;
             }
-            if(isset($rows[0][0])){
-
-                if($rows[0][0] == 'ERROR') {
-                    
-                    echo 1;
-                    
-                }
-
-            } else {
-                
-                echo 0;
-
+            
+            // Si no hay resultados, significa que se procesó correctamente sin insertar registros
+            if(empty($rows)) {
+                echo json_encode([
+                    'status' => 'success', 
+                    'code' => 0,
+                    'message' => 'Procesado correctamente',
+                    'periodo' => $periodo,
+                    'fecha_proceso' => $fechaUltimoDia ?? 'No calculada',
+                    'nota' => 'El SP se ejecutó sin errores y sin devolver registros'
+                ]);
+                return;
             }
+            
+            if(isset($rows[0][0])){
+                if($rows[0][0] == 'ERROR') {
+                    echo json_encode([
+                        'status' => 'error',
+                        'code' => 1,
+                        'message' => 'El período ya se encuentra procesado (confirmado por SP)',
+                        'raw_response' => $rows[0][0],
+                        'periodo' => $periodo,
+                        'detalle' => 'El stored procedure indica que ya existe un registro para este período en RO_T_INTEGRAL_TANGO_2'
+                    ]);
+                    return;
+                }
+            }
+            
+            // Si llegamos aquí, el procesamiento fue exitoso
+            echo json_encode([
+                'status' => 'success', 
+                'code' => 0,
+                'message' => 'Procesado correctamente',
+                'periodo' => $periodo,
+                'registros_insertados' => count($rows),
+                'fecha_proceso' => $fechaUltimoDia ?? 'No calculada'
+            ]);
            
             
         } catch (\Throwable $th) {
-            throw $th;
+            echo json_encode([
+                'status' => 'error',
+                'code' => 2, 
+                'message' => 'Error en la base de datos: ' . $th->getMessage(),
+                'periodo' => $periodo
+            ]);
         }
 
+    }
+
+    /**
+     * Verifica si un período ya está procesado usando la misma lógica que el SP
+     */
+    function verificarProcesadoPorPeriodo($periodo) {
+        // Calculamos la fecha del último día del mes
+        $partes = explode('-', $periodo);
+        if (count($partes) == 2) {
+            $mes = str_pad($partes[0], 2, '0', STR_PAD_LEFT);
+            $anio = $partes[1];
+            $fechaUltimoDia = date('Y-m-d', strtotime("last day of $anio-$mes"));
+        } else {
+            return false;
+        }
+        
+        // Verificamos usando el período original (como se graba en la tabla: "4-2025")
+        $sql = "SELECT 
+            CASE WHEN EXISTS (
+                SELECT 1 FROM RO_T_INTEGRAL_TANGO_2 
+                WHERE MODULO = 'ALQUILERES' 
+                AND (FECHA = '$fechaUltimoDia' OR PERIODO = '$periodo')
+            ) THEN 1 ELSE 0 END AS Procesado,
+            '$fechaUltimoDia' as FechaCalculada,
+            '$periodo' as PeriodoOriginal";
+            
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            if ($stmt) {
+                return sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            }
+            return false;
+        } catch (\Throwable $th) {
+            error_log("Error en verificarProcesadoPorPeriodo: " . $th->getMessage());
+            return false;
+        }
     }
 
     function verificarProcesado ($fecha) 

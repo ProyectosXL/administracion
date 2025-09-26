@@ -54740,3 +54740,1205 @@
 [01-Sep-2025 16:12:59 Europe/Berlin] PHP Deprecated:  Creation of dynamic property Conexion::$database_sucUy is deprecated in C:\xampp\htdocs\administracion\class\conexion.php on line 27
 [01-Sep-2025 16:12:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
 [01-Sep-2025 16:12:59 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 13:52:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:49 Europe/Berlin] Acción solicitada: get_tipo_usuario
+[25-Sep-2025 13:52:49 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 13:52:49 Europe/Berlin] 🔧 DEBUG: Iniciando get_tipo_usuario
+[25-Sep-2025 13:52:49 Europe/Berlin] ✅ DEBUG: Clase Usuario existe
+[25-Sep-2025 13:52:49 Europe/Berlin] ✅ DEBUG: Método getTipoUsuario existe
+[25-Sep-2025 13:52:49 Europe/Berlin] ✅ DEBUG: getTipoUsuario() retornó: 4
+[25-Sep-2025 13:52:49 Europe/Berlin] ✅ DEBUG: Método esUsuarioRRHH existe
+[25-Sep-2025 13:52:49 Europe/Berlin] ✅ DEBUG: esUsuarioRRHH() retornó: true
+[25-Sep-2025 13:52:49 Europe/Berlin] ✅ DEBUG: Método getTipoUsuarioDescripcion existe
+[25-Sep-2025 13:52:49 Europe/Berlin] ✅ DEBUG: getTipoUsuarioDescripcion() retornó: Recursos Humanos
+[25-Sep-2025 13:52:49 Europe/Berlin] ✅ DEBUG: Todos los métodos funcionaron correctamente
+[25-Sep-2025 13:52:50 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:50 Europe/Berlin] Acción solicitada: test
+[25-Sep-2025 13:52:50 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:50 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 13:52:50 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:50 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 13:52:50 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:50 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:52:50 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:50 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:52:50 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:50 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:52:50 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:52:50 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: get_tipo_usuario
+[25-Sep-2025 13:53:11 Europe/Berlin] 🔧 DEBUG: Iniciando get_tipo_usuario
+[25-Sep-2025 13:53:11 Europe/Berlin] ✅ DEBUG: Clase Usuario existe
+[25-Sep-2025 13:53:11 Europe/Berlin] ✅ DEBUG: Método getTipoUsuario existe
+[25-Sep-2025 13:53:11 Europe/Berlin] ✅ DEBUG: getTipoUsuario() retornó: 4
+[25-Sep-2025 13:53:11 Europe/Berlin] ✅ DEBUG: Método esUsuarioRRHH existe
+[25-Sep-2025 13:53:11 Europe/Berlin] ✅ DEBUG: esUsuarioRRHH() retornó: true
+[25-Sep-2025 13:53:11 Europe/Berlin] ✅ DEBUG: Método getTipoUsuarioDescripcion existe
+[25-Sep-2025 13:53:11 Europe/Berlin] ✅ DEBUG: getTipoUsuarioDescripcion() retornó: Recursos Humanos
+[25-Sep-2025 13:53:11 Europe/Berlin] ✅ DEBUG: Todos los métodos funcionaron correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: test
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:53:11 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:11 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 13:53:41 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:41 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 13:53:41 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:41 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 13:53:41 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:41 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: get_tipo_usuario
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: get_sucursales_con_casa_central
+[25-Sep-2025 13:53:59 Europe/Berlin] 🔧 DEBUG: Iniciando get_tipo_usuario
+[25-Sep-2025 13:53:59 Europe/Berlin] ✅ DEBUG: Clase Usuario existe
+[25-Sep-2025 13:53:59 Europe/Berlin] ✅ DEBUG: Método getTipoUsuario existe
+[25-Sep-2025 13:53:59 Europe/Berlin] ✅ DEBUG: getTipoUsuario() retornó: 4
+[25-Sep-2025 13:53:59 Europe/Berlin] ✅ DEBUG: Método esUsuarioRRHH existe
+[25-Sep-2025 13:53:59 Europe/Berlin] ✅ DEBUG: esUsuarioRRHH() retornó: true
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] ✅ DEBUG: Método getTipoUsuarioDescripcion existe
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: get_puestos
+[25-Sep-2025 13:53:59 Europe/Berlin] ✅ DEBUG: getTipoUsuarioDescripcion() retornó: Recursos Humanos
+[25-Sep-2025 13:53:59 Europe/Berlin] ✅ DEBUG: Todos los métodos funcionaron correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: test
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 13:53:59 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:53:59 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 13:54:20 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 13:54:20 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 17:49:42 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:42 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: get_tipo_usuario
+[25-Sep-2025 17:49:43 Europe/Berlin] 🔧 DEBUG: Iniciando get_tipo_usuario
+[25-Sep-2025 17:49:43 Europe/Berlin] ✅ DEBUG: Clase Usuario existe
+[25-Sep-2025 17:49:43 Europe/Berlin] ✅ DEBUG: Método getTipoUsuario existe
+[25-Sep-2025 17:49:43 Europe/Berlin] ✅ DEBUG: getTipoUsuario() retornó: 4
+[25-Sep-2025 17:49:43 Europe/Berlin] ✅ DEBUG: Método esUsuarioRRHH existe
+[25-Sep-2025 17:49:43 Europe/Berlin] ✅ DEBUG: esUsuarioRRHH() retornó: true
+[25-Sep-2025 17:49:43 Europe/Berlin] ✅ DEBUG: Método getTipoUsuarioDescripcion existe
+[25-Sep-2025 17:49:43 Europe/Berlin] ✅ DEBUG: getTipoUsuarioDescripcion() retornó: Recursos Humanos
+[25-Sep-2025 17:49:43 Europe/Berlin] ✅ DEBUG: Todos los métodos funcionaron correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: test
+[25-Sep-2025 17:49:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 17:49:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:49:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:49:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:49:43 Europe/Berlin] Acción solicitada: get_tipos_novedad
+[25-Sep-2025 17:50:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:50:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:50:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:50:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:50:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:50:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:50:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:50:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:50:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:50:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:50:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:50:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:51:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:51:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:51:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:51:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:51:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:51:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:51:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:51:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:51:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:51:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:51:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:51:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:52:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:52:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:52:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:52:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:52:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:52:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:52:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:52:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:52:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:52:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:52:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:52:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:53:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:53:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:53:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:53:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:53:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:53:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:53:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:53:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:53:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:53:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:53:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:53:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:54:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:54:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:54:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:54:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:54:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:54:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:55:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:55:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:55:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:55:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:55:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:55:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:56:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:56:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:56:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:56:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:56:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:56:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:57:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:57:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:57:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:58:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:58:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:58:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:58:49 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:58:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:58:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 17:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:59:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 17:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:59:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 17:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 17:59:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:00:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:00:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:00:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:00:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:00:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:00:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:01:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:01:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:01:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:02:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:02:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:02:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:02:49 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:02:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:02:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:03:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:03:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:03:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:04:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:04:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:04:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:05:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:05:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:05:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:06:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:06:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:06:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:07:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:07:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:07:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:07:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:07:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:07:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:16:32 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:16:32 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:16:32 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:16:32 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:16:32 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:16:32 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:16:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:16:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:16:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:16:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:16:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:16:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:17:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:17:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:17:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:17:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:17:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:17:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:18:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:18:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:18:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:18:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:18:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:18:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:19:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:19:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:19:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:19:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:19:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:19:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:20:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:20:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:20:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:20:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:20:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:20:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:21:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:21:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:21:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:21:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:21:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:21:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:22:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:22:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:22:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:23:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:23:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:23:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:24:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:24:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:24:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:25:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:25:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:25:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:25:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:25:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:25:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:26:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:26:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:26:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:26:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:26:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:26:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:27:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:27:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:27:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:28:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:28:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:28:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:29:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:29:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:29:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:29:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:29:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:29:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:30:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:30:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:30:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:30:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:30:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:30:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:31:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:31:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:31:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:31:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:31:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:31:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:32:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:32:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:32:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:32:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:32:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:32:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:33:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:33:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:33:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:33:49 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:33:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:33:50 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:34:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:34:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:34:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:34:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:34:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:34:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:35:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:35:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:35:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:36:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:36:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:36:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:37:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:37:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:37:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:38:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:38:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:38:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:39:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:39:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:39:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:40:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:40:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:40:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:41:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:41:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:41:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:42:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:42:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:42:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:42:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:42:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:42:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:43:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:43:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:43:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:44:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:44:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:44:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:45:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:45:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:45:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:46:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:46:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:46:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:46:49 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:46:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:46:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:47:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:47:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:47:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:48:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:48:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:48:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:49:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:49:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:49:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:50:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:50:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:50:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:51:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:51:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:51:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:51:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:51:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:51:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:52:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:52:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:52:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 18:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:53:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 18:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:53:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 18:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 18:53:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:21:27 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:21:27 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:21:27 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:21:27 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:21:27 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:21:27 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:21:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:21:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:21:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:21:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:21:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:21:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:22:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:22:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:22:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:22:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:22:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:22:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:22:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:22:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:22:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:23:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:23:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:23:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:24:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:24:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:24:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:25:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:25:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:25:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:25:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:25:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:25:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:25:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:25:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:25:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:25:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:25:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:25:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:26:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:26:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:26:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:26:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:26:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:26:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:27:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:27:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:27:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:28:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:28:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:28:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:29:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:29:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:29:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:29:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:29:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:29:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:30:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:30:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:30:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:30:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:30:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:30:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:31:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:31:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:31:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:31:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:31:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:31:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:32:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:32:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:32:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:32:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:32:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:32:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:33:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:33:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:33:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:33:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:33:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:33:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:34:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:34:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:34:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:34:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:34:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:34:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:35:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:35:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:35:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:36:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:36:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:36:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:37:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:37:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:37:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:38:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:38:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:38:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:39:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:39:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:39:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:40:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:40:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:40:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:41:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:41:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:41:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:42:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:42:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:42:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:42:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:42:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:42:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:43:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:43:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:43:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:44:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:44:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:44:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:45:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:45:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:45:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:46:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:46:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:46:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:46:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:46:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:46:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:47:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:47:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:47:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:48:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:48:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:48:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:49:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:49:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:49:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:50:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:50:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:50:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:51:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:51:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:51:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:51:49 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:51:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:51:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:52:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:52:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:52:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:53:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:53:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:53:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:54:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:54:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:54:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:54:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:54:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:54:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:55:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:55:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:55:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:55:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:55:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:55:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:55:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:55:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:55:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:55:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:55:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:55:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:56:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:56:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:56:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:56:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:56:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:56:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:56:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:56:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:56:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:56:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:56:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:56:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:57:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:57:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:57:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:58:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:58:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:58:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:58:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:58:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:58:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 20:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:59:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 20:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:59:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 20:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 20:59:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:00:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:00:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:00:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:00:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:00:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:00:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:01:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:01:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:01:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:02:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:02:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:02:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:02:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:02:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:02:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:03:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:03:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:03:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:04:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:04:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:04:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:05:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:05:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:05:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:06:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:06:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:06:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:07:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:07:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:07:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:07:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:07:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:07:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:08:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:08:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:08:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:08:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:08:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:08:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:09:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:09:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:09:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:09:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:09:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:09:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:10:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:10:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:10:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:10:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:10:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:10:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:11:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:11:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:11:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:11:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:11:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:11:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:12:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:12:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:12:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:12:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:12:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:12:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:12:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:12:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:12:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:12:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:12:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:12:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:13:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:13:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:13:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:13:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:13:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:13:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:13:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:13:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:13:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:13:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:13:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:13:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:14:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:14:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:14:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:14:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:14:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:14:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:15:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:15:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:15:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:15:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:15:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:15:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:16:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:16:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:16:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:16:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:16:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:16:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:17:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:17:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:17:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:17:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:17:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:17:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:18:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:18:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:18:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:18:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:18:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:18:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:19:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:19:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:19:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:19:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:19:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:19:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:20:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:20:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:20:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:20:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:20:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:20:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:21:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:21:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:21:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:21:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:21:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:21:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:22:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:22:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:22:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:22:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:23:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:23:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:23:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:23:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:24:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:24:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:24:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:24:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:25:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:25:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:25:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:25:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:25:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:25:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:26:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:26:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:26:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:26:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:26:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:26:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:26:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:26:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:26:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:26:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:26:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:26:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:27:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:27:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:27:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:27:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:28:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:28:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:28:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:28:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:29:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:29:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:29:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:29:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:29:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:29:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:29:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:29:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:29:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:29:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:29:44 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:29:44 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:30:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:30:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:30:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:30:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:30:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:30:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:30:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:30:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:30:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:30:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:30:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:30:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:31:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:31:13 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:31:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:31:13 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:31:13 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:31:13 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:31:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:31:43 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:31:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:31:43 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:31:43 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:31:43 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:32:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:32:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:32:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:32:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:32:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:32:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:33:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:33:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:33:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:33:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:33:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:33:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:34:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:34:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:34:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:34:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:34:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:34:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:35:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:35:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:35:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:35:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:36:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:36:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:36:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:36:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:37:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:37:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:37:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:37:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:38:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:38:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:38:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:38:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:39:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:39:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:39:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:39:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:40:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:40:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:40:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:40:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:41:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:41:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:41:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:41:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:42:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:42:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:42:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:42:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:42:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:42:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:43:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:43:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:43:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:43:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:44:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:44:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:44:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:44:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:45:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:45:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:45:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:45:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:46:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:46:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:46:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:46:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:46:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:46:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:47:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:47:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:47:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:47:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:48:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:48:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:48:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:48:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:49:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:49:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:49:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:49:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:50:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:50:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:50:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:50:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:51:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:51:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:51:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:51:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:51:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:51:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:52:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:52:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:52:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:52:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:53:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:53:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:53:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:53:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:54:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:54:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:54:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:54:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:54:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:54:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:55:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:55:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:55:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:55:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:55:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:55:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:56:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:56:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:56:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:56:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:56:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:56:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:57:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:57:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:57:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:57:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:58:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:58:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:58:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:58:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:58:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:58:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 21:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:59:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 21:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:59:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 21:59:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 21:59:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:00:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:00:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:00:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:00:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:00:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:00:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:01:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:01:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:01:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:01:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:02:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:02:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:02:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:02:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:02:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:02:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:03:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:03:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:03:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:03:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:04:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:04:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:04:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:04:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:05:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:05:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:05:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:05:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:06:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:06:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:06:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:06:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:07:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:07:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:07:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:07:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:07:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:07:49 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:08:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:08:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:08:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:08:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:08:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:08:48 Europe/Berlin] Acción solicitada: get_centros_costos
+[25-Sep-2025 22:09:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:09:48 Europe/Berlin] Acción solicitada: get_all_novedades
+[25-Sep-2025 22:09:48 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:09:48 Europe/Berlin] Acción solicitada: get_novedades
+[25-Sep-2025 22:09:49 Europe/Berlin] Conexión a base de datos 'apps' establecida correctamente
+[25-Sep-2025 22:09:49 Europe/Berlin] Acción solicitada: get_centros_costos

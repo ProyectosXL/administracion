@@ -22,7 +22,7 @@
     $ultimaFechaDelMes = $periodoClass->desHacerPeriodo($periodo);
     
 
-    $userName = $_GET['userName'];
+    // $userName = $_GET['userName'];
  
     $result = $alquiler->conteoDetalle($periodo);
 
@@ -51,9 +51,9 @@
         $sucursalesOcultasArray = explode(',', $arraySucursalesOcultas['sucursales']);
     }
 
-    if (session_status() == PHP_SESSION_NONE) {
-        session_start();
-    }
+    // if (session_status() == PHP_SESSION_NONE) {
+    //     session_start();
+    // }
     
     if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
         $checked = 'checked';
@@ -123,7 +123,6 @@
                             <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
                                 <div style="margin-top:10px">
 
-                                    <div hidden ><input type="text" id="userName" name="userName" value="<?= $userName ?>"></div>
                                     <div hidden id="periodo"><?= isset($periodo) ? $periodo : "" ?></div>
                                     <div hidden id="ultimaFechaDelMes"><?= isset($ultimaFechaDelMes) ? $ultimaFechaDelMes : "" ?></div>
                                     <div hidden id="mesAnterior"><?= isset($mesAnterior) ? $mesAnterior : "" ?></div>
@@ -135,7 +134,7 @@
                                                     for ($i=1; $i <= 12 ; $i++) { 
                                                         if(strlen($i) == 1){
                                                             $i = "0".$i;
-                                                    }
+                                                        }
                                                 ?>
 
                                                 <option value="<?=$i?>" <?php if($mes == $i ) echo "selected"?>><?=$i?></option>

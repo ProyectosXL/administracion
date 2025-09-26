@@ -221,7 +221,6 @@ const actualizarDetalle = (div) => {
     let porcentaje = div.getAttribute("attr-porcentaje");
 
     let importe = div.value.replace(/[$.]/g, "");
-    let userName = document.querySelector("#userName").value;
     let importe9 = 0;
     let importe13 = 0;
 
@@ -236,7 +235,6 @@ const actualizarDetalle = (div) => {
             importe:  importe,
             importe9: importe9,
             importe13: importe13,
-            userName: userName,
             porcentaje: porcentaje
         },
         success : function(data) {
@@ -378,28 +376,51 @@ const procesar = () => {
                             periodo: periodo
                         },
                         success : function(data) {
-
-                            if(data == 1){
-
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: 'El período ya se encuentra procesado!'
-                                })
-                        
-                            }else{
-
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Procesado',
-                                    text: 'Se ha procesado correctamente!'
-                                }).then((result) => {
-                                    // location.reload();
-                                })
+                            try {
+                                // Intentar parsear como JSON
+                                const response = JSON.parse(data);
                                 
+                                if(response.status === 'error'){
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: response.message
+                                    });
+                                } else if(response.status === 'success') {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Procesado',
+                                        text: response.message
+                                    }).then((result) => {
+                                        location.reload();
+                                    });
+                                }
+                                
+                            } catch (e) {
+                                // Fallback para respuestas que no sean JSON (compatibilidad)
+                                if(data == 1){
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: 'El período ya se encuentra procesado!'
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Procesado',
+                                        text: 'Se ha procesado correctamente!'
+                                    }).then((result) => {
+                                        location.reload();
+                                    });
+                                }
                             }
-                            
-
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de conexión',
+                                text: 'No se pudo procesar la solicitud. Error: ' + error
+                            });
                         }
                     });
                 }

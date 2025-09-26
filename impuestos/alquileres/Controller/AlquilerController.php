@@ -54,7 +54,11 @@ switch ($accion) {
 
     default:
         http_response_code(400);
-        echo json_encode(['error' => true, 'mensaje' => 'Acción no válida']);
+        echo json_encode([
+            'error' => true, 
+            'mensaje' => 'Acción no válida', 
+            'accion_recibida' => $accion
+        ]);
         break;
 }
 
@@ -81,10 +85,9 @@ function actualizarDetalle () {
     $sucursal = $_POST['sucursal'];
     $concepto = $_POST['concepto'];
     $importe = $_POST['importe'];
-    $userName = $_POST['userName'];
     $porcentaje = $_POST['porcentaje'];
 
-    $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, $userName, $porcentaje);
+    $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, null, $porcentaje);
     
     return true;
 }
@@ -546,9 +549,7 @@ function execSpAlquileres () {
 
     $periodo = $_POST['periodo'];
 
-    $detalles = $alquiler->execSpAlquileres($periodo);
-
-    return $detalles;
+    $alquiler->execSpAlquileres($periodo);
 
 }
 
