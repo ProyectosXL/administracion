@@ -9,6 +9,7 @@ $mensaje = '';
 
 try {
     $franquicias = $alquiler->traerFranquicias();
+    
 } catch (Exception $e) {
     error_log("Error al obtener franquicias: " . $e->getMessage());
     $mensaje = "Error al cargar las franquicias. Por favor, inténtelo de nuevo más tarde.";
@@ -49,6 +50,7 @@ try {
                     <option value="">Seleccione una franquicia</option>
                     <?php foreach ($franquicias as $franquicia): ?>
                         <option value="<?php echo htmlspecialchars($franquicia['NRO_SUCURSAL']); ?>">
+                               <?php echo htmlspecialchars($franquicia['NRO_SUCURSAL']); ?> -
                             <?php echo htmlspecialchars($franquicia['DESC_SUCURSAL']); ?>
                         </option>
                     <?php endforeach; ?>
