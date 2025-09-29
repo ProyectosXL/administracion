@@ -133,7 +133,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         </div>
         <div>
             <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:10">Ejecutar <i class="bi bi-check2-square"></i></button>
-            <button class="btn btn-primary ml-1 mt-3" id="btnRevertir" onclick="revertir()" style="margin-right:300px">Revertir<i class="bi bi-arrow-counterclockwise"></i></button>
+            <button class="btn btn-primary ml-1 mt-3" id="btnRevertir" onclick="revertir()" style="margin-right:300px">Revertir proceso <i class="bi bi-arrow-counterclockwise"></i></button>
             <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
 
             <!-- spinner -->
