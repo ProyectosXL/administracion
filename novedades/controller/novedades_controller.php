@@ -4,11 +4,10 @@
  * /novedades/controller/novedades_controller.php
  */
 
-// DEBUG TEMPORAL - ACTIVAR ERRORES
+// Configuración de errores para producción
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/debug.log');
+ini_set('display_errors', 0);
+ini_set('log_errors', 0);
 
 // Iniciar buffer de salida y limpiar cualquier salida previa - MEJORADO
 while (ob_get_level()) {
@@ -59,7 +58,6 @@ function sendResponse($success, $data = null, $message = '', $httpCode = null) {
 // Función para manejar errores
 function handleError($message, $error = null) {
     if ($error) {
-        error_log("Error en controlador: $message - " . $error->getMessage());
         // En modo debug, incluir más detalles
         if (isset($_GET['debug']) && $_GET['debug'] === '1') {
             $message .= " | Detalles: " . $error->getMessage() . " en " . $error->getFile() . ":" . $error->getLine();
@@ -100,9 +98,6 @@ try {
     
     // Obtener acción
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
-    
-    // Log para debugging
-    error_log("Acción solicitada: $action");
     
     if (empty($action)) {
         handleError('No se especificó una acción válida');
