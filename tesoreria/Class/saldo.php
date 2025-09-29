@@ -357,7 +357,7 @@ class Saldo
     public function obtenerUltimaFechaControlada($desde, $hasta)
     {
         try {
-            error_log("obtenerUltimaFechaControlada - Iniciando consulta directa - Rango: $desde a $hasta");
+            error_log("obtenerUltimaFechaControlada - Iniciando consulta directa - Buscando en TODA la tabla");
             
             // Primero verificar que la tabla existe
             $sqlTableExists = "SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'RO_T_MOV_CAJA_TESORERIA'";
@@ -375,16 +375,15 @@ class Saldo
             }
             
             // Hacer consulta directa con JOIN para obtener la fecha del movimiento controlado más reciente
+            // MODIFICADO: Quitar el filtro de rango de fechas para buscar en TODA la tabla
             $sql = "SELECT TOP 1 s.FECHA 
                     FROM SBA05 s
                     INNER JOIN RO_T_MOV_CAJA_TESORERIA c ON s.ID_SBA05 = c.ID_SBA05
                     WHERE s.COD_CTA = '100101' 
-                      AND s.FECHA BETWEEN ? AND ?
                       AND c.CONTROLADO = 1
                     ORDER BY s.FECHA DESC";
                     
-            $params = array($desde, $hasta);
-            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            $stmt = sqlsrv_query($this->cid_central, $sql);
             
             if ($stmt === false) {
                 $errors = sqlsrv_errors();
@@ -396,10 +395,10 @@ class Saldo
             
             if ($row && isset($row['FECHA'])) {
                 $ultimaFechaControlada = $row['FECHA'];
-                error_log("obtenerUltimaFechaControlada - Fecha encontrada: " . $ultimaFechaControlada->format('Y-m-d'));
+                error_log("obtenerUltimaFechaControlada - Fecha encontrada en toda la tabla: " . $ultimaFechaControlada->format('Y-m-d'));
                 return $ultimaFechaControlada;
             } else {
-                error_log("obtenerUltimaFechaControlada - No se encontraron movimientos controlados");
+                error_log("obtenerUltimaFechaControlada - No se encontraron movimientos controlados en toda la tabla");
                 return null;
             }
             
@@ -815,6 +814,40 @@ class Saldo
             
         } catch (Exception $e) {
             error_log("Error en actualizarControlMasivo: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function obtenerIdsSba05PorRango($desde, $hasta)
+    {
+        try {
+            // Ejecutar SP para obtener movimientos base
+            $sql = "EXEC RO_SP_MAYOR_CTA_100101 ?, ?";
+            $params = array($desde, $hasta);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $ids = array();
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                // Si no tiene ID_SBA05, intentar obtenerlo desde SBA05
+                if (!isset($row['ID_SBA05']) || !$row['ID_SBA05']) {
+                    $row['ID_SBA05'] = $this->obtenerIdSba05($row);
+                }
+                
+                // Solo agregar si tiene un ID_SBA05 válido (puede ser controlado)
+                if (isset($row['ID_SBA05']) && $row['ID_SBA05']) {
+                    $ids[] = $row['ID_SBA05'];
+                }
+            }
+            
+            error_log("Total IDs obtenidos para rango $desde-$hasta: " . count($ids));
+            return $ids;
+            
+        } catch (Exception $e) {
+            error_log("Error en obtenerIdsSba05PorRango: " . $e->getMessage());
             throw $e;
         }
     }

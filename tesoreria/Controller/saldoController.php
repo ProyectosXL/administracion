@@ -35,6 +35,9 @@ switch ($accion) {
     case 'actualizarControlMasivo':
         actualizarControlMasivo();
         break;
+    case 'obtenerIdsPorRango':
+        obtenerIdsPorRango();
+        break;
     case 'diagnosticar':
         diagnosticar();
         break;
@@ -289,6 +292,34 @@ function actualizarControlMasivo() {
 
     } catch (Exception $e) {
         error_log("Error en actualizarControlMasivo controller: " . $e->getMessage());
+        enviarRespuestaJSON([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+function obtenerIdsPorRango() {
+    try {
+        if (!isset($_GET['desde']) || !isset($_GET['hasta'])) {
+            enviarRespuestaJSON(['error' => 'Faltan parámetros de fecha']);
+            return;
+        }
+
+        $saldo = new Saldo();
+        $desde = $_GET['desde'];
+        $hasta = $_GET['hasta'];
+
+        $ids = $saldo->obtenerIdsSba05PorRango($desde, $hasta);
+
+        enviarRespuestaJSON([
+            'success' => true,
+            'ids' => $ids,
+            'total' => count($ids)
+        ]);
+
+    } catch (Exception $e) {
+        error_log("Error en obtenerIdsPorRango controller: " . $e->getMessage());
         enviarRespuestaJSON([
             'success' => false,
             'error' => $e->getMessage()

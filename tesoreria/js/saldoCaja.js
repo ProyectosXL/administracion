@@ -586,41 +586,76 @@ function actualizarControlIndividual(idSba05, controlado, checkbox) {
 }
 
 function actualizarControlMasivo(controlado) {
-    // Obtener todos los IDs visibles en la tabla actual
-    const checkboxes = $('.control-checkbox-custom:visible');
-    const idsSba05 = [];
+    // Obtener el rango de fechas actual
+    const desde = $('#desde').val();
+    const hasta = $('#hasta').val();
     
-    checkboxes.each(function() {
-        const id = $(this).data('id');
-        if (id) {
-            idsSba05.push(id);
-        }
-    });
-    
-    if (idsSba05.length === 0) {
-        mostrarNotificacion('warning', 'No hay registros para actualizar');
+    if (!desde || !hasta) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Por favor seleccione un rango de fechas válido'
+        });
         return;
     }
     
-    // Confirmar acción
-    const mensaje = controlado ? 
-        `¿Desea marcar como CONTROLADOS los ${idsSba05.length} registros visibles?` :
-        `¿Desea marcar como NO CONTROLADOS los ${idsSba05.length} registros visibles?`;
-    
+    // Mostrar loading mientras obtenemos el conteo
     Swal.fire({
-        title: 'Confirmar acción masiva',
-        text: mensaje,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, continuar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            ejecutarControlMasivo(idsSba05, controlado, checkboxes);
-        } else {
-            // Revertir check all si se cancela
+        title: 'Obteniendo información...',
+        text: 'Por favor espere',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Obtener todos los IDs del rango de fechas desde el servidor
+    $.ajax({
+        url: 'Controller/saldoController.php?accion=obtenerIdsPorRango',
+        type: 'GET',
+        data: { desde: desde, hasta: hasta },
+        dataType: 'json',
+        success: function(response) {
+            Swal.close();
+            
+            if (response.success && response.ids && response.ids.length > 0) {
+                const totalRegistros = response.ids.length;
+                
+                // Confirmar acción
+                const mensaje = controlado ? 
+                    `¿Desea marcar como CONTROLADOS TODOS los ${totalRegistros} registros del período ${desde} al ${hasta}?\n\nEsto incluye registros de todas las páginas.` :
+                    `¿Desea marcar como NO CONTROLADOS TODOS los ${totalRegistros} registros del período ${desde} al ${hasta}?\n\nEsto incluye registros de todas las páginas.`;
+                
+                Swal.fire({
+                    title: 'Confirmar acción masiva',
+                    text: mensaje,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sí, continuar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        ejecutarControlMasivo(response.ids, controlado, null);
+                    } else {
+                        // Revertir check all si se cancela
+                        $('#checkAll').prop('checked', false);
+                    }
+                });
+            } else {
+                mostrarNotificacion('warning', 'No hay registros controlables en este rango de fechas');
+                $('#checkAll').prop('checked', false);
+            }
+        },
+        error: function() {
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo obtener la información de los registros'
+            });
             $('#checkAll').prop('checked', false);
         }
     });
@@ -638,8 +673,10 @@ function ejecutarControlMasivo(idsSba05, controlado, checkboxes) {
         }
     });
     
-    // Deshabilitar todos los checkboxes
-    checkboxes.prop('disabled', true);
+    // Deshabilitar checkboxes si existen (solo los visibles)
+    if (checkboxes) {
+        checkboxes.prop('disabled', true);
+    }
     $('#checkAll').prop('disabled', true);
     
     $.ajax({
@@ -652,28 +689,14 @@ function ejecutarControlMasivo(idsSba05, controlado, checkboxes) {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                // Actualizar todos los checkboxes y badges
-                checkboxes.each(function() {
-                    const checkbox = $(this);
-                    const fila = checkbox.closest('tr');
-                    const estadoCell = fila.find('td:nth-child(10)'); // Columna de estado
-                    
-                    checkbox.prop('checked', controlado);
-                    
-                    if (controlado) {
-                        estadoCell.html('<span class="badge bg-success">CONTROLADO</span>');
-                        checkbox.attr('title', 'Desmarcar como controlado');
-                    } else {
-                        estadoCell.html('<span class="badge bg-secondary">NO CONTROLADO</span>');
-                        checkbox.attr('title', 'Marcar como controlado');
-                    }
-                });
-                
                 Swal.fire({
                     icon: 'success',
                     title: 'Actualización completada',
                     text: response.message,
                     timer: 3000
+                }).then(() => {
+                    // Recargar los movimientos para reflejar todos los cambios
+                    cargarMovimientos();
                 });
             } else {
                 Swal.fire({
@@ -692,7 +715,9 @@ function ejecutarControlMasivo(idsSba05, controlado, checkboxes) {
         },
         complete: function() {
             // Rehabilitar checkboxes
-            checkboxes.prop('disabled', false);
+            if (checkboxes) {
+                checkboxes.prop('disabled', false);
+            }
             $('#checkAll').prop('disabled', false);
             actualizarEstadoCheckAll();
         }
