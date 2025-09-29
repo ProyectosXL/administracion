@@ -120,7 +120,7 @@ $hasta = isset($_GET['hasta']) && $_GET['hasta'] != "" ? $_GET['hasta'] : $hasta
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="stat-value" id="ultima-fecha-control">-</div>
-                        <div class="stat-label">Fecha Último Control</div>
+                        <div class="stat-label">Última Fecha Controlada</div>
                     </div>
                 </div>
             </div>
@@ -169,6 +169,6 @@ $hasta = isset($_GET['hasta']) && $_GET['hasta'] != "" ? $_GET['hasta'] : $hasta
     <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="js/saldoCaja.js"></script>
+    <script src="js/saldoCaja.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

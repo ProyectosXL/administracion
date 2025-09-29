@@ -41,8 +41,9 @@ function cargarMovimientos() {
         dataType: 'json',
         success: function(response) {
             console.log('Respuesta del servidor:', response); // Debug
+            console.log('ultimaFechaControlada en respuesta:', response.ultimaFechaControlada); // Debug específico
             if (response.success) {
-                actualizarEstadisticas(response.estadisticas, response.saldoActualDisplay, response.ultimaFechaControl);
+                actualizarEstadisticas(response.estadisticas, response.saldoActualDisplay, response.ultimaFechaControlada);
                 renderizarTabla(response.movimientos);
             } else {
                 Swal.fire({
@@ -67,8 +68,8 @@ function cargarMovimientos() {
     });
 }
 
-function actualizarEstadisticas(stats, saldoActual, ultimaFechaControl) {
-    console.log('Actualizando estadísticas:', stats, saldoActual, ultimaFechaControl); // Debug
+function actualizarEstadisticas(stats, saldoActual, ultimaFechaControlada) {
+    console.log('Actualizando estadísticas:', stats, saldoActual, ultimaFechaControlada); // Debug
     
     // Actualizar saldo actual
     $('#saldo-actual').text('$' + (saldoActual || '0'));
@@ -94,11 +95,11 @@ function actualizarEstadisticas(stats, saldoActual, ultimaFechaControl) {
     }
     
     // Actualizar última fecha controlada
-    console.log('Última fecha control recibida:', ultimaFechaControl); // Debug
-    if (ultimaFechaControl) {
-        $('#ultima-fecha-control').text(ultimaFechaControl);
+    console.log('Última fecha controlada recibida:', ultimaFechaControlada); // Debug
+    if (ultimaFechaControlada) {
+        $('#ultima-fecha-control').text(ultimaFechaControlada);
     } else {
-        $('#ultima-fecha-control').text('Sin controles');
+        $('#ultima-fecha-control').text('Ninguna');
     }
 }
 
@@ -197,7 +198,28 @@ function renderizarTabla(movimientos) {
     // Inicializar DataTable
     $('#movimientosTable').DataTable({
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json'
+            decimal: "",
+            emptyTable: "No hay datos disponibles en la tabla",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+            infoEmpty: "Mostrando 0 a 0 de 0 registros",
+            infoFiltered: "(filtrado de _MAX_ registros totales)",
+            infoPostFix: "",
+            thousands: ",",
+            lengthMenu: "Mostrar _MENU_ registros",
+            loadingRecords: "Cargando...",
+            processing: "Procesando...",
+            search: "Buscar:",
+            zeroRecords: "No se encontraron registros coincidentes",
+            paginate: {
+                first: "Primero",
+                last: "Último",
+                next: "Siguiente",
+                previous: "Anterior"
+            },
+            aria: {
+                sortAscending: ": activar para ordenar la columna ascendente",
+                sortDescending: ": activar para ordenar la columna descendente"
+            }
         },
         responsive: {
             breakpoints: [
@@ -528,14 +550,32 @@ function actualizarControlIndividual(idSba05, controlado, checkbox) {
                 });
             }
         },
-        error: function() {
+        error: function(xhr, status, error) {
+            console.error('Error AJAX en actualizarControlIndividual:', error);
+            console.error('Status:', status);
+            console.error('Response:', xhr.responseText);
+            
             // Revertir checkbox en caso de error
             checkbox.prop('checked', !controlado);
+            
+            let mensaje = 'No se pudo actualizar el control';
+            if (xhr.responseText) {
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    if (errorResponse.error) {
+                        mensaje = errorResponse.error;
+                    }
+                } catch (e) {
+                    // Si no es JSON válido, usar el texto de respuesta
+                    mensaje = 'Error del servidor: ' + xhr.responseText.substring(0, 100);
+                }
+            }
+            
             Swal.fire({
                 icon: 'error',
                 title: 'Error de conexión',
-                text: 'No se pudo actualizar el control',
-                timer: 3000
+                text: mensaje,
+                timer: 5000
             });
         },
         complete: function() {

@@ -35,6 +35,18 @@ switch ($accion) {
     case 'actualizarControlMasivo':
         actualizarControlMasivo();
         break;
+    case 'diagnosticar':
+        diagnosticar();
+        break;
+    case 'regenerarControl':
+        regenerarControl();
+        break;
+    case 'repararTabla':
+        repararTabla();
+        break;
+    case 'diagnosticarUltimaFecha':
+        diagnosticarUltimaFecha();
+        break;
     default:
         enviarRespuestaJSON(['error' => 'Acción no reconocida']);
         break;
@@ -54,7 +66,10 @@ function obtenerMovimientos() {
         $movimientos = $saldo->obtenerMovimientosCaja($desde, $hasta);
         $saldoActual = $saldo->obtenerSaldoActual($hasta);
         $estadisticas = $saldo->obtenerEstadisticasMovimientos($desde, $hasta);
-        $ultimaFechaControl = $saldo->obtenerUltimaFechaControl($desde, $hasta);
+        $ultimaFechaControlada = $saldo->obtenerUltimaFechaControlada($desde, $hasta);
+
+        // Log para debug
+        error_log("Controller obtenerMovimientos - ultimaFechaControlada: " . ($ultimaFechaControlada ? $ultimaFechaControlada->format('Y-m-d') : 'NULL'));
 
         // Formatear los movimientos para JSON
         $movimientosFormateados = [];
@@ -98,7 +113,7 @@ function obtenerMovimientos() {
                 'cantIngresos' => $estadisticas['CANT_INGRESOS'] ?? 0,
                 'cantEgresos' => $estadisticas['CANT_EGRESOS'] ?? 0
             ],
-            'ultimaFechaControl' => $ultimaFechaControl ? $ultimaFechaControl->format('d/m/Y H:i') : null
+            'ultimaFechaControlada' => $ultimaFechaControlada ? $ultimaFechaControlada->format('d/m/Y') : null
         ]);
 
     } catch (Exception $e) {
@@ -228,6 +243,9 @@ function actualizarControl() {
         $idSba05 = $_POST['idSba05'];
         $controlado = $_POST['controlado'] === 'true' || $_POST['controlado'] === '1';
 
+        // Log para debug
+        error_log("Controller actualizarControl - ID_SBA05: $idSba05, Controlado: " . ($controlado ? 'true' : 'false'));
+
         $resultado = $saldo->actualizarControlMovimiento($idSba05, $controlado);
 
         enviarRespuestaJSON([
@@ -239,7 +257,7 @@ function actualizarControl() {
         error_log("Error en actualizarControl controller: " . $e->getMessage());
         enviarRespuestaJSON([
             'success' => false,
-            'error' => $e->getMessage()
+            'error' => 'Error interno: ' . $e->getMessage()
         ]);
     }
 }
@@ -271,6 +289,108 @@ function actualizarControlMasivo() {
 
     } catch (Exception $e) {
         error_log("Error en actualizarControlMasivo controller: " . $e->getMessage());
+        enviarRespuestaJSON([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+function diagnosticar() {
+    try {
+        if (!isset($_GET['desde']) || !isset($_GET['hasta'])) {
+            enviarRespuestaJSON(['error' => 'Faltan parámetros de fecha']);
+            return;
+        }
+
+        $saldo = new Saldo();
+        $desde = $_GET['desde'];
+        $hasta = $_GET['hasta'];
+
+        $resultado = $saldo->diagnosticarStoredProcedure($desde, $hasta);
+
+        enviarRespuestaJSON([
+            'success' => $resultado,
+            'message' => 'Diagnóstico completado, revisar logs'
+        ]);
+
+    } catch (Exception $e) {
+        error_log("Error en diagnosticar controller: " . $e->getMessage());
+        enviarRespuestaJSON([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+function regenerarControl() {
+    try {
+        $saldo = new Saldo();
+        
+        $desde = isset($_GET['desde']) ? $_GET['desde'] : null;
+        $hasta = isset($_GET['hasta']) ? $_GET['hasta'] : null;
+
+        $contador = $saldo->regenerarRegistrosControl($desde, $hasta);
+
+        enviarRespuestaJSON([
+            'success' => true,
+            'message' => "Se regeneraron $contador registros de control",
+            'registros_creados' => $contador
+        ]);
+
+    } catch (Exception $e) {
+        error_log("Error en regenerarControl controller: " . $e->getMessage());
+        enviarRespuestaJSON([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+function repararTabla() {
+    try {
+        $saldo = new Saldo();
+        
+        // Llamar al método de reparación de tabla usando reflexión
+        $reflection = new ReflectionClass($saldo);
+        $method = $reflection->getMethod('repararTablaControlMovimientos');
+        $method->setAccessible(true);
+        $resultado = $method->invoke($saldo);
+
+        enviarRespuestaJSON([
+            'success' => $resultado,
+            'message' => 'Tabla reparada exitosamente'
+        ]);
+
+    } catch (Exception $e) {
+        error_log("Error en repararTabla controller: " . $e->getMessage());
+        enviarRespuestaJSON([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+}
+
+function diagnosticarUltimaFecha() {
+    try {
+        if (!isset($_GET['desde']) || !isset($_GET['hasta'])) {
+            enviarRespuestaJSON(['error' => 'Faltan parámetros de fecha']);
+            return;
+        }
+
+        $saldo = new Saldo();
+        $desde = $_GET['desde'];
+        $hasta = $_GET['hasta'];
+
+        $resultado = $saldo->diagnosticarUltimaFechaControlada($desde, $hasta);
+
+        enviarRespuestaJSON([
+            'success' => $resultado,
+            'message' => 'Diagnóstico de última fecha controlada completado, revisar logs'
+        ]);
+
+    } catch (Exception $e) {
+        error_log("Error en diagnosticarUltimaFecha controller: " . $e->getMessage());
         enviarRespuestaJSON([
             'success' => false,
             'error' => $e->getMessage()
