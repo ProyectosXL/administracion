@@ -71,17 +71,18 @@ function registrarRetiro() {
         exit; // Stop execution
     }
     // --- VALIDATION END ---
-    
+
     $resultado = $sucursal->insertarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
-    
+
     if ($resultado['success']) {
-    
+
         if((count($remitos) > 0) ){
 
             $sucursal->limpiarRemitos($datos['numeroRegistro'], $nroSucursal);
 
             foreach ($remitos as $remito) {   
-                $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos'], $nroSucursal);
+                $dt = DateTime::createFromFormat('d/m/Y', $remito['fecha']);
+                $sucursal->insertarRemitos($datos['numeroRegistro'], $dt->format('Y-m-d'), $remito['remito'], $remito['destino'], $remito['bultos'], $nroSucursal);
                 
             }
 
