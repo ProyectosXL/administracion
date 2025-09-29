@@ -29,6 +29,14 @@ switch ($accion) {
         cambiarEntorno();
         break;
     
+    case 'revertir':
+        revertir();
+        break;
+    
+    case 'validarModulos':
+        validarModulos();
+        break;
+    
     default:
         # code...
         break;
@@ -113,5 +121,24 @@ function cambiarEntorno () {
 }
 
 
+
+function revertir() {
+
+    $gasto = new Gasto();
+
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+
+    $result = $gasto->revertir($desde, $hasta);
+    
+    echo json_encode($result);
+}
+
+function validarModulos() {
+    $gasto = new Gasto();
+    $result = $gasto->validarModulos();
+    
+    echo json_encode($result);
+}
 
  ?>
