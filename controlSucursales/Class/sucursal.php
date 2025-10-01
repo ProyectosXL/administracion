@@ -501,7 +501,7 @@ class Sucursal
         LEFT JOIN RO_T_RECIBOS_VINCULADOS V
             ON A.COD_COMP = V.original_cod_comp COLLATE Latin1_General_BIN
             AND RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(V.original_n_comp)) COLLATE Latin1_General_BIN
-        WHERE A.COD_CTA = '100100'
+        WHERE A.COD_CTA = '100100' AND A.COD_COMP = 'RAF'
             AND A.FECHA BETWEEN '$desde' AND '$hasta'
         ORDER BY A.FECHA DESC";
 

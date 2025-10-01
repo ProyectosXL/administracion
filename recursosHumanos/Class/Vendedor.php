@@ -103,7 +103,7 @@ class Vendedor
         $sql = "SELECT COD_VENDED, NOMBRE_VEN, INHABILITA FROM GVA23 WHERE INHABILITA = 0 ORDER BY NOMBRE_VEN";
     
         // Determine the database based on the environment
-        $db = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : '';
+        $db = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
     
         $rows = $this->retornarArray($sql, $db);
     
