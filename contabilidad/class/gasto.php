@@ -537,4 +537,54 @@ class Gasto
         return 1;
     }
 
+    public function revertir($desde, $hasta) {
+        $sql = "EXEC RO_SP_REVERTIR_DATAWAREHOUSE_IE '$desde', '$hasta'";
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            $errors = sqlsrv_errors();
+            $errorMessage = "Error al ejecutar el procedimiento almacenado: ";
+            if ($errors) {
+                foreach ($errors as $error) {
+                    $errorMessage .= $error['message'] . " ";
+                }
+            }
+            return array('success' => false, 'message' => $errorMessage);
+        }
+
+        return array('success' => true, 'message' => 'Proceso de reversión ejecutado correctamente');
+    }
+
+    public function validarModulos() {
+        $sql = "SELECT DISTINCT (MODULO) AS MODULOS FROM RO_T_INTEGRAL_TANGO_2";
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            $errors = sqlsrv_errors();
+            $errorMessage = "Error al consultar módulos: ";
+            if ($errors) {
+                foreach ($errors as $error) {
+                    $errorMessage .= $error['message'] . " ";
+                }
+            }
+            return array('success' => false, 'message' => $errorMessage, 'modulos' => array());
+        }
+
+        $modulos = array();
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $modulos[] = $row['MODULOS'];
+        }
+
+        $modulosRequeridos = array('VENTAS', 'ALQUILERES', 'CONTABILIDAD', 'TESORERIA', 'CUENTAS2', 'COMPRAS');
+        
+        $modulosFaltantes = array_diff($modulosRequeridos, $modulos);
+        
+        if (empty($modulosFaltantes)) {
+            return array('success' => true, 'message' => 'Todos los módulos están presentes', 'modulos' => $modulos);
+        } else {
+            $modulosFaltantesStr = implode(', ', $modulosFaltantes);
+            return array('success' => false, 'message' => "Faltan los siguientes módulos: $modulosFaltantesStr", 'modulos' => $modulos, 'modulosFaltantes' => $modulosFaltantes);
+        }
+    }
+
 }  
