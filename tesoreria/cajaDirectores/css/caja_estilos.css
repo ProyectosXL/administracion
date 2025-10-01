@@ -1,0 +1,269 @@
+/**
+ * Estilos específicos para Gestión de Caja Directores
+ */
+
+/* Tarjetas de resumen específicas */
+.card.bg-success .card-header,
+.card.bg-danger .card-header,
+.card.bg-primary .card-header,
+.card.bg-warning .card-header {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.card.bg-success,
+.card.bg-danger,
+.card.bg-primary {
+    border: none;
+}
+
+.card.bg-warning {
+    border: none;
+    color: #212529;
+}
+
+.card.bg-warning .card-header,
+.card.bg-warning .card-title,
+.card.bg-warning .card-text {
+    color: #212529;
+}
+
+/* Inputs de importe */
+.importe-input {
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: right;
+}
+
+.input-group .importe-input {
+    border-left: none;
+}
+
+.input-group .input-group-text {
+    border-right: none;
+    font-size: 1.1rem;
+}
+
+/* Formularios de ingresos y egresos */
+#formIngreso,
+#formEgreso {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+}
+
+/* Listas de movimientos recientes */
+#listaIngresos .list-group-item,
+#listaEgresos .list-group-item {
+    background-color: #fff;
+    margin-bottom: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e9ecef;
+}
+
+#listaIngresos .list-group-item h6 {
+    color: #28a745;
+    font-weight: 700;
+}
+
+#listaEgresos .list-group-item h6 {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+/* Tabla de reporte */
+#contenidoReporte .table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#contenidoReporte .table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#contenidoReporte .table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* Iconos en tabla */
+#contenidoReporte .bi-arrow-down-circle {
+    font-size: 1.2rem;
+}
+
+#contenidoReporte .bi-arrow-up-circle {
+    font-size: 1.2rem;
+}
+
+/* Estados de movimientos */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+/* Selector de director */
+#divDirector {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+    }
+    to {
+        opacity: 1;
+        max-height: 200px;
+    }
+}
+
+/* Botones de acción en tabla */
+#contenidoReporte .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Totales en footer de tabla */
+#contenidoReporte tfoot tr {
+    background-color: #f8f9fa;
+    font-size: 1rem;
+    border-top: 2px solid #dee2e6;
+}
+
+#contenidoReporte tfoot td {
+    padding: 1rem;
+}
+
+/* Responsivo para tablas */
+@media (max-width: 767.98px) {
+    .table-responsive {
+        font-size: 0.8rem;
+    }
+    
+    .table thead th {
+        font-size: 0.7rem;
+        padding: 0.5rem;
+    }
+    
+    .table tbody td {
+        padding: 0.5rem;
+    }
+    
+    #formIngreso,
+    #formEgreso {
+        padding: 1rem;
+    }
+    
+    .importe-input {
+        font-size: 1rem;
+    }
+}
+
+/* Estado de carga */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.3rem solid #f3f3f3;
+    border-top: 0.3rem solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Mensajes vacíos */
+.text-muted.empty-state {
+    text-align: center;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* Botón actualizar */
+#btnActualizarDatos {
+    transition: none;
+}
+
+#btnActualizarDatos i {
+    transition: transform 0.3s ease;
+}
+
+#btnActualizarDatos:hover i {
+    transform: rotate(180deg);
+}
+
+/* Pestañas con iconos */
+.nav-tabs .nav-link i {
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+}
+
+/* Sidebar - Estados activos */
+#sidebarMenu .nav-link.active {
+    background-color: #e3f2fd;
+    color: #1565c0 !important;
+    border-radius: 0.375rem;
+    border-left: 3px solid #1976d2;
+}
+
+#sidebarMenu .nav-link:hover {
+    background-color: #f5f5f5;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s ease;
+}
+
+#sidebarMenu .nav-link.active:hover {
+    background-color: #e1f5fe;
+    color: #1565c0 !important;
+}
+
+/* Mejoras de accesibilidad */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Sombras y elevaciones */
+.elevation-1 {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.elevation-2 {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+}
+
+.elevation-3 {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+}
+
+/* Transiciones suaves */
+* {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}

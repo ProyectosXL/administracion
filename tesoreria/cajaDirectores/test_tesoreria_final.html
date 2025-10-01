@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Final - Marcar TESORERÍA</title>
+</head>
+<body>
+    <h1>Test Final - Marcar TESORERÍA como Recibido</h1>
+    <button onclick="testMarcarTesoreria()">Probar Marcar TESORERÍA</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testMarcarTesoreria() {
+            try {
+                const formData = new FormData();
+                formData.append('accion', 'marcar_recibido_tesoreria');
+                formData.append('id_tesoreria', '12345');
+                formData.append('fecha', '2025-10-01');
+                formData.append('observaciones', 'Test desde JavaScript');
+                formData.append('importe', '1500');
+                
+                console.log('Enviando petición...');
+                
+                const response = await fetch('controller/caja_ingresos_controller.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                console.log('Result:', result);
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>Resultado:</h3>
+                    <p><strong>Status HTTP:</strong> ${response.status}</p>
+                    <p><strong>Success:</strong> ${result.success}</p>
+                    <p><strong>Message:</strong> ${result.message}</p>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `
+                    <h3>Error:</h3>
+                    <p style="color: red;">${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
