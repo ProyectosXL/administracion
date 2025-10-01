@@ -14,6 +14,45 @@ const btnProcesar = document.querySelector("#btnProcesar");
 const selectCentroCosto = document.querySelector("#selectCentroCosto");
 
 const btnEjecutar = document.querySelector("#btnEjecutar");
+const btnRevertir = document.querySelector("#btnRevertir");
+
+const validarModulos = () => {
+    $.ajax({
+        url: 'Controller/controlGastosController.php?accion=validarModulos',
+        method: 'GET',
+        dataType: 'json',
+        success: function (response) {
+            if (!response.success) {
+                btnEjecutar.disabled = true;
+                btnEjecutar.style.opacity = '0.5';
+                btnEjecutar.style.cursor = 'not-allowed';
+                btnRevertir.disabled = true;
+                btnRevertir.style.opacity = '0.5';
+                btnRevertir.style.cursor = 'not-allowed';
+                
+                Swal.fire({
+                    title: 'Módulos Faltantes',
+                    text: response.message,
+                    icon: 'warning',
+                    confirmButtonText: 'Aceptar',
+                    allowOutsideClick: false
+                });
+            } else {
+                btnEjecutar.disabled = false;
+                btnEjecutar.style.opacity = '1';
+                btnEjecutar.style.cursor = 'pointer';
+                
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error('Error al validar módulos:', error);
+            btnEjecutar.disabled = true;
+            btnEjecutar.style.opacity = '0.5';
+            btnEjecutar.style.cursor = 'not-allowed';
+        }
+    });
+};
+
 let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
 let pasoActual = 0;
 
@@ -30,6 +69,7 @@ btnAmortizar.addEventListener("click", amortizarGastos);
 btnProrratear.addEventListener("click", prorratearGastos);
 btnEjecutar.addEventListener("click", ejecutarPasos);
 btnProcesar.addEventListener("click", procesar);
+
 
 let conexion;
 
@@ -1513,4 +1553,58 @@ const cambiarEntorno = (t) =>{
   }
   });
 
+}
+
+const revertir = () => {
+  let desde = document.querySelector("#desde").value;
+  let hasta = document.querySelector("#hasta").value;
+  Swal.fire({
+    title: '¿Estás seguro?',
+    text: 'Esta acción revertirá todos los cambios realizados en el proceso de control.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, revertir',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: 'Controller/controlGastosController.php?accion=revertir',
+        method: 'POST',
+        data: {
+          desde: desde,
+          hasta: hasta
+        },
+        dataType: 'json',
+        success: function (response) {
+          if (response.success) {
+            Swal.fire({
+              title: '¡Éxito!',
+              text: response.message,
+              icon: 'success',
+              confirmButtonText: 'Aceptar'
+            }).then(() => {
+              location.reload();
+            });
+          } else {
+            Swal.fire({
+              title: 'Error',
+              text: response.message,
+              icon: 'error',
+              confirmButtonText: 'Aceptar'
+            });
+          }
+        },
+        error: function (xhr, status, error) {
+          Swal.fire({
+            title: 'Error de conexión',
+            text: 'No se pudo conectar con el servidor. Por favor, inténtalo de nuevo.',
+            icon: 'error',
+            confirmButtonText: 'Aceptar'
+          });
+        }
+      });
+    }
+  });
 }
