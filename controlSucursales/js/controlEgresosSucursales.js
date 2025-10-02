@@ -343,22 +343,49 @@ $(document).ready(function () {
 });
 
 // --- Cambio de entorno (ARG/UY) ---
-const cambiarEntorno = (t) => {
-    let entorno = 0;
-    if(t.getAttribute("data-off") == "ARG" ){
-        entorno = 0;
-    }else{
-        entorno = 1;
+const cambiarEntorno = (element) => {
+    // Mostrar indicador de carga
+    $('body').append(`
+        <div class="controlEgresos_loading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+             background: rgba(255,255,255,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+            <div style="text-align: center;">
+                <i class="bi bi-arrow-repeat" style="font-size: 2rem; animation: spin 1s linear infinite;"></i>
+                <p style="margin-top: 1rem;">Cambiando entorno...</p>
+            </div>
+        </div>
+        <style>
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+    `);
+
+    // Obtener el valor seleccionado del select
+    let entorno = element.value === "ARG" ? 0 : 1;
+    
+    // Actualizar la información de país mostrada
+    const countryName = document.querySelector('.controlEgresos_country-name');
+    const countryFlag = document.querySelector('.controlEgresos_flag');
+    
+    if (element.value === "ARG") {
+        countryName.textContent = "ARGENTINA";
+        countryFlag.src = "../assets/images/bandera_con_sol__55757_std.jpg";
+        countryFlag.alt = "Argentina";
+    } else {
+        countryName.textContent = "URUGUAY";
+        countryFlag.src = "../assets/images/UY.png";
+        countryFlag.alt = "Uruguay";
     }
+    
     $.ajax({
         url: "Controller/cambiarEntorno.php",
         method: "POST",
-        data : {entorno: entorno},
+        data: { entorno: entorno },
         success: function (data) {
-            location.reload();
+            setTimeout(() => location.reload(), 500);
         },
         error: function(xhr, status, error) {
             console.error('Error al cambiar entorno:', error);
+            $('.controlEgresos_loading').remove();
+            alert('Error al cambiar el entorno. Por favor, intente nuevamente.');
         }
     });
 }

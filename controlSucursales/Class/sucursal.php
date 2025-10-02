@@ -151,21 +151,41 @@ class Sucursal
 
     public function autorizarEgreso ($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy)
     {
-        $sql="IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = '$comprobante'  AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComp')
-        BEGIN
-            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET AUTORIZADO = 1, FECHA_AUTORIZADO = '$fechaDeHoy' WHERE N_COMP  = '$comprobante' AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComp'
-        END
-        ELSE
-        BEGIN
-            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, AUTORIZADO, FECHA_AUTORIZADO) 
-            VALUES ('$fecha', $nroSucursal, '$tipoComp', '$comprobante', '$codCuenta', '$descCuenta', $monto, '$leyenda', '0', '0', '1', '$fechaDeHoy')
-        END";
-
-        try{
-            $stmt = sqlsrv_query($this->conexion, $sql);
+        try {
+            // Verificamos si existe el registro
+            $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
+            $params = array($comprobante, $nroSucursal, $tipoComp);
+            $stmt = sqlsrv_query($this->conexion, $sqlCheck, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error checking record existence");
+            }
+            
+            $row = sqlsrv_fetch_array($stmt);
+            
+            if ($row['count'] > 0) {
+                // El registro existe, actualizamos
+                $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET AUTORIZADO = 1, FECHA_AUTORIZADO = ? WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
+                $params = array($fechaDeHoy, $comprobante, $nroSucursal, $tipoComp);
+            } else {
+                // El registro no existe, lo insertamos
+                $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, AUTORIZADO, FECHA_AUTORIZADO) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?)";
+                $params = array($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy);
+            }
+            
+            $stmt = sqlsrv_query($this->conexion, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("SQL Error en autorizarEgreso: " . print_r($errors, true));
+                throw new Exception("Error executing SQL");
+            }
+            
             return $stmt;
+            
         } catch (\Throwable $th){
-            print_r($th);
+            error_log("Exception en autorizarEgreso: " . $th->getMessage());
+            throw $th;
         }
     }
 
@@ -206,94 +226,130 @@ class Sucursal
 
     public function marcarFacturado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control) 
     {
-        $sql = "
-        IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = '$nroComprobante'  AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante')
-        BEGIN
-            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET FACTURA = $factura WHERE N_COMP  = '$nroComprobante' AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante'
-        END
-        ELSE
-        BEGIN
-            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL) 
-            VALUES ('$fecha', $nroSucursal, '$tipoComprobante', '$nroComprobante', '$codCuenta', '$descripcionCuenta', $monto, '$leyenda', $factura, $control)
-        END
-        ";
-
-        try{
-            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
-                $stmt = sqlsrv_query($this->cid_uy, $sql);
-            }else{
-                $stmt = sqlsrv_query($this->conexion, $sql);
+        try {
+            $conexion = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? $this->cid_uy : $this->conexion;
+            
+            // Verificamos si existe el registro
+            $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
+            $params = array($nroComprobante, $nroSucursal, $tipoComprobante);
+            $stmt = sqlsrv_query($conexion, $sqlCheck, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error checking record existence");
             }
+            
+            $row = sqlsrv_fetch_array($stmt);
+            
+            if ($row['count'] > 0) {
+                // El registro existe, actualizamos
+                $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET FACTURA = ? WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
+                $params = array($factura, $nroComprobante, $nroSucursal, $tipoComprobante);
+            } else {
+                // El registro no existe, lo insertamos
+                $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $params = array($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
+            }
+            
+            $stmt = sqlsrv_query($conexion, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("SQL Error en marcarFacturado: " . print_r($errors, true));
+                throw new Exception("Error executing SQL");
+            }
+            
             return $stmt;
+            
         } catch (\Throwable $th){
-            print_r($th);
+            error_log("Exception en marcarFacturado: " . $th->getMessage());
+            throw $th;
         }
     }
 
     public function uncheckFactura ($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto)
     {
-        $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET FACTURA = 0 
-        WHERE N_COMP  = '$nroComprobante' 
-        AND NRO_SUCURSAL = '$nroSucursal' 
-        AND TIPO_COMP = '$tipoComprobante' 
-        AND COD_CUENTA = '$codCuenta' 
-        AND MONTO = $monto";
-
-        try{
-            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
-                $stmt = sqlsrv_query($this->cid_uy, $sql);
-            }else{
-                $stmt = sqlsrv_query($this->conexion, $sql);
+        try {
+            $conexion = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? $this->cid_uy : $this->conexion;
+            
+            $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET FACTURA = 0 WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ? AND COD_CUENTA = ? AND MONTO = ?";
+            $params = array($nroComprobante, $nroSucursal, $tipoComprobante, $codCuenta, $monto);
+            
+            $stmt = sqlsrv_query($conexion, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("SQL Error en uncheckFactura: " . print_r($errors, true));
+                return false;
             }
+            
             return true;
         } catch (\Throwable $th){
-            print_r($th);
+            error_log("Exception en uncheckFactura: " . $th->getMessage());
+            return false;
         }
     }
 
     public function marcarControlado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control, $observaciones) 
     {
-        $sql = "
-        IF EXISTS (SELECT 1 FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = '$nroComprobante'  AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante' AND COD_CUENTA = '$codCuenta')
-        BEGIN
-            UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = $control ,FECHA_CONTROL = GETDATE(), OBSERVACIONES = '$observaciones' WHERE N_COMP  = '$nroComprobante' AND NRO_SUCURSAL = '$nroSucursal' AND TIPO_COMP = '$tipoComprobante' AND COD_CUENTA = '$codCuenta'
-        END
-        ELSE
-        BEGIN
-            INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, FECHA_CONTROL, USUARIO, OBSERVACIONES) 
-            VALUES ('$fecha', $nroSucursal, '$tipoComprobante', '$nroComprobante', '$codCuenta', '$descripcionCuenta', $monto, '$leyenda', $factura, $control, GETDATE(), '', '$observaciones')
-        END
-        ";
-
-        try{
-            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
-                $stmt = sqlsrv_query($this->cid_uy, $sql);
-            }else{
-                $stmt = sqlsrv_query($this->conexion, $sql);
+        try {
+            $conexion = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? $this->cid_uy : $this->conexion;
+            
+            // Verificamos si existe el registro
+            $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ? AND COD_CUENTA = ?";
+            $params = array($nroComprobante, $nroSucursal, $tipoComprobante, $codCuenta);
+            $stmt = sqlsrv_query($conexion, $sqlCheck, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error checking record existence");
             }
+            
+            $row = sqlsrv_fetch_array($stmt);
+            
+            if ($row['count'] > 0) {
+                // El registro existe, actualizamos
+                $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = ?, FECHA_CONTROL = GETDATE(), OBSERVACIONES = ? WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ? AND COD_CUENTA = ?";
+                $params = array($control, $observaciones, $nroComprobante, $nroSucursal, $tipoComprobante, $codCuenta);
+            } else {
+                // El registro no existe, lo insertamos
+                $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, FECHA_CONTROL, USUARIO, OBSERVACIONES) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), '', ?)";
+                $params = array($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control, $observaciones);
+            }
+            
+            $stmt = sqlsrv_query($conexion, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("SQL Error en marcarControlado: " . print_r($errors, true));
+                throw new Exception("Error executing SQL");
+            }
+            
             return $stmt;
+            
         } catch (\Throwable $th){
-            print_r($th);
+            error_log("Exception en marcarControlado: " . $th->getMessage());
+            throw $th;
         }
     }
 
     public function uncheckControl ($nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto) {
-        $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = 0
-        WHERE N_COMP  = '$nroComprobante' 
-        AND NRO_SUCURSAL = '$nroSucursal' 
-        AND TIPO_COMP = '$tipoComprobante' 
-        AND COD_CUENTA = '$codCuenta' 
-        AND MONTO = $monto";
-
-        try{
-            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
-                $stmt = sqlsrv_query($this->cid_uy, $sql);
-            }else{
-                $stmt = sqlsrv_query($this->conexion, $sql);
+        try {
+            $conexion = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? $this->cid_uy : $this->conexion;
+            
+            $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = 0 WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ? AND COD_CUENTA = ? AND MONTO = ?";
+            $params = array($nroComprobante, $nroSucursal, $tipoComprobante, $codCuenta, $monto);
+            
+            $stmt = sqlsrv_query($conexion, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("SQL Error en uncheckControl: " . print_r($errors, true));
+                return false;
             }
+            
             return true;
         } catch (\Throwable $th){
-            print_r($th);
+            error_log("Exception en uncheckControl: " . $th->getMessage());
+            return false;
         }
     }
 
@@ -426,17 +482,24 @@ class Sucursal
 }
     public function guardarObservaciones ($observaciones, $nroSucursal, $nroComprobante)
     {
-        $sql = " UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET OBSERVACIONES = '$observaciones' WHERE N_COMP = '$nroComprobante' AND NRO_SUCURSAL = '$nroSucursal'";
-   
-        try{
-            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
-                $stmt = sqlsrv_query($this->cid_uy, $sql);
-            }else{
-                $stmt = sqlsrv_query($this->conexion, $sql);
+        try {
+            $conexion = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? $this->cid_uy : $this->conexion;
+            
+            $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET OBSERVACIONES = ? WHERE N_COMP = ? AND NRO_SUCURSAL = ?";
+            $params = array($observaciones, $nroComprobante, $nroSucursal);
+            
+            $stmt = sqlsrv_query($conexion, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("SQL Error en guardarObservaciones: " . print_r($errors, true));
+                return false;
             }
+            
             return true;
         } catch (\Throwable $th){
-            print_r($th);
+            error_log("Exception en guardarObservaciones: " . $th->getMessage());
+            return false;
         }
     }
    
@@ -547,25 +610,24 @@ class Sucursal
    
     public function contabilizar ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto, $contabilizado) 
     {
-        $sql ="UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTABILIZADA = '$contabilizado'
-        WHERE FECHA = '$fecha' 
-        AND N_COMP = '$nroComprobante' 
-        AND NRO_SUCURSAL = '$nroSucursal' 
-        AND TIPO_COMP = '$tipoComprobante'
-        AND COD_CUENTA = '$codCuenta' 
-        AND MONTO = $monto";
-
-        try{
-            $conexion = $this->cid_central;
-
-            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
-                $conexion = $this->cid_uy;
+        try {
+            $conexion = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? $this->cid_uy : $this->cid_central;
+            
+            $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTABILIZADA = ? WHERE FECHA = ? AND N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ? AND COD_CUENTA = ? AND MONTO = ?";
+            $params = array($contabilizado, $fecha, $nroComprobante, $nroSucursal, $tipoComprobante, $codCuenta, $monto);
+            
+            $stmt = sqlsrv_query($conexion, $sql, $params);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("SQL Error en contabilizar: " . print_r($errors, true));
+                return false;
             }
-
-            $stmt = sqlsrv_query($conexion, $sql);
+            
             return true;
         } catch (Exception $e) {
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+            error_log('Excepción capturada en contabilizar: ' . $e->getMessage());
+            return false;
         }
     }
 

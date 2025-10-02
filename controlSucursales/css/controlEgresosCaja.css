@@ -1,0 +1,919 @@
+/* ===== ESTILOS PARA CONTROL EGRESOS DE CAJA SUCURSALES ===== */
+
+/* Variables CSS para consistencia */
+:root {
+    --primary-color: #0d6efd;
+    --primary-dark: #0b5ed7;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-bg: #f8f9fa;
+    --border-color: #dee2e6;
+    --text-dark: #495057;
+    --text-muted: #6c757d;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+    --border-radius: 8px;
+    --border-radius-lg: 15px;
+}
+
+/* Contenedor principal */
+.controlEgresos_wrapper {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+/* Card principal */
+.controlEgresos_main-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+/* Header del card */
+.controlEgresos_header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+}
+
+.controlEgresos_header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.controlEgresos_title-section h3 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.controlEgresos_title-section i {
+    font-size: 1.8rem;
+}
+
+/* Selector de país */
+.controlEgresos_country-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.controlEgresos_country-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.controlEgresos_country-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.controlEgresos_country-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.controlEgresos_flag {
+    width: 24px;
+    height: 18px;
+    border-radius: 3px;
+    object-fit: cover;
+}
+
+.controlEgresos_country-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.controlEgresos_country-select {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--text-dark);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.controlEgresos_country-select:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.controlEgresos_country-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.5);
+}
+
+/* Sección de filtros */
+.controlEgresos_filters {
+    background: var(--light-bg);
+    padding: 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.controlEgresos_filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: end;
+    justify-content: center;
+}
+
+.controlEgresos_filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+}
+
+.controlEgresos_filter-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.controlEgresos_filter-input {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.controlEgresos_filter-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    outline: none;
+    position: relative;
+    z-index: 10;
+}
+
+/* Z-index específico para textarea de leyenda */
+textarea.controlEgresos_filter-input {
+    position: relative;
+    z-index: 5;
+}
+
+textarea.controlEgresos_filter-input:focus {
+    z-index: 15;
+}
+
+.controlEgresos_filter-select {
+    min-width: 200px;
+}
+
+/* Botón de filtrar */
+.controlEgresos_filter-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.controlEgresos_filter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 0.5rem;
+}
+
+/* Toggle de entorno */
+.controlEgresos_toggle-wrapper {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.controlEgresos_toggle-custom {
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    height: 40px !important;
+    width: 80px !important;
+}
+
+.controlEgresos_toggle-custom .toggle-on,
+.controlEgresos_toggle-custom .toggle-off {
+    border-radius: 50% !important;
+    width: 35px !important;
+    height: 35px !important;
+    background-size: cover !important;
+    background-position: center !important;
+    margin: 2px !important;
+}
+
+.controlEgresos_toggle-custom .toggle-handle {
+    width: 35px !important;
+    height: 35px !important;
+    border-radius: 50% !important;
+}
+
+.controlEgresos_toggle-custom.btn {
+    height: 40px !important;
+    width: 80px !important;
+    padding: 0 !important;
+}
+
+/* Contenedor de tabla */
+.controlEgresos_table-container {
+    padding: 1rem;
+    overflow-x: auto;
+    width: 100%;
+    overflow-x: auto;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Tabla personalizada */
+.controlEgresos_table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    table-layout: fixed;
+    min-width: 100%;
+    font-size: 0.75rem; /* Fuente más pequeña para optimizar espacio */
+}
+
+.controlEgresos_table thead {
+    background: linear-gradient(135deg, var(--text-dark) 0%, var(--secondary-color) 100%);
+    color: white;
+}
+
+.controlEgresos_table th {
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.3px;
+    border: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.controlEgresos_table td {
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.7rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Anchos optimizados para todas las columnas */
+.controlEgresos_table th:nth-child(1), /* FECHA */
+.controlEgresos_table td:nth-child(1) {
+    width: 8% !important;
+    min-width: 80px !important;
+}
+
+.controlEgresos_table th:nth-child(2), /* SUCURSAL */
+.controlEgresos_table td:nth-child(2) {
+    width: 6% !important;
+    min-width: 60px !important;
+}
+
+.controlEgresos_table th:nth-child(3), /* TIPO COMP */
+.controlEgresos_table td:nth-child(3) {
+    width: 6% !important;
+    min-width: 50px !important;
+}
+
+.controlEgresos_table th:nth-child(4), /* COMPROBANTE */
+.controlEgresos_table td:nth-child(4) {
+    width: 10% !important;
+    min-width: 90px !important;
+}
+
+.controlEgresos_table th:nth-child(5), /* COD.CUENTA */
+.controlEgresos_table td:nth-child(5) {
+    width: 8% !important;
+    min-width: 70px !important;
+}
+
+.controlEgresos_table th:nth-child(6), /* CUENTA */
+.controlEgresos_table td:nth-child(6) {
+    width: 15% !important;
+    min-width: 120px !important;
+}
+
+.controlEgresos_table th:nth-child(7), /* MONTO */
+.controlEgresos_table td:nth-child(7) {
+    width: 10% !important;
+    min-width: 80px !important;
+}
+
+.controlEgresos_table th:nth-child(8), /* LEYENDA */
+.controlEgresos_table td:nth-child(8) {
+    width: 20% !important;
+    min-width: 150px !important;
+}
+
+.controlEgresos_table th:nth-child(9), /* VER */
+.controlEgresos_table td:nth-child(9) {
+    width: 4% !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+}
+
+/* Columnas de iconos compactas */
+.controlEgresos_table th:nth-child(10), /* AUTORIZADO */
+.controlEgresos_table th:nth-child(11), /* RECIBIDO */
+.controlEgresos_table th:nth-child(12), /* FACTURA */
+.controlEgresos_table th:nth-child(13), /* CONTROL */
+.controlEgresos_table td:nth-child(10),
+.controlEgresos_table td:nth-child(11),
+.controlEgresos_table td:nth-child(12),
+.controlEgresos_table td:nth-child(13) {
+    width: 3.25% !important;
+    min-width: 35px !important;
+    max-width: 35px !important;
+    padding: 0.25rem !important;
+}
+
+/* Optimizaciones adicionales para compactar la tabla */
+.controlEgresos_table .controlEgresos_sucursal {
+    font-size: 0.8rem !important;
+    padding: 0.15rem 0.3rem !important;
+}
+
+.controlEgresos_table .controlEgresos_fecha {
+    font-size: 0.8rem !important;
+}
+
+.controlEgresos_table .controlEgresos_comprobante {
+    font-size: 0.8rem !important;
+}
+
+.controlEgresos_table .controlEgresos_cuenta-codigo {
+    font-size: 0.8rem !important;
+}
+
+.controlEgresos_table .controlEgresos_monto-positivo,
+.controlEgresos_table .controlEgresos_monto-negativo {
+    font-size: 0.8rem !important;
+    font-weight: 600;
+}
+
+.controlEgresos_table .controlEgresos_leyenda {
+    font-size: 0.8rem !important;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.controlEgresos_table .controlEgresos_btn-ver {
+    padding: 0.2rem 0.3rem !important;
+    font-size: 0.7rem !important;
+}
+
+.controlEgresos_table .controlEgresos_checkbox {
+    transform: scale(0.8);
+}
+
+.controlEgresos_table .controlEgresos_icon-autorizado {
+    font-size: 1.2rem !important;
+}
+
+.controlEgresos_table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.controlEgresos_table tbody tr:hover {
+    background-color: #f8f9ff;
+    transform: scale(1.001);
+}
+
+.controlEgresos_table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+/* Estilos para diferentes tipos de datos en la tabla */
+.controlEgresos_fecha {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.controlEgresos_sucursal {
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    color: var(--primary-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    display: inline-block;
+}
+
+.controlEgresos_comprobante {
+    font-family: 'Courier New', monospace;
+    background: var(--light-bg);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.controlEgresos_monto-positivo {
+    color: var(--success-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.controlEgresos_monto-negativo {
+    color: var(--danger-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.controlEgresos_cuenta-codigo {
+    background: #fff3cd;
+    color: #856404;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.controlEgresos_leyenda {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* Iconos de estado */
+.controlEgresos_icon-autorizado {
+    color: var(--success-color) !important;
+    font-size: 1.5rem !important;
+    filter: drop-shadow(0 2px 4px rgba(25, 135, 84, 0.3));
+}
+
+.controlEgresos_icon-recibido {
+    color: #198754 !important;
+    font-size: 1.75rem !important;
+    filter: drop-shadow(0 2px 4px rgba(25, 135, 84, 0.3));
+    animation: none;
+}
+
+.controlEgresos_icon-recibido:hover {
+    animation: pulse 1s ease-in-out;
+}
+
+/* Asegurar que todos los iconos de check se vean verdes */
+.bi-check-circle-fill {
+    color: #198754 !important;
+}
+
+/* Botones de acción */
+.controlEgresos_btn-ver {
+    background: linear-gradient(135deg, var(--warning-color) 0%, #e0a800 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.controlEgresos_btn-ver:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.controlEgresos_btn-ver i {
+    font-size: 1rem;
+}
+
+/* Checkboxes personalizados */
+.controlEgresos_checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.controlEgresos_checkbox:checked {
+    background: linear-gradient(135deg, var(--success-color) 0%, #157347 100%);
+    border-color: var(--success-color);
+}
+
+.controlEgresos_checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.controlEgresos_checkbox:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Tooltips mejorados */
+.controlEgresos_tooltip {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border-radius: var(--border-radius) !important;
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+/* Modal de imágenes */
+.controlEgresos_modal {
+    z-index: 1050;
+}
+
+.controlEgresos_modal .modal-dialog {
+    max-width: 90vw;
+    max-height: 90vh;
+}
+
+.controlEgresos_modal .modal-content {
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+}
+
+.controlEgresos_modal .modal-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+}
+
+/* Animaciones */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.controlEgresos_table tbody tr {
+    animation: slideIn 0.3s ease forwards;
+}
+
+/* Estados de la tabla */
+.controlEgresos_table tbody tr.row-autorizado {
+    border-left: 4px solid var(--success-color);
+}
+
+.controlEgresos_table tbody tr.row-pendiente {
+    border-left: 4px solid var(--warning-color);
+}
+
+.controlEgresos_table tbody tr.row-error {
+    border-left: 4px solid var(--danger-color);
+}
+
+/* Correcciones adicionales para elementos específicos */
+.controlEgresos_table tbody tr td:nth-child(11) {
+    /* Columna RECIBIDO */
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+.controlEgresos_table tbody tr td:nth-child(11) i {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Asegurar que los checkboxes se vean bien */
+.controlEgresos_table tbody tr td:nth-child(12),
+.controlEgresos_table tbody tr td:nth-child(13) {
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+/* Mejoras para el toggle cuando está activo/inactivo */
+.toggle.btn-primary .toggle-on {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.toggle.btn-primary .toggle-off {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .controlEgresos_filter-row {
+        justify-content: flex-start;
+    }
+    
+    .controlEgresos_toggle-wrapper {
+        margin-left: 0;
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .controlEgresos_wrapper {
+        padding: 1rem 0;
+    }
+    
+    .controlEgresos_header {
+        padding: 1rem;
+    }
+    
+    .controlEgresos_header h3 {
+        font-size: 1.25rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .controlEgresos_header i {
+        font-size: 1.5rem;
+    }
+    
+    .controlEgresos_filters {
+        padding: 1rem;
+    }
+    
+    .controlEgresos_filter-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .controlEgresos_filter-group {
+        min-width: auto;
+    }
+    
+    .controlEgresos_filter-btn {
+        justify-content: center;
+        margin-top: 1rem;
+        padding: 0.875rem 1.5rem;
+    }
+    
+    .controlEgresos_toggle-wrapper {
+        align-self: center;
+        margin-top: 1rem;
+    }
+    
+    .controlEgresos_filter-summary {
+        padding: 1rem;
+        font-size: 0.85rem;
+        text-align: center;
+    }
+    
+    .controlEgresos_table-container {
+        padding: 0.5rem;
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .controlEgresos_table {
+        min-width: 1000px;
+        font-size: 0.75rem;
+    }
+    
+    .controlEgresos_table-container {
+        padding: 0.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100vw;
+    }
+    
+    .controlEgresos_table th,
+    .controlEgresos_table td {
+        padding: 0.5rem 0.3rem;
+        font-size: 0.8rem;
+    }
+    
+    .controlEgresos_leyenda {
+        max-width: 120px;
+    }
+    
+    .controlEgresos_icon-autorizado,
+    .controlEgresos_icon-recibido {
+        font-size: 1.25rem !important;
+    }
+    
+    .controlEgresos_checkbox {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .controlEgresos_header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .controlEgresos_table th,
+    .controlEgresos_table td {
+        padding: 0.375rem 0.2rem;
+        font-size: 0.75rem;
+    }
+    
+    .controlEgresos_btn-ver {
+        padding: 0.375rem 0.5rem;
+    }
+    
+    .controlEgresos_checkbox {
+        width: 1rem;
+        height: 1rem;
+    }
+}
+
+/* Mejoras adicionales para UX */
+.controlEgresos_loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+}
+
+.controlEgresos_no-data {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.controlEgresos_filter-summary {
+    background: #e8f4fd;
+    color: var(--primary-color);
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0;
+    margin-left: 5rem;
+    border-left: 4px solid var(--primary-color);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    clear: both;
+}
+
+.controlEgresos_filter-summary i {
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+/* Estilos para Select2 */
+.controlEgresos_select2 .select2-container {
+    width: 100% !important;
+}
+
+.controlEgresos_select2 .select2-selection {
+    border: 2px solid var(--border-color) !important;
+    border-radius: var(--border-radius) !important;
+    height: auto !important;
+    min-height: 44px !important;
+}
+
+.controlEgresos_select2 .select2-selection:focus-within {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.controlEgresos_select2 .select2-selection__rendered {
+    padding: 0.75rem !important;
+    line-height: 1.5 !important;
+}
+
+/* Estilos para DataTables */
+.controlEgresos_table_wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.controlEgresos_table_wrapper .dataTables_length,
+.controlEgresos_table_wrapper .dataTables_filter,
+.controlEgresos_table_wrapper .dataTables_info,
+.controlEgresos_table_wrapper .dataTables_paginate {
+    margin: 1rem 0;
+}
+
+.controlEgresos_table_wrapper .dataTables_filter input {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+    margin-left: 0.5rem;
+}
+
+.controlEgresos_table_wrapper .dataTables_paginate .paginate_button {
+    border-radius: var(--border-radius) !important;
+    margin: 0 2px !important;
+}
+
+.controlEgresos_table_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .controlEgresos_header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .controlEgresos_country-selector {
+        justify-content: center;
+    }
+    
+    .controlEgresos_filters {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .controlEgresos_table {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .controlEgresos_wrapper {
+        padding: 1rem 0;
+    }
+    
+    .controlEgresos_container {
+        margin: 0 1rem;
+    }
+    
+    .controlEgresos_header {
+        padding: 1rem;
+    }
+    
+    .controlEgresos_title-section h3 {
+        font-size: 1.2rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .controlEgresos_country-display {
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .controlEgresos_country-name {
+        font-size: 0.8rem;
+    }
+}
