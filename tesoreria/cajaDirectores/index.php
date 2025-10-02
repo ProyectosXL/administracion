@@ -36,40 +36,6 @@ session_start();
                     </div>
                 </div>
                 
-                <!-- Tarjetas de resumen -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="card text-white bg-success mb-3">
-                            <div class="card-header">
-                                <i class="bi bi-arrow-down-circle"></i> Total Ingresos
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title" id="totalIngresos">$0</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-white bg-danger mb-3">
-                            <div class="card-header">
-                                <i class="bi bi-arrow-up-circle"></i> Total Egresos
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title" id="totalEgresos">$0</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-white bg-primary mb-3">
-                            <div class="card-header">
-                                <i class="bi bi-cash-stack"></i> Saldo Actual
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title" id="saldoActual">$0</h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Pestañas de navegación -->
                 <ul class="nav nav-tabs" id="cajaTabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -96,8 +62,8 @@ session_start();
                 <div class="tab-content" id="cajaTabsContent">
                     <!-- Pestaña Ingresos -->
                     <div class="tab-pane fade show active" id="ingresos" role="tabpanel">
-                        <div class="py-4">
-                            <h3>Formulario de Ingresos</h3>
+                        <div class="pt-2 pb-4">
+                            <h3 class="mb-4">Formulario de Ingresos</h3>
                             <div class="row">
                                 <div class="col-md-6">
                                     <form id="formIngreso">
@@ -134,8 +100,8 @@ session_start();
                     
                     <!-- Pestaña Egresos -->
                     <div class="tab-pane fade" id="egresos" role="tabpanel">
-                        <div class="py-4">
-                            <h3>Formulario de Egresos</h3>
+                        <div class="pt-2 pb-4">
+                            <h3 class="mb-4">Formulario de Egresos</h3>
                             <div class="row">
                                 <div class="col-md-6">
                                     <form id="formEgreso">
@@ -172,6 +138,55 @@ session_start();
                                             <textarea class="form-control" id="observacionesEgreso" 
                                                       rows="3"></textarea>
                                         </div>
+                                        <div class="mb-3">
+                                            <label for="fotoEgreso" class="form-label">
+                                                Foto del Comprobante <span class="text-muted">(opcional)</span>
+                                            </label>
+                                            
+                                            <!-- Botones para móvil -->
+                                            <div class="d-md-none mb-2">
+                                                <div class="btn-group w-100" role="group">
+                                                    <input type="file" class="d-none" id="fotoEgresoCamera" 
+                                                           accept="image/*" 
+                                                           capture="environment"
+                                                           onchange="previsualizarFoto(this)">
+                                                    <input type="file" class="d-none" id="fotoEgresoGallery" 
+                                                           accept="image/*"
+                                                           onchange="previsualizarFoto(this)">
+                                                    
+                                                    <button type="button" class="btn btn-outline-primary" 
+                                                            onclick="document.getElementById('fotoEgresoCamera').click()">
+                                                        <i class="bi bi-camera"></i> Tomar Foto
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary" 
+                                                            onclick="document.getElementById('fotoEgresoGallery').click()">
+                                                        <i class="bi bi-image"></i> Galería
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Input tradicional para escritorio -->
+                                            <input type="file" class="form-control d-none d-md-block" id="fotoEgreso" 
+                                                   accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp,image/tiff,image/heic,image/heif"
+                                                   onchange="previsualizarFoto(this)">
+                                            
+                                            <div class="form-text">
+                                                <small>
+                                                    <strong>Móvil:</strong> Usa los botones para tomar foto o seleccionar de galería<br>
+                                                    <strong>Escritorio:</strong> Arrastra o selecciona archivo<br>
+                                                    <strong>Formatos:</strong> JPG, PNG, GIF, BMP, WebP, TIFF, HEIC, HEIF
+                                                </small>
+                                            </div>
+                                            
+                                            <div id="previewFotoEgreso" class="mt-2 d-none">
+                                                <img id="imgPreviewEgreso" src="" class="img-thumbnail" 
+                                                     style="max-width: 200px; max-height: 150px;">
+                                                <button type="button" class="btn btn-sm btn-outline-danger ms-2" 
+                                                        onclick="eliminarPreviewFoto()">
+                                                    <i class="bi bi-trash"></i> Quitar
+                                                </button>
+                                            </div>
+                                        </div>
                                         <button type="submit" class="btn btn-danger">
                                             <i class="bi bi-check-circle"></i> Registrar Egreso
                                         </button>
@@ -187,14 +202,14 @@ session_start();
                     
                     <!-- Pestaña Reporte -->
                     <div class="tab-pane fade" id="reporte" role="tabpanel">
-                        <div class="py-4">
-                            <h3>Reporte de Saldo de Caja</h3>
+                        <div class="pt-2 pb-4">
+                            <h3 class="mb-4">Reporte de Saldo de Caja</h3>
                             
                             <!-- Filtros de fecha -->
                             <div class="card mb-4">
                                 <div class="card-body">
                                     <h5 class="card-title">
-                                        <i class="bi bi-funnel"></i> Filtros de Período
+                                        <i class="bi bi-funnel"></i> Filtro de Período
                                     </h5>
                                     <div class="row">
                                         <div class="col-md-4">
@@ -217,6 +232,43 @@ session_start();
                                 </div>
                             </div>
                             
+                            <!-- Tarjetas de resumen -->
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-success mb-3">
+                                        <div class="card-header">
+                                            <i class="bi bi-arrow-down-circle"></i> Total Ingresos (Rango Seleccionado)
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="totalIngresos">$0</h3>
+                                            <p class="card-text">Ingresos confirmados</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-danger mb-3">
+                                        <div class="card-header">
+                                            <i class="bi bi-arrow-up-circle"></i> Total Egresos (Rango Seleccionado)
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="totalEgresos">$0</h3>
+                                            <p class="card-text">Egresos registrados</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-primary mb-3">
+                                        <div class="card-header">
+                                            <i class="bi bi-cash-stack"></i> Saldo Actual en Caja   
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="saldoActual">$0</h3>
+                                            <p class="card-text">Disponible</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div id="contenidoReporte"></div>
                         </div>
                     </div>
@@ -228,14 +280,42 @@ session_start();
     <!-- Modal de confirmación -->
     <?php include 'components/modal_confirmar.php'; ?>
     
+    <!-- Modal para ver fotos de egresos -->
+    <div class="modal fade" id="modalFotoEgreso" tabindex="-1" aria-labelledby="modalFotoEgresoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalFotoEgresoLabel">
+                        <i class="bi bi-camera"></i> Foto del Comprobante
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="contenedorFotoEgreso">
+                        <img id="imagenFotoEgreso" src="" class="img-fluid rounded shadow" 
+                             style="max-width: 100%; max-height: 70vh;">
+                    </div>
+                    <div id="infoFotoEgreso" class="mt-3 text-muted small">
+                        <!-- Información adicional del egreso -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Scripts personalizados -->
-    <script src="js/modal_global.js"></script>
-    <script src="js/caja_ingresos.js"></script>
-    <script src="js/caja_egresos.js"></script>
-    <script src="js/caja_reporte.js"></script>
-    <script src="js/sincronizar_vistas.js"></script>
+    <script src="js/modal_global.js?v=<?php echo time(); ?>"></script>
+    <script src="js/caja_ingresos.js?v=<?php echo time(); ?>"></script>
+    <script src="js/caja_egresos.js?v=<?php echo time(); ?>"></script>
+    <script src="js/caja_reporte.js?v=<?php echo time(); ?>"></script>
+    <script src="js/sincronizar_vistas.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

@@ -1,15 +1,6 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Manejar preflight requests
-if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    exit(0);
-}
-
-require_once __DIR__ . '/../Class/Egreso.php';
+require_once __DIR__ . '/../class/Egreso.php';
 
 try {
     $egreso = new Egreso();
@@ -45,7 +36,8 @@ try {
                 'fecha' => $_POST['fecha'],
                 'motivo' => $_POST['motivo'],
                 'importe' => $importe,
-                'observaciones' => $_POST['observaciones'] ?? ''
+                'observaciones' => $_POST['observaciones'] ?? '',
+                'foto' => $_POST['foto'] ?? null
             ];
             
             // Si es retiro de socio, agregar director
@@ -119,6 +111,19 @@ try {
             echo json_encode([
                 'success' => true,
                 'data' => $directores
+            ]);
+            break;
+            
+        case 'obtener_foto':
+            if (empty($_GET['id'])) {
+                throw new Exception('ID de egreso requerido');
+            }
+            
+            $foto = $egreso->obtenerFoto($_GET['id']);
+            
+            echo json_encode([
+                'success' => true,
+                'foto' => $foto
             ]);
             break;
             

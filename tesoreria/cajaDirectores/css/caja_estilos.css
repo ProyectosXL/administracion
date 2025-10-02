@@ -2,6 +2,117 @@
  * Estilos específicos para Gestión de Caja Directores
  */
 
+/* Estilos para subida y preview de fotos */
+.img-thumbnail {
+    transition: transform 0.3s ease;
+}
+
+.img-thumbnail:hover {
+    transform: scale(1.05);
+}
+
+#previewFotoEgreso {
+    border: 1px dashed #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+}
+
+/* Botones de foto para móvil */
+@media (max-width: 767.98px) {
+    .btn-group .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .btn-group .btn i {
+        margin-right: 0.25rem;
+    }
+    
+    /* Mejorar visualización del preview en móvil */
+    #previewFotoEgreso img {
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 200px;
+    }
+}
+
+/* Estilos para input file oculto en móvil */
+.d-md-none input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Modal de foto */
+#modalFotoEgreso .modal-body {
+    padding: 1.5rem;
+}
+
+#modalFotoEgreso img {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+}
+
+/* Responsive para modal de foto */
+@media (max-width: 767.98px) {
+    #modalFotoEgreso .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+    
+    #modalFotoEgreso .modal-body {
+        padding: 1rem;
+    }
+}
+
+/* Estilos para indicador de carga en tarjetas */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Botón de foto centrado - estilos específicos */
+.btn[onclick*="verFotoEgreso"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+}
+
+.btn[onclick*="verFotoEgreso"] i {
+    margin: 0 !important;
+    display: block !important;
+}
+
+/* Estilos para checkboxes personalizados en tabla */
+.checkbox-style {
+    transition: all 0.2s ease;
+    border-width: 2px !important;
+    background-color: transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-family: monospace !important;
+    line-height: 1 !important;
+}
+
+.checkbox-style:hover {
+    background-color: #e8f5e8 !important;
+    border-color: #28a745 !important;
+    transform: scale(1.05);
+}
+
+.checkbox-style:active {
+    transform: scale(0.95);
+}
+
+.checkbox-style.checked {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+}
+
 /* Tarjetas de resumen específicas */
 .card.bg-success .card-header,
 .card.bg-danger .card-header,
