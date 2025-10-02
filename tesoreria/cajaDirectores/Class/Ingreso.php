@@ -121,9 +121,9 @@ class Ingreso {
     }
     
     /**
-     * Obtiene ingresos desde la fuente 599 (Base Central)
+     * Obtiene ingresos desde TESORERÍA (Base Central - SBA05)
      */
-    public function obtenerIngresos599($desde, $hasta): array {
+    public function obtenerIngresosTesoreria($desde, $hasta): array {
         try {
             $sql = "SELECT    
                         ID_SBA05,    
@@ -147,21 +147,21 @@ class Ingreso {
             
             $resultados = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                // Verificar si ya fue insertado en tabla ingresos (para evitar duplicados)
-                $yaInsertado = $this->verificarRecibido599($row['ID_SBA05']);
+                // Verificar si ya fue marcado como recibido en tabla ingresos
+                $recibido = $this->verificarRecibidoTesoreria($row['ID_SBA05']);
                 
-                // Solo mostrar si NO está ya insertado en tabla ingresos (evitar duplicados)
-                if (!$yaInsertado) {
+                // Solo incluir si NO está marcado como recibido (evitar duplicados)
+                if (!$recibido) {
                     $resultados[] = [
-                        'id' => 'EXT_599_' . $row['ID_SBA05'], // ID único para identificar
+                        'id' => 'EXT_TES_' . $row['ID_SBA05'], // ID único para identificar
                         'ID_SBA05' => $row['ID_SBA05'],
                         'fecha' => $row['FECHA'],
-                        'COD_COMP' => $row['COD_COMP'],
-                        'N_COMP' => $row['N_COMP'],
+                        'COD_COMP' => $row['COD_COMP'], // Ya viene correctamente separado de SBA05
+                        'N_COMP' => $row['N_COMP'],     // Ya viene correctamente separado de SBA05
                         'observaciones' => $row['OBSERVACIONES'],
                         'importe' => $row['MONTO'],
-                        'recibido' => 1, // Fuente 599 viene RECIBIDA por defecto
-                        'origen' => '599'
+                        'recibido' => 0, // Siempre pendiente hasta marcar
+                        'origen' => 'TESORERIA'
                     ];
                 }
             }
@@ -175,9 +175,9 @@ class Ingreso {
     }
 
     /**
-     * Obtiene ingresos desde TESORERIA (Base Central)
+     * Obtiene ingresos desde 599 (Base Central - sj_administracion_cobros)
      */
-    public function obtenerIngresosTesoreria($desde, $hasta): array {
+    public function obtenerIngresos599($desde, $hasta): array {
         try {
             $sql = "SELECT 
                         CAST(fecha_cobro AS DATE) FECHA, 
@@ -198,24 +198,17 @@ class Ingreso {
             
             $resultados = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                // Verificar si ya fue insertado en tabla ingresos (para evitar duplicados)
-                $yaInsertado = $this->verificarRecibidoTesoreria($row['ID']);
-                
-                // Solo mostrar si NO está ya insertado en tabla ingresos (evitar duplicados)
-                if (!$yaInsertado) {
-                    $resultados[] = [
-                        'id' => 'EXT_TES_' . $row['ID'], // ID único para identificar
-                        'ID_TESORERIA' => $row['ID'], // Nuevo campo para identificar origen tesorería
-                        'ID_SBA05' => null, // No aplica para tesorería
-                        'fecha' => $row['FECHA'],
-                        'COD_COMP' => '', // Vacío para tesorería
-                        'N_COMP' => '', // Vacío para tesorería
-                        'observaciones' => $row['OBSERVACIONES'],
-                        'importe' => $row['MONTO'],
-                        'recibido' => 0, // TESORERÍA viene PENDIENTE, requiere checkbox
-                        'origen' => 'TESORERIA'
-                    ];
-                }
+                $resultados[] = [
+                    'id' => 'EXT_599_' . $row['ID'], // ID único para identificar
+                    'ID_SBA05' => null, // No aplica para 599
+                    'fecha' => $row['FECHA'],
+                    'COD_COMP' => '', // Vacío para 599
+                    'N_COMP' => '', // Vacío para 599
+                    'observaciones' => $row['OBSERVACIONES'],
+                    'importe' => $row['MONTO'],
+                    'recibido' => 1, // Siempre recibido para 599
+                    'origen' => '599'
+                ];
             }
             
             sqlsrv_free_stmt($stmt);
@@ -227,11 +220,11 @@ class Ingreso {
     }
 
     /**
-     * Verifica si un ingreso de la fuente 599 ya fue marcado como recibido
+     * Verifica si un ingreso de TESORERÍA ya fue marcado como recibido
      */
-    private function verificarRecibido599($idSba05): int {
+    private function verificarRecibidoTesoreria($idSba05): int {
         try {
-            $sql = "SELECT COUNT(*) as count FROM ingresos WHERE ID_SBA05 = ? AND origen = '599'";
+            $sql = "SELECT COUNT(*) as count FROM ingresos WHERE ID_SBA05 = ? AND origen = 'TESORERIA'";
             $stmt = sqlsrv_query($this->db, $sql, [$idSba05]);
             
             if ($stmt === false) {
@@ -244,28 +237,6 @@ class Ingreso {
             return $row['count'] > 0 ? 1 : 0;
         } catch (Exception $e) {
             error_log("Error en verificarRecibido599: " . $e->getMessage());
-            return 0;
-        }
-    }
-    
-    /**
-     * Verifica si un ingreso de TESORERÍA ya fue marcado como recibido
-     */
-    private function verificarRecibidoTesoreria($idTesoreria): int {
-        try {
-            $sql = "SELECT COUNT(*) as count FROM ingresos WHERE ID_TESORERIA = ? AND origen = 'TESORERIA'";
-            $stmt = sqlsrv_query($this->db, $sql, [$idTesoreria]);
-            
-            if ($stmt === false) {
-                return 0;
-            }
-            
-            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-            sqlsrv_free_stmt($stmt);
-            
-            return $row['count'] > 0 ? 1 : 0;
-        } catch (Exception $e) {
-            error_log("Error en verificarRecibidoTesoreria: " . $e->getMessage());
             return 0;
         }
     }
@@ -298,13 +269,13 @@ class Ingreso {
             ];
         }
         
-        // 2. Ingresos desde fuente 599
-        $ingresos599 = $this->obtenerIngresos599($desde, $hasta);
-        $resultados = array_merge($resultados, $ingresos599);
-        
-        // 3. Ingresos desde TESORERIA
+        // 2. Ingresos desde TESORERÍA (SBA05)
         $ingresosTesoreria = $this->obtenerIngresosTesoreria($desde, $hasta);
         $resultados = array_merge($resultados, $ingresosTesoreria);
+        
+        // 3. Ingresos desde 599 (sj_administracion_cobros)
+        $ingresos599 = $this->obtenerIngresos599($desde, $hasta);
+        $resultados = array_merge($resultados, $ingresos599);
         
         // Ordenar por fecha descendente
         usort($resultados, function($a, $b) {
@@ -317,27 +288,32 @@ class Ingreso {
     }
     
     /**
-     * Marca un ingreso 599 como recibido (lo inserta en tabla ingresos)
+     * Marca un ingreso TESORERÍA como recibido (lo inserta en tabla ingresos)
      */
-    public function marcarRecibido599($idSba05, $fecha, $codComp, $nComp, $observaciones, $importe): bool {
+    public function marcarRecibidoTesoreria($idSba05, $fecha, $codComp, $nComp, $observaciones, $importe): bool {
         try {
             // Verificar si ya existe
-            if ($this->verificarRecibido599($idSba05)) {
+            if ($this->verificarRecibidoTesoreria($idSba05)) {
                 return true; // Ya existe
             }
+            
+            // Los campos COD_COMP y N_COMP ya vienen separados correctamente desde obtenerIngresosTesoreria()
+            // Ajustar longitudes según límites de la tabla
+            $codCompAjustado = substr($codComp, 0, 10); // Máximo 10 caracteres para COD_COMP
+            $nCompAjustado = substr($nComp, 0, 20);     // Máximo 20 caracteres para N_COMP
             
             $sql = "INSERT INTO ingresos (
                         ID_SBA05, COD_COMP, N_COMP, fecha, importe, 
                         observaciones, recibido, fecha_carga, origen
                     ) VALUES (
                         ?, ?, ?, ?, ?,
-                        ?, 1, GETDATE(), '599'
+                        ?, 1, GETDATE(), 'TESORERIA'
                     )";
             
             $params = [
                 $idSba05,
-                $codComp,
-                $nComp,
+                $codCompAjustado,
+                $nCompAjustado,
                 $fecha,
                 $importe,
                 $observaciones
@@ -346,51 +322,7 @@ class Ingreso {
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
-                throw new Exception("Error al insertar ingreso 599: " . print_r(sqlsrv_errors(), true));
-            }
-            
-            sqlsrv_free_stmt($stmt);
-            return true;
-        } catch (Exception $e) {
-            error_log("Error en marcarRecibido599: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Marca un ingreso de TESORERÍA como recibido (lo inserta en tabla ingresos)
-     */
-    public function marcarRecibidoTesoreria($idTesoreria, $fecha, $observaciones, $importe): bool {
-        try {
-            // Verificar si ya existe
-            if ($this->verificarRecibidoTesoreria($idTesoreria)) {
-                return true; // Ya existe
-            }
-            
-            // Generar número de comprobante para TESORERÍA
-            $numeroComprobante = $this->generarNumeroComprobante();
-            
-            $sql = "INSERT INTO ingresos (
-                        ID_TESORERIA, COD_COMP, N_COMP, fecha, importe, observaciones, 
-                        recibido, fecha_carga, origen
-                    ) VALUES (
-                        ?, 'TES', ?, ?, ?, ?, 
-                        1, GETDATE(), 'TESORERIA'
-                    )";
-            
-            $params = [
-                $idTesoreria,
-                $numeroComprobante,
-                $fecha,
-                $importe,
-                $observaciones
-            ];
-            
-            $stmt = sqlsrv_query($this->db, $sql, $params);
-            
-            if ($stmt === false) {
-                $errors = sqlsrv_errors();
-                throw new Exception("Error al insertar ingreso TESORERÍA: " . print_r($errors, true));
+                throw new Exception("Error al insertar ingreso TESORERÍA: " . print_r(sqlsrv_errors(), true));
             }
             
             sqlsrv_free_stmt($stmt);

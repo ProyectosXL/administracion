@@ -1,16 +1,7 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Manejar preflight requests
-if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    exit(0);
-}
-
-require_once __DIR__ . '/../Class/Ingreso.php';
-require_once __DIR__ . '/../Class/Egreso.php';
+require_once __DIR__ . '/../class/Ingreso.php';
+require_once __DIR__ . '/../class/Egreso.php';
 
 try {
     $accion = $_GET['accion'] ?? '';
@@ -63,9 +54,9 @@ try {
                 // Convertir fechas DateTime a string si es necesario
                 $fecha = is_object($ing['fecha']) ? $ing['fecha']->format('Y-m-d') : $ing['fecha'];
                 
-                // Para TESORERIA, no mostrar campos COMP
-                $codComp = $ing['origen'] === 'TESORERIA' ? '' : $ing['COD_COMP'];
-                $nComp = $ing['origen'] === 'TESORERIA' ? '' : $ing['N_COMP'];
+                // Para TESORERÍA, mostrar los campos COMP correctamente
+                $codComp = $ing['COD_COMP'] ?? '';
+                $nComp = $ing['N_COMP'] ?? '';
                 
                 $movimientos[] = [
                     'tipo' => 'INGRESO',
@@ -77,8 +68,8 @@ try {
                     'recibido' => $ing['recibido'],
                     'id' => $ing['id'],
                     'origen' => $ing['origen'] ?? 'MANUAL',
-                    'ID_SBA05' => $ing['ID_SBA05'] ?? null,
-                    'ID_TESORERIA' => $ing['ID_TESORERIA'] ?? null
+                    'ID_SBA05' => $ing['ID_SBA05'] ?? null, // Necesario para TESORERÍA
+                    'tiene_foto' => 0 // Los ingresos no tienen foto
                 ];
             }
             
@@ -103,7 +94,8 @@ try {
                     'importe' => $egr['importe'],
                     'recibido' => $egr['recibido'],
                     'id' => $egr['id'],
-                    'origen' => 'MANUAL' // Los egresos siempre son manuales
+                    'origen' => 'MANUAL', // Los egresos siempre son manuales
+                    'tiene_foto' => $egr['tiene_foto'] ?? 0 // Incluir info de foto
                 ];
             }
             

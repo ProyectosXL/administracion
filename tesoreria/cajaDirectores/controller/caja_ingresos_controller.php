@@ -1,19 +1,39 @@
 <?php
+// ===== DEBUG ULTRA EXTREMO =====
+error_log('[GLOBAL DEBUG] === INICIO ABSOLUTO caja_ingresos_controller.php ===');
+error_log('[GLOBAL DEBUG] Timestamp: ' . date('Y-m-d H:i:s'));
+error_log('[GLOBAL DEBUG] Método HTTP: ' . $_SERVER['REQUEST_METHOD']);
+error_log('[GLOBAL DEBUG] Content-Type: ' . ($_SERVER['CONTENT_TYPE'] ?? 'NO_DEFINIDO'));
+error_log('[GLOBAL DEBUG] User-Agent: ' . ($_SERVER['HTTP_USER_AGENT'] ?? 'NO_DEFINIDO'));
+error_log('[GLOBAL DEBUG] Request URI: ' . ($_SERVER['REQUEST_URI'] ?? 'NO_DEFINIDO'));
+error_log('[GLOBAL DEBUG] Query String: ' . ($_SERVER['QUERY_STRING'] ?? 'NO_DEFINIDO'));
+
+// Capturar entrada RAW
+$raw_input = file_get_contents('php://input');
+error_log('[GLOBAL DEBUG] php://input RAW (' . strlen($raw_input) . ' chars): ' . $raw_input);
+
+// Análisis de $_POST
+error_log('[GLOBAL DEBUG] $_POST count: ' . count($_POST));
+error_log('[GLOBAL DEBUG] $_POST keys: ' . implode(', ', array_keys($_POST)));
+error_log('[GLOBAL DEBUG] $_POST complete: ' . print_r($_POST, true));
+
+// Análisis de $_GET
+error_log('[GLOBAL DEBUG] $_GET count: ' . count($_GET));
+error_log('[GLOBAL DEBUG] $_GET complete: ' . print_r($_GET, true));
+
+// Análisis de $_REQUEST
+error_log('[GLOBAL DEBUG] $_REQUEST count: ' . count($_REQUEST));
+error_log('[GLOBAL DEBUG] $_REQUEST complete: ' . print_r($_REQUEST, true));
+
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-// Manejar preflight requests
-if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    exit(0);
-}
-
-require_once __DIR__ . '/../Class/Ingreso.php';
+require_once __DIR__ . '/../class/Ingreso.php';
 
 try {
     $ingreso = new Ingreso();
     $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
+    
+    error_log('[GLOBAL DEBUG] Acción detectada: "' . $accion . '"');
+    error_log('[GLOBAL DEBUG] === FIN DEBUG GLOBAL - INICIANDO SWITCH ===');
     
     switch ($accion) {
         case 'crear':
@@ -129,55 +149,102 @@ try {
             }
             break;
             
-        case 'marcar_recibido_599':
-            $required = ['id_sba05', 'fecha', 'cod_comp', 'n_comp', 'observaciones', 'importe'];
-            foreach ($required as $field) {
-                if (empty($_POST[$field])) {
-                    throw new Exception("Campo requerido: {$field}");
-                }
-            }
-            
-            $resultado = $ingreso->marcarRecibido599(
-                $_POST['id_sba05'],
-                $_POST['fecha'],
-                $_POST['cod_comp'],
-                $_POST['n_comp'],
-                $_POST['observaciones'],
-                (float)$_POST['importe']
-            );
-            
-            if ($resultado) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Ingreso 599 marcado como recibido'
-                ]);
-            } else {
-                throw new Exception('Error al marcar el ingreso 599');
-            }
-            break;
-            
         case 'marcar_recibido_tesoreria':
-            $required = ['id_tesoreria', 'fecha', 'observaciones', 'importe'];
-            foreach ($required as $field) {
-                if (empty($_POST[$field])) {
-                    throw new Exception("Campo requerido: {$field}");
+            // Debug EXTREMO: Capturar TODO lo que llega
+            error_log('[ULTRA DEBUG] === INICIO marcar_recibido_tesoreria ===');
+            error_log('[ULTRA DEBUG] Método HTTP: ' . $_SERVER['REQUEST_METHOD']);
+            error_log('[ULTRA DEBUG] Content-Type: ' . ($_SERVER['CONTENT_TYPE'] ?? 'NO_DEFINIDO'));
+            error_log('[ULTRA DEBUG] POST raw: ' . print_r($_POST, true));
+            error_log('[ULTRA DEBUG] REQUEST raw: ' . print_r($_REQUEST, true));
+            error_log('[ULTRA DEBUG] php://input: ' . file_get_contents('php://input'));
+            
+            // Obtener valores con múltiples fuentes de respaldo
+            $id_sba05 = $_POST['id_sba05'] ?? $_REQUEST['id_sba05'] ?? '';
+            $fecha = $_POST['fecha'] ?? $_REQUEST['fecha'] ?? '';
+            $cod_comp = $_POST['cod_comp'] ?? $_REQUEST['cod_comp'] ?? '';
+            $n_comp = $_POST['n_comp'] ?? $_REQUEST['n_comp'] ?? '';
+            $observaciones = $_POST['observaciones'] ?? $_REQUEST['observaciones'] ?? '';
+            $importe = $_POST['importe'] ?? $_REQUEST['importe'] ?? 0;
+            
+            // Log EXTREMO de cada campo con análisis profundo
+            error_log('[ULTRA DEBUG] ANÁLISIS DE CAMPOS:');
+            error_log('  id_sba05: "' . $id_sba05 . '" (tipo: ' . gettype($id_sba05) . ', longitud: ' . strlen($id_sba05) . ', empty: ' . (empty($id_sba05) ? 'true' : 'false') . ')');
+            error_log('  fecha: "' . $fecha . '" (tipo: ' . gettype($fecha) . ', longitud: ' . strlen($fecha) . ', empty: ' . (empty($fecha) ? 'true' : 'false') . ')');
+            error_log('  cod_comp: "' . $cod_comp . '" (tipo: ' . gettype($cod_comp) . ')');
+            error_log('  n_comp: "' . $n_comp . '" (tipo: ' . gettype($n_comp) . ')');
+            error_log('  observaciones: "' . $observaciones . '" (tipo: ' . gettype($observaciones) . ')');
+            error_log('  importe: "' . $importe . '" (tipo: ' . gettype($importe) . ')');
+            
+            // Análisis de caracteres ocultos en campos críticos
+            if (!empty($id_sba05)) {
+                error_log('[ULTRA DEBUG] id_sba05 análisis de caracteres:');
+                for ($i = 0; $i < strlen($id_sba05); $i++) {
+                    $char = $id_sba05[$i];
+                    error_log('  Posición ' . $i . ': "' . $char . '" (ASCII: ' . ord($char) . ')');
                 }
             }
+            
+            // Limpiar posibles caracteres ocultos
+            $id_sba05 = trim($id_sba05);
+            $fecha = trim($fecha);
+            $observaciones = trim($observaciones);
+            
+            error_log('[ULTRA DEBUG] Después de trim:');
+            error_log('  id_sba05: "' . $id_sba05 . '" (longitud: ' . strlen($id_sba05) . ')');
+            error_log('  fecha: "' . $fecha . '" (longitud: ' . strlen($fecha) . ')');
+            
+            // Validación ULTRA detallada
+            if (empty($id_sba05) || $id_sba05 === '' || $id_sba05 === 'undefined' || $id_sba05 === 'null') {
+                $error = 'Campo requerido: id_sba05';
+                error_log('[CRITICAL ERROR] ' . $error);
+                error_log('[CRITICAL ERROR] Valor exacto recibido: "' . $id_sba05 . '"');
+                error_log('[CRITICAL ERROR] Análisis completo: empty=' . (empty($id_sba05) ? 'true' : 'false') . 
+                         ', equals_empty_string=' . ($id_sba05 === '' ? 'true' : 'false') . 
+                         ', equals_undefined=' . ($id_sba05 === 'undefined' ? 'true' : 'false') . 
+                         ', equals_null=' . ($id_sba05 === 'null' ? 'true' : 'false'));
+                error_log('[CRITICAL ERROR] Todas las claves de $_POST: ' . implode(', ', array_keys($_POST)));
+                error_log('[CRITICAL ERROR] ¿Existe $_POST[id_sba05]? ' . (isset($_POST['id_sba05']) ? 'SI' : 'NO'));
+                throw new Exception($error);
+            }
+            
+            if (empty($fecha) || $fecha === '' || $fecha === 'undefined' || $fecha === 'null') {
+                $error = 'Campo requerido: fecha';
+                error_log('[CRITICAL ERROR] ' . $error);
+                error_log('[CRITICAL ERROR] Valor exacto de fecha: "' . $fecha . '"');
+                throw new Exception($error);
+            }
+            
+            if (empty($observaciones) || $observaciones === '' || $observaciones === 'undefined' || $observaciones === 'null') {
+                $error = 'Campo requerido: observaciones';
+                error_log('[CRITICAL ERROR] ' . $error);
+                error_log('[CRITICAL ERROR] Valor exacto de observaciones: "' . $observaciones . '"');
+                throw new Exception($error);
+            }
+            
+            error_log('[ULTRA DEBUG] ✅ Todas las validaciones pasadas. Campos válidos:');
+            error_log('  ✅ id_sba05: "' . $id_sba05 . '"');
+            error_log('  ✅ fecha: "' . $fecha . '"');
+            error_log('  ✅ observaciones: "' . $observaciones . '"');
+            error_log('[ULTRA DEBUG] Llamando a marcarRecibidoTesoreria...');
             
             $resultado = $ingreso->marcarRecibidoTesoreria(
-                $_POST['id_tesoreria'],
-                $_POST['fecha'],
-                $_POST['observaciones'],
-                (float)$_POST['importe']
+                $id_sba05,
+                $fecha,
+                $cod_comp,
+                $n_comp,
+                $observaciones,
+                (float)$importe
             );
             
             if ($resultado) {
+                error_log('[ULTRA DEBUG] ✅ marcarRecibidoTesoreria exitoso');
                 echo json_encode([
                     'success' => true,
-                    'message' => 'Ingreso de TESORERÍA marcado como recibido'
+                    'message' => 'Ingreso TESORERÍA marcado como recibido'
                 ]);
             } else {
-                throw new Exception('Error al marcar el ingreso de TESORERÍA');
+                error_log('[ULTRA DEBUG] ❌ marcarRecibidoTesoreria falló');
+                throw new Exception('Error al marcar el ingreso TESORERÍA');
             }
             break;
             
