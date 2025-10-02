@@ -361,7 +361,9 @@ class Sucursal
         error_log("tipoComprobante: '$tipoComprobante'");
         error_log("nroComprobante: '$nroComprobante'");
         error_log("codCuenta: '$codCuenta'");
+        error_log("descripcionCuenta: '$descripcionCuenta'");
         error_log("monto: '$monto'");
+        error_log("observaciones: '$observaciones'");
 
         try {
             // Primero verificamos si existe el registro
@@ -393,6 +395,9 @@ class Sucursal
                 $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES 
                         (FECHA, FECHA_RECIBIDO, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, RECIBIDO, OBSERVACIONES) 
                         VALUES (?, GETDATE(), ?, ?, ?, ?, ?, ?, 1, ?)";
+                
+                // DEBUG: Verificar parámetros antes de insertar
+                error_log("INSERT - codCuenta: '$codCuenta', descripcionCuenta: '$descripcionCuenta'");
                 
                 $params = array($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $observaciones);
             }

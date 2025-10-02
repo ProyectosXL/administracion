@@ -153,8 +153,8 @@ $locales = $sucursal->traerLocales();
                                                 <?php endif; ?>
                                             </div>
                                         </td>
-                                        <td hidden><?= $gasto['COD_CTA'] ?></td>
-                                        <td hidden><?= $gasto['DESC_CUENTA'] ?></td>
+                                        <td hidden data-cod-cuenta="<?= htmlspecialchars($gasto['COD_CTA']) ?>"><?= $gasto['COD_CTA'] ?></td>
+                                        <td hidden data-desc-cuenta="<?= htmlspecialchars($gasto['DESC_CUENTA']) ?>"><?= $gasto['DESC_CUENTA'] ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>

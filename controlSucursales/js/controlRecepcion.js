@@ -59,8 +59,8 @@ const marcarRecibido = async (e) => {
             tipoComprobante: cells[3].textContent.trim(),
             nroComprobante: cells[4].getAttribute('data-ncomp-original') || cells[4].textContent.trim(),
             monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
-            codCuenta: cells[12].textContent.trim(),
-            descripcionCuenta: cells[13].textContent.trim(),
+            codCuenta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
+            descripcionCuenta: row.querySelector('[data-desc-cuenta]').getAttribute('data-desc-cuenta'),
             observaciones: cells[11].querySelector('textarea')?.value || ''
         };
 
@@ -119,8 +119,8 @@ const marcarControlado = (e) => {
         nroSucursal: cells[1].textContent.trim(),
         tipoComprobante: cells[3].textContent.trim(),
         nroComprobante: cells[4].getAttribute('data-ncomp-original') || cells[4].textContent.trim(),
-        codCuenta: cells[12].textContent.trim(),
-        descripcionCuenta: cells[13].textContent.trim(),
+        codCuenta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
+        descripcionCuenta: row.querySelector('[data-desc-cuenta]').getAttribute('data-desc-cuenta'),
         monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
         observaciones: cells[11].querySelector('textarea')?.value || ''
     };
@@ -223,7 +223,7 @@ const vincularRecibo = (btn) => {
         codComp: cells[3].textContent.trim(),
         nComp: cells[4].textContent, // No usar trim() aquí
         monto: parseFloat(cells[5].textContent.replace(/[$.]/g, '').replace(',', '.')),
-        codCta: cells[12].textContent.trim(),
+        codCta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
         montoFormateado: cells[5].textContent.trim()
     };
 
