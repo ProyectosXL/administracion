@@ -195,11 +195,11 @@ function procesarImagenes(response, carouselElement, startIndex) {
                 if (existe) {
                     let carouselItem = document.createElement('div');
                     carouselItem.className = index === startIndex ? 'carousel-item active h-100' : 'carousel-item h-100';
-                    carouselItem.style = "text-align:center; position: relative;";
+                    carouselItem.style = 'display:flex; align-items:center; justify-content:center; text-align:center; position: relative; min-height:80vh;';
                     let imgElement = document.createElement('img');
                     imgElement.src = '../../../../Imagenes/egresosCaja/' + imagen;
-                    imgElement.className = 'd-block img-fluid';
-                    imgElement.style = 'max-height: 80vh; width: auto;';
+                    imgElement.className = 'd-block img-fluid mx-auto';
+                    imgElement.style = 'max-height: 80vh; max-width: 90vw; width: auto; height: auto; margin: 0 auto;';
 
                     carouselItem.appendChild(imgElement);
                     carouselInner.appendChild(carouselItem);
