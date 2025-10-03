@@ -1,4 +1,3 @@
-
 <?php
 
 /**
@@ -9,6 +8,17 @@ class CostoOcupacionService
 {
     private $cid_central;
     private $alquiler;
+    
+    // Mapeo de agrupación de conceptos según tabla adjunta
+    private $agrupacionConceptos = [
+        'Alquiler' => [1, 2, 3], // Alquiler, Complementario, Baulera
+        'Llave' => [4], // Renovación contrato (llave) - Se calculará
+        'Alquiler porcentual' => [6, 7], // Porc. S/ventas brutas, Porc. S/ventas netas
+        'Gastos varios' => [10, 13, 14], // Gastos publicidad, Gastos administrativos, Gastos administrativos (S/Vtas. netas)
+        'Expensas' => [11], // Expensas + imp expensables
+        'Diferencia acuerdo' => [12], // Diferencia acuerdo
+        'Fondo de promoción %:' => [9, 16, 17] // Fondo de promoción (% VMM), Fondo promoción mensual (S/Vtas. Brutas), Fondo de promoción mensual (S/Vtas. Netas)
+    ];
 
     public function __construct()
     {
@@ -95,7 +105,7 @@ class CostoOcupacionService
     }
 
     /**
-     * Obtiene gastos por concepto y mes para una sucursal
+     * Obtiene gastos por concepto y mes para una sucursal (con agrupación)
      * @param string $idSucursal
      * @param string $fechaDesde
      * @param string $fechaHasta
@@ -137,23 +147,58 @@ class CostoOcupacionService
             
             sqlsrv_execute($stmt);
             
-            $gastos = [];
+            // Almacenar datos por ID_CA
+            $datosPorConcepto = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $periodoNorm = $this->normalizarPeriodo($row['PERIODO']);
+                $idCa = $row['ID_CA'];
                 
-                if (!isset($gastos[$row['CONCEPTO']])) {
-                    $gastos[$row['CONCEPTO']] = [
-                        'id_ca' => $row['ID_CA'],
-                        'concepto' => $row['CONCEPTO'],
-                        'meses' => []
-                    ];
+                if (!isset($datosPorConcepto[$idCa])) {
+                    $datosPorConcepto[$idCa] = [];
                 }
                 
-                $gastos[$row['CONCEPTO']]['meses'][$periodoNorm] = $row['IMPORTE'];
+                $datosPorConcepto[$idCa][$periodoNorm] = $row['IMPORTE'];
+            }
+            
+            // Calcular Llave (25% de suma de ID_CA 1, 6 y 7)
+            $llaveCalculada = [];
+            foreach ($meses as $mes) {
+                $suma = 0;
+                foreach ([1, 6, 7] as $idCa) {
+                    if (isset($datosPorConcepto[$idCa][$mes])) {
+                        $suma += $datosPorConcepto[$idCa][$mes];
+                    }
+                }
+                $llaveCalculada[$mes] = $suma * 0.25;
+            }
+            
+            // Agregar Llave calculada
+            $datosPorConcepto[4] = $llaveCalculada;
+            
+            // Agrupar según mapeo
+            $gastosAgrupados = [];
+            
+            foreach ($this->agrupacionConceptos as $nombreGrupo => $idsConceptos) {
+                $gastosAgrupados[$nombreGrupo] = [
+                    'concepto' => $nombreGrupo,
+                    'meses' => []
+                ];
+                
+                foreach ($meses as $mes) {
+                    $sumaGrupo = 0;
+                    
+                    foreach ($idsConceptos as $idCa) {
+                        if (isset($datosPorConcepto[$idCa][$mes])) {
+                            $sumaGrupo += $datosPorConcepto[$idCa][$mes];
+                        }
+                    }
+                    
+                    $gastosAgrupados[$nombreGrupo]['meses'][$mes] = $sumaGrupo;
+                }
             }
             
             // Completar meses faltantes con 0
-            foreach ($gastos as $concepto => &$data) {
+            foreach ($gastosAgrupados as $grupo => &$data) {
                 foreach ($meses as $mes) {
                     if (!isset($data['meses'][$mes])) {
                         $data['meses'][$mes] = 0;
@@ -162,7 +207,7 @@ class CostoOcupacionService
                 ksort($data['meses']);
             }
             
-            return array_values($gastos);
+            return array_values($gastosAgrupados);
             
         } catch (Exception $e) {
             error_log("Error en obtenerGastosPorMes: " . $e->getMessage());
@@ -329,7 +374,7 @@ class CostoOcupacionService
             }
         }
         
-        // Calcular % total
+        // Calcular % total (acumulado 12 meses)
         $porcentajeCostoTotal = $totalVentaNeta > 0 ? ($totalSubtotal / $totalVentaNeta) * 100 : null;
         
         // Calcular totales por concepto
@@ -376,8 +421,8 @@ class CostoOcupacionService
         ];
         $filas[] = $filaPorcentaje;
         
-        // Calcular KPIs
-        $kpis = $this->calcularKPIs($porcentajeCosto, $meses);
+        // Calcular KPIs (actualizado)
+        $kpis = $this->calcularKPIs($porcentajeCosto, $porcentajeCostoTotal, $meses, $idSucursal, $fechaDesde, $fechaHasta);
         
         return [
             'meses' => $meses,
@@ -389,124 +434,171 @@ class CostoOcupacionService
     }
 
     /**
-     * Calcula KPIs del dashboard
+     * Calcula KPIs del dashboard (actualizado según requerimientos)
      * @param array $porcentajeCosto
+     * @param float $porcentajeCostoTotal
      * @param array $meses
+     * @param string $idSucursal
+     * @param string $fechaDesde
+     * @param string $fechaHasta
      * @return array
      */
-    private function calcularKPIs($porcentajeCosto, $meses)
+    private function calcularKPIs($porcentajeCosto, $porcentajeCostoTotal, $meses, $idSucursal, $fechaDesde, $fechaHasta)
     {
-        // Promedio solo de meses con venta neta (excluyendo null)
-        $valoresValidos = array_filter($porcentajeCosto, function($v) {
-            return $v !== null;
-        });
+        // KPI 1: Acumulado últimos 12 meses con datos
+        $acumulado12m = $porcentajeCostoTotal;
         
-        $promedio12m = count($valoresValidos) > 0 ? 
-            array_sum($valoresValidos) / count($valoresValidos) : null;
+        // KPI 2: % Variación contra mismo período año anterior
+        $variacionAnual = $this->calcularVariacionAnual($idSucursal, $fechaDesde, $fechaHasta);
         
-        // Último mes con datos disponibles (no necesariamente el último del rango)
-        $costoUltimoMes = null;
-        $ultimoMesConDatos = null;
-        $costoPenultimoMes = null;
-        $penultimoMesConDatos = null;
-        
-        // Recorrer desde el final hacia atrás para encontrar los últimos dos meses con datos
-        $mesesInvertidos = array_reverse($meses, true);
-        $contadorMesesConDatos = 0;
-        
-        foreach ($mesesInvertidos as $mes) {
-            if ($porcentajeCosto[$mes] !== null) {
-                $contadorMesesConDatos++;
-                
-                if ($contadorMesesConDatos === 1) {
-                    // Primer mes con datos (más reciente)
-                    $costoUltimoMes = $porcentajeCosto[$mes];
-                    $ultimoMesConDatos = $mes;
-                } elseif ($contadorMesesConDatos === 2) {
-                    // Segundo mes con datos (penúltimo)
-                    $costoPenultimoMes = $porcentajeCosto[$mes];
-                    $penultimoMesConDatos = $mes;
-                    break; // Ya tenemos los dos meses que necesitamos
-                }
-            }
-        }
-        
-        // Estado del último mes (para badge)
-        $estadoUltimoMes = 'success';
-        if ($costoUltimoMes !== null) {
-            if ($costoUltimoMes > 20) {
-                $estadoUltimoMes = 'danger';
-            } elseif ($costoUltimoMes >= 15) {
-                $estadoUltimoMes = 'warning';
-            }
-        }
-        
-        // Calcular variación mensual (fórmula: ((actual - anterior) / anterior) * 100)
-        $variacionMensual = null;
-        $estadoVariacion = 'info';
-        
-        if ($costoUltimoMes !== null && $costoPenultimoMes !== null && $costoPenultimoMes > 0) {
-            $variacionMensual = (($costoUltimoMes - $costoPenultimoMes) / $costoPenultimoMes) * 100;
-            
-            // Estado de la variación (invertido: mejora = negativo, empeora = positivo)
-            if ($variacionMensual > 0) {
-                $estadoVariacion = 'danger'; // Empeoró
-            } elseif ($variacionMensual < 0) {
-                $estadoVariacion = 'success'; // Mejoró
-            } else {
-                $estadoVariacion = 'info'; // Sin cambio
-            }
-        }
-        
-        // Calcular variación vs promedio (fórmula: ((actual - promedio) / promedio) * 100)
-        $variacionVsPromedio = null;
-        $estadoVsPromedio = 'info';
-        
-        if ($costoUltimoMes !== null && $promedio12m !== null && $promedio12m > 0) {
-            $variacionVsPromedio = (($costoUltimoMes - $promedio12m) / $promedio12m) * 100;
-            
-            // Estado de la variación vs promedio (usando umbrales relativos)
-            if ($variacionVsPromedio > 5) {
-                $estadoVsPromedio = 'danger'; // Más de 5% por encima del promedio
-            } elseif ($variacionVsPromedio < -5) {
-                $estadoVsPromedio = 'success'; // Más de 5% por debajo del promedio
-            } else {
-                $estadoVsPromedio = 'warning'; // Dentro del rango ±5% del promedio
-            }
-        }
-        
-        // Últimos 6 meses con datos válidos para tendencia (excluyendo null)
-        $tendencia6m = [];
-        $contadorValidos = 0;
-        
-        // Recorrer desde el final hacia atrás para obtener los últimos 6 valores válidos
-        $mesesInvertidos = array_reverse($meses, true);
-        foreach ($mesesInvertidos as $mes) {
-            if ($porcentajeCosto[$mes] !== null) {
-                $tendencia6m[] = $porcentajeCosto[$mes];
-                $contadorValidos++;
-                
-                // Detener cuando tengamos 6 valores válidos
-                if ($contadorValidos >= 6) {
-                    break;
-                }
-            }
-        }
-        
-        // Revertir el array para que esté en orden cronológico
-        $tendencia6m = array_reverse($tendencia6m);
+        // Datos para gráfico (últimos 6 meses vs año anterior)
+        $datosGrafico = $this->obtenerDatosGraficoEvolucion($idSucursal, $meses);
         
         return [
-            'promedio_12m' => $promedio12m,
-            'costo_ultimo_mes' => $costoUltimoMes,
-            'ultimo_mes_con_datos' => $ultimoMesConDatos,
-            'estado_ultimo_mes' => $estadoUltimoMes,
-            'variacion_mensual' => $variacionMensual,
-            'estado_variacion' => $estadoVariacion,
-            'penultimo_mes_con_datos' => $penultimoMesConDatos,
-            'variacion_vs_promedio' => $variacionVsPromedio,
-            'estado_vs_promedio' => $estadoVsPromedio,
-            'tendencia_6m' => $tendencia6m
+            'acumulado_12m' => $acumulado12m,
+            'variacion_anual' => $variacionAnual['porcentaje'],
+            'variacion_anual_estado' => $variacionAnual['estado'],
+            'periodo_actual' => $variacionAnual['periodo_actual'],
+            'periodo_anterior' => $variacionAnual['periodo_anterior'],
+            'grafico_datos' => $datosGrafico
+        ];
+    }
+    
+    /**
+     * Calcula variación anual comparando período actual vs año anterior
+     * @param string $idSucursal
+     * @param string $fechaDesde
+     * @param string $fechaHasta
+     * @return array
+     */
+    private function calcularVariacionAnual($idSucursal, $fechaDesde, $fechaHasta)
+    {
+        // Calcular período anterior (mismo rango, un año atrás)
+        $desde = new DateTime($fechaDesde);
+        $hasta = new DateTime($fechaHasta);
+        
+        $desdeAnterior = clone $desde;
+        $desdeAnterior->modify('-1 year');
+        
+        $hastaAnterior = clone $hasta;
+        $hastaAnterior->modify('-1 year');
+        
+        // Obtener % costo de ocupación período actual
+        $datasetActual = $this->construirDatasetSimplificado($idSucursal, $fechaDesde, $fechaHasta);
+        $costoActual = $datasetActual['costo_ocupacion_total'];
+        
+        // Obtener % costo de ocupación período anterior
+        $datasetAnterior = $this->construirDatasetSimplificado(
+            $idSucursal, 
+            $desdeAnterior->format('Y-m-d'), 
+            $hastaAnterior->format('Y-m-d')
+        );
+        $costoAnterior = $datasetAnterior['costo_ocupacion_total'];
+        
+        // Calcular variación porcentual
+        $variacionPorcentaje = null;
+        $estado = 'info';
+        
+        if ($costoAnterior !== null && $costoAnterior > 0 && $costoActual !== null) {
+            $variacionPorcentaje = (($costoActual - $costoAnterior) / $costoAnterior) * 100;
+            
+            // Determinar estado
+            if ($variacionPorcentaje < 0) {
+                $estado = 'success'; // Mejoró (bajó el costo)
+            } elseif ($variacionPorcentaje > 0) {
+                $estado = 'danger'; // Empeoró (subió el costo)
+            } else {
+                $estado = 'info'; // Sin cambio
+            }
+        }
+        
+        return [
+            'porcentaje' => $variacionPorcentaje,
+            'estado' => $estado,
+            'costo_actual' => $costoActual,
+            'costo_anterior' => $costoAnterior,
+            'periodo_actual' => $fechaDesde . ' a ' . $fechaHasta,
+            'periodo_anterior' => $desdeAnterior->format('Y-m-d') . ' a ' . $hastaAnterior->format('Y-m-d')
+        ];
+    }
+    
+    /**
+     * Construye dataset simplificado solo para cálculo de KPIs
+     * @param string $idSucursal
+     * @param string $fechaDesde
+     * @param string $fechaHasta
+     * @return array
+     */
+    private function construirDatasetSimplificado($idSucursal, $fechaDesde, $fechaHasta)
+    {
+        $meses = $this->generarMeses($fechaDesde, $fechaHasta);
+        
+        $gastos = $this->obtenerGastosPorMes($idSucursal, $fechaDesde, $fechaHasta);
+        $ventaNeta = $this->obtenerVentaNetaPorMes($idSucursal, $fechaDesde, $fechaHasta);
+        
+        $totalGastos = 0;
+        foreach ($gastos as $gasto) {
+            $totalGastos += array_sum($gasto['meses']);
+        }
+        
+        $totalVentaNeta = array_sum($ventaNeta);
+        
+        $costoOcupacion = null;
+        if ($totalVentaNeta > 0) {
+            $costoOcupacion = ($totalGastos / $totalVentaNeta) * 100;
+        }
+        
+        return [
+            'costo_ocupacion_total' => $costoOcupacion,
+            'total_gastos' => $totalGastos,
+            'total_venta_neta' => $totalVentaNeta
+        ];
+    }
+    
+    /**
+     * Obtiene datos para gráfico de evolución (últimos 6 meses vs año anterior)
+     * @param string $idSucursal
+     * @param array $meses Meses del período actual
+     * @return array
+     */
+    private function obtenerDatosGraficoEvolucion($idSucursal, $meses)
+    {
+        // Tomar últimos 6 meses del período actual
+        $ultimos6Meses = array_slice($meses, -6);
+        
+        $datosActuales = [];
+        $datosAnteriores = [];
+        
+        foreach ($ultimos6Meses as $mes) {
+            $fecha = DateTime::createFromFormat('Y-m', $mes);
+            
+            // Mes actual
+            $desde = $fecha->format('Y-m-01');
+            $hasta = $fecha->format('Y-m-t');
+            
+            $dataActual = $this->construirDatasetSimplificado($idSucursal, $desde, $hasta);
+            $datosActuales[] = [
+                'mes' => $mes,
+                'costo' => $dataActual['costo_ocupacion_total']
+            ];
+            
+            // Mes año anterior
+            $fechaAnterior = clone $fecha;
+            $fechaAnterior->modify('-1 year');
+            
+            $desdeAnterior = $fechaAnterior->format('Y-m-01');
+            $hastaAnterior = $fechaAnterior->format('Y-m-t');
+            
+            $dataAnterior = $this->construirDatasetSimplificado($idSucursal, $desdeAnterior, $hastaAnterior);
+            $datosAnteriores[] = [
+                'mes' => $fechaAnterior->format('Y-m'),
+                'costo' => $dataAnterior['costo_ocupacion_total']
+            ];
+        }
+        
+        return [
+            'actuales' => $datosActuales,
+            'anteriores' => $datosAnteriores
         ];
     }
 }

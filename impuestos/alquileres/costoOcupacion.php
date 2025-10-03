@@ -1,4 +1,3 @@
-
 <?php
 require_once "Class/Sucursal.php";
 require_once "Class/costoOcupacionService.php";
@@ -44,6 +43,25 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="Css/costoOcupacion.css">
+    <link rel="stylesheet" href="Css/modalEvolucion.css">
+    
+    <style>
+        /* KPI Button Card */
+        .kpi-button-card {
+            transition: all 0.3s ease;
+            border-left-color: #27ae60 !important;
+        }
+        
+        .kpi-button-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(39, 174, 96, 0.3);
+            background: linear-gradient(135deg, #f8fff8 0%, #e8f8e8 100%);
+        }
+        
+        .kpi-button-card:active {
+            transform: translateY(-3px) scale(1.01);
+        }
+    </style>
 
     <style>
         /* Toggle styles */
@@ -188,65 +206,43 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 </div>
             </div>
 
-            <!-- KPIs Section -->
+            <!-- KPIs Section (Actualizado) -->
             <div class="kpis-section" id="kpisSection" style="display: none;">
+                <!-- KPI 1: Acumulado 12 meses -->
                 <div class="kpi-card">
                     <div class="kpi-icon kpi-primary">
                         <i class="bi bi-calendar-range"></i>
                     </div>
                     <div class="kpi-info">
-                        <div class="kpi-label">Promedio 12 meses</div>
-                        <div class="kpi-value" id="kpiPromedio12m">--</div>
+                        <div class="kpi-label">Acumulado últimos 12 meses</div>
+                        <div class="kpi-value" id="kpiAcumulado12m">--</div>
                     </div>
                 </div>
                 
-                <div class="kpi-card">
-                    <div class="kpi-icon kpi-success" id="kpiIconUltimoMes">
-                        <i class="bi bi-calendar-check"></i>
-                    </div>
-                    <div class="kpi-info">
-                        <div class="kpi-label">Último mes</div>
-                        <div class="kpi-value">
-                            <span id="kpiUltimoMes">--</span>
-                            <span class="kpi-badge" id="kpiBadgeUltimoMes"></span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="kpi-card">
-                    <div class="kpi-icon kpi-warning" id="kpiIconVsPromedio">
-                        <i class="bi bi-graph-up-arrow"></i>
-                    </div>
-                    <div class="kpi-info">
-                        <div class="kpi-label">Vs Promedio</div>
-                        <div class="kpi-value">
-                            <span id="kpiVsPromedio">--</span>
-                            <span class="kpi-trend" id="kpiTrendVsPromedio"></span>
-                        </div>
-                    </div>
-                </div>
-                
+                <!-- KPI 2: Variación anual -->
                 <div class="kpi-card">
                     <div class="kpi-icon kpi-info" id="kpiIconVariacion">
                         <i class="bi bi-arrow-left-right"></i>
                     </div>
                     <div class="kpi-info">
-                        <div class="kpi-label">Variación mensual</div>
+                        <div class="kpi-label">Variación vs año anterior</div>
                         <div class="kpi-value">
-                            <span id="kpiVariacion">--</span>
+                            <span id="kpiVariacionAnual">--</span>
                             <span class="kpi-trend" id="kpiTrendVariacion"></span>
                         </div>
                     </div>
                 </div>
                 
-                <div class="kpi-card">
-                    <div class="kpi-icon kpi-info">
+                <!-- KPI 3: Botón Ver Evolución -->
+                <div class="kpi-card kpi-button-card" style="cursor: pointer;" id="btnVerEvolucion" title="Ver gráfico de evolución">
+                    <div class="kpi-icon kpi-success">
                         <i class="bi bi-graph-up"></i>
                     </div>
                     <div class="kpi-info">
-                        <div class="kpi-label">Tendencia 6 meses</div>
-                        <div class="kpi-chart">
-                            <canvas id="chartTendencia" width="150" height="40"></canvas>
+                        <div class="kpi-label">Ver Evolución</div>
+                        <div class="kpi-value" style="font-size: 18px;">
+                            Gráfico comparativo
+                            <i class="bi bi-chevron-right" style="font-size: 20px; margin-left: 8px;"></i>
                         </div>
                     </div>
                 </div>
@@ -294,6 +290,9 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
         </div>
     </div>
 
+    <!-- Incluir Modal de Evolución -->
+    <?php include 'components/modalEvolucion.php'; ?>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -309,12 +308,10 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
     <script>
         $(document).ready(function() {
-            // El select ahora usa el mismo estilo que los inputs
-            // Sin Select2 para mantener consistencia visual
-
             // Ajustar estilos del toggle
             setTimeout(() => {
                 const toggle = document.querySelector(".toggle");
@@ -407,6 +404,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     </script>
     
     <!-- Custom JS -->
+    <script src="js/modalEvolucion.js"></script>
     <script src="js/costoOcupacion.js"></script>
 </body>
 </html>
