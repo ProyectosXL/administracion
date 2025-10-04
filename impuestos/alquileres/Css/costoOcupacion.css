@@ -148,28 +148,47 @@ body {
 }
 
 .filter-label {
-    font-weight: 500;
-    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--primary-color);
     font-size: 14px;
 }
 
-.filter-input {
+.filter-label i {
+    color: var(--accent-color);
+}
+
+.filter-input,
+.form-control {
     padding: 10px 15px;
     border: 2px solid #e1e8ed;
     border-radius: var(--border-radius);
     background: var(--white);
     font-size: 14px;
     transition: var(--transition);
+    height: calc(2.25rem + 2px);
+    line-height: 1.5;
 }
 
-.filter-input:focus {
+.filter-input:focus,
+.form-control:focus {
     outline: none;
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
-.filter-button {
-    padding: 10px 20px;
+/* Asegurar que selectores tengan la misma altura */
+select.form-control,
+select.filter-input {
+    height: calc(2.5rem + 2px) !important;
+}
+
+.filter-button,
+.filter-button-primary {
+    padding: 12px 20px;
     background: var(--accent-color);
     color: var(--white);
     border: none;
@@ -180,16 +199,20 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    text-decoration: none;
 }
 
-.filter-button:hover {
+.filter-button:hover,
+.filter-button-primary:hover {
     background: #2980b9;
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    color: var(--white);
+    text-decoration: none;
 }
 
 .filter-button-secondary {
-    padding: 10px 20px;
+    padding: 12px 20px;
     background: var(--medium-gray);
     color: var(--white);
     border: none;
@@ -200,11 +223,37 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    text-decoration: none;
 }
 
 .filter-button-secondary:hover {
     background: var(--dark-gray);
     transform: translateY(-2px);
+    color: var(--white);
+    text-decoration: none;
+}
+
+.filter-button-info {
+    padding: 12px 20px;
+    background: var(--info-color);
+    color: var(--white);
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.filter-button-info:hover {
+    background: #138496;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+    color: var(--white);
+    text-decoration: none;
 }
 
 /* KPIs Section */

@@ -11,13 +11,15 @@ class CostoOcupacionService
     
     // Mapeo de agrupación de conceptos según tabla adjunta
     private $agrupacionConceptos = [
-        'Alquiler' => [1, 2, 3], // Alquiler, Complementario, Baulera
-        'Llave' => [4], // Renovación contrato (llave) - Se calculará
+        'Alquiler' => [1, 2, 8], // Alquiler, Complementario
         'Alquiler porcentual' => [6, 7], // Porc. S/ventas brutas, Porc. S/ventas netas
+        'Fondo de promoción (% VMM)' => [9], // Fondo de promoción (% VMM)
+        'Fondo de promoción %:' => [16, 17], // Fondo de promoción (% VMM), Fondo promoción mensual (S/Vtas. Brutas), Fondo de promoción mensual (S/Vtas. Netas)
+        'Baulera' => [3], // Baulera
         'Gastos varios' => [10, 13, 14], // Gastos publicidad, Gastos administrativos, Gastos administrativos (S/Vtas. netas)
         'Expensas' => [11], // Expensas + imp expensables
-        'Diferencia acuerdo' => [12], // Diferencia acuerdo
-        'Fondo de promoción %:' => [9, 16, 17] // Fondo de promoción (% VMM), Fondo promoción mensual (S/Vtas. Brutas), Fondo de promoción mensual (S/Vtas. Netas)
+        'Diferencia' => [12], // Diferencia acuerdo
+        'Llave' => [4, 5, 19] // Renovación contrato (llave) - Se calculará
     ];
 
     public function __construct()
@@ -164,7 +166,7 @@ class CostoOcupacionService
             $llaveCalculada = [];
             foreach ($meses as $mes) {
                 $suma = 0;
-                foreach ([1, 6, 7] as $idCa) {
+                foreach ([1, 2, 6, 7, 8] as $idCa) {
                     if (isset($datosPorConcepto[$idCa][$mes])) {
                         $suma += $datosPorConcepto[$idCa][$mes];
                     }

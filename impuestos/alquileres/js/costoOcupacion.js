@@ -72,7 +72,7 @@ function cargarDatos() {
     
     // Petición AJAX
     $.ajax({
-        url: 'Controller/CostoOcupacionController.php',
+        url: 'Controller/costoOcupacionController.php',
         method: 'POST',
         data: {
             action: 'fetch',
@@ -136,11 +136,33 @@ function renderizarKPIs(kpis) {
         const signo = variacion >= 0 ? '+' : '';
         $('#kpiVariacionAnual').text(`${signo}${variacion.toFixed(2)}%`);
         
-        // Trigger click
-        excelButton.trigger();
+        // Actualizar icono y color
+        const icono = $('#kpiIconVariacion');
+        const trend = $('#kpiTrendVariacion');
         
-        // Remover botón
-        excelButton.remove();
+        icono.removeClass('kpi-success kpi-warning kpi-danger kpi-info');
+        
+        if (estado === 'success') {
+            // Mejoró (bajó el costo)
+            icono.addClass('kpi-success');
+            icono.html('<i class="bi bi-arrow-down-circle"></i>');
+            trend.html('<i class="bi bi-check-circle text-success" style="font-size: 14px;"></i>');
+        } else if (estado === 'danger') {
+            // Empeoró (subió el costo)
+            icono.addClass('kpi-danger');
+            icono.html('<i class="bi bi-arrow-up-circle"></i>');
+            trend.html('<i class="bi bi-exclamation-triangle text-danger" style="font-size: 14px;"></i>');
+        } else {
+            // Sin cambios significativos
+            icono.addClass('kpi-info');
+            icono.html('<i class="bi bi-arrow-left-right"></i>');
+            trend.html('<i class="bi bi-dash-circle text-info" style="font-size: 14px;"></i>');
+        }
+    } else {
+        $('#kpiVariacionAnual').text('--');
+        $('#kpiTrendVariacion').html('');
+        $('#kpiIconVariacion').removeClass('kpi-success kpi-warning kpi-danger').addClass('kpi-info');
+        $('#kpiIconVariacion').html('<i class="bi bi-arrow-left-right"></i>');
     }
 }
 
@@ -214,34 +236,10 @@ function formatearMoneda(valor) {
         return '$0';
     }
     
-    return ' Actualizar icono y color
-        const icono = $('#kpiIconVariacion');
-        const trend = $('#kpiTrendVariacion');
-        
-        icono.removeClass('kpi-success kpi-warning kpi-danger kpi-info');
-        
-        if (estado === 'success') {
-            // Mejoró (bajó el costo)
-            icono.addClass('kpi-success');
-            icono.html('<i class="bi bi-arrow-down-circle"></i>');
-            trend.html('<i class="bi bi-check-circle text-success" style="font-size: 14px;"></i>');
-        } else if (estado === 'danger') {
-            // Empeoró (subió el costo)
-            icono.addClass('kpi-danger');
-            icono.html('<i class="bi bi-arrow-up-circle"></i>');
-            trend.html('<i class="bi bi-exclamation-triangle text-danger" style="font-size: 14px;"></i>');
-        } else {
-            // Sin cambio
-            icono.addClass('kpi-info');
-            icono.html('<i class="bi bi-arrow-left-right"></i>');
-            trend.html('<i class="bi bi-dash-circle text-info" style="font-size: 14px;"></i>');
-        }
-    } else {
-        $('#kpiVariacionAnual').text('--');
-        $('#kpiTrendVariacion').html('');
-        $('#kpiIconVariacion').removeClass('kpi-success kpi-warning kpi-danger').addClass('kpi-info');
-        $('#kpiIconVariacion').html('<i class="bi bi-arrow-left-right"></i>');
-    }
+    return '$' + Math.round(valor).toLocaleString('es-AR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
 }
 
 /**
@@ -393,7 +391,7 @@ function limpiarFiltros() {
     
     // Resetear fechas al rango default
     $.ajax({
-        url: 'Controller/CostoOcupacionController.php?accion=obtenerRangoDefault',
+        url: 'Controller/costoOcupacionController.php?accion=obtenerRangoDefault',
         method: 'POST',
         dataType: 'json',
         success: function(response) {
@@ -446,10 +444,12 @@ function exportarDatos() {
             }
         });
         
-        // + Math.round(valor).toLocaleString('es-AR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
+        // Trigger click
+        excelButton.trigger();
+        
+        // Remover botón
+        excelButton.remove();
+    }
 }
 
 /**
@@ -474,236 +474,4 @@ function formatearMes(mesStr) {
     const mesNum = parseInt(mes) - 1;
     
     return `${meses[mesNum]} ${anio}`;
-} Actualizar icono y color
-        const icono = $('#kpiIconVariacion');
-        const trend = $('#kpiTrendVariacion');
-        
-        icono.removeClass('kpi-success kpi-warning kpi-danger kpi-info');
-        
-        if (estado === 'success') {
-            // Mejoró (bajó el costo)
-            icono.addClass('kpi-success');
-            icono.html('<i class="bi bi-arrow-down-circle"></i>');
-            trend.html('<i class="bi bi-check-circle text-success" style="font-size: 14px;"></i>');
-        } else if (estado === 'danger') {
-            // Empeoró (subió el costo)
-            icono.addClass('kpi-danger');
-            icono.html('<i class="bi bi-arrow-up-circle"></i>');
-            trend.html('<i class="bi bi-exclamation-triangle text-danger" style="font-size: 14px;"></i>');
-        } else {
-            // Sin cambio
-            icono.addClass('kpi-info');
-            icono.html('<i class="bi bi-arrow-left-right"></i>');
-            trend.html('<i class="bi bi-dash-circle text-info" style="font-size: 14px;"></i>');
-        }
-    } else {
-        $('#kpiVariacionAnual').text('--');
-        $('#kpiTrendVariacion').html('');
-        $('#kpiIconVariacion').removeClass('kpi-success kpi-warning kpi-danger').addClass('kpi-info');
-        $('#kpiIconVariacion').html('<i class="bi bi-arrow-left-right"></i>');
-    }
 }
-
-/**
- * Muestra el modal de evolución
- */
-function mostrarEvolucion() {
-    if (!datosActuales || !datosActuales.kpis) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Sin datos',
-            text: 'Debe cargar los datos primero',
-            confirmButtonText: 'Entendido'
-        });
-        return;
-    }
-    
-    const datosGrafico = datosActuales.kpis.grafico_datos;
-    const kpis = datosActuales.kpis;
-    
-    abrirModalEvolucion(datosGrafico, kpis);
-}
-
-/**
- * Renderiza la tabla con DataTables
- */
-function renderizarTabla(meses, filas) {
-    // Destruir tabla existente si existe
-    if (dataTableInstance) {
-        dataTableInstance.destroy();
-        $('#tablaCostoOcupacion').empty();
-    }
-    
-    // Construir header
-    let headerHtml = '<thead><tr class="header-row">';
-    headerHtml += '<th class="fixed-column"><i class="bi bi-list-ul"></i> Concepto</th>';
-    
-    meses.forEach(mes => {
-        const mesFormateado = formatearMes(mes);
-        headerHtml += `<th class="text-right">${mesFormateado}</th>`;
-    });
-    
-    headerHtml += '<th class="text-right total-column"><strong>Total</strong></th>';
-    headerHtml += '</tr></thead>';
-    
-    // Construir body
-    let bodyHtml = '<tbody>';
-    
-    filas.forEach(fila => {
-        let rowClass = '';
-        
-        if (fila.is_subtotal) {
-            rowClass = 'row-subtotal';
-        } else if (fila.is_metric) {
-            rowClass = 'row-metric';
-        } else if (fila.is_percentage) {
-            rowClass = 'row-percentage';
-        }
-        
-        bodyHtml += `<tr class="${rowClass}">`;
-        bodyHtml += `<td class="fixed-column"><strong>${fila.concepto}</strong></td>`;
-        
-        // Columnas de meses
-        meses.forEach(mes => {
-            const valor = fila.meses[mes];
-            let contenido = '';
-            let cellClass = 'text-right';
-            
-            if (fila.is_percentage) {
-                if (valor !== null && valor !== undefined) {
-                    contenido = formatearPorcentaje(valor);
-                    
-                    // Aplicar color condicional
-                    if (valor < 15) {
-                        cellClass += ' bg-success-light';
-                    } else if (valor >= 15 && valor <= 20) {
-                        cellClass += ' bg-warning-light';
-                    } else {
-                        cellClass += ' bg-danger-light';
-                    }
-                } else {
-                    contenido = '–';
-                }
-            } else {
-                contenido = formatearMoneda(valor);
-            }
-            
-            bodyHtml += `<td class="${cellClass}">${contenido}</td>`;
-        });
-        
-        // Columna Total
-        let totalContenido = '';
-        let totalClass = 'text-right total-column';
-        
-        if (fila.is_percentage) {
-            if (fila.total !== null && fila.total !== undefined) {
-                totalContenido = formatearPorcentaje(fila.total);
-                
-                if (fila.total < 15) {
-                    totalClass += ' bg-success-light';
-                } else if (fila.total >= 15 && fila.total <= 20) {
-                    totalClass += ' bg-warning-light';
-                } else {
-                    totalClass += ' bg-danger-light';
-                }
-            } else {
-                totalContenido = '–';
-            }
-        } else {
-            totalContenido = formatearMoneda(fila.total);
-        }
-        
-        bodyHtml += `<td class="${totalClass}"><strong>${totalContenido}</strong></td>`;
-        bodyHtml += '</tr>';
-    });
-    
-    bodyHtml += '</tbody>';
-    
-    // Actualizar HTML
-    $('#tablaCostoOcupacion').html(headerHtml + bodyHtml);
-    
-    // Inicializar DataTable
-    dataTableInstance = $('#tablaCostoOcupacion').DataTable({
-        responsive: false,
-        scrollX: true,
-        scrollY: '500px',
-        scrollCollapse: true,
-        paging: false,
-        searching: false,
-        info: false,
-        ordering: false,
-        fixedColumns: {
-            leftColumns: 1
-        },
-        language: {
-            emptyTable: "No hay datos disponibles",
-            zeroRecords: "No se encontraron registros"
-        },
-        dom: 'Bfrtip',
-        buttons: []
-    });
-}
-
-/**
- * Limpia los filtros y resetea la vista
- */
-function limpiarFiltros() {
-    // Limpiar select
-    $('#selectSucursal').val('').trigger('change');
-    
-    // Resetear fechas al rango default
-    $.ajax({
-        url: 'Controller/CostoOcupacionController.php?accion=obtenerRangoDefault',
-        method: 'POST',
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                $('#fechaDesde').val(response.data.desde);
-                $('#fechaHasta').val(response.data.hasta);
-            }
-        }
-    });
-    
-    // Ocultar secciones y mostrar empty state
-    $('#kpisSection').hide();
-    $('#tableSection').hide();
-    $('#emptyState').fadeIn();
-    
-    // Limpiar datos
-    datosActuales = null;
-    
-    if (dataTableInstance) {
-        dataTableInstance.destroy();
-        $('#tablaCostoOcupacion').empty();
-        dataTableInstance = null;
-    }
-}
-
-/**
- * Exporta los datos a Excel
- */
-function exportarDatos() {
-    if (!datosActuales) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Sin datos',
-            text: 'No hay datos para exportar',
-            confirmButtonText: 'Entendido'
-        });
-        return;
-    }
-    
-    // Usar DataTables buttons para exportar
-    if (dataTableInstance) {
-        // Crear botón temporal de Excel
-        const excelButton = dataTableInstance.button().add(0, {
-            extend: 'excel',
-            text: 'Excel',
-            title: 'Costo de Ocupación',
-            filename: 'costo_ocupacion_' + new Date().toISOString().split('T')[0],
-            exportOptions: {
-                columns: ':visible'
-            }
-        });
-        
-        //

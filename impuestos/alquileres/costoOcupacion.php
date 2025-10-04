@@ -42,8 +42,8 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="Css/costoOcupacion.css">
-    <link rel="stylesheet" href="Css/modalEvolucion.css">
+    <link rel="stylesheet" href="css/costoOcupacion.css">
+    <link rel="stylesheet" href="css/modalEvolucion.css">
     
     <style>
         /* KPI Button Card */
@@ -61,9 +61,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
         .kpi-button-card:active {
             transform: translateY(-3px) scale(1.01);
         }
-    </style>
-
-    <style>
+ 
         /* Toggle styles */
         .toggle-on, .toggle-off {
             font-size: 12px !important;
@@ -126,7 +124,75 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
             margin-left: 5px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
+
+        /* Tabs Styles */
+        .tabs-container {
+            margin-bottom: 20px;
+        }
+
+        .nav-tabs-custom {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 0;
+        }
+
+        .nav-tabs-custom .nav-tabs {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .nav-tabs-custom .nav-link {
+            border: none;
+            color: #7f8c8d;
+            font-weight: 600;
+            padding: 15px 25px;
+            transition: all 0.3s ease;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .nav-tabs-custom .nav-link:hover {
+            color: #2c3e50;
+            background-color: #f8f9fa;
+        }
+
+        .nav-tabs-custom .nav-link.active {
+            color: #3498db;
+            background-color: #f8f9fa;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .nav-tabs-custom .nav-link i {
+            margin-right: 8px;
+        }
+
+        .tab-content {
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .tab-pane {
+            min-height: 400px;
+        }
+        
+        /* Estilos adicionales para pestañas */
+        @media (max-width: 768px) {
+            .nav-tabs-custom .nav-link {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            
+            .nav-tabs-custom .nav-link i {
+                display: none;
+            }
+        }
+
+        .select2-container .select2-selection--single{
+            height: 2rem !important;
+        }
     </style>
+
 </head>
 
 <body>
@@ -160,8 +226,35 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
 
         <!-- Content -->
         <div class="content-wrapper">
-            <!-- Filtros Section -->
-            <div class="filters-section">
+            <!-- Tabs Navigation -->
+            <div class="tabs-container">
+                <nav class="nav-tabs-custom">
+                    <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="analisis-tab" data-toggle="tab" href="#analisis" role="tab" aria-controls="analisis" aria-selected="true">
+                                <i class="bi bi-graph-up"></i> Análisis Individual
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="comparar-tab" data-toggle="tab" href="#comparar" role="tab" aria-controls="comparar" aria-selected="false">
+                                <i class="bi bi-arrow-left-right"></i> Comparar Sucursales
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="controlar-tab" data-toggle="tab" href="#controlar" role="tab" aria-controls="controlar" aria-selected="false">
+                                <i class="bi bi-clipboard-check"></i> Controlar Gastos
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="mainTabContent">
+                <!-- Pestaña 1: Análisis Individual -->
+                <div class="tab-pane fade show active" id="analisis" role="tabpanel" aria-labelledby="analisis-tab">
+                    <!-- Filtros Section -->
+                    <div class="filters-section">
                 <div class="section-title">
                     <i class="bi bi-funnel"></i>
                     <span>Filtros de Búsqueda</span>
@@ -170,35 +263,35 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 <div class="filters-form">
                     <div class="filter-group">
                         <div class="filter-field">
-                            <label for="selectSucursal" class="filter-label">Sucursal:</label>
-                            <select id="selectSucursal" class="filter-input" style="min-width: 300px;">
+                            <label for="selectSucursal" class="filter-label"><i class="bi bi-building"></i> Sucursal:</label>
+                            <select id="selectSucursal" class="form-control" style="min-width: 300px; height: calc(2.25rem + 2px);">
                                 <option value="">Seleccione una sucursal...</option>
                                 <?php foreach ($todosLosLocales as $local): ?>
-                                    <option value="<?= $local['NRO_SUCURSAL'] ?>">
-                                        <?= $local['DESC_SUCURSAL'] ?> (<?= $local['NRO_SUCURSAL'] ?>)
+                                    <option value="<?= $local['ID'] ?>">
+                                        <?= $local['SUCURSAL'] ?> (<?= $local['ID'] ?>)
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         
                         <div class="filter-field">
-                            <label for="fechaDesde" class="filter-label">Desde:</label>
-                            <input type="date" id="fechaDesde" class="filter-input" 
-                                   value="<?= $rangoDefault['desde'] ?>">
+                            <label for="fechaDesde" class="filter-label"><i class="bi bi-calendar-event"></i> Desde:</label>
+                            <input type="date" id="fechaDesde" class="form-control" 
+                                   value="<?= $rangoDefault['desde'] ?>" style="height: calc(2.25rem + 2px);">
                         </div>
                         
                         <div class="filter-field">
-                            <label for="fechaHasta" class="filter-label">Hasta:</label>
-                            <input type="date" id="fechaHasta" class="filter-input" 
-                                   value="<?= $rangoDefault['hasta'] ?>">
+                            <label for="fechaHasta" class="filter-label"><i class="bi bi-calendar-event"></i> Hasta:</label>
+                            <input type="date" id="fechaHasta" class="form-control" 
+                                   value="<?= $rangoDefault['hasta'] ?>" style="height: calc(2.25rem + 2px);">
                         </div>
                         
-                        <button type="button" class="filter-button" id="btnAplicar">
+                        <button type="button" class="btn btn-primary filter-button-primary" id="btnAplicar">
                             <i class="bi bi-search"></i>
                             Aplicar
                         </button>
                         
-                        <button type="button" class="filter-button-secondary" id="btnLimpiar">
+                        <button type="button" class="btn btn-secondary filter-button-secondary" id="btnLimpiar">
                             <i class="bi bi-x-circle"></i>
                             Limpiar
                         </button>
@@ -286,6 +379,25 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 </div>
                 <h3>Seleccione una sucursal para comenzar</h3>
                 <p>Elija una sucursal y rango de fechas para visualizar el análisis de costos de ocupación</p>
+            </div>
+                </div>
+                <!-- Fin Pestaña 1 -->
+
+                <!-- Pestaña 2: Comparar Sucursales -->
+                <div class="tab-pane fade" id="comparar" role="tabpanel" aria-labelledby="comparar-tab">
+                    <?php include 'components/compararSucursales.php'; ?>
+                </div>
+
+                <!-- Pestaña 3: Controlar Gastos -->
+                <div class="tab-pane fade" id="controlar" role="tabpanel" aria-labelledby="controlar-tab">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-wrench-adjustable" style="font-size: 4rem; color: #bdc3c7;"></i>
+                        </div>
+                        <h3>Módulo en desarrollo</h3>
+                        <p>Esta funcionalidad estará disponible próximamente</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -406,5 +518,6 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <!-- Custom JS -->
     <script src="js/modalEvolucion.js"></script>
     <script src="js/costoOcupacion.js"></script>
+    <script src="js/compararSucursales.js"></script>
 </body>
 </html>

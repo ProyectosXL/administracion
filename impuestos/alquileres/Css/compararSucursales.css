@@ -1,0 +1,12 @@
+/**
+ * CSS para Comparar Sucursales
+ * NOTA: Los estilos principales ahora están encapsulados en el componente compararSucursalesCompleto.php
+ * Este archivo se mantiene para referencias globales o overrides si son necesarios
+ */
+
+/* 
+ * Los estilos específicos para "Comparar Sucursales" ahora están contenidos 
+ * dentro del componente para evitar conflictos con otras pestañas.
+ * 
+ * Si necesitas estilos globales adicionales, agrégalos aquí.
+ */

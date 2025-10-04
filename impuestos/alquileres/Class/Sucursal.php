@@ -37,24 +37,24 @@ class Sucursal
 
         if((isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy')){
 
-            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS  WHERE CANAL = 'EXTERIOR' ";
+            $sql = "SELECT NRO_SUCURSAL as ID, DESC_SUCURSAL as SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS  WHERE CANAL = 'EXTERIOR' ";
 
         }else{
 
-            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1
+            $sql = "SELECT NRO_SUCURSAL as ID, DESC_SUCURSAL as SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1
                     UNION ALL
-                SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE NRO_SUCURSAL = '16'";
+                SELECT NRO_SUCURSAL as ID, DESC_SUCURSAL as SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE NRO_SUCURSAL = '16'";
 
             
         }
 
         if($orderByName == true){
 
-            $sql = $sql."ORDER BY DESC_SUCURSAL";
+            $sql = $sql."ORDER BY SUCURSAL";
 
         }else{
 
-            $sql = $sql."ORDER BY NRO_SUCURSAL"; 
+            $sql = $sql."ORDER BY ID"; 
             
         }    
 
@@ -74,5 +74,36 @@ class Sucursal
         } catch (\Throwable $th){
             print_r($th);
         }
+    }
+    
+    /**
+     * Obtiene información de una sucursal por su ID
+     */
+    public function obtenerSucursalPorId($idSucursal)
+    {
+        if((isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy')){
+            $sql = "SELECT NRO_SUCURSAL as ID, DESC_SUCURSAL as SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'EXTERIOR' AND NRO_SUCURSAL = ?";
+        } else {
+            $sql = "SELECT NRO_SUCURSAL as ID, DESC_SUCURSAL as SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS 
+                    WHERE ((CANAL = 'PROPIOS' AND HABILITADO = 1) OR NRO_SUCURSAL = '16') AND NRO_SUCURSAL = ?";
+        }
+        
+        $stmt = sqlsrv_prepare($this->conexion, $sql, array($idSucursal));
+        
+        if ($stmt === false) {
+            throw new Exception('Error al preparar consulta de sucursal');
+        }
+        
+        if (!sqlsrv_execute($stmt)) {
+            throw new Exception('Error al ejecutar consulta de sucursal');
+        }
+        
+        $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        
+        if (!$result) {
+            throw new Exception('Sucursal no encontrada');
+        }
+        
+        return $result;
     }
 }
