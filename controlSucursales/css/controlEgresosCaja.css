@@ -577,6 +577,21 @@ textarea.controlEgresos_filter-input:focus {
 .controlEgresos_modal .modal-content {
     border-radius: var(--border-radius-lg);
     overflow: hidden;
+    max-width: 100vh;
+    position: relative;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.controlEgresos_modal .modal-dialog {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 60px);
+    margin: 30px auto;
 }
 
 .controlEgresos_modal .modal-header {
