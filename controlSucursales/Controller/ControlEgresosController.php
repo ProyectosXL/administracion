@@ -235,7 +235,7 @@ function contarFotosEnCarpeta() {
 
     $root = $_SERVER["DOCUMENT_ROOT"];
     $targetDir = $root.'/Imagenes/egresosCaja/';
-    
+
     if(isset($_POST['arrayNcomp'])){
         $arrayArticulos = $_POST['arrayNcomp'];
         $contadorFotos = 0;
@@ -265,7 +265,8 @@ function contarFotosEnCarpeta() {
         
         // Si tenemos todos los datos necesarios, buscar con nueva nomenclatura
         if (!empty($nComp) && !empty($codCta) && !empty($codComp) && !empty($nroSucursal)) {
-            $nombreNuevo = $nComp . $nroSucursal . $codCta . $codComp;
+
+            $nombreNuevo = trim($nComp).trim($nroSucursal).trim($codCta).trim($codComp);
             
             if ($gestor = opendir($targetDir)) {
                 while (($archivo = readdir($gestor)) !== false) {
