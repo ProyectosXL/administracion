@@ -2,14 +2,16 @@
 const checkFactura = (div) => {
     let allTd = div.parentElement.parentElement.querySelectorAll("td");
     let fecha = allTd[0].textContent;
-    let nro_sucursal = allTd[1].textContent;
-    let tipoComprobante = allTd[2].textContent;
-    let nroComprobante = allTd[3].textContent;
-    let codCuenta = allTd[4].textContent;
-    let descripcionCuenta = allTd[5].textContent;
-    let monto = allTd[6].textContent.replace(/[$.]/g, "");
-    let leyenda = allTd[7].textContent;
-
+    let nro_sucursal = allTd[1].textContent.trim();
+    let tipoComprobante = allTd[2].textContent.trim();
+    let nroComprobante = allTd[3].textContent.trim();
+    if(nroComprobante.length = 13){
+        nroComprobante = ' '+nroComprobante;
+    }
+    let codCuenta = allTd[4].textContent.trim();
+    let descripcionCuenta = allTd[5].textContent.trim();
+    let monto = allTd[6].textContent.replace(/[$.]/g, "").trim();
+    let leyenda = allTd[7].textContent.trim();
     let accion = "";
     let factura = 0;
     let control = 0;

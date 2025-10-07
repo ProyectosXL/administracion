@@ -245,9 +245,10 @@ class Sucursal
                 $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET FACTURA = ? WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
                 $params = array($factura, $nroComprobante, $nroSucursal, $tipoComprobante);
             } else {
-                // El registro no existe, lo insertamos
+            
+                $fechaSQL = DateTime::createFromFormat('d/m/Y', $fecha)->format('Y-m-d');
                 $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                $params = array($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
+                $params = array($fechaSQL, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control);
             }
             
             $stmt = sqlsrv_query($conexion, $sql, $params);
@@ -310,9 +311,10 @@ class Sucursal
                 $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET CONTROL = ?, FECHA_CONTROL = GETDATE(), OBSERVACIONES = ? WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ? AND COD_CUENTA = ?";
                 $params = array($control, $observaciones, $nroComprobante, $nroSucursal, $tipoComprobante, $codCuenta);
             } else {
+                $fechaSQL = DateTime::createFromFormat('d/m/Y', $fecha)->format('Y-m-d');
                 // El registro no existe, lo insertamos
                 $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, FECHA_CONTROL, USUARIO, OBSERVACIONES) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), '', ?)";
-                $params = array($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control, $observaciones);
+                $params = array($fechaSQL, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control, $observaciones);
             }
             
             $stmt = sqlsrv_query($conexion, $sql, $params);
