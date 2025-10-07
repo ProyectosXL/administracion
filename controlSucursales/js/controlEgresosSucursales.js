@@ -53,7 +53,7 @@ const checkControl = (div) => {
     let fecha = allTd[0].textContent;
     let nro_sucursal = allTd[1].textContent.trim();
     let tipoComprobante = allTd[2].textContent.trim();
-    let nroComprobante = allTd[3].textContent;
+    let nroComprobante = allTd[3].textContent.trim();
     if(nroComprobante.length = 13){
         nroComprobante = ' '+nroComprobante;
     }
