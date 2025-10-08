@@ -15,6 +15,24 @@ $titulo_pagina = 'Directores';
     <!-- Fallback para Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.min.css" crossorigin="anonymous">
     
+    <!-- Estilo específico para iconos Bootstrap -->
+    <style>
+        .bi {
+            font-family: "bootstrap-icons" !important;
+            font-style: normal;
+            font-weight: normal;
+            font-variant: normal;
+            text-transform: none;
+            line-height: 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .bi-arrow-clockwise::before {
+            content: "\f128";
+        }
+    </style>
+    
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/global.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="css/solicitudes_estilos.css?v=<?php echo time(); ?>">
@@ -31,8 +49,9 @@ $titulo_pagina = 'Directores';
                 </h1>
                 <div class="btn-toolbar mb-2 mb-md-0">
                     <div class="btn-group me-2">
+                        <!-- Botón actualizar con icono Bootstrap sutil -->
                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="location.reload()">
-                            <i class="bi bi-arrow-clockwise"></i> 🔄 Actualizar
+                            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
                         </button>
                     </div>
                 </div>
@@ -119,16 +138,41 @@ $titulo_pagina = 'Directores';
                                             Adjuntar Factura <span class="text-danger">*</span>
                                         </label>
                                         
-                                        <div class="upload-area" onclick="document.getElementById('archivoSolicitud').click()">
-                                            <i class="bi bi-cloud-upload"></i>
-                                            <p class="mb-0"><strong>Haz clic para seleccionar archivo</strong></p>
-                                            <small class="text-muted">
-                                                Formatos: JPG, PNG, PDF (máx. 15MB)
-                                            </small>
+                                        <!-- Interfaz para Escritorio -->
+                                        <div class="d-none d-md-block mb-3">
+                                            <button type="button" class="btn btn-outline-primary w-100" 
+                                                    onclick="document.getElementById('archivoSolicitud').click()">
+                                                <i class="bi bi-paperclip"></i> Adjuntar Archivo
+                                            </button>
                                         </div>
                                         
+                                        <!-- Interfaz para Móvil -->
+                                        <div class="d-md-none">
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-primary w-100" 
+                                                            onclick="document.getElementById('archivoSolicitud').click()">
+                                                        <i class="bi bi-folder-open"></i> Galería
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success w-100" 
+                                                            onclick="document.getElementById('camaraSolicitud').click()">
+                                                        <i class="bi bi-camera"></i> Cámara
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Input para galería (escritorio y móvil) -->
                                         <input type="file" id="archivoSolicitud" class="d-none" 
-                                               accept="image/*,application/pdf" multiple>
+                                               accept="image/jpeg,image/jpg,image/png,image/gif,application/pdf" 
+                                               multiple>
+                                        
+                                        <!-- Input para cámara (solo móvil) -->
+                                        <input type="file" id="camaraSolicitud" class="d-none d-md-none" 
+                                               accept="image/*" 
+                                               capture="environment">
                                         
                                         <div id="listaArchivos" class="mt-3">
                                             <p class="text-muted"><small>No hay archivos adjuntos</small></p>

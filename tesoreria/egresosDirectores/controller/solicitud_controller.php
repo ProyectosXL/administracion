@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../Class/SolicitudEgreso.php';
 require_once __DIR__ . '/../Class/Director.php';
+require_once __DIR__ . '/../Class/ArchivoSolicitud.php';
 
 try {
     $solicitud = new SolicitudEgreso();
@@ -22,6 +23,32 @@ try {
             
             if (!in_array($_POST['motivo'], $motivosValidos)) {
                 throw new Exception('Motivo no válido');
+            }
+            
+            // Validar archivos para compra personal
+            if ($_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
+                if (empty($_FILES['archivos']['name'][0])) {
+                    throw new Exception('Para compras personales es obligatorio adjuntar la factura');
+                }
+                
+                // Validar tipos y tamaños de archivo
+                $archivosPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+                $tamaño_maximo = 15 * 1024 * 1024; // 15MB
+                
+                foreach ($_FILES['archivos']['tmp_name'] as $index => $tmp_name) {
+                    if (!empty($tmp_name)) {
+                        $tipo = $_FILES['archivos']['type'][$index];
+                        $tamaño = $_FILES['archivos']['size'][$index];
+                        
+                        if (!in_array($tipo, $archivosPermitidos)) {
+                            throw new Exception('Formato de archivo no permitido. Use JPG, PNG, GIF o PDF');
+                        }
+                        
+                        if ($tamaño > $tamaño_maximo) {
+                            throw new Exception('El archivo no puede superar los 15MB');
+                        }
+                    }
+                }
             }
             
             // Limpiar y validar importe
@@ -45,7 +72,15 @@ try {
                 'observaciones' => $_POST['observaciones'] ?? ''
             ];
             
+            // Crear la solicitud
             $resultado = $solicitud->crear($datos);
+            
+            // Si se creó exitosamente y hay archivos, procesarlos
+            if ($resultado['success'] && $_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL && !empty($_FILES['archivos']['name'][0])) {
+                $idSolicitud = $resultado['id_solicitud'];
+                $archivosProcesados = procesarArchivos($idSolicitud);
+                $resultado['archivos'] = $archivosProcesados;
+            }
             
             echo json_encode($resultado);
             break;
@@ -153,4 +188,49 @@ try {
         'success' => false,
         'message' => $e->getMessage()
     ]);
+}
+
+/**
+ * Procesa los archivos adjuntos y los guarda en la base de datos
+ */
+function procesarArchivos($idSolicitud) {
+    $archivo = new ArchivoSolicitud();
+    $archivosProcesados = [];
+    
+    foreach ($_FILES['archivos']['tmp_name'] as $index => $tmp_name) {
+        if (!empty($tmp_name) && is_uploaded_file($tmp_name)) {
+            $nombreOriginal = $_FILES['archivos']['name'][$index];
+            $mimeType = $_FILES['archivos']['type'][$index];
+            $tamaño = $_FILES['archivos']['size'][$index];
+            
+            // Leer archivo y convertir a base64
+            $contenidoArchivo = file_get_contents($tmp_name);
+            $archivoBase64 = base64_encode($contenidoArchivo);
+            
+            try {
+                $resultado = $archivo->guardar(
+                    $idSolicitud,
+                    ArchivoSolicitud::TIPO_FACTURA,
+                    $nombreOriginal,
+                    $archivoBase64,
+                    $mimeType
+                );
+                
+                if ($resultado['success']) {
+                    $archivosProcesados[] = [
+                        'id' => $resultado['id'],
+                        'nombre_original' => $nombreOriginal,
+                        'tipo' => ArchivoSolicitud::TIPO_FACTURA,
+                        'tamaño' => $tamaño,
+                        'mime_type' => $mimeType
+                    ];
+                }
+            } catch (Exception $e) {
+                error_log("Error al guardar archivo: " . $e->getMessage());
+                // Continuamos con los otros archivos aunque uno falle
+            }
+        }
+    }
+    
+    return $archivosProcesados;
 }

@@ -15,6 +15,24 @@ $titulo_pagina = 'Tesorería';
     <!-- Fallback para Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.min.css" crossorigin="anonymous">
     
+    <!-- Estilo específico para iconos Bootstrap -->
+    <style>
+        .bi {
+            font-family: "bootstrap-icons" !important;
+            font-style: normal;
+            font-weight: normal;
+            font-variant: normal;
+            text-transform: none;
+            line-height: 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .bi-arrow-clockwise::before {
+            content: "\f128";
+        }
+    </style>
+    
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/global.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="css/solicitudes_estilos.css?v=<?php echo time(); ?>">
@@ -30,8 +48,9 @@ $titulo_pagina = 'Tesorería';
                     <i class="bi bi-cash-stack"></i> Portal de Tesorería
                 </h1>
                 <div class="btn-toolbar mb-2 mb-md-0">
+                    <!-- Botón actualizar con icono Bootstrap sutil -->
                     <button type="button" class="btn btn-sm btn-outline-primary" onclick="cargarFacturasListas()">
-                        <i class="bi bi-arrow-clockwise"></i> Actualizar
+                        <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
                     </button>
                 </div>
             </div>

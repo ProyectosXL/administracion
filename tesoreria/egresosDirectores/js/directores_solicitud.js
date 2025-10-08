@@ -89,38 +89,177 @@ function configurarFormulario() {
         await crearSolicitud();
     });
     
-    // Configurar input de importe
+    // Configurar input de importe con formateo en tiempo real
     const importeInput = document.getElementById('importeSolicitud');
     if (importeInput) {
-        importeInput.addEventListener('input', formatearImporte);
+        // Usar keyup en lugar de input para evitar conflictos
+        importeInput.addEventListener('keyup', function(e) {
+            // Solo formatear si no estamos borrando
+            if (e.key !== 'Backspace' && e.key !== 'Delete') {
+                formatearImporte(e);
+            }
+        });
+        
+        // También en blur para formatear cuando se sale del campo
+        importeInput.addEventListener('blur', formatearImporte);
     }
     
     // Mostrar/ocultar sección de archivos según motivo
     const motivoSelect = document.getElementById('motivoSolicitud');
     if (motivoSelect) {
         motivoSelect.addEventListener('change', function() {
-            const archivoSection = document.getElementById('archivoFacturaSection');
-            if (archivoSection) {
-                if (this.value === 'COMPRA_PERSONAL') {
-                    archivoSection.style.display = 'block';
-                } else {
-                    archivoSection.style.display = 'none';
-                }
+            const divArchivos = document.getElementById('divArchivos');
+            const alertaFactura = document.getElementById('alertaFactura');
+            
+            if (this.value === 'COMPRA_PERSONAL') {
+                if (divArchivos) divArchivos.classList.remove('d-none');
+                if (alertaFactura) alertaFactura.classList.remove('d-none');
+            } else {
+                if (divArchivos) divArchivos.classList.add('d-none');
+                if (alertaFactura) alertaFactura.classList.add('d-none');
             }
+        });
+    }
+    
+    // Configurar manejo de archivos
+    configurarArchivos();
+}
+
+/**
+ * Formatea el input de importe con separadores de miles
+ */
+function formatearImporte(e) {
+    const input = e.target;
+    let valor = input.value;
+    
+    // Eliminar todo excepto números
+    let numeroLimpio = valor.replace(/\D/g, '');
+    
+    // Si está vacío, no hacer nada
+    if (numeroLimpio === '') {
+        return;
+    }
+    
+    // Formatear con puntos cada 3 dígitos
+    let valorFormateado = numeroLimpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    // Solo actualizar si cambió
+    if (input.value !== valorFormateado) {
+        input.value = valorFormateado;
+    }
+}
+
+/**
+ * Agrega separadores de miles a un número
+ */
+function formatearNumero(numero) {
+    return numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/**
+ * Configura el manejo de archivos
+ */
+function configurarArchivos() {
+    const inputArchivo = document.getElementById('archivoSolicitud');
+    const inputCamara = document.getElementById('camaraSolicitud');
+    
+    if (inputArchivo) {
+        inputArchivo.addEventListener('change', function(e) {
+            combinarArchivos(e.target.files, inputCamara.files);
+        });
+    }
+    
+    if (inputCamara) {
+        inputCamara.addEventListener('change', function(e) {
+            combinarArchivos(inputArchivo.files, e.target.files);
         });
     }
 }
 
 /**
- * Formatea el input de importe
+ * Combina archivos de galería y cámara
  */
-function formatearImporte(e) {
-    let valor = e.target.value;
-    // Eliminar caracteres no numéricos excepto puntos y comas
-    valor = valor.replace(/[^0-9.,]/g, '');
-    // Reemplazar comas por puntos
-    valor = valor.replace(',', '.');
-    e.target.value = valor;
+function combinarArchivos(archivosGaleria, archivosCamara) {
+    const dt = new DataTransfer();
+    
+    // Agregar archivos de galería
+    for (let i = 0; i < archivosGaleria.length; i++) {
+        dt.items.add(archivosGaleria[i]);
+    }
+    
+    // Agregar archivos de cámara
+    for (let i = 0; i < archivosCamara.length; i++) {
+        dt.items.add(archivosCamara[i]);
+    }
+    
+    // Actualizar ambos inputs
+    const inputArchivo = document.getElementById('archivoSolicitud');
+    if (inputArchivo) inputArchivo.files = dt.files;
+    
+    mostrarArchivosSeleccionados(dt.files);
+}
+
+/**
+ * Muestra los archivos seleccionados
+ */
+function mostrarArchivosSeleccionados(archivos) {
+    const listaArchivos = document.getElementById('listaArchivos');
+    if (!listaArchivos) return;
+    
+    if (archivos.length === 0) {
+        listaArchivos.innerHTML = '<p class="text-muted"><small>No hay archivos adjuntos</small></p>';
+        return;
+    }
+    
+    let html = '<div class="row g-2">';
+    
+    for (let i = 0; i < archivos.length; i++) {
+        const archivo = archivos[i];
+        const esImagen = archivo.type.startsWith('image/');
+        const icono = esImagen ? 'bi-image' : 'bi-file-earmark-pdf';
+        const tamaño = (archivo.size / 1024 / 1024).toFixed(2) + ' MB';
+        
+        html += `
+            <div class="col-12">
+                <div class="d-flex align-items-center p-2 border rounded">
+                    <i class="bi ${icono} me-2 text-primary"></i>
+                    <div class="flex-grow-1">
+                        <small class="fw-bold">${archivo.name}</small>
+                        <br>
+                        <small class="text-muted">${tamaño}</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                            onclick="eliminarArchivo(${i})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    listaArchivos.innerHTML = html;
+}
+
+/**
+ * Elimina un archivo de la selección
+ */
+function eliminarArchivo(indice) {
+    const inputArchivo = document.getElementById('archivoSolicitud');
+    if (!inputArchivo) return;
+    
+    // Crear nuevo FileList sin el archivo eliminado
+    const dt = new DataTransfer();
+    const archivos = inputArchivo.files;
+    
+    for (let i = 0; i < archivos.length; i++) {
+        if (i !== indice) {
+            dt.items.add(archivos[i]);
+        }
+    }
+    
+    inputArchivo.files = dt.files;
+    mostrarArchivosSeleccionados(inputArchivo.files);
 }
 
 /**
@@ -146,8 +285,22 @@ async function crearSolicitud() {
             throw new Error('Debe seleccionar un motivo');
         }
         
-        if (!formData.get('importe') || parseFloat(formData.get('importe')) <= 0) {
+        if (!formData.get('importe') || parseFloat(formData.get('importe').replace(/\./g, '').replace(',', '.')) <= 0) {
             throw new Error('Debe ingresar un importe válido');
+        }
+        
+        // Agregar archivos si es compra personal
+        if (formData.get('motivo') === 'COMPRA_PERSONAL') {
+            const inputArchivos = document.getElementById('archivoSolicitud');
+            
+            if (!inputArchivos || inputArchivos.files.length === 0) {
+                throw new Error('Para compras personales debe adjuntar la factura');
+            }
+            
+            // Agregar cada archivo al FormData
+            for (let i = 0; i < inputArchivos.files.length; i++) {
+                formData.append('archivos[]', inputArchivos.files[i]);
+            }
         }
         
         const response = await fetch('controller/solicitud_controller.php', {
@@ -158,15 +311,22 @@ async function crearSolicitud() {
         const result = await response.json();
         
         if (result.success) {
-            mostrarAlerta('Éxito', `Solicitud creada correctamente. ID: ${result.id_solicitud}`);
-            document.getElementById('formSolicitud').reset();
-            
-            // Si hay archivo y es compra personal, subirlo
-            const archivoInput = document.getElementById('archivoFactura');
-            if (archivoInput && archivoInput.files.length > 0 && 
-                document.getElementById('motivoSolicitud').value === 'COMPRA_PERSONAL') {
-                await subirArchivo(result.id_solicitud, archivoInput.files[0], 'FACTURA');
+            let mensaje = `Solicitud creada correctamente. ID: ${result.id_solicitud}`;
+            if (result.archivos && result.archivos.length > 0) {
+                mensaje += `\nArchivos adjuntos: ${result.archivos.length}`;
             }
+            
+            mostrarAlerta('Éxito', mensaje);
+            
+            // Limpiar formulario
+            document.getElementById('formSolicitud').reset();
+            document.getElementById('listaArchivos').innerHTML = '<p class="text-muted"><small>No hay archivos adjuntos</small></p>';
+            
+            // Ocultar secciones de archivos
+            const divArchivos = document.getElementById('divArchivos');
+            const alertaFactura = document.getElementById('alertaFactura');
+            if (divArchivos) divArchivos.classList.add('d-none');
+            if (alertaFactura) alertaFactura.classList.add('d-none');
             
             // Cambiar a la pestaña de listado para ver la solicitud
             const tabListado = document.getElementById('listado-tab');
