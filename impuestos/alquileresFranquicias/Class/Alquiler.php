@@ -1,4 +1,3 @@
-
 <?php
 
 class Alquiler
@@ -251,6 +250,38 @@ class Alquiler
             default:
                 throw new Exception('Tipo de archivo no válido');
         }
+    }
+
+    public function eliminarArchivoContrato($id, $tipo)
+    {
+        // Determinar la columna
+        $columna = $this->obtenerColumnaArchivo($tipo);
+        // Obtener el nombre del archivo actual
+        $sql = "SELECT $columna FROM RO_T_CONTRATOS_ALQUILER_FRANQUICIAS WHERE ID = ?";
+        $params = array($id);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+        if ($stmt === false) {
+            return false;
+        }
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        sqlsrv_free_stmt($stmt);
+        $archivo = $row[$columna] ?? '';
+        // Eliminar archivo físico si existe
+        if ($archivo) {
+            $ruta = __DIR__ . '/../archivos/' . $archivo;
+            if (file_exists($ruta)) {
+                @unlink($ruta);
+            }
+        }
+        // Actualizar la base de datos, dejar la columna vacía
+        $sql = "UPDATE RO_T_CONTRATOS_ALQUILER_FRANQUICIAS SET $columna = NULL WHERE ID = ?";
+        $params = array($id);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+        if ($stmt === false) {
+            return false;
+        }
+        sqlsrv_free_stmt($stmt);
+        return true;
     }
 
 }
