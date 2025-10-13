@@ -82,7 +82,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 </div>
                                 <div class="col-md-4">
                                     <button type="button" class="btn btn-outline-success btn-lg w-100 modo-carga-btn" id="modo-multiple" data-modo="multiple">
-                                        <i class="fas fa-files fa-2x mb-2 d-block"></i>
+                                        <i class="far fa-copy fa-2x mb-2 d-block"></i>
                                         <strong>Cargar varias novedades</strong>
                                         <br><small class="text-muted">Para el mismo empleado</small>
                                     </button>
@@ -205,8 +205,8 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             <label for="tipo_novedad" class="form-label">
                                 Seleccione el tipo de novedad <span class="required">*</span>
                             </label>
-                            <select class="form-select" id="tipo_novedad" name="tipo_novedad" required>
-                                <option value="">Seleccione tipo de novedad...</option>
+                            <select class="form-select" id="tipo_novedad" name="tipo_novedad" required onchange="onTipoNovedadChangeActualizado(this)">
+                                <option value="">Buscar tipo de novedad...</option>
                             </select>
                             <div class="invalid-feedback">
                                 El tipo de novedad es obligatorio
@@ -306,7 +306,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo_nuevo_puesto" id="tipo_puesto_permanente" value="permanente" checked>
+                                        <input class="form-check-input" type="radio" name="tipo_nuevo_puesto" id="tipo_puesto_permanente" value="permanente" checked onchange="toggleFechaFinModoIndividual()">
                                         <label class="form-check-label" for="tipo_puesto_permanente">
                                             <i class="fas fa-check-circle text-success me-2"></i>
                                             <strong>Permanente</strong>
@@ -316,7 +316,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo_nuevo_puesto" id="tipo_puesto_temporario" value="temporario">
+                                        <input class="form-check-input" type="radio" name="tipo_nuevo_puesto" id="tipo_puesto_temporario" value="temporario" onchange="toggleFechaFinModoIndividual()">
                                         <label class="form-check-label" for="tipo_puesto_temporario">
                                             <i class="fas fa-clock text-warning me-2"></i>
                                             <strong>Temporario</strong>
@@ -986,8 +986,169 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                 </div>
 
+                <!-- 53. Reemplazo -->
+                <div class="form-section campo-dinamico" id="config-reemplazo">
+                    <h5>
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        Configuración: Reemplazo
+                    </h5>
+                    <div class="row">
+                        <!-- Puesto Actual -->
+                        <div class="col-md-12 mb-3">
+                            <div class="alert alert-info" id="puesto-actual-info-reemplazo" style="display: none;">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Puesto actual:</strong> <span id="puesto-actual-texto-reemplazo">-</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Tipo de Reemplazo -->
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">
+                                Tipo de Reemplazo <span class="required">*</span>
+                            </label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_reemplazo" id="tipo_reemplazo_permanente" value="permanente" checked onchange="toggleFechaFinReemplazo()">
+                                        <label class="form-check-label" for="tipo_reemplazo_permanente">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            <strong>Permanente</strong>
+                                            <br><small class="text-muted">Reemplazo definitivo</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_reemplazo" id="tipo_reemplazo_temporario" value="temporario" onchange="toggleFechaFinReemplazo()">
+                                        <label class="form-check-label" for="tipo_reemplazo_temporario">
+                                            <i class="fas fa-clock text-warning me-2"></i>
+                                            <strong>Temporario</strong>
+                                            <br><small class="text-muted">Reemplazo temporal con fecha de fin</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback" id="tipo_reemplazo_error">
+                                Debe seleccionar el tipo de reemplazo
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="puesto_reemplazo" class="form-label">
+                                Puesto de Reemplazo <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="puesto_reemplazo" name="puesto">
+                                <option value="">Buscar y seleccionar puesto...</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                El puesto es obligatorio
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="fecha_vigencia_reemplazo" class="form-label">
+                                Fecha de inicio <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_reemplazo" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de inicio es obligatoria
+                            </div>
+                        </div>
+                        
+                        <!-- Fecha de fin (solo para temporario) -->
+                        <div class="col-md-3" id="campo_fecha_fin_reemplazo" style="display: none;">
+                            <label for="fecha_vigencia_hasta_reemplazo" class="form-label">
+                                Fecha de fin <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_hasta_reemplazo" name="fecha_vigencia_hasta">
+                            <div class="invalid-feedback">
+                                La fecha de fin es obligatoria para reemplazos temporarios
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                
+                <!-- 54. Aumento Salarial -->
+                <div class="form-section campo-dinamico" id="config-aumento-salarial">
+                    <h5>
+                        <i class="fas fa-chart-line me-2"></i>
+                        Configuración: Aumento Salarial
+                    </h5>
+                    <div class="row">
+                        <!-- Tipo de Aumento -->
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">
+                                Tipo de Aumento <span class="required">*</span>
+                            </label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_aumento" id="tipo_aumento_porcentaje" value="porcentaje" checked onchange="toggleTipoAumento()">
+                                        <label class="form-check-label" for="tipo_aumento_porcentaje">
+                                            <i class="fas fa-percentage text-primary me-2"></i>
+                                            <strong>Porcentaje</strong>
+                                            <br><small class="text-muted">Aumento por porcentaje sobre el salario actual</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_aumento" id="tipo_aumento_monto" value="monto" onchange="toggleTipoAumento()">
+                                        <label class="form-check-label" for="tipo_aumento_monto">
+                                            <i class="fas fa-dollar-sign text-success me-2"></i>
+                                            <strong>Monto Fijo</strong>
+                                            <br><small class="text-muted">Aumento por monto específico</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback" id="tipo_aumento_error">
+                                Debe seleccionar el tipo de aumento
+                            </div>
+                        </div>
+                        
+                        <!-- Campo Porcentaje -->
+                        <div class="col-md-4" id="campo_porcentaje_aumento">
+                            <label for="porcentaje_aumento" class="form-label">
+                                Porcentaje de Aumento <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="porcentaje_aumento" 
+                                    name="porcentaje_1" step="0.01" min="0.01" max="100" placeholder="0.00">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="invalid-feedback">
+                                El porcentaje debe ser mayor a 0.01
+                            </div>
+                            <small class="form-text text-muted">Ejemplo: 15.5 para 15.5%</small>
+                        </div>
+                        
+                        <!-- Campo Monto -->
+                        <div class="col-md-4" id="campo_monto_aumento" style="display: none;">
+                            <label for="monto_aumento" class="form-label">
+                                Monto del Aumento <span class="required">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="monto_aumento" 
+                                    name="valor_numerico" step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                            <div class="invalid-feedback">
+                                El monto debe ser mayor a 0.01
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="fecha_vigencia_aumento" class="form-label">
+                                Fecha de vigencia <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_aumento" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de vigencia es obligatoria
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
             </div>
 
@@ -1476,6 +1637,108 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
             $('#nuevo_puesto').on('select2:clear', function (e) {
                 $(this).removeClass('is-valid is-invalid');
             });
+
+            // Configurar Select2 para búsqueda de puestos de reemplazo
+            $('#puesto_reemplazo').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Buscar puesto de reemplazo...',
+                allowClear: true,
+                ajax: {
+                    url: 'controller/novedades_controller.php?action=buscar_puestos_select2',
+                    dataType: 'json',
+                    delay: 300,
+                    data: function (params) {
+                        return {
+                            q: params.term,
+                            limit: 20
+                        };
+                    },
+                    processResults: function (data) {
+                        if (data.success) {
+                            return {
+                                results: data.data
+                            };
+                        } else {
+                            console.error('Error en búsqueda de puestos de reemplazo:', data.message);
+                            return {
+                                results: []
+                            };
+                        }
+                    },
+                    cache: true
+                },
+                minimumInputLength: 0,
+                language: {
+                    noResults: function () {
+                        return "No se encontraron puestos";
+                    },
+                    searching: function () {
+                        return "Buscando puestos...";
+                    }
+                }
+            });
+
+            // Manejar selección de puesto de reemplazo
+            $('#puesto_reemplazo').on('select2:select', function (e) {
+                console.log('🎯 Puesto de reemplazo seleccionado:', e.params.data);
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            });
+
+            // Manejar limpieza de puesto de reemplazo
+            $('#puesto_reemplazo').on('select2:clear', function (e) {
+                $(this).removeClass('is-valid is-invalid');
+            });
+
+            // Configurar Select2 para búsqueda de puestos de reemplazo
+            $('#puesto_reemplazo').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Buscar puesto de reemplazo...',
+                allowClear: true,
+                ajax: {
+                    url: 'controller/novedades_controller.php?action=buscar_puestos_select2',
+                    dataType: 'json',
+                    delay: 300,
+                    data: function (params) {
+                        return {
+                            q: params.term,
+                            limit: 20
+                        };
+                    },
+                    processResults: function (data) {
+                        if (data.success) {
+                            return {
+                                results: data.data
+                            };
+                        } else {
+                            console.error('Error en búsqueda de puestos:', data.message);
+                            return {
+                                results: []
+                            };
+                        }
+                    },
+                    cache: true
+                },
+                minimumInputLength: 0,
+                language: {
+                    noResults: function () {
+                        return "No se encontraron puestos";
+                    },
+                    searching: function () {
+                        return "Buscando puestos...";
+                    }
+                }
+            });
+
+            // Manejar selección de puesto de reemplazo
+            $('#puesto_reemplazo').on('select2:select', function (e) {
+                console.log('🎯 Puesto de reemplazo seleccionado:', e.params.data);
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            });
+
+            // Manejar limpieza de puesto de reemplazo
+            $('#puesto_reemplazo').on('select2:clear', function (e) {
+                $(this).removeClass('is-valid is-invalid');
+            });
         });
 
         // Función para mostrar modal de confirmación de limpieza
@@ -1614,6 +1877,126 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     <script src="js/manual.js"></script>
     <script src="js/modal_fix.js"></script>
     <script src="js/periodo_utils.js"></script>
+
+    <script>
+        /**
+         * Función específica para toggle de fecha fin en modo individual
+         */
+        function toggleFechaFinModoIndividual() {
+            const radioTemporario = document.getElementById('tipo_puesto_temporario');
+            const campoFechaFin = document.getElementById('campo_fecha_fin');
+            const fechaFinInput = document.getElementById('fecha_vigencia_hasta_puesto');
+            
+            console.log('🔄 toggleFechaFinModoIndividual ejecutado');
+            console.log('📍 Radio temporario checked:', radioTemporario ? radioTemporario.checked : 'no encontrado');
+            console.log('📍 Campo fecha fin:', campoFechaFin ? 'encontrado' : 'no encontrado');
+            
+            if (radioTemporario && radioTemporario.checked) {
+                // Mostrar campo de fecha de fin
+                if (campoFechaFin) {
+                    campoFechaFin.style.display = 'block';
+                    console.log('✅ Campo fecha fin mostrado');
+                }
+                if (fechaFinInput) {
+                    fechaFinInput.setAttribute('required', 'required');
+                    console.log('✅ Campo fecha fin marcado como requerido');
+                }
+            } else {
+                // Ocultar campo de fecha de fin
+                if (campoFechaFin) {
+                    campoFechaFin.style.display = 'none';
+                    console.log('🔒 Campo fecha fin ocultado');
+                }
+                if (fechaFinInput) {
+                    fechaFinInput.removeAttribute('required');
+                    fechaFinInput.value = '';
+                    console.log('🧹 Campo fecha fin limpiado');
+                }
+            }
+        }
+
+        /**
+         * Función para toggle de fecha fin en Reemplazo
+         */
+        function toggleFechaFinReemplazo() {
+            const radioTemporario = document.getElementById('tipo_reemplazo_temporario');
+            const campoFechaFin = document.getElementById('campo_fecha_fin_reemplazo');
+            const fechaFinInput = document.getElementById('fecha_vigencia_hasta_reemplazo');
+            
+            console.log('🔄 toggleFechaFinReemplazo ejecutado');
+            
+            if (radioTemporario && radioTemporario.checked) {
+                // Mostrar campo de fecha de fin
+                if (campoFechaFin) {
+                    campoFechaFin.style.display = 'block';
+                    console.log('✅ Campo fecha fin reemplazo mostrado');
+                }
+                if (fechaFinInput) {
+                    fechaFinInput.setAttribute('required', 'required');
+                }
+            } else {
+                // Ocultar campo de fecha de fin
+                if (campoFechaFin) {
+                    campoFechaFin.style.display = 'none';
+                    console.log('🔒 Campo fecha fin reemplazo ocultado');
+                }
+                if (fechaFinInput) {
+                    fechaFinInput.removeAttribute('required');
+                    fechaFinInput.value = '';
+                }
+            }
+        }
+
+        /**
+         * Función para toggle entre porcentaje y monto en Aumento Salarial
+         */
+        function toggleTipoAumento() {
+            const radioPorcentaje = document.getElementById('tipo_aumento_porcentaje');
+            const radioMonto = document.getElementById('tipo_aumento_monto');
+            const campoPorcentaje = document.getElementById('campo_porcentaje_aumento');
+            const campoMonto = document.getElementById('campo_monto_aumento');
+            const inputPorcentaje = document.getElementById('porcentaje_aumento');
+            const inputMonto = document.getElementById('monto_aumento');
+            
+            console.log('🔄 toggleTipoAumento ejecutado');
+            
+            if (radioPorcentaje && radioPorcentaje.checked) {
+                // Mostrar campo porcentaje, ocultar monto
+                if (campoPorcentaje) {
+                    campoPorcentaje.style.display = 'block';
+                    console.log('✅ Campo porcentaje mostrado');
+                }
+                if (campoMonto) {
+                    campoMonto.style.display = 'none';
+                    console.log('🔒 Campo monto ocultado');
+                }
+                if (inputPorcentaje) {
+                    inputPorcentaje.setAttribute('required', 'required');
+                }
+                if (inputMonto) {
+                    inputMonto.removeAttribute('required');
+                    inputMonto.value = '';
+                }
+            } else if (radioMonto && radioMonto.checked) {
+                // Mostrar campo monto, ocultar porcentaje
+                if (campoMonto) {
+                    campoMonto.style.display = 'block';
+                    console.log('✅ Campo monto mostrado');
+                }
+                if (campoPorcentaje) {
+                    campoPorcentaje.style.display = 'none';
+                    console.log('🔒 Campo porcentaje ocultado');
+                }
+                if (inputMonto) {
+                    inputMonto.setAttribute('required', 'required');
+                }
+                if (inputPorcentaje) {
+                    inputPorcentaje.removeAttribute('required');
+                    inputPorcentaje.value = '';
+                }
+            }
+        }
+    </script>
 
     <!-- Manual de Usuario Modal -->
     <?php include 'components/manual_modal.php'; ?>

@@ -87,7 +87,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                         <label for="filtro-tipo" class="form-label">
                             <i class="fas fa-tags me-2"></i>Tipo de Novedad
                         </label>
-                        <select class="form-select" id="filtro-tipo">
+                        <select class="form-select" id="filtro-tipo" name="filtro-tipo">
                             <option value="">Todos los tipos</option>
                         </select>
                     </div>
@@ -229,6 +229,12 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     <table class="table table-hover mb-0" id="tabla-novedades">
                         <thead class="table-light">
                             <tr>
+                                <th class="sortable" data-column="fecha_registro" style="cursor: pointer;">
+                                    Registro 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
                                 <th class="sortable" data-column="empleado" style="cursor: pointer;">
                                     Empleado 
                                     <span class="sort-arrow">
@@ -254,19 +260,19 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                     </span>
                                 </th>
                                 <th class="sortable" data-column="vigencia" style="cursor: pointer;">
-                                    Vigencia 
+                                    Vigencia desde 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-column="vigencia_hasta" style="cursor: pointer;">
+                                    Vigencia hasta 
                                     <span class="sort-arrow">
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>
                                 </th>
                                 <th class="sortable" data-column="valor" style="cursor: pointer;">
                                     Valor 
-                                    <span class="sort-arrow">
-                                        <i class="fas fa-sort text-muted"></i>
-                                    </span>
-                                </th>
-                                <th class="sortable" data-column="fecha_registro" style="cursor: pointer;">
-                                    Fecha Registro 
                                     <span class="sort-arrow">
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>

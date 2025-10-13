@@ -142,6 +142,16 @@ const tiposNovedadConfigActualizada = {
         config: 'config-premios-ajuste',
         campos: ['importe_ajuste_general', 'fecha_vigencia_ajuste'],
         validaciones: ['importe', 'fecha_vigencia']
+    },
+    53: { // Reemplazo
+        config: 'config-reemplazo',
+        campos: ['puesto_reemplazo', 'fecha_vigencia_reemplazo', 'tipo_reemplazo'],
+        validaciones: ['puesto', 'fecha_vigencia', 'tipo_reemplazo']
+    },
+    54: { // Aumento Salarial
+        config: 'config-aumento-salarial',
+        campos: ['tipo_aumento', 'porcentaje_aumento', 'monto_aumento', 'fecha_vigencia_aumento'],
+        validaciones: ['tipo_aumento', 'fecha_vigencia']
     }
 };
 
@@ -157,6 +167,21 @@ function onTipoNovedadChangeActualizado(selectElement) {
         configuracionDisponible: !!tiposNovedadConfigActualizada[tipoSeleccionado],
         configKeys: Object.keys(tiposNovedadConfigActualizada)
     });
+    
+    // DEBUG ADICIONAL para tipos 53 y 54
+    if (tipoSeleccionado === 53 || tipoSeleccionado === 54) {
+        console.log('🎯 TIPO NUEVO DETECTADO:', tipoSeleccionado);
+        console.log('🎯 Config para este tipo:', tiposNovedadConfigActualizada[tipoSeleccionado]);
+        console.log('🎯 Elemento config ID:', tiposNovedadConfigActualizada[tipoSeleccionado]?.config);
+        
+        const configId = tiposNovedadConfigActualizada[tipoSeleccionado]?.config;
+        const configElement = document.getElementById(configId);
+        console.log('🎯 Elemento HTML encontrado:', !!configElement);
+        if (configElement) {
+            console.log('🎯 Estilo display actual:', configElement.style.display);
+            console.log('🎯 Clases del elemento:', configElement.className);
+        }
+    }
 
     // Toggle del botón de información (con verificación)
     try {
@@ -772,6 +797,70 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
                 valido = false;
             }
             break;
+
+        case 53: // Reemplazo
+            const puestoReemplazo = document.getElementById('puesto_reemplazo');
+            const fechaVigenciaReemplazo = document.getElementById('fecha_vigencia_reemplazo');
+            const tipoReemplazoPermanente = document.getElementById('tipo_reemplazo_permanente');
+            const tipoReemplazoTemporario = document.getElementById('tipo_reemplazo_temporario');
+
+            if (!puestoReemplazo || !puestoReemplazo.value) {
+                errores.push('El puesto de reemplazo es obligatorio');
+                valido = false;
+            }
+
+            if (!fechaVigenciaReemplazo || !fechaVigenciaReemplazo.value) {
+                errores.push('La fecha de vigencia del reemplazo es obligatoria');
+                valido = false;
+            }
+
+            if ((!tipoReemplazoPermanente || !tipoReemplazoPermanente.checked) && 
+                (!tipoReemplazoTemporario || !tipoReemplazoTemporario.checked)) {
+                errores.push('Debe seleccionar el tipo de reemplazo');
+                valido = false;
+            }
+
+            // Si es temporario, validar fecha de fin
+            if (tipoReemplazoTemporario && tipoReemplazoTemporario.checked) {
+                const fechaFinReemplazo = document.getElementById('fecha_vigencia_hasta_reemplazo');
+                if (!fechaFinReemplazo || !fechaFinReemplazo.value) {
+                    errores.push('La fecha de fin es obligatoria para reemplazos temporarios');
+                    valido = false;
+                }
+            }
+            break;
+
+        case 54: // Aumento Salarial
+            const fechaVigenciaAumento = document.getElementById('fecha_vigencia_aumento');
+            const tipoAumentoPorcentaje = document.getElementById('tipo_aumento_porcentaje');
+            const tipoAumentoMonto = document.getElementById('tipo_aumento_monto');
+
+            if (!fechaVigenciaAumento || !fechaVigenciaAumento.value) {
+                errores.push('La fecha de vigencia del aumento es obligatoria');
+                valido = false;
+            }
+
+            if ((!tipoAumentoPorcentaje || !tipoAumentoPorcentaje.checked) && 
+                (!tipoAumentoMonto || !tipoAumentoMonto.checked)) {
+                errores.push('Debe seleccionar el tipo de aumento');
+                valido = false;
+            }
+
+            // Validar campo específico según tipo seleccionado
+            if (tipoAumentoPorcentaje && tipoAumentoPorcentaje.checked) {
+                const porcentajeAumento = parseFloat(document.getElementById('porcentaje_aumento').value);
+                if (!porcentajeAumento || porcentajeAumento <= 0) {
+                    errores.push('El porcentaje de aumento debe ser mayor a 0');
+                    valido = false;
+                }
+            } else if (tipoAumentoMonto && tipoAumentoMonto.checked) {
+                const montoAumento = parseFloat(document.getElementById('monto_aumento').value);
+                if (!montoAumento || montoAumento <= 0) {
+                    errores.push('El monto de aumento debe ser mayor a 0');
+                    valido = false;
+                }
+            }
+            break;
     }
 
     if (errores.length > 0) {
@@ -1046,6 +1135,72 @@ async function recopilarDatosFormularioActualizado(tipoNovedad) {
             datos.importe = parseFloat(document.getElementById('importe_ajuste_general').value);
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_ajuste').value;
             break;
+
+        case 53: // Reemplazo
+            datos.puesto = document.getElementById('puesto_reemplazo').value;
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_reemplazo').value;
+            
+            // Obtener tipo de reemplazo (permanente/temporario)
+            let tipoReemplazo = 'permanente'; // default seguro
+            
+            // Verificar radio buttons
+            const radioPermanenteReemplazo = document.getElementById('tipo_reemplazo_permanente');
+            const radioTemporarioReemplazo = document.getElementById('tipo_reemplazo_temporario');
+            
+            if (radioTemporarioReemplazo && radioTemporarioReemplazo.checked) {
+                tipoReemplazo = 'temporario';
+            } else if (radioPermanenteReemplazo && radioPermanenteReemplazo.checked) {
+                tipoReemplazo = 'permanente';
+            }
+            
+            datos.tipo_reemplazo = tipoReemplazo;
+            
+            // Si es temporario, agregar fecha de fin
+            if (tipoReemplazo === 'temporario') {
+                const fechaHastaReemplazo = document.getElementById('fecha_vigencia_hasta_reemplazo');
+                datos.fecha_vigencia_hasta = fechaHastaReemplazo ? fechaHastaReemplazo.value : '';
+            } else {
+                // Para permanente, asegurar que fecha_vigencia_hasta sea null
+                datos.fecha_vigencia_hasta = null;
+            }
+            
+            console.log('🔍 REEMPLAZO - Datos recopilados:', {
+                puesto: datos.puesto,
+                fecha_vigencia: datos.fecha_vigencia,
+                tipo_reemplazo: datos.tipo_reemplazo,
+                fecha_vigencia_hasta: datos.fecha_vigencia_hasta || 'N/A'
+            });
+            break;
+
+        case 54: // Aumento Salarial
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_aumento').value;
+            
+            // Obtener tipo de aumento (porcentaje/monto)
+            let tipoAumento = 'porcentaje'; // default seguro
+            
+            // Verificar radio buttons
+            const radioPorcentaje = document.getElementById('tipo_aumento_porcentaje');
+            const radioMonto = document.getElementById('tipo_aumento_monto');
+            
+            if (radioMonto && radioMonto.checked) {
+                tipoAumento = 'monto';
+                datos.valor_numerico = parseFloat(document.getElementById('monto_aumento').value);
+                datos.porcentaje_1 = null; // Limpiar campo porcentaje
+            } else if (radioPorcentaje && radioPorcentaje.checked) {
+                tipoAumento = 'porcentaje';
+                datos.porcentaje_1 = parseFloat(document.getElementById('porcentaje_aumento').value);
+                datos.valor_numerico = null; // Limpiar campo monto
+            }
+            
+            datos.tipo_aumento = tipoAumento;
+            
+            console.log('🔍 AUMENTO SALARIAL - Datos recopilados:', {
+                fecha_vigencia: datos.fecha_vigencia,
+                tipo_aumento: datos.tipo_aumento,
+                porcentaje_1: datos.porcentaje_1,
+                valor_numerico: datos.valor_numerico
+            });
+            break;
     }
     
     // Agregar período de aplicación seleccionado (solo en modo único)
@@ -1225,7 +1380,7 @@ async function obtenerDiaCierreEfectivo(valorCierre, year, month) {
  * Calcular período siguiente basado en el día de cierre del tipo de novedad
  */
 async function calcularPeriodoSiguienteSegunCierre(tipoNovedadId, fechaReferencia = null) {
-    const tipoData = tiposNovedadData[tipoNovedadId];
+    const tipoData = window.tiposNovedadData ? window.tiposNovedadData[tipoNovedadId] : null;
     if (!tipoData || !tipoData.cierre) {
         // Fallback: usar día 28
         return calcularPeriodoConDiaCierre(28, fechaReferencia, false, true);
@@ -1244,7 +1399,7 @@ async function calcularPeriodoSiguienteSegunCierre(tipoNovedadId, fechaReferenci
     return calcularPeriodoConDiaCierre(diaCierre, fechaReferencia, esPrimerDiaHabil, true);
 }
 async function calcularPeriodoSegunCierre(tipoNovedadId, fechaReferencia = null) {
-    const tipoData = tiposNovedadData[tipoNovedadId];
+    const tipoData = window.tiposNovedadData ? window.tiposNovedadData[tipoNovedadId] : null;
     if (!tipoData || !tipoData.cierre) {
         // Fallback: usar día 28
         return calcularPeriodoConDiaCierre(28, fechaReferencia, false);
@@ -1356,7 +1511,7 @@ async function calcularFechaPeriodoSiguienteParaVigencia(tipoNovedadId) {
  * Configurar fecha de vigencia según tipo de corte
  */
 async function configurarFechaVigencia(tipoNovedadId, campoFechaId) {
-    const tipoData = tiposNovedadData[tipoNovedadId];
+    const tipoData = window.tiposNovedadData ? window.tiposNovedadData[tipoNovedadId] : null;
     const campoFecha = document.getElementById(campoFechaId);
     
     console.log('🔍 configurarFechaVigencia llamado:', {
@@ -1552,28 +1707,153 @@ async function cargarTiposNovedad() {
             arr.findIndex(t => t.descripcion === tipo.descripcion) === index
         );
         
+        // Filtrar solo tipos activos y ordenar alfabéticamente - CORREGIDO FILTRO
+        const tiposActivos = tiposUnicos
+            .filter(tipo => {
+                // Manejar diferentes formatos del campo activo
+                const esActivo = tipo.activo == 1 || tipo.activo === '1' || tipo.activo === true || tipo.activo === 'true';
+                return esActivo;
+            })
+            .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es', { sensitivity: 'accent' }));
+        
         // Almacenar la información completa globalmente
-        tiposNovedadData = {};
+        window.tiposNovedadData = {};
         tiposUnicos.forEach(tipo => {
-            tiposNovedadData[tipo.id] = tipo;
+            window.tiposNovedadData[tipo.id] = tipo;
         });
         
-        const selectTipo = document.getElementById('tipo_novedad');
-        if (selectTipo) {
-            selectTipo.innerHTML = '<option value="">Seleccione tipo de novedad...</option>';
-            tiposUnicos.forEach(tipo => {
-                if (tipo.activo == 1) { // Solo mostrar tipos activos
-                    selectTipo.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
-                }
-            });
+        // FALLBACK: Si no hay tipos activos, usar todos los tipos disponibles
+        let tiposParaUsar = tiposActivos;
+        if (tiposActivos.length === 0 && tiposUnicos.length > 0) {
+            console.warn('⚠️ No se encontraron tipos activos en modo único, usando todos los tipos disponibles');
+            tiposParaUsar = tiposUnicos.sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es', { sensitivity: 'accent' }));
         }
 
-        console.log('Tipos de novedad cargados:', tiposUnicos.length);
+        const selectTipo = document.getElementById('tipo_novedad');
+        if (selectTipo) {
+            selectTipo.innerHTML = '<option value="">Buscar tipo de novedad...</option>';
+            tiposParaUsar.forEach(tipo => {
+                selectTipo.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
+            });
+            
+            // Inicializar Select2 con búsqueda
+            inicializarSelect2TiposNovedad(selectTipo);
+        }
+
+        console.log('Tipos de novedad cargados (ordenados alfabéticamente):', tiposParaUsar.length);
         console.log('Datos de tipos:', tiposNovedadData);
 
     } catch (error) {
         console.error('Error cargando tipos de novedad:', error);
         NovedadesApp.mostrarError('Error cargando tipos de novedad');
+    }
+}
+
+/**
+ * Inicializar Select2 para selector de tipos de novedad
+ */
+function inicializarSelect2TiposNovedad(selectElement) {
+    if (!selectElement || typeof $ === 'undefined') {
+        console.warn('⚠️ No se puede inicializar Select2 para tipos de novedad:', !selectElement ? 'elemento no encontrado' : 'jQuery no disponible');
+        return;
+    }
+    
+    try {
+        const $select = $(selectElement);
+        
+        // Destruir Select2 existente si existe
+        if ($select.hasClass('select2-hidden-accessible')) {
+            $select.select2('destroy');
+        }
+        
+        // Configurar Select2 con búsqueda
+        $select.select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Buscar tipo de novedad...',
+            allowClear: true,
+            width: '100%',
+            language: {
+                inputTooShort: function () {
+                    return 'Escriba para buscar tipos de novedad';
+                },
+                noResults: function () {
+                    return 'No se encontraron tipos de novedad';
+                },
+                searching: function () {
+                    return 'Buscando tipos de novedad...';
+                }
+            },
+            // Las opciones ya están cargadas y ordenadas alfabéticamente
+            // Select2 mantendrá este orden durante la búsqueda
+            sorter: function(data) {
+                // Mantener el orden alfabético durante la búsqueda
+                return data.sort(function(a, b) {
+                    if (a.text && b.text) {
+                        return a.text.localeCompare(b.text, 'es', { sensitivity: 'accent' });
+                    }
+                    return 0;
+                });
+            }
+        });
+        
+        // Event listener para cuando se selecciona un tipo
+        $select.on('select2:select', function (e) {
+            const data = e.params.data;
+            console.log('🎯 Tipo de novedad seleccionado:', {
+                selectId: selectElement.id,
+                data: data,
+                esModoUnico: selectElement.id === 'tipo_novedad',
+                esModoMultiple: selectElement.id.startsWith('tipo_novedad_')
+            });
+            
+            // Remover clases de error
+            $(this).removeClass('is-invalid').addClass('is-valid');
+            
+            // Llamar a la función de cambio de tipo según el contexto
+            if (selectElement.id === 'tipo_novedad') {
+                // Modo único
+                console.log('🔄 Ejecutando onTipoNovedadChangeActualizado para modo único');
+                onTipoNovedadChangeActualizado(selectElement);
+            } else if (selectElement.id.startsWith('tipo_novedad_')) {
+                // Modo múltiple - extraer el ID de la novedad
+                const match = selectElement.id.match(/tipo_novedad_(\d+)/);
+                console.log('🔍 Match para modo múltiple:', match);
+                
+                if (match && typeof onTipoNovedadChangeMultiple === 'function') {
+                    const novedadId = parseInt(match[1]);
+                    console.log('🔄 Ejecutando onTipoNovedadChangeMultiple para novedad:', novedadId);
+                    onTipoNovedadChangeMultiple(selectElement, novedadId);
+                    
+                    // También llamar a toggleInfoButton si existe
+                    if (typeof window.toggleInfoButton === 'function') {
+                        window.toggleInfoButton(selectElement, novedadId);
+                    } else if (typeof toggleInfoButton === 'function') {
+                        toggleInfoButton(selectElement, novedadId);
+                    }
+                } else {
+                    console.error('❌ No se pudo ejecutar onTipoNovedadChangeMultiple:', {
+                        match: match,
+                        functionExists: typeof onTipoNovedadChangeMultiple === 'function'
+                    });
+                }
+            }
+        });
+        
+        // Event listener para cuando se limpia la selección
+        $select.on('select2:clear', function (e) {
+            $(this).removeClass('is-valid is-invalid');
+            
+            // Limpiar configuraciones si es modo único
+            if (selectElement.id === 'tipo_novedad') {
+                ocultarTodasLasConfiguraciones();
+                document.getElementById('configuracion-novedad').style.display = 'none';
+            }
+        });
+        
+        console.log('✅ Select2 inicializado para tipos de novedad:', selectElement.id);
+        
+    } catch (error) {
+        console.error('❌ Error inicializando Select2 para tipos de novedad:', error);
     }
 }
 
@@ -1596,8 +1876,23 @@ function limpiarFormulario(formId = 'form-novedad') {
         form.reset();
         
         // Limpiar Select2 si existe
-        if (typeof $ !== 'undefined' && $('#empleado-select').length) {
-            $('#empleado-select').val(null).trigger('change');
+        if (typeof $ !== 'undefined') {
+            // Limpiar select de empleados
+            if ($('#empleado-select').length) {
+                $('#empleado-select').val(null).trigger('change');
+            }
+            
+            // Limpiar select de tipos de novedad (modo único)
+            if ($('#tipo_novedad').length && $('#tipo_novedad').hasClass('select2-hidden-accessible')) {
+                $('#tipo_novedad').val(null).trigger('change');
+            }
+            
+            // Limpiar selects de tipos de novedad (modo múltiple)
+            $('.tipo-novedad-multiple').each(function() {
+                if ($(this).hasClass('select2-hidden-accessible')) {
+                    $(this).val(null).trigger('change');
+                }
+            });
         }
         
         // Ocultar configuraciones
@@ -2142,18 +2437,11 @@ function actualizarIndicadorModo(modo) {
 }
 
 /**
- * Volver a la selección de modo
+ * Volver a la selección de modo - ACCIÓN DIRECTA (sin confirmación)
  */
 function volverSeleccionModo() {
-    // Mostrar confirmación si hay datos
-    const tieneNovedad = document.getElementById('tipo_novedad')?.value;
-    const tieneNovedadesMultiples = document.querySelectorAll('.novedad-card').length > 0;
-    
-    if (tieneNovedad || tieneNovedadesMultiples) {
-        if (!confirm('¿Está seguro de que desea cambiar el modo? Se perderán todos los datos ingresados.')) {
-            return;
-        }
-    }
+    // ELIMINADA: confirmación de cambio de modo
+    // El cambio ahora es directo e inmediato
     
     // Limpiar formulario
     if (typeof limpiarFormularioSinConfirmacion === 'function') {
@@ -2496,28 +2784,15 @@ function agregarNuevaNovedadCard() {
     console.log('📝 HTML de card insertado');
     console.log('🔄 Cargando tipos de novedad...');
     
-    // Cargar tipos de novedad en el nuevo select
-    cargarTiposNovedadEnSelect(`tipo_novedad_${window.contadorNovedades}`);
+    // Cargar tipos de novedad en el nuevo select (async)
+    cargarTiposNovedadEnSelect(`tipo_novedad_${window.contadorNovedades}`).then(() => {
+        console.log('✅ Select2 inicializado para card', window.contadorNovedades);
+    }).catch(error => {
+        console.error('❌ Error inicializando select en card:', error);
+    });
     
-    // Agregar event listener para el cambio de tipo
-    const selectTipoNovedad = document.getElementById(`tipo_novedad_${window.contadorNovedades}`);
-    console.log('📋 Select encontrado:', !!selectTipoNovedad);
-    
-    if (selectTipoNovedad) {
-        selectTipoNovedad.addEventListener('change', function() {
-            console.log('🎯 Cambio en select múltiple detectado');
-            onTipoNovedadChangeMultiple(this, window.contadorNovedades);
-            
-            // Llamar a toggleInfoButton si existe
-            if (typeof window.toggleInfoButton === 'function') {
-                window.toggleInfoButton(this, window.contadorNovedades);
-            } else if (typeof toggleInfoButton === 'function') {
-                toggleInfoButton(this, window.contadorNovedades);
-            } else {
-                console.warn('toggleInfoButton no está disponible');
-            }
-        });
-    }
+    // NOTA: Los event listeners de Select2 se configuran en inicializarSelect2TiposNovedad()
+    // No agregamos listeners manuales aquí para evitar conflictos
     
     console.log(`✅ Agregada card de novedad #${window.contadorNovedades}`);
 }
@@ -2633,6 +2908,10 @@ function generarConfiguracionEspecificaMultiple(tipoNovedad, novedadId) {
         case 18: // Premios - Ajuste General
         case 38: // Premios - Ajuste General (ID real BD)
             return generarConfigPremiosAjusteGeneralMultiple(novedadId);
+        case 53: // Reemplazo
+            return generarConfigReemplazoMultiple(novedadId);
+        case 54: // Aumento Salarial
+            return generarConfigAumentoSalarialMultiple(novedadId);
         default:
             return `<div class="alert alert-warning">Tipo de novedad ${tipoNovedad} no configurado para modo múltiple</div>`;
     }
@@ -2653,6 +2932,8 @@ async function cargarTiposNovedadEnSelect(selectId) {
             return;
         }
         
+        let tipos = [];
+        
         // Verificar si NovedadesApp está disponible
         if (typeof NovedadesApp === 'undefined' || !NovedadesApp.request) {
             console.warn('⚠️ NovedadesApp no disponible, usando fetch directo');
@@ -2662,26 +2943,62 @@ async function cargarTiposNovedadEnSelect(selectId) {
             const data = await response.json();
             
             if (data.success && data.data) {
-                select.innerHTML = '<option value="">Seleccione tipo de novedad...</option>';
-                data.data.forEach(tipo => {
-                    select.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
-                });
-                console.log('✅ Tipos de novedad cargados (fallback):', data.data.length);
+                tipos = data.data;
+                console.log('✅ Tipos de novedad obtenidos (fallback):', tipos.length);
             } else {
                 console.error('❌ Error en respuesta de tipos de novedad:', data);
+                return;
             }
-            return;
+        } else {
+            tipos = await NovedadesApp.request('get_tipos_novedad');
+            console.log('📦 Tipos recibidos:', tipos);
         }
         
-        const tipos = await NovedadesApp.request('get_tipos_novedad');
-        console.log('📦 Tipos recibidos:', tipos);
-        
         if (select && tipos) {
-            select.innerHTML = '<option value="">Seleccione tipo de novedad...</option>';
-            tipos.forEach(tipo => {
+            console.log('🔍 Debug tipos recibidos:', tipos.slice(0, 3).map(t => ({id: t.id, descripcion: t.descripcion, activo: t.activo, tipo_activo: typeof t.activo})));
+            
+            // Filtrar solo tipos activos y ordenar alfabéticamente - CORREGIDO FILTRO
+            const tiposActivos = tipos
+                .filter(tipo => {
+                    // Manejar diferentes formatos del campo activo
+                    const esActivo = tipo.activo == 1 || tipo.activo === '1' || tipo.activo === true || tipo.activo === 'true';
+                    if (!esActivo) {
+                        console.log('🚫 Tipo filtrado (no activo):', tipo.descripcion, 'activo:', tipo.activo);
+                    }
+                    return esActivo;
+                })
+                .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es', { sensitivity: 'accent' }));
+            
+            console.log('🔤 Tipos ordenados alfabéticamente para', selectId, ':', tiposActivos.map(t => t.descripcion).slice(0, 5));
+            console.log('📊 Total tipos activos encontrados:', tiposActivos.length, 'de', tipos.length);
+            
+            // FALLBACK: Si no hay tipos activos, usar todos los tipos disponibles
+            let tiposParaUsar = tiposActivos;
+            if (tiposActivos.length === 0 && tipos.length > 0) {
+                console.warn('⚠️ No se encontraron tipos activos, usando todos los tipos disponibles');
+                tiposParaUsar = tipos.sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es', { sensitivity: 'accent' }));
+            }
+            
+            // Actualizar tiposNovedadData global si no existe
+            if (!window.tiposNovedadData || Object.keys(window.tiposNovedadData).length === 0) {
+                window.tiposNovedadData = {};
+                tipos.forEach(tipo => {
+                    window.tiposNovedadData[tipo.id] = tipo;
+                });
+                console.log('📊 tiposNovedadData actualizado globalmente');
+            }
+            
+            select.innerHTML = '<option value="">Buscar tipo de novedad...</option>';
+            tiposParaUsar.forEach(tipo => {
                 select.innerHTML += `<option value="${tipo.id}">${tipo.descripcion}</option>`;
             });
-            console.log('✅ Tipos de novedad cargados:', tipos.length);
+            
+            // Esperar un momento para que el DOM se actualice antes de inicializar Select2
+            setTimeout(() => {
+                inicializarSelect2TiposNovedad(select);
+            }, 100);
+            
+            console.log('✅ Tipos de novedad cargados y ordenados alfabéticamente:', tiposParaUsar.length);
         }
     } catch (error) {
         console.error('❌ Error cargando tipos de novedad:', error);
@@ -3114,6 +3431,158 @@ function generarConfigPremiosAjusteGeneralMultiple(novedadId) {
 }
 
 /**
+ * Generar configuración para Reemplazo en modo múltiple
+ */
+function generarConfigReemplazoMultiple(novedadId) {
+    return `
+        <div class="row">
+            <!-- Tipo de Reemplazo -->
+            <div class="col-md-12 mb-3">
+                <label class="form-label">
+                    Tipo de Reemplazo <span class="required">*</span>
+                </label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipo_reemplazo_${novedadId}" 
+                                   id="tipo_reemplazo_permanente_${novedadId}" value="permanente" checked 
+                                   onchange="toggleFechaFinReemplazoMultiple('${novedadId}')">
+                            <label class="form-check-label" for="tipo_reemplazo_permanente_${novedadId}">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Permanente</strong>
+                                <br><small class="text-muted">Reemplazo definitivo</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipo_reemplazo_${novedadId}" 
+                                   id="tipo_reemplazo_temporario_${novedadId}" value="temporario" 
+                                   onchange="toggleFechaFinReemplazoMultiple('${novedadId}')">
+                            <label class="form-check-label" for="tipo_reemplazo_temporario_${novedadId}">
+                                <i class="fas fa-clock text-warning me-2"></i>
+                                <strong>Temporario</strong>
+                                <br><small class="text-muted">Reemplazo temporal con fecha de fin</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="invalid-feedback">Debe seleccionar el tipo de reemplazo</div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="puesto_reemplazo_${novedadId}" class="form-label">
+                    Puesto de Reemplazo <span class="required">*</span>
+                </label>
+                <select class="form-select" id="puesto_reemplazo_${novedadId}" name="puesto_reemplazo_${novedadId}" required>
+                    <option value="">Seleccione puesto de reemplazo...</option>
+                </select>
+                <div class="invalid-feedback">El puesto de reemplazo es obligatorio</div>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="fecha_vigencia_reemplazo_${novedadId}" class="form-label">
+                    Fecha de inicio <span class="required">*</span>
+                </label>
+                <input type="date" class="form-control" id="fecha_vigencia_reemplazo_${novedadId}" 
+                       name="fecha_vigencia_reemplazo_${novedadId}" required>
+                <div class="invalid-feedback">La fecha de inicio es obligatoria</div>
+            </div>
+            
+            <!-- Fecha de fin (solo para temporario) -->
+            <div class="col-md-3" id="campo_fecha_fin_reemplazo_${novedadId}" style="display: none;">
+                <label for="fecha_vigencia_hasta_reemplazo_${novedadId}" class="form-label">
+                    Fecha de fin <span class="required">*</span>
+                </label>
+                <input type="date" class="form-control" id="fecha_vigencia_hasta_reemplazo_${novedadId}" 
+                       name="fecha_vigencia_hasta_reemplazo_${novedadId}">
+                <div class="invalid-feedback">La fecha de fin es obligatoria para reemplazos temporarios</div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Generar configuración para Aumento Salarial en modo múltiple
+ */
+function generarConfigAumentoSalarialMultiple(novedadId) {
+    return `
+        <div class="row">
+            <!-- Tipo de Aumento -->
+            <div class="col-md-12 mb-3">
+                <label class="form-label">
+                    Tipo de Aumento <span class="required">*</span>
+                </label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipo_aumento_${novedadId}" 
+                                   id="tipo_aumento_porcentaje_${novedadId}" value="porcentaje" checked 
+                                   onchange="toggleTipoAumentoMultiple('${novedadId}')">
+                            <label class="form-check-label" for="tipo_aumento_porcentaje_${novedadId}">
+                                <i class="fas fa-percentage text-primary me-2"></i>
+                                <strong>Porcentaje</strong>
+                                <br><small class="text-muted">Aumento por porcentaje sobre el salario actual</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipo_aumento_${novedadId}" 
+                                   id="tipo_aumento_monto_${novedadId}" value="monto" 
+                                   onchange="toggleTipoAumentoMultiple('${novedadId}')">
+                            <label class="form-check-label" for="tipo_aumento_monto_${novedadId}">
+                                <i class="fas fa-dollar-sign text-success me-2"></i>
+                                <strong>Monto Fijo</strong>
+                                <br><small class="text-muted">Aumento por monto específico</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="invalid-feedback">Debe seleccionar el tipo de aumento</div>
+            </div>
+            
+            <!-- Campo Porcentaje -->
+            <div class="col-md-4" id="campo_porcentaje_aumento_${novedadId}">
+                <label for="porcentaje_aumento_${novedadId}" class="form-label">
+                    Porcentaje de Aumento <span class="required">*</span>
+                </label>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="porcentaje_aumento_${novedadId}" 
+                           name="porcentaje_aumento_${novedadId}" step="0.01" min="0.01" max="100" 
+                           placeholder="0.00" required>
+                    <span class="input-group-text">%</span>
+                </div>
+                <div class="invalid-feedback">El porcentaje debe ser mayor a 0.01</div>
+                <small class="form-text text-muted">Ejemplo: 15.5 para 15.5%</small>
+            </div>
+            
+            <!-- Campo Monto -->
+            <div class="col-md-4" id="campo_monto_aumento_${novedadId}" style="display: none;">
+                <label for="monto_aumento_${novedadId}" class="form-label">
+                    Monto del Aumento <span class="required">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" id="monto_aumento_${novedadId}" 
+                           name="monto_aumento_${novedadId}" step="0.01" min="0.01" placeholder="0.00">
+                </div>
+                <div class="invalid-feedback">El monto debe ser mayor a 0.01</div>
+            </div>
+            
+            <div class="col-md-4">
+                <label for="fecha_vigencia_aumento_${novedadId}" class="form-label">
+                    Fecha de vigencia <span class="required">*</span>
+                </label>
+                <input type="date" class="form-control" id="fecha_vigencia_aumento_${novedadId}" 
+                       name="fecha_vigencia_aumento_${novedadId}" required>
+                <div class="invalid-feedback">La fecha de vigencia es obligatoria</div>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * Aplicar configuraciones específicas después de generar HTML
  */
 function aplicarConfiguracionesEspecificasMultiple(tipoNovedad, novedadId) {
@@ -3141,6 +3610,12 @@ function aplicarConfiguracionesEspecificasMultiple(tipoNovedad, novedadId) {
         case 17: // Comisión sobre Local
         case 37:
             configurarComisionLocalMultiple(novedadId);
+            break;
+        case 53: // Reemplazo
+            cargarPuestosEnSelectMultiple(`puesto_reemplazo_${novedadId}`);
+            break;
+        case 54: // Aumento Salarial
+            // No necesita configuración especial inicial
             break;
     }
 }
@@ -3703,6 +4178,21 @@ function agregarCamposEspecificosNovedad(novedad, tipoNovedad, novedadId) {
         case 38:
             novedad.importe = document.getElementById(`importe_ajuste_general_${novedadId}`)?.value;
             break;
+        case 53: // Reemplazo
+            novedad.puesto = document.getElementById(`puesto_reemplazo_${novedadId}`)?.value;
+            novedad.tipo_reemplazo = document.querySelector(`input[name="tipo_reemplazo_${novedadId}"]:checked`)?.value;
+            if (novedad.tipo_reemplazo === 'temporario') {
+                novedad.fecha_vigencia_hasta = document.getElementById(`fecha_vigencia_hasta_reemplazo_${novedadId}`)?.value;
+            }
+            break;
+        case 54: // Aumento Salarial
+            novedad.tipo_aumento = document.querySelector(`input[name="tipo_aumento_${novedadId}"]:checked`)?.value;
+            if (novedad.tipo_aumento === 'porcentaje') {
+                novedad.porcentaje_1 = document.getElementById(`porcentaje_aumento_${novedadId}`)?.value;
+            } else if (novedad.tipo_aumento === 'monto') {
+                novedad.valor_numerico = document.getElementById(`monto_aumento_${novedadId}`)?.value;
+            }
+            break;
         // Agregar más casos según necesidad
     }
 }
@@ -3732,8 +4222,23 @@ function limpiarFormularioMultiple() {
     // Limpiar formulario
     document.getElementById('form-novedad').reset();
     
-    if (typeof $ !== 'undefined' && $('#empleado-select').length) {
-        $('#empleado-select').val(null).trigger('change');
+    if (typeof $ !== 'undefined') {
+        // Limpiar select de empleados
+        if ($('#empleado-select').length) {
+            $('#empleado-select').val(null).trigger('change');
+        }
+        
+        // Limpiar select de tipos de novedad (modo único)
+        if ($('#tipo_novedad').length && $('#tipo_novedad').hasClass('select2-hidden-accessible')) {
+            $('#tipo_novedad').val(null).trigger('change');
+        }
+        
+        // Limpiar selects de tipos de novedad (modo múltiple)
+        $('.tipo-novedad-multiple').each(function() {
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                $(this).val(null).trigger('change');
+            }
+        });
     }
     
     if (typeof NovedadesApp !== 'undefined') {
@@ -4138,6 +4643,88 @@ function mostrarInfoTipoNovedad(mode) {
     // Mostrar modal
     const modal = new bootstrap.Modal(document.getElementById('modalTipoNovedadInfo'));
     modal.show();
+}
+
+/**
+ * Toggle fecha fin para reemplazo en modo múltiple
+ */
+function toggleFechaFinReemplazoMultiple(novedadId) {
+    const radioTemporario = document.getElementById(`tipo_reemplazo_temporario_${novedadId}`);
+    const campoFechaFin = document.getElementById(`campo_fecha_fin_reemplazo_${novedadId}`);
+    const fechaFinInput = document.getElementById(`fecha_vigencia_hasta_reemplazo_${novedadId}`);
+    
+    console.log('🔄 toggleFechaFinReemplazoMultiple ejecutado para', novedadId);
+    
+    if (radioTemporario && radioTemporario.checked) {
+        // Mostrar campo de fecha de fin
+        if (campoFechaFin) {
+            campoFechaFin.style.display = 'block';
+            console.log('✅ Campo fecha fin reemplazo múltiple mostrado');
+        }
+        if (fechaFinInput) {
+            fechaFinInput.setAttribute('required', 'required');
+        }
+    } else {
+        // Ocultar campo de fecha de fin
+        if (campoFechaFin) {
+            campoFechaFin.style.display = 'none';
+            console.log('🔒 Campo fecha fin reemplazo múltiple ocultado');
+        }
+        if (fechaFinInput) {
+            fechaFinInput.removeAttribute('required');
+            fechaFinInput.value = '';
+        }
+    }
+}
+
+/**
+ * Toggle tipo de aumento en modo múltiple
+ */
+function toggleTipoAumentoMultiple(novedadId) {
+    const radioPorcentaje = document.getElementById(`tipo_aumento_porcentaje_${novedadId}`);
+    const radioMonto = document.getElementById(`tipo_aumento_monto_${novedadId}`);
+    const campoPorcentaje = document.getElementById(`campo_porcentaje_aumento_${novedadId}`);
+    const campoMonto = document.getElementById(`campo_monto_aumento_${novedadId}`);
+    const inputPorcentaje = document.getElementById(`porcentaje_aumento_${novedadId}`);
+    const inputMonto = document.getElementById(`monto_aumento_${novedadId}`);
+    
+    console.log('🔄 toggleTipoAumentoMultiple ejecutado para', novedadId);
+    
+    if (radioPorcentaje && radioPorcentaje.checked) {
+        // Mostrar campo porcentaje, ocultar monto
+        if (campoPorcentaje) {
+            campoPorcentaje.style.display = 'block';
+            console.log('✅ Campo porcentaje múltiple mostrado');
+        }
+        if (campoMonto) {
+            campoMonto.style.display = 'none';
+            console.log('🔒 Campo monto múltiple ocultado');
+        }
+        if (inputPorcentaje) {
+            inputPorcentaje.setAttribute('required', 'required');
+        }
+        if (inputMonto) {
+            inputMonto.removeAttribute('required');
+            inputMonto.value = '';
+        }
+    } else if (radioMonto && radioMonto.checked) {
+        // Mostrar campo monto, ocultar porcentaje
+        if (campoMonto) {
+            campoMonto.style.display = 'block';
+            console.log('✅ Campo monto múltiple mostrado');
+        }
+        if (campoPorcentaje) {
+            campoPorcentaje.style.display = 'none';
+            console.log('🔒 Campo porcentaje múltiple ocultado');
+        }
+        if (inputMonto) {
+            inputMonto.setAttribute('required', 'required');
+        }
+        if (inputPorcentaje) {
+            inputPorcentaje.removeAttribute('required');
+            inputPorcentaje.value = '';
+        }
+    }
 }
 
 // Hacer funciones disponibles globalmente
