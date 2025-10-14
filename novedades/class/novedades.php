@@ -2926,6 +2926,32 @@ class Novedades {
                 $datosAdaptados['puesto'] = 'Premios - Ajuste General';
                 break;
 
+            case 53: // Reemplazo
+                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Reemplazo';
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['tipo_nuevo_puesto'] = isset($datos['tipo_reemplazo']) ? $datos['tipo_reemplazo'] : 'permanente';
+                
+                if ($datosAdaptados['tipo_nuevo_puesto'] === 'temporario' && !empty($datos['fecha_vigencia_hasta'])) {
+                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
+                }
+                break;
+
+            case 54: // Aumento Salarial
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Aumento Salarial';
+                
+                // Determinar si es por porcentaje o monto
+                if (isset($datos['tipo_aumento'])) {
+                    if ($datos['tipo_aumento'] === 'porcentaje' && isset($datos['porcentaje_1'])) {
+                        $datosAdaptados['porcentaje_1'] = (float)$datos['porcentaje_1'];
+                        $datosAdaptados['valor_numerico'] = null; // Limpiar monto
+                    } elseif ($datos['tipo_aumento'] === 'monto' && isset($datos['valor_numerico'])) {
+                        $datosAdaptados['valor_numerico'] = (float)$datos['valor_numerico'];
+                        $datosAdaptados['porcentaje_1'] = null; // Limpiar porcentaje
+                    }
+                }
+                break;
+
             default:
                 $datosAdaptados['puesto'] = 'Novedad General';
                 break;

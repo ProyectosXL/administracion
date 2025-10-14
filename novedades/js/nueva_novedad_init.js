@@ -3,15 +3,12 @@
  * Maneja la configuración inicial y eventos
  */
 
-// Compartir variables globales con el archivo principal
-let modoActual, contadorNovedades, novedadesData;
-
 /**
  * Inicialización del formulario de nueva novedad
  * Maneja la configuración inicial y eventos
  */
 
-// Variables globales compartidas (declaradas aquí para compatibilidad)
+// Variables globales compartidas (usar las del archivo principal)
 if (typeof window.modoActual === 'undefined') {
     window.modoActual = null;
 }
@@ -61,7 +58,7 @@ function configurarFormularioOriginal() {
     const tipoNovedadSelect = document.getElementById('tipo_novedad');
     if (tipoNovedadSelect) {
         tipoNovedadSelect.addEventListener('change', function() {
-            if (modoActual === 'unica' || modoActual === null) {
+            if (window.modoActual === 'unica' || window.modoActual === null) {
                 // Llamar a la función original de cambio de tipo
                 if (typeof onTipoNovedadChangeActualizado === 'function') {
                     onTipoNovedadChangeActualizado(this);

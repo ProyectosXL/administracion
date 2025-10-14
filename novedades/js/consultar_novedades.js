@@ -95,6 +95,21 @@ function inicializarSelect2() {
         }
     });
 
+    // Select2 para tipos de novedad con búsqueda
+    $('#filtro-tipo').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Todos los tipos',
+        allowClear: true,
+        language: {
+            noResults: function () {
+                return 'No se encontraron tipos de novedad';
+            },
+            searching: function () {
+                return 'Buscando tipos...';
+            }
+        }
+    });
+
     console.log('✅ Select2 inicializado correctamente');
 }
 
@@ -109,7 +124,7 @@ function aplicarFiltros() {
     filtrosActivos = {
         legajo: $('#filtro-legajo').val() || '', 
         centro_costos: document.getElementById('filtro-centro-costos').value,
-        tipo: document.getElementById('filtro-tipo').value,
+        tipo: $('#filtro-tipo').val() || '',
         estado: document.getElementById('filtro-estado').value,
         empleado: $('#filtro-empleado').val() || '',
         fechaDesde: document.getElementById('fecha-desde').value,
@@ -240,6 +255,7 @@ function mostrarTabla(datos) {
 
     datos.forEach(novedad => {
         const fechaVigencia = novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '-';
+        const fechaVigenciaHasta = novedad.fecha_vigencia_hasta ? NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta) : '-';
         const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
         let valor = '';
         if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
@@ -260,6 +276,9 @@ function mostrarTabla(datos) {
         html += `
             <tr class="novedad-row" data-id="${novedad.id}">
                 <td>
+                    <small>${fechaRegistro}</small>
+                </td>
+                <td>
                     <div class="d-flex align-items-center">
                         <div>
                             <strong>${novedad.nombre} ${novedad.apellido}</strong><br>
@@ -279,10 +298,10 @@ function mostrarTabla(datos) {
                 <td>
                     <small>${fechaVigencia}</small>
                 </td>
-                <td>${valor !== '-' ? `<strong>${valor}</strong>` : '-'}</td>
                 <td>
-                    <small>${fechaRegistro}</small>
+                    <small>${fechaVigenciaHasta}</small>
                 </td>
+                <td>${valor !== '-' ? `<strong>${valor}</strong>` : '-'}</td>
                 <td>${estado}</td>
                 <td>
                     <div class="btn-group btn-group-sm">
@@ -1175,6 +1194,112 @@ function mostrarModalDetalleCompleto(novedad) {
                     </div>
                 </div>`;
             break;
+
+        case 39: // Reemplazo
+            // Reemplazo: Similar a Nuevo Puesto
+            let puestoReemplazoDetalle = '';
+            
+            // PRIORITARIO: Usar el campo puesto directo si existe
+            if (novedad.puesto && novedad.puesto !== 'Cambio centro de costos' && novedad.puesto !== 'Ajuste Salario' && novedad.puesto !== 'Premio') {
+                puestoReemplazoDetalle = novedad.puesto;
+            } else if (novedad.observaciones) {
+                // Solo como fallback: extraer de observaciones si no hay puesto directo
+                let match = novedad.observaciones.match(/Reemplazo:\s*([^-]*?)\s*(?:\([^)]*?\))?(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?(?:\s*-|$)/);
+                if (match) {
+                    puestoReemplazoDetalle = match[1].trim();
+                } else {
+                    // Buscar con etiquetas HTML
+                    match = novedad.observaciones.match(/Reemplazo:\s*<[^>]*>([^<]+)<[^>]*>/);
+                    if (match) {
+                        puestoReemplazoDetalle = match[1].trim();
+                    }
+                }
+            }
+            
+            // Determinar tipo de reemplazo y fechas
+            const tipoReemplazo = novedad.tipo_reemplazo || 'permanente';
+            const esPermanenteReemplazo = tipoReemplazo === 'permanente';
+            const iconoTipoReemplazo = esPermanenteReemplazo ? 'fa-check-circle text-success' : 'fa-clock text-warning';
+            const textTipoReemplazo = esPermanenteReemplazo ? 'Permanente' : 'Temporario';
+            
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Detalles del Reemplazo</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Puesto de Reemplazo:</strong><br>
+                                    <span class="badge bg-info">${puestoReemplazoDetalle || 'No especificado'}</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Tipo de Reemplazo:</strong><br>
+                                    <span class="badge ${esPermanenteReemplazo ? 'bg-success' : 'bg-warning text-dark'}">
+                                        <i class="fas ${iconoTipoReemplazo} me-1"></i>${textTipoReemplazo}
+                                    </span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Inicio:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                                ${!esPermanenteReemplazo && novedad.fecha_vigencia_hasta ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Fin:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 40: // Aumento Salarial
+            const tipoAumento = novedad.tipo_aumento || 'porcentaje';
+            const esPorcentaje = tipoAumento === 'porcentaje';
+            const iconoAumento = esPorcentaje ? 'fa-percentage text-primary' : 'fa-dollar-sign text-success';
+            const textTipoAumento = esPorcentaje ? 'Porcentaje' : 'Monto Fijo';
+            
+            let valorAumento = '';
+            if (esPorcentaje && novedad.porcentaje_1) {
+                valorAumento = parseFloat(novedad.porcentaje_1).toFixed(2) + '%';
+            } else if (!esPorcentaje && novedad.valor_numerico) {
+                valorAumento = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico;
+            }
+            
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Detalles del Aumento Salarial</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Tipo de Aumento:</strong><br>
+                                    <span class="badge ${esPorcentaje ? 'bg-primary' : 'bg-success'}">
+                                        <i class="fas ${iconoAumento} me-1"></i>${textTipoAumento}
+                                    </span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Valor del Aumento:</strong><br>
+                                    <span class="h5">${valorAumento || 'No especificado'}</span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
     }
     
     // Cerrar la fila de detalles específicos
@@ -1220,18 +1345,18 @@ function cambiarVista(vista) {
 }
 
 /**
- * Limpiar filtros - ACTUALIZADO PARA CAMPO ÚNICO
+ * Limpiar filtros - ACTUALIZADO PARA CAMPOS SELECT2
  */
 function limpiarFiltros() {
     // Limpiar selects normales
     document.getElementById('filtro-centro-costos').value = '';
-    document.getElementById('filtro-tipo').value = '';
     document.getElementById('filtro-estado').value = '';
     document.getElementById('fecha-desde').value = '';
     document.getElementById('fecha-hasta').value = '';
     
-    // Limpiar Select2 único
+    // Limpiar Select2 campos
     $('#filtro-empleado').val(null).trigger('change');
+    $('#filtro-tipo').val(null).trigger('change');
     
     // Limpiar filtros personalizados
     if (filtrosActivos.periodoReal) {
@@ -1801,27 +1926,17 @@ document.addEventListener('DOMContentLoaded', function() {
         fechaHasta.addEventListener('change', aplicarFiltros);
     }
     
-    // Event listeners para otros filtros
+    // Event listeners para filtros normales
     const filtroCentroCostos = document.getElementById('filtro-centro-costos');
-    const filtroTipo = document.getElementById('filtro-tipo');
     const filtroEstado = document.getElementById('filtro-estado');
     
     if (filtroCentroCostos) {
         filtroCentroCostos.addEventListener('change', aplicarFiltros);
     }
     
-    if (filtroTipo) {
-        filtroTipo.addEventListener('change', aplicarFiltros);
-    }
-    
     if (filtroEstado) {
         filtroEstado.addEventListener('change', aplicarFiltros);
     }
-    
-    // Event listeners para filtros normales
-    document.getElementById('filtro-centro-costos').addEventListener('change', aplicarFiltros);
-    document.getElementById('filtro-tipo').addEventListener('change', aplicarFiltros);
-    document.getElementById('filtro-estado').addEventListener('change', aplicarFiltros);
     
     // Event listeners para Select2 (se configuran después de inicializar)
     setTimeout(() => {
@@ -1832,6 +1947,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         $('#filtro-empleado').on('change', function() {
             console.log('Cambio en filtro-empleado:', $(this).val());
+            aplicarFiltros();
+        });
+        
+        $('#filtro-tipo').on('change', function() {
+            console.log('Cambio en filtro-tipo:', $(this).val());
             aplicarFiltros();
         });
     }, 1000);
@@ -1865,8 +1985,12 @@ async function cargarDatosBase() {
             centroCostosSelect.appendChild(option);
         });
 
-        // Cargar tipos de novedad
+        // Cargar tipos de novedad ordenados alfabéticamente
         const tipos = await NovedadesApp.request('get_tipos_novedad');
+        
+        // Ordenar tipos alfabéticamente por descripción
+        tipos.sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es', { sensitivity: 'base' }));
+        
         const tipoSelect = document.getElementById('filtro-tipo');
         tipoSelect.innerHTML = '<option value="">Todos los tipos</option>';
         
@@ -1875,6 +1999,24 @@ async function cargarDatosBase() {
             option.value = tipo.id;
             option.textContent = tipo.descripcion;
             tipoSelect.appendChild(option);
+        });
+        
+        // Reinicializar Select2 para tipos de novedad después de cargar los datos
+        if ($('#filtro-tipo').hasClass('select2-hidden-accessible')) {
+            $('#filtro-tipo').select2('destroy');
+        }
+        $('#filtro-tipo').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Todos los tipos',
+            allowClear: true,
+            language: {
+                noResults: function () {
+                    return 'No se encontraron tipos de novedad';
+                },
+                searching: function () {
+                    return 'Buscando tipos...';
+                }
+            }
         });
 
         console.log('✅ Datos base cargados correctamente');
@@ -2590,6 +2732,118 @@ function generarCamposDinamicosEdicion(novedad) {
                         <input type="number" class="form-control" id="edit-importe-ajuste-general" 
                             value="${novedad.valor_numerico || ''}" step="0.01" min="0" required>
                     </div>
+                </div>
+            `;
+            break;
+
+        case 39: // Reemplazo
+            const tipoReemplazoEdit = novedad.tipo_reemplazo || 'permanente';
+            campos += `
+                <!-- Tipo de Reemplazo -->
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Tipo de Reemplazo <span class="text-danger">*</span></label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edit-tipo-reemplazo" 
+                                    id="edit-tipo-reemplazo-permanente" value="permanente" 
+                                    ${tipoReemplazoEdit === 'permanente' ? 'checked' : ''} 
+                                    onchange="toggleFechaFinReemplazoEdicion()">
+                                <label class="form-check-label" for="edit-tipo-reemplazo-permanente">
+                                    <i class="fas fa-check-circle text-success me-2"></i>Permanente
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edit-tipo-reemplazo" 
+                                    id="edit-tipo-reemplazo-temporario" value="temporario" 
+                                    ${tipoReemplazoEdit === 'temporario' ? 'checked' : ''} 
+                                    onchange="toggleFechaFinReemplazoEdicion()">
+                                <label class="form-check-label" for="edit-tipo-reemplazo-temporario">
+                                    <i class="fas fa-clock text-warning me-2"></i>Temporario
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="edit-puesto-reemplazo" class="form-label">Puesto de Reemplazo <span class="text-danger">*</span></label>
+                    <select class="form-select" id="edit-puesto-reemplazo" required>
+                        <option value="">Seleccionar puesto...</option>
+                        <option value="${novedad.puesto || ''}" selected>${novedad.puesto || 'Puesto actual'}</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="edit-fecha-vigencia-reemplazo" class="form-label">Fecha de Inicio <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="edit-fecha-vigencia-reemplazo" 
+                        value="${novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : ''}" required>
+                </div>
+
+                <div class="col-md-3" id="edit-campo-fecha-fin-reemplazo" style="display: ${tipoReemplazoEdit === 'temporario' ? 'block' : 'none'}">
+                    <label for="edit-fecha-hasta-reemplazo" class="form-label">Fecha de Fin <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="edit-fecha-hasta-reemplazo" 
+                        value="${novedad.fecha_vigencia_hasta ? novedad.fecha_vigencia_hasta.split(' ')[0] : ''}">
+                </div>
+            `;
+            break;
+
+        case 40: // Aumento Salarial
+            const tipoAumentoEdit = novedad.tipo_aumento || 'porcentaje';
+            campos += `
+                <!-- Tipo de Aumento -->
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Tipo de Aumento <span class="text-danger">*</span></label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edit-tipo-aumento" 
+                                    id="edit-tipo-aumento-porcentaje" value="porcentaje" 
+                                    ${tipoAumentoEdit === 'porcentaje' ? 'checked' : ''} 
+                                    onchange="toggleTipoAumentoEdicion()">
+                                <label class="form-check-label" for="edit-tipo-aumento-porcentaje">
+                                    <i class="fas fa-percentage text-primary me-2"></i>Porcentaje
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="edit-tipo-aumento" 
+                                    id="edit-tipo-aumento-monto" value="monto" 
+                                    ${tipoAumentoEdit === 'monto' ? 'checked' : ''} 
+                                    onchange="toggleTipoAumentoEdicion()">
+                                <label class="form-check-label" for="edit-tipo-aumento-monto">
+                                    <i class="fas fa-dollar-sign text-success me-2"></i>Monto Fijo
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4" id="edit-campo-porcentaje-aumento" style="display: ${tipoAumentoEdit === 'porcentaje' ? 'block' : 'none'}">
+                    <label for="edit-porcentaje-aumento" class="form-label">Porcentaje <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="edit-porcentaje-aumento" 
+                            value="${novedad.porcentaje_1 || ''}" step="0.01" min="0.01" max="100">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4" id="edit-campo-monto-aumento" style="display: ${tipoAumentoEdit === 'monto' ? 'block' : 'none'}">
+                    <label for="edit-monto-aumento" class="form-label">Monto <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="edit-monto-aumento" 
+                            value="${novedad.valor_numerico || ''}" step="0.01" min="0.01">
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="edit-fecha-vigencia-aumento" class="form-label">Fecha de Vigencia <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="edit-fecha-vigencia-aumento" 
+                        value="${novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : ''}" required>
                 </div>
             `;
             break;
@@ -3558,5 +3812,87 @@ function toggleCamposComisionLocalEdicion() {
         if (porcentaje2) porcentaje2.value = '';
         
         console.log('Mostrando campos SIN tope');
+    }
+}
+
+/**
+ * Toggle fecha fin para reemplazo en edición
+ */
+function toggleFechaFinReemplazoEdicion() {
+    const radioTemporario = document.getElementById('edit-tipo-reemplazo-temporario');
+    const campoFechaFin = document.getElementById('edit-campo-fecha-fin-reemplazo');
+    const fechaFinInput = document.getElementById('edit-fecha-hasta-reemplazo');
+    
+    console.log('🔄 toggleFechaFinReemplazoEdicion ejecutado');
+    
+    if (radioTemporario && radioTemporario.checked) {
+        // Mostrar campo de fecha de fin
+        if (campoFechaFin) {
+            campoFechaFin.style.display = 'block';
+            console.log('✅ Campo fecha fin reemplazo edición mostrado');
+        }
+        if (fechaFinInput) {
+            fechaFinInput.setAttribute('required', 'required');
+        }
+    } else {
+        // Ocultar campo de fecha de fin
+        if (campoFechaFin) {
+            campoFechaFin.style.display = 'none';
+            console.log('🔒 Campo fecha fin reemplazo edición ocultado');
+        }
+        if (fechaFinInput) {
+            fechaFinInput.removeAttribute('required');
+            fechaFinInput.value = '';
+        }
+    }
+}
+
+/**
+ * Toggle tipo de aumento en edición
+ */
+function toggleTipoAumentoEdicion() {
+    const radioPorcentaje = document.getElementById('edit-tipo-aumento-porcentaje');
+    const radioMonto = document.getElementById('edit-tipo-aumento-monto');
+    const campoPorcentaje = document.getElementById('edit-campo-porcentaje-aumento');
+    const campoMonto = document.getElementById('edit-campo-monto-aumento');
+    const inputPorcentaje = document.getElementById('edit-porcentaje-aumento');
+    const inputMonto = document.getElementById('edit-monto-aumento');
+    
+    console.log('🔄 toggleTipoAumentoEdicion ejecutado');
+    
+    if (radioPorcentaje && radioPorcentaje.checked) {
+        // Mostrar campo porcentaje, ocultar monto
+        if (campoPorcentaje) {
+            campoPorcentaje.style.display = 'block';
+            console.log('✅ Campo porcentaje edición mostrado');
+        }
+        if (campoMonto) {
+            campoMonto.style.display = 'none';
+            console.log('🔒 Campo monto edición ocultado');
+        }
+        if (inputPorcentaje) {
+            inputPorcentaje.setAttribute('required', 'required');
+        }
+        if (inputMonto) {
+            inputMonto.removeAttribute('required');
+            inputMonto.value = '';
+        }
+    } else if (radioMonto && radioMonto.checked) {
+        // Mostrar campo monto, ocultar porcentaje
+        if (campoMonto) {
+            campoMonto.style.display = 'block';
+            console.log('✅ Campo monto edición mostrado');
+        }
+        if (campoPorcentaje) {
+            campoPorcentaje.style.display = 'none';
+            console.log('🔒 Campo porcentaje edición ocultado');
+        }
+        if (inputMonto) {
+            inputMonto.setAttribute('required', 'required');
+        }
+        if (inputPorcentaje) {
+            inputPorcentaje.removeAttribute('required');
+            inputPorcentaje.value = '';
+        }
     }
 }
