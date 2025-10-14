@@ -16,9 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    // Incluir la clase Alquiler
-    require_once "../Class/Alquiler.php";
-    $alquiler = new Alquiler();
+    // Incluir la clase Contrato
+    require_once "../Class/Contrato.php";
+    $contrato = new Contrato();
     
     // Validar que todos los campos requeridos estén presentes
     $camposRequeridos = [
@@ -87,7 +87,7 @@ try {
     }
     
     // Verificar que el contrato existe antes de actualizar
-    $contratoExistente = $alquiler->obtenerContratoPorId($contratoId);
+    $contratoExistente = $contrato->obtenerContratoPorId($contratoId);
     if (!$contratoExistente) {
         echo json_encode([
             'success' => false,
@@ -98,7 +98,7 @@ try {
     
     // Verificar solapamientos solo si las fechas cambiaron
     if ($contratoExistente['VIG_DESDE'] !== $vigDesde || $contratoExistente['VIG_HASTA'] !== $vigHasta) {
-        $verificacionSolapamiento = $alquiler->verificarSolapamientoContratoEdicion($nroSucursal, $vigDesde, $vigHasta, $contratoId);
+        $verificacionSolapamiento = $contrato->verificarSolapamientoContratoEdicion($nroSucursal, $vigDesde, $vigHasta, $contratoId);
         
         if ($verificacionSolapamiento['solapamiento']) {
             echo json_encode([
@@ -110,7 +110,7 @@ try {
     }
     
     // Actualizar el contrato
-    $resultado = $alquiler->actualizarContrato(
+    $resultado = $contrato->actualizarContrato(
         $contratoId,
         $vigDesde,
         $vigHasta,

@@ -1,15 +1,15 @@
 
 <?php 
-require_once "Class/Alquiler.php";
-$alquiler = new Alquiler();
+require_once "Class/Contrato.php";
+$contrato = new Contrato();
 $estado = (isset($_GET['estado'])) ? $_GET['estado'] : 0;
 
 if($estado == 0){
-    $contratos = $alquiler->traerContratoVigente();
+    $contratos = $contrato->traerContratoVigente();
 }elseif($estado == 1){
-    $contratos = $alquiler->traerContratoAnterior();
+    $contratos = $contrato->traerContratoAnterior();
 }else{
-    $contratos = $alquiler->traerContratosFuturos();
+    $contratos = $contrato->traerContratosFuturos();
 }
 
 if (session_status() == PHP_SESSION_NONE) {
@@ -681,7 +681,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
             });
 
             $.ajax({
-                url: "Controller/cambiarEntorno.php",
+                url: "../Controller/cambiarEntorno.php",
                 method: "POST",
                 data: { entorno: entorno },
                 dataType: 'json',

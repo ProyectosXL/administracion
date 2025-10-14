@@ -1,7 +1,9 @@
 <?php
-    require_once "Class/Alquiler.php";
-    require_once "Class/sucursal.php";
+    require_once "Class/Contrato.php";
+    require_once "../Class/Alquiler.php";
+    require_once "../Class/sucursal.php";
 
+    $contrato = new Contrato();
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
 
@@ -190,7 +192,7 @@
             const entorno = toggle.checked ? 0 : 1;
             
             $.ajax({
-                url: 'Controller/cambiarEntorno.php',
+                url: '../Controller/cambiarEntorno.php',
                 method: 'POST',
                 data: { entorno: entorno },
                 success: function(response) {
