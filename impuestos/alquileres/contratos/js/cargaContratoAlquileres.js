@@ -208,7 +208,7 @@ const enviarData = (formData) => {
     });
 
     $.ajax({
-        url: 'Controller/AlquilerController.php?accion=guardarContratoAlquiler',
+        url: 'Controller/ContratoController.php?accion=guardarContratoAlquiler',
         type: 'POST',
         data: {
             desde: formData.desde,
@@ -248,7 +248,7 @@ function verificarSolapamientoContratos(formData) {
     });
 
     $.ajax({
-        url: 'Controller/AlquilerController.php?accion=verificarSolapamientoContrato',
+        url: 'Controller/ContratoController.php?accion=verificarSolapamientoContrato',
         type: 'POST',
         dataType: 'json',
         headers: { 'Accept': 'application/json' },
@@ -561,7 +561,7 @@ const cambiarEntorno = (toggle) => {
     });
 
     $.ajax({
-        url: "Controller/cambiarEntorno.php",
+        url: "../Controller/cambiarEntorno.php",
         method: "POST",
         data: { entorno: entorno },
         dataType: 'json',
