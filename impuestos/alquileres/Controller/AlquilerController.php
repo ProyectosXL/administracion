@@ -53,12 +53,7 @@ switch ($accion) {
         break;
 
     default:
-        http_response_code(400);
-        echo json_encode([
-            'error' => true, 
-            'mensaje' => 'Acción no válida', 
-            'accion_recibida' => $accion
-        ]);
+        // No hacer nada si no hay acción válida
         break;
 }
 

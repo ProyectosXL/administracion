@@ -1,4 +1,7 @@
 <?php 
+    // Incluir el controlador donde están definidas las funciones
+    require_once "Controller/AlquilerController.php";
+    
     for ($i=0; $i < 13; $i++)
     {
          $meses[] = date('M', strtotime("-$i month"));

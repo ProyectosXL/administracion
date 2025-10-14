@@ -50,102 +50,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/cargaAlquileres.css">
-    
-    <style>
-
-        /* Toggle simple sin banderas */
-        .toggle-on, .toggle-off {
-            font-size: 12px !important;
-            font-weight: bold !important;
-            color: white !important;
-            text-shadow: none !important;
-            line-height: 30px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-
-        /* Custom toggle styles */
-        .toggle.btn {
-            height: 38px !important;
-            min-width: 90px !important;
-            border-radius: 6px !important;
-            padding: 0 !important;
-        }
-
-        /* Colores específicos para cada estado */
-        .toggle-on {
-            background-color: #007bff !important;
-            border-color: #007bff !important;
-            color: white !important;
-        }
-        
-        .toggle-off {
-            background-color: #6c757d !important;
-            border-color: #6c757d !important;
-            color: white !important;
-        }
-
-        /* Bandera al lado del toggle */
-        .flag-indicator {
-            width: 40px;
-            height: 30px;
-            margin-left: 10px;
-            border-radius: 4px;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            border: 2px solid #ddd;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .environment-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .country-label {
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            margin-left: 5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
-
-        /* Asegurar que el toggle tenga colores correctos y no sean sobreescritos */
-        .toggle.off .toggle-off {
-            background-color: #6c757d !important;
-            border-color: #6c757d !important;
-            color: white !important;
-        }
-        
-        .toggle:not(.off) .toggle-on {
-            background-color: #007bff !important;
-            border-color: #007bff !important;
-            color: white !important;
-        }
-
-        /* Forzar estilos del texto del toggle */
-        .toggle .toggle-handle {
-            background-color: white !important;
-            border: 1px solid #ccc !important;
-        }
-
-        /* Header title styling */
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-title h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-    </style>
+    <link rel="stylesheet" href="css/cargaContratoAlquileres.css">
 </head>
 
 <body>
@@ -270,38 +175,32 @@
                 width: '100%'
             });
 
-            // Style adjustments after initialization
+            // Ajustes del toggle después de la inicialización
             setTimeout(() => {
                 const toggle = document.querySelector(".toggle");
                 if (toggle) {
                     toggle.style.width = "90px";
                     toggle.style.height = "38px";
                 }
-                
-                // Asegurar que el toggle muestre texto blanco y centrado
-                const toggleOn = document.querySelector(".toggle-on");
-                const toggleOff = document.querySelector(".toggle-off");
-                
-                if (toggleOn) {
-                    toggleOn.style.fontSize = "12px";
-                    toggleOn.style.fontWeight = "bold";
-                    toggleOn.style.color = "white";
-                    toggleOn.style.display = "flex";
-                    toggleOn.style.alignItems = "center";
-                    toggleOn.style.justifyContent = "center";
-                    toggleOn.style.textShadow = "none";
-                }
-                if (toggleOff) {
-                    toggleOff.style.fontSize = "12px";
-                    toggleOff.style.fontWeight = "bold";
-                    toggleOff.style.color = "white";
-                    toggleOff.style.display = "flex";
-                    toggleOff.style.alignItems = "center";
-                    toggleOff.style.justifyContent = "center";
-                    toggleOff.style.textShadow = "none";
-                }
             }, 100);
         });
+
+        function cambiarEntorno(elemento) {
+            const toggle = document.getElementById('checkEntorno');
+            const entorno = toggle.checked ? 0 : 1;
+            
+            $.ajax({
+                url: 'Controller/cambiarEntorno.php',
+                method: 'POST',
+                data: { entorno: entorno },
+                success: function(response) {
+                    location.reload();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al cambiar entorno:', error);
+                }
+            });
+        }
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-﻿const agregar = () => {
+const agregar = () => {
 
     let concepto = document.getElementById('conceptos').value;
     let idConcepto = concepto.split("-")[0];
@@ -78,5 +78,24 @@ const eliminarPorcentaje = (fila) => {
     });
 }
 
-// La función cambiarEntorno ha sido removida de aquí porque está definida
-// directamente en porcGastosAlquileres.php con la lógica correcta del toggle.
+const cambiarEntorno = (t) =>{
+
+    let entorno = 0;
+  
+    if(t.getAttribute("data-off") == "ARG" ){
+      entorno = 0;
+    }else{
+      entorno = 1;
+    }
+  
+  
+    $.ajax({
+      url: "Controller/cambiarEntorno.php",
+      method: "POST",
+      data : {entorno: entorno},
+      success: function (data) {
+        location.reload();
+      }
+    });
+  
+  }

@@ -82,6 +82,9 @@
             <?php
                 require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
             ?>
+            
+            <!-- CSS Custom para Carga Alquileres -->
+            <link rel="stylesheet" href="css/cargaAlquileres.css">
 
             </link>
 
@@ -103,18 +106,17 @@
                     width: 60px;
                 }
         </style>
-        <body style="width:2800px">
+        <body>
 
             <div class="alert alert-secondary">
                 <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                    <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Carga de Alquileres</h6></div>
                         <div class="card card-1">
 
                             <div class="row" style="margin-left:50px">
                                 <a href="http://192.168.0.13:8000/" style="display:inline-block;">
                                     <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                                 </a>
-                                <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Alquileres - <?= $fechaParaMostrar ?></strong></h3>
+                                <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga de Gastos de Alquiler - <?= $fechaParaMostrar ?></strong></h3>
                                 <div style="margin-top:30px;margin-left:50%">
                                     <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
                                 </div>
@@ -161,8 +163,8 @@
                                             <button class="btn btn-primary btn-submit ml-2">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                         </div>
                                     </div>
-                                    <div class="btn-group">
-                                        <button style="margin-left:8rem; margin-top:0.5rem;" type="button" class="btn btn-info" onclick="AplicarAjuste()">Aplicar Ajuste <i class="bi bi-check-circle" style="color:white"></i></button>
+                                    <div class="btn-group" style="margin-left:8rem; display: flex; gap: 10px; flex-wrap: nowrap; align-items: center;">
+                                        <button style="margin-top:0.5rem;" type="button" class="btn btn-info" onclick="AplicarAjuste()">Aplicar Ajuste <i class="bi bi-check-circle" style="color:white"></i></button>
                                         <?php 
                                         if($estado == 1){
                                             echo '<div  id="estado" hidden>1</div>';
@@ -175,8 +177,8 @@
                                         <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
                                         <button style="margin-top:0.5rem; width:140px" type="button" class="btn btn-success" onclick="procesar()">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
                                     </div>
-                                    <div style="margin-left:10rem">
-                                        <select class="form-control ml-6 mt-2" id="selectOcultarSucursal">
+                                    <div style="margin-left:3rem; display: flex; gap: 10px; align-items: center; flex-wrap: nowrap;">
+                                        <select class="form-control mt-2" id="selectOcultarSucursal" style="min-width: 200px;">
                                             <option value="" disabled selected>Selecciona una sucursal</option>
                                             <?php 
                                                 foreach ($todosLosLocales as $key => $local) {
@@ -188,24 +190,22 @@
                                             ?>
                                         </select>
                                         <button class="btn btn-danger mt-2" onclick="ocultarSucursal()">Eliminar <i class="bi bi-trash"></i></button>
-                                    </div>
-                                    <div>
                           
                                     </div>
                             </form>
 
-                            <div style="margin-left:50px;margin-bottom:10px"><strong><i class="bi bi-check-circle"> Control Por Sucursal</i></strong></div>
                             <?php 
-                                $width = '';
-                                
-                                if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
-                                    $width = 'width:30%';
-                                }
+                                // Calcular ancho mínimo según cantidad de sucursales
+                                $cantidadSucursales = count($todosLosLocales);
+                                // Cada columna de sucursal necesita aprox 120px + las columnas fijas (260px)
+                                $anchoMinimo = 260 + ($cantidadSucursales * 120);
+                                $width = "min-width: {$anchoMinimo}px;";
                             ?>
+                            <div class="table-responsive">
                                 <table class="table table-striped table-bordered table-sm table-hover" id="tablaAlquileres" style="font-size :12px;<?= $width ?>" >
                                     <thead class="thead-dark">
                                         <tr>
-                                            <th style="text-align:center;width:5%" id="thIdConcepto">ID</th>
+                                            <th style="text-align:center;width:1%" id="thIdConcepto">ID</th>
                                             <th style="text-align:center;width:10%" id="thConcepto"  >CONCEPTOS </th>
                                             <?php 
                                                 foreach ($todosLosLocales as $key => $value) {   
@@ -333,7 +333,7 @@
                                     </tbody>
 
                                 </table>
-                            </div>
+                            </div> <!-- Fin table-responsive -->
                         </div>
                     </div>
                 </div>
@@ -346,6 +346,23 @@
             <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
             <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
             <script src="js/cargaAlquileres.js"></script>
+            
+            <script>
+                // Script para mejorar el comportamiento de las columnas fijas
+                $(document).ready(function() {
+                    const table = document.getElementById('tablaAlquileres');
+                    if (table) {
+                        // Añadir clase especial al hacer scroll horizontal
+                        table.addEventListener('scroll', function() {
+                            if (this.scrollLeft > 0) {
+                                this.classList.add('is-scrolled');
+                            } else {
+                                this.classList.remove('is-scrolled');
+                            }
+                        });
+                    }
+                });
+            </script>
 
         </body>
 
