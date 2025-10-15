@@ -16,9 +16,6 @@ $(document).ready(function() {
 
     // --- FUNCTIONS ---
 
-    /**
-     * Llama al SP masivo y, si tiene éxito, llama a la función que carga la tabla.
-     */
     function ejecutarSPMasivoYRecargarTabla() {
         const fechaDesde = $('#fecha-desde').val();
         const fechaHasta = $('#fecha-hasta').val();
@@ -28,13 +25,11 @@ $(document).ready(function() {
             return;
         }
 
-        // Paso 1: Ejecutar el SP masivo.
         realizarAjax('Controller/controlVentasController.php', { 
             action: 'ejecutar_masivo', 
             desde: fechaDesde, 
             hasta: fechaHasta 
         }, function(response) {
-            // Paso 2: Si el SP se ejecutó bien, pedir los datos para la tabla.
             if (response.success) {
                 cargarDatosEnTabla();
             } else {
@@ -43,9 +38,6 @@ $(document).ready(function() {
         });
     }
 
-    /**
-     * Ejecuta el SP para una sucursal específica y luego recarga la tabla completa.
-     */
     function ejecutarSPPorSucursal(nroSucursal) {
         const fechaDesde = $('#fecha-desde').val();
         const fechaHasta = $('#fecha-hasta').val();
@@ -62,9 +54,6 @@ $(document).ready(function() {
         });
     }
 
-    /**
-     * Obtiene los datos de la BD y los renderiza en la tabla.
-     */
     function cargarDatosEnTabla() {
         const fechaDesde = $('#fecha-desde').val();
         const fechaHasta = $('#fecha-hasta').val();
@@ -130,9 +119,10 @@ $(document).ready(function() {
             data: data,
             success: function(response) {
                 if (response && response.debug_info) {
-                    console.group("--- Gemini Debug Info ---");
+                    console.group("--- Debug Info ---");
                     console.log("Database:", response.debug_info.database);
                     console.log("SQL:", response.debug_info.sql);
+                    if(response.debug_info.sp_return) console.log("SP Return:", response.debug_info.sp_return);
                     console.groupEnd();
                 }
 
@@ -157,3 +147,32 @@ $(document).ready(function() {
         return number.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
     }
 });
+
+// --- INICIO DE FUNCIÓN NUEVA ---
+/**
+ * Llama al backend para cambiar el entorno en la sesión y recarga la página.
+ * @param {HTMLSelectElement} selectElement - El elemento <select> que disparó el evento.
+ */
+function cambiarEntorno(selectElement) {
+    // Muestra un indicador de carga para que el usuario sepa que algo está pasando
+    $('#loading-spinner').show();
+
+    // El valor 0 es para Argentina ('central'), 1 para Uruguay ('suc_uy')
+    const entorno = (selectElement.value === "ARG") ? 0 : 1;
+    
+    $.ajax({
+        url: 'Controller/cambiarentorno.php', // Reutilizamos un controlador que ya existe para esta tarea
+        method: 'POST',
+        data: { entorno: entorno },
+        success: function (data) {
+            // Si la sesión se cambió correctamente, recargamos la página
+            location.reload();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cambiar entorno:', error);
+            $('#loading-spinner').hide(); // Ocultamos el spinner si hay un error
+            alert('Error al cambiar el país. Por favor, intente nuevamente.');
+        }
+    });
+}
+// --- FIN DE FUNCIÓN NUEVA ---

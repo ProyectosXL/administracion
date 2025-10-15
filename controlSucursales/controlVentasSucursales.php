@@ -1,9 +1,16 @@
 <?php
+session_start(); // <-- AÑADIDO: Necesario para gestionar el entorno
 require_once '../class/conexion.php';
 
 // Calcular el primer y último día del mes anterior
 $previous_month_first = date('Y-m-01', strtotime("first day of last month"));
 $previous_month_last = date('Y-m-t', strtotime("last day of last month"));
+
+// --- INICIO DE CÓDIGO NUEVO PARA GESTIONAR ENTORNO ---
+$checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+$paisActual = ($checkedValue === 'suc_uy') ? 'URUGUAY' : 'ARGENTINA';
+$banderaActual = ($checkedValue === 'suc_uy') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
+// --- FIN DE CÓDIGO NUEVO ---
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -11,7 +18,6 @@ $previous_month_last = date('Y-m-t', strtotime("last day of last month"));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Ventas por Sucursal</title>
-    <!-- Estilos y scripts existentes del proyecto (ej. Bootstrap, jQuery) -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <style>
@@ -36,8 +42,6 @@ $previous_month_last = date('Y-m-t', strtotime("last day of last month"));
 </head>
 <body>
 
-
-
 <div class="container-fluid mt-4">
     <div class="card">
         <div class="card-header card-header-blue">
@@ -45,21 +49,36 @@ $previous_month_last = date('Y-m-t', strtotime("last day of last month"));
         </div>
         <div class="card-body">
             <form id="form-consulta">
+                <!-- --- INICIO DE MODIFICACIÓN DEL FORMULARIO --- -->
                 <div class="form-row align-items-end">
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-md-3">
                         <label for="fecha-desde">Desde:</label>
                         <input type="date" class="form-control" id="fecha-desde" value="<?php echo $previous_month_first; ?>">
                     </div>
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-md-3">
                         <label for="fecha-hasta">Hasta:</label>
                         <input type="date" class="form-control" id="fecha-hasta" value="<?php echo $previous_month_last; ?>">
                     </div>
-                    <div class="form-group col-md-4">
+                    <div class="form-group col-md-3">
                         <button type="button" id="btn-consultar" class="btn btn-primary btn-block">
                             <i class="fas fa-search"></i> Consultar
                         </button>
                     </div>
+                    <!-- NUEVO SELECTOR DE PAÍS -->
+                    <div class="form-group col-md-3 d-flex align-items-end justify-content-end">
+                        <div style="text-align: right;">
+                            <label>País:</label>
+                            <div class="d-flex align-items-center">
+                                <img src="<?= $banderaActual ?>" alt="<?= $paisActual ?>" style="width: 30px; height: 20px; border-radius: 3px; margin-right: 10px;">
+                                <select class="form-control" onchange="cambiarEntorno(this)">
+                                    <option value="ARG" <?= ($checkedValue !== 'suc_uy') ? 'selected' : '' ?>>Argentina</option>
+                                    <option value="URY" <?= ($checkedValue === 'suc_uy') ? 'selected' : '' ?>>Uruguay</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                <!-- --- FIN DE MODIFICACIÓN DEL FORMULARIO --- -->
             </form>
 
             <div id="resultado-consulta" class="mt-4 position-relative">

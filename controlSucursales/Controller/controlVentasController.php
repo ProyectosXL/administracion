@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 
 require_once '../../class/conexion.php';
+session_start();
 
 $response = ['success' => false, 'message' => 'Acción no válida.'];
 $action = $_POST['action'] ?? '';
@@ -12,22 +13,7 @@ if (empty($action)) {
 }
 
 $conn = new Conexion();
-$conexion = $conn->conectar('locales');
-
 $debug_info = [];
-if ($conexion) {
-    $test_stmt = sqlsrv_query($conexion, "SELECT DB_NAME() AS db_name");
-    if ($test_stmt && $row = sqlsrv_fetch_array($test_stmt, SQLSRV_FETCH_ASSOC)) {
-        $debug_info['database'] = $row['db_name'];
-    }
-}
-
-if (!$conexion) {
-    $response['message'] = 'Error de conexión a la base de datos.';
-    $response['debug_info'] = $debug_info;
-    echo json_encode($response);
-    exit;
-}
 
 try {
     switch ($action) {
@@ -35,97 +21,138 @@ try {
             set_time_limit(300);
             $desde = $_POST['desde'] ?? '';
             $hasta = $_POST['hasta'] ?? '';
-
             if (empty($desde) || empty($hasta)) throw new Exception('Las fechas son obligatorias.');
 
-            sqlsrv_configure("WarningsReturnAsErrors", 0);
+            $conexion_maestra = $conn->conectar('locales');
+            if (!$conexion_maestra) throw new Exception('No se pudo conectar a la base de datos maestra.');
 
-            $sql = "EXEC RO_SP_COMPARAR_VENTAS_MASIVO @desde = ?, @hasta = ?";
-            $debug_info['sql'] = "EXEC RO_SP_COMPARAR_VENTAS_MASIVO @desde = '" . $desde . "', @hasta = '" . $hasta . "'";
-            $params = [$desde, $hasta];
-            $stmt = sqlsrv_query($conexion, $sql, $params);
+            $condicion_canal = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy')
+                ? "CANAL = 'EXTERIOR' AND HABILITADO = 1"
+                : "CANAL = 'PROPIOS' AND HABILITADO = 1";
 
-            if ($stmt === false) throw new Exception('Error al ejecutar el proceso masivo: ' . print_r(sqlsrv_errors(), true));
+            $sql_sucursales = "SELECT NRO_SUCURSAL FROM dbo.SUCURSALES_LAKERS WHERE {$condicion_canal}";
+            $stmt_sucursales = sqlsrv_query($conexion_maestra, $sql_sucursales);
+            if ($stmt_sucursales === false) throw new Exception('Error al obtener la lista de sucursales maestra.');
             
-            // Liberar resultados del SP, si los hubiera
-            do {
-                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                    // No hacer nada, solo consumir el result set
-                }
-            } while (sqlsrv_next_result($stmt));
+            $lista_sucursales = [];
+            while ($row = sqlsrv_fetch_array($stmt_sucursales, SQLSRV_FETCH_ASSOC)) {
+                $lista_sucursales[] = $row['NRO_SUCURSAL'];
+            }
+            sqlsrv_close($conexion_maestra);
 
-            $response = ['success' => true, 'message' => 'Proceso masivo ejecutado correctamente.', 'debug_info' => $debug_info];
+            $db_alias_procesamiento = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'suc_uy' : 'locales';
+            $conexion_procesamiento = $conn->conectar($db_alias_procesamiento);
+            if (!$conexion_procesamiento) throw new Exception('No se pudo conectar a la base de datos de procesamiento.');
+
+            foreach ($lista_sucursales as $nroSucursal) {
+                $sql_individual = "EXEC dbo.RO_SP_COMPARAR_VENTAS_SUCURSAL @NRO_SUCURSAL = ?, @DESDE = ?, @HASTA = ?";
+                $params_individual = [$nroSucursal, $desde, $hasta];
+                $stmt_individual = sqlsrv_query($conexion_procesamiento, $sql_individual, $params_individual);
+                if ($stmt_individual === false) error_log("Error al procesar sucursal $nroSucursal: " . print_r(sqlsrv_errors(), true));
+            }
+            sqlsrv_close($conexion_procesamiento);
+
+            $response = ['success' => true, 'message' => 'Proceso masivo ejecutado correctamente.'];
             break;
 
         case 'ejecutar_sucursal':
             $desde = $_POST['desde'] ?? '';
             $hasta = $_POST['hasta'] ?? '';
             $nro_sucurs = $_POST['nro_sucurs'] ?? '';
-
             if (empty($desde) || empty($hasta) || empty($nro_sucurs)) throw new Exception('Todos los parámetros son obligatorios.');
 
-            $sql = "EXEC RO_SP_COMPARAR_VENTAS_SUCURSAL @desde = ?, @hasta = ?, @NRO_SUCURSAL = ?";
-            $debug_info['sql'] = "EXEC RO_SP_COMPARAR_VENTAS_SUCURSAL @desde = '" . $desde . "', @hasta = '" . $hasta . "', @NRO_SUCURSAL = " . $nro_sucurs;
-            $params = [$desde, $hasta, $nro_sucurs];
-            $stmt = sqlsrv_query($conexion, $sql, $params);
+            $db_alias_procesamiento = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'suc_uy' : 'locales';
+            $conexion_procesamiento = $conn->conectar($db_alias_procesamiento);
+            if (!$conexion_procesamiento) throw new Exception('No se pudo conectar a la base de datos de procesamiento.');
 
-            if ($stmt === false) throw new Exception('Error al ejecutar el proceso para la sucursal: ' . print_r(sqlsrv_errors(), true));
+            $sql = "EXEC dbo.RO_SP_COMPARAR_VENTAS_SUCURSAL @NRO_SUCURSAL = ?, @DESDE = ?, @HASTA = ?";
+            $params = [$nro_sucurs, $desde, $hasta];
+            $stmt = sqlsrv_query($conexion_procesamiento, $sql, $params);
+            if ($stmt === false) throw new Exception('Error al ejecutar el proceso para la sucursal.');
+            sqlsrv_close($conexion_procesamiento);
 
-            // Leemos el resultado que devuelve el SP para asegurar su correcta ejecución y para depurar.
-            $sp_return_data = [];
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $sp_return_data[] = $row;
-            }
-            $debug_info['sp_return'] = $sp_return_data;
-
-            $response = ['success' => true, 'message' => 'Proceso para sucursal ' . $nro_sucurs . ' ejecutado.', 'debug_info' => $debug_info];
+            $response = ['success' => true, 'message' => 'Proceso para sucursal ' . $nro_sucurs . ' ejecutado.'];
             break;
 
         case 'obtener_datos':
             $desde = $_POST['desde'] ?? '';
             $hasta = $_POST['hasta'] ?? '';
-
             if (empty($desde) || empty($hasta)) throw new Exception('Las fechas son obligatorias.');
 
-            $query = "
+            $conexion_maestra = $conn->conectar('locales');
+            if (!$conexion_maestra) throw new Exception('No se pudo conectar a la base de datos maestra.');
+
+            $condicion_canal = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy')
+                ? "CANAL = 'EXTERIOR' AND HABILITADO = 1"
+                : "CANAL = 'PROPIOS' AND HABILITADO = 1";
+            
+            $sql_maestra = "SELECT NRO_SUCURSAL, COD_CLIENT FROM dbo.SUCURSALES_LAKERS WHERE {$condicion_canal}";
+            $stmt_maestra = sqlsrv_query($conexion_maestra, $sql_maestra);
+            if ($stmt_maestra === false) throw new Exception('Error al obtener datos de la tabla maestra.');
+
+            $sucursales_maestra = [];
+            while ($row = sqlsrv_fetch_array($stmt_maestra, SQLSRV_FETCH_ASSOC)) {
+                $sucursales_maestra[$row['NRO_SUCURSAL']] = $row['COD_CLIENT'];
+            }
+            sqlsrv_close($conexion_maestra);
+
+            $db_alias_procesamiento = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'suc_uy' : 'locales';
+            $conexion_procesamiento = $conn->conectar($db_alias_procesamiento);
+            if (!$conexion_procesamiento) throw new Exception('No se pudo conectar a la base de datos de procesamiento.');
+
+            // --- INICIO DE LA CORRECCIÓN DE LA DIFERENCIA ---
+            $sql_resultados = "
                 SELECT 
-                    NRO_SUCURS AS NUM_SUC, SUC.COD_CLIENT AS COD_SUCURSAL, IMPORTE_CENTRAL, 
-                    IMPORTE_LOCAL, DIFERENCIA, ESTADO,
-                    DATEADD(HOUR, -3, REFRESHED_AT) AS REFRESHED_AT
-                FROM dbo.RO_T_COMPARA_VENTAS
-                LEFT JOIN SUCURSALES_LAKERS AS SUC ON SUC.NRO_SUCURSAL = RO_T_COMPARA_VENTAS.NRO_SUCURS
+                    NRO_SUCURS, 
+                    IMPORTE_CENTRAL, 
+                    IMPORTE_LOCAL, 
+                    -- Si la diferencia es NULL, la calculamos aquí mismo
+                    ISNULL(DIFERENCIA, ISNULL(IMPORTE_CENTRAL, 0) - ISNULL(IMPORTE_LOCAL, 0)) AS DIFERENCIA,
+                    ESTADO, 
+                    REFRESHED_AT 
+                FROM dbo.RO_T_COMPARA_VENTAS 
                 WHERE DESDE = ? AND HASTA = ?
-                AND NRO_SUCURS IN (SELECT NRO_SUCURSAL FROM dbo.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1)
-                ORDER BY NRO_SUCURS;
             ";
-            $debug_info['sql'] = preg_replace('/\s+/', ' ', $query);
-            $params = [$desde, $hasta];
-            $stmt = sqlsrv_query($conexion, $query, $params);
+            // --- FIN DE LA CORRECCIÓN DE LA DIFERENCIA ---
 
-            if ($stmt === false) throw new Exception('Error al obtener los datos: ' . print_r(sqlsrv_errors(), true));
+            $params_resultados = [$desde, $hasta];
+            $stmt_resultados = sqlsrv_query($conexion_procesamiento, $sql_resultados, $params_resultados);
+            if ($stmt_resultados === false) throw new Exception('Error al obtener resultados de ventas.');
+            
+            $resultados_ventas = [];
+            while ($row = sqlsrv_fetch_array($stmt_resultados, SQLSRV_FETCH_ASSOC)) {
+                $resultados_ventas[] = $row;
+            }
+            sqlsrv_close($conexion_procesamiento);
 
-            $data = [];
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $data[] = $row;
+            $data_final = [];
+            foreach ($resultados_ventas as $venta) {
+                $nro_suc = $venta['NRO_SUCURS'];
+                if (isset($sucursales_maestra[$nro_suc])) {
+                    $data_final[] = [
+                        'NUM_SUC' => $nro_suc,
+                        'COD_SUCURSAL' => $sucursales_maestra[$nro_suc],
+                        'IMPORTE_CENTRAL' => $venta['IMPORTE_CENTRAL'],
+                        'IMPORTE_LOCAL' => $venta['IMPORTE_LOCAL'],
+                        'DIFERENCIA' => $venta['DIFERENCIA'],
+                        'ESTADO' => $venta['ESTADO'],
+                        'REFRESHED_AT' => $venta['REFRESHED_AT']
+                    ];
+                }
             }
 
-            $response = ['success' => true, 'data' => $data, 'debug_info' => $debug_info];
+            $response = ['success' => true, 'data' => $data_final, 'debug_info' => $debug_info];
             break;
 
         default:
-            $response['message'] = 'Acción desconocida.';
+            $response['message'] = 'Acción no válida.';
             break;
     }
 } catch (Exception $e) {
     $response['success'] = false;
     $response['message'] = $e->getMessage();
     $response['debug_info'] = $debug_info;
-} finally {
-    if ($conexion) {
-        sqlsrv_close($conexion);
-    }
 }
 
 echo json_encode($response);
-
 ?>
