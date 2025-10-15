@@ -111,24 +111,28 @@
 
 /* Estados de solicitud */
 .estado-badge {
-    font-size: 0.875rem;
-    padding: 0.5rem 1rem;
-    border-radius: 2rem;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 1rem;
+    font-weight: 500;
 }
 
 .estado-solicitado {
-    background-color: #ffc107;
-    color: #212529;
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
 }
 
 .estado-cargado {
-    background-color: #17a2b8;
-    color: #fff;
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #17a2b8;
 }
 
 .estado-pagado {
-    background-color: #28a745;
-    color: #fff;
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #28a745;
 }
 
 /* Formulario de solicitud */
@@ -141,8 +145,16 @@
 
 /* Cards de solicitudes */
 .solicitud-card {
-    border-left: 4px solid;
-    margin-bottom: 1rem;
+    border-left: 3px solid;
+    margin-bottom: 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s ease;
+}
+
+.solicitud-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
 }
 
 .solicitud-card.estado-solicitado {
@@ -157,27 +169,39 @@
     border-left-color: #28a745;
 }
 
+.solicitud-card .card-body {
+    padding: 1rem;
+}
+
 .solicitud-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .solicitud-id {
-    font-family: monospace;
-    font-size: 0.875rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
     color: #6c757d;
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
 }
 
 .solicitud-importe {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
+    color: #28a745;
 }
 
 .solicitud-director {
     font-weight: 600;
     color: #212529;
+    font-size: 0.95rem;
+    margin-bottom: 0;
 }
 
 .solicitud-fecha {
@@ -252,21 +276,26 @@
 
 /* Motivos de solicitud */
 .motivo-badge {
-    padding: 0.35rem 0.75rem;
+    padding: 0.25rem 0.6rem;
     border-radius: 0.25rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
 }
 
 .motivo-compra {
-    background-color: #e7f3ff;
-    color: #007bff;
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
 }
 
 .motivo-retiro {
-    background-color: #fff3cd;
-    color: #856404;
+    background-color: #fff8e1;
+    color: #f57c00;
+    border: 1px solid #ffcc80;
 }
 
 /* Indicador de archivos requeridos */

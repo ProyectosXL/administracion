@@ -130,40 +130,61 @@ class SolicitudEgreso {
      */
     public function obtenerTodas(array $filtros = []): array {
         try {
-            $sql = "SELECT * FROM vw_solicitudes_completas WHERE 1=1";
+            // Consultar directamente las tablas en lugar de la vista
+            $sql = "SELECT 
+                        s.id_solicitud,
+                        s.id_director,
+                        d.NOMBRE as nombre_director,
+                        s.motivo,
+                        s.importe,
+                        s.estado,
+                        s.observaciones,
+                        s.fecha_solicitud,
+                        s.fecha_modificacion,
+                        s.usuario_modificacion,
+                        (SELECT COUNT(*) FROM archivos_solicitud WHERE id_solicitud = s.id_solicitud) as cantidad_archivos
+                    FROM solicitudes_egresos s
+                    INNER JOIN RO_T_DIRECTORES d ON s.id_director = d.ID_DIRECTOR
+                    WHERE 1=1";
+            
             $params = [];
             
             if (!empty($filtros['id_director'])) {
-                $sql .= " AND id_director = ?";
+                $sql .= " AND s.id_director = ?";
                 $params[] = $filtros['id_director'];
             }
             
             if (!empty($filtros['nombre_director'])) {
-                $sql .= " AND nombre_director LIKE ?";
+                $sql .= " AND d.NOMBRE LIKE ?";
                 $params[] = '%' . $filtros['nombre_director'] . '%';
             }
             
             if (!empty($filtros['estado'])) {
-                $sql .= " AND estado = ?";
+                $sql .= " AND s.estado = ?";
                 $params[] = $filtros['estado'];
             }
             
             if (!empty($filtros['fecha_desde'])) {
-                $sql .= " AND CAST(fecha_solicitud AS DATE) >= ?";
+                $sql .= " AND CAST(s.fecha_solicitud AS DATE) >= ?";
                 $params[] = $filtros['fecha_desde'];
             }
             
             if (!empty($filtros['fecha_hasta'])) {
-                $sql .= " AND CAST(fecha_solicitud AS DATE) <= ?";
+                $sql .= " AND CAST(s.fecha_solicitud AS DATE) <= ?";
                 $params[] = $filtros['fecha_hasta'];
             }
             
-            $sql .= " ORDER BY fecha_solicitud DESC";
+            $sql .= " ORDER BY s.fecha_solicitud DESC";
+            
+            error_log("SQL Query: " . $sql);
+            error_log("SQL Params: " . print_r($params, true));
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
-                throw new Exception("Error en consulta: " . print_r(sqlsrv_errors(), true));
+                $errors = sqlsrv_errors();
+                error_log("Error en obtenerTodas: " . print_r($errors, true));
+                throw new Exception("Error en consulta: " . print_r($errors, true));
             }
             
             $resultados = [];
@@ -175,13 +196,12 @@ class SolicitudEgreso {
                 if (isset($row['fecha_modificacion']) && is_object($row['fecha_modificacion'])) {
                     $row['fecha_modificacion'] = $row['fecha_modificacion']->format('Y-m-d H:i:s');
                 }
-                if (isset($row['ultima_actualizacion']) && is_object($row['ultima_actualizacion'])) {
-                    $row['ultima_actualizacion'] = $row['ultima_actualizacion']->format('Y-m-d H:i:s');
-                }
                 $resultados[] = $row;
             }
             
             sqlsrv_free_stmt($stmt);
+            error_log("Solicitudes encontradas: " . count($resultados));
+            
             return $resultados;
         } catch (Exception $e) {
             error_log("Error al obtener solicitudes: " . $e->getMessage());
@@ -194,10 +214,26 @@ class SolicitudEgreso {
      */
     public function obtenerPorId(string $idSolicitud): ?array {
         try {
-            $sql = "SELECT * FROM vw_solicitudes_completas WHERE id_solicitud = ?";
+            $sql = "SELECT 
+                        s.id_solicitud,
+                        s.id_director,
+                        d.NOMBRE as nombre_director,
+                        s.motivo,
+                        s.importe,
+                        s.estado,
+                        s.observaciones,
+                        s.fecha_solicitud,
+                        s.fecha_modificacion,
+                        s.usuario_modificacion,
+                        (SELECT COUNT(*) FROM archivos_solicitud WHERE id_solicitud = s.id_solicitud) as cantidad_archivos
+                    FROM solicitudes_egresos s
+                    INNER JOIN RO_T_DIRECTORES d ON s.id_director = d.ID_DIRECTOR
+                    WHERE s.id_solicitud = ?";
+            
             $stmt = sqlsrv_query($this->db, $sql, [$idSolicitud]);
             
             if ($stmt === false) {
+                error_log("Error en obtenerPorId: " . print_r(sqlsrv_errors(), true));
                 return null;
             }
             

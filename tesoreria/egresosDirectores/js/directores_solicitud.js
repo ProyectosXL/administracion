@@ -165,13 +165,15 @@ function configurarArchivos() {
     
     if (inputArchivo) {
         inputArchivo.addEventListener('change', function(e) {
-            combinarArchivos(e.target.files, inputCamara.files);
+            const camaraFiles = inputCamara ? inputCamara.files : new FileList();
+            combinarArchivos(e.target.files, camaraFiles);
         });
     }
     
     if (inputCamara) {
         inputCamara.addEventListener('change', function(e) {
-            combinarArchivos(inputArchivo.files, e.target.files);
+            const archivoFiles = inputArchivo ? inputArchivo.files : new FileList();
+            combinarArchivos(archivoFiles, e.target.files);
         });
     }
 }
@@ -183,18 +185,25 @@ function combinarArchivos(archivosGaleria, archivosCamara) {
     const dt = new DataTransfer();
     
     // Agregar archivos de galería
-    for (let i = 0; i < archivosGaleria.length; i++) {
-        dt.items.add(archivosGaleria[i]);
+    if (archivosGaleria && archivosGaleria.length > 0) {
+        for (let i = 0; i < archivosGaleria.length; i++) {
+            dt.items.add(archivosGaleria[i]);
+        }
     }
     
     // Agregar archivos de cámara
-    for (let i = 0; i < archivosCamara.length; i++) {
-        dt.items.add(archivosCamara[i]);
+    if (archivosCamara && archivosCamara.length > 0) {
+        for (let i = 0; i < archivosCamara.length; i++) {
+            dt.items.add(archivosCamara[i]);
+        }
     }
     
-    // Actualizar ambos inputs
+    // Actualizar el input principal con todos los archivos
     const inputArchivo = document.getElementById('archivoSolicitud');
-    if (inputArchivo) inputArchivo.files = dt.files;
+    if (inputArchivo) {
+        inputArchivo.files = dt.files;
+        console.log('Archivos combinados:', dt.files.length, 'archivo(s)');
+    }
     
     mostrarArchivosSeleccionados(dt.files);
 }
@@ -207,31 +216,55 @@ function mostrarArchivosSeleccionados(archivos) {
     if (!listaArchivos) return;
     
     if (archivos.length === 0) {
-        listaArchivos.innerHTML = '<p class="text-muted"><small>No hay archivos adjuntos</small></p>';
+        listaArchivos.innerHTML = '<div class="alert alert-light border"><small><i class="bi bi-info-circle me-1"></i> No hay archivos adjuntos</small></div>';
         return;
     }
     
-    let html = '<div class="row g-2">';
+    let html = '<div class="alert alert-success mb-3">';
+    html += '<i class="bi bi-check-circle me-2"></i>';
+    html += '<strong>' + archivos.length + '</strong> archivo(s) adjunto(s)';
+    html += '</div>';
+    
+    html += '<div class="list-group mb-3">';
     
     for (let i = 0; i < archivos.length; i++) {
         const archivo = archivos[i];
         const esImagen = archivo.type.startsWith('image/');
-        const icono = esImagen ? 'bi-image' : 'bi-file-earmark-pdf';
-        const tamaño = (archivo.size / 1024 / 1024).toFixed(2) + ' MB';
+        const icono = esImagen ? 'bi-image-fill' : 'bi-file-earmark-pdf-fill';
+        const tamaño = (archivo.size / 1024).toFixed(1);
+        const unidad = tamaño < 1024 ? 'KB' : 'MB';
+        const tamañoFormateado = tamaño < 1024 ? tamaño : (tamaño / 1024).toFixed(2);
         
         html += `
-            <div class="col-12">
-                <div class="d-flex align-items-center p-2 border rounded">
-                    <i class="bi ${icono} me-2 text-primary"></i>
-                    <div class="flex-grow-1">
-                        <small class="fw-bold">${archivo.name}</small>
-                        <br>
-                        <small class="text-muted">${tamaño}</small>
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <i class="bi ${icono} fs-3 text-primary"></i>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                            onclick="eliminarArchivo(${i})">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div class="col">
+                        <div class="fw-semibold text-break">${archivo.name}</div>
+                        <small class="text-muted">
+                            <i class="bi bi-hdd"></i> ${tamañoFormateado} ${unidad}
+                        </small>
+                    </div>
+                    <div class="col-auto">
+                        <div class="btn-group" role="group">
+                            ${esImagen ? `
+                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                    onclick="previsualizarImagen(${i})" 
+                                    title="Ver vista previa">
+                                <i class="bi bi-eye-fill"></i>
+                                <span class="d-none d-sm-inline ms-1">Ver</span>
+                            </button>
+                            ` : ''}
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="eliminarArchivo(${i})" 
+                                    title="Eliminar archivo">
+                                <i class="bi bi-trash-fill"></i>
+                                <span class="d-none d-sm-inline ms-1">Eliminar</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -259,7 +292,58 @@ function eliminarArchivo(indice) {
     }
     
     inputArchivo.files = dt.files;
+    console.log('Archivo eliminado. Archivos restantes:', inputArchivo.files.length);
     mostrarArchivosSeleccionados(inputArchivo.files);
+}
+
+/**
+ * Previsualiza una imagen en un modal
+ */
+function previsualizarImagen(indice) {
+    const inputArchivo = document.getElementById('archivoSolicitud');
+    if (!inputArchivo || !inputArchivo.files[indice]) return;
+    
+    const archivo = inputArchivo.files[indice];
+    if (!archivo.type.startsWith('image/')) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Crear modal para previsualización
+        const modalHtml = `
+            <div class="modal fade" id="modalPreview" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Vista Previa: ${archivo.name}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="${e.target.result}" class="img-fluid" alt="Vista previa">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Eliminar modal anterior si existe
+        const modalAnterior = document.getElementById('modalPreview');
+        if (modalAnterior) modalAnterior.remove();
+        
+        // Agregar y mostrar nuevo modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('modalPreview'));
+        modal.show();
+        
+        // Limpiar modal al cerrar
+        document.getElementById('modalPreview').addEventListener('hidden.bs.modal', function() {
+            this.remove();
+        });
+    };
+    
+    reader.readAsDataURL(archivo);
 }
 
 /**
@@ -293,14 +377,25 @@ async function crearSolicitud() {
         if (formData.get('motivo') === 'COMPRA_PERSONAL') {
             const inputArchivos = document.getElementById('archivoSolicitud');
             
+            console.log('Validando archivos para COMPRA_PERSONAL...');
+            console.log('Input encontrado:', !!inputArchivos);
+            console.log('Cantidad de archivos:', inputArchivos ? inputArchivos.files.length : 0);
+            
             if (!inputArchivos || inputArchivos.files.length === 0) {
-                throw new Error('Para compras personales debe adjuntar la factura');
+                throw new Error('Las compras personales requieren adjuntar la factura');
             }
             
-            // Agregar cada archivo al FormData
+            console.log('Adjuntando', inputArchivos.files.length, 'archivo(s) al FormData...');
+            
+            // Agregar cada archivo al FormData (sin [] para que PHP lo reciba correctamente)
             for (let i = 0; i < inputArchivos.files.length; i++) {
                 formData.append('archivos[]', inputArchivos.files[i]);
+                console.log(`Archivo ${i + 1}: ${inputArchivos.files[i].name} (${inputArchivos.files[i].size} bytes)`);
             }
+            
+            // Debug: verificar que se agregaron al FormData
+            console.log('FormData keys:', Array.from(formData.keys()));
+            console.log('Archivos en FormData:', formData.getAll('archivos[]').length)
         }
         
         const response = await fetch('controller/solicitud_controller.php', {
@@ -320,7 +415,18 @@ async function crearSolicitud() {
             
             // Limpiar formulario
             document.getElementById('formSolicitud').reset();
-            document.getElementById('listaArchivos').innerHTML = '<p class="text-muted"><small>No hay archivos adjuntos</small></p>';
+            
+            // Limpiar inputs de archivos manualmente
+            const inputArchivo = document.getElementById('archivoSolicitud');
+            const inputCamara = document.getElementById('camaraSolicitud');
+            if (inputArchivo) inputArchivo.value = '';
+            if (inputCamara) inputCamara.value = '';
+            
+            // Resetear visualización de archivos
+            const listaArchivos = document.getElementById('listaArchivos');
+            if (listaArchivos) {
+                listaArchivos.innerHTML = '<div class="alert alert-light border"><small><i class="bi bi-info-circle me-1"></i> No hay archivos adjuntos</small></div>';
+            }
             
             // Ocultar secciones de archivos
             const divArchivos = document.getElementById('divArchivos');
@@ -352,189 +458,20 @@ function configurarFiltros() {
     const btnLimpiar = document.getElementById('btnLimpiarFiltros');
     
     if (btnAplicar) {
-        btnAplicar.addEventListener('click', aplicarFiltros);
+        btnAplicar.addEventListener('click', () => {
+            if (typeof aplicarFiltros === 'function') {
+                aplicarFiltros();
+            }
+        });
     }
     
     if (btnLimpiar) {
-        btnLimpiar.addEventListener('click', limpiarFiltros);
-    }
-}
-
-/**
- * Aplica filtros al listado
- */
-function aplicarFiltros() {
-    const filtros = {
-        id_director: document.getElementById('filtroDirector')?.value || '',
-        estado: document.getElementById('filtroEstado')?.value || '',
-        fecha_desde: document.getElementById('filtroFechaDesde')?.value || '',
-        fecha_hasta: document.getElementById('filtroFechaHasta')?.value || ''
-    };
-    
-    cargarSolicitudes(filtros);
-}
-
-/**
- * Limpia los filtros
- */
-function limpiarFiltros() {
-    document.getElementById('filtroDirector').value = '';
-    document.getElementById('filtroEstado').value = '';
-    document.getElementById('filtroFechaDesde').value = '';
-    document.getElementById('filtroFechaHasta').value = '';
-    
-    cargarSolicitudes();
-}
-
-/**
- * Carga las solicitudes con filtros opcionales
- */
-async function cargarSolicitudes(filtros = {}) {
-    mostrarLoading();
-    
-    try {
-        let url = 'controller/solicitud_controller.php?accion=listar';
-        
-        // Agregar filtros a la URL
-        Object.keys(filtros).forEach(key => {
-            if (filtros[key]) {
-                url += `&${key}=${encodeURIComponent(filtros[key])}`;
+        btnLimpiar.addEventListener('click', () => {
+            if (typeof limpiarFiltros === 'function') {
+                limpiarFiltros();
             }
         });
-        
-        const response = await fetch(url);
-        const result = await response.json();
-        
-        if (result.success) {
-            mostrarListaSolicitudes(result.data);
-        } else {
-            console.error('Error al cargar solicitudes:', result.message);
-            mostrarAlerta('Error', 'No se pudieron cargar las solicitudes');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        mostrarAlerta('Error', 'Error de conexión al cargar solicitudes');
-    } finally {
-        ocultarLoading();
     }
-}
-
-/**
- * Muestra la lista de solicitudes
- */
-function mostrarListaSolicitudes(solicitudes) {
-    const contenedor = document.getElementById('listadoSolicitudes');
-    
-    if (!solicitudes || solicitudes.length === 0) {
-        contenedor.innerHTML = `
-            <div class="empty-state">
-                <i class="bi bi-inbox"></i>
-                <h5>No hay solicitudes registradas</h5>
-                <p>Las solicitudes que crees aparecerán aquí.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const formatoMoneda = new Intl.NumberFormat('es-AR', { 
-        style: 'currency', 
-        currency: 'ARS',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
-    
-    let html = '';
-    
-    solicitudes.forEach(solicitud => {
-        const fecha = new Date(solicitud.fecha_solicitud).toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        const importe = formatoMoneda.format(solicitud.importe);
-        
-        const estadoClass = `estado-${solicitud.estado.toLowerCase()}`;
-        const estadoTexto = obtenerTextoEstado(solicitud.estado);
-        
-        const motivoClass = solicitud.motivo === 'COMPRA_PERSONAL' ? 'motivo-compra' : 'motivo-retiro';
-        const motivoTexto = solicitud.motivo === 'COMPRA_PERSONAL' ? 'Compra Personal' : 'Retiro de Dinero';
-        
-        html += `
-            <div class="card solicitud-card ${estadoClass} mb-3">
-                <div class="card-body">
-                    <div class="solicitud-header">
-                        <div>
-                            <span class="solicitud-id">${solicitud.id_solicitud}</span>
-                            <h5 class="solicitud-director mt-1">${solicitud.nombre_director}</h5>
-                        </div>
-                        <div class="text-end">
-                            <span class="badge estado-badge ${estadoClass}">${estadoTexto}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <p class="mb-2">
-                                <span class="motivo-badge ${motivoClass}">
-                                    <i class="bi ${solicitud.motivo === 'COMPRA_PERSONAL' ? 'bi-receipt' : 'bi-cash-coin'}"></i>
-                                    ${motivoTexto}
-                                </span>
-                            </p>
-                            <p class="solicitud-importe mb-0">${importe}</p>
-                        </div>
-                        <div class="col-md-6 text-md-end">
-                            <p class="solicitud-fecha mb-2">
-                                <i class="bi bi-calendar"></i> ${fecha}
-                            </p>
-                            <p class="mb-0">
-                                <i class="bi bi-paperclip"></i> 
-                                ${solicitud.cantidad_archivos || 0} archivo(s)
-                            </p>
-                        </div>
-                    </div>
-                    
-                    ${solicitud.observaciones ? `
-                        <div class="mt-3">
-                            <small class="text-muted">
-                                <i class="bi bi-chat-left-text"></i> ${solicitud.observaciones}
-                            </small>
-                        </div>
-                    ` : ''}
-                    
-                    <div class="mt-3 d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="verDetalle('${solicitud.id_solicitud}')">
-                            <i class="bi bi-eye"></i> Ver Detalle
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial('${solicitud.id_solicitud}')">
-                            <i class="bi bi-clock-history"></i> Historial
-                        </button>
-                        ${solicitud.cantidad_archivos > 0 ? `
-                            <button class="btn btn-sm btn-outline-info" onclick="verArchivos('${solicitud.id_solicitud}')">
-                                <i class="bi bi-paperclip"></i> Archivos
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    contenedor.innerHTML = html;
-}
-
-/**
- * Obtiene el texto del estado
- */
-function obtenerTextoEstado(estado) {
-    const estados = {
-        'SOLICITADO': 'Solicitado',
-        'CARGADO': 'Cargado',
-        'PAGADO': 'Pagado'
-    };
-    return estados[estado] || estado;
 }
 
 /**
@@ -548,6 +485,6 @@ function obtenerNombreDirector(idDirector) {
 // Exportar funciones para uso global
 window.cargarDirectores = cargarDirectores;
 window.crearSolicitud = crearSolicitud;
-window.aplicarFiltros = aplicarFiltros;
-window.limpiarFiltros = limpiarFiltros;
 window.obtenerNombreDirector = obtenerNombreDirector;
+window.eliminarArchivo = eliminarArchivo;
+window.previsualizarImagen = previsualizarImagen;

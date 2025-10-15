@@ -121,6 +121,13 @@ function generarTablaFacturas(facturas, tipo) {
         
         const importe = formatoMoneda.format(factura.importe);
         
+        // Para retiros de dinero, solo mostrar 0 sin botón
+        const columnArchivos = tipo === 'RETIRO_DINERO' 
+            ? '<span class="text-muted">0</span>'
+            : `<button class="btn btn-sm btn-outline-info" onclick="verArchivosFactura('${factura.id_solicitud}')">
+                   <i class="bi bi-paperclip"></i> ${factura.cantidad_archivos || 0}
+               </button>`;
+        
         html += `
             <tr>
                 <td><code>${factura.id_solicitud}</code></td>
@@ -128,9 +135,7 @@ function generarTablaFacturas(facturas, tipo) {
                 <td>${fecha}</td>
                 <td class="text-end">${importe}</td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-outline-info" onclick="verArchivosFactura('${factura.id_solicitud}')">
-                        <i class="bi bi-paperclip"></i> ${factura.cantidad_archivos || 0}
-                    </button>
+                    ${columnArchivos}
                 </td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-success" onclick="abrirModalPago('${factura.id_solicitud}', '${tipo}')">
@@ -164,24 +169,42 @@ async function verArchivosFactura(idSolicitud) {
             let html = '<div class="list-group">';
             
             result.data.forEach(archivo => {
-                const fecha = new Date(archivo.fecha_carga).toLocaleDateString('es-AR');
+                const fecha = new Date(archivo.fecha_carga).toLocaleDateString('es-AR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
                 const sizeKB = (archivo.tamanio_bytes / 1024).toFixed(2);
                 const icon = obtenerIconoArchivo(archivo.mime_type);
+                const esImagen = archivo.mime_type.startsWith('image/');
                 
                 html += `
                     <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="bi ${icon} text-primary"></i>
-                                <strong>${archivo.nombre_archivo}</strong>
-                                <br>
-                                <small class="text-muted">
-                                    ${archivo.tipo_archivo} - ${sizeKB} KB - ${fecha}
-                                </small>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex gap-3 flex-grow-1">
+                                <div class="text-primary">
+                                    <i class="bi ${icon} fs-2"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">${archivo.nombre_archivo}</h6>
+                                    <div class="text-muted small">
+                                        ${archivo.tipo_archivo} • ${sizeKB} KB
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-calendar3"></i> ${fecha}
+                                    </div>
+                                </div>
                             </div>
-                            <button class="btn btn-sm btn-outline-primary" onclick="descargarArchivo(${archivo.id})">
-                                <i class="bi bi-download"></i>
-                            </button>
+                            <div class="d-flex gap-2 flex-shrink-0">
+                                ${esImagen ? `
+                                    <button class="btn btn-sm btn-outline-primary" onclick="verImagenCompleta(${archivo.id}, '${archivo.nombre_archivo.replace(/'/g, "\\'")}')">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-primary" onclick="descargarArchivo(${archivo.id})">
+                                    <i class="bi bi-download"></i> Descargar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -200,6 +223,80 @@ async function verArchivosFactura(idSolicitud) {
     } catch (error) {
         console.error('Error:', error);
         mostrarAlerta('Error', 'No se pudieron obtener los archivos');
+    } finally {
+        ocultarLoading();
+    }
+}
+
+/**
+ * Ver imagen completa en modal
+ */
+async function verImagenCompleta(idArchivo, nombreArchivo) {
+    console.log('Intentando ver imagen:', idArchivo, nombreArchivo);
+    mostrarLoading();
+    
+    try {
+        const url = `controller/archivo_controller.php?accion=descargar&id=${idArchivo}`;
+        console.log('Fetching desde:', url);
+        
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        console.log('Resultado:', result);
+        
+        if (result.success && result.data) {
+            const modalId = 'modalImagenCompleta';
+            let modalElement = document.getElementById(modalId);
+            
+            if (!modalElement) {
+                console.log('Creando modal de imagen');
+                modalElement = document.createElement('div');
+                modalElement.id = modalId;
+                modalElement.className = 'modal fade';
+                modalElement.innerHTML = `
+                    <div class="modal-dialog modal-xl modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="modalImagenCompletaTitulo"></h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center bg-light p-4">
+                                <img id="modalImagenCompletaImg" class="img-fluid" style="max-width: 100%; height: auto;" alt="">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-primary" onclick="descargarArchivo(${idArchivo})">
+                                    <i class="bi bi-download"></i> Descargar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modalElement);
+            }
+            
+            const titulo = document.getElementById('modalImagenCompletaTitulo');
+            const imagen = document.getElementById('modalImagenCompletaImg');
+            
+            if (titulo) titulo.textContent = nombreArchivo;
+            if (imagen) {
+                const imgSrc = `data:${result.data.mime_type};base64,${result.data.archivo}`;
+                console.log('Estableciendo src de imagen, tamaño base64:', result.data.archivo.length);
+                imagen.src = imgSrc;
+                imagen.alt = nombreArchivo;
+            }
+            
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            
+            console.log('Modal mostrado');
+        } else {
+            console.error('Error en resultado:', result);
+            mostrarAlerta('Error', result.message || 'No se pudo cargar la imagen');
+        }
+    } catch (error) {
+        console.error('Error en verImagenCompleta:', error);
+        mostrarAlerta('Error', 'No se pudo cargar la imagen: ' + error.message);
     } finally {
         ocultarLoading();
     }
@@ -439,3 +536,6 @@ document.addEventListener('DOMContentLoaded', function() {
         cargarFacturasListas();
     });
 });
+
+// Exportar funciones para uso global
+window.verImagenCompleta = verImagenCompleta;

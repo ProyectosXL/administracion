@@ -10,28 +10,8 @@ $titulo_pagina = 'Directores';
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons - Versión más reciente -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- Fallback para Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.0/font/bootstrap-icons.min.css" crossorigin="anonymous">
-    
-    <!-- Estilo específico para iconos Bootstrap -->
-    <style>
-        .bi {
-            font-family: "bootstrap-icons" !important;
-            font-style: normal;
-            font-weight: normal;
-            font-variant: normal;
-            text-transform: none;
-            line-height: 1;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
-        .bi-arrow-clockwise::before {
-            content: "\f128";
-        }
-    </style>
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/global.css?v=<?php echo time(); ?>">
@@ -291,18 +271,19 @@ $titulo_pagina = 'Directores';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Scripts personalizados -->
-        <!-- Scripts personalizados -->
     <script src="js/modal_global.js?v=<?php echo time(); ?>"></script>
     <script src="js/solicitud_listado.js?v=<?php echo time(); ?>"></script>
     <script src="js/directores_solicitud.js?v=<?php echo time(); ?>"></script>
-</body>
-</html>"></script>
-    <script src="js/solicitud_form.js?v=<?php echo time(); ?>"></script>
-    <script src="js/solicitud_listado.js?v=<?php echo time(); ?>"></script>
     
     <script>
         // Cargar directores en filtro cuando se muestra listado
         document.getElementById('listado-tab')?.addEventListener('shown.bs.tab', async function() {
+            // Cargar solicitudes
+            if (typeof cargarSolicitudes === 'function') {
+                cargarSolicitudes();
+            }
+            
+            // Cargar directores para filtro
             try {
                 const response = await fetch('controller/solicitud_controller.php?accion=obtener_directores');
                 const result = await response.json();
@@ -314,8 +295,8 @@ $titulo_pagina = 'Directores';
                     
                     result.data.forEach(director => {
                         const option = document.createElement('option');
-                        option.value = director;
-                        option.textContent = director;
+                        option.value = director.id_director;
+                        option.textContent = director.nombre_director;
                         selectFiltro.appendChild(option);
                     });
                     
