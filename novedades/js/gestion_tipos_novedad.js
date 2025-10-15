@@ -116,9 +116,6 @@ class GestionTiposApp {
                     <button class="btn btn-outline-primary btn-action" onclick="app.editarTipo(${tipo.id})" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-outline-danger btn-action" onclick="app.eliminarTipo(${tipo.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
                 </div>
             </td>
         `;
@@ -265,6 +262,9 @@ class GestionTiposApp {
         modal.show();
     }
 
+    // FUNCIÓN DESHABILITADA: No se permite eliminar tipos de novedad
+    // Solo se permite editar tipos existentes
+    /*
     eliminarTipo(id) {
         const tipo = this.tipos.find(t => t.id == id);
         if (!tipo) {
@@ -279,6 +279,7 @@ class GestionTiposApp {
         const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
         modal.show();
     }
+    */
 
     async guardarTipo() {
         try {
@@ -347,6 +348,8 @@ class GestionTiposApp {
         }
     }
 
+    // FUNCIÓN DESHABILITADA: No se permite eliminar tipos de novedad
+    /*
     async confirmarEliminacion() {
         if (!this.tipoAEliminar) {
             return;
@@ -380,6 +383,7 @@ class GestionTiposApp {
             this.tipoAEliminar = null;
         }
     }
+    */
 
     limpiarFormulario() {
         document.getElementById('formTipo').reset();
@@ -472,9 +476,11 @@ function guardarTipo() {
     app.guardarTipo();
 }
 
+/*
 function confirmarEliminacion() {
     app.confirmarEliminacion();
 }
+*/
 
 // Inicializar aplicación
 let app;

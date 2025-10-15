@@ -306,7 +306,8 @@ if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
         </div>
     </div>
 
-    <!-- Modal Confirmar Eliminación -->
+    <!-- Modal Confirmar Eliminación - DESHABILITADO -->
+    <!-- No se permite eliminar tipos de novedad, solo editar
     <div class="modal fade" id="modalEliminar" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -335,6 +336,7 @@ if (Usuario::getTipoUsuario() !== Usuario::TIPO_RRHH) {
             </div>
         </div>
     </div>
+    -->
 
     <!-- Incluir modal de manual -->
     <?php include 'components/manual_modal.php'; ?>

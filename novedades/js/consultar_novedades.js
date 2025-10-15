@@ -898,23 +898,14 @@ function mostrarModalDetalleCompleto(novedad) {
             // Construir lista de aplicaciones - SOLO vendedora y sub-encargada
             let aplicacionesPremio = [];
             
-            // DEBUG EXTENSIVO - Ver EXACTAMENTE qué valores llegan desde el backend
-            console.log('🏆 DEBUG PREMIO LOCAL ========================================');
-            console.log('🏆 aplica_vendedora RAW:', novedad.aplica_vendedora, 'TIPO:', typeof novedad.aplica_vendedora);
-            console.log('🏆 aplica_sub_encargada RAW:', novedad.aplica_sub_encargada, 'TIPO:', typeof novedad.aplica_sub_encargada);
-            
-            // Verificación robusta para TODOS los posibles valores de campos BIT desde SQL Server
-            const aplicaVendedora = Boolean(novedad.aplica_vendedora) && novedad.aplica_vendedora !== 0 && novedad.aplica_vendedora !== '0' && novedad.aplica_vendedora !== false;
-            const aplicaSubEncargada = Boolean(novedad.aplica_sub_encargada) && novedad.aplica_sub_encargada !== 0 && novedad.aplica_sub_encargada !== '0' && novedad.aplica_sub_encargada !== false;
-            
-            console.log('🏆 aplicaVendedora FINAL:', aplicaVendedora);
-            console.log('🏆 aplicaSubEncargada FINAL:', aplicaSubEncargada);
+            // Conversión robusta y simple usando doble negación (!!)
+            // Cualquier valor truthy no-cero se considera true
+            const aplicaVendedora = !!(novedad.aplica_vendedora && novedad.aplica_vendedora != 0 && novedad.aplica_vendedora != '0');
+            const aplicaSubEncargada = !!(novedad.aplica_sub_encargada && novedad.aplica_sub_encargada != 0 && novedad.aplica_sub_encargada != '0');
             
             if (aplicaVendedora) aplicacionesPremio.push('Vendedora');
             if (aplicaSubEncargada) aplicacionesPremio.push('Sub-Encargada');
             const aplicaTexto = aplicacionesPremio.length > 0 ? aplicacionesPremio.join(', ') : 'No especificado';
-            
-            console.log('🏆 aplicaTexto FINAL:', aplicaTexto);
             
             html += `
                 <div class="col-12">
@@ -1195,7 +1186,7 @@ function mostrarModalDetalleCompleto(novedad) {
                 </div>`;
             break;
 
-        case 39: // Reemplazo
+        case 53: // Reemplazo
             // Reemplazo: Similar a Nuevo Puesto
             let puestoReemplazoDetalle = '';
             
@@ -1217,7 +1208,8 @@ function mostrarModalDetalleCompleto(novedad) {
             }
             
             // Determinar tipo de reemplazo y fechas
-            const tipoReemplazo = novedad.tipo_reemplazo || 'permanente';
+            // IMPORTANTE: El campo en la BD es tipo_nuevo_puesto, no tipo_reemplazo
+            const tipoReemplazo = novedad.tipo_nuevo_puesto || 'permanente';
             const esPermanenteReemplazo = tipoReemplazo === 'permanente';
             const iconoTipoReemplazo = esPermanenteReemplazo ? 'fa-check-circle text-success' : 'fa-clock text-warning';
             const textTipoReemplazo = esPermanenteReemplazo ? 'Permanente' : 'Temporario';
@@ -1258,15 +1250,19 @@ function mostrarModalDetalleCompleto(novedad) {
                 </div>`;
             break;
 
-        case 40: // Aumento Salarial
-            const tipoAumento = novedad.tipo_aumento || 'porcentaje';
-            const esPorcentaje = tipoAumento === 'porcentaje';
+        case 54: // Aumento Salarial
+            // Detectar tipo de aumento basándose en qué campo tiene valor
+            const tienePorcentaje = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
+            const tieneMonto = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0;
+            const esPorcentaje = tienePorcentaje;
             const iconoAumento = esPorcentaje ? 'fa-percentage text-primary' : 'fa-dollar-sign text-success';
             const textTipoAumento = esPorcentaje ? 'Porcentaje' : 'Monto Fijo';
             
             let valorAumento = '';
             if (esPorcentaje && novedad.porcentaje_1) {
-                valorAumento = parseFloat(novedad.porcentaje_1).toFixed(2) + '%';
+                // IMPORTANTE: El porcentaje se guarda como decimal (0.21), multiplicar por 100 para mostrar (21%)
+                const porcentajeDisplay = (parseFloat(novedad.porcentaje_1) * 100).toFixed(2);
+                valorAumento = porcentajeDisplay + '%';
             } else if (!esPorcentaje && novedad.valor_numerico) {
                 valorAumento = NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico;
             }
@@ -1536,13 +1532,34 @@ function actualizarEstadisticas() {
     const centrosCostosUnicos = new Set(novedadesData.map(n => n.descripcion_centro_costos || 'Centro de Costos ' + n.codigo_centro_costos)).size;
     const empleadosUnicos = new Set(novedadesData.map(n => n.legajo)).size;
     
-    // Solo sumar valores monetarios (tipos 3, 4 y los nuevos tipos 32-38)
+    // Sumar valores monetarios según el tipo de novedad
     const valorTotal = novedadesData.reduce((sum, n) => {
         const tipo = parseInt(n.tipo_novedad);
-        // Tipos con valores monetarios: 3, 4 (salarios y premios) y 32-38 (nuevos tipos)
-        if (tipo === 3 || tipo === 4 || (tipo >= 32 && tipo <= 38)) {
-            return sum + (parseFloat(n.valor_numerico) || 0);
+        const valorNumerico = parseFloat(n.valor_numerico) || 0;
+        
+        // Tipos con valores monetarios directos en valor_numerico:
+        // 3: Nuevo salario, 4: Ajuste premios
+        // 12/32: Plus de caja, 13/33: Plus sub-encargada, 14/34: Plus encargada
+        // 15/35: Premio local, 18/38: Premios - Ajuste General
+        if (tipo === 3 || tipo === 4 || 
+            tipo === 12 || tipo === 32 || 
+            tipo === 13 || tipo === 33 || 
+            tipo === 14 || tipo === 34 || 
+            tipo === 15 || tipo === 35 || 
+            tipo === 18 || tipo === 38) {
+            return sum + valorNumerico;
         }
+        
+        // Tipo 54: Aumento Salarial - solo sumar si es tipo monto (no porcentaje)
+        if (tipo === 54) {
+            const tieneMonto = valorNumerico > 0;
+            const tienePorcentaje = n.porcentaje_1 && parseFloat(n.porcentaje_1) > 0;
+            // Solo sumar si tiene monto y NO tiene porcentaje (para evitar contar los de tipo porcentaje)
+            if (tieneMonto && !tienePorcentaje) {
+                return sum + valorNumerico;
+            }
+        }
+        
         return sum;
     }, 0);
 
@@ -1647,26 +1664,72 @@ function exportarExcel() {
         return;
     }
 
-
-    // Crear datos para XLSX
-    const headers = ['Legajo', 'Nombre', 'Apellido', 'Sucursal', 'Tipo de Novedad', 'Fecha Vigencia', 'Valor', 'Fecha Permiso', 'Compensa', 'Observaciones', 'Fecha Registro'];
+    // Crear datos para XLSX - ACTUALIZADO según columnas de la tabla actual
+    const headers = [
+        'Fecha Registro',
+        'Legajo', 
+        'Empleado',
+        'Centro de Costos',
+        'Tipo de Novedad',
+        'Período',
+        'Vigencia Desde',
+        'Vigencia Hasta',
+        'Valor',
+        'Estado',
+        'Observaciones'
+    ];
+    
     const data = [
         headers,
         ...datosFiltrados.map(novedad => [
+            // Fecha Registro
+            NovedadesApp.formatearFecha(novedad.fecha_creacion),
+            
+            // Legajo
             novedad.legajo,
-            novedad.nombre,
-            novedad.apellido,
-            novedad.sucursal,
+            
+            // Empleado (Nombre completo)
+            `${novedad.nombre} ${novedad.apellido}`,
+            
+            // Centro de Costos
+            novedad.descripcion_centro_costos || novedad.codigo_centro_costos || novedad.sucursal || '',
+            
+            // Tipo de Novedad
             novedad.tipo_descripcion,
-            (novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : ''),
-            (() => { 
-                const ctx = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero'; 
-                return (novedad.valor_numerico && parseFloat(novedad.valor_numerico)!==0) ? (NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, ctx) : novedad.valor_numerico) : ''; 
+            
+            // Período
+            novedad.periodo_mes && novedad.periodo_anio ? 
+                `${novedad.periodo_mes.toString().padStart(2, '0')}/${novedad.periodo_anio}` : '',
+            
+            // Vigencia Desde
+            novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '',
+            
+            // Vigencia Hasta
+            novedad.fecha_vigencia_hasta ? NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta) : '',
+            
+            // Valor - usar la misma lógica que en la tabla
+            (() => {
+                const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
+                if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                    return NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico;
+                }
+                return '-';
             })(),
-            (novedad.fecha_permiso ? NovedadesApp.formatearFecha(novedad.fecha_permiso) : ''),
-            novedad.compensa ? 'Sí' : 'No',
-            (novedad.observaciones || ''),
-            NovedadesApp.formatearFecha(novedad.fecha_creacion)
+            
+            // Estado
+            (() => {
+                const estados = {
+                    1: 'Enviada',
+                    2: 'En Revisión',
+                    3: 'Aprobada',
+                    4: 'A Revisar',
+                    5: 'Procesada'
+                };
+                return estados[novedad.estado_numero] || novedad.estado || '';
+            })(),
+            
+            // Observaciones
+            novedad.observaciones || ''
         ])
     ];
 
@@ -1677,8 +1740,25 @@ function exportarExcel() {
     }
 
     const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Ajustar anchos de columnas
+    ws['!cols'] = [
+        { wch: 12 }, // Fecha Registro
+        { wch: 8 },  // Legajo
+        { wch: 30 }, // Empleado
+        { wch: 20 }, // Centro de Costos
+        { wch: 25 }, // Tipo de Novedad
+        { wch: 10 }, // Período
+        { wch: 12 }, // Vigencia Desde
+        { wch: 12 }, // Vigencia Hasta
+        { wch: 20 }, // Valor
+        { wch: 12 }, // Estado
+        { wch: 40 }  // Observaciones
+    ];
+    
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Novedades');
+    
     const fecha = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `novedades_${fecha}.xlsx`);
 
@@ -1710,62 +1790,177 @@ function imprimirReporte() {
     // Crear ventana de impresión
     const ventanaImpresion = window.open('', '_blank');
     
+    // Preparar información de filtros aplicados
+    let filtrosInfo = [];
+    if (filtrosActivos.legajo) filtrosInfo.push(`Legajo: ${filtrosActivos.legajo}`);
+    if (filtrosActivos.empleado) filtrosInfo.push(`Empleado: ${filtrosActivos.empleado}`);
+    if (filtrosActivos.sucursal) {
+        const selectSucursal = document.getElementById('filtro-sucursal');
+        const textoSucursal = selectSucursal.options[selectSucursal.selectedIndex].text;
+        filtrosInfo.push(`Centro de Costos: ${textoSucursal}`);
+    }
+    if (filtrosActivos.tipo) {
+        const selectTipo = document.getElementById('filtro-tipo');
+        const textoTipo = selectTipo.options[selectTipo.selectedIndex].text;
+        filtrosInfo.push(`Tipo: ${textoTipo}`);
+    }
+    if (filtrosActivos.estado) {
+        const selectEstado = document.getElementById('filtro-estado');
+        const textoEstado = selectEstado.options[selectEstado.selectedIndex].text;
+        filtrosInfo.push(`Estado: ${textoEstado}`);
+    }
+    
     let html = `
         <html>
         <head>
             <title>Reporte de Novedades</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .header { text-align: center; margin-bottom: 30px; }
-                .header h1 { color: #0d6efd; margin-bottom: 5px; }
-                .header p { color: #6c757d; margin: 0; }
-                .periodo { background: #e3f2fd; padding: 10px; text-align: center; margin-bottom: 20px; }
-                table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f8f9fa; font-weight: bold; }
+                @page { size: landscape; margin: 1cm; }
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    margin: 0; 
+                    padding: 15px;
+                    font-size: 10pt;
+                }
+                .header { 
+                    text-align: center; 
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #0d6efd;
+                    padding-bottom: 10px;
+                }
+                .header h1 { 
+                    color: #0d6efd; 
+                    margin: 0 0 5px 0;
+                    font-size: 18pt;
+                }
+                .header p { 
+                    color: #6c757d; 
+                    margin: 0;
+                    font-size: 11pt;
+                }
+                .info-section {
+                    background: #f8f9fa;
+                    padding: 10px;
+                    margin-bottom: 15px;
+                    border-radius: 4px;
+                    border-left: 4px solid #0d6efd;
+                }
+                .info-section p {
+                    margin: 3px 0;
+                    font-size: 9pt;
+                }
+                .filtros-aplicados {
+                    font-size: 9pt;
+                    color: #495057;
+                    font-style: italic;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    font-size: 9pt;
+                }
+                th, td { 
+                    border: 1px solid #dee2e6; 
+                    padding: 6px 8px; 
+                    text-align: left; 
+                }
+                th { 
+                    background-color: #0d6efd; 
+                    color: white;
+                    font-weight: 600;
+                    font-size: 9pt;
+                }
+                tr:nth-child(even) { background-color: #f8f9fa; }
                 .text-center { text-align: center; }
-                .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #6c757d; }
+                .badge {
+                    padding: 3px 6px;
+                    border-radius: 3px;
+                    font-size: 8pt;
+                    font-weight: 500;
+                }
+                .badge-enviada { background-color: #cfe2ff; color: #084298; }
+                .badge-revision { background-color: #fff3cd; color: #664d03; }
+                .badge-aprobada { background-color: #d1e7dd; color: #0f5132; }
+                .badge-revisar { background-color: #f8d7da; color: #842029; }
+                .badge-procesada { background-color: #d3d3d4; color: #141619; }
+                .footer { 
+                    margin-top: 20px; 
+                    text-align: center; 
+                    font-size: 8pt; 
+                    color: #6c757d;
+                    border-top: 1px solid #dee2e6;
+                    padding-top: 10px;
+                }
+                @media print {
+                    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                    .no-print { display: none; }
+                }
             </style>
         </head>
         <body>
             <div class="header">
-                <h1>Sistema de Novedades RRHH</h1>
-                <p>Reporte de Novedades Registradas</p>
+                <h1>Reporte de Novedades RRHH</h1>
+                <p>Listado Completo de Novedades</p>
             </div>
             
-            <div class="periodo">
-                <strong>Período: 28/07/2025 - 27/08/2025</strong>
+            <div class="info-section">
+                <p><strong>Total de registros:</strong> ${datosFiltrados.length}</p>
+                <p><strong>Fecha de generación:</strong> ${new Date().toLocaleDateString('es-AR')} ${new Date().toLocaleTimeString('es-AR')}</p>
+                ${filtrosInfo.length > 0 ? `<p class="filtros-aplicados"><strong>Filtros aplicados:</strong> ${filtrosInfo.join(' | ')}</p>` : ''}
             </div>
-            
-            <p><strong>Total de registros:</strong> ${datosFiltrados.length}</p>
-            <p><strong>Fecha de generación:</strong> ${new Date().toLocaleDateString('es-AR')}</p>
             
             <table>
                 <thead>
                     <tr>
-                        <th>Legajo</th>
-                        <th>Empleado</th>
-                        <th>Sucursal</th>
-                        <th>Tipo de Novedad</th>
-                        <th>Fecha Vigencia</th>
-                        <th>Valor</th>
-                        <th>Fecha Registro</th>
+                        <th style="width: 8%;">Fecha Registro</th>
+                        <th style="width: 5%;">Legajo</th>
+                        <th style="width: 15%;">Empleado</th>
+                        <th style="width: 12%;">Centro de Costos</th>
+                        <th style="width: 15%;">Tipo de Novedad</th>
+                        <th style="width: 7%;">Período</th>
+                        <th style="width: 8%;">Vigencia Desde</th>
+                        <th style="width: 8%;">Vigencia Hasta</th>
+                        <th style="width: 10%;">Valor</th>
+                        <th style="width: 8%;">Estado</th>
+                        <th style="width: 14%;">Observaciones</th>
                     </tr>
                 </thead>
                 <tbody>
     `;
 
     datosFiltrados.forEach(novedad => {
-        const contexto = NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad));
+        const contexto = NovedadesApp.contextoDesdeTipo ? NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)) : 'numero';
+        const valor = (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) 
+            ? (NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : novedad.valor_numerico)
+            : '-';
+        
+        const periodoDisplay = (novedad.periodo_mes && novedad.periodo_anio) 
+            ? `${novedad.periodo_mes.toString().padStart(2, '0')}/${novedad.periodo_anio}` 
+            : '-';
+        
+        // Estados
+        const estados = {
+            1: { texto: 'Enviada', clase: 'badge-enviada' },
+            2: { texto: 'En Revisión', clase: 'badge-revision' },
+            3: { texto: 'Aprobada', clase: 'badge-aprobada' },
+            4: { texto: 'A Revisar', clase: 'badge-revisar' },
+            5: { texto: 'Procesada', clase: 'badge-procesada' }
+        };
+        const estadoInfo = estados[novedad.estado_numero] || { texto: novedad.estado || '-', clase: '' };
+        
         html += `
             <tr>
-                <td>${novedad.legajo}</td>
+                <td style="font-size: 8pt;">${NovedadesApp.formatearFecha(novedad.fecha_creacion)}</td>
+                <td><strong>${novedad.legajo}</strong></td>
                 <td>${novedad.nombre} ${novedad.apellido}</td>
-                <td>${novedad.centro_costos_display || novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td>
-                <td>${novedad.tipo_descripcion}</td>
-                <td>${novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '-'}</td>
-                <td>${novedad.valor_numerico ? NovedadesApp.formatearValor(novedad.valor_numerico, contexto) : '-'}</td>
-                <td>${NovedadesApp.formatearFecha(novedad.fecha_creacion)}</td>
+                <td style="font-size: 8pt;">${novedad.descripcion_centro_costos || novedad.codigo_centro_costos || novedad.sucursal || '-'}</td>
+                <td style="font-size: 8pt;">${novedad.tipo_descripcion}</td>
+                <td class="text-center" style="font-size: 8pt;">${periodoDisplay}</td>
+                <td style="font-size: 8pt;">${novedad.fecha_vigencia ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : '-'}</td>
+                <td style="font-size: 8pt;">${novedad.fecha_vigencia_hasta ? NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta) : '-'}</td>
+                <td><strong>${valor}</strong></td>
+                <td class="text-center"><span class="badge ${estadoInfo.clase}">${estadoInfo.texto}</span></td>
+                <td style="font-size: 8pt;">${novedad.observaciones || '-'}</td>
             </tr>
         `;
     });
@@ -1775,7 +1970,7 @@ function imprimirReporte() {
             </table>
             
             <div class="footer">
-                <p>Generado por Sistema de Novedades RRHH - ${new Date().toLocaleString('es-AR')}</p>
+                <p>Sistema de Novedades RRHH | Generado el ${new Date().toLocaleDateString('es-AR')} a las ${new Date().toLocaleTimeString('es-AR')}</p>
             </div>
         </body>
         </html>
@@ -1793,69 +1988,490 @@ function imprimirReporte() {
 /**
  * Imprimir novedad individual
  */
-function imprimirNovedad(id) {
-    console.log('🔍 Iniciando verDetalle para ID:', id);
+async function imprimirNovedad(id) {
+    console.log('Iniciando impresión para ID:', id);
     
     if (!id) {
-        console.error('❌ ID de novedad no válido:', id);
+        console.error('ID de novedad no válido:', id);
         mostrarAlerta('Error: ID de novedad no válido', 'danger');
         return;
     }
 
-    // Buscar la novedad en los datos actuales
-    const novedad = novedadesData.find(n => n.id == id);
-    if (!novedad) return;
+    try {
+        // Obtener datos COMPLETOS desde el backend (igual que mostrarDetalleNovedad)
+        const novedad = await NovedadesApp.request('get_novedad', { id: id });
+        
+        if (!novedad) {
+            mostrarAlerta('Novedad no encontrada', 'danger');
+            return;
+        }
 
-    const ventanaImpresion = window.open('', '_blank');
+        const tipo = parseInt(novedad.tipo_novedad);
+        const ventanaImpresion = window.open('', '_blank');
     
     let html = `
         <html>
         <head>
-            <title>Detalle de Novedad</title>
+            <title>Novedad - ${novedad.tipo_descripcion} - ${novedad.nombre} ${novedad.apellido}</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .header { text-align: center; margin-bottom: 30px; }
-                .header h1 { color: #0d6efd; margin-bottom: 5px; }
-                .section { margin-bottom: 20px; border: 1px solid #ddd; padding: 15px; }
-                .section h3 { margin-top: 0; color: #0d6efd; }
-                table { width: 100%; }
-                th, td { padding: 8px; text-align: left; }
-                th { background-color: #f8f9fa; }
+                @page { 
+                    size: A4; 
+                    margin: 15mm; 
+                }
+                body { 
+                    font-family: 'Segoe UI', Arial, sans-serif; 
+                    margin: 0;
+                    padding: 15px;
+                    font-size: 11pt;
+                    line-height: 1.4;
+                    color: #212529;
+                }
+                .container {
+                    max-width: 100%;
+                }
+                .header { 
+                    text-align: center; 
+                    margin-bottom: 20px; 
+                    border-bottom: 2px solid #333;
+                    padding-bottom: 12px;
+                }
+                .header h1 { 
+                    color: #212529; 
+                    margin: 0 0 5px 0;
+                    font-size: 18pt;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .header .subtitle { 
+                    color: #495057; 
+                    margin: 3px 0;
+                    font-size: 10pt;
+                }
+                .section { 
+                    margin-bottom: 15px;
+                    page-break-inside: avoid;
+                }
+                .section-title { 
+                    background-color: #f8f9fa;
+                    color: #212529; 
+                    padding: 6px 10px;
+                    margin: 0 0 10px 0;
+                    font-size: 11pt;
+                    font-weight: 600;
+                    border-left: 4px solid #495057;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse;
+                    margin-bottom: 8px;
+                }
+                th, td { 
+                    padding: 6px 10px;
+                    text-align: left;
+                    border-bottom: 1px solid #dee2e6;
+                    vertical-align: top;
+                }
+                th { 
+                    background-color: #f8f9fa;
+                    font-weight: 600;
+                    width: 32%;
+                    font-size: 10pt;
+                }
+                td {
+                    font-size: 10pt;
+                }
+                .value-highlight { 
+                    font-weight: 600;
+                    font-size: 14pt;
+                }
+                .badge { 
+                    display: inline-block; 
+                    padding: 3px 8px;
+                    border-radius: 3px;
+                    font-size: 9pt;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
+                .badge-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+                .badge-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+                .badge-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+                .badge-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+                .badge-primary { background-color: #cfe2ff; color: #084298; border: 1px solid #b6d4fe; }
+                .badge-secondary { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+                .alert-box {
+                    background-color: #fff3cd;
+                    border-left: 3px solid #856404;
+                    padding: 8px 12px;
+                    margin: 8px 0;
+                    font-size: 10pt;
+                }
+                .footer { 
+                    margin-top: 20px;
+                    padding-top: 12px;
+                    text-align: center;
+                    font-size: 9pt;
+                    color: #6c757d;
+                    border-top: 1px solid #dee2e6;
+                }
+                .row-data {
+                    display: table;
+                    width: 100%;
+                    margin-bottom: 6px;
+                }
+                .row-data .label {
+                    display: table-cell;
+                    width: 32%;
+                    font-weight: 600;
+                    padding: 4px 0;
+                    font-size: 10pt;
+                }
+                .row-data .value {
+                    display: table-cell;
+                    padding: 4px 0;
+                    font-size: 10pt;
+                }
+                @media print {
+                    body { padding: 0; }
+                    .section { page-break-inside: avoid; }
+                    .no-print { display: none; }
+                }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>Detalle de Novedad</h1>
-                <p>Período: 28/07/2025 - 27/08/2025</p>
-            </div>
-            
+            <div class="container">
+                <div class="header">
+                    <h1>Registro de Novedad</h1>
+                    <div class="subtitle">Sistema de Gestión de Novedades - Recursos Humanos</div>
+                    <div class="subtitle">Período: ${(novedad.periodo_mes && novedad.periodo_anio) ? novedad.periodo_mes + '/' + novedad.periodo_anio : 'Período Actual'}</div>
+                </div>
+                
+                <div class="section">
+                    <h2 class="section-title">Información del Empleado</h2>
+                    <table>
+                        <tr><th>Legajo</th><td>${novedad.legajo}</td></tr>
+                        <tr><th>Nombre Completo</th><td>${novedad.nombre} ${novedad.apellido}</td></tr>
+                        <tr><th>Centro de Costos</th><td>${novedad.centro_costos_display || novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td></tr>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <h2 class="section-title">Información General de la Novedad</h2>
+                    <table>
+                        <tr><th>Tipo de Novedad</th><td><span class="badge badge-primary">${novedad.tipo_descripcion}</span></td></tr>
+                        <tr><th>Estado</th><td><span class="badge ${getEstadoClass(novedad.estado_numero || 1)}">${getEstadoText(novedad.estado_numero || 1)}</span></td></tr>
+                        <tr><th>Fecha de Registro</th><td>${NovedadesApp.formatearFecha(novedad.fecha_creacion)}</td></tr>
+                        ${novedad.fecha_vigencia ? `<tr><th>Fecha de Vigencia</th><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
+                    </table>
+                </div>
+    `;
+
+    // Agregar detalles específicos según el tipo de novedad
+    switch(tipo) {
+        case 1: // Cambio de sucursal
+            let nuevaSucursal = 'No especificado';
+            if (novedad.observaciones) {
+                let match = novedad.observaciones.match(/Nueva sucursal:\s*<[^>]*>([^<]+)<[^>]*>/);
+                if (match) {
+                    nuevaSucursal = match[1].trim();
+                } else {
+                    match = novedad.observaciones.match(/Nueva sucursal:\s*([^-<\\n]+)/);
+                    if (match) nuevaSucursal = match[1].trim();
+                }
+            }
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Cambio de Sucursal</h2>
+                    <table>
+                        <tr><th>Sucursal Actual</th><td>${novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td></tr>
+                        <tr><th>Nueva Sucursal</th><td>${nuevaSucursal}</td></tr>
+                    </table>
+                </div>`;
+            break;
+
+        case 2: // Nuevo puesto
+            const tipoPuesto = novedad.tipo_nuevo_puesto || 'permanente';
+            const esPermanente = tipoPuesto === 'permanente';
+            let fechaHasta = '';
+            if (novedad.fecha_vigencia_hasta) {
+                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
+                    fechaHasta = novedad.fecha_vigencia_hasta.date.split(' ')[0];
+                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
+                    fechaHasta = novedad.fecha_vigencia_hasta.split(' ')[0];
+                }
+            }
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Cambio de Puesto</h2>
+                    <table>
+                        <tr><th>Nuevo Puesto</th><td>${novedad.puesto || 'No especificado'}</td></tr>
+                        <tr><th>Tipo de Cambio</th><td><span class="badge ${esPermanente ? 'badge-success' : 'badge-warning'}">${esPermanente ? 'Permanente' : 'Temporario'}</span></td></tr>
+                        ${novedad.fecha_vigencia ? `<tr><th>Fecha de Inicio</th><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
+                        ${(!esPermanente && fechaHasta) ? `<tr><th>Fecha de Finalización</th><td>${NovedadesApp.formatearFecha(fechaHasta)}</td></tr>` : ''}
+                    </table>
+                    ${(!esPermanente && fechaHasta) ? `<div class="alert-box">Cambio temporario. El empleado regresará a su puesto original el ${NovedadesApp.formatearFecha(fechaHasta)}.</div>` : ''}
+                </div>`;
+            break;
+
+        case 3: // Nuevo salario neto
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles del Nuevo Salario</h2>
+                        <table>
+                            <tr><th>Nuevo Salario Neto</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
+                        </table>
+                    </div>`;
+            }
+            break;
+
+        case 4: // Ajuste de premios
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles del Ajuste de Premios</h2>
+                        <table>
+                            <tr><th>Monto del Ajuste</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
+                        </table>
+                    </div>`;
+            }
+            break;
+
+        case 5: // Horas extras
+        case 6: // Horas adicionales
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles de ${tipo === 5 ? 'Horas Extras' : 'Horas Adicionales'}</h2>
+                        <table>
+                            <tr><th>Cantidad de Horas</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'horas')}</td></tr>
+                        </table>
+                    </div>`;
+            }
+            break;
+
+        case 7: // Permiso
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Permiso</h2>
+                    <table>
+                        ${novedad.fecha_permiso ? `<tr><th>Fecha del Permiso</th><td>${NovedadesApp.formatearFecha(novedad.fecha_permiso)}</td></tr>` : ''}
+                        ${novedad.tipo_permiso ? `<tr><th>Tipo de Permiso</th><td>${novedad.tipo_permiso}</td></tr>` : ''}
+                        <tr><th>Compensa</th><td><span class="badge ${novedad.compensa ? 'badge-success' : 'badge-danger'}">${novedad.compensa ? 'Sí' : 'No'}</span></td></tr>
+                    </table>
+                </div>`;
+            break;
+
+        case 8: // Cortes
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles de Cortes</h2>
+                        <table>
+                            <tr><th>Cantidad de Cortes</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'cortes')}</td></tr>
+                        </table>
+                    </div>`;
+            }
+            break;
+
+        case 9: // Producción 25%
+        case 10: // Producción 50%
+        case 11: // Producción 100%
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                const porcentaje = tipo === 9 ? '25%' : (tipo === 10 ? '50%' : '100%');
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles de Producción</h2>
+                        <table>
+                            <tr><th>Porcentaje</th><td><span class="badge badge-success">${porcentaje}</span></td></tr>
+                            <tr><th>Cantidad de Unidades</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'unidades')}</td></tr>
+                        </table>
+                    </div>`;
+            }
+            break;
+
+        case 12: // Plus de caja (compatibilidad)
+        case 32: // Plus de caja
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles del Plus de Caja</h2>
+                        <table>
+                            <tr><th>Importe</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
+                        </table>
+                    </div>`;
+            }
+            break;
+
+        case 13: // Plus de Sub-Encargada (compatibilidad)
+        case 33: // Plus de Sub-Encargada
+            const tieneImporteSub = novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0;
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Plus de Sub-Encargada</h2>
+                    <table>
+                        <tr><th>Tipo de Plus</th><td><span class="badge ${tieneImporteSub ? 'badge-success' : 'badge-info'}">${tieneImporteSub ? 'Con importe fijo' : 'Sin importe fijo'}</span></td></tr>
+                        ${tieneImporteSub ? `<tr><th>Importe</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>` : ''}
+                    </table>
+                </div>`;
+            break;
+
+        case 14: // Plus de Encargada (compatibilidad)
+        case 34: // Plus de Encargada
+            const tieneImporteEnc = novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0;
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Plus de Encargada</h2>
+                    <table>
+                        <tr><th>Tipo de Plus</th><td><span class="badge ${tieneImporteEnc ? 'badge-success' : 'badge-info'}">${tieneImporteEnc ? 'Con importe fijo' : 'Sin importe fijo'}</span></td></tr>
+                        ${tieneImporteEnc ? `<tr><th>Importe</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>` : ''}
+                    </table>
+                </div>`;
+            break;
+
+        case 15: // Premio Local (compatibilidad)
+        case 35: // Premio Local
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                // Conversión robusta: cualquier valor "truthy" no-cero se considera true
+                const aplicaVendedora = !!(novedad.aplica_vendedora && novedad.aplica_vendedora != 0 && novedad.aplica_vendedora != '0');
+                const aplicaSubEnc = !!(novedad.aplica_sub_encargada && novedad.aplica_sub_encargada != 0 && novedad.aplica_sub_encargada != '0');
+                
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles del Premio Local</h2>
+                        <table>
+                            <tr><th>Importe del Premio</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
+                            <tr><th>Aplica a Vendedora</th><td><span class="badge ${aplicaVendedora ? 'badge-success' : 'badge-secondary'}">${aplicaVendedora ? 'Sí' : 'No'}</span></td></tr>
+                            <tr><th>Aplica a Sub-Encargada</th><td><span class="badge ${aplicaSubEnc ? 'badge-success' : 'badge-secondary'}">${aplicaSubEnc ? 'Sí' : 'No'}</span></td></tr>
+                        </table>
+                    </div>`;
+            }
+            break;
+
+        case 16: // Comisión Individual (compatibilidad)
+        case 36: // Comisión Individual
+            const tieneTope = Boolean(novedad.tiene_tope);
+            const porc1 = parseFloat(novedad.porcentaje_1 || 0) * 100;
+            const porc2 = parseFloat(novedad.porcentaje_2 || 0) * 100;
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles de la Comisión Individual</h2>
+                    <table>
+                        <tr><th>Tipo de Comisión</th><td><span class="badge badge-info">Individual</span></td></tr>
+                        <tr><th>Estructura</th><td><span class="badge ${tieneTope ? 'badge-warning' : 'badge-success'}">${tieneTope ? 'Con tope' : 'Sin tope'}</span></td></tr>
+                        ${tieneTope ? `
+                            <tr><th>Primer Porcentaje</th><td>${porc1.toFixed(2)}% (hasta el tope)</td></tr>
+                            <tr><th>Segundo Porcentaje</th><td>${porc2.toFixed(2)}% (sobre excedente)</td></tr>
+                        ` : `
+                            <tr><th>Porcentaje Único</th><td class="value-highlight">${porc1.toFixed(2)}%</td></tr>
+                        `}
+                    </table>
+                </div>`;
+            break;
+
+        case 17: // Comisión sobre Local (compatibilidad)
+        case 37: // Comisión sobre Local
+            const tieneTopeLocal = Boolean(novedad.tiene_tope);
+            const porc1Local = parseFloat(novedad.porcentaje_1 || 0) * 100;
+            const porc2Local = parseFloat(novedad.porcentaje_2 || 0) * 100;
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles de la Comisión sobre Local</h2>
+                    <table>
+                        <tr><th>Tipo de Comisión</th><td><span class="badge badge-primary">Sobre Local</span></td></tr>
+                        <tr><th>Estructura</th><td><span class="badge ${tieneTopeLocal ? 'badge-warning' : 'badge-success'}">${tieneTopeLocal ? 'Con tope' : 'Sin tope'}</span></td></tr>
+                        ${tieneTopeLocal ? `
+                            <tr><th>Primer Porcentaje</th><td>${porc1Local.toFixed(2)}% (hasta el tope)</td></tr>
+                            <tr><th>Segundo Porcentaje</th><td>${porc2Local.toFixed(2)}% (sobre excedente)</td></tr>
+                        ` : `
+                            <tr><th>Porcentaje Único</th><td class="value-highlight">${porc1Local.toFixed(2)}%</td></tr>
+                        `}
+                    </table>
+                </div>`;
+            break;
+
+        case 18: // Premios - Ajuste General (compatibilidad)
+        case 38: // Premios - Ajuste General
+            if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) !== 0) {
+                html += `
+                    <div class="section">
+                        <h2 class="section-title">Detalles del Ajuste General de Premios</h2>
+                        <table>
+                            <tr><th>Importe del Ajuste</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
+                            <tr><th>Descripción</th><td>Ajuste general aplicado a premios</td></tr>
+                        </table>
+                    </div>`;
+            }
+            break;
+
+        case 53: // Reemplazo
+            const tipoReemplazo = novedad.tipo_nuevo_puesto || 'permanente';
+            const esReemplazoPermanente = tipoReemplazo === 'permanente';
+            let fechaFinReemplazo = '';
+            if (novedad.fecha_vigencia_hasta) {
+                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
+                    fechaFinReemplazo = novedad.fecha_vigencia_hasta.date.split(' ')[0];
+                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
+                    fechaFinReemplazo = novedad.fecha_vigencia_hasta.split(' ')[0];
+                }
+            }
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Reemplazo</h2>
+                    <table>
+                        <tr><th>Puesto de Reemplazo</th><td>${novedad.puesto || 'No especificado'}</td></tr>
+                        <tr><th>Tipo de Reemplazo</th><td><span class="badge ${esReemplazoPermanente ? 'badge-success' : 'badge-warning'}">${esReemplazoPermanente ? 'Permanente' : 'Temporario'}</span></td></tr>
+                        ${novedad.fecha_vigencia ? `<tr><th>Fecha de Inicio</th><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
+                        ${(!esReemplazoPermanente && fechaFinReemplazo) ? `<tr><th>Fecha de Finalización</th><td>${NovedadesApp.formatearFecha(fechaFinReemplazo)}</td></tr>` : ''}
+                    </table>
+                    ${(!esReemplazoPermanente && fechaFinReemplazo) ? `<div class="alert-box">Reemplazo temporario. El empleado regresará a su puesto original el ${NovedadesApp.formatearFecha(fechaFinReemplazo)}.</div>` : ''}
+                </div>`;
+            break;
+
+        case 54: // Aumento Salarial
+            const tienePorcentaje = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
+            const tieneMonto = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0;
+            const porcentajeDisplay = tienePorcentaje ? (parseFloat(novedad.porcentaje_1) * 100).toFixed(2) : '';
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles del Aumento Salarial</h2>
+                    <table>
+                        <tr><th>Tipo de Aumento</th><td><span class="badge ${tienePorcentaje ? 'badge-primary' : 'badge-success'}">${tienePorcentaje ? 'Porcentaje' : 'Monto Fijo'}</span></td></tr>
+                        ${tienePorcentaje ? `
+                            <tr><th>Porcentaje de Aumento</th><td class="value-highlight">${porcentajeDisplay}%</td></tr>
+                        ` : `
+                            <tr><th>Monto del Aumento</th><td class="value-highlight">${NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda')}</td></tr>
+                        `}
+                    </table>
+                </div>`;
+            break;
+    }
+
+    // Agregar observaciones si existen
+    if (novedad.observaciones && novedad.observaciones.trim() !== '') {
+        html += `
             <div class="section">
-                <h3>Información del Empleado</h3>
-                <table>
-                    <tr><th>Legajo:</th><td>${novedad.legajo}</td></tr>
-                    <tr><th>Nombre:</th><td>${novedad.nombre} ${novedad.apellido}</td></tr>
-                    <tr><th>Centro de Costos:</th><td>${novedad.centro_costos_display || novedad.descripcion_centro_costos || 'Centro ' + novedad.codigo_centro_costos}</td></tr>
-                </table>
+                <h2 class="section-title">Observaciones</h2>
+                <p style="margin: 0; padding: 8px 10px; line-height: 1.5;">${novedad.observaciones}</p>
+            </div>`;
+    }
+
+    html += `
+            <div class="footer">
+                <p style="margin: 3px 0;"><strong>Sistema de Gestión de Novedades - Recursos Humanos</strong></p>
+                <p style="margin: 3px 0;">Documento generado el ${new Date().toLocaleDateString('es-AR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric'
+                })} a las ${new Date().toLocaleTimeString('es-AR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit'
+                })}</p>
+                <p style="margin: 3px 0;">Este documento es una copia fiel del registro en el sistema</p>
             </div>
-            
-            <div class="section">
-                <h3>Información de la Novedad</h3>
-                <table>
-                    <tr><th>Tipo:</th><td>${novedad.tipo_descripcion}</td></tr>
-                    <tr><th>Fecha de Registro:</th><td>${NovedadesApp.formatearFecha(novedad.fecha_creacion)}</td></tr>
-                    ${novedad.fecha_vigencia ? `<tr><th>Fecha de Vigencia:</th><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
-                    ${novedad.valor_numerico ? `<tr><th>Valor:</th><td>${NovedadesApp.formatearValor(novedad.valor_numerico, NovedadesApp.contextoDesdeTipo(parseInt(novedad.tipo_novedad)))}</td></tr>` : ''}
-                </table>
-            </div>
-            
-            ${novedad.observaciones ? `
-            <div class="section">
-                <h3>Observaciones</h3>
-                <p>${novedad.observaciones}</p>
-            </div>` : ''}
-            
-            <div style="margin-top: 50px; text-align: center; font-size: 12px; color: #6c757d;">
-                <p>Generado el ${new Date().toLocaleString('es-AR')}</p>
             </div>
         </body>
         </html>
@@ -1866,6 +2482,34 @@ function imprimirNovedad(id) {
     ventanaImpresion.onload = function() {
         ventanaImpresion.print();
     };
+        
+    } catch (error) {
+        console.error('Error al imprimir novedad:', error);
+        mostrarAlerta('Error al cargar datos para impresión: ' + error.message, 'danger');
+    }
+}
+
+// Funciones auxiliares para la impresión
+function getEstadoClass(estadoNumero) {
+    const clases = {
+        1: 'badge-info',
+        2: 'badge-warning',
+        3: 'badge-success',
+        4: 'badge-danger',
+        5: 'badge-secondary'
+    };
+    return clases[estadoNumero] || 'badge-secondary';
+}
+
+function getEstadoText(estadoNumero) {
+    const textos = {
+        1: 'Enviada',
+        2: 'En Revisión',
+        3: 'Aprobada',
+        4: 'A Revisar',
+        5: 'Procesada'
+    };
+    return textos[estadoNumero] || 'Estado Desconocido';
 }
 
 /**
@@ -2034,13 +2678,34 @@ function actualizarEstadisticasFiltros(datosFiltrados) {
     const centrosCostosUnicos = new Set(datosFiltrados.map(n => n.codigo_centro_costos)).size;
     const empleadosUnicos = new Set(datosFiltrados.map(n => n.legajo)).size;
     
-    // Solo sumar valores monetarios (tipos 3, 4 y los nuevos tipos 32-38)
+    // Sumar valores monetarios según el tipo de novedad
     const valorTotal = datosFiltrados.reduce((sum, n) => {
         const tipo = parseInt(n.tipo_novedad);
-        // Tipos con valores monetarios: 3, 4 (salarios y premios) y 32-38 (nuevos tipos)
-        if (tipo === 3 || tipo === 4 || (tipo >= 32 && tipo <= 38)) {
-            return sum + (parseFloat(n.valor_numerico) || 0);
+        const valorNumerico = parseFloat(n.valor_numerico) || 0;
+        
+        // Tipos con valores monetarios directos en valor_numerico:
+        // 3: Nuevo salario, 4: Ajuste premios
+        // 12/32: Plus de caja, 13/33: Plus sub-encargada, 14/34: Plus encargada
+        // 15/35: Premio local, 18/38: Premios - Ajuste General
+        if (tipo === 3 || tipo === 4 || 
+            tipo === 12 || tipo === 32 || 
+            tipo === 13 || tipo === 33 || 
+            tipo === 14 || tipo === 34 || 
+            tipo === 15 || tipo === 35 || 
+            tipo === 18 || tipo === 38) {
+            return sum + valorNumerico;
         }
+        
+        // Tipo 54: Aumento Salarial - solo sumar si es tipo monto (no porcentaje)
+        if (tipo === 54) {
+            const tieneMonto = valorNumerico > 0;
+            const tienePorcentaje = n.porcentaje_1 && parseFloat(n.porcentaje_1) > 0;
+            // Solo sumar si tiene monto y NO tiene porcentaje (para evitar contar los de tipo porcentaje)
+            if (tieneMonto && !tienePorcentaje) {
+                return sum + valorNumerico;
+            }
+        }
+        
         return sum;
     }, 0);
 
@@ -2222,16 +2887,14 @@ async function generarFormularioEdicion(novedad) {
                     </div>
                 </div>
                 
-                <!-- Tipo de Novedad -->
+                <!-- Tipo de Novedad (Solo lectura - NO editable) -->
                 <div class="col-md-6">
-                    <label for="edit-tipo-novedad" class="form-label">Tipo de Novedad</label>
-                    <select class="form-select" id="edit-tipo-novedad" required onchange="actualizarFormularioEdicionAsync()">
-                        ${tipos.map(t => `
-                            <option value="${t.id}" ${t.id == novedad.tipo_novedad ? 'selected' : ''}>
-                                ${t.descripcion}
-                            </option>
-                        `).join('')}
-                    </select>
+                    <label for="edit-tipo-novedad-display" class="form-label">Tipo de Novedad</label>
+                    <div class="form-control-plaintext bg-light p-2 rounded border">
+                        <span class="badge bg-primary">${tipos.find(t => t.id == novedad.tipo_novedad)?.descripcion || 'Desconocido'}</span>
+                    </div>
+                    <!-- Campo oculto para mantener el valor -->
+                    <input type="hidden" id="edit-tipo-novedad" value="${novedad.tipo_novedad}">
                 </div>
                 
                 <!-- Campos dinámicos según tipo -->
@@ -2274,6 +2937,11 @@ async function cargarDatosFormularioEdicion(novedad) {
         // Para cambio de puesto, cargar lista de puestos
         if (tipo === 2) {
             await cargarPuestosFormularioEdicion(novedad);
+        }
+        
+        // Para reemplazo, cargar lista de puestos
+        if (tipo === 53) {
+            await cargarPuestosReemplazoFormularioEdicion(novedad);
         }
         
     } catch (error) {
@@ -2736,8 +3404,22 @@ function generarCamposDinamicosEdicion(novedad) {
             `;
             break;
 
-        case 39: // Reemplazo
-            const tipoReemplazoEdit = novedad.tipo_reemplazo || 'permanente';
+        case 53: // Reemplazo
+            // IMPORTANTE: El campo en la BD es tipo_nuevo_puesto, no tipo_reemplazo
+            const tipoReemplazoEdit = novedad.tipo_nuevo_puesto || 'permanente';
+            
+            // Extraer fecha de finalización manejando objeto DateTime
+            let fechaHastaReemplazo = '';
+            if (novedad.fecha_vigencia_hasta) {
+                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
+                    // Es un objeto DateTime de PHP
+                    fechaHastaReemplazo = novedad.fecha_vigencia_hasta.date.split(' ')[0];
+                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
+                    // Es una cadena
+                    fechaHastaReemplazo = novedad.fecha_vigencia_hasta.split(' ')[0];
+                }
+            }
+            
             campos += `
                 <!-- Tipo de Reemplazo -->
                 <div class="col-md-12 mb-3">
@@ -2785,13 +3467,17 @@ function generarCamposDinamicosEdicion(novedad) {
                 <div class="col-md-3" id="edit-campo-fecha-fin-reemplazo" style="display: ${tipoReemplazoEdit === 'temporario' ? 'block' : 'none'}">
                     <label for="edit-fecha-hasta-reemplazo" class="form-label">Fecha de Fin <span class="text-danger">*</span></label>
                     <input type="date" class="form-control" id="edit-fecha-hasta-reemplazo" 
-                        value="${novedad.fecha_vigencia_hasta ? novedad.fecha_vigencia_hasta.split(' ')[0] : ''}">
+                        value="${fechaHastaReemplazo}">
                 </div>
             `;
             break;
 
-        case 40: // Aumento Salarial
-            const tipoAumentoEdit = novedad.tipo_aumento || 'porcentaje';
+        case 54: // Aumento Salarial
+            // Detectar tipo de aumento basándose en qué campo tiene valor
+            const tienePorcentajeEdit = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
+            const tipoAumentoEdit = tienePorcentajeEdit ? 'porcentaje' : 'monto';
+            // IMPORTANTE: El porcentaje se guarda como decimal (0.21), multiplicar por 100 para mostrar en edición (21)
+            const porcentajeEditDisplay = novedad.porcentaje_1 ? (parseFloat(novedad.porcentaje_1) * 100).toFixed(2) : '';
             campos += `
                 <!-- Tipo de Aumento -->
                 <div class="col-md-12 mb-3">
@@ -2826,7 +3512,7 @@ function generarCamposDinamicosEdicion(novedad) {
                     <label for="edit-porcentaje-aumento" class="form-label">Porcentaje <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <input type="number" class="form-control" id="edit-porcentaje-aumento" 
-                            value="${novedad.porcentaje_1 || ''}" step="0.01" min="0.01" max="100">
+                            value="${porcentajeEditDisplay}" step="0.01" min="0.01" max="100">
                         <span class="input-group-text">%</span>
                     </div>
                 </div>
@@ -3126,6 +3812,85 @@ async function guardarEdicionNovedad() {
                     datos.importe = parseFloat(importeAjuste.value);
                 }
                 break;
+
+            case 53: // Reemplazo
+                const puestoReemplazo = document.getElementById('edit-puesto-reemplazo');
+                if (puestoReemplazo && puestoReemplazo.value) {
+                    datos.puesto = puestoReemplazo.value;
+                    console.log(`👔 Puesto de reemplazo capturado:`, puestoReemplazo.value);
+                }
+                
+                // IMPORTANTE: Capturar fecha de inicio de vigencia
+                const fechaVigenciaReemplazo = document.getElementById('edit-fecha-vigencia-reemplazo');
+                if (fechaVigenciaReemplazo && fechaVigenciaReemplazo.value) {
+                    datos.fecha_vigencia = fechaVigenciaReemplazo.value;
+                    console.log(`📅 Fecha de inicio de reemplazo capturada:`, fechaVigenciaReemplazo.value);
+                }
+                
+                // Obtener tipo de reemplazo (permanente/temporario)
+                const tipoReemplazoRadios = document.getElementsByName('edit-tipo-reemplazo');
+                let tipoReemplazo = 'permanente'; // default
+                for (let radio of tipoReemplazoRadios) {
+                    if (radio.checked) {
+                        tipoReemplazo = radio.value;
+                        break;
+                    }
+                }
+                datos.tipo_reemplazo = tipoReemplazo; // Enviamos como tipo_reemplazo, el backend lo mapea a tipo_nuevo_puesto
+                console.log(`🔄 Tipo de reemplazo capturado:`, tipoReemplazo);
+                
+                // Si es temporario, agregar fecha de fin
+                if (tipoReemplazo === 'temporario') {
+                    const fechaFinReemplazo = document.getElementById('edit-fecha-hasta-reemplazo');
+                    if (fechaFinReemplazo && fechaFinReemplazo.value) {
+                        datos.fecha_vigencia_hasta = fechaFinReemplazo.value;
+                        console.log(`📅 Fecha de fin de reemplazo capturada:`, fechaFinReemplazo.value);
+                    }
+                } else {
+                    // Si cambió de temporario a permanente, limpiar fecha de fin
+                    datos.fecha_vigencia_hasta = null;
+                    console.log(`🗑️ Fecha de fin de reemplazo limpiada (cambio a permanente)`);
+                }
+                break;
+
+            case 54: // Aumento Salarial
+                // IMPORTANTE: Capturar fecha de vigencia
+                const fechaVigenciaAumento = document.getElementById('edit-fecha-vigencia-aumento');
+                if (fechaVigenciaAumento && fechaVigenciaAumento.value) {
+                    datos.fecha_vigencia = fechaVigenciaAumento.value;
+                    console.log(`📅 Fecha de vigencia de aumento capturada:`, fechaVigenciaAumento.value);
+                }
+                
+                // Obtener tipo de aumento (porcentaje/monto)
+                const tipoAumentoRadios = document.getElementsByName('edit-tipo-aumento');
+                let tipoAumento = 'porcentaje'; // default
+                for (let radio of tipoAumentoRadios) {
+                    if (radio.checked) {
+                        tipoAumento = radio.value;
+                        break;
+                    }
+                }
+                datos.tipo_aumento = tipoAumento;
+                console.log(`💰 Tipo de aumento capturado:`, tipoAumento);
+                
+                // Recopilar valor según tipo
+                if (tipoAumento === 'porcentaje') {
+                    const porcentajeAumento = document.getElementById('edit-porcentaje-aumento');
+                    if (porcentajeAumento && porcentajeAumento.value) {
+                        // NO dividir por 100 aquí - el backend lo hará (enviar 21, no 0.21)
+                        datos.porcentaje_1 = parseFloat(porcentajeAumento.value);
+                        datos.valor_numerico = null; // Limpiar monto
+                        console.log(`📊 Porcentaje de aumento capturado: ${datos.porcentaje_1}% (backend lo convertirá a decimal)`);
+                    }
+                } else { // monto
+                    const montoAumento = document.getElementById('edit-monto-aumento');
+                    if (montoAumento && montoAumento.value) {
+                        datos.valor_numerico = parseFloat(montoAumento.value);
+                        datos.porcentaje_1 = null; // Limpiar porcentaje
+                        console.log(`💵 Monto de aumento capturado:`, datos.valor_numerico);
+                    }
+                }
+                break;
         }
         
         console.log('📋 Datos completos a enviar:', datos);
@@ -3272,7 +4037,7 @@ function ordenarPor(columna) {
             case 'periodo':
                 // Ordenar por período (mes/año) - convertir a formato comparable
                 if (a.periodo_mes && a.periodo_anio) {
-                    valorA = a.periodo_anio * 100 + a.periodo_mes; // Ej: 2024*100 + 8 = 202408
+                    valorA = a.periodo_anio * 100 + a.periodo_mes; // Ej: 2024*100 + 8 = 202548
                 } else {
                     valorA = null;
                 }
@@ -3432,6 +4197,43 @@ async function cargarPuestosParaEdicion(puestoSeleccionado = '') {
         
     } catch (error) {
         console.error('Error cargando puestos para edición:', error);
+    }
+}
+
+/**
+ * Cargar puestos para reemplazo en el formulario de edición
+ */
+async function cargarPuestosReemplazoFormularioEdicion(novedad) {
+    try {
+        const puestos = await NovedadesApp.request('get_puestos');
+        const select = document.getElementById('edit-puesto-reemplazo');
+        
+        if (!select) {
+            console.error('Select edit-puesto-reemplazo no encontrado');
+            return;
+        }
+        
+        // Limpiar opciones actuales
+        select.innerHTML = '<option value="">Seleccionar puesto...</option>';
+        
+        // Agregar puestos
+        puestos.forEach(puesto => {
+            const option = document.createElement('option');
+            option.value = puesto.nombre_puesto;
+            option.textContent = puesto.nombre_puesto;
+            
+            // Seleccionar si coincide con el puesto actual
+            if (novedad.puesto && puesto.nombre_puesto === novedad.puesto) {
+                option.selected = true;
+            }
+            
+            select.appendChild(option);
+        });
+        
+        console.log('👔 Puestos cargados para reemplazo, seleccionado:', novedad.puesto);
+        
+    } catch (error) {
+        console.error('Error cargando puestos para reemplazo:', error);
     }
 }
 

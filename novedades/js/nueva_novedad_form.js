@@ -3480,17 +3480,8 @@ function generarConfigReemplazoMultiple(novedadId) {
                 <div class="invalid-feedback">El puesto de reemplazo es obligatorio</div>
             </div>
             
-            <div class="col-md-3">
-                <label for="fecha_vigencia_reemplazo_${novedadId}" class="form-label">
-                    Fecha de inicio <span class="required">*</span>
-                </label>
-                <input type="date" class="form-control" id="fecha_vigencia_reemplazo_${novedadId}" 
-                       name="fecha_vigencia_reemplazo_${novedadId}" required>
-                <div class="invalid-feedback">La fecha de inicio es obligatoria</div>
-            </div>
-            
             <!-- Fecha de fin (solo para temporario) -->
-            <div class="col-md-3" id="campo_fecha_fin_reemplazo_${novedadId}" style="display: none;">
+            <div class="col-md-6" id="campo_fecha_fin_reemplazo_${novedadId}" style="display: none;">
                 <label for="fecha_vigencia_hasta_reemplazo_${novedadId}" class="form-label">
                     Fecha de fin <span class="required">*</span>
                 </label>
@@ -3543,7 +3534,7 @@ function generarConfigAumentoSalarialMultiple(novedadId) {
             </div>
             
             <!-- Campo Porcentaje -->
-            <div class="col-md-4" id="campo_porcentaje_aumento_${novedadId}">
+            <div class="col-md-6" id="campo_porcentaje_aumento_${novedadId}">
                 <label for="porcentaje_aumento_${novedadId}" class="form-label">
                     Porcentaje de Aumento <span class="required">*</span>
                 </label>
@@ -3558,7 +3549,7 @@ function generarConfigAumentoSalarialMultiple(novedadId) {
             </div>
             
             <!-- Campo Monto -->
-            <div class="col-md-4" id="campo_monto_aumento_${novedadId}" style="display: none;">
+            <div class="col-md-6" id="campo_monto_aumento_${novedadId}" style="display: none;">
                 <label for="monto_aumento_${novedadId}" class="form-label">
                     Monto del Aumento <span class="required">*</span>
                 </label>
@@ -3568,15 +3559,6 @@ function generarConfigAumentoSalarialMultiple(novedadId) {
                            name="monto_aumento_${novedadId}" step="0.01" min="0.01" placeholder="0.00">
                 </div>
                 <div class="invalid-feedback">El monto debe ser mayor a 0.01</div>
-            </div>
-            
-            <div class="col-md-4">
-                <label for="fecha_vigencia_aumento_${novedadId}" class="form-label">
-                    Fecha de vigencia <span class="required">*</span>
-                </label>
-                <input type="date" class="form-control" id="fecha_vigencia_aumento_${novedadId}" 
-                       name="fecha_vigencia_aumento_${novedadId}" required>
-                <div class="invalid-feedback">La fecha de vigencia es obligatoria</div>
             </div>
         </div>
     `;

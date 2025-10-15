@@ -2688,6 +2688,35 @@ class Novedades {
                 $datosAdaptados['puesto'] = 'Premios - Ajuste General';
                 break;
 
+            case 53: // Reemplazo
+                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Reemplazo';
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['tipo_nuevo_puesto'] = isset($datos['tipo_reemplazo']) ? $datos['tipo_reemplazo'] : 'permanente';
+                
+                if ($datosAdaptados['tipo_nuevo_puesto'] === 'temporario' && !empty($datos['fecha_vigencia_hasta'])) {
+                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
+                }
+                break;
+
+            case 54: // Aumento Salarial
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['puesto'] = 'Aumento Salarial';
+                
+                // JavaScript envía directamente porcentaje_1 y valor_numerico
+                // Determinar si es por porcentaje o monto
+                if (isset($datos['tipo_aumento'])) {
+                    if ($datos['tipo_aumento'] === 'porcentaje' && !empty($datos['porcentaje_1'])) {
+                        // IMPORTANTE: Convertir porcentaje de 21 a 0.21 (formato decimal) para evitar overflow
+                        // La columna porcentaje_1 probablemente tiene NUMERIC(3,2) o NUMERIC(4,2)
+                        $porcentajeValor = (float)$datos['porcentaje_1'];
+                        $datosAdaptados['porcentaje_1'] = round($porcentajeValor / 100, 4); // Dividir entre 100: 21 -> 0.21
+                    } elseif ($datos['tipo_aumento'] === 'monto' && !empty($datos['valor_numerico'])) {
+                        // Convertir y redondear a 2 decimales para evitar overflow
+                        $datosAdaptados['valor_numerico'] = round((float)$datos['valor_numerico'], 2);
+                    }
+                }
+                break;
+
             default:
                 $datosAdaptados['puesto'] = 'Novedad General';
                 break;
@@ -2909,7 +2938,7 @@ class Novedades {
                     $p1_display = $datosAdaptados['porcentaje_1'];
                     $p2_display = $datosAdaptados['porcentaje_2'];
                     $datosAdaptados['observaciones'] = "Comisión sobre local con tope: {$p1_display}% / {$p2_display}%";
-                } else {
+                } else {    
                     $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? (float)$datos['porcentaje_unico'] : null;
                     $datosAdaptados['porcentaje_2'] = null;
                     
@@ -2940,14 +2969,24 @@ class Novedades {
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Aumento Salarial';
                 
+                // JavaScript envía directamente porcentaje_1 y valor_numerico
                 // Determinar si es por porcentaje o monto
                 if (isset($datos['tipo_aumento'])) {
-                    if ($datos['tipo_aumento'] === 'porcentaje' && isset($datos['porcentaje_1'])) {
-                        $datosAdaptados['porcentaje_1'] = (float)$datos['porcentaje_1'];
-                        $datosAdaptados['valor_numerico'] = null; // Limpiar monto
-                    } elseif ($datos['tipo_aumento'] === 'monto' && isset($datos['valor_numerico'])) {
-                        $datosAdaptados['valor_numerico'] = (float)$datos['valor_numerico'];
-                        $datosAdaptados['porcentaje_1'] = null; // Limpiar porcentaje
+                    if ($datos['tipo_aumento'] === 'porcentaje') {
+                        // IMPORTANTE: Convertir porcentaje de 21 a 0.21 (formato decimal) para evitar overflow
+                        if (!empty($datos['porcentaje_1'])) {
+                            $porcentajeValor = (float)$datos['porcentaje_1'];
+                            $datosAdaptados['porcentaje_1'] = round($porcentajeValor / 100, 4); // Dividir entre 100: 21 -> 0.21
+                        }
+                        // Limpiar campo de monto
+                        $datosAdaptados['valor_numerico'] = null;
+                    } elseif ($datos['tipo_aumento'] === 'monto') {
+                        // Convertir y redondear a 2 decimales para evitar overflow
+                        if (!empty($datos['valor_numerico'])) {
+                            $datosAdaptados['valor_numerico'] = round((float)$datos['valor_numerico'], 2);
+                        }
+                        // Limpiar campo de porcentaje
+                        $datosAdaptados['porcentaje_1'] = null;
                     }
                 }
                 break;
@@ -2999,6 +3038,11 @@ class Novedades {
             
             // Adaptar datos según el tipo de novedad y estructura real de tabla
             $datosAdaptados = $this->adaptarDatosParaInsercionActualizado($datos);
+            
+            // DEBUG: Verificar valores de porcentaje_1 y valor_numerico antes del INSERT
+            error_log("🔍 DEBUG INSERT - tipo_novedad: " . $datosAdaptados['tipo_novedad']);
+            error_log("🔍 DEBUG INSERT - porcentaje_1: " . var_export($datosAdaptados['porcentaje_1'], true) . " (tipo: " . gettype($datosAdaptados['porcentaje_1']) . ")");
+            error_log("🔍 DEBUG INSERT - valor_numerico: " . var_export($datosAdaptados['valor_numerico'], true) . " (tipo: " . gettype($datosAdaptados['valor_numerico']) . ")");
             
             // SQL ACTUALIZADO CON NUEVOS CAMPOS
             $sql = "INSERT INTO novedades (
