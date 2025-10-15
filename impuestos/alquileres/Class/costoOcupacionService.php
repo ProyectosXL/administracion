@@ -396,14 +396,14 @@ class CostoOcupacionService
         ];
         $filas[] = $filaSubtotal;
         
-        // Agregar fila Venta Bruta
-        $filaVentaBruta = [
-            'concepto' => 'Venta bruta',
-            'meses' => $ventaBruta,
-            'total' => $totalVentaBruta,
-            'is_metric' => true
-        ];
-        $filas[] = $filaVentaBruta;
+        // Venta Bruta comentada - no es necesaria para el cálculo de costo de ocupación
+        // $filaVentaBruta = [
+        //     'concepto' => 'Venta bruta',
+        //     'meses' => $ventaBruta,
+        //     'total' => $totalVentaBruta,
+        //     'is_metric' => true
+        // ];
+        // $filas[] = $filaVentaBruta;
         
         // Agregar fila Venta Neta
         $filaVentaNeta = [
@@ -602,5 +602,149 @@ class CostoOcupacionService
             'actuales' => $datosActuales,
             'anteriores' => $datosAnteriores
         ];
+    }
+
+    /**
+     * Obtiene el valor agregado para un concepto, sucursal y rango de fechas
+     * Si el rango abarca múltiples meses, suma los valores
+     * 
+     * @param int $conceptoId ID del concepto
+     * @param int $sucursalId ID de la sucursal
+     * @param string $fechaDesde Fecha desde (Y-m-d)
+     * @param string $fechaHasta Fecha hasta (Y-m-d)
+     * @return float Valor agregado
+     */
+    public function obtenerValorAgregado($conceptoId, $sucursalId, $fechaDesde, $fechaHasta)
+    {
+        try {
+            $desde = new DateTime($fechaDesde);
+            $hasta = new DateTime($fechaHasta);
+            
+            $totalAgregado = 0;
+            
+            // Iterar por cada mes en el rango
+            $periodo = new DatePeriod(
+                $desde,
+                new DateInterval('P1M'),
+                $hasta->modify('+1 day')
+            );
+            
+            foreach ($periodo as $fecha) {
+                $mesDesde = $fecha->format('Y-m-01');
+                $mesHasta = $fecha->format('Y-m-t');
+                
+                // Obtener datos del mes
+                $dataset = $this->construirDatasetSimplificado($sucursalId, $mesDesde, $mesHasta);
+                
+                // Obtener valor del concepto específico
+                $valor = $this->obtenerValorConcepto($conceptoId, $dataset, $sucursalId, $mesDesde, $mesHasta);
+                $totalAgregado += $valor;
+            }
+            
+            return $totalAgregado;
+            
+        } catch (Exception $e) {
+            error_log("Error en obtenerValorAgregado: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Obtiene el valor de un concepto específico del dataset
+     * 
+     * @param int $conceptoId ID del concepto
+     * @param array $dataset Dataset con los datos del mes
+     * @param int $sucursalId ID de la sucursal
+     * @param string $desde Fecha desde
+     * @param string $hasta Fecha hasta
+     * @return float Valor del concepto
+     */
+    private function obtenerValorConcepto($conceptoId, $dataset, $sucursalId, $desde, $hasta)
+    {
+        // Mapeo de conceptos según IDs
+        $mapeoConceptos = [
+            1 => 'alquiler_total',
+            2 => 'expensas_total',
+            3 => 'impuestos_municipales',
+            4 => 'luz',
+            5 => 'gas',
+            6 => 'agua',
+            7 => 'abl_arba',
+            8 => 'internet',
+            9 => 'telefono',
+            10 => 'seguridad',
+            11 => 'limpieza',
+            12 => 'mantenimiento',
+            13 => 'otros_gastos',
+            14 => 'amortizacion',
+            15 => 'ventas',
+            16 => 'rentabilidad_bruta',
+            17 => 'porcentaje_costo_ventas',
+            18 => 'porcentaje_rentabilidad_ventas'
+        ];
+        
+        // Si el concepto está en el mapeo directo
+        if (isset($mapeoConceptos[$conceptoId]) && isset($dataset[$mapeoConceptos[$conceptoId]])) {
+            return $dataset[$mapeoConceptos[$conceptoId]];
+        }
+        
+        // Casos especiales
+        switch ($conceptoId) {
+            case 15: // Ventas - obtener de otra fuente
+                return $this->obtenerVentasSucursal($sucursalId, $desde, $hasta);
+            
+            case 16: // Rentabilidad bruta
+                $ventas = $this->obtenerVentasSucursal($sucursalId, $desde, $hasta);
+                $costoOcupacion = $dataset['costo_ocupacion_total'] ?? 0;
+                return $ventas - $costoOcupacion;
+            
+            case 17: // % Costo ocupación s/ventas
+                $ventas = $this->obtenerVentasSucursal($sucursalId, $desde, $hasta);
+                $costoOcupacion = $dataset['costo_ocupacion_total'] ?? 0;
+                return $ventas > 0 ? ($costoOcupacion / $ventas) * 100 : 0;
+            
+            case 18: // % Rentabilidad s/ventas
+                $ventas = $this->obtenerVentasSucursal($sucursalId, $desde, $hasta);
+                $costoOcupacion = $dataset['costo_ocupacion_total'] ?? 0;
+                $rentabilidad = $ventas - $costoOcupacion;
+                return $ventas > 0 ? ($rentabilidad / $ventas) * 100 : 0;
+            
+            default:
+                return 0;
+        }
+    }
+
+    /**
+     * Obtiene las ventas de una sucursal en un período
+     * 
+     * @param int $sucursalId ID de la sucursal
+     * @param string $desde Fecha desde
+     * @param string $hasta Fecha hasta
+     * @return float Total de ventas
+     */
+    private function obtenerVentasSucursal($sucursalId, $desde, $hasta)
+    {
+        try {
+            // Aquí debes implementar la lógica para obtener las ventas
+            // Esto es un ejemplo, ajusta según tu estructura de base de datos
+            
+            $query = "SELECT ISNULL(SUM(IMPORTE), 0) as total_ventas 
+                     FROM VENTAS 
+                     WHERE NRO_SUCURSAL = ? 
+                     AND FECHA BETWEEN ? AND ?";
+            
+            $stmt = sqlsrv_prepare($this->cid_central, $query, [$sucursalId, $desde, $hasta]);
+            
+            if ($stmt && sqlsrv_execute($stmt)) {
+                $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+                return floatval($row['total_ventas'] ?? 0);
+            }
+            
+            return 0;
+            
+        } catch (Exception $e) {
+            error_log("Error en obtenerVentasSucursal: " . $e->getMessage());
+            return 0;
+        }
     }
 }

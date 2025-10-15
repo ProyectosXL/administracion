@@ -191,6 +191,91 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
         .select2-container .select2-selection--single{
             height: 2rem !important;
         }
+
+        /* Clases de colores para el reporte */
+        .bg-success-light {
+            background-color: #e8f5e9 !important;
+        }
+        
+        .bg-warning-light {
+            background-color: #fff3e0 !important;
+        }
+        
+        .bg-danger-light {
+            background-color: #ffebee !important;
+        }
+        
+        .bg-info-light {
+            background-color: #e3f2fd !important;
+        }
+        
+        /* Estilos para columna fija en reporte a fecha */
+        #tablaReporteFecha .fixed-column {
+            position: sticky;
+            left: 0;
+            background-color: white;
+            z-index: 10;
+            font-weight: 600;
+            min-width: 300px;
+            max-width: 300px;
+            width: 300px;
+        }
+        
+        #tablaReporteFecha thead th.fixed-column {
+            z-index: 11;
+        }
+        
+        #tablaReporteFecha tfoot td.fixed-column {
+            z-index: 11;
+            background-color: #f8f9fa;
+        }
+        
+        /* Asegurar que las columnas de sucursales tengan el mismo ancho */
+        #tablaReporteFecha th:not(.fixed-column),
+        #tablaReporteFecha td:not(.fixed-column) {
+            min-width: 120px;
+            max-width: 120px;
+            width: 120px;
+            white-space: nowrap;
+        }
+        
+        /* Ocultar el footer de totales */
+        #tablaReporteFecha tfoot {
+            display: none;
+        }
+        
+        /* Resaltar la fila de % Costo de Ocupación */
+        #tablaReporteFecha tr.row-porcentaje-costo {
+            background-color: #fff3e0 !important;
+            border-top: 3px solid #ff9800 !important;
+            border-bottom: 3px solid #ff9800 !important;
+        }
+        
+        #tablaReporteFecha tr.row-porcentaje-costo td {
+            font-weight: bold !important;
+            font-size: 0.95em !important;
+            color: #e65100 !important;
+            padding: 12px 8px !important;
+        }
+        
+        /* Ajustar KPIs para 4 tarjetas en línea */
+        #kpisSectionReporte {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        
+        @media (max-width: 1200px) {
+            #kpisSectionReporte {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            #kpisSectionReporte {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 
 </head>
@@ -232,7 +317,12 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                     <ul class="nav nav-tabs" id="mainTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <a class="nav-link active" id="analisis-tab" data-toggle="tab" href="#analisis" role="tab" aria-controls="analisis" aria-selected="true">
-                                <i class="bi bi-graph-up"></i> Análisis Individual
+                                <i class="bi bi-building"></i> Reporte por Sucursal
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="reporte-fecha-tab" data-toggle="tab" href="#reporte-fecha" role="tab" aria-controls="reporte-fecha" aria-selected="false">
+                                <i class="bi bi-calendar-range"></i> Reporte a Fecha
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -383,12 +473,145 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 </div>
                 <!-- Fin Pestaña 1 -->
 
-                <!-- Pestaña 2: Comparar Sucursales -->
+                <!-- Pestaña 2: Reporte a Fecha -->
+                <div class="tab-pane fade" id="reporte-fecha" role="tabpanel" aria-labelledby="reporte-fecha-tab">
+                    <!-- Filtros Section -->
+                    <div class="filters-section">
+                        <div class="section-title">
+                            <i class="bi bi-funnel"></i>
+                            <span>Filtros de Búsqueda</span>
+                        </div>
+                        
+                        <div class="filters-form">
+                            <div class="filter-group">
+                                <div class="filter-field">
+                                    <label for="fechaDesdeReporte" class="filter-label"><i class="bi bi-calendar-event"></i> Desde:</label>
+                                    <input type="date" id="fechaDesdeReporte" class="form-control" 
+                                           value="<?= $rangoDefault['desde'] ?>" style="height: calc(2.25rem + 2px);">
+                                </div>
+                                
+                                <div class="filter-field">
+                                    <label for="fechaHastaReporte" class="filter-label"><i class="bi bi-calendar-event"></i> Hasta:</label>
+                                    <input type="date" id="fechaHastaReporte" class="form-control" 
+                                           value="<?= $rangoDefault['hasta'] ?>" style="height: calc(2.25rem + 2px);">
+                                </div>
+                                
+                                <button type="button" class="btn btn-primary filter-button-primary" id="btnAplicarReporte">
+                                    <i class="bi bi-search"></i>
+                                    Aplicar
+                                </button>
+                                
+                                <button type="button" class="btn btn-secondary filter-button-secondary" id="btnLimpiarReporte">
+                                    <i class="bi bi-x-circle"></i>
+                                    Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPIs Section para Reporte a Fecha -->
+                    <div class="kpis-section" id="kpisSectionReporte" style="display: none;">
+                        <!-- KPI 1: Cantidad de Sucursales -->
+                        <div class="kpi-card">
+                            <div class="kpi-icon kpi-info">
+                                <i class="bi bi-buildings"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label">Sucursales Activas</div>
+                                <div class="kpi-value" id="kpiCantidadSucursales">--</div>
+                            </div>
+                        </div>
+                        
+                        <!-- KPI 2: % Costo de Ocupación Total -->
+                        <div class="kpi-card" style="border-left-color: #e74c3c !important;">
+                            <div class="kpi-icon" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                                <i class="bi bi-percent"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label" style="font-weight: bold; color: #e74c3c;">% Costo de Ocupación Total</div>
+                                <div class="kpi-value" id="kpiPorcentajeCostoTotal" style="color: #e74c3c; font-size: 2rem;">--</div>
+                            </div>
+                        </div>
+                        
+                        <!-- KPI 3: Menor Costo de Ocupación -->
+                        <div class="kpi-card">
+                            <div class="kpi-icon kpi-success">
+                                <i class="bi bi-arrow-down-circle"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label">Menor Costo de Ocupación</div>
+                                <div class="kpi-value" id="kpiMenorCosto" style="font-size: 1.5rem;">--</div>
+                                <div style="font-size: 0.85rem; color: #7f8c8d; margin-top: 5px;" id="kpiMenorCostoDetalle">--</div>
+                            </div>
+                        </div>
+                        
+                        <!-- KPI 4: Mayor Costo de Ocupación -->
+                        <div class="kpi-card">
+                            <div class="kpi-icon" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label">Mayor Costo de Ocupación (Peor)</div>
+                                <div class="kpi-value" id="kpiMayorCosto" style="font-size: 1.5rem; color: #e74c3c;">--</div>
+                                <div style="font-size: 0.85rem; color: #7f8c8d; margin-top: 5px;" id="kpiMayorCostoDetalle">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table Section -->
+                    <div class="table-section" id="tableSectionReporte" style="display: none;">
+                        <div class="table-header">
+                            <h2><i class="bi bi-table"></i> Reporte por Sucursales</h2>
+                            <div class="table-actions">
+                                <button class="legend-btn" id="btnLeyendaReporte" title="Ver leyenda de colores">
+                                    <i class="bi bi-info-circle"></i>
+                                    Leyenda
+                                </button>
+                                <button class="export-btn" id="btnExportarReporte" title="Exportar a Excel">
+                                    <i class="bi bi-file-earmark-excel"></i>
+                                    Exportar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table class="cost-table" id="tablaReporteFecha">
+                                <thead>
+                                    <tr id="headerRowReporte">
+                                        <th class="fixed-column"><i class="bi bi-list-ul"></i> Concepto</th>
+                                        <!-- Columnas dinámicas de sucursales se agregan aquí -->
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodyReporte">
+                                    <!-- Filas dinámicas se agregan aquí -->
+                                </tbody>
+                                <tfoot>
+                                    <tr id="footerRowReporte" style="font-weight: bold; background-color: #f8f9fa;">
+                                        <td class="fixed-column">TOTAL</td>
+                                        <!-- Totales por sucursal se agregan aquí -->
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Estado inicial -->
+                    <div class="empty-state" id="emptyStateReporte">
+                        <div class="empty-icon">
+                            <i class="bi bi-calendar-range"></i>
+                        </div>
+                        <h3>Seleccione un rango de fechas para comenzar</h3>
+                        <p>Elija las fechas desde y hasta para visualizar el reporte consolidado de todas las sucursales</p>
+                    </div>
+                </div>
+                <!-- Fin Pestaña 2: Reporte a Fecha -->
+
+                <!-- Pestaña 3: Comparar Sucursales -->
                 <div class="tab-pane fade" id="comparar" role="tabpanel" aria-labelledby="comparar-tab">
                     <?php include 'components/compararSucursales.php'; ?>
                 </div>
 
-                <!-- Pestaña 3: Controlar Gastos -->
+                <!-- Pestaña 4: Controlar Gastos -->
                 <div class="tab-pane fade" id="controlar" role="tabpanel" aria-labelledby="controlar-tab">
                     <div class="empty-state">
                         <div class="empty-icon">
@@ -519,5 +742,6 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="js/modalEvolucion.js"></script>
     <script src="js/costoOcupacion.js"></script>
     <script src="js/compararSucursales.js"></script>
+    <script src="js/reporteFecha.js"></script>
 </body>
 </html>

@@ -31,8 +31,8 @@
     $dataOffValue = 'UY';
     
     // Imagen de la bandera que se mostrará al lado del toggle
-    $imagenBandera = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
-    
+    $imagenBandera = ($checkedValue === 'central') ? '../../../assets/images/bandera_con_sol__55757_std.jpg' : '../../../assets/images/UY.png';
+
     $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
 ?>
 

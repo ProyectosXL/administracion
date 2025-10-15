@@ -76,7 +76,6 @@ body {
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     flex-wrap: wrap;
     gap: 20px;
 }
@@ -274,18 +273,47 @@ body {
     overflow: hidden;
 }
 
-/* Contenedor con scroll horizontal solo cuando sea necesario */
+/* CRÍTICO: Forzar overflow visible en body y html para que sticky funcione */
+html,
+body {
+    overflow-x: visible !important;
+    overflow-y: auto !important;
+}
+
+/* Asegurar que contenedores padres no rompan sticky */
+.alert-secondary,
+.page-wrapper,
+.card,
+.card-1 {
+    overflow: visible !important;
+    transform: none !important;
+    will-change: auto !important;
+}
+
+/* Contenedor con scroll horizontal - CRÍTICO para sticky */
 .table-responsive {
-    overflow-x: auto;
-    overflow-y: visible;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
     width: 100%;
     max-width: 100%;
     -webkit-overflow-scrolling: touch;
+    position: relative !important;
+    display: block !important;
+    /* CRÍTICO: Sin transforms que rompan sticky */
+    transform: none !important;
+    will-change: auto !important;
+    contain: none !important;
 }
 
-/* Ajuste para tablas con pocas columnas */
-.table-responsive:has(#tablaAlquileres) {
-    display: block;
+/* Tabla principal con sticky support */
+#tablaAlquileres {
+    position: relative !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: auto !important;
+    margin: 0 !important;
+    /* Asegurar que no haya transforms */
+    transform: none !important;
 }
 
 #tablaAlquileres thead {
@@ -305,51 +333,75 @@ body {
     letter-spacing: 0.5px;
     padding: 15px 10px;
     text-align: center;
-    border: none;
+    border: 1px solid #dee2e6;
     font-size: 12px;
     white-space: nowrap;
 }
 
-/* Columnas Fijas: ID y CONCEPTOS */
-#tablaAlquileres th:nth-child(1),
-#tablaAlquileres th:nth-child(2),
-#tablaAlquileres td:nth-child(1),
-#tablaAlquileres td:nth-child(2) {
-    position: sticky;
-    background: var(--white);
-    z-index: 10;
-}
-
+/* Columnas Fijas: ID (columna 1) */
 #tablaAlquileres th:nth-child(1),
 #tablaAlquileres td:nth-child(1) {
-    left: 0;
-    width: 60px;
-    min-width: 60px;
-    max-width: 60px;
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 10 !important;
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+    text-align: center !important;
+    border-right: 2px solid #495057 !important;
 }
 
+/* Columnas Fijas: CONCEPTOS (columna 2) */
 #tablaAlquileres th:nth-child(2),
 #tablaAlquileres td:nth-child(2) {
-    left: 60px;
-    width: 200px;
-    min-width: 200px;
-    max-width: 200px;
+    position: sticky !important;
+    left: 60px !important;
+    z-index: 10 !important;
+    width: 200px !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
+    text-align: left !important;
+    padding-left: 15px !important;
+    border-right: 2px solid #495057 !important;
 }
 
-/* Header de columnas fijas */
-#tablaAlquileres thead th:nth-child(1),
+/* Header de columna ID con fondo oscuro y z-index mayor */
+#tablaAlquileres thead th:nth-child(1) {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    z-index: 101 !important;
+    position: sticky !important;
+    left: 0 !important;
+    text-align: center !important;
+}
+
+/* Header de columna CONCEPTOS con fondo oscuro y z-index mayor */
 #tablaAlquileres thead th:nth-child(2) {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    z-index: 101;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    z-index: 101 !important;
+    position: sticky !important;
+    left: 60px !important;
+    text-align: center !important;
 }
 
-/* Sombra para columnas fijas */
-#tablaAlquileres th:nth-child(2),
-#tablaAlquileres td:nth-child(2) {
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+/* Asegurar fondo blanco en celdas del tbody */
+#tablaAlquileres tbody td:nth-child(1),
+#tablaAlquileres tbody td:nth-child(2) {
+    background-color: var(--white) !important;
 }
 
-/* Efecto de sombra más pronunciado al hacer scroll */
+/* Filas alternas - mantener fondo en columnas fijas */
+#tablaAlquileres tbody tr:nth-child(even) td:nth-child(1),
+#tablaAlquileres tbody tr:nth-child(even) td:nth-child(2) {
+    background-color: #f8f9fa !important;
+}
+
+/* Hover en filas - mantener en columnas fijas */
+#tablaAlquileres tbody tr:hover td:nth-child(1),
+#tablaAlquileres tbody tr:hover td:nth-child(2) {
+    background-color: #e3f2fd !important;
+}
+
+/* Sombra para columna CONCEPTOS al hacer scroll horizontal */
 #tablaAlquileres.is-scrolled th:nth-child(2),
 #tablaAlquileres.is-scrolled td:nth-child(2) {
     box-shadow: 3px 0 8px rgba(0, 0, 0, 0.15);
@@ -371,7 +423,7 @@ body {
 #tablaAlquileres td {
     padding: 10px;
     text-align: center;
-    border-bottom: 1px solid #e9ecef;
+    border: 1px solid #e9ecef;
     vertical-align: middle;
     min-width: 100px;
 }
@@ -538,3 +590,180 @@ body {
 .select2-container--default .select2-selection--single:focus {
     border-color: var(--accent-color) !important;
 }
+
+/* ========================================
+   Estilos para Diferencias en Valores
+   ======================================== */
+
+/* Input con diferencia resaltado */
+input.input-diferencia,
+input[style*="background-color: rgb(255, 243, 205)"] {
+    background-color: #fff3cd !important;
+    border: 2px solid #ffc107 !important;
+    animation: pulseWarning 2s infinite;
+}
+
+/* Animación de pulso para inputs con diferencias */
+@keyframes pulseWarning {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+    }
+}
+
+/* Tabla de diferencias en modal */
+.tabla-diferencias {
+    max-height: 400px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.tabla-diferencias table {
+    font-size: 12px;
+    margin: 0;
+}
+
+.tabla-diferencias th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.tabla-diferencias td {
+    vertical-align: middle;
+}
+
+/* Colores para diferencias positivas y negativas */
+.text-success {
+    color: var(--success-color) !important;
+    font-weight: bold;
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+    font-weight: bold;
+}
+
+/* Mejoras para SweetAlert2 con tabla de diferencias */
+.swal2-popup {
+    font-size: 1rem !important;
+}
+
+.swal2-html-container {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Tooltip para celdas con diferencias */
+.celda-diferencia {
+    position: relative;
+    cursor: help;
+}
+
+.celda-diferencia::after {
+    content: '⚠';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 10px;
+    color: var(--warning-color);
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+/* Mensaje de actualización en progreso */
+.updating-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.updating-spinner {
+    background: white;
+    padding: 30px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--box-shadow);
+    text-align: center;
+}
+
+.updating-spinner .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 4px;
+}
+
+/* Estilos para SweetAlert2 con iconos modernos */
+.btn-icon-swal {
+    padding: 10px 20px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-icon-swal i {
+    margin-right: 8px;
+}
+
+.swal2-popup {
+    border-radius: var(--border-radius-lg) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+.swal2-title {
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    color: var(--primary-color) !important;
+}
+
+.swal2-html-container {
+    font-size: 16px !important;
+    color: var(--secondary-color) !important;
+}
+
+.swal2-html-container .fas,
+.swal2-html-container .fa {
+    animation: iconPulse 0.5s ease-in-out;
+}
+
+@keyframes iconPulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Estilos para botones de confirmación con iconos */
+.swal2-confirm:hover,
+.swal2-deny:hover,
+.swal2-cancel:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+

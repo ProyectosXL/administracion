@@ -43,30 +43,33 @@
 
         $newArray = cargarAlquieres($fecha,$periodo);
     }
-    $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
+    
+    // FUNCIONALIDAD DE SUCURSALES OCULTAS DESHABILITADA
+    // $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
     $arraySucursalesOcultas = [];
     $sucursalesOcultasArray = [];
-    if(count($sucursalesOcultas) > 0){
-        $arraySucursalesOcultas = json_decode($sucursalesOcultas[0]['JSON_LOCALES'],true);
-        $sucursalesOcultasArray = explode(',', $arraySucursalesOcultas['sucursales']);
-    }
-
-    // if (session_status() == PHP_SESSION_NONE) {
-    //     session_start();
+    // if(count($sucursalesOcultas) > 0){
+    //     $arraySucursalesOcultas = json_decode($sucursalesOcultas[0]['JSON_LOCALES'],true);
+    //     $sucursalesOcultasArray = explode(',', $arraySucursalesOcultas['sucursales']);
     // }
-    
-    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
-        $checked = 'checked';
-    }else{
-        $checked = '';
+
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
     }
-        
-    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $dataOnValue = ($checkedValue === 'uy') ? 'UY' : 'ARG';
-    $dataOffValue = ($checkedValue === 'uy') ? 'ARG' : 'UY';
-    $imageOn = ($checkedValue === 'central') ? '../../assets/images/bandera_con_sol__55757_std.jpg' : '../../assets/images/UY.png';
-    $imageOff = ($checkedValue === 'central') ? '../../assets/images/UY.png' : '../../assets/images/bandera_con_sol__55757_std.jpg';
     
+    // Inicializar entorno por defecto si no existe
+    if (!isset($_SESSION['entorno'])) {
+        $_SESSION['entorno'] = 'central';
+    }
+    
+    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $checked = ($checkedValue === 'central') ? 'checked' : '';
+    $dataOnValue = 'ARG';
+    $dataOffValue = 'UY';
+    $imagenBandera = ($checkedValue === 'central') ? 
+        '../../assets/images/bandera_con_sol__55757_std.jpg' : 
+        '../../assets/images/UY.png';
+    $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     
 
 ?>
@@ -83,28 +86,117 @@
                 require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
             ?>
             
+            <!-- Font Awesome -->
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            
             <!-- CSS Custom para Carga Alquileres -->
             <link rel="stylesheet" href="css/cargaAlquileres.css">
+            
+            <!-- CSS para Modal de Ayuda -->
+            <link rel="stylesheet" href="css/ayuda.css">
+            
+            <!-- STICKY COLUMNS - CSS SIMPLE -->
+            <style>
+                /* Tabla con border-collapse separate */
+                #tablaAlquileres {
+                    border-collapse: separate !important;
+                    border-spacing: 0 !important;
+                }
+                
+                /* Primera columna sticky */
+                #tablaAlquileres th:first-child,
+                #tablaAlquileres td:first-child {
+                    position: sticky !important;
+                    left: 0 !important;
+                    z-index: 10 !important;
+                    background-color: white !important;
+                }
+                
+                #tablaAlquileres thead th:first-child {
+                    z-index: 11 !important;
+                }
+                
+                /* Segunda columna sticky */
+                #tablaAlquileres th:nth-child(2),
+                #tablaAlquileres td:nth-child(2) {
+                    position: sticky !important;
+                    left: 60px !important;
+                    z-index: 10 !important;
+                    background-color: white !important;
+                }
+                
+                #tablaAlquileres thead th:nth-child(2) {
+                    z-index: 11 !important;
+                }
+            </style>
 
             </link>
 
         </head>
         <style>
-              .toggle-on {
-                    background-image: url('<?= $imageOn ?>');
-                    background-size: contain;
-                    background-repeat: no-repeat;
-                    height: 60px;
-                    width: 60px;
-                }
+              /* Toggle styles */
+        .toggle-on, .toggle-off {
+            font-size: 12px !important;
+            font-weight: bold !important;
+            color: white !important;
+            text-shadow: none !important;
+            line-height: 30px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background-size: auto !important;
+            background-image: none !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            height: auto !important;
+            width: auto !important;
+            min-height: 34px !important;
+            min-width: 45px !important;
+        }
 
-                .toggle-off {
-                    background-image: url('<?= $imageOff ?>');
-                    background-size: contain;
-                    background-repeat: no-repeat;
-                    height: 60px;
-                    width: 60px;
-                }
+        .toggle.btn {
+            height: 38px !important;
+            min-width: 90px !important;
+            border-radius: 6px !important;
+            padding: 0 !important;
+        }
+
+        .toggle-on {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+        }
+        
+        .toggle-off {
+            background-color: #6c757d !important;
+            border-color: #6c757d !important;
+        }
+
+        .flag-indicator {
+            width: 40px;
+            height: 30px;
+            margin-left: 10px;
+            border-radius: 4px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .environment-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .country-label {
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
         </style>
         <body>
 
@@ -117,8 +209,16 @@
                                     <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                                 </a>
                                 <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga de Gastos de Alquiler - <?= $fechaParaMostrar ?></strong></h3>
-                                <div style="margin-top:30px;margin-left:50%">
-                                    <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
+                                <div class="environment-toggle" style="margin-left:30%">
+                                    <div class="environment-controls">
+                                        <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
+                                               data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
+                                               class="custom-toggle" onchange="cambiarEntorno(this)" 
+                                               id="checkEntorno">
+                                        <div class="flag-indicator" style="background-image: url('<?= $imagenBandera ?>');" 
+                                             title="<?= $nombrePais ?>"></div>
+                                        <span class="country-label"><?= $nombrePais ?></span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -160,37 +260,23 @@
 
                                             </select>
                                         
-                                            <button class="btn btn-primary btn-submit ml-2">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
+                                            <button class="btn btn-primary btn-submit ml-2" data-toggle="tooltip" data-placement="top" title="Filtrar por mes y año">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                         </div>
                                     </div>
-                                    <div class="btn-group" style="margin-left:8rem; display: flex; gap: 10px; flex-wrap: nowrap; align-items: center;">
-                                        <button style="margin-top:0.5rem;" type="button" class="btn btn-info" onclick="AplicarAjuste()">Aplicar Ajuste <i class="bi bi-check-circle" style="color:white"></i></button>
+                                    <div class="btn-group" style="margin-left:2rem; display: flex; gap: 10px; flex-wrap: nowrap; align-items: center;">
+                                        <button style="margin-top:0.5rem;" type="button" class="btn btn-info" onclick="AplicarAjuste()" data-toggle="tooltip" data-placement="top" title="Aplicar el coeficiente de ajuste a los conceptos 4, 5 y 18">Aplicar Ajuste <i class="bi bi-check-circle" style="color:white"></i></button>
+                                        <button style="margin-top:0.5rem; width:140px" type="button" class="btn btn-success" onclick="procesar()" data-toggle="tooltip" data-placement="top" title="Enviar datos procesados al sistema Tango">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
                                         <?php 
                                         if($estado == 1){
                                             echo '<div  id="estado" hidden>1</div>';
-                                            echo '<button type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-top:0.5rem;" onclick="abrirPeriodo()">Abrir Periodo <i class="bi bi-unlock"></i></button>';
+                                            echo '<button type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-top:0.5rem;" onclick="abrirPeriodo()" data-toggle="tooltip" data-placement="top" title="Reabrir el período para realizar modificaciones">Abrir Periodo <i class="bi bi-unlock"></i></button>';
                                         }else{
                                             echo '<div  id="estado" hidden>0</div>';
-                                            echo '<button type="button" class="btn btn-secondary" value="Cerrar Periodo" style="margin-top:0.5rem;" onclick="cerrarPeriodo()">Cerrar Periodo <i class="bi bi-lock"></i></button>';
+                                            echo '<button type="button" class="btn btn-secondary" value="Cerrar Periodo" style="margin-top:0.5rem;" onclick="cerrarPeriodo()" data-toggle="tooltip" data-placement="top" title="Cerrar el período y deshabilitar modificaciones">Cerrar Periodo <i class="bi bi-lock"></i></button>';
                                         }
                                         ?>
                                         <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
-                                        <button style="margin-top:0.5rem; width:140px" type="button" class="btn btn-success" onclick="procesar()">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
-                                    </div>
-                                    <div style="margin-left:3rem; display: flex; gap: 10px; align-items: center; flex-wrap: nowrap;">
-                                        <select class="form-control mt-2" id="selectOcultarSucursal" style="min-width: 200px;">
-                                            <option value="" disabled selected>Selecciona una sucursal</option>
-                                            <?php 
-                                                foreach ($todosLosLocales as $key => $local) {
-                                                    if (in_array($local['NRO_SUCURSAL'], $sucursalesOcultasArray)) {
-                                                        continue;
-                                                    }
-                                                    echo '<option value="'.$local['NRO_SUCURSAL'].'">'.$local['DESC_SUCURSAL'].' ('.$local['NRO_SUCURSAL'].')</option>';
-                                                }
-                                            ?>
-                                        </select>
-                                        <button class="btn btn-danger mt-2" onclick="ocultarSucursal()">Eliminar <i class="bi bi-trash"></i></button>
-                          
+                                        <button style="margin-top:0.5rem; width:180px" type="button" class="btn btn-danger" onclick="revertirProcesamiento()" data-toggle="tooltip" data-placement="top" title="Eliminar el procesamiento para poder volver a procesar el período">Revertir Proc. <i class="bi bi-arrow-counterclockwise" style="color:white"></i></button>
                                     </div>
                             </form>
 
@@ -205,8 +291,8 @@
                                 <table class="table table-striped table-bordered table-sm table-hover" id="tablaAlquileres" style="font-size :12px;<?= $width ?>" >
                                     <thead class="thead-dark">
                                         <tr>
-                                            <th style="text-align:center;width:1%" id="thIdConcepto">ID</th>
-                                            <th style="text-align:center;width:10%" id="thConcepto"  >CONCEPTOS </th>
+                                            <th id="thIdConcepto">ID</th>
+                                            <th id="thConcepto">CONCEPTOS</th>
                                             <?php 
                                                 foreach ($todosLosLocales as $key => $value) {   
 
@@ -214,12 +300,8 @@
                                                
                                                         continue;
                                                     } 
-                                                    $width = '';
-                                                    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
-                                                        $width = 'width:1%';
-                                                    }
                                             ?>
-                                                <th style="text-align:center;<?= $width ?>" id="sucursal"  class = "suc<?= $value['NRO_SUCURSAL']?>" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?></th>
+                                                <th id="sucursal" class="suc<?= $value['NRO_SUCURSAL']?>" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?></th>
                                             <?php
                                                 }
                                             ?>
@@ -232,8 +314,8 @@
                                             foreach ($conceptos as $key => $value) {    
                                         ?>
                                                 <tr>
-                                                    <td style="text-align:center" id="idConcepto"><?= $value['ID_CA']?> </td>
-                                                    <td style="text-align:center" id="concepto"><strong><?= $value['CONCEPTO']?></strong> </td>
+                                                    <td id="idConcepto"><?= $value['ID_CA']?> </td>
+                                                    <td id="concepto"><strong><?= $value['CONCEPTO']?></strong> </td>
                                                     <?php   
                                                         foreach ($newArray as $k => $val) {
 
@@ -346,23 +428,10 @@
             <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
             <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
             <script src="js/cargaAlquileres.js"></script>
-            
-            <script>
-                // Script para mejorar el comportamiento de las columnas fijas
-                $(document).ready(function() {
-                    const table = document.getElementById('tablaAlquileres');
-                    if (table) {
-                        // Añadir clase especial al hacer scroll horizontal
-                        table.addEventListener('scroll', function() {
-                            if (this.scrollLeft > 0) {
-                                this.classList.add('is-scrolled');
-                            } else {
-                                this.classList.remove('is-scrolled');
-                            }
-                        });
-                    }
-                });
-            </script>
+            <script src="js/ayuda.js"></script>
+
+            <!-- Incluir Modal de Ayuda -->
+            <?php include 'components/modalAyuda.php'; ?>
 
         </body>
 
@@ -382,11 +451,6 @@ $(document).ready(function() {
     }else{
         actualizarCargaAutomatica(<?= $estado ?>);
     }
-
-    document.querySelector(".toggle").style.width="40px"
-    document.querySelector(".toggle-on").style.fontSize="0"
-    document.querySelector(".toggle-off").style.fontSize="0"
-    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
 
 });
 

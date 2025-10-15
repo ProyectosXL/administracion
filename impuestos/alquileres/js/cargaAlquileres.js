@@ -470,36 +470,8 @@ const cerrarPeriodo = () => {
                 
                         if(response[0]['RegistroExiste'] == 1){
             
-                            $.ajax({
-            
-                                url: 'Controller/AlquilerController.php?accion=cerrarPeriodo',
-                                method: 'POST',
-                                data: {
-                                    periodo: periodo
-                                },
-                                success : function(data) {
-                                    if(data == 1){
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error',
-                                            text: 'El período ya se encuentra cerrado!'
-                                            })
-                                    }else{
-            
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Cerrado',
-                                            text: 'Se ha cerrado correctamente!'
-                                        }).then((result) => {
-                                            location.reload();
-                                        })
-                                        
-                                    }
-                                    
-            
-                                }
-            
-                            });
+                            // Antes de cerrar, verificar si hay diferencias en los valores
+                            verificarDiferenciasYCerrar(periodo);
             
                         }else{
             
@@ -518,6 +490,321 @@ const cerrarPeriodo = () => {
     });
 
     return 1
+}
+
+const verificarDiferenciasYCerrar = (periodo) => {
+    // Recolectar todos los valores actuales de la tabla
+    let datosActuales = {};
+    let sucursales = document.querySelectorAll("#sucursal");
+    let conceptos = document.querySelectorAll("#idConcepto");
+    
+    sucursales.forEach(sucursal => {
+        const nroSucursal = sucursal.textContent.trim();
+        datosActuales[nroSucursal] = {};
+        
+        conceptos.forEach(concepto => {
+            const idConcepto = concepto.textContent.trim();
+            const inputElement = document.querySelector(`#input-${idConcepto}-${nroSucursal}`);
+            if (inputElement) {
+                // Extraer el valor real del input preservando el signo negativo
+                let valorTexto = inputElement.value.trim();
+                
+                // Detectar si es negativo
+                const esNegativo = valorTexto.startsWith('-') || valorTexto.startsWith('(');
+                
+                // Limpiar formato pero preservar números y decimales
+                valorTexto = valorTexto.replace(/[\$\.\s\(\)]/g, '').replace(',', '.');
+                
+                // Parsear valor
+                let valor = parseFloat(valorTexto) || 0;
+                
+                // Aplicar signo negativo si corresponde
+                if (esNegativo && valor > 0) {
+                    valor = -valor;
+                }
+                
+                datosActuales[nroSucursal][idConcepto] = valor;
+            }
+        });
+    });
+    
+    // Verificar si hay diferencias
+    $.ajax({
+        url: 'Controller/AlquilerController.php?accion=verificarDiferenciasPreCierre',
+        method: 'POST',
+        data: {
+            periodo: periodo,
+            datosActuales: datosActuales
+        },
+        success: function(response) {
+            const data = JSON.parse(response);
+            
+            if (data.tieneDiferencias && data.diferencias.length > 0) {
+                mostrarDiferenciasYConfirmar(periodo, data.diferencias);
+            } else {
+                // No hay diferencias, proceder al cierre normal
+                ejecutarCierrePeriodo(periodo, false);
+            }
+        },
+        error: function(xhr, status, error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al verificar diferencias: ' + error
+            });
+        }
+    });
+}
+
+const mostrarDiferenciasYConfirmar = (periodo, diferencias) => {
+    // Resaltar las celdas con diferencias
+    diferencias.forEach(dif => {
+        const inputElement = document.querySelector(`#input-${dif.concepto}-${dif.sucursal}`);
+        if (inputElement) {
+            inputElement.style.backgroundColor = '#fff3cd';
+            inputElement.style.border = '2px solid #ffc107';
+        }
+    });
+    
+    // Crear tabla HTML con las diferencias
+    let tablaHTML = `
+        <div style="max-height: 400px; overflow-y: auto; text-align: left;">
+            <table class="table table-sm table-bordered" style="font-size: 12px;">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Sucursal</th>
+                        <th>Concepto</th>
+                        <th>Valor Guardado</th>
+                        <th>Valor Actual</th>
+                        <th>Diferencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    diferencias.forEach(dif => {
+        const diferencia = dif.diferencia;
+        const colorDif = diferencia > 0 ? 'text-success' : 'text-danger';
+        const simbolo = diferencia > 0 ? '+' : '';
+        
+        tablaHTML += `
+            <tr>
+                <td>${dif.sucursal} - ${dif.desc_sucursal}</td>
+                <td>${dif.concepto}</td>
+                <td>$${formatNumber(dif.importeGuardado)}</td>
+                <td>$${formatNumber(dif.importeActual)}</td>
+                <td class="${colorDif}">${simbolo}$${formatNumber(diferencia)}</td>
+            </tr>
+        `;
+    });
+    
+    tablaHTML += `
+                </tbody>
+            </table>
+        </div>
+        <p style="margin-top: 15px; font-weight: bold;">¿Desea actualizar los valores antes de cerrar el período?</p>
+    `;
+    
+    Swal.fire({
+        icon: 'warning',
+        title: '⚠️ Se detectaron diferencias en los valores',
+        html: tablaHTML,
+        width: '800px',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-sync-alt"></i> Actualizar y Cerrar',
+        denyButtonText: '<i class="fas fa-lock"></i> Cerrar sin Actualizar',
+        cancelButtonText: '<i class="fas fa-times"></i> Cancelar',
+        confirmButtonColor: '#28a745',
+        denyButtonColor: '#ffc107',
+        cancelButtonColor: '#6c757d',
+        customClass: {
+            confirmButton: 'btn-icon-swal',
+            denyButton: 'btn-icon-swal',
+            cancelButton: 'btn-icon-swal'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Actualizar valores y luego cerrar
+            actualizarValoresYCerrar(periodo);
+        } else if (result.isDenied) {
+            // Cerrar sin actualizar
+            ejecutarCierrePeriodo(periodo, true);
+        } else {
+            // Cancelar - quitar resaltados
+            quitarResaltadoDiferencias();
+        }
+    });
+}
+
+const actualizarValoresYCerrar = (periodo) => {
+    // Primero actualizar todos los valores modificados
+    Swal.fire({
+        title: '🔄 Actualizando valores...',
+        html: '<i class="fas fa-sync fa-spin" style="font-size: 48px; color: #007bff;"></i><br><br>Por favor espere',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Guardar todos los cambios actuales
+    let sucursales = document.querySelectorAll("#sucursal");
+    let conceptos = document.querySelectorAll("#idConcepto");
+    let promises = [];
+    
+    sucursales.forEach(sucursal => {
+        const nroSucursal = sucursal.textContent.trim();
+        
+        conceptos.forEach(concepto => {
+            const idConcepto = concepto.textContent.trim();
+            const inputElement = document.querySelector(`#input-${idConcepto}-${nroSucursal}`);
+            
+            if (inputElement && inputElement.style.backgroundColor === 'rgb(255, 243, 205)') {
+                // Este input tiene diferencias, actualizarlo
+                const porcentaje = inputElement.getAttribute('attr-porcentaje') || 0;
+                
+                // Obtener el valor actual del input preservando el signo negativo
+                let valorTexto = inputElement.value.trim();
+                
+                // Detectar si es negativo
+                const esNegativo = valorTexto.startsWith('-') || valorTexto.startsWith('(');
+                
+                // Limpiar formato pero preservar números y decimales
+                valorTexto = valorTexto.replace(/[\$\.\s\(\)]/g, '').replace(',', '.');
+                
+                // Parsear valor
+                let valorReal = parseFloat(valorTexto) || 0;
+                
+                // Aplicar signo negativo si corresponde
+                if (esNegativo && valorReal > 0) {
+                    valorReal = -valorReal;
+                }
+                
+                console.log(`Actualizando: Sucursal=${nroSucursal}, Concepto=${idConcepto}, Valor=${valorReal}, Porcentaje=${porcentaje}`);
+                
+                const promise = $.ajax({
+                    url: 'Controller/AlquilerController.php?accion=actualizarDetalle',
+                    method: 'POST',
+                    data: {
+                        periodo: periodo,
+                        sucursal: nroSucursal,
+                        concepto: idConcepto,
+                        importe: valorReal,
+                        porcentaje: porcentaje
+                    }
+                });
+                promises.push(promise);
+            }
+        });
+    });
+    
+    // Esperar a que todas las actualizaciones terminen
+    Promise.all(promises).then(() => {
+        quitarResaltadoDiferencias();
+        // Ahora proceder al cierre
+        ejecutarCierrePeriodo(periodo, true);
+    }).catch((error) => {
+        Swal.fire({
+            icon: 'error',
+            title: '✖ Error al actualizar',
+            html: `<div style="text-align: center;">
+                    <i class="fas fa-times-circle" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
+                    <p>Error al actualizar valores: ${error}</p>
+                  </div>`,
+            confirmButtonText: 'Aceptar'
+        });
+    });
+}
+
+const ejecutarCierrePeriodo = (periodo, forzarCierre) => {
+    $.ajax({
+        url: 'Controller/AlquilerController.php?accion=cerrarPeriodo',
+        method: 'POST',
+        data: {
+            periodo: periodo,
+            forzarCierre: forzarCierre
+        },
+        success: function(data) {
+            try {
+                const response = JSON.parse(data);
+                
+                if (response.status === 'success') {
+                    quitarResaltadoDiferencias();
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✓ Período cerrado exitosamente',
+                        html: `<div style="text-align: center;">
+                                <i class="fas fa-check-circle" style="font-size: 48px; color: #28a745; margin-bottom: 15px;"></i>
+                                <p>${response.message}</p>
+                              </div>`,
+                        confirmButtonText: 'Aceptar'
+                    }).then((result) => {
+                        location.reload();
+                    });
+                } else if (response.status === 'error') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '✖ Error',
+                        html: `<div style="text-align: center;">
+                                <i class="fas fa-times-circle" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
+                                <p>${response.message}</p>
+                              </div>`,
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            } catch (e) {
+                // Compatibilidad con respuesta anterior
+                if (data == 1) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '✖ Error',
+                        html: `<div style="text-align: center;">
+                                <i class="fas fa-times-circle" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
+                                <p>El período ya se encuentra cerrado!</p>
+                              </div>`,
+                        confirmButtonText: 'Aceptar'
+                    });
+                } else {
+                    quitarResaltadoDiferencias();
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✓ Período cerrado',
+                        html: `<div style="text-align: center;">
+                                <i class="fas fa-check-circle" style="font-size: 48px; color: #28a745; margin-bottom: 15px;"></i>
+                                <p>Se ha cerrado correctamente!</p>
+                              </div>`,
+                        confirmButtonText: 'Aceptar'
+                    }).then((result) => {
+                        location.reload();
+                    });
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            Swal.fire({
+                icon: 'error',
+                title: '✖ Error al cerrar período',
+                html: `<div style="text-align: center;">
+                        <i class="fas fa-times-circle" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
+                        <p>${error}</p>
+                      </div>`,
+                confirmButtonText: 'Aceptar'
+            });
+        }
+    });
+}
+
+const quitarResaltadoDiferencias = () => {
+    document.querySelectorAll('input[type="text"]').forEach(input => {
+        input.style.backgroundColor = '';
+        input.style.border = '';
+    });
+}
+
+const formatNumber = (num) => {
+    return Math.abs(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 const abrirPeriodo = () => {
@@ -553,6 +840,66 @@ const abrirPeriodo = () => {
 
         }
 
+    });
+}
+
+const revertirProcesamiento = () => {
+
+    let periodo = document.querySelector("#periodo").textContent;
+
+    Swal.fire({
+        title: '¿Está seguro?',
+        text: "Se eliminarán los registros procesados de este período y podrá volver a procesarlo",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, revertir',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: 'Controller/AlquilerController.php?accion=revertirProcesamiento',
+                method: 'POST',
+                data: {
+                    periodo: periodo
+                },
+                success: function(data) {
+                    try {
+                        const response = JSON.parse(data);
+                        
+                        if (response.status === 'success') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Revertido',
+                                text: response.message
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message
+                            });
+                        }
+                    } catch (e) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error al revertir el procesamiento'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error de conexión: ' + error
+                    });
+                }
+            });
+        }
     });
 }
 
@@ -596,7 +943,8 @@ const AplicarAjuste = () => {
             const div = document.querySelector(`#input-${concepto}-${sucursalName}`);
             const valor = div.value.replace(/[$.]/g, "").trim();
 
-            if (valor > 0 && div.disabled) {
+            // Solo incluir si NO está deshabilitado y tiene valor > 0
+            if (valor > 0 && !div.disabled) {
                 newArray[sucursalName].push({
                     concepto: concepto,
                     value: valor,
@@ -615,48 +963,108 @@ const AplicarAjuste = () => {
             periodo: periodo
         },
         success: function (response) {
-         
-            if(response != 1){
-
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error...',
-                    text: 'El coeficiente correspondiente al período no se encuentra cargado!'
-                })
+            try {
+                // Intentar parsear como JSON
+                const data = JSON.parse(response);
                 
-            }else{
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Ajuste aplicado correctamente!',
-                    showConfirmButton: false,
-                    timer: 1500
-                })
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✓ Ajuste aplicado correctamente',
+                        html: `<div style="text-align: center;">
+                                <i class="fas fa-check-circle" style="font-size: 48px; color: #28a745; margin-bottom: 15px;"></i>
+                                <p>Se actualizaron <strong>${data.registros_actualizados}</strong> registro(s)</p>
+                                <p>Coeficiente aplicado: <strong>${data.coeficiente}</strong></p>
+                              </div>`,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Aceptar'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else if (data.status === 'info') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'ℹ️ Información',
+                        html: `<div style="text-align: center;">
+                                <i class="fas fa-info-circle" style="font-size: 48px; color: #17a2b8; margin-bottom: 15px;"></i>
+                                <p>${data.message}</p>
+                              </div>`,
+                        confirmButtonText: 'Entendido'
+                    });
+                } else if (data.status === 'warning') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '⚠️ Atención',
+                        html: `<div style="text-align: center;">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #ffc107; margin-bottom: 15px;"></i>
+                                <p>${data.message}</p>
+                              </div>`,
+                        confirmButtonText: 'Entendido'
+                    });
+                } else if (data.status === 'error') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '✖ Error',
+                        html: `<div style="text-align: center;">
+                                <i class="fas fa-times-circle" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
+                                <p>${data.message}</p>
+                              </div>`,
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+                
+            } catch (e) {
+                // Fallback para compatibilidad con respuesta legacy
+                if(response != 1){
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error...',
+                        text: 'El coeficiente correspondiente al período no se encuentra cargado!'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Ajuste aplicado correctamente!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
             }
-            // location.reload();
+        },
+        error: function(xhr, status, error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo aplicar el ajuste. Error: ' + error
+            });
         }
     });
 };
 
 
-const cambiarEntorno = (t) =>{
-
+const cambiarEntorno = (t) => {
     let entorno = 0;
-  
-    if(t.getAttribute("data-off") == "ARG" ){
-      entorno = 0;
-    }else{
-      entorno = 1;
+    
+    // Si el checkbox está checked = Argentina (central = 0)
+    // Si el checkbox NO está checked = Uruguay (uy = 1)
+    if(t.checked){
+        entorno = 0; // Argentina
+    } else {
+        entorno = 1; // Uruguay
     }
   
-  
     $.ajax({
-      url: "Controller/cambiarEntorno.php",
-      method: "POST",
-      data : {entorno: entorno},
-      success: function (data) {
-        location.reload();
-      }
+        url: "Controller/cambiarEntorno.php",
+        method: "POST",
+        data: {entorno: entorno},
+        success: function (data) {
+            location.reload();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cambiar entorno:', error);
+            location.reload();
+        }
     });
-  
-  }
+}

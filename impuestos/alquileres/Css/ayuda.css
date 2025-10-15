@@ -1,0 +1,543 @@
+/**
+ * CSS para Modal de Ayuda Contextual
+ * Sistema de Gestión de Alquileres
+ */
+
+/* ===== BOTÓN DE AYUDA FLOTANTE ===== */
+#btnAyudaFlotante {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-ayuda 2s infinite;
+}
+
+#btnAyudaFlotante:hover {
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+}
+
+#btnAyudaFlotante:active {
+    transform: scale(0.95);
+}
+
+@keyframes pulse-ayuda {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 25px rgba(102, 126, 234, 0.7);
+    }
+}
+
+/* ===== MODAL PRINCIPAL ===== */
+#modalAyuda .modal-dialog {
+    max-width: 1200px;
+}
+
+#modalAyuda .modal-content {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+#modalAyuda .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 30px;
+    border: none;
+}
+
+#modalAyuda .modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+#modalAyuda .modal-title i {
+    margin-right: 10px;
+}
+
+#modalAyuda .modal-body {
+    padding: 30px;
+    background-color: #f8f9fa;
+}
+
+/* ===== PESTAÑAS DE NAVEGACIÓN ===== */
+.nav-ayuda {
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 0;
+    background: white;
+    border-radius: 10px 10px 0 0;
+    padding: 10px 10px 0 10px;
+}
+
+.nav-ayuda .nav-item {
+    margin-right: 5px;
+}
+
+.nav-ayuda .nav-link {
+    border: none;
+    border-radius: 8px 8px 0 0;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+}
+
+.nav-ayuda .nav-link:hover {
+    background-color: #f8f9fa;
+    color: #667eea;
+}
+
+.nav-ayuda .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.nav-ayuda .nav-link i {
+    margin-right: 8px;
+}
+
+/* ===== CONTENIDO DE PESTAÑAS ===== */
+.tab-content {
+    background: white;
+    padding: 30px;
+    border-radius: 0 0 10px 10px;
+    min-height: 500px;
+}
+
+.ayuda-intro {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.ayuda-intro .lead {
+    margin-bottom: 0;
+    color: #495057;
+}
+
+/* ===== CARDS DE ACCORDION ===== */
+.ayuda-card {
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.ayuda-card:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.ayuda-card .card-header {
+    background-color: #ffffff;
+    border-bottom: none;
+    padding: 0;
+}
+
+.ayuda-card .card-header .btn-link {
+    width: 100%;
+    text-align: left;
+    text-decoration: none;
+    color: #495057;
+    font-weight: 600;
+    padding: 18px 25px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.ayuda-card .card-header .btn-link:hover {
+    background-color: #f8f9fa;
+    color: #667eea;
+}
+
+.ayuda-card .card-header .btn-link:focus {
+    box-shadow: none;
+    text-decoration: none;
+}
+
+.ayuda-card .card-header .btn-link i {
+    margin-right: 12px;
+    font-size: 1.2rem;
+    min-width: 25px;
+}
+
+.ayuda-card .card-body {
+    padding: 25px;
+    background-color: #fafbfc;
+}
+
+/* ===== NÚMEROS DE PASO ===== */
+.paso-numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-right: 15px;
+    font-size: 1.1rem;
+}
+
+/* ===== ALERTAS PERSONALIZADAS ===== */
+.ayuda-card .alert {
+    border-radius: 8px;
+    border: none;
+    padding: 15px 20px;
+    margin-top: 15px;
+}
+
+.ayuda-card .alert i {
+    margin-right: 10px;
+}
+
+/* ===== PROCESO DE DIFERENCIAS ===== */
+.proceso-diferencias {
+    margin-top: 20px;
+}
+
+.paso-diferencia {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.icono-diferencia {
+    min-width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-right: 15px;
+}
+
+.texto-diferencia strong {
+    display: block;
+    color: #495057;
+    margin-bottom: 5px;
+    font-size: 1.05rem;
+}
+
+.texto-diferencia p {
+    margin: 0;
+    color: #6c757d;
+}
+
+/* ===== BOTONES DE EJEMPLO ===== */
+.btn-example {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    cursor: default;
+}
+
+.btn-example.btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-example.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-example.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-example.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-example.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* ===== EJEMPLOS PRÁCTICOS ===== */
+.ejemplo-container {
+    padding: 10px 0;
+}
+
+.ejemplo-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 30px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.ejemplo-card:hover {
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.12);
+    transform: translateY(-3px);
+}
+
+.ejemplo-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 25px;
+    display: flex;
+    align-items: center;
+}
+
+.ejemplo-header i {
+    font-size: 1.5rem;
+    margin-right: 15px;
+}
+
+.ejemplo-header h5 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.ejemplo-body {
+    padding: 25px;
+}
+
+.ejemplo-body p:first-child {
+    font-weight: 500;
+    color: #495057;
+}
+
+/* Pasos del ejemplo */
+.ejemplo-pasos {
+    margin-top: 20px;
+}
+
+.paso-ejemplo {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.numero-paso {
+    min-width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.contenido-paso {
+    flex: 1;
+}
+
+.contenido-paso strong {
+    display: block;
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+}
+
+.contenido-paso p {
+    margin: 0;
+    color: #6c757d;
+}
+
+.ejemplo-diferencia {
+    margin-top: 15px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+}
+
+/* Lista ordenada de ejemplos */
+.ejemplo-lista {
+    padding-left: 20px;
+}
+
+.ejemplo-lista li {
+    margin-bottom: 20px;
+    color: #495057;
+}
+
+.ejemplo-lista li strong {
+    color: #495057;
+    display: block;
+    margin-bottom: 5px;
+    font-size: 1.05rem;
+}
+
+.ejemplo-lista li p {
+    margin: 5px 0 0 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+/* ===== CONSIDERACIONES TÉCNICAS ===== */
+.tecnica-intro {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, #fff3cd 0%, #f8d7da 100%);
+    border-radius: 10px;
+    border-left: 4px solid #ff6b6b;
+}
+
+.tecnica-intro .lead {
+    margin-bottom: 0;
+    color: #495057;
+}
+
+/* Código inline */
+code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #d63384;
+    font-size: 0.9em;
+    border: 1px solid #e9ecef;
+}
+
+/* Tablas en ayuda */
+.ayuda-card table {
+    margin-top: 15px;
+}
+
+.ayuda-card table thead {
+    background-color: #f8f9fa;
+}
+
+.ayuda-card table th {
+    font-weight: 600;
+    color: #495057;
+    padding: 12px;
+    border: 1px solid #dee2e6;
+}
+
+.ayuda-card table td {
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    #btnAyudaFlotante {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+
+    #modalAyuda .modal-dialog {
+        margin: 10px;
+    }
+
+    .nav-ayuda .nav-link {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+
+    .nav-ayuda .nav-link i {
+        display: none;
+    }
+
+    .tab-content {
+        padding: 15px;
+    }
+
+    .paso-numero {
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+        margin-right: 10px;
+    }
+
+    .paso-diferencia,
+    .paso-ejemplo {
+        flex-direction: column;
+    }
+
+    .icono-diferencia,
+    .numero-paso {
+        margin-bottom: 10px;
+    }
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ayuda-card {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.ayuda-card:nth-child(1) { animation-delay: 0.1s; }
+.ayuda-card:nth-child(2) { animation-delay: 0.2s; }
+.ayuda-card:nth-child(3) { animation-delay: 0.3s; }
+.ayuda-card:nth-child(4) { animation-delay: 0.4s; }
+.ayuda-card:nth-child(5) { animation-delay: 0.5s; }
+
+/* ===== SCROLLBAR PERSONALIZADO ===== */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}

@@ -28,13 +28,17 @@ switch ($accion) {
         cerrarPeriodo(); 
         break;
 
+    case 'verificarDiferenciasPreCierre':
+        verificarDiferenciasPreCierre(); 
+        break;
+
     case 'abrirPeriodo':
         abrirPeriodo(); 
         break;
 
-    case 'ocultarSucursal':
-        ocultarSucursal(); 
-        break;
+    // case 'ocultarSucursal':
+    //     ocultarSucursal(); 
+    //     break;
 
     case 'aplicarAjuste':
         aplicarAjuste(); 
@@ -42,6 +46,10 @@ switch ($accion) {
 
     case 'comprobarAjuste':
         comprobarAjuste(); 
+        break;
+
+    case 'revertirProcesamiento':
+        revertirProcesamiento(); 
         break;
 
     default:
@@ -83,12 +91,14 @@ function cargarAlquieres ($fecha, $periodo) {
 
     require_once "Class/Alquiler.php";
     require_once "Class/sucursal.php";
+    require_once "contratos/Class/Contrato.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
+    $contrato = new Contrato();
     $conceptos = $alquiler->traerConceptos();
 
-    $contratoAlquiler = $alquiler->traerContratoAlquiler($fecha);
+    $contratoAlquiler = $contrato->traerContratoAlquiler($fecha);
 
     $todosLosLocales= $sucursal->traerLocales();
 
@@ -213,9 +223,11 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
     require_once "Class/Alquiler.php";
     require_once "Class/sucursal.php";
+    require_once "contratos/Class/Contrato.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
+    $contrato = new Contrato();
 
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
 
@@ -229,26 +241,12 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
     $detalle = $alquiler->traerDetalle($periodo);
     $estado = $alquiler->traerEstado($periodo);
-    $contratoAlquiler = $alquiler->traerContratoAlquiler($fecha);
+    $contratoAlquiler = $contrato->traerContratoAlquiler($fecha);
 
-    
-    $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
-    $arraySucursalesOcultas = [];
-    $sucursalesOcultasArray = [];
-    if(count($sucursalesOcultas) > 0){
-        $arraySucursalesOcultas = json_decode($sucursalesOcultas[0]['JSON_LOCALES'],true);
-        $sucursalesOcultasArray = explode(',', $arraySucursalesOcultas['sucursales']);
-    }
- 
     $newArray = [];
 
     if($estado == 1){
         foreach ($todosLosLocales as $k => $v) {
-
-            if (in_array($v['NRO_SUCURSAL'], $sucursalesOcultasArray)) {
-                                               
-                continue;
-            }
 
             foreach ($conceptos as $key => $value) {  
 
@@ -560,10 +558,83 @@ function cerrarPeriodo () {
     $alquiler = new Alquiler();
 
     $periodo = $_POST['periodo'];
+    $forzarCierre = isset($_POST['forzarCierre']) ? $_POST['forzarCierre'] : false;
+
+    // Si no es un cierre forzado, verificar que no haya diferencias pendientes
+    if (!$forzarCierre) {
+        $diferencias = verificarDiferenciasInterno($periodo);
+        if (!empty($diferencias)) {
+            echo json_encode([
+                'status' => 'diferencias',
+                'message' => 'Se detectaron diferencias en los valores',
+                'diferencias' => $diferencias
+            ]);
+            return;
+        }
+    }
 
     $result = $alquiler->cerrarPeriodo($periodo);
 
-    return $result;
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Período cerrado correctamente'
+    ]);
+}
+
+function verificarDiferenciasPreCierre() {
+    $periodo = $_POST['periodo'];
+    $diferencias = verificarDiferenciasInterno($periodo);
+    
+    echo json_encode([
+        'status' => 'success',
+        'diferencias' => $diferencias,
+        'tieneDiferencias' => !empty($diferencias)
+    ]);
+}
+
+function verificarDiferenciasInterno($periodo) {
+    require_once "../Class/Alquiler.php";
+    require_once "../Class/sucursal.php";
+
+    $alquiler = new Alquiler();
+    $sucursal = new Sucursal();
+    
+    // Obtener los datos guardados en la base de datos
+    $detalleGuardado = $alquiler->traerDetalle($periodo);
+    
+    // Obtener los datos actuales enviados desde el frontend
+    $datosActuales = isset($_POST['datosActuales']) ? $_POST['datosActuales'] : [];
+    
+    $diferencias = [];
+    
+    // Comparar cada registro
+    foreach ($detalleGuardado as $registroGuardado) {
+        $nroSucursal = $registroGuardado['NRO_SUCURS'];
+        $idConcepto = $registroGuardado['ID_CA'];
+        $importeGuardado = floatval($registroGuardado['IMPORTE_PARSE']);
+        
+        // Buscar el valor actual correspondiente
+        if (isset($datosActuales[$nroSucursal]) && isset($datosActuales[$nroSucursal][$idConcepto])) {
+            $importeActual = floatval($datosActuales[$nroSucursal][$idConcepto]);
+            
+            // Verificar si hay diferencia (tolerancia de 0.01 por redondeos)
+            // Usar abs() para comparar valores absolutos y evitar problemas con signos
+            $diferencia = $importeActual - $importeGuardado;
+            
+            if (abs($diferencia) > 0.01) {
+                $diferencias[] = [
+                    'sucursal' => $nroSucursal,
+                    'concepto' => $idConcepto,
+                    'desc_sucursal' => $registroGuardado['DESC_SUCURS'],
+                    'importeGuardado' => $importeGuardado,
+                    'importeActual' => $importeActual,
+                    'diferencia' => $diferencia
+                ];
+            }
+        }
+    }
+    
+    return $diferencias;
 }
 
 function abrirPeriodo () {
@@ -592,6 +663,8 @@ function checkCierrePeriodoAnt () {
     echo json_encode($result);
 }
 
+// FUNCIÓN DESHABILITADA - No se usa más
+/*
 function ocultarSucursal () {
 
     require_once "../Class/Alquiler.php";
@@ -640,38 +713,108 @@ function ocultarSucursal () {
 
     echo json_encode($result);
 }
+*/
 
 function aplicarAjuste () {
 
     require_once "../Class/Alquiler.php";
+    require_once "../Class/sucursal.php";
     
     $alquiler = new Alquiler();
+    $sucursal = new Sucursal();
     
     $data = $_POST['arrayData'];  
-
     $periodo = $_POST['periodo'];
 
+    // Verificar si hay datos para ajustar
+    $hayDatosParaAjustar = false;
+    foreach ($data as $key => $value) {
+        if (count($value) > 0) {
+            $hayDatosParaAjustar = true;
+            break;
+        }
+    }
+
+    // Si no hay datos, verificar si ya están ajustados
+    if (!$hayDatosParaAjustar) {
+        // Obtener todas las sucursales y verificar si tienen conceptos 4, 5, 18 con valores
+        $detalle = $alquiler->traerDetalle($periodo);
+        $conceptosConValor = [];
+        $conceptosAjustados = [];
+        
+        foreach ($detalle as $det) {
+            if (in_array($det['ID_CA'], ['4', '5', '18'])) {
+                $importe = floatval($det['IMPORTE_PARSE']);
+                $ajustado = intval($det['AJUSTADO']);
+                
+                if ($importe > 0) {
+                    $key = $det['NRO_SUCURS'] . '-' . $det['ID_CA'];
+                    $conceptosConValor[] = $key;
+                    
+                    if ($ajustado == 1) {
+                        $conceptosAjustados[] = $key;
+                    }
+                }
+            }
+        }
+        
+        if (count($conceptosConValor) == 0) {
+            echo json_encode([
+                'status' => 'warning',
+                'code' => 3,
+                'message' => 'No hay valores en los conceptos 4, 5 o 18 para ajustar'
+            ]);
+        } else if (count($conceptosAjustados) > 0 && count($conceptosConValor) == count($conceptosAjustados)) {
+            echo json_encode([
+                'status' => 'info',
+                'code' => 2,
+                'message' => 'El ajuste ya fue aplicado anteriormente para todos los conceptos'
+            ]);
+        } else if (count($conceptosAjustados) > 0) {
+            echo json_encode([
+                'status' => 'warning',
+                'code' => 4,
+                'message' => 'Algunos conceptos ya tienen ajuste aplicado. Verifique los datos.'
+            ]);
+        } else {
+            echo json_encode([
+                'status' => 'error',
+                'code' => 5,
+                'message' => 'Hay valores para ajustar pero no se enviaron en la solicitud. Recargue la página.'
+            ]);
+        }
+        die();
+    }
+
+    // Verificar coeficiente
     $coeficiente = $alquiler->traerCoeficiente($periodo);
 
-    if($coeficiente == 0){
-      
-        echo 0;
+    if($coeficiente == 0 || $coeficiente == null){
+        echo json_encode([
+            'status' => 'error',
+            'code' => 0,
+            'message' => 'El coeficiente correspondiente al período no se encuentra cargado'
+        ]);
         die();
-
     }
 
+    // Aplicar ajuste
+    $registrosActualizados = 0;
     foreach ($data as $key => $value) {
-
         foreach ($value as $detalle) {
-
             $importe = $detalle['value'] * $coeficiente;
-            $alquiler->aplicarAjuste($key, $detalle['concepto'],$importe, $periodo);
-    
+            $alquiler->aplicarAjuste($key, $detalle['concepto'], $importe, $periodo);
+            $registrosActualizados++;
         }
-          
     }
 
-    echo 1;
+    echo json_encode([
+        'status' => 'success',
+        'code' => 1,
+        'message' => 'Ajuste aplicado correctamente',
+        'registros_actualizados' => $registrosActualizados,
+        'coeficiente' => $coeficiente
+    ]);
 }
 
 function comprobarAjuste () {
@@ -696,6 +839,33 @@ function comprobarAjuste () {
     }
 
     echo ($error);
+}
+
+
+function revertirProcesamiento() {
+    
+    require_once "../Class/Alquiler.php";
+    
+    $alquiler = new Alquiler();
+    
+    $periodo = $_POST['periodo'];
+
+    try {
+        $result = $alquiler->revertirProcesamiento($periodo);
+        
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Procesamiento revertido correctamente',
+            'periodo' => $periodo
+        ]);
+        
+    } catch (\Throwable $th) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Error al revertir procesamiento: ' . $th->getMessage(),
+            'periodo' => $periodo
+        ]);
+    }
 }
 
 ?>

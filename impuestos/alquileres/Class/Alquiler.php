@@ -18,6 +18,11 @@ class Alquiler
 
         }
         
+        // Inicializar entorno por defecto si no existe
+        if(!isset($_SESSION['entorno'])){
+            $_SESSION['entorno'] = 'central';
+        }
+        
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
 
             $this->cid_central = $cid->conectar('uy');
@@ -229,7 +234,10 @@ class Alquiler
 
     public function traerDetalle($periodo)
     {
-        $sql = "SELECT *, CAST(IMPORTE AS FLOAT) IMPORTE_PARSE FROM RO_T_DETALLE_ALQUILERES WHERE PERIODO LIKE '%$periodo%'";
+        $sql = "SELECT *, CAST(IMPORTE AS FLOAT) IMPORTE_PARSE, 
+                ISNULL(AJUSTADO, 0) AS AJUSTADO 
+                FROM RO_T_DETALLE_ALQUILERES 
+                WHERE PERIODO LIKE '%$periodo%'";
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
        
@@ -274,23 +282,25 @@ class Alquiler
     public function actualizarDetalle($periodo, $idSucursal, $idConcepto, $importe, $userName, $porcentaje )
     {
         $userNameClause = $userName ? ", USUARIO = '$userName'" : "";
-        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe'" . $userNameClause . ", FECHA_MODIF = GETDATE(), PORCENTAJE_APLICADO = '$porcentaje' WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$idSucursal' AND ID_CA = '$idConcepto'";
+        $sql = "UPDATE RO_T_DETALLE_ALQUILERES 
+                SET IMPORTE = '$importe'" . $userNameClause . ", 
+                    FECHA_MODIF = GETDATE(), 
+                    PORCENTAJE_APLICADO = '$porcentaje' 
+                WHERE PERIODO = '$periodo' 
+                  AND NRO_SUCURS = '$idSucursal' 
+                  AND ID_CA = '$idConcepto'";
 
-        $stmt = sqlsrv_query($this->cid_central, $sql);
-       
         try{
+            $stmt = sqlsrv_query($this->cid_central, $sql);
             
-            $rows = array();
-    
-            while ($v = sqlsrv_fetch_array($stmt)) {
-                $rows[] = $v;
+            if ($stmt === false) {
+                throw new \Exception("Error en UPDATE: " . print_r(sqlsrv_errors(), true));
             }
-   
-    
-            return $rows;
+            
+            return true;
         
         } catch (\Throwable $th){
-            print_r($th);
+            throw $th;
         }
 
     }
@@ -605,6 +615,9 @@ class Alquiler
         }
 
     }
+    
+    // FUNCIONES DESHABILITADAS - No se usan más
+    /*
     function traerSucursalesOcultas ($periodo) {
 
         $sql = "SELECT * FROM SJ_ALQUILERES_OCULTOS_POR_PERIODO WHERE PERIODO = '$periodo';";
@@ -654,6 +667,7 @@ class Alquiler
         }
 
     }
+    */
 
     public function traerCoeficiente ($periodo ) {
 
@@ -705,6 +719,44 @@ class Alquiler
             
         } catch (\Throwable $th){
             print_r($th);
+        }
+    }
+
+    public function revertirProcesamiento($periodo) {
+        
+        // Calcular la fecha del último día del mes
+        $partes = explode('-', $periodo);
+        if (count($partes) == 2) {
+            $mes = str_pad($partes[0], 2, '0', STR_PAD_LEFT);
+            $anio = $partes[1];
+            $fechaUltimoDia = date('Y-m-d', strtotime("last day of $anio-$mes"));
+        } else {
+            throw new \Exception("Formato de período inválido");
+        }
+
+        // Eliminar registros de la tabla RO_T_INTEGRAL_TANGO_2
+        $sql = "DELETE FROM RO_T_INTEGRAL_TANGO_2 
+                WHERE MODULO = 'ALQUILERES' 
+                AND (FECHA = '$fechaUltimoDia' OR PERIODO = '$periodo')";
+
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                throw new \Exception("Error al eliminar registros: " . print_r($errors, true));
+            }
+            
+            $rowsAffected = sqlsrv_rows_affected($stmt);
+            
+            return [
+                'rowsAffected' => $rowsAffected,
+                'fecha' => $fechaUltimoDia,
+                'periodo' => $periodo
+            ];
+            
+        } catch (\Throwable $th) {
+            throw $th;
         }
     }
 
