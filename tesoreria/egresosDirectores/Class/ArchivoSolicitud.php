@@ -59,28 +59,49 @@ class ArchivoSolicitud {
                 $archivoData = $this->comprimirImagen($archivoBase64, $mimeType);
             }
             
-            // Insertar en base de datos
+            error_log("DEBUG ArchivoSolicitud - Guardando archivo: " . $nombreArchivo);
+            error_log("DEBUG ArchivoSolicitud - ID Solicitud: " . $idSolicitud);
+            error_log("DEBUG ArchivoSolicitud - Tipo: " . $tipoArchivo);
+            error_log("DEBUG ArchivoSolicitud - Tamaño original: " . strlen($archivoData) . " bytes");
+            
+            // Convertir a hexadecimal para SQL Server
+            $archivoHex = bin2hex($archivoData);
+            $tamañoBytes = strlen($archivoData);
+            
+            // Insertar usando consulta directa con hex (más confiable para VARBINARY)
             $sql = "INSERT INTO archivos_solicitud 
                         (id_solicitud, tipo_archivo, nombre_archivo, archivo, mime_type, tamanio_bytes)
-                    VALUES (?, ?, ?, ?, ?, ?)";
+                    VALUES (?, ?, ?, 0x{$archivoHex}, ?, ?)";
             
             $params = [
                 $idSolicitud,
                 $tipoArchivo,
                 $nombreArchivo,
-                $archivoData,
                 $mimeType,
-                strlen($archivoData)
+                $tamañoBytes
             ];
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
-                throw new Exception("Error al guardar archivo: " . print_r(sqlsrv_errors(), true));
+                $errors = sqlsrv_errors();
+                error_log("ERROR ArchivoSolicitud - SQL Error: " . print_r($errors, true));
+                throw new Exception("Error al guardar archivo: " . print_r($errors, true));
             }
             
-            $idArchivo = sqlsrv_rows_affected($stmt);
+            // Obtener el ID insertado con una consulta separada
+            $sqlId = "SELECT SCOPE_IDENTITY() AS id";
+            $stmtId = sqlsrv_query($this->db, $sqlId);
+            
+            $idArchivo = null;
+            if ($stmtId !== false && sqlsrv_fetch($stmtId)) {
+                $idArchivo = sqlsrv_get_field($stmtId, 0);
+                sqlsrv_free_stmt($stmtId);
+            }
+            
             sqlsrv_free_stmt($stmt);
+            
+            error_log("DEBUG ArchivoSolicitud - Archivo guardado con ID: " . $idArchivo);
             
             return [
                 'success' => true,
@@ -134,13 +155,17 @@ class ArchivoSolicitud {
      */
     public function obtenerContenido(int $idArchivo): ?array {
         try {
-            $sql = "SELECT archivo, nombre_archivo, mime_type 
+            error_log("DEBUG obtenerContenido - Buscando archivo ID: " . $idArchivo);
+            
+            $sql = "SELECT archivo, nombre_archivo, mime_type, tamanio_bytes
                     FROM archivos_solicitud 
                     WHERE id = ?";
             
             $stmt = sqlsrv_query($this->db, $sql, [$idArchivo]);
             
             if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("ERROR obtenerContenido - Query Error: " . print_r($errors, true));
                 return null;
             }
             
@@ -148,11 +173,22 @@ class ArchivoSolicitud {
             sqlsrv_free_stmt($stmt);
             
             if ($row && $row['archivo']) {
+                error_log("DEBUG obtenerContenido - Archivo encontrado: " . $row['nombre_archivo']);
+                error_log("DEBUG obtenerContenido - Tamaño BD: " . $row['tamanio_bytes'] . " bytes");
+                error_log("DEBUG obtenerContenido - Tamaño real: " . strlen($row['archivo']) . " bytes");
+                error_log("DEBUG obtenerContenido - MIME type: " . $row['mime_type']);
+                
+                // El archivo viene como binario directo de SQL Server
+                $archivoBase64 = base64_encode($row['archivo']);
+                error_log("DEBUG obtenerContenido - Base64 length: " . strlen($archivoBase64));
+                
                 return [
-                    'archivo' => base64_encode($row['archivo']),
+                    'archivo' => $archivoBase64,
                     'nombre_archivo' => $row['nombre_archivo'],
                     'mime_type' => $row['mime_type']
                 ];
+            } else {
+                error_log("ERROR obtenerContenido - Archivo no encontrado o sin datos");
             }
             
             return null;

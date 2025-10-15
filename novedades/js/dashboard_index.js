@@ -117,6 +117,30 @@ function mostrarUltimasNovedades(novedades) {
                     tipoDetalle = `<br><small class="text-warning">${valor}</small>`;
                 }
                 break;
+
+            case 53: // Reemplazo
+                // Mostrar puesto de reemplazo y tipo
+                const tipoReemplazoIcon = novedad.tipo_nuevo_puesto === 'temporario' ? 
+                    '<i class="fas fa-clock text-warning"></i>' : 
+                    '<i class="fas fa-check-circle text-success"></i>';
+                const puestoReemplazo = novedad.puesto || 'No especificado';
+                tipoDetalle = `<br><small class="text-info">${tipoReemplazoIcon} ${puestoReemplazo}</small>`;
+                break;
+
+            case 54: // Aumento Salarial
+                // Detectar si es porcentaje o monto
+                const tienePorcentaje = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
+                if (tienePorcentaje) {
+                    // Multiplicar por 100 para mostrar como porcentaje
+                    const porcentaje = (parseFloat(novedad.porcentaje_1) * 100).toFixed(2);
+                    tipoDetalle = `<br><small class="text-primary"><i class="fas fa-percentage"></i> ${porcentaje}%</small>`;
+                } else if (novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0) {
+                    const monto = NovedadesApp.formatearValor ? 
+                        NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : 
+                        `$${parseFloat(novedad.valor_numerico).toLocaleString()}`;
+                    tipoDetalle = `<br><small class="text-success"><i class="fas fa-dollar-sign"></i> ${monto}</small>`;
+                }
+                break;
         }
         
         html += `
@@ -685,6 +709,109 @@ function mostrarModalDetalle(novedad) {
                         </div>
                     </div>`;
             }
+            break;
+
+        case 53: // Reemplazo
+            // IMPORTANTE: usar tipo_nuevo_puesto no tipo_reemplazo
+            const tipoReemplazo = novedad.tipo_nuevo_puesto || 'permanente';
+            const esReemplazoPermanente = tipoReemplazo === 'permanente';
+            const iconoReemplazo = esReemplazoPermanente ? 'fa-check-circle text-success' : 'fa-clock text-warning';
+            const textoReemplazo = esReemplazoPermanente ? 'Permanente' : 'Temporario';
+            
+            // Manejar fecha_vigencia_hasta como objeto DateTime si es necesario
+            let fechaFinReemplazo = '';
+            if (novedad.fecha_vigencia_hasta) {
+                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
+                    fechaFinReemplazo = novedad.fecha_vigencia_hasta.date.split(' ')[0];
+                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
+                    fechaFinReemplazo = novedad.fecha_vigencia_hasta.split(' ')[0];
+                }
+            }
+            
+            modalHtml += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <h6 class="mb-0"><i class="fas fa-people-arrows me-2"></i>Detalles del Reemplazo</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Puesto de Reemplazo:</strong><br>
+                                    <span class="badge" style="background: #f5576c;">${novedad.puesto || 'No especificado'}</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Tipo de Reemplazo:</strong><br>
+                                    <span class="badge ${esReemplazoPermanente ? 'bg-success' : 'bg-warning text-dark'}">
+                                        <i class="fas ${iconoReemplazo} me-1"></i>${textoReemplazo}
+                                    </span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Inicio:</strong><br>
+                                    ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : novedad.fecha_vigencia}
+                                </div>
+                                ` : ''}
+                            </div>
+                            ${(!esReemplazoPermanente && fechaFinReemplazo) ? `
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-calendar-times me-2"></i>
+                                        <strong>Fecha de Finalización:</strong> ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(fechaFinReemplazo) : fechaFinReemplazo}
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 54: // Aumento Salarial
+            // Detectar tipo de aumento basándose en qué campo tiene valor
+            const tienePorcentaje = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
+            const tieneMonto = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0;
+            const tipoAumento = tienePorcentaje ? 'porcentaje' : 'monto';
+            const iconoAumento = tienePorcentaje ? 'fa-percentage text-primary' : 'fa-dollar-sign text-success';
+            
+            // IMPORTANTE: El porcentaje se guarda como decimal (0.21), multiplicar por 100 para mostrar (21%)
+            const porcentajeDisplay = tienePorcentaje ? (parseFloat(novedad.porcentaje_1) * 100).toFixed(2) : '';
+            
+            modalHtml += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Detalles del Aumento Salarial</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <strong>Tipo de Aumento:</strong><br>
+                                    <span class="badge ${tienePorcentaje ? 'bg-primary' : 'bg-success'}">
+                                        <i class="fas ${iconoAumento} me-1"></i>
+                                        ${tienePorcentaje ? 'Porcentaje' : 'Monto Fijo'}
+                                    </span>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <strong>Valor del Aumento:</strong><br>
+                                    <h4 class="${tienePorcentaje ? 'text-primary' : 'text-success'}">
+                                        ${tienePorcentaje ? 
+                                            `${porcentajeDisplay}%` : 
+                                            (NovedadesApp.formatearValor ? NovedadesApp.formatearValor(novedad.valor_numerico, 'moneda') : '$' + novedad.valor_numerico)
+                                        }
+                                    </h4>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Vigencia:</strong><br>
+                                    ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : novedad.fecha_vigencia}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
             break;
     }
     

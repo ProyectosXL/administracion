@@ -27,26 +27,73 @@ try {
             
             // Validar archivos para compra personal
             if ($_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
-                if (empty($_FILES['archivos']['name'][0])) {
+                // Debug: log de lo que llega
+                error_log("DEBUG - FILES structure: " . print_r($_FILES, true));
+                error_log("DEBUG - POST data: " . print_r($_POST, true));
+                
+                // Verificar estructura de archivos
+                if (!isset($_FILES['archivos']) || empty($_FILES['archivos']['name'])) {
+                    error_log("ERROR - No se encontraron archivos en \$_FILES['archivos']");
                     throw new Exception('Para compras personales es obligatorio adjuntar la factura');
                 }
+                
+                // Manejar tanto el formato array como el formato individual
+                $archivos = $_FILES['archivos'];
+                $cantidadArchivos = 0;
+                
+                // Si name es un array, hay múltiples archivos
+                if (is_array($archivos['name'])) {
+                    $cantidadArchivos = count(array_filter($archivos['name']));
+                    if ($cantidadArchivos === 0) {
+                        throw new Exception('Para compras personales es obligatorio adjuntar la factura');
+                    }
+                } else {
+                    // Un solo archivo
+                    if (empty($archivos['name'])) {
+                        throw new Exception('Para compras personales es obligatorio adjuntar la factura');
+                    }
+                    $cantidadArchivos = 1;
+                }
+                
+                error_log("DEBUG - Cantidad de archivos detectados: " . $cantidadArchivos);
                 
                 // Validar tipos y tamaños de archivo
                 $archivosPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
                 $tamaño_maximo = 15 * 1024 * 1024; // 15MB
                 
-                foreach ($_FILES['archivos']['tmp_name'] as $index => $tmp_name) {
-                    if (!empty($tmp_name)) {
-                        $tipo = $_FILES['archivos']['type'][$index];
-                        $tamaño = $_FILES['archivos']['size'][$index];
-                        
-                        if (!in_array($tipo, $archivosPermitidos)) {
-                            throw new Exception('Formato de archivo no permitido. Use JPG, PNG, GIF o PDF');
+                // Normalizar a array para procesamiento uniforme
+                $archivosParaValidar = [];
+                if (is_array($archivos['tmp_name'])) {
+                    // Múltiples archivos
+                    for ($i = 0; $i < count($archivos['tmp_name']); $i++) {
+                        if (!empty($archivos['tmp_name'][$i])) {
+                            $archivosParaValidar[] = [
+                                'tmp_name' => $archivos['tmp_name'][$i],
+                                'type' => $archivos['type'][$i],
+                                'size' => $archivos['size'][$i],
+                                'name' => $archivos['name'][$i]
+                            ];
                         }
-                        
-                        if ($tamaño > $tamaño_maximo) {
-                            throw new Exception('El archivo no puede superar los 15MB');
-                        }
+                    }
+                } else {
+                    // Un solo archivo
+                    if (!empty($archivos['tmp_name'])) {
+                        $archivosParaValidar[] = [
+                            'tmp_name' => $archivos['tmp_name'],
+                            'type' => $archivos['type'],
+                            'size' => $archivos['size'],
+                            'name' => $archivos['name']
+                        ];
+                    }
+                }
+                
+                foreach ($archivosParaValidar as $archivo) {
+                    if (!in_array($archivo['type'], $archivosPermitidos)) {
+                        throw new Exception('Formato de archivo no permitido. Use JPG, PNG, GIF o PDF');
+                    }
+                    
+                    if ($archivo['size'] > $tamaño_maximo) {
+                        throw new Exception('El archivo no puede superar los 15MB');
                     }
                 }
             }
@@ -65,6 +112,7 @@ try {
                 throw new Exception('ID de director no válido');
             }
             
+            // Preparar datos de la solicitud
             $datos = [
                 'id_director' => $idDirector,
                 'motivo' => $_POST['motivo'],
@@ -72,14 +120,45 @@ try {
                 'observaciones' => $_POST['observaciones'] ?? ''
             ];
             
+            // Agregar indicador de archivos si es compra personal
+            if ($_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
+                // Indicar que hay archivos (ya fueron validados arriba)
+                $datos['archivos'] = true;
+            }
+            
             // Crear la solicitud
             $resultado = $solicitud->crear($datos);
             
+            error_log("DEBUG - Resultado de crear solicitud: " . print_r($resultado, true));
+            
             // Si se creó exitosamente y hay archivos, procesarlos
-            if ($resultado['success'] && $_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL && !empty($_FILES['archivos']['name'][0])) {
-                $idSolicitud = $resultado['id_solicitud'];
-                $archivosProcesados = procesarArchivos($idSolicitud);
-                $resultado['archivos'] = $archivosProcesados;
+            if ($resultado['success'] && $_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
+                error_log("DEBUG - Intentando procesar archivos...");
+                error_log("DEBUG - FILES: " . print_r($_FILES, true));
+                
+                // Verificar si realmente hay archivos para procesar
+                if (isset($_FILES['archivos'])) {
+                    $hayArchivos = false;
+                    
+                    if (is_array($_FILES['archivos']['name'])) {
+                        $hayArchivos = !empty($_FILES['archivos']['name'][0]);
+                    } else {
+                        $hayArchivos = !empty($_FILES['archivos']['name']);
+                    }
+                    
+                    error_log("DEBUG - Hay archivos para procesar: " . ($hayArchivos ? 'SI' : 'NO'));
+                    
+                    if ($hayArchivos) {
+                        $idSolicitud = $resultado['id_solicitud'];
+                        error_log("DEBUG - Procesando archivos para solicitud: " . $idSolicitud);
+                        
+                        $archivosProcesados = procesarArchivos($idSolicitud);
+                        $resultado['archivos'] = $archivosProcesados;
+                        
+                        error_log("DEBUG - Archivos procesados: " . count($archivosProcesados));
+                        error_log("DEBUG - Detalle archivos: " . print_r($archivosProcesados, true));
+                    }
+                }
             }
             
             echo json_encode($resultado);
@@ -194,43 +273,96 @@ try {
  * Procesa los archivos adjuntos y los guarda en la base de datos
  */
 function procesarArchivos($idSolicitud) {
+    error_log("DEBUG procesarArchivos - Iniciando para solicitud: " . $idSolicitud);
+    
     $archivo = new ArchivoSolicitud();
     $archivosProcesados = [];
     
-    foreach ($_FILES['archivos']['tmp_name'] as $index => $tmp_name) {
-        if (!empty($tmp_name) && is_uploaded_file($tmp_name)) {
-            $nombreOriginal = $_FILES['archivos']['name'][$index];
-            $mimeType = $_FILES['archivos']['type'][$index];
-            $tamaño = $_FILES['archivos']['size'][$index];
+    if (!isset($_FILES['archivos'])) {
+        error_log("DEBUG procesarArchivos - No hay \$_FILES['archivos']");
+        return $archivosProcesados;
+    }
+    
+    $archivos = $_FILES['archivos'];
+    $archivosParaProcesar = [];
+    
+    error_log("DEBUG procesarArchivos - Estructura de archivos: " . print_r($archivos, true));
+    
+    // Normalizar a array para procesamiento uniforme
+    if (is_array($archivos['tmp_name'])) {
+        error_log("DEBUG procesarArchivos - Detectado formato array");
+        // Múltiples archivos
+        for ($i = 0; $i < count($archivos['tmp_name']); $i++) {
+            if (!empty($archivos['tmp_name'][$i])) {
+                $archivosParaProcesar[] = [
+                    'tmp_name' => $archivos['tmp_name'][$i],
+                    'name' => $archivos['name'][$i],
+                    'type' => $archivos['type'][$i],
+                    'size' => $archivos['size'][$i]
+                ];
+                error_log("DEBUG procesarArchivos - Archivo {$i}: " . $archivos['name'][$i]);
+            }
+        }
+    } else {
+        error_log("DEBUG procesarArchivos - Detectado formato simple");
+        // Un solo archivo
+        if (!empty($archivos['tmp_name'])) {
+            $archivosParaProcesar[] = [
+                'tmp_name' => $archivos['tmp_name'],
+                'name' => $archivos['name'],
+                'type' => $archivos['type'],
+                'size' => $archivos['size']
+            ];
+        }
+    }
+    
+    error_log("DEBUG procesarArchivos - Total archivos a procesar: " . count($archivosParaProcesar));
+    
+    foreach ($archivosParaProcesar as $index => $archivoData) {
+        error_log("DEBUG procesarArchivos - Procesando archivo {$index}: " . $archivoData['name']);
+        
+        if (is_uploaded_file($archivoData['tmp_name'])) {
+            error_log("DEBUG procesarArchivos - Archivo validado como uploaded");
             
             // Leer archivo y convertir a base64
-            $contenidoArchivo = file_get_contents($tmp_name);
+            $contenidoArchivo = file_get_contents($archivoData['tmp_name']);
             $archivoBase64 = base64_encode($contenidoArchivo);
+            
+            error_log("DEBUG procesarArchivos - Tamaño contenido: " . strlen($contenidoArchivo) . " bytes");
+            error_log("DEBUG procesarArchivos - Tamaño base64: " . strlen($archivoBase64) . " caracteres");
             
             try {
                 $resultado = $archivo->guardar(
                     $idSolicitud,
                     ArchivoSolicitud::TIPO_FACTURA,
-                    $nombreOriginal,
+                    $archivoData['name'],
                     $archivoBase64,
-                    $mimeType
+                    $archivoData['type']
                 );
+                
+                error_log("DEBUG procesarArchivos - Resultado guardar: " . print_r($resultado, true));
                 
                 if ($resultado['success']) {
                     $archivosProcesados[] = [
                         'id' => $resultado['id'],
-                        'nombre_original' => $nombreOriginal,
+                        'nombre_original' => $archivoData['name'],
                         'tipo' => ArchivoSolicitud::TIPO_FACTURA,
-                        'tamaño' => $tamaño,
-                        'mime_type' => $mimeType
+                        'tamaño' => $archivoData['size'],
+                        'mime_type' => $archivoData['type']
                     ];
+                    error_log("DEBUG procesarArchivos - Archivo guardado exitosamente con ID: " . $resultado['id']);
+                } else {
+                    error_log("ERROR procesarArchivos - Fallo al guardar: " . ($resultado['message'] ?? 'Sin mensaje'));
                 }
             } catch (Exception $e) {
-                error_log("Error al guardar archivo: " . $e->getMessage());
+                error_log("ERROR procesarArchivos - Exception al guardar archivo: " . $e->getMessage());
                 // Continuamos con los otros archivos aunque uno falle
             }
+        } else {
+            error_log("ERROR procesarArchivos - Archivo NO es uploaded_file: " . $archivoData['tmp_name']);
         }
     }
     
+    error_log("DEBUG procesarArchivos - Total archivos procesados: " . count($archivosProcesados));
     return $archivosProcesados;
 }
