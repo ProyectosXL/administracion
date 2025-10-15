@@ -531,7 +531,11 @@ class CostoOcupacionService
      * @param string $fechaHasta
      * @return array
      */
-    private function construirDatasetSimplificado($idSucursal, $fechaDesde, $fechaHasta)
+    /**
+     * Construir dataset simplificado con % costo de ocupación
+     * Método público para poder usarse desde controladores externos
+     */
+    public function construirDatasetSimplificado($idSucursal, $fechaDesde, $fechaHasta)
     {
         $meses = $this->generarMeses($fechaDesde, $fechaHasta);
         
@@ -552,6 +556,7 @@ class CostoOcupacionService
         
         return [
             'costo_ocupacion_total' => $costoOcupacion,
+            'porcentaje_costo_ocupacion' => $costoOcupacion, // Alias para compatibilidad
             'total_gastos' => $totalGastos,
             'total_venta_neta' => $totalVentaNeta
         ];

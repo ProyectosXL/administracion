@@ -326,13 +326,13 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="comparar-tab" data-toggle="tab" href="#comparar" role="tab" aria-controls="comparar" aria-selected="false">
-                                <i class="bi bi-arrow-left-right"></i> Comparar Sucursales
+                            <a class="nav-link" id="ranking-tab" data-toggle="tab" href="#ranking" role="tab" aria-controls="ranking" aria-selected="false">
+                                <i class="bi bi-bar-chart"></i> Ranking
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="controlar-tab" data-toggle="tab" href="#controlar" role="tab" aria-controls="controlar" aria-selected="false">
-                                <i class="bi bi-clipboard-check"></i> Controlar Gastos
+                            <a class="nav-link" id="comparar-tab" data-toggle="tab" href="#comparar" role="tab" aria-controls="comparar" aria-selected="false">
+                                <i class="bi bi-arrow-left-right"></i> Comparar Sucursales
                             </a>
                         </li>
                     </ul>
@@ -606,20 +606,15 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 </div>
                 <!-- Fin Pestaña 2: Reporte a Fecha -->
 
-                <!-- Pestaña 3: Comparar Sucursales -->
+                <!-- Pestaña 3: Ranking -->
+                <div class="tab-pane fade" id="ranking" role="tabpanel" aria-labelledby="ranking-tab">
+                    <?php include 'components/rankingTab.php'; ?>
+                </div>
+                <!-- Fin Pestaña 3: Ranking -->
+
+                <!-- Pestaña 4: Comparar Sucursales -->
                 <div class="tab-pane fade" id="comparar" role="tabpanel" aria-labelledby="comparar-tab">
                     <?php include 'components/compararSucursales.php'; ?>
-                </div>
-
-                <!-- Pestaña 4: Controlar Gastos -->
-                <div class="tab-pane fade" id="controlar" role="tabpanel" aria-labelledby="controlar-tab">
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="bi bi-wrench-adjustable" style="font-size: 4rem; color: #bdc3c7;"></i>
-                        </div>
-                        <h3>Módulo en desarrollo</h3>
-                        <p>Esta funcionalidad estará disponible próximamente</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -644,6 +639,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -743,5 +739,6 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="js/costoOcupacion.js"></script>
     <script src="js/compararSucursales.js"></script>
     <script src="js/reporteFecha.js"></script>
+    <script src="js/ranking.js"></script>
 </body>
 </html>

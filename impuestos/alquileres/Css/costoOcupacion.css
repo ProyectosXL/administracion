@@ -482,6 +482,8 @@ select.filter-input {
     left: 0;
     z-index: 10;
     background: var(--primary-color);
+    min-width: 250px;
+    width: 250px;
 }
 
 .cost-table tbody tr {
@@ -506,6 +508,8 @@ select.filter-input {
     background: var(--white);
     z-index: 5;
     font-weight: 600;
+    min-width: 250px;
+    width: 250px;
 }
 
 .cost-table tbody tr:hover td.fixed-column {

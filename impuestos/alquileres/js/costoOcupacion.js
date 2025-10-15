@@ -203,7 +203,10 @@ function mostrarLeyenda() {
                 <hr style="margin: 15px 0;">
                 <h4 style="margin-bottom: 15px; color: #2c3e50;">Agrupación de Conceptos:</h4>
                 <div style="margin-bottom: 8px;">
-                    <strong>Alquiler:</strong> Alquiler + Complementario + Baulera
+                    <strong>Alquiler:</strong> Alquiler + Complementario + Valor minimo mensual
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <strong>Baulera:</strong> Baulera
                 </div>
                 <div style="margin-bottom: 8px;">
                     <strong>Llave:</strong> 25% de (Alquiler + Porc. S/ventas brutas + Porc. S/ventas netas)
