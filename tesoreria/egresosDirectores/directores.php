@@ -89,12 +89,15 @@ $titulo_pagina = 'Directores';
                                     
                                     <div class="mb-3">
                                         <label for="importeSolicitud" class="form-label">
-                                            Importe <span class="text-danger">*</span>
+                                            Importe SIN IVA <span class="text-danger">*</span>
                                         </label>
                                         <div class="input-group">
                                             <span class="input-group-text">$</span>
                                             <input type="text" class="form-control importe-input" 
                                                    id="importeSolicitud" placeholder="0" required>
+                                        </div>
+                                        <div class="form-text">
+                                            Ingrese el importe en pesos SIN IVA. 
                                         </div>
                                     </div>
                                     

@@ -73,7 +73,11 @@ function mostrarListaSolicitudes(solicitudes) {
         maximumFractionDigits: 0
     });
     
-    let html = '';
+    // Iniciar el contenedor con sistema de grid responsive
+    // col-12 = 1 columna en móvil
+    // col-md-6 = 2 columnas en tablets (pantallas medianas)
+    // col-lg-4 = 3 columnas en escritorio (pantallas grandes)
+    let html = '<div class="row g-3">';
     
     solicitudes.forEach(solicitud => {
         const fecha = new Date(solicitud.fecha_solicitud).toLocaleDateString('es-AR', {
@@ -93,25 +97,26 @@ function mostrarListaSolicitudes(solicitudes) {
         const motivoTexto = solicitud.motivo === 'COMPRA_PERSONAL' ? 'Compra Personal' : 'Retiro de Dinero';
         
         html += `
-            <div class="card solicitud-card ${estadoClass}">
-                <div class="card-body">
-                    <div class="solicitud-header">
-                        <div class="flex-grow-1">
-                            <span class="solicitud-id">${solicitud.id_solicitud}</span>
-                            <h6 class="solicitud-director mt-1 mb-0">${solicitud.nombre_director}</h6>
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card solicitud-card ${estadoClass} h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="solicitud-header">
+                            <div class="flex-grow-1">
+                                <span class="solicitud-id">${solicitud.id_solicitud}</span>
+                                <h6 class="solicitud-director mt-1 mb-0">${solicitud.nombre_director}</h6>
+                            </div>
+                            <span class="badge estado-badge ${estadoClass}">${estadoTexto}</span>
                         </div>
-                        <span class="badge estado-badge ${estadoClass}">${estadoTexto}</span>
-                    </div>
-                    
-                    <div class="row align-items-center g-2">
-                        <div class="col-md-6">
+                        
+                        <div class="mt-2">
                             <span class="motivo-badge ${motivoClass}">
                                 <i class="bi ${solicitud.motivo === 'COMPRA_PERSONAL' ? 'bi-receipt' : 'bi-cash-coin'}"></i>
                                 ${motivoTexto}
                             </span>
-                            <div class="solicitud-importe mt-1">${importe}</div>
+                            <div class="solicitud-importe mt-2">${importe}</div>
                         </div>
-                        <div class="col-md-6 text-md-end">
+                        
+                        <div class="mt-2">
                             <div class="solicitud-fecha mb-1">
                                 <i class="bi bi-calendar3"></i> ${fecha}
                             </div>
@@ -119,34 +124,35 @@ function mostrarListaSolicitudes(solicitudes) {
                                 <i class="bi bi-paperclip"></i> ${solicitud.cantidad_archivos || 0} archivo(s)
                             </small>
                         </div>
-                    </div>
-                    
-                    ${solicitud.observaciones ? `
-                        <div class="mt-2 pt-2 border-top">
-                            <small class="text-muted">
-                                <i class="bi bi-chat-left-text"></i> ${solicitud.observaciones}
-                            </small>
-                        </div>
-                    ` : ''}
-                    
-                    <div class="mt-2 pt-2 border-top d-flex gap-1 flex-wrap">
-                        <button class="btn btn-sm btn-outline-primary" onclick="verDetalle('${solicitud.id_solicitud}')">
-                            <i class="bi bi-eye"></i> Detalle
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial('${solicitud.id_solicitud}')">
-                            <i class="bi bi-clock-history"></i> Historial
-                        </button>
-                        ${solicitud.cantidad_archivos > 0 ? `
-                            <button class="btn btn-sm btn-outline-info" onclick="verArchivos('${solicitud.id_solicitud}')">
-                                <i class="bi bi-paperclip"></i> Archivos (${solicitud.cantidad_archivos})
-                            </button>
+                        
+                        ${solicitud.observaciones ? `
+                            <div class="mt-2 pt-2 border-top">
+                                <small class="text-muted">
+                                    <i class="bi bi-chat-left-text"></i> ${solicitud.observaciones}
+                                </small>
+                            </div>
                         ` : ''}
+                        
+                        <div class="mt-auto pt-2 border-top d-flex gap-1 flex-wrap">
+                            <button class="btn btn-sm btn-outline-primary" onclick="verDetalle('${solicitud.id_solicitud}')">
+                                <i class="bi bi-eye"></i> Detalle
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial('${solicitud.id_solicitud}')">
+                                <i class="bi bi-clock-history"></i> Historial
+                            </button>
+                            ${solicitud.cantidad_archivos > 0 ? `
+                                <button class="btn btn-sm btn-outline-info" onclick="verArchivos('${solicitud.id_solicitud}')">
+                                    <i class="bi bi-paperclip"></i> Archivos (${solicitud.cantidad_archivos})
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             </div>
         `;
     });
     
+    html += '</div>';
     contenedor.innerHTML = html;
 }
 
