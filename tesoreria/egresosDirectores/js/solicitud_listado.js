@@ -253,14 +253,38 @@ async function verDetalle(idSolicitud) {
                                 <td><span class="badge bg-secondary">${solicitud.cantidad_archivos || 0}</span></td>
                             </tr>
                         </table>
+                    </div>
+                </div>
+                
+                ${solicitud.observaciones || solicitud.observaciones_proveedores || solicitud.observaciones_tesoreria ? `
+                    <div class="mt-3">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-chat-left-text"></i> Observaciones</h6>
                         ${solicitud.observaciones ? `
-                            <div class="mt-3">
-                                <strong class="text-muted d-block mb-2">Observaciones:</strong>
+                            <div class="mb-2">
+                                <strong class="text-primary d-block mb-1">
+                                    <i class="bi bi-person-circle"></i> Director:
+                                </strong>
                                 <p class="bg-light p-2 rounded small mb-0">${solicitud.observaciones}</p>
                             </div>
                         ` : ''}
+                        ${solicitud.observaciones_proveedores ? `
+                            <div class="mb-2">
+                                <strong class="text-info d-block mb-1">
+                                    <i class="bi bi-building"></i> Proveedores:
+                                </strong>
+                                <p class="bg-light p-2 rounded small mb-0">${solicitud.observaciones_proveedores}</p>
+                            </div>
+                        ` : ''}
+                        ${solicitud.observaciones_tesoreria ? `
+                            <div class="mb-2">
+                                <strong class="text-success d-block mb-1">
+                                    <i class="bi bi-cash-stack"></i> Tesorería:
+                                </strong>
+                                <p class="bg-light p-2 rounded small mb-0">${solicitud.observaciones_tesoreria}</p>
+                            </div>
+                        ` : ''}
                     </div>
-                </div>
+                ` : ''}
             `;
             
             document.getElementById('modalDetalleContenido').innerHTML = contenidoHtml;
@@ -305,8 +329,19 @@ async function verHistorial(idSolicitud) {
                         minute: '2-digit'
                     });
                     
-                    const estadoAnterior = item.estado_anterior ? obtenerTextoEstado(item.estado_anterior) : 'Ninguno';
-                    const estadoNuevo = obtenerTextoEstado(item.estado_nuevo);
+                    // Personalizar primer cambio según el tipo
+                    let estadoAnterior, estadoNuevo, usuario;
+                    
+                    if (!item.estado_anterior && (item.usuario === 'SISTEMA' || item.usuario === 'DIRECTORES')) {
+                        // Es el primer cambio (creación de la solicitud)
+                        estadoAnterior = 'Creado';
+                        estadoNuevo = obtenerTextoEstado(item.estado_nuevo);
+                        usuario = 'DIRECTORES';
+                    } else {
+                        estadoAnterior = item.estado_anterior ? obtenerTextoEstado(item.estado_anterior) : 'Ninguno';
+                        estadoNuevo = obtenerTextoEstado(item.estado_nuevo);
+                        usuario = item.usuario;
+                    }
                     
                     html += `
                         <div class="historial-item">
@@ -315,7 +350,7 @@ async function verHistorial(idSolicitud) {
                                 ${estadoAnterior} → ${estadoNuevo}
                             </div>
                             <div class="historial-usuario">
-                                <i class="bi bi-person"></i> ${item.usuario}
+                                <i class="bi bi-person"></i> ${usuario}
                             </div>
                             ${item.observaciones ? `
                                 <div class="mt-1">

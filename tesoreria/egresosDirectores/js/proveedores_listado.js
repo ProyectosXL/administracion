@@ -100,7 +100,7 @@ function mostrarFacturasPendientes(facturas) {
                     </button>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-primary" onclick="abrirModalOrdenCompra('${factura.id_solicitud}')">
+                    <button class="btn btn-sm btn-outline-primary" onclick="abrirModalOrdenCompra('${factura.id_solicitud}')">
                         <i class="bi bi-file-earmark-check"></i> Cargar O.C.
                     </button>
                 </td>

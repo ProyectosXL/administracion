@@ -85,6 +85,13 @@ class SolicitudEgreso {
             // Generar ID único
             $idSolicitud = $this->generarIdSolicitud();
             
+            // Determinar estado inicial según el motivo
+            // - COMPRA_PERSONAL: inicia en SOLICITADO (necesita orden de compra)
+            // - RETIRO_DINERO: inicia en CARGADO (va directo a tesorería)
+            $estadoInicial = ($datos['motivo'] === self::MOTIVO_RETIRO_DINERO) 
+                ? self::ESTADO_CARGADO 
+                : self::ESTADO_SOLICITADO;
+            
             // Insertar solicitud
             $sql = "INSERT INTO solicitudes_egresos (
                         id_solicitud, id_director, motivo, importe, 
@@ -96,7 +103,7 @@ class SolicitudEgreso {
                 (int)$datos['id_director'],
                 $datos['motivo'],
                 $importe,
-                self::ESTADO_SOLICITADO,
+                $estadoInicial,
                 $datos['observaciones'] ?? ''
             ];
             
@@ -108,8 +115,13 @@ class SolicitudEgreso {
             
             sqlsrv_free_stmt($stmt);
             
-            // Registrar en historial
-            $this->registrarHistorial($idSolicitud, null, self::ESTADO_SOLICITADO, 'Solicitud creada');
+            // Registrar en historial con el usuario apropiado
+            $usuarioCreacion = 'DIRECTORES';
+            $observacionCreacion = ($datos['motivo'] === self::MOTIVO_RETIRO_DINERO) 
+                ? 'Solicitud de retiro de dinero creada y lista para pago'
+                : 'Solicitud de compra personal creada';
+            
+            $this->registrarHistorial($idSolicitud, null, $estadoInicial, $observacionCreacion, $usuarioCreacion);
             
             return [
                 'success' => true,
@@ -139,6 +151,8 @@ class SolicitudEgreso {
                         s.importe,
                         s.estado,
                         s.observaciones,
+                        ISNULL(s.observaciones_proveedores, '') as observaciones_proveedores,
+                        ISNULL(s.observaciones_tesoreria, '') as observaciones_tesoreria,
                         s.fecha_solicitud,
                         s.fecha_modificacion,
                         s.usuario_modificacion,
@@ -222,6 +236,8 @@ class SolicitudEgreso {
                         s.importe,
                         s.estado,
                         s.observaciones,
+                        ISNULL(s.observaciones_proveedores, '') as observaciones_proveedores,
+                        ISNULL(s.observaciones_tesoreria, '') as observaciones_tesoreria,
                         s.fecha_solicitud,
                         s.fecha_modificacion,
                         s.usuario_modificacion,
@@ -297,6 +313,56 @@ class SolicitudEgreso {
             return true;
         } catch (Exception $e) {
             error_log("Error al actualizar estado: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Actualiza las observaciones de proveedores
+     */
+    public function actualizarObservacionesProveedores(string $idSolicitud, string $observaciones): bool {
+        try {
+            $sql = "UPDATE solicitudes_egresos 
+                    SET observaciones_proveedores = ?, 
+                        fecha_modificacion = GETDATE(),
+                        usuario_modificacion = 'PROVEEDORES'
+                    WHERE id_solicitud = ?";
+            
+            $stmt = sqlsrv_query($this->db, $sql, [$observaciones, $idSolicitud]);
+            
+            if ($stmt === false) {
+                throw new Exception("Error al actualizar observaciones de proveedores: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return true;
+        } catch (Exception $e) {
+            error_log("Error al actualizar observaciones de proveedores: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Actualiza las observaciones de tesorería
+     */
+    public function actualizarObservacionesTesoreria(string $idSolicitud, string $observaciones): bool {
+        try {
+            $sql = "UPDATE solicitudes_egresos 
+                    SET observaciones_tesoreria = ?, 
+                        fecha_modificacion = GETDATE(),
+                        usuario_modificacion = 'TESORERIA'
+                    WHERE id_solicitud = ?";
+            
+            $stmt = sqlsrv_query($this->db, $sql, [$observaciones, $idSolicitud]);
+            
+            if ($stmt === false) {
+                throw new Exception("Error al actualizar observaciones de tesorería: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return true;
+        } catch (Exception $e) {
+            error_log("Error al actualizar observaciones de tesorería: " . $e->getMessage());
             return false;
         }
     }

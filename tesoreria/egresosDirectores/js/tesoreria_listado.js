@@ -11,28 +11,21 @@ let archivosComprobantes = {
 /**
  * Carga las facturas listas para pago
  * - Compras personales: estado CARGADO (ya tienen O.C.)
- * - Retiros de dinero: estado SOLICITADO (van directo a tesorería)
+ * - Retiros de dinero: estado CARGADO (van directo a tesorería)
  */
 async function cargarFacturasListas() {
     mostrarLoading();
     
     try {
-        // 1. Cargar COMPRAS PERSONALES con estado CARGADO
-        const urlCompras = 'controller/solicitud_controller.php?accion=listar&estado=CARGADO';
-        const responseCompras = await fetch(urlCompras);
-        const resultCompras = await responseCompras.json();
+        // Cargar todas las solicitudes con estado CARGADO
+        const url = 'controller/solicitud_controller.php?accion=listar&estado=CARGADO';
+        const response = await fetch(url);
+        const result = await response.json();
         
-        // 2. Cargar RETIROS DE DINERO con estado SOLICITADO
-        const urlRetiros = 'controller/solicitud_controller.php?accion=listar&estado=SOLICITADO';
-        const responseRetiros = await fetch(urlRetiros);
-        const resultRetiros = await responseRetiros.json();
-        
-        if (resultCompras.success && resultRetiros.success) {
-            // Filtrar solo compras personales del estado CARGADO
-            const compras = resultCompras.data.filter(s => s.motivo === 'COMPRA_PERSONAL');
-            
-            // Filtrar solo retiros de dinero del estado SOLICITADO
-            const retiros = resultRetiros.data.filter(s => s.motivo === 'RETIRO_DINERO');
+        if (result.success) {
+            // Filtrar por tipo de motivo
+            const compras = result.data.filter(s => s.motivo === 'COMPRA_PERSONAL');
+            const retiros = result.data.filter(s => s.motivo === 'RETIRO_DINERO');
             
             mostrarComprasListas(compras);
             mostrarRetirosListos(retiros);
@@ -138,7 +131,7 @@ function generarTablaFacturas(facturas, tipo) {
                     ${columnArchivos}
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-success" onclick="abrirModalPago('${factura.id_solicitud}', '${tipo}')">
+                    <button class="btn btn-sm btn-outline-success" onclick="abrirModalPago('${factura.id_solicitud}', '${tipo}')">
                         <i class="bi bi-cash-stack"></i> Pagar
                     </button>
                 </td>

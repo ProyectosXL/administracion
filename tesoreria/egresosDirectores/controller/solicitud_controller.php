@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../Class/SolicitudEgreso.php';
 require_once __DIR__ . '/../Class/Director.php';
 require_once __DIR__ . '/../Class/ArchivoSolicitud.php';
+require_once __DIR__ . '/../Class/EmailNotificacion.php';
 
 try {
     $solicitud = new SolicitudEgreso();
@@ -161,6 +162,29 @@ try {
                 }
             }
             
+            // Enviar notificación por email si la solicitud se creó exitosamente
+            if ($resultado['success']) {
+                try {
+                    error_log("DEBUG - Intentando enviar email para solicitud: " . $resultado['id_solicitud']);
+                    $emailNotificacion = new EmailNotificacion();
+                    $emailEnviado = $emailNotificacion->notificarNuevaSolicitud([
+                        'id_solicitud' => $resultado['id_solicitud'],
+                        'motivo' => $_POST['motivo']
+                    ]);
+                    
+                    if ($emailEnviado) {
+                        error_log("DEBUG - Notificación por email enviada correctamente");
+                    } else {
+                        error_log("DEBUG - No se pudo enviar la notificación por email");
+                    }
+                } catch (Exception $emailException) {
+                    // Capturar cualquier error de email pero no interrumpir el flujo
+                    error_log("ERROR al enviar email: " . $emailException->getMessage());
+                    error_log("TRACE: " . $emailException->getTraceAsString());
+                    // No re-lanzar la excepción para que no afecte la respuesta JSON
+                }
+            }
+            
             echo json_encode($resultado);
             break;
             
@@ -217,21 +241,56 @@ try {
                 throw new Exception('Datos incompletos');
             }
             
+            $idSolicitud = $_POST['id_solicitud'];
+            $nuevoEstado = $_POST['estado'];
+            $usuario = $_POST['usuario'] ?? 'SISTEMA';
+            $observaciones = $_POST['observaciones'] ?? '';
+            
+            // Actualizar el estado
             $resultado = $solicitud->actualizarEstado(
-                $_POST['id_solicitud'],
-                $_POST['estado'],
-                $_POST['usuario'] ?? 'SISTEMA',
-                $_POST['observaciones'] ?? ''
+                $idSolicitud,
+                $nuevoEstado,
+                $usuario,
+                $observaciones
             );
             
-            if ($resultado) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Estado actualizado correctamente'
-                ]);
-            } else {
+            if (!$resultado) {
                 throw new Exception('Error al actualizar estado');
             }
+            
+            // Actualizar observaciones específicas según el usuario
+            if (!empty($observaciones)) {
+                if ($usuario === 'PROVEEDORES') {
+                    $solicitud->actualizarObservacionesProveedores($idSolicitud, $observaciones);
+                } elseif ($usuario === 'TESORERIA') {
+                    $solicitud->actualizarObservacionesTesoreria($idSolicitud, $observaciones);
+                }
+            }
+            
+            // Enviar email si proveedores carga la orden de compra (cambia a CARGADO)
+            if ($usuario === 'PROVEEDORES' && $nuevoEstado === SolicitudEgreso::ESTADO_CARGADO) {
+                try {
+                    error_log("DEBUG - Intentando enviar email de O.C. cargada para solicitud: " . $idSolicitud);
+                    $emailNotificacion = new EmailNotificacion();
+                    $emailEnviado = $emailNotificacion->notificarOrdenCompraCargada($idSolicitud);
+                    
+                    if ($emailEnviado) {
+                        error_log("DEBUG - Notificación de O.C. cargada enviada correctamente");
+                    } else {
+                        error_log("DEBUG - No se pudo enviar la notificación de O.C. cargada");
+                    }
+                } catch (Exception $emailException) {
+                    // Capturar cualquier error de email pero no interrumpir el flujo
+                    error_log("ERROR al enviar email O.C.: " . $emailException->getMessage());
+                    error_log("TRACE: " . $emailException->getTraceAsString());
+                    // No re-lanzar la excepción
+                }
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Estado actualizado correctamente'
+            ]);
             break;
             
         case 'historial':
