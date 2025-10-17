@@ -64,7 +64,7 @@ $titulo_pagina = 'Proveedores';
             </div>
             
             <!-- Card con facturas pendientes -->
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-receipt"></i> Facturas Pendientes de Carga
@@ -77,6 +77,28 @@ $titulo_pagina = 'Proveedores';
                                 <span class="visually-hidden">Cargando...</span>
                             </div>
                             <p class="mt-2 text-muted">Cargando facturas pendientes...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card con historial de facturas procesadas -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-archive"></i> Historial de Facturas Procesadas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-info-circle"></i> Facturas que ya tienen orden de compra cargada o que ya fueron pagadas.
+                    </p>
+                    <div id="historialFacturas">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-secondary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Cargando historial...</p>
                         </div>
                     </div>
                 </div>

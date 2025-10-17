@@ -173,6 +173,21 @@
     padding: 1rem;
 }
 
+/* Asegurar que las tarjetas en columnas tengan la misma altura */
+.solicitud-card.h-100 {
+    height: 100%;
+}
+
+.solicitud-card.h-100 .card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Los botones siempre al final de la tarjeta */
+.solicitud-card .mt-auto {
+    margin-top: auto !important;
+}
+
 .solicitud-header {
     display: flex;
     justify-content: space-between;
@@ -271,6 +286,36 @@
     
     .solicitud-importe {
         font-size: 1.25rem;
+    }
+    
+    /* En móvil las tarjetas ocupan todo el ancho */
+    .solicitud-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Tablets: 2 columnas */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    /* Las tarjetas se verán en 2 columnas en tablets */
+    .solicitud-card {
+        height: 100%;
+    }
+}
+
+/* Escritorio: 3 columnas */
+@media (min-width: 992px) {
+    /* Las tarjetas se verán en 3 columnas en escritorio */
+    .solicitud-card {
+        height: 100%;
+    }
+    
+    /* Ajustar tamaño de fuente en columnas */
+    .solicitud-importe {
+        font-size: 1.15rem;
+    }
+    
+    .solicitud-director {
+        font-size: 0.9rem;
     }
 }
 

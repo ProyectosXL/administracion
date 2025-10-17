@@ -86,7 +86,7 @@ $titulo_pagina = 'Tesorería';
             <div class="tab-content" id="tesoreriaTabsContent">
                 <!-- Pestaña Compras Personales -->
                 <div class="tab-pane fade show active" id="compras" role="tabpanel">
-                    <div class="card">
+                    <div class="card mb-4">
                         <div class="card-header bg-success text-white">
                             <h5 class="mb-0">
                                 <i class="bi bi-receipt-cutoff"></i> Compras Personales Listas para Pago
@@ -107,11 +107,33 @@ $titulo_pagina = 'Tesorería';
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Historial de Compras Pagadas -->
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-archive"></i> Historial de Compras Pagadas
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-info-circle"></i> Compras personales que ya fueron pagadas.
+                            </p>
+                            <div id="historialComprasPagadas">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-secondary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Cargando historial...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Pestaña Retiros de Dinero -->
                 <div class="tab-pane fade" id="retiros" role="tabpanel">
-                    <div class="card">
+                    <div class="card mb-4">
                         <div class="card-header bg-info text-white">
                             <h5 class="mb-0">
                                 <i class="bi bi-cash-coin"></i> Retiros de Dinero Listos para Pago
@@ -128,6 +150,28 @@ $titulo_pagina = 'Tesorería';
                                         <span class="visually-hidden">Cargando...</span>
                                     </div>
                                     <p class="mt-2 text-muted">Cargando retiros listos...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Historial de Retiros Pagados -->
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-archive"></i> Historial de Retiros Pagados
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-info-circle"></i> Retiros de dinero que ya fueron pagados.
+                            </p>
+                            <div id="historialRetirosPagados">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-secondary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Cargando historial...</p>
                                 </div>
                             </div>
                         </div>

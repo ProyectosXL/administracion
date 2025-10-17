@@ -41,6 +41,120 @@ async function cargarFacturasPendientes() {
 }
 
 /**
+ * Carga el historial de facturas ya procesadas (CARGADO o PAGADO)
+ */
+async function cargarHistorialFacturas() {
+    try {
+        // Cargar todas las solicitudes de COMPRA_PERSONAL
+        const url = 'controller/solicitud_controller.php?accion=listar';
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            // Filtrar compras personales que ya están cargadas o pagadas
+            const facturasHistorial = result.data.filter(
+                solicitud => solicitud.motivo === 'COMPRA_PERSONAL' && 
+                            (solicitud.estado === 'CARGADO' || solicitud.estado === 'PAGADO')
+            );
+            mostrarHistorialFacturas(facturasHistorial);
+        } else {
+            console.error('Error al cargar historial:', result.message);
+            document.getElementById('historialFacturas').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Error al cargar historial: ${result.message}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error en cargarHistorialFacturas:', error);
+        document.getElementById('historialFacturas').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i> Error de conexión
+            </div>
+        `;
+    }
+}
+
+/**
+ * Muestra el historial de facturas procesadas
+ */
+function mostrarHistorialFacturas(facturas) {
+    const contenedor = document.getElementById('historialFacturas');
+    
+    if (!facturas || facturas.length === 0) {
+        contenedor.innerHTML = `
+            <div class="empty-state">
+                <i class="bi bi-archive"></i>
+                <h5>No hay registros históricos</h5>
+                <p>Las facturas ya procesadas aparecerán aquí.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const formatoMoneda = new Intl.NumberFormat('es-AR', { 
+        style: 'currency', 
+        currency: 'ARS',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+    
+    let html = '<div class="table-responsive"><table class="table table-hover table-sm">';
+    html += `
+        <thead class="table-secondary">
+            <tr>
+                <th>ID Solicitud</th>
+                <th>Director</th>
+                <th>Fecha</th>
+                <th class="text-end">Importe</th>
+                <th class="text-center">Estado</th>
+                <th class="text-center">Archivos</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    facturas.forEach(factura => {
+        const fecha = new Date(factura.fecha_solicitud).toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        
+        const importe = formatoMoneda.format(factura.importe);
+        
+        // Badge de estado
+        const estadoBadge = factura.estado === 'PAGADO' 
+            ? '<span class="badge bg-success">PAGADO</span>'
+            : '<span class="badge bg-warning text-dark">LISTO PARA PAGO</span>';
+        
+        html += `
+            <tr>
+                <td><code>${factura.id_solicitud}</code></td>
+                <td><strong>${factura.nombre_director}</strong></td>
+                <td>${fecha}</td>
+                <td class="text-end">${importe}</td>
+                <td class="text-center">${estadoBadge}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-info" onclick="verArchivosFactura('${factura.id_solicitud}')">
+                        <i class="bi bi-paperclip"></i> ${factura.cantidad_archivos || 0}
+                    </button>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="verHistorialEstados('${factura.id_solicitud}')">
+                        <i class="bi bi-clock-history"></i> Historial
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    contenedor.innerHTML = html;
+}
+
+/**
  * Muestra las facturas pendientes en la interfaz
  */
 function mostrarFacturasPendientes(facturas) {
@@ -365,7 +479,129 @@ async function guardarOrdenCompra() {
 // Cargar facturas al iniciar la página
 document.addEventListener('DOMContentLoaded', function() {
     cargarFacturasPendientes();
+    cargarHistorialFacturas();
 });
+
+/**
+ * Ver el historial de estados de una solicitud
+ */
+async function verHistorialEstados(idSolicitud) {
+    mostrarLoading();
+    
+    try {
+        const response = await fetch(`controller/solicitud_controller.php?accion=historial&id_solicitud=${idSolicitud}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            mostrarModalHistorial(idSolicitud, result.data);
+        } else {
+            mostrarAlerta('Error', result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error', 'No se pudo obtener el historial');
+    } finally {
+        ocultarLoading();
+    }
+}
+
+/**
+ * Muestra el modal con el historial de estados
+ */
+function mostrarModalHistorial(idSolicitud, historial) {
+    let html = '<div class="timeline">';
+    
+    if (historial.length === 0) {
+        html = '<div class="alert alert-info">No hay historial de cambios para esta solicitud.</div>';
+    } else {
+        historial.forEach((cambio, index) => {
+            const fecha = new Date(cambio.fecha_cambio).toLocaleString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const estadoAnterior = cambio.estado_anterior || 'INICIO';
+            const estadoNuevo = cambio.estado_nuevo;
+            
+            let iconoEstado = 'bi-circle-fill';
+            let colorEstado = 'text-secondary';
+            
+            if (estadoNuevo === 'SOLICITADO') {
+                iconoEstado = 'bi-file-earmark-plus';
+                colorEstado = 'text-primary';
+            } else if (estadoNuevo === 'CARGADO') {
+                iconoEstado = 'bi-file-earmark-check';
+                colorEstado = 'text-warning';
+            } else if (estadoNuevo === 'PAGADO') {
+                iconoEstado = 'bi-cash-coin';
+                colorEstado = 'text-success';
+            }
+            
+            html += `
+                <div class="timeline-item mb-3 ${index === 0 ? 'border-start border-3 border-primary' : ''}">
+                    <div class="d-flex align-items-start">
+                        <div class="${colorEstado} me-3">
+                            <i class="bi ${iconoEstado} fs-4"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <h6 class="mb-0">${estadoAnterior} → ${estadoNuevo}</h6>
+                                <small class="text-muted">${fecha}</small>
+                            </div>
+                            <p class="mb-1"><strong>Usuario:</strong> ${cambio.usuario}</p>
+                            ${cambio.observaciones ? `<p class="mb-0 text-muted small">${cambio.observaciones}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    html += '</div>';
+    
+    // Crear o actualizar el modal
+    const modalId = 'modalHistorialEstados';
+    let modalElement = document.getElementById(modalId);
+    
+    if (!modalElement) {
+        modalElement = document.createElement('div');
+        modalElement.id = modalId;
+        modalElement.className = 'modal fade';
+        modalElement.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-clock-history"></i> Historial de Estados
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="modalHistorialEstadosContenido">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalElement);
+    }
+    
+    document.getElementById('modalHistorialEstadosContenido').innerHTML = `
+        <div class="mb-3">
+            <strong>Solicitud:</strong> <code>${idSolicitud}</code>
+        </div>
+        <hr>
+        ${html}
+    `;
+    
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
 
 // Exportar funciones para uso global
 window.verImagenCompleta = verImagenCompleta;
+window.verHistorialEstados = verHistorialEstados;

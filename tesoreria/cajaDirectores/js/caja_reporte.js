@@ -537,7 +537,7 @@ function cambiarCantidadMovimientos(cantidad) {
 async function marcarRecibidoDesdeReporte(id) {
     try {
         const formData = new FormData();
-                formData.append('accion', 'marcar_recibido_tesoreria');
+        formData.append('accion', 'marcar_recibido');
         formData.append('id', id);
         
         const response = await fetch('controller/caja_ingresos_controller.php', {
@@ -549,8 +549,27 @@ async function marcarRecibidoDesdeReporte(id) {
         
         if (result.success) {
             mostrarAlerta('Éxito', result.message);
-            cargarReporte(); // Recargar tabla
-            actualizarResumen(true); // Solo actualizar saldo
+            
+            // Recargar usando las fechas de los filtros si están disponibles
+            const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
+            const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
+            
+            if (fechaDesde && fechaHasta) {
+                cargarReporte({
+                    fecha_desde: fechaDesde,
+                    fecha_hasta: fechaHasta,
+                    aplicadoManualmente: true
+                });
+                // Actualizar todas las tarjetas con los filtros activos
+                actualizarResumen(false, {
+                    fecha_desde: fechaDesde,
+                    fecha_hasta: fechaHasta
+                });
+            } else {
+                cargarReporte();
+                // Actualizar todas las tarjetas sin filtros
+                actualizarResumen();
+            }
         } else {
             mostrarAlerta('Error', result.message);
         }
@@ -685,13 +704,19 @@ async function marcarRecibidoTesoreria(botonElemento) {
             if (fechaDesde && fechaHasta) {
                 cargarReporte({
                     fecha_desde: fechaDesde,
+                    fecha_hasta: fechaHasta,
+                    aplicadoManualmente: true
+                });
+                // Actualizar todas las tarjetas con los filtros activos
+                actualizarResumen(false, {
+                    fecha_desde: fechaDesde,
                     fecha_hasta: fechaHasta
                 });
             } else {
                 cargarReporte();
+                // Actualizar todas las tarjetas sin filtros
+                actualizarResumen();
             }
-            
-            actualizarResumen(true); // Solo actualizar saldo
         } else {
             // Restaurar botón en caso de error
             botonElemento.disabled = false;
@@ -706,22 +731,6 @@ async function marcarRecibidoTesoreria(botonElemento) {
         botonElemento.classList.remove('checked');
         botonElemento.textContent = '☐';
         mostrarAlerta('Error', 'No se pudo procesar la solicitud: ' + error.message);
-    }
-}
-async function marcarRecibidoDesdeReporte(id) {
-    await marcarRecibido(id);
-    
-    // Recargar usando las fechas de los filtros si están disponibles
-    const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
-    const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
-    
-    if (fechaDesde && fechaHasta) {
-        cargarReporte({
-            fecha_desde: fechaDesde,
-            fecha_hasta: fechaHasta
-        });
-    } else {
-        cargarReporte();
     }
 }
 
