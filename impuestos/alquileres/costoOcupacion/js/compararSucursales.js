@@ -88,7 +88,7 @@ function compararSucursales() {
     
     // Petición AJAX
     $.ajax({
-        url: 'Controller/CompararSucursalesController.php',
+        url: 'Controller/compararSucursalesController.php',
         method: 'POST',
         data: {
             action: 'comparar',

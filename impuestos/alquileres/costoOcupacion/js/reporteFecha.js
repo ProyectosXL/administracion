@@ -213,6 +213,51 @@ function renderizarReporteFecha(data) {
         tableBody.append(row);
     });
     
+    // Agregar fila de % Costo de Ocupación Período Anterior (YoY)
+    let rowAnterior = `<tr class="row-yoy-anterior" style="font-weight: bold;">
+        <td class="fixed-column" style="font-weight: 600;">% Costo de Ocupación (Período Anterior YoY)</td>`;
+    
+    data.sucursales.forEach(sucursal => {
+        const valorAnterior = data.porcentajesAnteriores[sucursal.id];
+        const formattedValue = valorAnterior !== null && valorAnterior !== undefined 
+            ? formatearPorcentaje(valorAnterior) 
+            : '-';
+        
+        rowAnterior += `<td class="text-right">${formattedValue}</td>`;
+    });
+    
+    rowAnterior += `</tr>`;
+    tableBody.append(rowAnterior);
+    
+    // Agregar fila de Variación Relativa (%)
+    let rowVariacion = `<tr class="row-yoy-variacion" style="font-weight: bold;">
+        <td class="fixed-column" style="font-weight: 600;">Variación Relativa (%)</td>`;
+    
+    data.sucursales.forEach(sucursal => {
+        // Buscar % Costo de Ocupación actual
+        let porcentajeActual = null;
+        data.conceptos.forEach(concepto => {
+            if (concepto.is_percentage && concepto.nombre.toLowerCase().includes('costo')) {
+                porcentajeActual = concepto.valores[sucursal.id];
+            }
+        });
+        
+        const porcentajeAnterior = data.porcentajesAnteriores[sucursal.id];
+        
+        let variacionHtml = '-';
+        if (porcentajeActual !== null && porcentajeAnterior !== null && porcentajeAnterior !== 0) {
+            const variacionRelativa = ((porcentajeActual - porcentajeAnterior) / porcentajeAnterior) * 100;
+            const signo = variacionRelativa > 0 ? '+' : '';
+            const colorClass = variacionRelativa > 0 ? 'text-danger' : 'text-success';
+            variacionHtml = `<span class="${colorClass}">${signo}${variacionRelativa.toFixed(2)}%</span>`;
+        }
+        
+        rowVariacion += `<td class="text-right">${variacionHtml}</td>`;
+    });
+    
+    rowVariacion += `</tr>`;
+    tableBody.append(rowVariacion);
+    
     // NO calcular ni mostrar footer con totales
     
     // Inicializar DataTable si no existe
@@ -473,8 +518,8 @@ function formatearMoneda(valor) {
     return new Intl.NumberFormat('es-AR', {
         style: 'currency',
         currency: 'ARS',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
     }).format(numero);
 }
 

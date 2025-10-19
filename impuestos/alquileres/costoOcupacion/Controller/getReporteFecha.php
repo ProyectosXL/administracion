@@ -7,11 +7,11 @@
 
 header('Content-Type: application/json');
 error_reporting(E_ALL);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 
 try {
-    require_once "../Class/Sucursal.php";
-    require_once "../Class/costoOcupacionService.php";
+    require_once "../../Class/Sucursal.php";
+    require_once __DIR__ . '/../Class/costoOcupacionService.php';
     
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
@@ -38,21 +38,37 @@ try {
         throw new Exception('La fecha desde no puede ser mayor a la fecha hasta');
     }
     
+    // Calcular período anterior (YoY - mismo rango pero 12 meses antes)
+    $dateDesdeAnterior = clone $dateDesde;
+    $dateDesdeAnterior->modify('-12 months');
+    $fechaDesdeAnterior = $dateDesdeAnterior->format('Y-m-d');
+    
+    $dateHastaAnterior = clone $dateHasta;
+    $dateHastaAnterior->modify('-12 months');
+    $fechaHastaAnterior = $dateHastaAnterior->format('Y-m-d');
+    
     $service = new CostoOcupacionService();
     $sucursalObj = new Sucursal();
     
     // Obtener todas las sucursales activas
     $todasLasSucursales = $sucursalObj->traerLocales(true);
     
+    // Debug: Log de sucursales obtenidas
+    error_log("Total sucursales obtenidas: " . count($todasLasSucursales));
+    if (count($todasLasSucursales) > 0) {
+        error_log("Primera sucursal: " . print_r($todasLasSucursales[0], true));
+    }
+    
     // Filtrar sucursales según el entorno (Argentina o Uruguay)
     $entorno = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    error_log("Entorno actual: " . $entorno);
     $sucursalesFiltradas = [];
     
     foreach ($todasLasSucursales as $sucursal) {
         // Lógica de filtrado según entorno
-        if ($entorno === 'central') {
-            // Argentina: todas las sucursales normales
-            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] < 900) {
+        if ($entorno === 'uy') {
+            // Uruguay: solo sucursales de Uruguay (>= 900)
+            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] >= 900) {
                 $sucursalesFiltradas[] = [
                     'id' => $sucursal['ID'],
                     'numero' => $sucursal['NRO_SUCURSAL'],
@@ -60,8 +76,9 @@ try {
                 ];
             }
         } else {
-            // Uruguay: solo sucursales de Uruguay
-            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] >= 900) {
+            // Argentina: todas las sucursales normales (< 900)
+            // Esto incluye 'central', 'sistemas' y cualquier otro entorno que no sea Uruguay
+            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] < 900) {
                 $sucursalesFiltradas[] = [
                     'id' => $sucursal['ID'],
                     'numero' => $sucursal['NRO_SUCURSAL'],
@@ -71,13 +88,33 @@ try {
         }
     }
     
-    // Array para almacenar datos por sucursal
+    // Debug: Log de sucursales filtradas
+    error_log("Sucursales filtradas: " . count($sucursalesFiltradas));
+    
+    // Array para almacenar datos por sucursal (período actual)
     $datosPorSucursal = [];
     
-    // Obtener dataset de cada sucursal
+    // Obtener dataset de cada sucursal (período actual)
     foreach ($sucursalesFiltradas as $sucursal) {
         $dataset = $service->construirDataset($sucursal['id'], $fechaDesde, $fechaHasta);
         $datosPorSucursal[$sucursal['id']] = $dataset;
+    }
+    
+    // Obtener % Costo de Ocupación del período anterior (YoY) para cada sucursal
+    $porcentajesAnteriores = [];
+    foreach ($sucursalesFiltradas as $sucursal) {
+        $datasetAnterior = $service->construirDatasetSimplificado(
+            $sucursal['id'], 
+            $fechaDesdeAnterior, 
+            $fechaHastaAnterior
+        );
+        
+        if (isset($datasetAnterior['porcentaje_costo_ocupacion']) && 
+            $datasetAnterior['porcentaje_costo_ocupacion'] !== null) {
+            $porcentajesAnteriores[$sucursal['id']] = floatval($datasetAnterior['porcentaje_costo_ocupacion']);
+        } else {
+            $porcentajesAnteriores[$sucursal['id']] = null;
+        }
     }
     
     // Construir estructura transpuesta: conceptos en filas, sucursales en columnas
@@ -129,8 +166,11 @@ try {
         'data' => [
             'sucursales' => $sucursalesFiltradas,
             'conceptos' => $conceptos,
+            'porcentajesAnteriores' => $porcentajesAnteriores,
             'fechaDesde' => $fechaDesde,
             'fechaHasta' => $fechaHasta,
+            'fechaDesdeAnterior' => $fechaDesdeAnterior,
+            'fechaHastaAnterior' => $fechaHastaAnterior,
             'entorno' => $entorno
         ]
     ];
@@ -143,12 +183,15 @@ try {
     // Log del error para debugging
     error_log("Error en getReporteFecha: " . $e->getMessage());
     error_log("Stack trace: " . $e->getTraceAsString());
+    error_log("Línea: " . $e->getLine());
+    error_log("Archivo: " . $e->getFile());
     
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage(),
         'file' => basename($e->getFile()),
-        'line' => $e->getLine()
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
     ]);
 } catch (Error $e) {
     http_response_code(500);

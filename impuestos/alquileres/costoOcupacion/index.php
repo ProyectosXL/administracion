@@ -1,5 +1,5 @@
 <?php
-require_once "Class/Sucursal.php";
+require_once "../Class/Sucursal.php";
 require_once "Class/costoOcupacionService.php";
 
 $sucursalObj = new Sucursal();
@@ -17,8 +17,8 @@ $checked = ($checkedValue === 'central') ? 'checked' : '';
 $dataOnValue = 'ARG';
 $dataOffValue = 'UY';
 $imagenBandera = ($checkedValue === 'central') ? 
-    '../../assets/images/bandera_con_sol__55757_std.jpg' : 
-    '../../assets/images/UY.png';
+    '../../../assets/images/bandera_con_sol__55757_std.jpg' : 
+    '../../../assets/images/UY.png';
 $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
 ?>
 
@@ -28,7 +28,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Costo de Ocupación</title>
+    <title>Dashboard Costo de Ocupación</title>
     
     <!-- CSS Includes -->
     <?php require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php'; ?>
@@ -276,6 +276,28 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 grid-template-columns: 1fr;
             }
         }
+        
+        /* Estilos para las filas YoY en Reporte a Fecha */
+        #tablaReporteFecha tr.row-yoy-anterior {
+            background-color: #e3f2fd !important;
+            border-top: 2px solid #2196F3 !important;
+        }
+        
+        #tablaReporteFecha tr.row-yoy-variacion {
+            background-color: #fff9c4 !important;
+            border-top: 2px solid #FFC107 !important;
+        }
+        
+        /* Estilos para las filas YoY en Reporte por Sucursal */
+        #tablaCostoOcupacion tr.row-yoy-anterior {
+            background-color: #e3f2fd !important;
+            border-top: 2px solid #2196F3 !important;
+        }
+        
+        #tablaCostoOcupacion tr.row-yoy-variacion {
+            background-color: #fff9c4 !important;
+            border-top: 2px solid #FFC107 !important;
+        }
     </style>
 
 </head>
@@ -328,6 +350,11 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="ranking-tab" data-toggle="tab" href="#ranking" role="tab" aria-controls="ranking" aria-selected="false">
                                 <i class="bi bi-bar-chart"></i> Ranking
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="costo-m2-tab" data-toggle="tab" href="#costo-m2" role="tab" aria-controls="costo-m2" aria-selected="false">
+                                <i class="bi bi-rulers"></i> Costo por M²
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -612,7 +639,11 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 </div>
                 <!-- Fin Pestaña 3: Ranking -->
 
-                <!-- Pestaña 4: Comparar Sucursales -->
+                <!-- Pestaña 4: Costo por M² -->
+                <?php include 'components/costoM2Tab.php'; ?>
+                <!-- Fin Pestaña 4: Costo por M² -->
+
+                <!-- Pestaña 5: Comparar Sucursales -->
                 <div class="tab-pane fade" id="comparar" role="tabpanel" aria-labelledby="comparar-tab">
                     <?php include 'components/compararSucursales.php'; ?>
                 </div>
@@ -702,7 +733,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
             });
 
             $.ajax({
-                url: "Controller/cambiarEntorno.php",
+                url: "../Controller/cambiarEntorno.php",
                 method: "POST",
                 data: { entorno: entorno },
                 dataType: 'json',
@@ -740,5 +771,6 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="js/compararSucursales.js"></script>
     <script src="js/reporteFecha.js"></script>
     <script src="js/ranking.js"></script>
+    <script src="js/costoM2.js"></script>
 </body>
 </html>

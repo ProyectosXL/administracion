@@ -762,3 +762,147 @@ select.filter-input {
     outline: 2px solid var(--accent-color);
     outline-offset: 2px;
 }
+
+/* ========================================
+   Costo por M² - Estilos específicos
+   ======================================== */
+
+/* Badges para semáforo de costos */
+.badge-success {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+    font-weight: 600;
+}
+
+.badge-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+    font-weight: 600;
+}
+
+.badge-danger {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+    font-weight: 600;
+}
+
+.badge-secondary {
+    background-color: #6c757d !important;
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+    font-weight: 600;
+}
+
+/* Cards de indicadores */
+#costoM2Promedios .card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+#costoM2Promedios .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#costoM2Promedios .card-body {
+    padding: 1.5rem;
+}
+
+#costoM2Promedios .card-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    opacity: 0.9;
+}
+
+#costoM2Promedios h4 {
+    font-size: 1.75rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+#costoM2Promedios small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+/* Tabla de costo M2 */
+#tablaCostoM2 {
+    font-size: 0.9rem;
+}
+
+#tablaCostoM2 thead th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 12px;
+}
+
+#tablaCostoM2 tbody td {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+#tablaCostoM2 tfoot tr {
+    background-color: #f8f9fa;
+    border-top: 2px solid var(--primary-color);
+}
+
+#tablaCostoM2 tfoot td {
+    padding: 12px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Leyenda */
+#leyendaCostoM2 .card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+#leyendaCostoM2 .card-title {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+#leyendaCostoM2 .badge {
+    margin-right: 0.5rem;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Loading spinner para costo M2 */
+#loadingCostoM2 {
+    padding: 3rem;
+}
+
+#loadingCostoM2 .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Leyenda de período seleccionado */
+#leyendaPeriodoCostoM2 {
+    font-weight: 600;
+    color: #0c5460;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.alert-info i.bi {
+    font-size: 1.1rem;
+    margin-right: 0.5rem;
+}
+

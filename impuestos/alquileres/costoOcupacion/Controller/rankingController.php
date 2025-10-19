@@ -9,7 +9,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 try {
-    require_once "../Class/Sucursal.php";
+    require_once "../../Class/Sucursal.php";
     require_once "../Class/costoOcupacionService.php";
     
     if (session_status() == PHP_SESSION_NONE) {
@@ -52,12 +52,14 @@ try {
     $sucursales = [];
     
     foreach ($todasLasSucursales as $sucursal) {
-        if ($entorno === 'central') {
-            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] < 900) {
+        if ($entorno === 'uy') {
+            // Uruguay: sucursales >= 900
+            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] >= 900) {
                 $sucursales[] = $sucursal;
             }
         } else {
-            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] >= 900) {
+            // Argentina: sucursales < 900 (incluye 'central', 'sistemas', etc.)
+            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] < 900) {
                 $sucursales[] = $sucursal;
             }
         }

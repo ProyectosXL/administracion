@@ -13,19 +13,18 @@ class CostoOcupacionService
     private $agrupacionConceptos = [
         'Alquiler' => [1, 2, 8], // Alquiler, Complementario
         'Alquiler porcentual' => [6, 7], // Porc. S/ventas brutas, Porc. S/ventas netas
-        'Fondo de promoción (% VMM)' => [9], // Fondo de promoción (% VMM)
-        'Fondo de promoción %:' => [16, 17], // Fondo de promoción (% VMM), Fondo promoción mensual (S/Vtas. Brutas), Fondo de promoción mensual (S/Vtas. Netas)
+        'Fondo de promoción' => [9, 16, 17], // Fondo de promoción (% VMM), Fondo promoción mensual (S/Vtas. Brutas), Fondo de promoción mensual (S/Vtas. Netas)
         'Baulera' => [3], // Baulera
         'Gastos varios' => [10, 13, 14], // Gastos publicidad, Gastos administrativos, Gastos administrativos (S/Vtas. netas)
         'Expensas' => [11], // Expensas + imp expensables
         'Diferencia' => [12], // Diferencia acuerdo
-        'Llave' => [4, 5, 19] // Renovación contrato (llave) - Se calculará
+        'Llave' => [4, 5, 18] // Renovación contrato (llave) - Se calculará
     ];
 
     public function __construct()
     {
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/class/conexion.php';
-        require_once __DIR__ . '/Alquiler.php';
+        require_once __DIR__ . '/../../Class/Alquiler.php';
         
         $cid = new Conexion();
         $this->cid_central = $cid->conectar('central');
@@ -162,11 +161,11 @@ class CostoOcupacionService
                 $datosPorConcepto[$idCa][$periodoNorm] = $row['IMPORTE'];
             }
             
-            // Calcular Llave (25% de suma de ID_CA 1, 6 y 7)
+            // Calcular Llave (25% de suma de conceptos 1, 2 y 8)
             $llaveCalculada = [];
             foreach ($meses as $mes) {
                 $suma = 0;
-                foreach ([1, 2, 6, 7, 8] as $idCa) {
+                foreach ([1, 2, 8] as $idCa) {
                     if (isset($datosPorConcepto[$idCa][$mes])) {
                         $suma += $datosPorConcepto[$idCa][$mes];
                     }

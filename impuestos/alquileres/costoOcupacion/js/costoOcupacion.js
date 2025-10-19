@@ -203,25 +203,28 @@ function mostrarLeyenda() {
                 <hr style="margin: 15px 0;">
                 <h4 style="margin-bottom: 15px; color: #2c3e50;">Agrupación de Conceptos:</h4>
                 <div style="margin-bottom: 8px;">
-                    <strong>Alquiler:</strong> Alquiler + Complementario + Valor minimo mensual
+                    <strong>Alquiler:</strong> Alquiler + Complementario + Valor mínimo mensual
                 </div>
                 <div style="margin-bottom: 8px;">
-                    <strong>Baulera:</strong> Baulera
+                    <strong>Baulera:</strong> Se calcula por separado (no incluida en Alquiler)
                 </div>
                 <div style="margin-bottom: 8px;">
-                    <strong>Llave:</strong> 25% de (Alquiler + Porc. S/ventas brutas + Porc. S/ventas netas)
+                    <strong>Llave:</strong> 25% de (Alquiler + Complementario + Valor mínimo mensual)
                 </div>
                 <div style="margin-bottom: 8px;">
                     <strong>Alquiler porcentual:</strong> Porc. S/ventas brutas + Porc. S/ventas netas
                 </div>
                 <div style="margin-bottom: 8px;">
+                    <strong>Fondo de promoción:</strong> Fondo de promoción (% VMM) + Fondo promoción mensual
+                </div>
+                <div style="margin-bottom: 8px;">
                     <strong>Gastos varios:</strong> Gastos publicidad + Gastos administrativos
                 </div>
                 <div style="margin-bottom: 8px;">
-                    <strong>Expensas:</strong> Expensas + imp expensables
+                    <strong>Expensas:</strong> Expensas + impuestos expensables
                 </div>
                 <div style="margin-bottom: 8px;">
-                    <strong>Fondo de promoción %:</strong> Fondo de promoción (% VMM) + Fondo promoción mensual
+                    <strong>Diferencia:</strong> Diferencia de acuerdo
                 </div>
             </div>
         `,
@@ -357,6 +360,73 @@ function renderizarTabla(meses, filas) {
         bodyHtml += `<td class="${totalClass}"><strong>${totalContenido}</strong></td>`;
         bodyHtml += '</tr>';
     });
+    
+    // Agregar filas YoY al final
+    if (datosActuales && datosActuales.porcentaje_anterior_yoy !== undefined) {
+        // Buscar la fila de % Costo de Ocupación actual para tener los valores mensuales
+        let filaPorcentajeActual = null;
+        filas.forEach(fila => {
+            if (fila.is_percentage && fila.concepto && fila.concepto.toLowerCase().includes('costo')) {
+                filaPorcentajeActual = fila;
+            }
+        });
+        
+        // Fila de % Costo de Ocupación Período Anterior
+        bodyHtml += `<tr class="row-yoy-anterior" style="font-weight: bold;">
+            <td class="fixed-column"><strong>% Costo de Ocupación (Período Anterior YoY)</strong></td>`;
+        
+        // Mostrar el promedio del período anterior en cada mes
+        // (es un valor único que se repite para comparación visual)
+        const porcentajeAnterior = datosActuales.porcentaje_anterior_yoy;
+        meses.forEach(() => {
+            const valorAnteriorFormateado = porcentajeAnterior !== null 
+                ? formatearPorcentaje(porcentajeAnterior) 
+                : '–';
+            bodyHtml += `<td class="text-right">${valorAnteriorFormateado}</td>`;
+        });
+        
+        // Total del período anterior
+        const valorAnteriorFormateadoTotal = porcentajeAnterior !== null 
+            ? formatearPorcentaje(porcentajeAnterior) 
+            : '–';
+        bodyHtml += `<td class="text-right total-column"><strong>${valorAnteriorFormateadoTotal}</strong></td>`;
+        bodyHtml += `</tr>`;
+        
+        // Fila de Variación Relativa (mes a mes)
+        bodyHtml += `<tr class="row-yoy-variacion" style="font-weight: bold;">
+            <td class="fixed-column"><strong>Variación Relativa (%)</strong></td>`;
+        
+        // Calcular variación relativa para cada mes
+        meses.forEach(mes => {
+            let variacionHtml = '–';
+            
+            if (filaPorcentajeActual && porcentajeAnterior !== null && porcentajeAnterior !== 0) {
+                const porcentajeMesActual = filaPorcentajeActual.meses[mes];
+                
+                if (porcentajeMesActual !== null && porcentajeMesActual !== undefined) {
+                    const variacionRelativa = ((porcentajeMesActual - porcentajeAnterior) / porcentajeAnterior) * 100;
+                    const signo = variacionRelativa > 0 ? '+' : '';
+                    const colorClass = variacionRelativa > 0 ? 'text-danger' : 'text-success';
+                    variacionHtml = `<span class="${colorClass}">${signo}${variacionRelativa.toFixed(2)}%</span>`;
+                }
+            }
+            
+            bodyHtml += `<td class="text-right">${variacionHtml}</td>`;
+        });
+        
+        // Variación total
+        let variacionTotalHtml = '–';
+        if (datosActuales.kpis && datosActuales.kpis.porcentaje_costo_ocupacion_12m !== null && 
+            porcentajeAnterior !== null && porcentajeAnterior !== 0) {
+            const porcentajeActual = parseFloat(datosActuales.kpis.porcentaje_costo_ocupacion_12m);
+            const variacionRelativa = ((porcentajeActual - porcentajeAnterior) / porcentajeAnterior) * 100;
+            const signo = variacionRelativa > 0 ? '+' : '';
+            const colorClass = variacionRelativa > 0 ? 'text-danger' : 'text-success';
+            variacionTotalHtml = `<span class="${colorClass}">${signo}${variacionRelativa.toFixed(2)}%</span>`;
+        }
+        bodyHtml += `<td class="text-right total-column"><strong>${variacionTotalHtml}</strong></td>`;
+        bodyHtml += `</tr>`;
+    }
     
     bodyHtml += '</tbody>';
     

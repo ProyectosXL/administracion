@@ -36,7 +36,7 @@ switch ($accion) {
 function obtenerRangoDefault()
 {
     try {
-        require_once '../Class/costoOcupacionService.php';
+        require_once __DIR__ . '/../Class/costoOcupacionService.php';
         
         $service = new CostoOcupacionService();
         $rango = $service->calcularRangoDefault();
@@ -62,7 +62,7 @@ function obtenerRangoDefault()
 function obtenerDatosCostoOcupacion()
 {
     try {
-        require_once '../Class/costoOcupacionService.php';
+        require_once __DIR__ . '/../Class/costoOcupacionService.php';
         
         // Obtener parámetros
         $idSucursal = isset($_POST['id_sucursal']) ? $_POST['id_sucursal'] : '';
@@ -94,6 +94,31 @@ function obtenerDatosCostoOcupacion()
             return;
         }
         
+        // Calcular período anterior (YoY) usando el dataset simplificado
+        $fechaDesdeReal = $dataset['fecha_desde'];
+        $fechaHastaReal = $dataset['fecha_hasta'];
+        
+        $dateDesde = new DateTime($fechaDesdeReal);
+        $dateHasta = new DateTime($fechaHastaReal);
+        
+        $dateDesde->modify('-12 months');
+        $dateHasta->modify('-12 months');
+        
+        $fechaDesdeAnterior = $dateDesde->format('Y-m-d');
+        $fechaHastaAnterior = $dateHasta->format('Y-m-d');
+        
+        // Obtener % Costo de Ocupación del período anterior
+        $datasetAnterior = $service->construirDatasetSimplificado(
+            $idSucursal,
+            $fechaDesdeAnterior,
+            $fechaHastaAnterior
+        );
+        
+        $porcentajeAnterior = null;
+        if (isset($datasetAnterior['porcentaje_costo_ocupacion'])) {
+            $porcentajeAnterior = floatval($datasetAnterior['porcentaje_costo_ocupacion']);
+        }
+        
         // Respuesta exitosa
         echo json_encode([
             'success' => true,
@@ -102,7 +127,10 @@ function obtenerDatosCostoOcupacion()
                 'filas' => $dataset['filas'],
                 'kpis' => $dataset['kpis'],
                 'fecha_desde' => $dataset['fecha_desde'],
-                'fecha_hasta' => $dataset['fecha_hasta']
+                'fecha_hasta' => $dataset['fecha_hasta'],
+                'porcentaje_anterior_yoy' => $porcentajeAnterior,
+                'fecha_desde_anterior' => $fechaDesdeAnterior,
+                'fecha_hasta_anterior' => $fechaHastaAnterior
             ]
         ]);
         
