@@ -133,18 +133,49 @@ try {
             break;
             
         case 'marcar_recibido':
+            error_log('[DEBUG marcar_recibido] === INICIO ===');
+            error_log('[DEBUG marcar_recibido] $_POST: ' . print_r($_POST, true));
+            
             if (empty($_POST['id'])) {
+                error_log('[ERROR marcar_recibido] ID no especificado');
                 throw new Exception('ID de ingreso no especificado');
             }
             
-            $resultado = $ingreso->marcarRecibido((int)$_POST['id']);
+            $idCompleto = $_POST['id']; // Puede ser 'MAN_47', 'EXT_TES_123', etc.
+            error_log('[DEBUG marcar_recibido] ID completo recibido: ' . $idCompleto);
+            
+            // Extraer el ID numérico del formato MAN_XX, EXT_TES_XX, etc.
+            if (strpos($idCompleto, 'MAN_') === 0) {
+                // Formato: MAN_47 -> extraer 47
+                $id = (int)str_replace('MAN_', '', $idCompleto);
+            } elseif (strpos($idCompleto, 'EXT_') === 0) {
+                // Los externos no deberían llegar aquí, pero por si acaso
+                error_log('[WARNING] Intento de marcar recibido un registro externo: ' . $idCompleto);
+                throw new Exception('Los registros externos se marcan mediante otra función');
+            } else {
+                // Si no tiene prefijo, asumir que es un ID directo
+                $id = (int)$idCompleto;
+            }
+            
+            error_log('[DEBUG marcar_recibido] ID numérico extraído: ' . $id);
+            
+            if ($id <= 0) {
+                error_log('[ERROR marcar_recibido] ID inválido después de conversión');
+                throw new Exception('ID de ingreso inválido');
+            }
+            
+            $resultado = $ingreso->marcarRecibido($id);
+            
+            error_log('[DEBUG marcar_recibido] Resultado: ' . ($resultado ? 'true' : 'false'));
             
             if ($resultado) {
+                error_log('[DEBUG marcar_recibido] ✅ Éxito - enviando respuesta');
                 echo json_encode([
                     'success' => true,
                     'message' => 'Ingreso marcado como recibido'
                 ]);
             } else {
+                error_log('[ERROR marcar_recibido] Falló marcarRecibido()');
                 throw new Exception('Error al marcar el ingreso');
             }
             break;

@@ -422,9 +422,11 @@ function mostrarReporte(movimientos, filtros = {}) {
                     // 599 siempre aparece como recibido, no necesita botón
                     accionBoton = '<span class="text-muted">-</span>';
                 } else {
+                    // Ingresos MANUALES - pasar el botón para poder cambiarlo visualmente
                     accionBoton = `
                         <button class="btn btn-outline-success checkbox-style" 
-                                onclick="marcarRecibidoDesdeReporte('${mov.id}')"
+                                onclick="marcarRecibidoDesdeReporte(this)"
+                                data-ingreso-id="${mov.id}"
                                 style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
                                 title="Marcar como recibido">
                             ☐
@@ -534,55 +536,99 @@ function cambiarCantidadMovimientos(cantidad) {
 }
 
 // Marcar ingreso como recibido desde el reporte
-async function marcarRecibidoDesdeReporte(id) {
+async function marcarRecibidoDesdeReporte(botonElemento) {
+    console.log('='.repeat(80));
+    console.log('[MANUAL] 🚀 FUNCIÓN LLAMADA - marcarRecibidoDesdeReporte');
+    console.log('[MANUAL] Timestamp:', new Date().toISOString());
+    console.log('[MANUAL] Elemento recibido:', botonElemento);
+    console.log('='.repeat(80));
+    
     try {
+        // Extraer el ID del ingreso desde el data-attribute
+        const ingresoId = botonElemento.dataset.ingresoId;
+        
+        if (!ingresoId) {
+            console.error('[ERROR] No se encontró el ID del ingreso');
+            mostrarAlerta('Error', 'No se pudo obtener el ID del ingreso');
+            return;
+        }
+        
+        console.log('[MANUAL] ID del ingreso:', ingresoId);
+        
+        // Deshabilitar botón y mostrar loading
+        botonElemento.disabled = true;
+        botonElemento.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+        
         const formData = new FormData();
         formData.append('accion', 'marcar_recibido');
-        formData.append('id', id);
+        formData.append('id', ingresoId);
+        
+        console.log('[MANUAL] Enviando petición...');
         
         const response = await fetch('controller/caja_ingresos_controller.php', {
             method: 'POST',
             body: formData
         });
         
+        console.log('[MANUAL] Respuesta recibida, status:', response.status);
         const result = await response.json();
+        console.log('[MANUAL] Resultado:', result);
         
         if (result.success) {
-            mostrarAlerta('Éxito', result.message);
+            console.log('✅ Ingreso manual marcado como recibido');
             
-            // Recargar usando las fechas de los filtros si están disponibles
-            const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
-            const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
+            // Cambiar el checkbox a "marcado" visualmente INMEDIATAMENTE
+            botonElemento.disabled = true;
+            botonElemento.classList.add('checked');
+            botonElemento.innerHTML = '<i class="bi bi-check-square-fill text-success"></i>';
             
-            if (fechaDesde && fechaHasta) {
-                cargarReporte({
-                    fecha_desde: fechaDesde,
-                    fecha_hasta: fechaHasta,
-                    aplicadoManualmente: true
-                });
-                // Actualizar todas las tarjetas con los filtros activos
-                actualizarResumen(false, {
-                    fecha_desde: fechaDesde,
-                    fecha_hasta: fechaHasta
-                });
-            } else {
-                cargarReporte();
-                // Actualizar todas las tarjetas sin filtros
-                actualizarResumen();
-            }
+            // Pequeño delay antes de recargar para dar tiempo al backend
+            setTimeout(() => {
+                // Recargar usando las fechas de los filtros si están disponibles
+                const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
+                const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
+                
+                if (fechaDesde && fechaHasta) {
+                    cargarReporte({
+                        fecha_desde: fechaDesde,
+                        fecha_hasta: fechaHasta,
+                        aplicadoManualmente: true
+                    });
+                    // Actualizar todas las tarjetas con los filtros activos
+                    actualizarResumen(false, {
+                        fecha_desde: fechaDesde,
+                        fecha_hasta: fechaHasta
+                    });
+                } else {
+                    cargarReporte();
+                    // Actualizar todas las tarjetas sin filtros
+                    actualizarResumen();
+                }
+            }, 300); // 300ms de delay
         } else {
+            // Restaurar botón en caso de error
+            botonElemento.disabled = false;
+            botonElemento.innerHTML = '<i class="bi bi-check"></i>';
             mostrarAlerta('Error', result.message);
         }
     } catch (error) {
-        console.error('Error:', error);
-        mostrarAlerta('Error', 'No se pudo procesar la solicitud');
+        console.error('[ERROR] Error en marcarRecibidoDesdeReporte:', error);
+        // Restaurar botón en caso de error
+        botonElemento.disabled = false;
+        botonElemento.innerHTML = '<i class="bi bi-check"></i>';
+        mostrarAlerta('Error', 'No se pudo procesar la solicitud: ' + error.message);
     }
 }
 
 // Marcar ingreso TESORERÍA como recibido
 async function marcarRecibidoTesoreria(botonElemento) {
-    console.log('[DEBUG] marcarRecibidoTesoreria iniciada - Versión:', new Date().getTime());
-    console.log('[DEBUG] Elemento recibido:', botonElemento);
+    console.log('='.repeat(80));
+    console.log('[TESORERÍA] 🚀 FUNCIÓN LLAMADA - marcarRecibidoTesoreria');
+    console.log('[TESORERÍA] Timestamp:', new Date().toISOString());
+    console.log('[TESORERÍA] Elemento recibido:', botonElemento);
+    console.log('[TESORERÍA] Tipo de elemento:', typeof botonElemento);
+    console.log('[TESORERÍA] Es HTMLElement?', botonElemento instanceof HTMLElement);
+    console.log('='.repeat(80));
     
     try {
         // Verificar que el elemento tiene dataset
@@ -673,10 +719,6 @@ async function marcarRecibidoTesoreria(botonElemento) {
         
         console.log('[DEBUG] Validación final OK. Enviando petición...');
         
-        // Cambiar el checkbox a "marcado" visualmente mientras se procesa
-        botonElemento.classList.add('checked');
-        botonElemento.textContent = '☑';
-        
         const response = await fetch('controller/caja_ingresos_controller.php?' + new Date().getTime(), { // Cache busting
             method: 'POST',
             body: formData
@@ -695,33 +737,40 @@ async function marcarRecibidoTesoreria(botonElemento) {
         }
         
         if (result.success) {
-            mostrarAlerta('Éxito', result.message);
+            console.log('✅ Ingreso de tesorería marcado como recibido');
             
-            // Recargar usando las fechas de los filtros si están disponibles
-            const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
-            const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
+            // Cambiar el checkbox a "marcado" visualmente INMEDIATAMENTE
+            botonElemento.disabled = true;
+            botonElemento.classList.add('checked');
+            botonElemento.innerHTML = '<i class="bi bi-check-square-fill text-success"></i>';
             
-            if (fechaDesde && fechaHasta) {
-                cargarReporte({
-                    fecha_desde: fechaDesde,
-                    fecha_hasta: fechaHasta,
-                    aplicadoManualmente: true
-                });
-                // Actualizar todas las tarjetas con los filtros activos
-                actualizarResumen(false, {
-                    fecha_desde: fechaDesde,
-                    fecha_hasta: fechaHasta
-                });
-            } else {
-                cargarReporte();
-                // Actualizar todas las tarjetas sin filtros
-                actualizarResumen();
-            }
+            // Pequeño delay antes de recargar para dar tiempo al backend
+            setTimeout(() => {
+                // Recargar usando las fechas de los filtros si están disponibles
+                const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
+                const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
+                
+                if (fechaDesde && fechaHasta) {
+                    cargarReporte({
+                        fecha_desde: fechaDesde,
+                        fecha_hasta: fechaHasta,
+                        aplicadoManualmente: true
+                    });
+                    // Actualizar todas las tarjetas con los filtros activos
+                    actualizarResumen(false, {
+                        fecha_desde: fechaDesde,
+                        fecha_hasta: fechaHasta
+                    });
+                } else {
+                    cargarReporte();
+                    // Actualizar todas las tarjetas sin filtros
+                    actualizarResumen();
+                }
+            }, 300); // 300ms de delay
         } else {
             // Restaurar botón en caso de error
             botonElemento.disabled = false;
-            botonElemento.classList.remove('checked');
-            botonElemento.textContent = '☐';
+            botonElemento.innerHTML = '<i class="bi bi-check"></i>';
             mostrarAlerta('Error', result.message);
         }
     } catch (error) {
@@ -737,6 +786,177 @@ async function marcarRecibidoTesoreria(botonElemento) {
 // Exportar reporte (función placeholder para futura implementación)
 function exportarReporte() {
     mostrarAlerta('Información', 'La función de exportación estará disponible en la próxima versión');
+}
+
+// Exportar Reporte de Saldo a Excel
+async function exportarReporteExcel() {
+    try {
+        // Verificar que SheetJS esté disponible
+        if (typeof XLSX === 'undefined') {
+            mostrarAlerta('Error', 'La librería de exportación no está disponible');
+            return;
+        }
+        
+        // Obtener filtros aplicados
+        const fechaDesde = document.getElementById('fechaReporteDesde').value;
+        const fechaHasta = document.getElementById('fechaReporteHasta').value;
+        
+        if (!fechaDesde || !fechaHasta) {
+            mostrarAlerta('Error', 'Por favor selecciona un rango de fechas');
+            return;
+        }
+        
+        // Obtener cantidad seleccionada para paginación
+        const cantidadSeleccionada = parseInt(localStorage.getItem('reporteCantidadPorPagina') || '50');
+        
+        // Cargar movimientos con los filtros actuales
+        let url = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
+        url += `&fecha_desde=${fechaDesde}`;
+        url += `&fecha_hasta=${fechaHasta}`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (!result.success || !result.data || result.data.length === 0) {
+            mostrarAlerta('Información', 'No hay datos para exportar');
+            return;
+        }
+        
+        const movimientos = result.data;
+        const movimientosPaginados = movimientos.slice(0, cantidadSeleccionada);
+        
+        // Preparar datos para Excel
+        const datosExcel = [];
+        
+        // Agregar encabezado
+        datosExcel.push([
+            'Fecha',
+            'Tipo',
+            'COMP.',
+            'Concepto',
+            'Importe',
+            'Origen',
+            'Estado'
+        ]);
+        
+        let saldoAcumulado = 0;
+        
+        // Agregar filas de datos
+        movimientosPaginados.forEach(mov => {
+            const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+            const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
+            
+            let origen = '';
+            switch(mov.origen) {
+                case 'MANUAL':
+                    origen = 'Manual';
+                    break;
+                case '599':
+                    origen = '599';
+                    break;
+                case 'TESORERIA':
+                    origen = 'Tesorería';
+                    break;
+                default:
+                    origen = 'Manual';
+            }
+            
+            let estado = '';
+            if (mov.tipo === 'INGRESO') {
+                estado = mov.recibido == 1 ? 'Recibido' : 'Pendiente';
+                if (mov.recibido == 1) {
+                    saldoAcumulado += parseFloat(mov.importe);
+                }
+            } else {
+                estado = 'Pagado';
+                saldoAcumulado -= parseFloat(mov.importe);
+            }
+            
+            datosExcel.push([
+                fecha,
+                mov.tipo,
+                compDisplay,
+                mov.concepto,
+                parseFloat(mov.importe),
+                origen,
+                estado
+            ]);
+        });
+        
+        // Agregar fila en blanco
+        datosExcel.push([]);
+        
+        // Agregar fila de total
+        datosExcel.push([
+            '',
+            '',
+            '',
+            'Saldo Calculado Rango Seleccionado:',
+            saldoAcumulado,
+            '',
+            ''
+        ]);
+        
+        // Crear libro de Excel
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(datosExcel);
+        
+        // Configurar ancho de columnas
+        ws['!cols'] = [
+            { wch: 12 }, // Fecha
+            { wch: 10 }, // Tipo
+            { wch: 10 }, // COMP.
+            { wch: 40 }, // Concepto
+            { wch: 15 }, // Importe
+            { wch: 12 }, // Origen
+            { wch: 12 }  // Estado
+        ];
+        
+        // Estilo para el encabezado (primera fila)
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const address = XLSX.utils.encode_col(C) + "1";
+            if (!ws[address]) continue;
+            ws[address].s = {
+                font: { bold: true },
+                fill: { fgColor: { rgb: "4472C4" } },
+                alignment: { horizontal: "center" }
+            };
+        }
+        
+        // Formato de moneda para la columna de Importe
+        for (let R = 1; R <= range.e.r; ++R) {
+            const cell_address = XLSX.utils.encode_cell({ r: R, c: 4 }); // Columna E (Importe)
+            if (!ws[cell_address]) continue;
+            ws[cell_address].z = '"$"#,##0';
+        }
+        
+        // Agregar hoja al libro
+        XLSX.utils.book_append_sheet(wb, ws, 'Reporte de Saldo');
+        
+        // Generar nombre de archivo con fechas
+        const nombreArchivo = `Reporte_Saldo_${fechaDesde}_${fechaHasta}.xlsx`;
+        
+        // Descargar archivo
+        XLSX.writeFile(wb, nombreArchivo);
+        
+        mostrarAlerta('Éxito', `Reporte de Saldo exportado correctamente como: ${nombreArchivo}`);
+        
+    } catch (error) {
+        console.error('Error al exportar reporte:', error);
+        mostrarAlerta('Error', 'No se pudo exportar el reporte');
+    }
 }
 
 // Cargar reporte al mostrar la pestaña
@@ -795,33 +1015,6 @@ function limpiarFiltrosReporte() {
     actualizarResumen();
 }
 
-// Botón actualizar datos del sidebar
-document.getElementById('btnActualizarDatos')?.addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    // Usar fechas de los filtros si están disponibles para actualizar tarjetas
-    const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
-    const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
-    
-    if (fechaDesde && fechaHasta) {
-        // Hay filtros activos: actualizar tarjetas con esos filtros
-        actualizarResumen(false, {
-            fecha_desde: fechaDesde,
-            fecha_hasta: fechaHasta
-        });
-        cargarReporte({
-            fecha_desde: fechaDesde,
-            fecha_hasta: fechaHasta
-        });
-    } else {
-        // No hay filtros: usar comportamiento por defecto
-        actualizarResumen();
-        cargarReporte();
-    }
-    
-    mostrarAlerta('Éxito', 'Datos actualizados correctamente');
-});
-
 // Cargar datos al iniciar la página
 document.addEventListener('DOMContentLoaded', function() {
     // Las tarjetas ahora están solo en la pestaña de reporte
@@ -837,3 +1030,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// IMPORTANTE: Exponer funciones críticas al scope global para onclick
+window.marcarRecibidoTesoreria = marcarRecibidoTesoreria;
+window.marcarRecibidoDesdeReporte = marcarRecibidoDesdeReporte;
+window.cambiarCantidadMovimientos = cambiarCantidadMovimientos;
+window.aplicarFiltrosReporte = aplicarFiltrosReporte;
+window.limpiarFiltrosReporte = limpiarFiltrosReporte;
+// window.verDetalleMovimiento = verDetalleMovimiento; // TODO: Implementar esta función si es necesaria
+window.exportarReporteExcel = exportarReporteExcel;
+window.verFotoEgreso = verFotoEgreso;

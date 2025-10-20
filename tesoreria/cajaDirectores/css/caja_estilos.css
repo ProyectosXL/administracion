@@ -278,6 +278,45 @@
     .importe-input {
         font-size: 1rem;
     }
+    
+    /* Tabla de reporte responsive con scroll horizontal */
+    #contenidoReporte .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #contenidoReporte .table {
+        min-width: 900px; /* Forzar ancho mínimo para scroll horizontal */
+        font-size: 0.75rem;
+    }
+    
+    #contenidoReporte .table thead th {
+        padding: 0.5rem 0.4rem;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+    
+    #contenidoReporte .table tbody td {
+        padding: 0.5rem 0.4rem;
+        white-space: nowrap;
+    }
+    
+    #contenidoReporte .table tbody td:nth-child(4) {
+        /* Columna de concepto puede tener wrap */
+        white-space: normal;
+        min-width: 150px;
+    }
+    
+    /* Ajustar selector de cantidad */
+    .d-flex.justify-content-between.align-items-center {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+    
+    .d-flex.justify-content-between.align-items-center .d-flex {
+        width: 100%;
+    }
 }
 
 /* Estado de carga */
@@ -377,4 +416,966 @@
 /* Transiciones suaves */
 * {
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =====================================================
+   ESTILOS PARA PESTAÑA EGRESOS SOCIOS
+   ===================================================== */
+
+/* Tabla resumen con bloques */
+#tablaResumenSocios .table {
+    margin-bottom: 0;
+}
+
+#tablaResumenSocios .table thead th {
+    background-color: #007bff;
+    color: white;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.75rem;
+    border-color: #0056b3;
+}
+
+#tablaResumenSocios .table tbody tr.fila-bloque-header {
+    background-color: #e9ecef;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+#tablaResumenSocios .table tbody tr.fila-bloque-header td {
+    padding: 0.75rem;
+    border-top: 2px solid #6c757d;
+    border-bottom: 1px solid #6c757d;
+}
+
+#tablaResumenSocios .table tbody tr.fila-fecha td {
+    padding: 0.5rem 0.75rem;
+    border-color: #dee2e6;
+}
+
+#tablaResumenSocios .table tbody tr.fila-fecha td:first-child {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+#tablaResumenSocios .table tbody tr.fila-tipo td {
+    padding: 0.75rem;
+    border-color: #dee2e6;
+}
+
+#tablaResumenSocios .table tbody tr.fila-tipo td.tipo-label {
+    font-weight: 700;
+    background-color: #f8f9fa;
+    text-align: left;
+    font-size: 0.95rem;
+}
+
+#tablaResumenSocios .table tbody tr.fila-total {
+    background-color: #28a745;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+#tablaResumenSocios .table tbody tr.fila-total td {
+    padding: 0.75rem;
+    border-top: 3px solid #1e7e34;
+}
+
+#tablaResumenSocios .table tbody tr.fila-total td:first-child {
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Celdas numéricas centradas */
+#tablaResumenSocios .table tbody td:not(:first-child) {
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+
+/* Colores para valores */
+#tablaResumenSocios .valor-positivo {
+    color: #28a745;
+    font-weight: 600;
+}
+
+#tablaResumenSocios .valor-cero {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Tabla detalle de egresos */
+#tablaDetalleSocios .table {
+    margin-bottom: 0;
+}
+
+#tablaDetalleSocios .table thead th {
+    background-color: #6c757d;
+    color: white;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.75rem;
+    border-color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+#tablaDetalleSocios .table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#tablaDetalleSocios .table tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+#tablaDetalleSocios .table tbody td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-color: #dee2e6;
+}
+
+/* Columnas específicas de la tabla detalle */
+#tablaDetalleSocios .col-fecha {
+    text-align: center;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#tablaDetalleSocios .col-codigo {
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+#tablaDetalleSocios .col-director {
+    font-weight: 600;
+    color: #212529;
+}
+
+#tablaDetalleSocios .col-motivo {
+    font-size: 0.9rem;
+}
+
+#tablaDetalleSocios .col-origen {
+    text-align: center;
+}
+
+#tablaDetalleSocios .col-importe {
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #dc3545;
+}
+
+#tablaDetalleSocios .col-acciones {
+    text-align: center;
+    width: 80px;
+}
+
+#tablaDetalleSocios .col-acciones .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Footer de tabla detalle con total */
+#tablaDetalleSocios .table tfoot tr {
+    background-color: #f8f9fa;
+    border-top: 3px solid #495057;
+}
+
+#tablaDetalleSocios .table tfoot td {
+    padding: 1rem 0.75rem;
+    font-size: 1.1rem;
+}
+
+#tablaDetalleSocios .table tfoot .col-importe {
+    font-size: 1.2rem;
+}
+
+/* Badges para origen */
+#tablaDetalleSocios .badge-origen {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.6rem;
+    font-weight: 600;
+}
+
+#tablaDetalleSocios .badge-manual {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+#tablaDetalleSocios .badge-app {
+    background-color: #17a2b8;
+    color: white;
+}
+
+/* Mensaje cuando no hay datos */
+.mensaje-sin-datos {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.mensaje-sin-datos i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.mensaje-sin-datos p {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Indicador de carga específico */
+.cargando-datos {
+    text-align: center;
+    padding: 2rem;
+}
+
+.cargando-datos .spinner-border {
+    width: 2rem;
+    height: 2rem;
+    border-width: 0.25rem;
+}
+
+.cargando-datos p {
+    margin-top: 1rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Filtros de fecha específicos */
+#fechaEgresosSociosDesde,
+#fechaEgresosSociosHasta {
+    font-weight: 600;
+}
+
+/* Botones de exportación */
+.btn-group .btn i {
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 767.98px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .d-flex.justify-content-between .btn-group {
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+    
+    .d-flex.justify-content-between .btn-group .btn {
+        flex: 1;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.5rem;
+    }
+    
+    .d-flex.justify-content-between .btn-group .btn i {
+        margin-right: 0.15rem;
+    }
+}
+
+/* Filtro de director en header de detalle */
+#filtroDirectorDetalle {
+    background-color: white;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #212529;
+    font-size: 0.875rem;
+}
+
+#filtroDirectorDetalle:focus {
+    border-color: white;
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+}
+
+@media (max-width: 767.98px) {
+    #filtroDirectorDetalle {
+        max-width: 150px !important;
+        font-size: 0.75rem;
+    }
+}
+
+/* Tarjeta de total específica */
+.card.bg-info .card-header {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.card.bg-info {
+    border: none;
+}
+
+/* Responsivo para tablas de egresos socios */
+@media (max-width: 991.98px) {
+    #tablaResumenSocios .table,
+    #tablaDetalleSocios .table {
+        font-size: 0.85rem;
+    }
+    
+    #tablaResumenSocios .table thead th,
+    #tablaDetalleSocios .table thead th {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    #tablaResumenSocios .table tbody td,
+    #tablaDetalleSocios .table tbody td {
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    /* Forzar scroll horizontal en lugar de colapsar */
+    .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        display: block;
+        width: 100%;
+    }
+    
+    /* Mantener tabla con tamaño mínimo */
+    #tablaDetalleSocios .table {
+        min-width: 800px;
+        font-size: 0.75rem;
+    }
+    
+    #tablaResumenSocios .table {
+        min-width: 600px;
+        font-size: 0.75rem;
+    }
+    
+    #tablaResumenSocios .table thead th,
+    #tablaDetalleSocios .table thead th {
+        padding: 0.5rem 0.4rem;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+    
+    #tablaResumenSocios .table tbody td,
+    #tablaDetalleSocios .table tbody td {
+        padding: 0.5rem 0.4rem;
+        white-space: nowrap;
+    }
+    
+    /* Mantener visibilidad de columnas importantes */
+    #tablaDetalleSocios .col-codigo {
+        min-width: 80px;
+    }
+    
+    #tablaDetalleSocios .col-director {
+        min-width: 120px;
+    }
+    
+    #tablaDetalleSocios .col-motivo {
+        min-width: 150px;
+        white-space: normal !important;
+    }
+    
+    #tablaDetalleSocios .col-importe {
+        min-width: 100px;
+    }
+    
+    #tablaDetalleSocios .col-acciones {
+        min-width: 70px;
+    }
+}
+
+/* Animación de entrada para las tablas */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#tablaResumenSocios,
+#tablaDetalleSocios {
+    animation: fadeInUp 0.5s ease;
+}
+
+/* Scroll suave en tablas grandes */
+.table-responsive {
+    scroll-behavior: smooth;
+}
+
+/* Mejoras visuales para totales */
+#totalEgresosSocios {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Bordes de bloque en tabla resumen */
+#tablaResumenSocios .table tbody tr.fila-bloque-header:first-child td {
+    border-top: none;
+}
+
+#tablaResumenSocios .table tbody tr.fila-tipo:first-child td {
+    border-top: none;
+}
+
+/* Espaciado entre bloques */
+#tablaResumenSocios .table tbody tr.separador-bloque {
+    height: 0.5rem;
+    background-color: transparent;
+    border: none;
+}
+
+#tablaResumenSocios .table tbody tr.separador-bloque td {
+    padding: 0;
+    border: none;
+}
+
+/* =====================================================
+   ESTILOS PARA MODAL DE DETALLE DE EGRESO
+   ===================================================== */
+
+/* Contenedor del detalle */
+.detalle-egreso-container {
+    padding: 0.5rem;
+}
+
+.detalle-egreso-container .info-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.detalle-egreso-container .info-item:last-child {
+    border-bottom: none;
+}
+
+.detalle-egreso-container .info-item strong {
+    color: #495057;
+    display: inline-block;
+    min-width: 120px;
+}
+
+/* Caja de observaciones */
+.observaciones-box {
+    background-color: #f8f9fa;
+    border-left: 3px solid #007bff;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Foto del comprobante en modal */
+.foto-comprobante-preview {
+    transition: transform 0.3s ease;
+    border: 2px solid #dee2e6;
+}
+
+.foto-comprobante-preview:hover {
+    transform: scale(1.05);
+    border-color: #007bff;
+}
+
+.foto-container {
+    position: relative;
+}
+
+.foto-comprobante-detalle {
+    max-width: 100%;
+    max-height: 400px;
+    width: auto;
+    height: auto;
+    display: inline-block;
+    transition: all 0.4s ease;
+    border: 2px solid #dee2e6;
+    cursor: pointer;
+    object-fit: contain;
+}
+
+.foto-comprobante-detalle:hover {
+    border-color: #007bff;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+}
+
+.foto-comprobante-detalle.foto-ampliada {
+    max-width: 100%;
+    max-height: none;
+    width: 100%;
+    height: auto;
+    border-color: #007bff;
+    box-shadow: 0 0 20px rgba(0, 123, 255, 0.5);
+}
+
+.foto-hint {
+    transition: opacity 0.3s ease;
+}
+
+/* Secciones del modal */
+#modalDetalleEgresoSocio .modal-body {
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+#modalDetalleEgresoSocio .modal-dialog {
+    max-width: 800px;
+}
+
+#modalDetalleEgresoSocio .modal-header {
+    background-color: #007bff;
+    color: white;
+}
+
+#modalDetalleEgresoSocio .modal-title {
+    color: white;
+}
+
+#modalDetalleEgresoSocio .modal-title i {
+    color: white;
+}
+
+#modalDetalleEgresoSocio .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+#modalDetalleEgresoSocio hr {
+    margin: 1rem 0;
+    border-color: #dee2e6;
+}
+
+#modalDetalleEgresoSocio h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+#modalDetalleEgresoSocio h6 i {
+    margin-right: 0.5rem;
+    color: #007bff;
+}
+
+/* Responsive para modal de detalle */
+@media (max-width: 767.98px) {
+    .detalle-egreso-container .info-item strong {
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    
+    .foto-comprobante-preview {
+        max-width: 100% !important;
+    }
+    
+    #modalDetalleEgresoSocio .modal-body {
+        padding: 1rem;
+    }
+}
+
+/* =====================================================
+   MEJORAS GENERALES DE RESPONSIVE
+   ===================================================== */
+
+/* Mejoras para tablas en general */
+@media (max-width: 991.98px) {
+    /* Tarjetas de resumen apiladas */
+    .row > [class*="col-md"] {
+        margin-bottom: 1rem;
+    }
+    
+    /* Ajustar filtros */
+    .card-body .row > [class*="col-md"] {
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Títulos más compactos */
+    h3 {
+        font-size: 1.5rem;
+    }
+    
+    h5 {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    /* Container principal con padding reducido */
+    .container-fluid {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    /* Cards más compactas */
+    .card {
+        margin-bottom: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .card-header {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Títulos responsive */
+    h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    h5 {
+        font-size: 1rem;
+    }
+    
+    /* Botones más compactos */
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-sm {
+        padding: 0.35rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Formularios */
+    .form-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .form-control,
+    .form-select {
+        font-size: 0.875rem;
+        padding: 0.5rem;
+    }
+    
+    /* Ajuste de filas con botones */
+    .d-flex.align-items-end.gap-2 {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+    
+    .d-flex.align-items-end.gap-2 .btn {
+        width: 100%;
+    }
+    
+    /* Badges más pequeñas */
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* Input groups */
+    .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.5rem;
+    }
+    
+    /* Mejorar legibilidad de tablas */
+    .table {
+        font-size: 0.8rem;
+    }
+    
+    .table thead th {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+    
+    .table tbody td {
+        padding: 0.5rem 0.25rem;
+        line-height: 1.3;
+    }
+    
+    /* Íconos en botones más visibles */
+    .btn i {
+        font-size: 1rem;
+    }
+    
+    /* Alertas */
+    .alert {
+        font-size: 0.875rem;
+        padding: 0.75rem;
+    }
+    
+    /* Tabs nav */
+    .nav-tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .nav-tabs .nav-link i {
+        font-size: 1rem;
+        margin-right: 0.25rem;
+    }
+    
+    /* Sidebar en móvil */
+    #sidebarMenu {
+        font-size: 0.875rem;
+    }
+    
+    #sidebarMenu .nav-link {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    #sidebarMenu .nav-link i {
+        font-size: 1rem;
+    }
+}
+
+/* Mejoras para pantallas muy pequeñas */
+@media (max-width: 575.98px) {
+    /* Espacio aún más reducido */
+    .container-fluid {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+    
+    .card-body {
+        padding: 0.5rem;
+    }
+    
+    /* Títulos */
+    h3 {
+        font-size: 1.1rem;
+    }
+    
+    /* Tabla más compacta */
+    .table {
+        font-size: 0.7rem;
+    }
+    
+    .table thead th,
+    .table tbody td {
+        padding: 0.4rem 0.2rem;
+    }
+    
+    /* Botones en pila */
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .d-flex.justify-content-between > * {
+        width: 100%;
+    }
+    
+    /* Tarjetas de resumen más compactas */
+    .card.text-white h3 {
+        font-size: 1.5rem;
+    }
+    
+    .card.text-white .card-text {
+        font-size: 0.8rem;
+    }
+}
+
+/* Mejorar comportamiento de modales en móvil */
+@media (max-width: 767.98px) {
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+    
+    .modal-content {
+        border-radius: 0.5rem;
+    }
+    
+    .modal-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .modal-title {
+        font-size: 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+        max-height: calc(100vh - 150px);
+        overflow-y: auto;
+    }
+    
+    .modal-footer {
+        padding: 0.75rem;
+    }
+    
+    .modal-footer .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* Scroll horizontal smooth para todas las tablas */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* Ajustes de espaciado */
+@media (max-width: 767.98px) {
+    .pt-2 {
+        padding-top: 0.5rem !important;
+    }
+    
+    .pb-4 {
+        padding-bottom: 1rem !important;
+    }
+    
+    .mb-4 {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .mb-3 {
+        margin-bottom: 0.5rem !important;
+    }
+}
+
+/* Mejorar accesibilidad táctil */
+@media (hover: none) and (pointer: coarse) {
+    /* Aumentar área de toque para botones */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .btn-sm {
+        min-height: 36px;
+        min-width: 36px;
+    }
+    
+    /* Links y elementos clickeables */
+    a, button, .clickable {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Checkboxes personalizados */
+    .checkbox-style {
+        min-height: 44px !important;
+        min-width: 44px !important;
+    }
+}
+
+/* Orientación landscape en tablets */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+    .modal-dialog {
+        max-width: 90%;
+    }
+    
+    .modal-body {
+        max-height: 60vh;
+    }
+}
+
+/* Print styles */
+@media print {
+    /* Ocultar elementos de navegación */
+    #sidebarMenu,
+    .nav-tabs,
+    .btn,
+    .modal,
+    .alert {
+        display: none !important;
+    }
+    
+    /* Expandir contenido */
+    .container-fluid {
+        width: 100%;
+        max-width: none;
+    }
+    
+    /* Tablas a ancho completo */
+    .table-responsive {
+        overflow: visible;
+    }
+    
+    .table {
+        page-break-inside: avoid;
+    }
+    
+    .table thead {
+        display: table-header-group;
+    }
+    
+    /* Colores para impresión */
+    .card {
+        border: 1px solid #000 !important;
+        page-break-inside: avoid;
+    }
+    
+    /* Remover fondos coloridos */
+    .bg-success,
+    .bg-danger,
+    .bg-primary,
+    .bg-info,
+    .bg-warning {
+        background-color: #fff !important;
+        color: #000 !important;
+        border: 2px solid #000 !important;
+    }
+}
+
+/* =====================================================
+   ESTILOS PARA MODAL DE ALERTA DE ÉXITO
+   ===================================================== */
+
+/* Fondo verde suave para el header del modal cuando es de éxito */
+.modal#modalAlerta .modal-header.modal-header-exito {
+    background-color: #d4edda !important;
+    border-bottom: 2px solid #c3e6cb !important;
+}
+
+.modal#modalAlerta .modal-header.modal-header-exito .modal-title {
+    color: #155724 !important;
+    font-weight: 600;
+}
+
+.modal#modalAlerta .modal-header.modal-header-exito .btn-close {
+    filter: none;
+}
+
+/* Mejorar responsive del modal */
+#modalAlerta .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+}
+
+#modalAlerta .modal-title {
+    margin-bottom: 0;
+    line-height: 1.5;
+    flex: 1;
+    padding-right: 1rem;
+}
+
+@media (max-width: 767.98px) {
+    #modalAlerta .modal-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    #modalAlerta .modal-title {
+        font-size: 1rem;
+        padding-right: 0.5rem;
+    }
+    
+    #modalAlerta .btn-close {
+        padding: 0.5rem;
+        margin: 0;
+    }
 }

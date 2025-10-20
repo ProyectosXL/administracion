@@ -153,7 +153,8 @@ document.getElementById('formIngreso')?.addEventListener('submit', async functio
     }
 });
 
-// Mostrar alerta
+// Mostrar alerta - COMENTADO: Ahora se usa la función global de modal_global.js
+/*
 function mostrarAlerta(titulo, mensaje) {
     // Asegurar que no hay otros modales abiertos
     const existingBackdrop = document.querySelector('.modal-backdrop');
@@ -199,6 +200,7 @@ function mostrarAlerta(titulo, mensaje) {
         modal.show();
     }
 }
+*/
 
 // Cargar ingresos al cambiar a la pestaña
 document.getElementById('ingresos-tab')?.addEventListener('shown.bs.tab', function() {

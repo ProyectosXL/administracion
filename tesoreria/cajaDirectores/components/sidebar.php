@@ -3,17 +3,22 @@
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="#ingresos" data-bs-toggle="tab">
-                    <i class="bi bi-plus-circle"></i> Ingresos
+                    <i class="bi bi-plus-circle"></i> Form Ingresos
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#egresos" data-bs-toggle="tab">
-                    <i class="bi bi-dash-circle"></i> Egresos
+                    <i class="bi bi-dash-circle"></i> Form Egresos
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#reporte" data-bs-toggle="tab">
                     <i class="bi bi-graph-up"></i> Reporte
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#egresos-socios" data-bs-toggle="tab">
+                    <i class="bi bi-people-fill"></i> Egresos Socios
                 </a>
             </li>
         </ul>

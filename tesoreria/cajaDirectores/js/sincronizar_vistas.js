@@ -157,13 +157,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Mostrar feedback
+            console.log('[SINCRONIZAR] Verificando mostrarAlerta:', typeof mostrarAlerta);
+            console.log('[SINCRONIZAR] window.mostrarAlerta:', typeof window.mostrarAlerta);
+            
             if (typeof mostrarAlerta === 'function') {
+                console.log('[SINCRONIZAR] Llamando a mostrarAlerta');
                 mostrarAlerta('Éxito', 'Datos actualizados correctamente');
             } else {
+                console.log('[SINCRONIZAR] mostrarAlerta NO existe, usando fallback');
                 // Crear modal temporal si no existe la función
                 const modal = document.createElement('div');
                 modal.className = 'alert alert-success alert-dismissible fade show position-fixed';
-                modal.style.cssText = 'top: 20px; right: 20px; z-index: 1055; max-width: 300px;';
+                modal.style.cssText = 'top: 20px; right: 20px; z-index: 1055; max-width: 300px; background-color: #d4edda; border-color: #c3e6cb; color: #155724;';
                 modal.innerHTML = `
                     <i class="bi bi-check-circle"></i> Datos actualizados correctamente
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

@@ -12,6 +12,9 @@ session_start();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
+    <!-- SheetJS para exportación a Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/caja_estilos.css">
@@ -41,19 +44,25 @@ session_start();
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="ingresos-tab" data-bs-toggle="tab" 
                                 data-bs-target="#ingresos" type="button" role="tab">
-                            <i class="bi bi-plus-circle"></i> Ingresos
+                            <i class="bi bi-plus-circle"></i> Form Ingresos
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="egresos-tab" data-bs-toggle="tab" 
                                 data-bs-target="#egresos" type="button" role="tab">
-                            <i class="bi bi-dash-circle"></i> Egresos
+                            <i class="bi bi-dash-circle"></i> Form Egresos
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="reporte-tab" data-bs-toggle="tab" 
                                 data-bs-target="#reporte" type="button" role="tab">
                             <i class="bi bi-graph-up"></i> Reporte de Saldo
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="egresos-socios-tab" data-bs-toggle="tab" 
+                                data-bs-target="#egresos-socios" type="button" role="tab">
+                            <i class="bi bi-people-fill"></i> Egresos Socios
                         </button>
                     </li>
                 </ul>
@@ -203,7 +212,12 @@ session_start();
                     <!-- Pestaña Reporte -->
                     <div class="tab-pane fade" id="reporte" role="tabpanel">
                         <div class="pt-2 pb-4">
-                            <h3 class="mb-4">Reporte de Saldo de Caja</h3>
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="mb-0">Reporte de Saldo de Caja</h3>
+                                <button type="button" class="btn btn-success" onclick="exportarReporteExcel()">
+                                    <i class="bi bi-file-earmark-excel"></i> Exportar Reporte
+                                </button>
+                            </div>
                             
                             <!-- Filtros de fecha -->
                             <div class="card mb-4">
@@ -272,6 +286,107 @@ session_start();
                             <div id="contenidoReporte"></div>
                         </div>
                     </div>
+                    
+                    <!-- Pestaña Egresos Socios -->
+                    <div class="tab-pane fade" id="egresos-socios" role="tabpanel">
+                        <div class="pt-2 pb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+                                <h3 class="mb-0">Egresos de Socios - Análisis Detallado</h3>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-success btn-sm" onclick="exportarResumenExcel()">
+                                        <i class="bi bi-file-earmark-excel"></i> Exportar Resumen
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="exportarDetalleExcel()">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i> Exportar Detalle
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Filtros de fecha -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-funnel"></i> Filtro de Período
+                                    </h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label for="fechaEgresosSociosDesde" class="form-label">Desde</label>
+                                            <input type="date" class="form-control" id="fechaEgresosSociosDesde">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="fechaEgresosSociosHasta" class="form-label">Hasta</label>
+                                            <input type="date" class="form-control" id="fechaEgresosSociosHasta">
+                                        </div>
+                                        <div class="col-md-4 d-flex align-items-end gap-2">
+                                            <button type="button" class="btn btn-primary" onclick="aplicarFiltrosEgresosSocios()">
+                                                <i class="bi bi-search"></i> Filtrar
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" onclick="limpiarFiltrosEgresosSocios()">
+                                                <i class="bi bi-arrow-clockwise"></i> Limpiar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tarjeta de total -->
+                            <div class="row mb-4 justify-content-center">
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card text-white bg-info mb-3">
+                                        <div class="card-header">
+                                            <i class="bi bi-cash-coin"></i> Total Egresos Socios (Rango Seleccionado)
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="totalEgresosSocios">$0</h3>
+                                            <p class="card-text">Efectivo + Transferencias</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tabla Resumen por Director -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-table"></i> Resumen por Director
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <div id="tablaResumenSocios"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tabla Detalle de Egresos -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-secondary text-white">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <h5 class="mb-0">
+                                                <i class="bi bi-list-ul"></i> Detalle de Egresos
+                                            </h5>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center justify-content-md-end mt-2 mt-md-0">
+                                                <label for="filtroDirectorDetalle" class="text-white me-2 mb-0" style="white-space: nowrap;">
+                                                    <i class="bi bi-funnel"></i> Filtrar por:
+                                                </label>
+                                                <select class="form-select form-select-sm" id="filtroDirectorDetalle" style="max-width: 200px;">
+                                                    <option value="">Todos los directores</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <div id="tablaDetalleSocios"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -308,14 +423,46 @@ session_start();
         </div>
     </div>
     
+    <!-- Modal para ver detalle de egreso de socio -->
+    <div class="modal fade" id="modalDetalleEgresoSocio" tabindex="-1" aria-labelledby="modalDetalleEgresoSocioLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalDetalleEgresoSocioLabel">
+                        <i class="bi bi-file-text"></i> Detalle del Egreso
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="contenidoDetalleEgresoSocio">
+                        <!-- Contenido del detalle se cargará dinámicamente -->
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Cargando información...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Scripts personalizados -->
     <script src="js/modal_global.js?v=<?php echo time(); ?>"></script>
+    <script src="js/responsive_helper.js?v=<?php echo time(); ?>"></script>
     <script src="js/caja_ingresos.js?v=<?php echo time(); ?>"></script>
     <script src="js/caja_egresos.js?v=<?php echo time(); ?>"></script>
     <script src="js/caja_reporte.js?v=<?php echo time(); ?>"></script>
+    <script src="js/egresos_socios.js?v=<?php echo time(); ?>"></script>
     <script src="js/sincronizar_vistas.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>
