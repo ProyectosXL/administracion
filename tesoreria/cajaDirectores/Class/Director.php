@@ -15,8 +15,9 @@ class Director {
     /**
      * Obtiene la lista de directores desde la base de datos sistemas
      * Consulta: SELECT NOMBRE FROM RO_T_DIRECTORES
+     * @return array
      */
-    public function obtenerDirectores(): array {
+    public function obtenerDirectores() {
         try {
             $sql = "SELECT NOMBRE FROM RO_T_DIRECTORES";
             $stmt = sqlsrv_query($this->db, $sql);
@@ -41,8 +42,10 @@ class Director {
     
     /**
      * Verifica si un director existe en la base de datos
+     * @param string $nombreDirector
+     * @return bool
      */
-    public function existeDirector(string $nombreDirector): bool {
+    public function existeDirector($nombreDirector) {
         try {
             $sql = "SELECT COUNT(*) as total FROM RO_T_DIRECTORES WHERE NOMBRE = ?";
             $params = [$nombreDirector];

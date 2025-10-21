@@ -7,9 +7,9 @@ require_once __DIR__ . '/../../../class/classEnv.php';
  * Soporta conexiones a BASE APPS y BASE CENTRAL usando variables del .env
  */
 class Database {
-    private static ?Database $instance = null;
-    private array $connections = [];
-    private array $envVars;
+    private static $instance = null;
+    private $connections = [];
+    private $envVars;
     
     /**
      * Constructor privado para implementar Singleton
@@ -21,8 +21,9 @@ class Database {
     
     /**
      * Obtiene la instancia única de Database
+     * @return Database
      */
-    public static function getInstance(): Database {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -31,8 +32,10 @@ class Database {
     
     /**
      * Establece la conexión con una base de datos específica
+     * @param string $dbType
+     * @return resource
      */
-    private function connect(string $dbType) {
+    private function connect($dbType) {
         try {
             if ($dbType === 'apps') {
                 $host = $this->envVars['HOST_APPS'];
@@ -99,8 +102,9 @@ class Database {
     
     /**
      * Cierra todas las conexiones
+     * @return void
      */
-    public function closeConnections(): void {
+    public function closeConnections() {
         foreach ($this->connections as $connection) {
             if ($connection) {
                 sqlsrv_close($connection);

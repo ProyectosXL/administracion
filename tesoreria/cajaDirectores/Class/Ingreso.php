@@ -17,7 +17,7 @@ class Ingreso {
     /**
      * Genera el próximo número de comprobante
      */
-    private function generarNumeroComprobante(): string {
+    private function generarNumeroComprobante() {
         $sql = "SELECT MAX(CAST(N_COMP AS BIGINT)) as max_comp 
                 FROM ingresos 
                 WHERE COD_COMP = 'ING'";
@@ -39,7 +39,7 @@ class Ingreso {
     /**
      * Crea un nuevo ingreso
      */
-    public function crear(array $datos): bool {
+    public function crear($datos) {
         try {
             $sql = "INSERT INTO ingresos (
                         ID_SBA05, COD_COMP, N_COMP, fecha, importe, 
@@ -79,7 +79,7 @@ class Ingreso {
     /**
      * Obtiene todos los ingresos con filtros opcionales
      */
-    public function obtenerTodos(array $filtros = []): array {
+    public function obtenerTodos($filtros = []) {
         try {
             $sql = "SELECT *, CAST(fecha_carga AS DATE) as fecha_solo FROM ingresos WHERE 1=1";
             $params = [];
@@ -123,7 +123,7 @@ class Ingreso {
     /**
      * Obtiene ingresos desde TESORERÍA (Base Central - SBA05)
      */
-    public function obtenerIngresosTesoreria($desde, $hasta): array {
+    public function obtenerIngresosTesoreria($desde, $hasta) {
         try {
             $sql = "SELECT    
                         ID_SBA05,    
@@ -177,7 +177,7 @@ class Ingreso {
     /**
      * Obtiene ingresos desde 599 (Base Central - sj_administracion_cobros)
      */
-    public function obtenerIngresos599($desde, $hasta): array {
+    public function obtenerIngresos599($desde, $hasta) {
         try {
             $sql = "SELECT 
                         CAST(fecha_cobro AS DATE) FECHA, 
@@ -222,7 +222,7 @@ class Ingreso {
     /**
      * Verifica si un ingreso de TESORERÍA ya fue marcado como recibido
      */
-    private function verificarRecibidoTesoreria($idSba05): int {
+    private function verificarRecibidoTesoreria($idSba05) {
         try {
             // Convertir a INT para la comparación
             $idSba05Int = (int)$idSba05;
@@ -247,7 +247,7 @@ class Ingreso {
     /**
      * Obtiene ingresos combinados de todas las fuentes
      */
-    public function obtenerIngresosCombinados($desde, $hasta): array {
+    public function obtenerIngresosCombinados($desde, $hasta) {
         $resultados = [];
         
         // 1. Ingresos MANUALES (desde tabla ingresos local)
@@ -293,7 +293,7 @@ class Ingreso {
     /**
      * Marca un ingreso TESORERÍA como recibido (lo inserta en tabla ingresos)
      */
-    public function marcarRecibidoTesoreria($idSba05, $fecha, $codComp, $nComp, $observaciones, $importe): bool {
+    public function marcarRecibidoTesoreria($idSba05, $fecha, $codComp, $nComp, $observaciones, $importe) {
         try {
             // CRÍTICO: Convertir ID_SBA05 a entero (la columna en la BD es INT)
             // Para ingresos de tesorería, ID_SBA05 debe ser un número válido
@@ -359,7 +359,7 @@ class Ingreso {
     /**
      * Marca un ingreso como recibido
      */
-    public function marcarRecibido(int $id): bool {
+    public function marcarRecibido($id) {
         try {
             error_log("[DEBUG marcarRecibido] Intentando marcar ingreso ID: $id como recibido");
             

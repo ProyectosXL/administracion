@@ -8,7 +8,7 @@ require_once __DIR__ . '/Director.php';
  */
 class Egreso {
     private $db;
-    private Director $director;
+    private $director;
     
     // Constantes para motivos de egreso
     public const MOTIVO_SUELDOS = 'SUELDOS';
@@ -23,7 +23,7 @@ class Egreso {
     /**
      * Genera el próximo número de comprobante
      */
-    private function generarNumeroComprobante(): string {
+    private function generarNumeroComprobante() {
         $sql = "SELECT MAX(CAST(N_COMP AS BIGINT)) as max_comp 
                 FROM egresos 
                 WHERE COD_COMP = 'EGR'";
@@ -45,7 +45,7 @@ class Egreso {
     /**
      * Crea un nuevo egreso
      */
-    public function crear(array $datos): bool {
+    public function crear($datos) {
         try {
             $sql = "INSERT INTO egresos (
                         ID_SBA05, COD_COMP, N_COMP, fecha, motivo, 
@@ -104,7 +104,7 @@ class Egreso {
     /**
      * Obtiene todos los egresos con filtros opcionales
      */
-    public function obtenerTodos(array $filtros = []): array {
+    public function obtenerTodos($filtros = []) {
         try {
             $sql = "SELECT *, CAST(fecha_carga AS DATE) as fecha_solo, 
                            CASE WHEN foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto 
@@ -173,7 +173,7 @@ class Egreso {
      * Comprime imagen base64 para almacenamiento optimizado
      * Soporta múltiples formatos: JPEG, PNG, GIF, BMP, WebP
      */
-    private function comprimirImagen(string $imagenBase64): string {
+    private function comprimirImagen($imagenBase64) {
         try {
             // Verificar si la extensión GD está disponible
             if (!extension_loaded('gd')) {
@@ -298,7 +298,7 @@ class Egreso {
     /**
      * Obtiene la foto de un egreso específico
      */
-    public function obtenerFoto(int $id): ?string {
+    public function obtenerFoto($id): ?string {
         try {
             $sql = "SELECT foto FROM egresos WHERE id = ?";
             $stmt = sqlsrv_query($this->db, $sql, [$id]);
@@ -320,7 +320,7 @@ class Egreso {
     /**
      * Obtiene la lista de directores desde la base de datos
      */
-    public function obtenerDirectores(): array {
+    public function obtenerDirectores() {
         return $this->director->obtenerDirectores();
     }
 }

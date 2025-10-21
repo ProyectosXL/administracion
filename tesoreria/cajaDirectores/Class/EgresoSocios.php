@@ -17,7 +17,7 @@ class EgresoSocios {
     /**
      * Obtiene lista de directores desde RO_T_DIRECTORES
      */
-    public function obtenerDirectores(): array {
+    public function obtenerDirectores() {
         try {
             $sql = "SELECT ID_DIRECTOR, NOMBRE FROM RO_T_DIRECTORES ORDER BY NOMBRE";
             $stmt = sqlsrv_query($this->db, $sql);
@@ -46,7 +46,7 @@ class EgresoSocios {
      * Obtiene egresos EFECTIVO por director y fecha
      * Fuente: tabla egresos WHERE nombre_director IS NOT NULL
      */
-    public function obtenerEgresosEfectivo(string $fechaDesde, string $fechaHasta): array {
+    public function obtenerEgresosEfectivo($fechaDesde, $fechaHasta) {
         try {
             $sql = "SELECT 
                         CAST(e.fecha AS DATE) as fecha,
@@ -87,7 +87,7 @@ class EgresoSocios {
      * Fuente: tabla solicitudes_egresos WHERE estado = 'PAGADO'
      * Join con RO_T_DIRECTORES para obtener nombre
      */
-    public function obtenerEgresosTransferencia(string $fechaDesde, string $fechaHasta): array {
+    public function obtenerEgresosTransferencia($fechaDesde, $fechaHasta) {
         try {
             $sql = "SELECT 
                         CAST(s.fecha_modificacion AS DATE) as fecha,
@@ -128,7 +128,7 @@ class EgresoSocios {
      * Obtiene resumen combinado de egresos efectivo + transferencia
      * Organizado por director con subtotales
      */
-    public function obtenerResumenPorDirector(string $fechaDesde, string $fechaHasta): array {
+    public function obtenerResumenPorDirector($fechaDesde, $fechaHasta) {
         try {
             // Obtener directores
             $directores = $this->obtenerDirectores();
@@ -203,7 +203,7 @@ class EgresoSocios {
      * Obtiene detalle completo de egresos combinando ambas fuentes
      * Columnas: FECHA | CODIGO | DIRECTOR | MOTIVO | ORIGEN | IMPORTE
      */
-    public function obtenerDetalleCompleto(string $fechaDesde, string $fechaHasta): array {
+    public function obtenerDetalleCompleto($fechaDesde, $fechaHasta) {
         try {
             // Query combinada con UNION ALL
             $sql = "SELECT 
@@ -269,7 +269,7 @@ class EgresoSocios {
     /**
      * Obtiene el total de egresos de socios en el rango de fechas
      */
-    public function obtenerTotalEgresos(string $fechaDesde, string $fechaHasta): float {
+    public function obtenerTotalEgresos($fechaDesde, $fechaHasta): float {
         try {
             $sql = "SELECT 
                         COALESCE(SUM(importe), 0) as total
@@ -305,7 +305,7 @@ class EgresoSocios {
     /**
      * Obtiene el detalle completo de un egreso específico por origen y código
      */
-    public function obtenerDetalleEgresoPorCodigo(string $origen, string $codigo): ?array {
+    public function obtenerDetalleEgresoPorCodigo($origen, $codigo): ?array {
         try {
             if ($origen === 'MANUAL') {
                 // Buscar en tabla egresos
