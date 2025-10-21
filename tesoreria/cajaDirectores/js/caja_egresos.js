@@ -335,6 +335,12 @@ document.getElementById('formEgreso')?.addEventListener('submit', async function
             
             cargarEgresos();
             actualizarResumen();
+            
+            // Recargar también la tabla de Egresos Socios si existe
+            if (typeof window.cargarDatosEgresosSocios === 'function') {
+                console.log('🔄 Actualizando tabla de Egresos Socios...');
+                window.cargarDatosEgresosSocios();
+            }
         } else {
             mostrarAlerta('Error', result.message);
         }

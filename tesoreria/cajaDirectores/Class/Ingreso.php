@@ -224,8 +224,11 @@ class Ingreso {
      */
     private function verificarRecibidoTesoreria($idSba05): int {
         try {
+            // Convertir a INT para la comparación
+            $idSba05Int = (int)$idSba05;
+            
             $sql = "SELECT COUNT(*) as count FROM ingresos WHERE ID_SBA05 = ? AND origen = 'TESORERIA'";
-            $stmt = sqlsrv_query($this->db, $sql, [$idSba05]);
+            $stmt = sqlsrv_query($this->db, $sql, [$idSba05Int]);
             
             if ($stmt === false) {
                 return 0;
@@ -292,15 +295,29 @@ class Ingreso {
      */
     public function marcarRecibidoTesoreria($idSba05, $fecha, $codComp, $nComp, $observaciones, $importe): bool {
         try {
+            // CRÍTICO: Convertir ID_SBA05 a entero (la columna en la BD es INT)
+            // Para ingresos de tesorería, ID_SBA05 debe ser un número válido
+            $idSba05Int = (int)$idSba05;
+            
+            // Validar que la conversión fue exitosa (debe ser un número positivo)
+            if ($idSba05Int <= 0) {
+                error_log("Error: ID_SBA05 inválido: '$idSba05' convertido a: $idSba05Int");
+                throw new Exception("ID_SBA05 debe ser un número entero positivo para ingresos de TESORERÍA");
+            }
+            
             // Verificar si ya existe
-            if ($this->verificarRecibidoTesoreria($idSba05)) {
-                return true; // Ya existe
+            if ($this->verificarRecibidoTesoreria($idSba05Int)) {
+                error_log("[INFO] Ingreso ID_SBA05 $idSba05Int ya está marcado como recibido");
+                return true; // Ya existe, retornar éxito
             }
             
             // Los campos COD_COMP y N_COMP ya vienen separados correctamente desde obtenerIngresosTesoreria()
             // Ajustar longitudes según límites de la tabla
             $codCompAjustado = substr($codComp, 0, 10); // Máximo 10 caracteres para COD_COMP
             $nCompAjustado = substr($nComp, 0, 20);     // Máximo 20 caracteres para N_COMP
+            
+            error_log("[DEBUG marcarRecibidoTesoreria] ID_SBA05 original: '$idSba05', convertido a INT: $idSba05Int");
+            error_log("[DEBUG marcarRecibidoTesoreria] COD_COMP: '$codCompAjustado', N_COMP: '$nCompAjustado'");
             
             $sql = "INSERT INTO ingresos (
                         ID_SBA05, COD_COMP, N_COMP, fecha, importe, 
@@ -311,21 +328,27 @@ class Ingreso {
                     )";
             
             $params = [
-                $idSba05,
+                $idSba05Int, // Usar el valor convertido a INT
                 $codCompAjustado,
                 $nCompAjustado,
                 $fecha,
-                $importe,
+                (float)$importe, // Asegurar que importe es float
                 $observaciones
             ];
+            
+            error_log("[DEBUG marcarRecibidoTesoreria] SQL: " . $sql);
+            error_log("[DEBUG marcarRecibidoTesoreria] Parámetros: " . print_r($params, true));
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
-                throw new Exception("Error al insertar ingreso TESORERÍA: " . print_r(sqlsrv_errors(), true));
+                $errors = sqlsrv_errors();
+                error_log("[ERROR marcarRecibidoTesoreria] SQL Error: " . print_r($errors, true));
+                throw new Exception("Error al insertar ingreso TESORERÍA: " . print_r($errors, true));
             }
             
             sqlsrv_free_stmt($stmt);
+            error_log("[DEBUG marcarRecibidoTesoreria] ✅ Inserción exitosa para ID_SBA05: $idSba05Int");
             return true;
         } catch (Exception $e) {
             error_log("Error en marcarRecibidoTesoreria: " . $e->getMessage());
@@ -338,12 +361,30 @@ class Ingreso {
      */
     public function marcarRecibido(int $id): bool {
         try {
+            error_log("[DEBUG marcarRecibido] Intentando marcar ingreso ID: $id como recibido");
+            
             $sql = "UPDATE ingresos SET recibido = 1 WHERE id = ?";
             $params = [$id];
+            
+            error_log("[DEBUG marcarRecibido] SQL: $sql");
+            error_log("[DEBUG marcarRecibido] Parámetros: " . print_r($params, true));
+            
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
-                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+                $errors = sqlsrv_errors();
+                error_log("[ERROR marcarRecibido] Error SQL: " . print_r($errors, true));
+                throw new Exception("Error en la consulta: " . print_r($errors, true));
+            }
+            
+            // Verificar cuántas filas fueron afectadas
+            $rowsAffected = sqlsrv_rows_affected($stmt);
+            error_log("[DEBUG marcarRecibido] Filas afectadas: $rowsAffected");
+            
+            if ($rowsAffected === 0) {
+                error_log("[WARNING marcarRecibido] No se actualizó ninguna fila. ¿El ID existe?");
+            } else {
+                error_log("[DEBUG marcarRecibido] ✅ Ingreso ID $id marcado como recibido exitosamente");
             }
             
             sqlsrv_free_stmt($stmt);
