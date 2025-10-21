@@ -742,7 +742,7 @@ function ejecutarPasos() {
   pasoActual = pasoActual + 1;
 
 
-  let pasosDirectos = [1, 5, 6, 7,8];
+  let pasosDirectos = [1, 5, 6, 7, 8];
 
 
  
@@ -784,6 +784,19 @@ function ejecutarPasos() {
           console.log("Paso:", pasoActual); // Agrega este log
           console.log("Perfil data:", perfil); // Agrega este log
           console.log("Perfil length:", perfil.length); // Agrega este log
+
+            // Caso especial: Paso 2 con array vacío o con resultado 0
+            // El SP ya marca el paso y ejecuta el resumen automáticamente
+            if (pasoActual == 2 && perfil.length == 1 && perfil[0].RESULTADO === 0) {
+              spinner.classList.remove('loading');
+              Swal.fire({
+                icon: "success",
+                title: "Control exitoso",
+                text: `Paso ${pasoActual} realizado! No se encontraron diferencias.`,
+              });
+              paso.className += "active";
+              return;
+            }
 
             if (perfil.length == 0 || pasosDirectos.includes(pasoActual) == true ) {
 
@@ -1414,34 +1427,54 @@ const aceptarDiferenciasModal2 = () =>{
 }
 
 
-const marcarPasoControladoConDiferencias = (paso) => {
+function marcarPasoControladoConDiferencias(paso) {
+  let desde = document.querySelector("#desde").value;
+  let hasta = document.querySelector("#hasta").value;
+  let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
   
-    let desde = document.querySelector("#desde").value;
-    let hasta = document.querySelector("#hasta").value;
- 
-    let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
-    $.ajax({
-      url: 'Controller/marcarPasoControlado.php',
-      method: 'POST',
-      data:{
-        periodo:periodo,
-        paso:paso,
-        desde:desde,
-        hasta:hasta
-      },
-      success : function(data) {
+  // Verificar primero si el paso ya está marcado
+  $.ajax({
+    url: 'Controller/consultarPasos.php',
+    method: 'GET',
+    data: {
+      periodo: periodo
+    },
+    success: function(data) {
+      let pasos = JSON.parse(data);
+      
+      // Si el paso ya está marcado, solo mostrar mensaje de éxito sin ejecutar nuevamente
+      if (pasos.length > 0 && pasos[0]['PASO_' + paso] == 1) {
         Swal.fire({
           icon: "success",
-          title: "Se guardo correctamente",
-          text: `Paso Ejecutado!`,
-        }).then(function () {
-          // location.reload();
+          title: "Paso ya ejecutado",
+          text: `El paso ${paso} ya fue marcado como completado.`,
+        }).then(function() {
           pintarPasos(periodo);
         });
-  
+      } else {
+        // Si no está marcado, proceder con la marca y ejecución
+        $.ajax({
+          url: 'Controller/marcarPasoControlado.php',
+          method: 'POST',
+          data: {
+            periodo: periodo,
+            paso: paso,
+            desde: desde,
+            hasta: hasta
+          },
+          success: function(data) {
+            Swal.fire({
+              icon: "success",
+              title: "Se guardo correctamente",
+              text: `Paso Ejecutado!`,
+            }).then(function() {
+              pintarPasos(periodo);
+            });
+          }
+        });
       }
-    })
-    
+    }
+  });
 }
 
 

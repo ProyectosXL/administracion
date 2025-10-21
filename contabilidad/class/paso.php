@@ -398,7 +398,15 @@ class Paso
             }
 
 
-            $sql ="INSERT INTO RO_T_CONTROL_INFORME_ECONOMICO (PERIODO,PASO_1) VALUES ('$periodo','1')";
+            // Usar MERGE para evitar duplicados
+            $sql = "MERGE INTO RO_T_CONTROL_INFORME_ECONOMICO AS target
+                    USING (SELECT '$periodo' AS PERIODO) AS source
+                    ON target.PERIODO = source.PERIODO
+                    WHEN MATCHED THEN
+                        UPDATE SET PASO_$paso_ejecutado = 1
+                    WHEN NOT MATCHED THEN
+                        INSERT (PERIODO, PASO_$paso_ejecutado)
+                        VALUES ('$periodo', 1);";
 
             $stmt = sqlsrv_query($cid_central, $sql);
 
@@ -433,7 +441,7 @@ class Paso
 
             $stmt = sqlsrv_query($cid_central, $sql);
 
-            $sql2="EXEC [LAKERBIS].[LOCALES_LAKERS].DBO.RO_SP_RESUMEN_VENTA_SUCURSALES_POR_TIPO_PAGO_NUEVO '$desde', '$hasta'";
+            $sql2="EXEC [XL-LAKERBIS].[LOCALES_LAKERS].DBO.RO_SP_RESUMEN_VENTA_SUCURSALES_POR_TIPO_PAGO_NUEVO '$desde', '$hasta'";
 
             $stmt = sqlsrv_query($cid_central, $sql2);
 
