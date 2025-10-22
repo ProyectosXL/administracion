@@ -46,10 +46,18 @@ function mostrarListaIngresos(ingresos) {
         return;
     }
     
+    // Filtrar solo los ingresos con COD_COMP = 'ING'
+    const ingresosING = ingresos.filter(ingreso => ingreso.COD_COMP === 'ING');
+    
+    if (ingresosING.length === 0) {
+        contenedor.innerHTML = '<p class="text-muted">No hay ingresos manuales registrados</p>';
+        return;
+    }
+    
     let html = '<div class="list-group">';
     
-    // Mostrar solo los últimos 5 ingresos
-    ingresos.slice(0, 5).forEach(ingreso => {
+    // Mostrar solo los últimos 5 ingresos con COD_COMP = 'ING'
+    ingresosING.slice(0, 5).forEach(ingreso => {
         // Usar fecha_solo si está disponible, sino fecha
         const fechaMostrar = ingreso.fecha_solo || ingreso.fecha;
         let fecha;

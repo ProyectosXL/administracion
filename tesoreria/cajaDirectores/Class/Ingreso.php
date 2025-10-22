@@ -418,4 +418,58 @@ class Ingreso {
             return 0.0;
         }
     }
+    
+    /**
+     * Obtiene gastos (ingresos con COD_COMP='GAS') para Reporte Alberto
+     */
+    public function obtenerGastos($desde, $hasta) {
+        try {
+            $sql = "SELECT * FROM ingresos 
+                    WHERE COD_COMP = 'GAS'
+                      AND fecha BETWEEN ? AND ?
+                    ORDER BY fecha DESC";
+            
+            $params = [$desde, $hasta];
+            $stmt = sqlsrv_query($this->db, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $resultados = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $resultados[] = $row;
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return $resultados;
+        } catch (Exception $e) {
+            error_log("Error al obtener gastos: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtiene el total de gastos (ingresos con COD_COMP='GAS') para Reporte Alberto
+     */
+    public function obtenerTotalGastos(): float {
+        try {
+            $sql = "SELECT COALESCE(SUM(importe), 0) as total 
+                    FROM ingresos 
+                    WHERE COD_COMP = 'GAS'";
+            $stmt = sqlsrv_query($this->db, $sql);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+            
+            return (float)$result['total'];
+        } catch (Exception $e) {
+            error_log("Error al obtener total gastos: " . $e->getMessage());
+            return 0.0;
+        }
+    }
 }

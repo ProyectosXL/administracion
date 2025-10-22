@@ -18,7 +18,12 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#egresos-socios" data-bs-toggle="tab">
-                    <i class="bi bi-people-fill"></i> Egresos Socios
+                    <i class="bi bi-people-fill"></i> Reporte Socios
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#reporte-alberto" data-bs-toggle="tab">
+                    <i class="bi bi-person-badge"></i> Reporte Alberto
                 </a>
             </li>
         </ul>

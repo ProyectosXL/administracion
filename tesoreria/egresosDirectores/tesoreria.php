@@ -98,7 +98,7 @@ $titulo_pagina = 'Tesorería';
                         <div class="card-body">
                             <p class="text-muted small">
                                 <i class="bi bi-info-circle"></i> Estas solicitudes ya tienen la orden de compra autorizada. 
-                                Debes adjuntar: comprobante de transferencia, orden de pago y retenciones.
+                                Debes adjuntar: comprobante de transferencia y orden de pago. Las retenciones son opcionales.
                             </p>
                             <div id="comprasListas">
                                 <div class="text-center py-4">
@@ -227,11 +227,11 @@ $titulo_pagina = 'Tesorería';
                             
                             <div class="mb-3">
                                 <label class="form-label">
-                                    <i class="bi bi-file-earmark-check"></i> Retenciones <span class="text-danger">*</span>
+                                    <i class="bi bi-file-earmark-check"></i> Retenciones <span class="text-muted">(Opcional)</span>
                                 </label>
                                 <input type="file" class="form-control" id="retenciones" 
                                        accept="image/*,application/pdf" multiple>
-                                <small class="form-text text-muted">Puedes seleccionar múltiples archivos</small>
+                                <small class="form-text text-muted">Puedes seleccionar múltiples archivos si aplica</small>
                             </div>
                         </div>
                         

@@ -287,6 +287,26 @@ try {
                 }
             }
             
+            // Enviar email si tesorería paga la solicitud (cambia a PAGADO)
+            if ($usuario === 'TESORERIA' && $nuevoEstado === SolicitudEgreso::ESTADO_PAGADO) {
+                try {
+                    error_log("DEBUG - Intentando enviar email de pago realizado para solicitud: " . $idSolicitud);
+                    $emailNotificacion = new EmailNotificacion();
+                    $emailEnviado = $emailNotificacion->notificarPagoRealizado($idSolicitud);
+                    
+                    if ($emailEnviado) {
+                        error_log("DEBUG - Notificación de pago realizado enviada correctamente");
+                    } else {
+                        error_log("DEBUG - No se pudo enviar la notificación de pago realizado");
+                    }
+                } catch (Exception $emailException) {
+                    // Capturar cualquier error de email pero no interrumpir el flujo
+                    error_log("ERROR al enviar email de pago: " . $emailException->getMessage());
+                    error_log("TRACE: " . $emailException->getTraceAsString());
+                    // No re-lanzar la excepción
+                }
+            }
+            
             echo json_encode([
                 'success' => true,
                 'message' => 'Estado actualizado correctamente'

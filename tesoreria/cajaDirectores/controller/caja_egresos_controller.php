@@ -48,6 +48,23 @@ try {
                 $datos['nombre_director'] = $_POST['nombre_director'];
             }
             
+            // Si es para sueldos, agregar centro de costo
+            if ($_POST['motivo'] === Egreso::MOTIVO_SUELDOS) {
+                if (!empty($_POST['centro_costo'])) {
+                    $datos['centro_costo'] = $_POST['centro_costo'];
+                }
+            }
+            
+            // Si es pago a proveedores, agregar proveedor y tipo de gasto
+            if ($_POST['motivo'] === Egreso::MOTIVO_PROVEEDORES) {
+                if (!empty($_POST['proveedor'])) {
+                    $datos['proveedor'] = $_POST['proveedor'];
+                }
+                if (!empty($_POST['tipo_gasto'])) {
+                    $datos['tipo_gasto'] = $_POST['tipo_gasto'];
+                }
+            }
+            
             $resultado = $egreso->crear($datos);
             
             if ($resultado) {
@@ -111,6 +128,24 @@ try {
             echo json_encode([
                 'success' => true,
                 'data' => $directores
+            ]);
+            break;
+            
+        case 'centros_costo':
+            $centrosCosto = $egreso->obtenerCentrosCosto();
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $centrosCosto
+            ]);
+            break;
+            
+        case 'proveedores':
+            $proveedores = $egreso->obtenerProveedores();
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $proveedores
             ]);
             break;
             

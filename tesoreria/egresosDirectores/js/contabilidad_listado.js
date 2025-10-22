@@ -1,48 +1,17 @@
 /**
- * Gestión del listado de facturas listas para Tesorería
+ * Gestión del listado de egresos pagados para Contabilidad
  */
 
-let archivosComprobantes = {
-    comprobanteTransferencia: null,
-    ordenPago: null,
-    retenciones: []
-};
-
-/**
- * Carga las facturas listas para pago
- * - Compras personales: estado CARGADO (ya tienen O.C.)
- * - Retiros de dinero: estado CARGADO (van directo a tesorería)
- */
-async function cargarFacturasListas() {
-    mostrarLoading();
-    
-    try {
-        // Cargar todas las solicitudes con estado CARGADO
-        const url = 'controller/solicitud_controller.php?accion=listar&estado=CARGADO';
-        const response = await fetch(url);
-        const result = await response.json();
-        
-        if (result.success) {
-            // Filtrar por tipo de motivo
-            const compras = result.data.filter(s => s.motivo === 'COMPRA_PERSONAL');
-            const retiros = result.data.filter(s => s.motivo === 'RETIRO_DINERO');
-            
-            mostrarComprasListas(compras);
-            mostrarRetirosListos(retiros);
-        } else {
-            console.error('Error al cargar facturas');
-        }
-    } catch (error) {
-        console.error('Error en cargarFacturasListas:', error);
-    } finally {
-        ocultarLoading();
-    }
-}
+// Variables globales para almacenar datos
+let comprasPagadasData = [];
+let retirosPagadosData = [];
 
 /**
  * Carga el historial de solicitudes ya pagadas
  */
 async function cargarHistorialPagadas() {
+    mostrarLoading();
+    
     try {
         // Cargar todas las solicitudes con estado PAGADO
         const url = 'controller/solicitud_controller.php?accion=listar&estado=PAGADO';
@@ -51,17 +20,109 @@ async function cargarHistorialPagadas() {
         
         if (result.success) {
             // Filtrar por tipo de motivo
-            const comprasPagadas = result.data.filter(s => s.motivo === 'COMPRA_PERSONAL');
-            const retirosPagados = result.data.filter(s => s.motivo === 'RETIRO_DINERO');
+            comprasPagadasData = result.data.filter(s => s.motivo === 'COMPRA_PERSONAL');
+            retirosPagadosData = result.data.filter(s => s.motivo === 'RETIRO_DINERO');
             
-            mostrarHistorialComprasPagadas(comprasPagadas);
-            mostrarHistorialRetirosPagados(retirosPagados);
+            mostrarHistorialComprasPagadas(comprasPagadasData);
+            mostrarHistorialRetirosPagados(retirosPagadosData);
         } else {
             console.error('Error al cargar historial');
         }
     } catch (error) {
         console.error('Error en cargarHistorialPagadas:', error);
+    } finally {
+        ocultarLoading();
     }
+}
+
+/**
+ * Filtra compras pagadas por rango de fechas
+ */
+async function filtrarComprasPagadas() {
+    mostrarLoading();
+    
+    try {
+        const fechaDesde = document.getElementById('fechaDesdeCompras').value;
+        const fechaHasta = document.getElementById('fechaHastaCompras').value;
+        
+        let url = 'controller/solicitud_controller.php?accion=listar&estado=PAGADO';
+        
+        if (fechaDesde) {
+            url += `&fecha_desde=${fechaDesde}`;
+        }
+        
+        if (fechaHasta) {
+            url += `&fecha_hasta=${fechaHasta}`;
+        }
+        
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            comprasPagadasData = result.data.filter(s => s.motivo === 'COMPRA_PERSONAL');
+            mostrarHistorialComprasPagadas(comprasPagadasData);
+        } else {
+            console.error('Error al filtrar compras');
+        }
+    } catch (error) {
+        console.error('Error en filtrarComprasPagadas:', error);
+    } finally {
+        ocultarLoading();
+    }
+}
+
+/**
+ * Filtra retiros pagados por rango de fechas
+ */
+async function filtrarRetirosPagados() {
+    mostrarLoading();
+    
+    try {
+        const fechaDesde = document.getElementById('fechaDesdeRetiros').value;
+        const fechaHasta = document.getElementById('fechaHastaRetiros').value;
+        
+        let url = 'controller/solicitud_controller.php?accion=listar&estado=PAGADO';
+        
+        if (fechaDesde) {
+            url += `&fecha_desde=${fechaDesde}`;
+        }
+        
+        if (fechaHasta) {
+            url += `&fecha_hasta=${fechaHasta}`;
+        }
+        
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success) {
+            retirosPagadosData = result.data.filter(s => s.motivo === 'RETIRO_DINERO');
+            mostrarHistorialRetirosPagados(retirosPagadosData);
+        } else {
+            console.error('Error al filtrar retiros');
+        }
+    } catch (error) {
+        console.error('Error en filtrarRetirosPagados:', error);
+    } finally {
+        ocultarLoading();
+    }
+}
+
+/**
+ * Limpia los filtros de compras
+ */
+function limpiarFiltrosCompras() {
+    document.getElementById('fechaDesdeCompras').value = '';
+    document.getElementById('fechaHastaCompras').value = '';
+    cargarHistorialPagadas();
+}
+
+/**
+ * Limpia los filtros de retiros
+ */
+function limpiarFiltrosRetiros() {
+    document.getElementById('fechaDesdeRetiros').value = '';
+    document.getElementById('fechaHastaRetiros').value = '';
+    cargarHistorialPagadas();
 }
 
 /**
@@ -69,17 +130,39 @@ async function cargarHistorialPagadas() {
  */
 function mostrarHistorialComprasPagadas(compras) {
     const contenedor = document.getElementById('historialComprasPagadas');
+    const resumen = document.getElementById('resumenCompras');
     
     if (!compras || compras.length === 0) {
         contenedor.innerHTML = `
             <div class="empty-state">
                 <i class="bi bi-archive"></i>
-                <h5>No hay registros históricos</h5>
-                <p>Las compras pagadas aparecerán aquí.</p>
+                <h5>No hay registros</h5>
+                <p>No se encontraron compras pagadas con los filtros aplicados.</p>
             </div>
         `;
+        resumen.innerHTML = '';
         return;
     }
+    
+    // Calcular total
+    const total = compras.reduce((sum, c) => sum + parseFloat(c.importe), 0);
+    const formatoMoneda = new Intl.NumberFormat('es-AR', { 
+        style: 'currency', 
+        currency: 'ARS',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    
+    resumen.innerHTML = `
+        <div class="alert alert-primary d-flex justify-content-between align-items-center">
+            <div>
+                <strong><i class="bi bi-graph-up"></i> Total de registros:</strong> ${compras.length}
+            </div>
+            <div>
+                <strong><i class="bi bi-cash-stack"></i> Importe Total:</strong> ${formatoMoneda.format(total)}
+            </div>
+        </div>
+    `;
     
     contenedor.innerHTML = generarTablaHistorial(compras, 'COMPRA_PERSONAL');
 }
@@ -89,17 +172,39 @@ function mostrarHistorialComprasPagadas(compras) {
  */
 function mostrarHistorialRetirosPagados(retiros) {
     const contenedor = document.getElementById('historialRetirosPagados');
+    const resumen = document.getElementById('resumenRetiros');
     
     if (!retiros || retiros.length === 0) {
         contenedor.innerHTML = `
             <div class="empty-state">
                 <i class="bi bi-archive"></i>
-                <h5>No hay registros históricos</h5>
-                <p>Los retiros pagados aparecerán aquí.</p>
+                <h5>No hay registros</h5>
+                <p>No se encontraron retiros pagados con los filtros aplicados.</p>
             </div>
         `;
+        resumen.innerHTML = '';
         return;
     }
+    
+    // Calcular total
+    const total = retiros.reduce((sum, r) => sum + parseFloat(r.importe), 0);
+    const formatoMoneda = new Intl.NumberFormat('es-AR', { 
+        style: 'currency', 
+        currency: 'ARS',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    
+    resumen.innerHTML = `
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <div>
+                <strong><i class="bi bi-graph-up"></i> Total de registros:</strong> ${retiros.length}
+            </div>
+            <div>
+                <strong><i class="bi bi-cash-stack"></i> Importe Total:</strong> ${formatoMoneda.format(total)}
+            </div>
+        </div>
+    `;
     
     contenedor.innerHTML = generarTablaHistorial(retiros, 'RETIRO_DINERO');
 }
@@ -124,7 +229,7 @@ function generarTablaHistorial(solicitudes, tipo) {
                 <th>Fecha Solicitud</th>
                 <th class="text-end">Importe</th>
                 <th class="text-center">Archivos</th>
-                <th class="text-center">Acciones</th>
+                <th class="text-center">Historial</th>
             </tr>
         </thead>
         <tbody>
@@ -157,111 +262,7 @@ function generarTablaHistorial(solicitudes, tipo) {
                 </td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-secondary" onclick="verHistorialEstados('${solicitud.id_solicitud}')">
-                        <i class="bi bi-clock-history"></i> Historial
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-    
-    html += '</tbody></table></div>';
-    return html;
-}
-
-/**
- * Muestra las compras personales listas para pago
- */
-function mostrarComprasListas(compras) {
-    const contenedor = document.getElementById('comprasListas');
-    
-    if (!compras || compras.length === 0) {
-        contenedor.innerHTML = `
-            <div class="empty-state">
-                <i class="bi bi-inbox"></i>
-                <h5>No hay compras listas para pago</h5>
-                <p>Las facturas con orden de compra autorizada aparecerán aquí.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    contenedor.innerHTML = generarTablaFacturas(compras, 'COMPRA_PERSONAL');
-}
-
-/**
- * Muestra los retiros listos para pago
- */
-function mostrarRetirosListos(retiros) {
-    const contenedor = document.getElementById('retirosListos');
-    
-    if (!retiros || retiros.length === 0) {
-        contenedor.innerHTML = `
-            <div class="empty-state">
-                <i class="bi bi-inbox"></i>
-                <h5>No hay retiros listos para pago</h5>
-                <p>Los retiros de dinero autorizados aparecerán aquí.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    contenedor.innerHTML = generarTablaFacturas(retiros, 'RETIRO_DINERO');
-}
-
-/**
- * Genera la tabla HTML para las facturas
- */
-function generarTablaFacturas(facturas, tipo) {
-    const formatoMoneda = new Intl.NumberFormat('es-AR', { 
-        style: 'currency', 
-        currency: 'ARS',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
-    
-    let html = '<div class="table-responsive"><table class="table table-hover">';
-    html += `
-        <thead class="table-dark">
-            <tr>
-                <th>ID Solicitud</th>
-                <th>Director</th>
-                <th>Fecha</th>
-                <th class="text-end">Importe</th>
-                <th class="text-center">Archivos</th>
-                <th class="text-center">Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-    `;
-    
-    facturas.forEach(factura => {
-        const fecha = new Date(factura.fecha_solicitud).toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-        
-        const importe = formatoMoneda.format(factura.importe);
-        
-        // Para retiros de dinero, solo mostrar 0 sin botón
-        const columnArchivos = tipo === 'RETIRO_DINERO' 
-            ? '<span class="text-muted">0</span>'
-            : `<button class="btn btn-sm btn-outline-info" onclick="verArchivosFactura('${factura.id_solicitud}')">
-                   <i class="bi bi-paperclip"></i> ${factura.cantidad_archivos || 0}
-               </button>`;
-        
-        html += `
-            <tr>
-                <td><code>${factura.id_solicitud}</code></td>
-                <td><strong>${factura.nombre_director}</strong></td>
-                <td>${fecha}</td>
-                <td class="text-end">${importe}</td>
-                <td class="text-center">
-                    ${columnArchivos}
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-outline-success" onclick="abrirModalPago('${factura.id_solicitud}', '${tipo}')">
-                        <i class="bi bi-cash-stack"></i> Pagar
+                        <i class="bi bi-clock-history"></i> Ver
                     </button>
                 </td>
             </tr>
@@ -354,24 +355,18 @@ async function verArchivosFactura(idSolicitud) {
  * Ver imagen completa en modal
  */
 async function verImagenCompleta(idArchivo, nombreArchivo) {
-    console.log('Intentando ver imagen:', idArchivo, nombreArchivo);
     mostrarLoading();
     
     try {
         const url = `controller/archivo_controller.php?accion=descargar&id=${idArchivo}`;
-        console.log('Fetching desde:', url);
-        
         const response = await fetch(url);
         const result = await response.json();
-        
-        console.log('Resultado:', result);
         
         if (result.success && result.data) {
             const modalId = 'modalImagenCompleta';
             let modalElement = document.getElementById(modalId);
             
             if (!modalElement) {
-                console.log('Creando modal de imagen');
                 modalElement = document.createElement('div');
                 modalElement.id = modalId;
                 modalElement.className = 'modal fade';
@@ -403,22 +398,18 @@ async function verImagenCompleta(idArchivo, nombreArchivo) {
             if (titulo) titulo.textContent = nombreArchivo;
             if (imagen) {
                 const imgSrc = `data:${result.data.mime_type};base64,${result.data.archivo}`;
-                console.log('Estableciendo src de imagen, tamaño base64:', result.data.archivo.length);
                 imagen.src = imgSrc;
                 imagen.alt = nombreArchivo;
             }
             
             const modal = new bootstrap.Modal(modalElement);
             modal.show();
-            
-            console.log('Modal mostrado');
         } else {
-            console.error('Error en resultado:', result);
             mostrarAlerta('Error', result.message || 'No se pudo cargar la imagen');
         }
     } catch (error) {
-        console.error('Error en verImagenCompleta:', error);
-        mostrarAlerta('Error', 'No se pudo cargar la imagen: ' + error.message);
+        console.error('Error:', error);
+        mostrarAlerta('Error', 'No se pudo cargar la imagen');
     } finally {
         ocultarLoading();
     }
@@ -460,205 +451,6 @@ function obtenerIconoArchivo(tipo) {
     if (tipo.includes('excel') || tipo.includes('spreadsheet')) return 'bi-file-excel';
     return 'bi-file-earmark';
 }
-
-/**
- * Abre el modal para adjuntar comprobantes de pago
- */
-function abrirModalPago(idSolicitud, tipo) {
-    document.getElementById('idSolicitudPago').value = idSolicitud;
-    document.getElementById('tipoSolicitudPago').value = tipo;
-    
-    // Limpiar archivos previos
-    archivosComprobantes = {
-        comprobanteTransferencia: null,
-        ordenPago: null,
-        retenciones: []
-    };
-    
-    document.getElementById('comprobanteTransferencia').value = '';
-    document.getElementById('ordenPago').value = '';
-    document.getElementById('retenciones').value = '';
-    document.getElementById('observacionesPago').value = '';
-    
-    // Mostrar/ocultar campos según el tipo
-    const comprobantesExtra = document.getElementById('comprobantesExtra');
-    const infoComprobantes = document.getElementById('infoComprobantes');
-    
-    if (tipo === 'COMPRA_PERSONAL') {
-        comprobantesExtra.classList.remove('d-none');
-        document.getElementById('ordenPago').required = true;
-        document.getElementById('retenciones').required = false;
-        
-        infoComprobantes.innerHTML = `
-            <strong>Compra Personal:</strong> Debes adjuntar:
-            <ul class="mb-0">
-                <li>Comprobante de transferencia (obligatorio)</li>
-                <li>Orden de pago (obligatorio)</li>
-                <li>Retenciones (opcional, puedes adjuntar varios si aplica)</li>
-            </ul>
-        `;
-    } else {
-        comprobantesExtra.classList.add('d-none');
-        document.getElementById('ordenPago').required = false;
-        document.getElementById('retenciones').required = false;
-        
-        infoComprobantes.innerHTML = `
-            <strong>Retiro de Dinero:</strong> Solo debes adjuntar el comprobante de transferencia.
-        `;
-    }
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalAdjuntarComprobantes'));
-    modal.show();
-}
-
-/**
- * Guarda los comprobantes y marca como PAGADO
- */
-async function guardarComprobantesPago() {
-    const idSolicitud = document.getElementById('idSolicitudPago').value;
-    const tipo = document.getElementById('tipoSolicitudPago').value;
-    const observaciones = document.getElementById('observacionesPago').value;
-    
-    // Validar que se hayan cargado los archivos
-    const comprobanteTransf = document.getElementById('comprobanteTransferencia').files[0];
-    if (!comprobanteTransf) {
-        mostrarAlerta('Error', 'Debe adjuntar el comprobante de transferencia');
-        return;
-    }
-    
-    if (tipo === 'COMPRA_PERSONAL') {
-        const ordenPago = document.getElementById('ordenPago').files[0];
-        
-        if (!ordenPago) {
-            mostrarAlerta('Error', 'Debe adjuntar la orden de pago');
-            return;
-        }
-        
-        // Las retenciones son opcionales, no validamos si están vacías
-    }
-    
-    mostrarLoading();
-    
-    try {
-        // 1. Subir archivos
-        await subirComprobanteTransferencia(idSolicitud, comprobanteTransf);
-        
-        if (tipo === 'COMPRA_PERSONAL') {
-            const ordenPago = document.getElementById('ordenPago').files[0];
-            const retenciones = document.getElementById('retenciones').files;
-            
-            await subirOrdenPago(idSolicitud, ordenPago);
-            
-            // Subir retenciones solo si fueron adjuntadas
-            if (retenciones && retenciones.length > 0) {
-                for (let i = 0; i < retenciones.length; i++) {
-                    await subirRetencion(idSolicitud, retenciones[i]);
-                }
-            }
-        }
-        
-        // 2. Cambiar estado a PAGADO
-        const formData = new FormData();
-        formData.append('accion', 'actualizar_estado');
-        formData.append('id_solicitud', idSolicitud);
-        formData.append('estado', 'PAGADO');
-        formData.append('usuario', 'TESORERIA');
-        formData.append('observaciones', observaciones || 'Pago realizado');
-        
-        const response = await fetch('controller/solicitud_controller.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            // Cerrar modal
-            bootstrap.Modal.getInstance(document.getElementById('modalAdjuntarComprobantes')).hide();
-            
-            mostrarAlerta('Éxito', 'Pago registrado correctamente');
-            
-            // Recargar listados
-            cargarFacturasListas();
-        } else {
-            mostrarAlerta('Error', result.message);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        mostrarAlerta('Error', 'No se pudo registrar el pago');
-    } finally {
-        ocultarLoading();
-    }
-}
-
-/**
- * Sube el comprobante de transferencia
- */
-async function subirComprobanteTransferencia(idSolicitud, archivo) {
-    return subirArchivo(idSolicitud, archivo, 'COMPROBANTE_TRANSFERENCIA');
-}
-
-/**
- * Sube la orden de pago
- */
-async function subirOrdenPago(idSolicitud, archivo) {
-    return subirArchivo(idSolicitud, archivo, 'ORDEN_PAGO');
-}
-
-/**
- * Sube una retención
- */
-async function subirRetencion(idSolicitud, archivo) {
-    return subirArchivo(idSolicitud, archivo, 'RETENCION');
-}
-
-/**
- * Función genérica para subir archivos
- */
-async function subirArchivo(idSolicitud, archivo, tipoArchivo) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            try {
-                const formData = new FormData();
-                formData.append('accion', 'subir');
-                formData.append('id_solicitud', idSolicitud);
-                formData.append('tipo_archivo', tipoArchivo);
-                formData.append('nombre_archivo', archivo.name);
-                formData.append('archivo_base64', e.target.result.split(',')[1]);
-                formData.append('mime_type', archivo.type);
-                
-                const response = await fetch('controller/archivo_controller.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    resolve(result);
-                } else {
-                    reject(new Error(result.message));
-                }
-            } catch (error) {
-                reject(error);
-            }
-        };
-        reader.readAsDataURL(archivo);
-    });
-}
-
-// Cargar facturas al iniciar la página y al cambiar de pestaña
-document.addEventListener('DOMContentLoaded', function() {
-    cargarFacturasListas();
-    cargarHistorialPagadas();
-    
-    // Recargar al cambiar de pestaña
-    document.getElementById('retiros-tab')?.addEventListener('shown.bs.tab', function() {
-        cargarFacturasListas();
-        cargarHistorialPagadas();
-    });
-});
 
 /**
  * Ver el historial de estados de una solicitud
@@ -780,6 +572,118 @@ function mostrarModalHistorial(idSolicitud, historial) {
     modal.show();
 }
 
+/**
+ * Exporta las compras pagadas a Excel
+ */
+function exportarComprasExcel() {
+    if (!comprasPagadasData || comprasPagadasData.length === 0) {
+        mostrarAlerta('Advertencia', 'No hay datos para exportar');
+        return;
+    }
+    
+    // Preparar datos para exportar (sin columnas de botones)
+    const datosExport = comprasPagadasData.map(compra => ({
+        'ID Solicitud': compra.id_solicitud,
+        'Director': compra.nombre_director,
+        'Fecha Solicitud': new Date(compra.fecha_solicitud).toLocaleDateString('es-AR'),
+        'Importe': parseFloat(compra.importe),
+        'Estado': compra.estado,
+        'Observaciones': compra.observaciones || '',
+        'Obs. Proveedores': compra.observaciones_proveedores || '',
+        'Obs. Tesorería': compra.observaciones_tesoreria || ''
+    }));
+    
+    // Crear el libro de trabajo
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(datosExport);
+    
+    // Ajustar ancho de columnas
+    ws['!cols'] = [
+        { wch: 20 },  // ID Solicitud
+        { wch: 25 },  // Director
+        { wch: 15 },  // Fecha
+        { wch: 15 },  // Importe
+        { wch: 12 },  // Estado
+        { wch: 30 },  // Observaciones
+        { wch: 30 },  // Obs. Proveedores
+        { wch: 30 }   // Obs. Tesorería
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Compras Pagadas');
+    
+    // Generar nombre de archivo con fecha
+    const fechaHoy = new Date().toISOString().split('T')[0];
+    const nombreArchivo = `Compras_Pagadas_${fechaHoy}.xlsx`;
+    
+    // Descargar
+    XLSX.writeFile(wb, nombreArchivo);
+    
+    mostrarAlerta('Éxito', `Archivo ${nombreArchivo} descargado correctamente`);
+}
+
+/**
+ * Exporta los retiros pagados a Excel
+ */
+function exportarRetirosExcel() {
+    if (!retirosPagadosData || retirosPagadosData.length === 0) {
+        mostrarAlerta('Advertencia', 'No hay datos para exportar');
+        return;
+    }
+    
+    // Preparar datos para exportar (sin columnas de botones)
+    const datosExport = retirosPagadosData.map(retiro => ({
+        'ID Solicitud': retiro.id_solicitud,
+        'Director': retiro.nombre_director,
+        'Fecha Solicitud': new Date(retiro.fecha_solicitud).toLocaleDateString('es-AR'),
+        'Importe': parseFloat(retiro.importe),
+        'Estado': retiro.estado,
+        'Observaciones': retiro.observaciones || '',
+        'Obs. Tesorería': retiro.observaciones_tesoreria || ''
+    }));
+    
+    // Crear el libro de trabajo
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(datosExport);
+    
+    // Ajustar ancho de columnas
+    ws['!cols'] = [
+        { wch: 20 },  // ID Solicitud
+        { wch: 25 },  // Director
+        { wch: 15 },  // Fecha
+        { wch: 15 },  // Importe
+        { wch: 12 },  // Estado
+        { wch: 30 },  // Observaciones
+        { wch: 30 }   // Obs. Tesorería
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Retiros Pagados');
+    
+    // Generar nombre de archivo con fecha
+    const fechaHoy = new Date().toISOString().split('T')[0];
+    const nombreArchivo = `Retiros_Pagados_${fechaHoy}.xlsx`;
+    
+    // Descargar
+    XLSX.writeFile(wb, nombreArchivo);
+    
+    mostrarAlerta('Éxito', `Archivo ${nombreArchivo} descargado correctamente`);
+}
+
+// Cargar historial al iniciar la página
+document.addEventListener('DOMContentLoaded', function() {
+    cargarHistorialPagadas();
+    
+    // Establecer fecha hasta como hoy por defecto
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaHastaCompras').value = hoy;
+    document.getElementById('fechaHastaRetiros').value = hoy;
+});
+
 // Exportar funciones para uso global
 window.verImagenCompleta = verImagenCompleta;
 window.verHistorialEstados = verHistorialEstados;
+window.filtrarComprasPagadas = filtrarComprasPagadas;
+window.filtrarRetirosPagados = filtrarRetirosPagados;
+window.limpiarFiltrosCompras = limpiarFiltrosCompras;
+window.limpiarFiltrosRetiros = limpiarFiltrosRetiros;
+window.exportarComprasExcel = exportarComprasExcel;
+window.exportarRetirosExcel = exportarRetirosExcel;

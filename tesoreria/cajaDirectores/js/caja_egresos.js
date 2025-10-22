@@ -165,18 +165,153 @@ async function cargarDirectores() {
     }
 }
 
+// Cargar lista de centros de costo
+async function cargarCentrosCosto() {
+    try {
+        const response = await fetch(`controller/caja_egresos_controller.php?accion=centros_costo&_=${Date.now()}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const text = await response.text();
+        let result;
+        
+        try {
+            result = JSON.parse(text);
+        } catch (jsonError) {
+            console.error('Respuesta no es JSON válido:', text);
+            throw new Error('Respuesta del servidor no es JSON válido');
+        }
+        
+        if (result.success) {
+            const select = document.getElementById('centroCosto');
+            select.innerHTML = '<option value="">Seleccione un centro de costo</option>';
+            
+            result.data.forEach(centro => {
+                const option = document.createElement('option');
+                // El value es el COD_AUXILIAR (lo que se guardará)
+                option.value = centro.cod_auxiliar;
+                // El texto visible es el CENTRO_COSTO
+                option.textContent = centro.centro_costo;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error al cargar centros de costo:', error);
+        // No mostrar alerta para no molestar al usuario constantemente
+    }
+}
+
+// Cargar lista de proveedores
+async function cargarProveedores() {
+    try {
+        const response = await fetch(`controller/caja_egresos_controller.php?accion=proveedores&_=${Date.now()}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const text = await response.text();
+        let result;
+        
+        try {
+            result = JSON.parse(text);
+        } catch (jsonError) {
+            console.error('Respuesta no es JSON válido:', text);
+            throw new Error('Respuesta del servidor no es JSON válido');
+        }
+        
+        if (result.success) {
+            const select = document.getElementById('proveedor');
+            select.innerHTML = '<option value="">Seleccione un proveedor</option>';
+            
+            result.data.forEach(proveedor => {
+                const option = document.createElement('option');
+                // El value es el COD_PROVEE (lo que se guardará)
+                option.value = proveedor.cod_provee;
+                // El texto visible es el NOM_PROVEE
+                option.textContent = proveedor.nom_provee;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error al cargar proveedores:', error);
+        // No mostrar alerta para no molestar al usuario constantemente
+    }
+}
+
 // Mostrar/ocultar selector de director según motivo
 document.getElementById('motivoEgreso')?.addEventListener('change', function() {
     const divDirector = document.getElementById('divDirector');
     const selectDirector = document.getElementById('nombreDirector');
+    const divCentroCosto = document.getElementById('divCentroCosto');
+    const selectCentroCosto = document.getElementById('centroCosto');
+    const divProveedor = document.getElementById('divProveedor');
+    const selectProveedor = document.getElementById('proveedor');
+    const divTipoGasto = document.getElementById('divTipoGasto');
+    const selectTipoGasto = document.getElementById('tipoGasto');
     
+    // Resetear todos los campos
+    divDirector.classList.add('d-none');
+    selectDirector.required = false;
+    selectDirector.value = '';
+    
+    divCentroCosto.classList.add('d-none');
+    selectCentroCosto.required = false;
+    selectCentroCosto.value = '';
+    
+    divProveedor.classList.add('d-none');
+    selectProveedor.required = false;
+    selectProveedor.value = '';
+    
+    divTipoGasto.classList.add('d-none');
+    selectTipoGasto.required = false;
+    selectTipoGasto.value = '';
+    
+    // Mostrar el campo correspondiente según el motivo
     if (this.value === 'RETIROS') {
         divDirector.classList.remove('d-none');
         selectDirector.required = true;
+    } else if (this.value === 'SUELDOS') {
+        divCentroCosto.classList.remove('d-none');
+        selectCentroCosto.required = false; // Opcional según requerimientos
+    } else if (this.value === 'PROVEEDORES') {
+        divProveedor.classList.remove('d-none');
+        selectProveedor.required = true;
+    }
+});
+
+// Mostrar/ocultar selector de tipo de gasto según proveedor seleccionado
+document.getElementById('proveedor')?.addEventListener('change', function() {
+    const divTipoGasto = document.getElementById('divTipoGasto');
+    const selectTipoGasto = document.getElementById('tipoGasto');
+    const selectProveedor = document.getElementById('proveedor');
+    
+    // Obtener el nombre del proveedor seleccionado (está en el texto de la opción)
+    const selectedOption = selectProveedor.options[selectProveedor.selectedIndex];
+    const nombreProveedor = selectedOption ? selectedOption.textContent : '';
+    
+    // Mostrar tipo de gasto solo si el proveedor es ROLLAN ALBERTO ESTEBAN
+    if (nombreProveedor === 'ROLLAN ALBERTO ESTEBAN') {
+        divTipoGasto.classList.remove('d-none');
+        selectTipoGasto.required = true;
     } else {
-        divDirector.classList.add('d-none');
-        selectDirector.required = false;
-        selectDirector.value = '';
+        divTipoGasto.classList.add('d-none');
+        selectTipoGasto.required = false;
+        selectTipoGasto.value = '';
     }
 });
 
@@ -248,8 +383,24 @@ function mostrarListaEgresos(egresos) {
         const motivo = egreso.motivo.charAt(0) + egreso.motivo.slice(1).toLowerCase();
         let concepto = motivo;
         
+        // RETIROS: motivo - director
         if (egreso.motivo === 'RETIROS' && egreso.nombre_director) {
             concepto += ` - ${egreso.nombre_director}`;
+        }
+        
+        // SUELDOS: motivo - centro_costo
+        if (egreso.motivo === 'SUELDOS' && egreso.centro_costo_nombre) {
+            concepto += ` - ${egreso.centro_costo_nombre}`;
+        }
+        
+        // PROVEEDORES: motivo - proveedor - tipo_gasto (si hay)
+        if (egreso.motivo === 'PROVEEDORES') {
+            if (egreso.proveedor_nombre) {
+                concepto += ` - ${egreso.proveedor_nombre}`;
+            }
+            if (egreso.tipo_gasto) {
+                concepto += ` - ${egreso.tipo_gasto}`;
+            }
         }
         
         // Obtener fecha de carga para aclaración
@@ -299,6 +450,32 @@ document.getElementById('formEgreso')?.addEventListener('submit', async function
             return;
         }
         formData.append('nombre_director', director);
+    } else if (motivo === 'SUELDOS') {
+        const centroCosto = document.getElementById('centroCosto').value;
+        if (centroCosto) {
+            formData.append('centro_costo', centroCosto);
+        }
+    } else if (motivo === 'PROVEEDORES') {
+        const proveedor = document.getElementById('proveedor').value;
+        if (!proveedor) {
+            mostrarAlerta('Error', 'Debe seleccionar un proveedor para pagos a proveedores');
+            return;
+        }
+        formData.append('proveedor', proveedor);
+        
+        // Verificar si el proveedor requiere tipo de gasto
+        const selectProveedor = document.getElementById('proveedor');
+        const selectedOption = selectProveedor.options[selectProveedor.selectedIndex];
+        const nombreProveedor = selectedOption ? selectedOption.textContent : '';
+        
+        if (nombreProveedor === 'ROLLAN ALBERTO ESTEBAN') {
+            const tipoGasto = document.getElementById('tipoGasto').value;
+            if (!tipoGasto) {
+                mostrarAlerta('Error', 'Debe seleccionar un tipo de gasto para este proveedor');
+                return;
+            }
+            formData.append('tipo_gasto', tipoGasto);
+        }
     }
     
     try {
@@ -329,6 +506,9 @@ document.getElementById('formEgreso')?.addEventListener('submit', async function
             this.reset();
             document.getElementById('fechaEgreso').value = new Date().toISOString().split('T')[0];
             document.getElementById('divDirector').classList.add('d-none');
+            document.getElementById('divCentroCosto').classList.add('d-none');
+            document.getElementById('divProveedor').classList.add('d-none');
+            document.getElementById('divTipoGasto').classList.add('d-none');
             
             // Limpiar foto
             eliminarPreviewFoto();
@@ -354,4 +534,6 @@ document.getElementById('formEgreso')?.addEventListener('submit', async function
 document.getElementById('egresos-tab')?.addEventListener('shown.bs.tab', function() {
     cargarEgresos();
     cargarDirectores();
+    cargarCentrosCosto();
+    cargarProveedores();
 });

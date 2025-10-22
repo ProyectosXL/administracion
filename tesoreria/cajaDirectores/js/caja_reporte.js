@@ -349,18 +349,18 @@ function mostrarReporte(movimientos, filtros = {}) {
             </small>
         </div>
         <div class="table-responsive">
-            <table class="table table-striped table-hover">
+            <table class="table table-striped table-hover align-middle">
                 <thead class="table-dark">
                     <tr>
-                        <th>Fecha</th>
-                        <th>Tipo</th>
-                        <th>COMP.</th>
-                        <th>Concepto</th>
-                        <th class="text-end">Importe</th>
-                        <th class="text-center">Origen</th>
-                        <th class="text-center">Foto</th>
-                        <th class="text-center">Estado</th>
-                        <th class="text-center">Acciones</th>
+                        <th class="text-center align-middle">Fecha</th>
+                        <th class="text-center align-middle">Tipo</th>
+                        <th class="text-center align-middle">COMP.</th>
+                        <th class="align-middle">Concepto</th>
+                        <th class="text-end align-middle">Importe</th>
+                        <th class="text-center align-middle">Origen</th>
+                        <th class="text-center align-middle">Foto</th>
+                        <th class="text-center align-middle">Estado</th>
+                        <th class="text-center align-middle">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -447,28 +447,30 @@ function mostrarReporte(movimientos, filtros = {}) {
         let fotoBoton = '';
         if (mov.tipo === 'EGRESO' && mov.tiene_foto == 1) {
             fotoBoton = `
-                <button class="btn btn-outline-primary btn-sm" 
-                        onclick="verFotoEgreso(${mov.id})"
-                        title="Ver foto del comprobante"
-                        style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; line-height: 1;">
-                    <i class="bi bi-camera" style="font-size: 14px;"></i>
-                </button>
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-outline-primary btn-sm" 
+                            onclick="verFotoEgreso(${mov.id})"
+                            title="Ver foto del comprobante"
+                            style="width: 32px; height: 32px; padding: 0;">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
             `;
         } else {
-            fotoBoton = '<span class="text-muted">-</span>';
+            fotoBoton = '<div class="d-flex justify-content-center"><span class="text-muted">-</span></div>';
         }
         
         html += `
             <tr>
-                <td>${fecha}</td>
-                <td><i class="bi bi-${tipoIcon} ${tipoClass}"></i> ${mov.tipo}</td>
-                <td><small>${compDisplay}</small></td>
-                <td>${mov.concepto}</td>
-                <td class="text-end ${tipoClass}"><strong>${importe}</strong></td>
-                <td class="text-center">${origenBadge}</td>
-                <td class="text-center">${fotoBoton}</td>
-                <td class="text-center">${estadoBadge}</td>
-                <td class="text-center">${accionBoton}</td>
+                <td class="text-center align-middle">${fecha}</td>
+                <td class="text-center align-middle"><i class="bi bi-${tipoIcon} ${tipoClass}"></i> ${mov.tipo}</td>
+                <td class="text-center align-middle"><small>${compDisplay}</small></td>
+                <td class="align-middle">${mov.concepto}</td>
+                <td class="text-end align-middle ${tipoClass}"><strong>${importe}</strong></td>
+                <td class="text-center align-middle">${origenBadge}</td>
+                <td class="text-center align-middle">${fotoBoton}</td>
+                <td class="text-center align-middle">${estadoBadge}</td>
+                <td class="text-center align-middle">${accionBoton}</td>
             </tr>
         `;
     });
@@ -477,7 +479,7 @@ function mostrarReporte(movimientos, filtros = {}) {
                 </tbody>
                 <tfoot class="table-light">
                     <tr>
-                        <td colspan="5" class="text-end"><strong>Saldo Calculado Rango Seleccionado:</strong></td>
+                        <td colspan="5" class="text-end"><strong>Saldo (Rango Seleccionado):</strong></td>
                         <td class="text-end"><strong>${formatoMoneda.format(saldoAcumulado)}</strong></td>
                         <td colspan="3"></td>
                     </tr>
@@ -902,7 +904,7 @@ async function exportarReporteExcel() {
             '',
             '',
             '',
-            'Saldo Calculado Rango Seleccionado:',
+            'Saldo (Rango Seleccionado):',
             saldoAcumulado,
             '',
             ''

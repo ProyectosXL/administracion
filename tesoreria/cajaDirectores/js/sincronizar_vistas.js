@@ -69,11 +69,59 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
+            // Cargar datos según la pestaña activada
+            cargarDatosDeVista(targetId);
+            
             setTimeout(() => {
                 sincronizandoDesdePanel = false;
             }, 50);
         });
     });
+    
+    // Función para cargar datos según la vista
+    function cargarDatosDeVista(vistaId) {
+        console.log('Cargando datos para vista:', vistaId);
+        
+        switch(vistaId) {
+            case 'ingresos':
+                if (typeof cargarIngresos === 'function') {
+                    cargarIngresos();
+                }
+                break;
+            case 'egresos':
+                if (typeof cargarEgresos === 'function') {
+                    cargarEgresos();
+                }
+                break;
+            case 'reporte':
+                if (typeof cargarReporte === 'function') {
+                    cargarReporte();
+                }
+                if (typeof actualizarResumen === 'function') {
+                    actualizarResumen();
+                }
+                break;
+            case 'egresos-socios':
+                if (typeof configurarFechasPorDefecto === 'function') {
+                    configurarFechasPorDefecto();
+                }
+                if (typeof cargarDatosEgresosSocios === 'function') {
+                    cargarDatosEgresosSocios();
+                }
+                break;
+            case 'reporte-alberto':
+                if (typeof actualizarResumenAlberto === 'function') {
+                    actualizarResumenAlberto();
+                }
+                if (typeof inicializarFechasReporteAlberto === 'function') {
+                    inicializarFechasReporteAlberto();
+                }
+                if (typeof cargarReporteAlberto === 'function') {
+                    cargarReporteAlberto();
+                }
+                break;
+        }
+    }
     
     // Escuchar eventos de los enlaces del sidebar
     sidebarLinks.forEach(link => {
@@ -94,6 +142,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     tab.classList.remove('active');
                 }
             });
+            
+            // Cargar datos según la pestaña activada
+            cargarDatosDeVista(targetId);
             
             setTimeout(() => {
                 sincronizandoDesdeSidebar = false;

@@ -23,6 +23,10 @@ class EmailNotificacion {
     // Nombre del remitente
     private const EMAIL_FROM_NAME = 'Sistema Egresos Directores';
     
+    // Modo desarrollo: enviar todos los emails a federico.trejo@xl.com.ar
+    private const DEVELOP = true;
+    private const EMAIL_DEVELOP = 'federico.trejo@xl.com.ar';
+    
     private $db;
     private $envVars;
     
@@ -85,6 +89,55 @@ class EmailNotificacion {
             error_log("Error al enviar notificación de O.C. cargada: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Envía notificación cuando tesorería paga una solicitud
+     * @param string $idSolicitud
+     * @return bool
+     */
+    public function notificarPagoRealizado(string $idSolicitud) {
+        try {
+            $datosCompletos = $this->obtenerDatosSolicitud($idSolicitud);
+            
+            if (!$datosCompletos) {
+                throw new Exception("No se pudo obtener datos de la solicitud");
+            }
+            
+            // Determinar destinatario: email del director (o email de desarrollo)
+            $destinatario = $this->obtenerEmailDestinatario($datosCompletos['email_director']);
+            
+            // Enviar email según el tipo de solicitud
+            if ($datosCompletos['motivo'] === 'COMPRA_PERSONAL') {
+                return $this->enviarEmailCompraPagada($datosCompletos, $destinatario);
+            } else {
+                // RETIRO_DINERO
+                return $this->enviarEmailRetiroPagado($datosCompletos, $destinatario);
+            }
+        } catch (Exception $e) {
+            error_log("Error al enviar notificación de pago realizado: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Obtiene el email destinatario según el modo (desarrollo o producción)
+     * @param string $emailDirector
+     * @return string
+     */
+    private function obtenerEmailDestinatario(string $emailDirector) {
+        if (self::DEVELOP) {
+            error_log("MODO DESARROLLO: Email redirigido a " . self::EMAIL_DEVELOP);
+            return self::EMAIL_DEVELOP;
+        }
+        
+        // En producción, usar el email del director
+        if (empty($emailDirector)) {
+            error_log("ADVERTENCIA: Director sin email, usando email de desarrollo");
+            return self::EMAIL_DEVELOP;
+        }
+        
+        return $emailDirector;
     }
     
     /**
@@ -349,6 +402,165 @@ class EmailNotificacion {
                     <a href='http://xl.com.ar/administracion/tesoreria/egresosDirectores/tesoreria.php' 
                        style='background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>
                         Ir al Portal de Tesorería
+                    </a>
+                </p>
+            "
+        ]);
+        
+        return $this->enviarEmail($destinatario, $asunto, $mensaje);
+    }
+    
+    /**
+     * Envía email cuando se paga una compra personal
+     * @param array $datos
+     * @param string $destinatario
+     * @return bool
+     */
+    private function enviarEmailCompraPagada(array $datos, string $destinatario) {
+        $fecha = date('d/m/Y H:i', strtotime($datos['fecha_solicitud']));
+        $importe = number_format($datos['importe'], 2, ',', '.');
+        
+        $asunto = "Compra Personal Pagada - {$datos['id_solicitud']}";
+        
+        $mensaje = $this->generarHtmlEmail([
+            'titulo' => 'Compra Personal Pagada',
+            'contenido' => "
+                <p><strong>{$datos['nombre_director']}</strong>,</p>
+                
+                <p>Le informamos que su solicitud de compra personal ha sido <strong>pagada</strong> por el área de Tesorería.</p>
+                
+                <div style='background-color: #d4edda; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;'>
+                    <h3 style='color: #155724; margin-top: 0;'>
+                        <i style='font-size: 24px;'>✅</i> Pago Completado
+                    </h3>
+                    <p style='margin: 0; font-size: 16px; color: #155724;'>El importe fue transferido exitosamente</p>
+                </div>
+                
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                    <h3 style='color: #007bff; margin-top: 0;'>Datos de la Solicitud</h3>
+                    <table style='width: 100%; border-collapse: collapse;'>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold; width: 180px;'>ID Solicitud:</td>
+                            <td style='padding: 8px 0;'><code style='background-color: #e9ecef; padding: 3px 8px; border-radius: 3px;'>{$datos['id_solicitud']}</code></td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Tipo:</td>
+                            <td style='padding: 8px 0;'>Compra Personal</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Fecha Solicitud:</td>
+                            <td style='padding: 8px 0;'>{$fecha}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Importe Pagado:</td>
+                            <td style='padding: 8px 0; color: #28a745; font-size: 18px; font-weight: bold;'>$ {$importe}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Estado:</td>
+                            <td style='padding: 8px 0;'><span style='background-color: #28a745; color: #fff; padding: 5px 10px; border-radius: 3px;'>PAGADO</span></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                " . ($datos['observaciones_tesoreria'] ? "
+                <div style='background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8;'>
+                    <h4 style='margin-top: 0; color: #0c5460;'>Observaciones de Tesorería:</h4>
+                    <p style='margin: 0;'>{$datos['observaciones_tesoreria']}</p>
+                </div>
+                " : "") . "
+                
+                <div style='background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;'>
+                    <h4 style='margin-top: 0; color: #856404;'>Importante:</h4>
+                    <p style='margin: 0;'>Los comprobantes de pago (transferencia, orden de pago y retenciones) están disponibles en el sistema. Puede consultarlos en cualquier momento.</p>
+                </div>
+                
+                <p style='margin-top: 30px;'>
+                    <a href='http://xl.com.ar/administracion/tesoreria/egresosDirectores/directores.php' 
+                       style='background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>
+                        Ver mis Solicitudes
+                    </a>
+                </p>
+            "
+        ]);
+        
+        return $this->enviarEmail($destinatario, $asunto, $mensaje);
+    }
+    
+    /**
+     * Envía email cuando se paga un retiro de dinero
+     * @param array $datos
+     * @param string $destinatario
+     * @return bool
+     */
+    private function enviarEmailRetiroPagado(array $datos, string $destinatario) {
+        $fecha = date('d/m/Y H:i', strtotime($datos['fecha_solicitud']));
+        $importe = number_format($datos['importe'], 2, ',', '.');
+        
+        $asunto = "Retiro de Dinero Pagado - {$datos['id_solicitud']}";
+        
+        $mensaje = $this->generarHtmlEmail([
+            'titulo' => 'Retiro de Dinero Pagado',
+            'contenido' => "
+                <p><strong>{$datos['nombre_director']}</strong>,</p>
+                
+                <p>Le informamos que su solicitud de retiro de dinero ha sido <strong>pagada</strong> por el área de Tesorería.</p>
+                
+                <div style='background-color: #d4edda; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;'>
+                    <h3 style='color: #155724; margin-top: 0;'>
+                        <i style='font-size: 24px;'>✅</i> Pago Completado
+                    </h3>
+                    <p style='margin: 0; font-size: 16px; color: #155724;'>El importe fue transferido exitosamente</p>
+                </div>
+                
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                    <h3 style='color: #17a2b8; margin-top: 0;'>Datos de la Solicitud</h3>
+                    <table style='width: 100%; border-collapse: collapse;'>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold; width: 180px;'>ID Solicitud:</td>
+                            <td style='padding: 8px 0;'><code style='background-color: #e9ecef; padding: 3px 8px; border-radius: 3px;'>{$datos['id_solicitud']}</code></td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Tipo:</td>
+                            <td style='padding: 8px 0;'>Retiro de Dinero</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Fecha Solicitud:</td>
+                            <td style='padding: 8px 0;'>{$fecha}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Importe Transferido:</td>
+                            <td style='padding: 8px 0; color: #28a745; font-size: 18px; font-weight: bold;'>$ {$importe}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Estado:</td>
+                            <td style='padding: 8px 0;'><span style='background-color: #28a745; color: #fff; padding: 5px 10px; border-radius: 3px;'>PAGADO</span></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                " . ($datos['observaciones'] ? "
+                <div style='background-color: #e7f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #007bff;'>
+                    <h4 style='margin-top: 0; color: #004085;'>Sus Observaciones:</h4>
+                    <p style='margin: 0;'>{$datos['observaciones']}</p>
+                </div>
+                " : "") . "
+                
+                " . ($datos['observaciones_tesoreria'] ? "
+                <div style='background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8;'>
+                    <h4 style='margin-top: 0; color: #0c5460;'>Observaciones de Tesorería:</h4>
+                    <p style='margin: 0;'>{$datos['observaciones_tesoreria']}</p>
+                </div>
+                " : "") . "
+                
+                <div style='background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;'>
+                    <h4 style='margin-top: 0; color: #856404;'>Importante:</h4>
+                    <p style='margin: 0;'>El comprobante de transferencia está disponible en el sistema. Puede consultarlo en cualquier momento.</p>
+                </div>
+                
+                <p style='margin-top: 30px;'>
+                    <a href='http://xl.com.ar/administracion/tesoreria/egresosDirectores/directores.php' 
+                       style='background-color: #17a2b8; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>
+                        Ver mis Solicitudes
                     </a>
                 </p>
             "

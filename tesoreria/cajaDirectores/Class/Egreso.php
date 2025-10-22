@@ -50,11 +50,13 @@ class Egreso {
             $sql = "INSERT INTO egresos (
                         ID_SBA05, COD_COMP, N_COMP, fecha, motivo, 
                         nombre_director, importe, observaciones, 
-                        recibido, fecha_carga, foto
+                        recibido, fecha_carga, foto, centro_costo,
+                        proveedor, tipo_gasto
                     ) VALUES (
                         ?, ?, ?, ?, ?,
                         ?, ?, ?, 
-                        1, GETDATE(), ?
+                        1, GETDATE(), ?, ?,
+                        ?, ?
                     )";
             
             $nComp = $this->generarNumeroComprobante();
@@ -67,6 +69,26 @@ class Egreso {
                     throw new Exception("Director no válido");
                 }
                 $nombreDirector = $datos['nombre_director'];
+            }
+            
+            // Validar centro de costo si es para sueldos
+            $centroCosto = null;
+            if ($datos['motivo'] === self::MOTIVO_SUELDOS) {
+                if (!empty($datos['centro_costo'])) {
+                    $centroCosto = $datos['centro_costo'];
+                }
+            }
+            
+            // Validar proveedor y tipo de gasto si es pago a proveedores
+            $proveedor = null;
+            $tipoGasto = null;
+            if ($datos['motivo'] === self::MOTIVO_PROVEEDORES) {
+                if (!empty($datos['proveedor'])) {
+                    $proveedor = $datos['proveedor'];
+                }
+                if (!empty($datos['tipo_gasto'])) {
+                    $tipoGasto = $datos['tipo_gasto'];
+                }
             }
             
             // Procesar foto si se proporciona
@@ -84,7 +106,10 @@ class Egreso {
                 $nombreDirector,
                 $datos['importe'],
                 $datos['observaciones'] ?? '',
-                $fotoComprimida
+                $fotoComprimida,
+                $centroCosto,
+                $proveedor,
+                $tipoGasto
             ];
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
@@ -126,6 +151,11 @@ class Egreso {
                 $params[] = $filtros['motivo'];
             }
             
+            if (!empty($filtros['proveedor'])) {
+                $sql .= " AND proveedor = ?";
+                $params[] = $filtros['proveedor'];
+            }
+            
             $sql .= " ORDER BY fecha DESC, id DESC";
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
@@ -135,7 +165,26 @@ class Egreso {
             }
             
             $resultados = [];
+            $dbCentral = Database::getInstance()->getCentralConnection();
+            
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                // Agregar nombres de centro de costo y proveedor
+                if (!empty($row['centro_costo'])) {
+                    $sqlCentro = "SELECT CENTRO_COSTO FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = ?";
+                    $stmtCentro = sqlsrv_query($dbCentral, $sqlCentro, [$row['centro_costo']]);
+                    if ($stmtCentro && $rowCentro = sqlsrv_fetch_array($stmtCentro, SQLSRV_FETCH_ASSOC)) {
+                        $row['centro_costo_nombre'] = $rowCentro['CENTRO_COSTO'];
+                    }
+                }
+                
+                if (!empty($row['proveedor'])) {
+                    $sqlProv = "SELECT NOM_PROVEE FROM RO_V_PROVEEDORES_EGRE_DIRECTORES WHERE COD_PROVEE = ?";
+                    $stmtProv = sqlsrv_query($dbCentral, $sqlProv, [$row['proveedor']]);
+                    if ($stmtProv && $rowProv = sqlsrv_fetch_array($stmtProv, SQLSRV_FETCH_ASSOC)) {
+                        $row['proveedor_nombre'] = $rowProv['NOM_PROVEE'];
+                    }
+                }
+                
                 $resultados[] = $row;
             }
             
@@ -165,6 +214,30 @@ class Egreso {
             return (float)$result['total'];
         } catch (Exception $e) {
             error_log("Error al obtener total: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+    
+    /**
+     * Obtiene el total de egresos de un proveedor específico (para Reporte Alberto)
+     */
+    public function obtenerTotalProveedor($codProvee): float {
+        try {
+            $sql = "SELECT COALESCE(SUM(importe), 0) as total 
+                    FROM egresos 
+                    WHERE proveedor = ?";
+            $stmt = sqlsrv_query($this->db, $sql, [$codProvee]);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+            
+            return (float)$result['total'];
+        } catch (Exception $e) {
+            error_log("Error al obtener total proveedor: " . $e->getMessage());
             return 0.0;
         }
     }
@@ -322,5 +395,69 @@ class Egreso {
      */
     public function obtenerDirectores() {
         return $this->director->obtenerDirectores();
+    }
+    
+    /**
+     * Obtiene la lista de centros de costo desde la base CENTRAL
+     * Retorna array con COD_AUXILIAR y CENTRO_COSTO
+     */
+    public function obtenerCentrosCosto() {
+        try {
+            $dbCentral = Database::getInstance()->getCentralConnection();
+            $sql = "SELECT COD_AUXILIAR, CENTRO_COSTO 
+                    FROM RO_T_CENTRO_DE_COSTOS 
+                    ORDER BY CENTRO_COSTO";
+            $stmt = sqlsrv_query($dbCentral, $sql);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $centros = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $centros[] = [
+                    'cod_auxiliar' => trim($row['COD_AUXILIAR']),
+                    'centro_costo' => trim($row['CENTRO_COSTO'])
+                ];
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return $centros;
+        } catch (Exception $e) {
+            error_log("Error al obtener centros de costo: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtiene la lista de proveedores desde la base CENTRAL
+     * Retorna array con COD_PROVEE y NOM_PROVEE
+     */
+    public function obtenerProveedores() {
+        try {
+            $dbCentral = Database::getInstance()->getCentralConnection();
+            $sql = "SELECT COD_PROVEE, NOM_PROVEE 
+                    FROM RO_V_PROVEEDORES_EGRE_DIRECTORES 
+                    ORDER BY NOM_PROVEE";
+            $stmt = sqlsrv_query($dbCentral, $sql);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $proveedores = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $proveedores[] = [
+                    'cod_provee' => trim($row['COD_PROVEE']),
+                    'nom_provee' => trim($row['NOM_PROVEE'])
+                ];
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return $proveedores;
+        } catch (Exception $e) {
+            error_log("Error al obtener proveedores: " . $e->getMessage());
+            return [];
+        }
     }
 }

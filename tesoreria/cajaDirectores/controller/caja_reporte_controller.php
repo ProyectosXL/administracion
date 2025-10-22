@@ -78,9 +78,40 @@ try {
                 $fecha = is_object($egr['fecha']) ? $egr['fecha']->format('Y-m-d') : $egr['fecha'];
                 
                 $concepto = $egr['motivo'];
+                
+                // RETIROS: motivo - director (observaciones)
                 if ($egr['motivo'] === 'RETIROS' && !empty($egr['nombre_director'])) {
                     $concepto .= ' - ' . $egr['nombre_director'];
                 }
+                
+                // SUELDOS: motivo - centro_costo (observaciones)
+                if ($egr['motivo'] === 'SUELDOS' && !empty($egr['centro_costo'])) {
+                    // Buscar el nombre del centro de costo en la base de datos CENTRAL
+                    $dbCentral = Database::getInstance()->getCentralConnection();
+                    $sqlCentro = "SELECT CENTRO_COSTO FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = ?";
+                    $stmtCentro = sqlsrv_query($dbCentral, $sqlCentro, [$egr['centro_costo']]);
+                    if ($stmtCentro && $rowCentro = sqlsrv_fetch_array($stmtCentro, SQLSRV_FETCH_ASSOC)) {
+                        $concepto .= ' - ' . $rowCentro['CENTRO_COSTO'];
+                    }
+                }
+                
+                // PROVEEDORES: motivo - proveedor - tipo_gasto (si hay) (observaciones)
+                if ($egr['motivo'] === 'PROVEEDORES' && !empty($egr['proveedor'])) {
+                    // Buscar el nombre del proveedor en la base de datos CENTRAL
+                    $dbCentral = Database::getInstance()->getCentralConnection();
+                    $sqlProv = "SELECT NOM_PROVEE FROM RO_V_PROVEEDORES_EGRE_DIRECTORES WHERE COD_PROVEE = ?";
+                    $stmtProv = sqlsrv_query($dbCentral, $sqlProv, [$egr['proveedor']]);
+                    if ($stmtProv && $rowProv = sqlsrv_fetch_array($stmtProv, SQLSRV_FETCH_ASSOC)) {
+                        $concepto .= ' - ' . $rowProv['NOM_PROVEE'];
+                    }
+                    
+                    // Agregar tipo de gasto si existe
+                    if (!empty($egr['tipo_gasto'])) {
+                        $concepto .= ' - ' . $egr['tipo_gasto'];
+                    }
+                }
+                
+                // Agregar observaciones al final
                 if (!empty($egr['observaciones'])) {
                     $concepto .= ' (' . $egr['observaciones'] . ')';
                 }

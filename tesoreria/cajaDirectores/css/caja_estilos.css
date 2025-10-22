@@ -255,6 +255,57 @@
     padding: 1rem;
 }
 
+/* Ancho ajustado para columna TIPO (más espacio) */
+#contenidoReporte .table td:nth-child(2),
+#contenidoReporte .table th:nth-child(2),
+#contenidoReporteAlberto .table td:nth-child(2),
+#contenidoReporteAlberto .table th:nth-child(2) {
+    min-width: 150px !important;
+    width: 150px !important;
+    white-space: nowrap !important;
+}
+
+/* Reducir espacio de columna ORIGEN para compensar */
+#contenidoReporte .table td:nth-child(6),
+#contenidoReporte .table th:nth-child(6) {
+    min-width: 80px !important;
+    width: 80px !important;
+    white-space: nowrap !important;
+}
+
+/* Permitir altura dinámica según contenido, sin altura fija */
+#contenidoReporte .table tbody td,
+#contenidoReporteAlberto .table tbody td {
+    vertical-align: middle !important;
+    padding: 0.5rem 0.75rem !important;
+    line-height: 1.5 !important;
+}
+
+/* Mantener elementos inline centrados */
+#contenidoReporte .table tbody td i,
+#contenidoReporteAlberto .table tbody td i {
+    vertical-align: middle !important;
+    line-height: normal !important;
+}
+
+#contenidoReporte .table tbody td .badge,
+#contenidoReporteAlberto .table tbody td .badge {
+    vertical-align: middle !important;
+    line-height: normal !important;
+}
+
+#contenidoReporte .table tbody td .btn,
+#contenidoReporteAlberto .table tbody td .btn {
+    vertical-align: middle !important;
+    line-height: normal !important;
+}
+
+/* Ajustar divs de botones */
+#contenidoReporte .table tbody td .d-flex,
+#contenidoReporteAlberto .table tbody td .d-flex {
+    line-height: normal !important;
+}
+
 /* Responsivo para tablas */
 @media (max-width: 767.98px) {
     .table-responsive {

@@ -59,13 +59,19 @@ session_start();
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="reporte-tab" data-bs-toggle="tab" 
                                 data-bs-target="#reporte" type="button" role="tab">
-                            <i class="bi bi-graph-up"></i> Reporte de Saldo
+                            <i class="bi bi-graph-up"></i> Reporte de Saldo 
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="egresos-socios-tab" data-bs-toggle="tab" 
                                 data-bs-target="#egresos-socios" type="button" role="tab">
-                            <i class="bi bi-people-fill"></i> Egresos Socios
+                            <i class="bi bi-people-fill"></i> Reporte Socios
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="reporte-alberto-tab" data-bs-toggle="tab" 
+                                data-bs-target="#reporte-alberto" type="button" role="tab">
+                            <i class="bi bi-person-badge"></i> Reporte Alberto
                         </button>
                     </li>
                 </ul>
@@ -103,7 +109,7 @@ session_start();
                                     </form>
                                 </div>
                                 <div class="col-md-6">
-                                    <h5>Últimos Ingresos</h5>
+                                    <h5>Últimos Ingresos Manuales</h5>
                                     <div id="listaIngresos"></div>
                                 </div>
                             </div>
@@ -135,6 +141,30 @@ session_start();
                                             <label for="nombreDirector" class="form-label">Director</label>
                                             <select class="form-select" id="nombreDirector">
                                                 <option value="">Seleccione un director</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3 d-none" id="divCentroCosto">
+                                            <label for="centroCosto" class="form-label">Centro de Costo</label>
+                                            <select class="form-select" id="centroCosto">
+                                                <option value="">Seleccione un centro de costo</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3 d-none" id="divProveedor">
+                                            <label for="proveedor" class="form-label">Proveedor</label>
+                                            <select class="form-select" id="proveedor">
+                                                <option value="">Seleccione un proveedor</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3 d-none" id="divTipoGasto">
+                                            <label for="tipoGasto" class="form-label">Tipo de Gasto</label>
+                                            <select class="form-select" id="tipoGasto">
+                                                <option value="">Seleccione un tipo de gasto</option>
+                                                <option value="Uruguay Mantenimiento">Uruguay Mantenimiento</option>
+                                                <option value="Locales mantenimiento">Locales mantenimiento</option>
+                                                <option value="Dirección de obra locales">Dirección de obra locales</option>
+                                                <option value="Uruguay obras">Uruguay obras</option>
+                                                <option value="Locales obras">Locales obras</option>
+                                                <option value="Materiales y gastos varios">Materiales y gastos varios</option>
                                             </select>
                                         </div>
                                         <div class="mb-3">
@@ -390,6 +420,84 @@ session_start();
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Pestaña Reporte Alberto -->
+                    <div class="tab-pane fade" id="reporte-alberto" role="tabpanel">
+                        <div class="pt-2 pb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="mb-0">Reporte Alberto (Proveedor OGROLL)</h3>
+                                <button type="button" class="btn btn-success" onclick="exportarReporteAlbertoExcel()">
+                                    <i class="bi bi-file-earmark-excel"></i> Exportar Reporte
+                                </button>
+                            </div>
+                            
+                            <!-- Filtros de fecha -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-funnel"></i> Filtro de Período
+                                    </h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label for="fechaReporteAlbertoDesde" class="form-label">Desde</label>
+                                            <input type="date" class="form-control" id="fechaReporteAlbertoDesde">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="fechaReporteAlbertoHasta" class="form-label">Hasta</label>
+                                            <input type="date" class="form-control" id="fechaReporteAlbertoHasta">
+                                        </div>
+                                        <div class="col-md-4 d-flex align-items-end gap-2">
+                                            <button type="button" class="btn btn-primary" onclick="aplicarFiltrosReporteAlberto()">
+                                                <i class="bi bi-search"></i> Filtrar
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" onclick="limpiarFiltrosReporteAlberto()">
+                                                <i class="bi bi-arrow-clockwise"></i> Limpiar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tarjetas de resumen -->
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-danger mb-3">
+                                        <div class="card-header">
+                                            <i class="bi bi-arrow-up-circle"></i> Total Egresos (Rango Seleccionado)
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="totalEgresosAlberto">$0</h3>
+                                            <p class="card-text">Pagos a Alberto</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-warning mb-3">
+                                        <div class="card-header">
+                                            <i class="bi bi-wallet2"></i> Total Gastos (Rango Seleccionado)
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="totalGastosAlberto">$0</h3>
+                                            <p class="card-text">Gastos registrados</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-primary mb-3">
+                                        <div class="card-header">
+                                            <i class="bi bi-cash-stack"></i> Saldo (Egresos - Gastos)
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="saldoAlberto">$0</h3>
+                                            <p class="card-text">Disponible</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="contenidoReporteAlberto"></div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -465,6 +573,7 @@ session_start();
     <script src="js/caja_ingresos.js?v=<?php echo time(); ?>"></script>
     <script src="js/caja_egresos.js?v=<?php echo time(); ?>"></script>
     <script src="js/caja_reporte.js?v=<?php echo time(); ?>"></script>
+    <script src="js/caja_reporte_alberto.js?v=<?php echo time(); ?>"></script>
     <script src="js/egresos_socios.js?v=<?php echo time(); ?>"></script>
     <script src="js/sincronizar_vistas.js?v=<?php echo time(); ?>"></script>
 </body>
