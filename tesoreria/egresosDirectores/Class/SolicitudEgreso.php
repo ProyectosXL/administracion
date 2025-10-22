@@ -8,7 +8,7 @@ require_once __DIR__ . '/Director.php';
  */
 class SolicitudEgreso {
     private $db;
-    private Director $director;
+    private $director;
     
     // Constantes de motivos
     public const MOTIVO_COMPRA_PERSONAL = 'COMPRA_PERSONAL';
@@ -26,8 +26,9 @@ class SolicitudEgreso {
     
     /**
      * Genera ID único de solicitud usando procedimiento almacenado
+     * @return string
      */
-    private function generarIdSolicitud(): string {
+    private function generarIdSolicitud() {
         try {
             $sql = "{CALL sp_generar_id_solicitud(?)}";
             $params = [
@@ -53,8 +54,10 @@ class SolicitudEgreso {
     
     /**
      * Crea una nueva solicitud de egreso
+     * @param array $datos
+     * @return array
      */
-    public function crear(array $datos): array {
+    public function crear(array $datos) {
         try {
             // Validar director
             if (empty($datos['id_director'])) {
@@ -139,8 +142,10 @@ class SolicitudEgreso {
     
     /**
      * Obtiene todas las solicitudes con filtros opcionales
+     * @param array $filtros
+     * @return array
      */
-    public function obtenerTodas(array $filtros = []): array {
+    public function obtenerTodas(array $filtros = []) {
         try {
             // Consultar directamente las tablas en lugar de la vista
             $sql = "SELECT 
@@ -225,8 +230,10 @@ class SolicitudEgreso {
     
     /**
      * Obtiene una solicitud específica por ID
+     * @param string $idSolicitud
+     * @return array|null
      */
-    public function obtenerPorId(string $idSolicitud): ?array {
+    public function obtenerPorId(string $idSolicitud) {
         try {
             $sql = "SELECT 
                         s.id_solicitud,
@@ -275,8 +282,13 @@ class SolicitudEgreso {
     
     /**
      * Actualiza el estado de una solicitud
+     * @param string $idSolicitud
+     * @param string $nuevoEstado
+     * @param string $usuario
+     * @param string $observaciones
+     * @return bool
      */
-    public function actualizarEstado(string $idSolicitud, string $nuevoEstado, string $usuario = 'SISTEMA', string $observaciones = ''): bool {
+    public function actualizarEstado(string $idSolicitud, string $nuevoEstado, string $usuario = 'SISTEMA', string $observaciones = '') {
         try {
             // Validar estado
             $estadosValidos = [self::ESTADO_SOLICITADO, self::ESTADO_CARGADO, self::ESTADO_PAGADO];
@@ -319,8 +331,11 @@ class SolicitudEgreso {
     
     /**
      * Actualiza las observaciones de proveedores
+     * @param string $idSolicitud
+     * @param string $observaciones
+     * @return bool
      */
-    public function actualizarObservacionesProveedores(string $idSolicitud, string $observaciones): bool {
+    public function actualizarObservacionesProveedores(string $idSolicitud, string $observaciones) {
         try {
             $sql = "UPDATE solicitudes_egresos 
                     SET observaciones_proveedores = ?, 
@@ -344,8 +359,11 @@ class SolicitudEgreso {
     
     /**
      * Actualiza las observaciones de tesorería
+     * @param string $idSolicitud
+     * @param string $observaciones
+     * @return bool
      */
-    public function actualizarObservacionesTesoreria(string $idSolicitud, string $observaciones): bool {
+    public function actualizarObservacionesTesoreria(string $idSolicitud, string $observaciones) {
         try {
             $sql = "UPDATE solicitudes_egresos 
                     SET observaciones_tesoreria = ?, 
@@ -369,8 +387,14 @@ class SolicitudEgreso {
     
     /**
      * Registra un cambio en el historial
+     * @param string $idSolicitud
+     * @param string|null $estadoAnterior
+     * @param string $estadoNuevo
+     * @param string $observaciones
+     * @param string $usuario
+     * @return bool
      */
-    private function registrarHistorial(string $idSolicitud, ?string $estadoAnterior, string $estadoNuevo, string $observaciones = '', string $usuario = 'SISTEMA'): bool {
+    private function registrarHistorial(string $idSolicitud, $estadoAnterior, string $estadoNuevo, string $observaciones = '', string $usuario = 'SISTEMA') {
         try {
             $sql = "INSERT INTO historial_estados 
                         (id_solicitud, estado_anterior, estado_nuevo, usuario, observaciones)
@@ -398,8 +422,10 @@ class SolicitudEgreso {
     
     /**
      * Obtiene el historial de cambios de una solicitud
+     * @param string $idSolicitud
+     * @return array
      */
-    public function obtenerHistorial(string $idSolicitud): array {
+    public function obtenerHistorial(string $idSolicitud) {
         try {
             $sql = "SELECT * FROM historial_estados 
                     WHERE id_solicitud = ? 

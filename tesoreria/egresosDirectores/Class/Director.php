@@ -14,8 +14,9 @@ class Director {
     
     /**
      * Obtiene todos los directores activos
+     * @return array
      */
-    public function obtenerDirectores(): array {
+    public function obtenerDirectores() {
         try {
             // Debug: log de inicio
             error_log("Director::obtenerDirectores - Iniciando consulta");
@@ -57,8 +58,10 @@ class Director {
     
     /**
      * Obtiene un director por ID
+     * @param int $idDirector
+     * @return array|null
      */
-    public function obtenerPorId(int $idDirector): ?array {
+    public function obtenerPorId(int $idDirector) {
         try {
             $sql = "SELECT ID_DIRECTOR, NOMBRE, EMAIL, ACTIVO 
                     FROM RO_T_DIRECTORES 
@@ -91,8 +94,10 @@ class Director {
     
     /**
      * Obtiene un director por nombre
+     * @param string $nombreDirector
+     * @return array|null
      */
-    public function obtenerPorNombre(string $nombreDirector): ?array {
+    public function obtenerPorNombre(string $nombreDirector) {
         try {
             $sql = "SELECT ID_DIRECTOR, NOMBRE, EMAIL, ACTIVO 
                     FROM RO_T_DIRECTORES 
@@ -125,8 +130,10 @@ class Director {
     
     /**
      * Verifica si existe un director por ID
+     * @param int $idDirector
+     * @return bool
      */
-    public function existeDirector(int $idDirector): bool {
+    public function existeDirector(int $idDirector) {
         try {
             $sql = "SELECT COUNT(*) as total 
                     FROM RO_T_DIRECTORES 
@@ -150,16 +157,20 @@ class Director {
     
     /**
      * Obtiene el nombre de un director por ID
+     * @param int $idDirector
+     * @return string|null
      */
-    public function obtenerNombrePorId(int $idDirector): ?string {
+    public function obtenerNombrePorId(int $idDirector) {
         $director = $this->obtenerPorId($idDirector);
         return $director ? $director['nombre_director'] : null;
     }
     
     /**
      * Obtiene el ID de un director por nombre
+     * @param string $nombreDirector
+     * @return int|null
      */
-    public function obtenerIdPorNombre(string $nombreDirector): ?int {
+    public function obtenerIdPorNombre(string $nombreDirector) {
         $director = $this->obtenerPorNombre($nombreDirector);
         return $director ? $director['id_director'] : null;
     }

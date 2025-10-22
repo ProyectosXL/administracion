@@ -7,22 +7,24 @@ require_once __DIR__ . '/../../../class/classEnv.php';
  * Implementa patrón Singleton para reutilización de conexiones
  */
 class Database {
-    private static ?Database $instance = null;
-    private array $connections = [];
-    private array $envVars;
+    private static $instance = null;
+    private $connections = [];
+    private $envVars;
     
     /**
      * Constructor privado - Singleton
      */
     private function __construct() {
+        $this->connections = [];
         $vars = new DotEnv(__DIR__ . '/../../../.env');
         $this->envVars = $vars->listVars();
     }
     
     /**
      * Obtiene instancia única
+     * @return Database
      */
-    public static function getInstance(): Database {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -31,8 +33,10 @@ class Database {
     
     /**
      * Conecta a una base de datos específica
+     * @param string $dbType
+     * @return resource
      */
-    private function connect(string $dbType) {
+    private function connect($dbType) {
         try {
             if ($dbType === 'apps') {
                 $host = $this->envVars['HOST_APPS'];
@@ -93,8 +97,9 @@ class Database {
     
     /**
      * Cierra todas las conexiones
+     * @return void
      */
-    public function closeConnections(): void {
+    public function closeConnections() {
         foreach ($this->connections as $connection) {
             if ($connection) {
                 sqlsrv_close($connection);

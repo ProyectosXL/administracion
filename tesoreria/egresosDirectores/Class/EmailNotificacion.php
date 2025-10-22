@@ -24,7 +24,7 @@ class EmailNotificacion {
     private const EMAIL_FROM_NAME = 'Sistema Egresos Directores';
     
     private $db;
-    private array $envVars;
+    private $envVars;
     
     public function __construct() {
         $this->db = Database::getInstance()->getAppsConnection();
@@ -36,8 +36,10 @@ class EmailNotificacion {
     
     /**
      * Envía notificación cuando se crea una nueva solicitud
+     * @param array $solicitud
+     * @return bool
      */
-    public function notificarNuevaSolicitud(array $solicitud): bool {
+    public function notificarNuevaSolicitud(array $solicitud) {
         try {
             $motivo = $solicitud['motivo'];
             $idSolicitud = $solicitud['id_solicitud'];
@@ -67,8 +69,10 @@ class EmailNotificacion {
     
     /**
      * Envía notificación cuando proveedores carga una orden de compra
+     * @param string $idSolicitud
+     * @return bool
      */
-    public function notificarOrdenCompraCargada(string $idSolicitud): bool {
+    public function notificarOrdenCompraCargada(string $idSolicitud) {
         try {
             $datosCompletos = $this->obtenerDatosSolicitud($idSolicitud);
             
@@ -85,8 +89,10 @@ class EmailNotificacion {
     
     /**
      * Obtiene los datos completos de una solicitud
+     * @param string $idSolicitud
+     * @return array|null
      */
-    private function obtenerDatosSolicitud(string $idSolicitud): ?array {
+    private function obtenerDatosSolicitud(string $idSolicitud) {
         try {
             $sql = "SELECT 
                         s.id_solicitud,
@@ -131,8 +137,11 @@ class EmailNotificacion {
     
     /**
      * Envía email para nueva compra personal
+     * @param array $datos
+     * @param string $destinatario
+     * @return bool
      */
-    private function enviarEmailNuevaCompraPersonal(array $datos, string $destinatario): bool {
+    private function enviarEmailNuevaCompraPersonal(array $datos, string $destinatario) {
         $fecha = date('d/m/Y H:i', strtotime($datos['fecha_solicitud']));
         $importe = number_format($datos['importe'], 2, ',', '.');
         
@@ -211,8 +220,11 @@ class EmailNotificacion {
     
     /**
      * Envía email para nuevo retiro de dinero
+     * @param array $datos
+     * @param string $destinatario
+     * @return bool
      */
-    private function enviarEmailNuevoRetiroDinero(array $datos, string $destinatario): bool {
+    private function enviarEmailNuevoRetiroDinero(array $datos, string $destinatario) {
         $fecha = date('d/m/Y H:i', strtotime($datos['fecha_solicitud']));
         $importe = number_format($datos['importe'], 2, ',', '.');
         
@@ -275,8 +287,11 @@ class EmailNotificacion {
     
     /**
      * Envía email cuando se carga una orden de compra
+     * @param array $datos
+     * @param string $destinatario
+     * @return bool
      */
-    private function enviarEmailOrdenCompraCargada(array $datos, string $destinatario): bool {
+    private function enviarEmailOrdenCompraCargada(array $datos, string $destinatario) {
         $fecha = date('d/m/Y H:i', strtotime($datos['fecha_solicitud']));
         $importe = number_format($datos['importe'], 2, ',', '.');
         
@@ -344,8 +359,10 @@ class EmailNotificacion {
     
     /**
      * Genera HTML del email con plantilla
+     * @param array $params
+     * @return string
      */
-    private function generarHtmlEmail(array $params): string {
+    private function generarHtmlEmail(array $params) {
         $titulo = $params['titulo'] ?? 'Notificación del Sistema';
         $contenido = $params['contenido'] ?? '';
         
@@ -379,8 +396,12 @@ class EmailNotificacion {
     
     /**
      * Envía el email usando PHPMailer con SMTP
+     * @param string $destinatario
+     * @param string $asunto
+     * @param string $mensaje
+     * @return bool
      */
-    private function enviarEmail(string $destinatario, string $asunto, string $mensaje): bool {
+    private function enviarEmail(string $destinatario, string $asunto, string $mensaje) {
         $mail = new PHPMailer(true);
         
         try {

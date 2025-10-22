@@ -24,8 +24,14 @@ class ArchivoSolicitud {
     
     /**
      * Guarda un archivo adjunto
+     * @param string $idSolicitud
+     * @param string $tipoArchivo
+     * @param string $nombreArchivo
+     * @param string $archivoBase64
+     * @param string $mimeType
+     * @return array
      */
-    public function guardar(string $idSolicitud, string $tipoArchivo, string $nombreArchivo, string $archivoBase64, string $mimeType): array {
+    public function guardar(string $idSolicitud, string $tipoArchivo, string $nombreArchivo, string $archivoBase64, string $mimeType) {
         try {
             // Validar tipo de archivo
             $tiposValidos = [
@@ -119,8 +125,10 @@ class ArchivoSolicitud {
     
     /**
      * Obtiene todos los archivos de una solicitud
+     * @param string $idSolicitud
+     * @return array
      */
-    public function obtenerPorSolicitud(string $idSolicitud): array {
+    public function obtenerPorSolicitud(string $idSolicitud) {
         try {
             $sql = "SELECT id, tipo_archivo, nombre_archivo, mime_type, 
                            tamanio_bytes, fecha_carga
@@ -152,8 +160,10 @@ class ArchivoSolicitud {
     
     /**
      * Obtiene el contenido binario de un archivo
+     * @param int $idArchivo
+     * @return array|null
      */
-    public function obtenerContenido(int $idArchivo): ?array {
+    public function obtenerContenido(int $idArchivo) {
         try {
             error_log("DEBUG obtenerContenido - Buscando archivo ID: " . $idArchivo);
             
@@ -200,8 +210,10 @@ class ArchivoSolicitud {
     
     /**
      * Elimina un archivo
+     * @param int $idArchivo
+     * @return bool
      */
-    public function eliminar(int $idArchivo): bool {
+    public function eliminar(int $idArchivo) {
         try {
             $sql = "DELETE FROM archivos_solicitud WHERE id = ?";
             $stmt = sqlsrv_query($this->db, $sql, [$idArchivo]);
@@ -220,8 +232,11 @@ class ArchivoSolicitud {
     
     /**
      * Comprime una imagen para optimizar almacenamiento
+     * @param string $imagenBase64
+     * @param string $mimeType
+     * @return string
      */
-    private function comprimirImagen(string $imagenBase64, string $mimeType): string {
+    private function comprimirImagen(string $imagenBase64, string $mimeType) {
         try {
             // Verificar extensión GD
             if (!extension_loaded('gd')) {
@@ -311,16 +326,18 @@ class ArchivoSolicitud {
     
     /**
      * Detecta si es dispositivo móvil
+     * @return bool
      */
-    private function esDispositoMovil(): bool {
+    private function esDispositoMovil() {
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
         return preg_match('/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i', $userAgent);
     }
     
     /**
      * Obtiene tipos de archivo válidos
+     * @return array
      */
-    public static function obtenerTiposValidos(): array {
+    public static function obtenerTiposValidos() {
         return [
             self::TIPO_FACTURA => 'Factura',
             self::TIPO_COMPROBANTE_TRANSFERENCIA => 'Comprobante de Transferencia',
