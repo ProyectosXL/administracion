@@ -8,6 +8,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarLinks = document.querySelectorAll('#sidebarMenu a[data-bs-toggle="tab"]');
     const panelTabs = document.querySelectorAll('#cajaTabs button[data-bs-toggle="tab"]');
     
+    // Manejar el estado del sidebar en móvil para prevenir scroll del body
+    const sidebarElement = document.querySelector('#sidebarMenu');
+    if (sidebarElement) {
+        sidebarElement.addEventListener('show.bs.collapse', function() {
+            // Agregar clase al body para bloquear scroll
+            document.body.classList.add('sidebar-open');
+        });
+        
+        sidebarElement.addEventListener('hide.bs.collapse', function() {
+            // Remover clase del body para permitir scroll
+            document.body.classList.remove('sidebar-open');
+        });
+        
+        // Asegurar que se remueva la clase si el sidebar está oculto
+        sidebarElement.addEventListener('hidden.bs.collapse', function() {
+            document.body.classList.remove('sidebar-open');
+        });
+        
+        // Cerrar sidebar al hacer clic en el overlay (area oscura)
+        document.body.addEventListener('click', function(e) {
+            // Solo en móvil y si el sidebar está abierto
+            if (document.body.classList.contains('sidebar-open')) {
+                // Si el clic no fue dentro del sidebar ni en el botón toggler
+                if (!sidebarElement.contains(e.target) && 
+                    !e.target.closest('.navbar-toggler')) {
+                    const bsCollapse = bootstrap.Collapse.getInstance(sidebarElement);
+                    if (bsCollapse) {
+                        bsCollapse.hide();
+                    }
+                }
+            }
+        });
+    }
+    
     // Función para limpiar todos los estados activos
     function limpiarEstadosActivos() {
         // Limpiar sidebar
@@ -125,6 +159,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Escuchar eventos de los enlaces del sidebar
     sidebarLinks.forEach(link => {
+        // Cerrar menú en modo responsive al hacer click
+        link.addEventListener('click', function(e) {
+            // Obtener el collapse del sidebar
+            const sidebarCollapse = document.querySelector('#sidebarMenu');
+            
+            // Si el menú está visible (en móvil), cerrarlo
+            if (sidebarCollapse && sidebarCollapse.classList.contains('show')) {
+                const bsCollapse = bootstrap.Collapse.getInstance(sidebarCollapse);
+                if (bsCollapse) {
+                    bsCollapse.hide();
+                } else {
+                    // Si no existe instancia, crear una y cerrarla
+                    const collapse = new bootstrap.Collapse(sidebarCollapse, {
+                        toggle: false
+                    });
+                    collapse.hide();
+                }
+            }
+        });
+        
         link.addEventListener('shown.bs.tab', function(e) {
             if (sincronizandoDesdePanel) return; // Evitar bucle
             

@@ -252,7 +252,8 @@ function mostrarReporteAlberto(movimientos, filtros = {}) {
         const tipoGastoDisplay = mov.tipo_gasto || '-';
         
         let fotoBoton = '';
-        if (mov.tipo === 'EGRESO' && mov.tiene_foto == 1) {
+        // Mostrar botón de foto para EGRESOS y GASTOS si tienen foto
+        if ((mov.tipo === 'EGRESO' || mov.tipo === 'GASTO') && mov.tiene_foto == 1) {
             fotoBoton = `
                 <div class="d-flex justify-content-center">
                     <button class="btn btn-outline-primary btn-sm" 

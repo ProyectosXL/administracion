@@ -1,5 +1,5 @@
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-    <div class="position-sticky pt-3">
+    <div class="position-sticky pt-0">
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="#ingresos" data-bs-toggle="tab">
@@ -32,6 +32,11 @@
             <span>Acciones Rápidas</span>
         </h6>
         <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link" href="formGastosAlberto.php" target="_blank">
+                    <i class="bi bi-receipt"></i> Cargar Gastos Alberto
+                </a>
+            </li>
             <li class="nav-item">
                 <a class="nav-link" href="#" id="btnActualizarDatos">
                     <i class="bi bi-arrow-clockwise"></i> Actualizar Datos

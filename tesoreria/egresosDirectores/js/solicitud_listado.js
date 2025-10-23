@@ -579,7 +579,6 @@ function obtenerIconoArchivo(mimeType) {
  */
 function aplicarFiltros() {
     const filtros = {
-        id_director: document.getElementById('filtroDirector')?.value || '',
         estado: document.getElementById('filtroEstado')?.value || '',
         fecha_desde: document.getElementById('filtroFechaDesde')?.value || '',
         fecha_hasta: document.getElementById('filtroFechaHasta')?.value || ''
@@ -593,7 +592,6 @@ function aplicarFiltros() {
  * Limpia los filtros
  */
 function limpiarFiltros() {
-    document.getElementById('filtroDirector').value = '';
     document.getElementById('filtroEstado').value = '';
     document.getElementById('filtroFechaDesde').value = '';
     document.getElementById('filtroFechaHasta').value = '';

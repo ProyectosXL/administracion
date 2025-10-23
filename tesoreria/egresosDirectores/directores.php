@@ -227,12 +227,6 @@ $titulo_pagina = 'Directores';
                             </h5>
                             <div class="row g-3">
                                 <div class="col-md-3">
-                                    <label for="filtroDirector" class="form-label">Director</label>
-                                    <select class="form-select form-select-sm" id="filtroDirector">
-                                        <option value="">Todos</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
                                     <label for="filtroEstado" class="form-label">Estado</label>
                                     <select class="form-select form-select-sm" id="filtroEstado">
                                         <option value="">Todos</option>
@@ -241,15 +235,15 @@ $titulo_pagina = 'Directores';
                                         <option value="PAGADO">Pagado</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-3">
                                     <label for="filtroFechaDesde" class="form-label">Desde</label>
                                     <input type="date" class="form-control form-control-sm" id="filtroFechaDesde">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-3">
                                     <label for="filtroFechaHasta" class="form-label">Hasta</label>
                                     <input type="date" class="form-control form-control-sm" id="filtroFechaHasta">
                                 </div>
-                                <div class="col-md-2 d-flex align-items-end gap-1">
+                                <div class="col-md-3 d-flex align-items-end gap-1">
                                     <button class="btn btn-sm btn-primary" onclick="aplicarFiltros()">
                                         <i class="bi bi-search"></i> Filtrar
                                     </button>
@@ -282,34 +276,11 @@ $titulo_pagina = 'Directores';
     <script src="js/directores_solicitud.js?v=<?php echo time(); ?>"></script>
     
     <script>
-        // Cargar directores en filtro cuando se muestra listado
+        // Cargar solicitudes cuando se muestra listado
         document.getElementById('listado-tab')?.addEventListener('shown.bs.tab', async function() {
             // Cargar solicitudes
             if (typeof cargarSolicitudes === 'function') {
                 cargarSolicitudes();
-            }
-            
-            // Cargar directores para filtro
-            try {
-                const response = await fetch('controller/solicitud_controller.php?accion=obtener_directores');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const selectFiltro = document.getElementById('filtroDirector');
-                    const valorActual = selectFiltro.value;
-                    selectFiltro.innerHTML = '<option value="">Todos</option>';
-                    
-                    result.data.forEach(director => {
-                        const option = document.createElement('option');
-                        option.value = director.id_director;
-                        option.textContent = director.nombre_director;
-                        selectFiltro.appendChild(option);
-                    });
-                    
-                    selectFiltro.value = valorActual;
-                }
-            } catch (error) {
-                console.error('Error al cargar directores para filtro:', error);
             }
         });
     </script>

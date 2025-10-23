@@ -52,9 +52,8 @@ async function cargarDirectores() {
  */
 function llenarSelectDirectores() {
     const selectSolicitud = document.getElementById('idDirector');
-    const selectFiltro = document.getElementById('filtroDirector');
     
-    // Limpiar opciones existentes
+    // Llenar select del formulario de nueva solicitud
     if (selectSolicitud) {
         selectSolicitud.innerHTML = '<option value="">Seleccione un director</option>';
         directoresCache.forEach(director => {
@@ -62,17 +61,6 @@ function llenarSelectDirectores() {
             option.value = director.id_director;
             option.textContent = director.nombre_director;
             selectSolicitud.appendChild(option);
-        });
-    }
-    
-    // Llenar filtro
-    if (selectFiltro) {
-        selectFiltro.innerHTML = '<option value="">Todos</option>';
-        directoresCache.forEach(director => {
-            const option = document.createElement('option');
-            option.value = director.id_director;
-            option.textContent = director.nombre_director;
-            selectFiltro.appendChild(option);
         });
     }
 }

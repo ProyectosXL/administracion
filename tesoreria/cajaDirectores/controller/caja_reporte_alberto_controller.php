@@ -1,20 +1,19 @@
 <?php
 header('Content-Type: application/json');
-require_once __DIR__ . '/../class/Ingreso.php';
-require_once __DIR__ . '/../class/Egreso.php';
+require_once __DIR__ . '/../Class/Egreso.php';
 
 try {
     $accion = $_GET['accion'] ?? '';
     
     switch ($accion) {
         case 'saldo':
-            $ingreso = new Ingreso();
             $egreso = new Egreso();
             
-            // Para Reporte Alberto: Gastos (ingresos con COD_COMP='GAS')
-            $totalGastos = $ingreso->obtenerTotalGastos();
-            // Egresos del proveedor OGROLL
-            $totalEgresos = $egreso->obtenerTotalProveedor('OGROLL');
+            // Para Reporte Alberto:
+            // - Gastos: egresos con COD_COMP='GAS'
+            // - Egresos: egresos con proveedor='OGROLL' y COD_COMP != 'GAS'
+            $totalGastos = $egreso->obtenerTotalGastos();
+            $totalEgresos = $egreso->obtenerTotalProveedorSinGastos('OGROLL');
             // Saldo = Egresos - Gastos (inverso al reporte normal)
             $saldo = $totalEgresos - $totalGastos;
             
@@ -29,7 +28,6 @@ try {
             break;
             
         case 'movimientos':
-            $ingreso = new Ingreso();
             $egreso = new Egreso();
             
             $filtros = [];
@@ -46,16 +44,17 @@ try {
                 throw new Exception('Fechas desde y hasta son requeridas');
             }
             
-            // Obtener gastos (ingresos con COD_COMP='GAS')
-            $gastos = $ingreso->obtenerGastos($filtros['fecha_desde'], $filtros['fecha_hasta']);
-            // Obtener egresos del proveedor OGROLL
+            // Obtener gastos (egresos con COD_COMP='GAS')
+            $gastos = $egreso->obtenerGastos($filtros);
+            
+            // Obtener egresos del proveedor OGROLL (por defecto ya excluye COD_COMP='GAS')
             $filtros['proveedor'] = 'OGROLL';
             $egresos = $egreso->obtenerTodos($filtros);
             
             // Combinar y ordenar movimientos
             $movimientos = [];
             
-            // Agregar gastos (antes "ingresos")
+            // Agregar gastos (ahora desde egresos con COD_COMP='GAS')
             foreach ($gastos as $gasto) {
                 $fecha = is_object($gasto['fecha']) ? $gasto['fecha']->format('Y-m-d') : $gasto['fecha'];
                 
@@ -70,11 +69,12 @@ try {
                     'concepto' => $gasto['observaciones'] ?? 'Gasto',
                     'importe' => $gasto['importe'],
                     'id' => $gasto['id'],
-                    'tipo_gasto' => null // Gastos no tienen tipo_gasto
+                    'tipo_gasto' => $gasto['tipo_gasto'] ?? null,
+                    'tiene_foto' => $gasto['tiene_foto'] ?? 0
                 ];
             }
             
-            // Agregar egresos del proveedor OGROLL
+            // Agregar egresos del proveedor OGROLL (sin gastos)
             foreach ($egresos as $egr) {
                 $fecha = is_object($egr['fecha']) ? $egr['fecha']->format('Y-m-d') : $egr['fecha'];
                 

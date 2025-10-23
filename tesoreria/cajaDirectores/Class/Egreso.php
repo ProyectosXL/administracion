@@ -136,6 +136,11 @@ class Egreso {
                     FROM egresos WHERE 1=1";
             $params = [];
             
+            // Por defecto, excluir gastos (COD_COMP='GAS') a menos que se especifique incluirlos
+            if (!isset($filtros['incluir_gastos']) || $filtros['incluir_gastos'] !== true) {
+                $sql .= " AND COD_COMP != 'GAS'";
+            }
+            
             if (!empty($filtros['fecha_desde'])) {
                 $sql .= " AND fecha >= ?";
                 $params[] = $filtros['fecha_desde'];
@@ -197,11 +202,13 @@ class Egreso {
     }
     
     /**
-     * Obtiene el total de egresos
+     * Obtiene el total de egresos (excluyendo gastos COD_COMP='GAS')
      */
     public function obtenerTotal(): float {
         try {
-            $sql = "SELECT COALESCE(SUM(importe), 0) as total FROM egresos";
+            $sql = "SELECT COALESCE(SUM(importe), 0) as total 
+                    FROM egresos 
+                    WHERE COD_COMP != 'GAS'";
             $stmt = sqlsrv_query($this->db, $sql);
             
             if ($stmt === false) {
@@ -458,6 +465,169 @@ class Egreso {
         } catch (Exception $e) {
             error_log("Error al obtener proveedores: " . $e->getMessage());
             return [];
+        }
+    }
+    
+    /**
+     * Crea un nuevo gasto (COD_COMP = 'GAS') con numeración independiente
+     */
+    public function crearGasto($datos) {
+        try {
+            // Generar número de comprobante para GAS
+            $nComp = $this->generarNumeroComprobanteGAS();
+            
+            $sql = "INSERT INTO egresos (
+                        ID_SBA05, COD_COMP, N_COMP, fecha, motivo, 
+                        nombre_director, proveedor, tipo_gasto, importe, 
+                        observaciones, foto, recibido, fecha_carga,
+                        centro_costo
+                    ) VALUES (
+                        NULL, 'GAS', ?, ?, 'PROVEEDORES',
+                        NULL, 'OGROLL', ?, ?,
+                        ?, ?, 1, GETDATE(),
+                        NULL
+                    )";
+            
+            // Procesar foto si se proporciona
+            $fotoComprimida = null;
+            if (!empty($datos['foto'])) {
+                $fotoComprimida = $this->comprimirImagen($datos['foto']);
+            }
+            
+            $params = [
+                $nComp,
+                $datos['fecha'],
+                $datos['tipo_gasto'],
+                $datos['importe'],
+                $datos['observaciones'] ?? '',
+                $fotoComprimida
+            ];
+            
+            $stmt = sqlsrv_query($this->db, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return true;
+        } catch (Exception $e) {
+            error_log("Error al crear gasto: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Genera el próximo número de comprobante para GAS (numeración independiente)
+     */
+    private function generarNumeroComprobanteGAS() {
+        $sql = "SELECT MAX(CAST(N_COMP AS BIGINT)) as max_comp 
+                FROM egresos 
+                WHERE COD_COMP = 'GAS'";
+        $stmt = sqlsrv_query($this->db, $sql);
+        
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+        
+        $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        sqlsrv_free_stmt($stmt);
+        
+        $ultimoNumero = $result['max_comp'] ?? 0;
+        $nuevoNumero = $ultimoNumero + 1;
+        
+        return str_pad($nuevoNumero, 11, '0', STR_PAD_LEFT);
+    }
+    
+    /**
+     * Obtiene todos los gastos (COD_COMP = 'GAS')
+     */
+    public function obtenerGastos($filtros = []) {
+        try {
+            $sql = "SELECT *, CAST(fecha_carga AS DATE) as fecha_solo,
+                           CASE WHEN foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto 
+                    FROM egresos 
+                    WHERE COD_COMP = 'GAS'";
+            $params = [];
+            
+            if (!empty($filtros['fecha_desde'])) {
+                $sql .= " AND fecha >= ?";
+                $params[] = $filtros['fecha_desde'];
+            }
+            
+            if (!empty($filtros['fecha_hasta'])) {
+                $sql .= " AND fecha <= ?";
+                $params[] = $filtros['fecha_hasta'];
+            }
+            
+            $sql .= " ORDER BY fecha DESC, id DESC";
+            
+            $stmt = sqlsrv_query($this->db, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $resultados = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $resultados[] = $row;
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return $resultados;
+        } catch (Exception $e) {
+            error_log("Error al obtener gastos: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtiene el total de gastos (COD_COMP = 'GAS')
+     */
+    public function obtenerTotalGastos() {
+        try {
+            $sql = "SELECT ISNULL(SUM(importe), 0) as total 
+                    FROM egresos 
+                    WHERE COD_COMP = 'GAS'";
+            
+            $stmt = sqlsrv_query($this->db, $sql);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+            
+            return $result['total'] ?? 0;
+        } catch (Exception $e) {
+            error_log("Error al obtener total de gastos: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Obtiene el total de egresos de un proveedor excluyendo gastos (COD_COMP != 'GAS')
+     */
+    public function obtenerTotalProveedorSinGastos($proveedor) {
+        try {
+            $sql = "SELECT ISNULL(SUM(importe), 0) as total 
+                    FROM egresos 
+                    WHERE proveedor = ? AND COD_COMP != 'GAS'";
+            
+            $stmt = sqlsrv_query($this->db, $sql, [$proveedor]);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+            
+            return $result['total'] ?? 0;
+        } catch (Exception $e) {
+            error_log("Error al obtener total de proveedor sin gastos: " . $e->getMessage());
+            return 0;
         }
     }
 }
