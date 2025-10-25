@@ -285,38 +285,30 @@ const actualizarCargaAutomatica = (cerrado = 0) => {
 const procesar = () => {
 
     let periodo = document.querySelector("#periodo").textContent;
+    let estado = document.querySelector("#estado").textContent;
 
-    let sucursales = document.querySelectorAll("#sucursal");
-    let newArray = {};
+    // VALIDACIÓN 1: Verificar primero si el período está cerrado
+    if (estado == 1) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Debe abrir el período antes de procesar!'
+        })
+        return false;
+    }
 
-
-    sucursales.forEach((sucursal) => {
-        const sucursalName = sucursal.textContent;
-        newArray[sucursalName] = [];
-
-        ["4", "5", "18"].forEach((concepto) => {
-            const div = document.querySelector(`#input-${concepto}-${sucursalName}`);
-            const valor = div.value.replace(/[$.]/g, "").trim();
-
-            if (valor > 0 && div.disabled) {
-                newArray[sucursalName].push({
-                    concepto: concepto,
-                    value: valor,
-                });
-            }
-        });
-    });
-
+    // VALIDACIÓN 2: Verificar si fue aplicado el ajuste
+    // Ahora solo necesitamos enviar el período
     $.ajax({
 
         url: 'Controller/AlquilerController.php?accion=comprobarAjuste',
         method: 'POST',
         data: {
-            arrayData: newArray,
             periodo: periodo
         },
         success : function(data) {
-
+            console.log('Respuesta comprobarAjuste:', data); // Debug
+            
             if(data == 1){
 
                 Swal.fire({
@@ -327,20 +319,9 @@ const procesar = () => {
                 
             }else{
 
+                // VALIDACIÓN 3: Verificar que todos los totales sean mayores a 0
                 let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
                 let error = false;
-                let periodo = document.querySelector("#periodo").textContent;        
-                let estado = document.querySelector("#estado").textContent;
-
-                if ( estado == 1 ) {
-            
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'El período ya se encuentra procesado!'
-                    })
-                    return false;
-                }
 
 
                 for (let i = 0; i < allTd.length; i++) {
@@ -819,25 +800,31 @@ const abrirPeriodo = () => {
             periodo: periodo
         },
         success : function(data) {
-            if(data == 1){
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'El período ya se encuentra abierto!'
-                    })
-            }else{
-
+            console.log('Respuesta abrirPeriodo:', data); // Debug
+            
+            // El controlador devuelve 0 para éxito, 1 para error
+            if(data == 0){
                 Swal.fire({
                     icon: 'success',
                     title: 'Abierto',
-                    text: 'Se ha abierto correctamente El periodo!'
+                    text: 'Se ha abierto correctamente el período!'
                 }).then((result) => {
                     location.reload();
                 })
-                
+            }else{
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Error al abrir el período!'
+                })
             }
-            
-
+        },
+        error: function(xhr, status, error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo abrir el período. Error: ' + error
+            });
         }
 
     });
@@ -1067,4 +1054,13 @@ const cambiarEntorno = (t) => {
             location.reload();
         }
     });
+}
+
+const descargarPDF = () => {
+    let periodo = document.querySelector("#periodo").textContent;
+    let mes = document.querySelector("#selectMes").value;
+    let anio = document.querySelector("#selectAnio").value;
+    
+    // Abrir en nueva ventana el archivo PDF
+    window.open(`components/generarPDF.php?periodo=${periodo}&mes=${mes}&anio=${anio}`, '_blank');
 }

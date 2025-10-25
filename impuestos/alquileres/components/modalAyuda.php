@@ -61,7 +61,7 @@
                                         <ul>
                                             <li>Seleccioná el mes y año del período que querés gestionar</li>
                                             <li>El sistema cargará automáticamente los conceptos asociados a cada sucursal</li>
-                                            <li>Completá los valores de <strong>carga manual</strong> (conceptos 4, 5, 18)</li>
+                                            <li>Completá los valores de <strong>carga manual</strong> (conceptos 1 , 2 , 3 , 8 , 10 , 11 , 12)</li>
                                             <li>Los demás conceptos se calculan automáticamente según porcentajes configurados</li>
                                         </ul>
                                         <div class="alert alert-info" role="alert">

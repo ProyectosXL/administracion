@@ -59,7 +59,7 @@ switch ($accion) {
 
 function insertarDetalle () {
 
-    require_once '../Class/Alquiler.php';
+    require_once __DIR__ . '/../Class/Alquiler.php';
 
     $alquiler = new Alquiler();
 
@@ -72,7 +72,7 @@ function insertarDetalle () {
 
 function actualizarDetalle () {
 
-    require_once '../Class/Alquiler.php';
+    require_once __DIR__ . '/../Class/Alquiler.php';
     
     $alquiler = new Alquiler();
     
@@ -89,9 +89,9 @@ function actualizarDetalle () {
 
 function cargarAlquieres ($fecha, $periodo) {
 
-    require_once "Class/Alquiler.php";
-    require_once "Class/sucursal.php";
-    require_once "contratos/Class/Contrato.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Sucursal.php";
+    require_once __DIR__ . "/../contratos/Class/Contrato.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -221,9 +221,9 @@ function cargarAlquieres ($fecha, $periodo) {
 
 function traerDetalleAlquiler ($fecha,$periodo) {
 
-    require_once "Class/Alquiler.php";
-    require_once "Class/sucursal.php";
-    require_once "contratos/Class/Contrato.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Sucursal.php";
+    require_once __DIR__ . "/../contratos/Class/Contrato.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -414,7 +414,7 @@ function traerDetalleAlquiler ($fecha,$periodo) {
 
 function traerLocales () {
     
-    require_once "Class/sucursal.php";
+    require_once __DIR__ . "/../Class/Sucursal.php";
 
     $sucursal = new Sucursal();
     $todosLosLocales= $sucursal->traerLocales();
@@ -424,7 +424,7 @@ function traerLocales () {
 
 function traerConceptos () {
     
-    require_once "Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
 
     $alquiler = new Alquiler();
 
@@ -435,8 +435,8 @@ function traerConceptos () {
 
 function consultarMesesDetalle ($periodoPasado, $periodo) {
     
-    require_once "Class/Alquiler.php";
-    require_once "Class/sucursal.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Sucursal.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -516,8 +516,8 @@ function traerArrayPeriodo () {
 
 function traerDetalleHaceUnAño ($periodoPasado, $now) {
     
-    require_once "Class/Alquiler.php";
-    require_once "Class/sucursal.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Sucursal.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -529,7 +529,7 @@ function traerDetalleHaceUnAño ($periodoPasado, $now) {
 
 function execSpAlquileres () {
 
-    require_once "../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
     $alquiler = new Alquiler();
 
     $periodo = $_POST['periodo'];
@@ -540,7 +540,7 @@ function execSpAlquileres () {
 
 function verificarProcesado () {
 
-    require_once "../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
 
     $alquiler = new Alquiler();
 
@@ -553,7 +553,7 @@ function verificarProcesado () {
 
 function cerrarPeriodo () {
 
-    require_once "../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
 
     $alquiler = new Alquiler();
 
@@ -593,8 +593,8 @@ function verificarDiferenciasPreCierre() {
 }
 
 function verificarDiferenciasInterno($periodo) {
-    require_once "../Class/Alquiler.php";
-    require_once "../Class/sucursal.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Sucursal.php";
 
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -639,20 +639,28 @@ function verificarDiferenciasInterno($periodo) {
 
 function abrirPeriodo () {
 
-    require_once "../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
 
     $alquiler = new Alquiler();
 
     $periodo = $_POST['periodo'];
 
-    $result = $alquiler->abrirPeriodo($periodo);
-
-    return $result;
+    try {
+        $result = $alquiler->abrirPeriodo($periodo);
+        
+        if($result) {
+            echo 0; // Período abierto correctamente
+        } else {
+            echo 1; // Error al abrir período
+        }
+    } catch (\Throwable $th) {
+        echo 1; // Error
+    }
 }
 
 function checkCierrePeriodoAnt () {
 
-    require_once "../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
 
     $alquiler = new Alquiler();
 
@@ -667,7 +675,7 @@ function checkCierrePeriodoAnt () {
 /*
 function ocultarSucursal () {
 
-    require_once "../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
 
     $alquiler = new Alquiler();
 
@@ -717,8 +725,8 @@ function ocultarSucursal () {
 
 function aplicarAjuste () {
 
-    require_once "../Class/Alquiler.php";
-    require_once "../Class/sucursal.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Sucursal.php";
     
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
@@ -819,32 +827,24 @@ function aplicarAjuste () {
 
 function comprobarAjuste () {
 
-    require_once "../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
     
     $alquiler = new Alquiler();
     
-    $data = $_POST['arrayData'];  
-
     $periodo = $_POST['periodo'];
-    $error = 0;
-
-    foreach ($data as $key => $value) {
-
-        foreach ($value as $detalle) {
-            $result = $alquiler->comprobarAjuste($key, $detalle['concepto'], $periodo);
-            if($result == 0){
-                $error = 1;
-            }
-        }
-    }
-
+    
+    // Usar el nuevo método que verifica con la consulta optimizada
+    $error = $alquiler->comprobarAjusteGeneral($periodo);
+    
+    // Retorna 1 si hay registros sin ajustar (error)
+    // Retorna 0 si todo está ajustado (ok)
     echo ($error);
 }
 
 
 function revertirProcesamiento() {
     
-    require_once "../Class/Alquiler.php";
+    require_once __DIR__ . "/../Class/Alquiler.php";
     
     $alquiler = new Alquiler();
     
@@ -869,3 +869,4 @@ function revertirProcesamiento() {
 }
 
 ?>
+

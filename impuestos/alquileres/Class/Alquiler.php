@@ -722,6 +722,32 @@ class Alquiler
         }
     }
 
+    public function comprobarAjusteGeneral ($periodo) {
+        // Verificar si hay registros sin ajustar de los conceptos 4, 5 y 18 que tengan importe diferente de 0
+        $sql = "SELECT COUNT(*) as REGISTROS_SIN_AJUSTAR 
+                FROM RO_T_DETALLE_ALQUILERES 
+                WHERE PERIODO = '$periodo' 
+                AND AJUSTADO IS NULL 
+                AND ID_CA IN (4, 5, 18) 
+                AND IMPORTE != 0";
+
+        try{
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            if (sqlsrv_fetch($stmt) === true) {
+                $count = sqlsrv_get_field($stmt, 0);
+                // Si count > 0, hay registros sin ajustar, retornar 1 (error)
+                // Si count = 0, todo está ajustado, retornar 0 (ok)
+                return ($count > 0) ? 1 : 0;
+            } else{
+                return 1; // Error en la consulta, asumir que no está ajustado
+            }
+            
+        } catch (\Throwable $th){
+            error_log("Error en comprobarAjusteGeneral: " . $th->getMessage());
+            return 1; // Error, asumir que no está ajustado
+        }
+    }
+
     public function revertirProcesamiento($periodo) {
         
         // Calcular la fecha del último día del mes

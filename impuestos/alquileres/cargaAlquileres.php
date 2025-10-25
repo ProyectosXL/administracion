@@ -95,40 +95,96 @@
             <!-- CSS para Modal de Ayuda -->
             <link rel="stylesheet" href="css/ayuda.css">
             
-            <!-- STICKY COLUMNS - CSS SIMPLE -->
+            <!-- STICKY COLUMNS - USANDO TRANSFORM -->
             <style>
-                /* Tabla con border-collapse separate */
+                .table-responsive {
+                    overflow-x: auto;
+                    overflow-y: visible;
+                }
+                
                 #tablaAlquileres {
-                    border-collapse: separate !important;
-                    border-spacing: 0 !important;
+                    border-collapse: separate;
+                    border-spacing: 0;
                 }
                 
-                /* Primera columna sticky */
-                #tablaAlquileres th:first-child,
-                #tablaAlquileres td:first-child {
-                    position: sticky !important;
-                    left: 0 !important;
-                    z-index: 10 !important;
-                    background-color: white !important;
+                /* Columnas fijas usando transform */
+                #tablaAlquileres th:nth-child(1),
+                #tablaAlquileres td:nth-child(1) {
+                    position: relative;
+                    background-color: white;
+                    width: 60px;
+                    min-width: 60px;
+                    max-width: 60px;
                 }
                 
-                #tablaAlquileres thead th:first-child {
-                    z-index: 11 !important;
-                }
-                
-                /* Segunda columna sticky */
                 #tablaAlquileres th:nth-child(2),
                 #tablaAlquileres td:nth-child(2) {
-                    position: sticky !important;
-                    left: 60px !important;
-                    z-index: 10 !important;
-                    background-color: white !important;
+                    position: relative;
+                    background-color: white;
+                    width: 250px;
+                    min-width: 250px;
+                    max-width: 250px;
+                    border-right: 2px solid #dee2e6 !important;
                 }
                 
+                #tablaAlquileres thead th:nth-child(1),
                 #tablaAlquileres thead th:nth-child(2) {
-                    z-index: 11 !important;
+                    background-color: #343a40;
+                }
+                
+                /* Mantener colores alternados */
+                #tablaAlquileres tbody tr:nth-child(even) td:nth-child(1),
+                #tablaAlquileres tbody tr:nth-child(even) td:nth-child(2) {
+                    background-color: #f2f2f2;
+                }
+                
+                #tablaAlquileres tbody tr:last-child td:nth-child(1),
+                #tablaAlquileres tbody tr:last-child td:nth-child(2) {
+                    background-color: #e9ecef;
+                    font-weight: bold;
                 }
             </style>
+            
+            <script>
+                // Script inline para manejar el scroll
+                document.addEventListener('DOMContentLoaded', function() {
+                    const tableWrapper = document.querySelector('.table-responsive');
+                    const tabla = document.getElementById('tablaAlquileres');
+                    
+                    if (!tableWrapper || !tabla) return;
+                    
+                    function actualizarColumnasFijas() {
+                        const scrollLeft = tableWrapper.scrollLeft;
+                        
+                        // Obtener todas las celdas de la primera y segunda columna
+                        const col1 = tabla.querySelectorAll('th:nth-child(1), td:nth-child(1)');
+                        const col2 = tabla.querySelectorAll('th:nth-child(2), td:nth-child(2)');
+                        
+                        col1.forEach(celda => {
+                            celda.style.transform = `translateX(${scrollLeft}px)`;
+                            celda.style.zIndex = scrollLeft > 0 ? '10' : '1';
+                            if (scrollLeft > 0) {
+                                celda.style.boxShadow = '2px 0 5px rgba(0,0,0,0.1)';
+                            } else {
+                                celda.style.boxShadow = 'none';
+                            }
+                        });
+                        
+                        col2.forEach(celda => {
+                            celda.style.transform = `translateX(${scrollLeft}px)`;
+                            celda.style.zIndex = scrollLeft > 0 ? '10' : '1';
+                            if (scrollLeft > 0) {
+                                celda.style.boxShadow = '2px 0 5px rgba(0,0,0,0.1)';
+                            } else {
+                                celda.style.boxShadow = 'none';
+                            }
+                        });
+                    }
+                    
+                    tableWrapper.addEventListener('scroll', actualizarColumnasFijas);
+                    actualizarColumnasFijas(); // Ejecutar una vez al cargar
+                });
+            </script>
 
             </link>
 
@@ -222,8 +278,8 @@
                                 </div>
                             </div>
 
-                            <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
-                                <div style="margin-top:10px">
+                            <form class="form-inline" action="#" method="get" style="margin-bottom:20px;">
+                                <div style="margin-top:10px; width:100%;">
 
                                     <div hidden id="periodo"><?= isset($periodo) ? $periodo : "" ?></div>
                                     <div hidden id="ultimaFechaDelMes"><?= isset($ultimaFechaDelMes) ? $ultimaFechaDelMes : "" ?></div>
@@ -262,21 +318,28 @@
                                         
                                             <button class="btn btn-primary btn-submit ml-2" data-toggle="tooltip" data-placement="top" title="Filtrar por mes y año">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
                                         </div>
-                                    </div>
-                                    <div class="btn-group" style="margin-left:2rem; display: flex; gap: 10px; flex-wrap: nowrap; align-items: center;">
-                                        <button style="margin-top:0.5rem;" type="button" class="btn btn-info" onclick="AplicarAjuste()" data-toggle="tooltip" data-placement="top" title="Aplicar el coeficiente de ajuste a los conceptos 4, 5 y 18">Aplicar Ajuste <i class="bi bi-check-circle" style="color:white"></i></button>
-                                        <button style="margin-top:0.5rem; width:140px" type="button" class="btn btn-success" onclick="procesar()" data-toggle="tooltip" data-placement="top" title="Enviar datos procesados al sistema Tango">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
-                                        <?php 
-                                        if($estado == 1){
-                                            echo '<div  id="estado" hidden>1</div>';
-                                            echo '<button type="button" class="btn btn-primary" value="Abrir Periodo" style="margin-top:0.5rem;" onclick="abrirPeriodo()" data-toggle="tooltip" data-placement="top" title="Reabrir el período para realizar modificaciones">Abrir Periodo <i class="bi bi-unlock"></i></button>';
-                                        }else{
-                                            echo '<div  id="estado" hidden>0</div>';
-                                            echo '<button type="button" class="btn btn-secondary" value="Cerrar Periodo" style="margin-top:0.5rem;" onclick="cerrarPeriodo()" data-toggle="tooltip" data-placement="top" title="Cerrar el período y deshabilitar modificaciones">Cerrar Periodo <i class="bi bi-lock"></i></button>';
-                                        }
-                                        ?>
-                                        <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
-                                        <button style="margin-top:0.5rem; width:180px" type="button" class="btn btn-danger" onclick="revertirProcesamiento()" data-toggle="tooltip" data-placement="top" title="Eliminar el procesamiento para poder volver a procesar el período">Revertir Proc. <i class="bi bi-arrow-counterclockwise" style="color:white"></i></button>
+                                        
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+                                            <div class="btn-group" style="margin-left:2rem; display: flex; gap: 10px; flex-wrap: nowrap; align-items: center;">
+                                                <button type="button" class="btn btn-info" onclick="AplicarAjuste()" data-toggle="tooltip" data-placement="top" title="Aplicar el coeficiente de ajuste a los conceptos 4, 5 y 18">Aplicar Ajuste <i class="bi bi-check-circle" style="color:white"></i></button>
+                                                <button style="width:140px" type="button" class="btn btn-success" onclick="procesar()" data-toggle="tooltip" data-placement="top" title="Enviar datos procesados al informe económico">Procesar <i class="bi bi-check-circle" style="color:white"></i></button>
+                                                <?php 
+                                                if($estado == 1){
+                                                    echo '<div  id="estado" hidden>1</div>';
+                                                    echo '<button type="button" class="btn btn-primary" value="Abrir Periodo" onclick="abrirPeriodo()" data-toggle="tooltip" data-placement="top" title="Reabrir el período para realizar modificaciones">Abrir Periodo <i class="bi bi-unlock"></i></button>';
+                                                }else{
+                                                    echo '<div  id="estado" hidden>0</div>';
+                                                    echo '<button type="button" class="btn btn-secondary" value="Cerrar Periodo" onclick="cerrarPeriodo()" data-toggle="tooltip" data-placement="top" title="Cerrar el período y deshabilitar modificaciones">Cerrar Periodo <i class="bi bi-lock"></i></button>';
+                                                }
+                                                ?>
+                                                <!-- <span class="bi bi-check-circle-fill" style="color:white"></span> -->
+                                                <button style="width:180px" type="button" class="btn btn-danger" onclick="revertirProcesamiento()" data-toggle="tooltip" data-placement="top" title="Eliminar el procesamiento para poder volver a procesar el período">Revertir Proc. <i class="bi bi-arrow-counterclockwise" style="color:white"></i></button>
+                                            </div>
+                                            
+                                            <div style="margin-right:50px;">
+                                                <button style="width:180px; margin-left: 5rem;" type="button" class="btn btn-warning" onclick="descargarPDF()" data-toggle="tooltip" data-placement="top" title="Descargar reporte en formato PDF"><i class="bi bi-file-earmark-pdf" style="color:white"></i> Descargar PDF</button>
+                                            </div>
+                                        </div>
                                     </div>
                             </form>
 
