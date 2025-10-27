@@ -136,27 +136,33 @@ $titulo_pagina = 'Directores';
                                         <div class="d-md-none">
                                             <div class="row g-2 mb-3">
                                                 <div class="col-6">
-                                                    <button type="button" class="btn btn-outline-primary w-100" 
+                                                    <button type="button" class="btn btn-outline-secondary w-100" 
                                                             onclick="document.getElementById('archivoSolicitud').click()">
-                                                        <i class="bi bi-folder-open"></i> Galería
+                                                        <i class="bi bi-image"></i> Galería
                                                     </button>
                                                 </div>
                                                 <div class="col-6">
-                                                    <button type="button" class="btn btn-outline-success w-100" 
+                                                    <button type="button" class="btn btn-outline-primary w-100" 
                                                             onclick="document.getElementById('camaraSolicitud').click()">
                                                         <i class="bi bi-camera"></i> Cámara
                                                     </button>
                                                 </div>
                                             </div>
+                                            <div class="form-text mb-2">
+                                                <small>
+                                                    <span class="text-primary"><i class="bi bi-camera"></i> Cámara:</span> Toma foto directamente<br>
+                                                    <span class="text-secondary"><i class="bi bi-image"></i> Galería:</span> Selecciona imagen o PDF guardado
+                                                </small>
+                                            </div>
                                         </div>
                                         
-                                        <!-- Input para galería (escritorio y móvil) -->
+                                        <!-- Input para galería (escritorio y móvil) - PERMITE MÚLTIPLES ARCHIVOS -->
                                         <input type="file" id="archivoSolicitud" class="d-none" 
                                                accept="image/jpeg,image/jpg,image/png,image/gif,application/pdf" 
                                                multiple>
                                         
-                                        <!-- Input para cámara (solo móvil) -->
-                                        <input type="file" id="camaraSolicitud" class="d-none d-md-none" 
+                                        <!-- Input para cámara (solo móvil) - CAPTURA DIRECTA DESDE CÁMARA TRASERA -->
+                                        <input type="file" id="camaraSolicitud" class="d-none" 
                                                accept="image/*" 
                                                capture="environment">
                                         

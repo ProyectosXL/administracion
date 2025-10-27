@@ -153,14 +153,18 @@ function configurarArchivos() {
     
     if (inputArchivo) {
         inputArchivo.addEventListener('change', function(e) {
-            const camaraFiles = inputCamara ? inputCamara.files : new FileList();
+            console.log('Archivo(s) seleccionado(s) desde galería:', e.target.files.length);
+            // Cuando se selecciona desde galería, combinar con los archivos de cámara si existen
+            const camaraFiles = inputCamara && inputCamara.files.length > 0 ? inputCamara.files : null;
             combinarArchivos(e.target.files, camaraFiles);
         });
     }
     
     if (inputCamara) {
         inputCamara.addEventListener('change', function(e) {
-            const archivoFiles = inputArchivo ? inputArchivo.files : new FileList();
+            console.log('Foto capturada desde cámara');
+            // Cuando se toma foto con cámara, combinar con archivos de galería si existen
+            const archivoFiles = inputArchivo && inputArchivo.files.length > 0 ? inputArchivo.files : null;
             combinarArchivos(archivoFiles, e.target.files);
         });
     }
@@ -172,25 +176,27 @@ function configurarArchivos() {
 function combinarArchivos(archivosGaleria, archivosCamara) {
     const dt = new DataTransfer();
     
-    // Agregar archivos de galería
+    // Primero agregar archivos existentes de galería
     if (archivosGaleria && archivosGaleria.length > 0) {
+        console.log('Agregando archivos de galería:', archivosGaleria.length);
         for (let i = 0; i < archivosGaleria.length; i++) {
             dt.items.add(archivosGaleria[i]);
         }
     }
     
-    // Agregar archivos de cámara
+    // Luego agregar foto de cámara si existe
     if (archivosCamara && archivosCamara.length > 0) {
+        console.log('Agregando foto de cámara:', archivosCamara.length);
         for (let i = 0; i < archivosCamara.length; i++) {
             dt.items.add(archivosCamara[i]);
         }
     }
     
-    // Actualizar el input principal con todos los archivos
+    // Actualizar el input principal con todos los archivos combinados
     const inputArchivo = document.getElementById('archivoSolicitud');
     if (inputArchivo) {
         inputArchivo.files = dt.files;
-        console.log('Archivos combinados:', dt.files.length, 'archivo(s)');
+        console.log('Total de archivos combinados:', dt.files.length);
     }
     
     mostrarArchivosSeleccionados(dt.files);
