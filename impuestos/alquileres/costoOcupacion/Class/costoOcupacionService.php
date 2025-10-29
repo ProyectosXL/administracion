@@ -90,9 +90,9 @@ class CostoOcupacionService
     }
 
     /**
-     * Convierte periodo M-YYYY a YYYY-MM
-     * @param string $periodo Formato "10-2024"
-     * @return string Formato "2024-10"
+     * Convierte periodo M-YYYY o MM-YYYY a YYYY-MM
+     * @param string $periodo Formato "10-2024" o "02-2024"
+     * @return string Formato "2024-10" o "2024-02"
      */
     private function normalizarPeriodo($periodo)
     {
@@ -116,15 +116,39 @@ class CostoOcupacionService
     {
         $meses = $this->generarMeses($fechaDesde, $fechaHasta);
         
-        // Construir lista de periodos en formato M-YYYY
+        // Construir lista de periodos en formato M-YYYY y MM-YYYY (ambos formatos)
         $periodos = [];
         foreach ($meses as $mes) {
-            $fecha = DateTime::createFromFormat('Y-m', $mes);
-            $periodos[] = (int)$fecha->format('n') . '-' . $fecha->format('Y');
+            // Usar explode en lugar de DateTime para evitar problemas con días del mes
+            list($anio, $mesNum) = explode('-', $mes);
+            
+            // Agregar ambos formatos: con y sin cero a la izquierda
+            $p1 = (int)$mesNum . '-' . $anio; // Ej: "2-2025"
+            $p2 = $mesNum . '-' . $anio;      // Ej: "02-2025"
+            
+            $periodos[] = $p1;
+            $periodos[] = $p2;
+            
+            // Log para debug específico de febrero
+            if ($mes === '2025-02') {
+                error_log("DEBUG FEBRERO - Mes: {$mes}, P1: [{$p1}], P2: [{$p2}]");
+            }
         }
+        
+        // Eliminar duplicados y reindexar
+        $periodos = array_values(array_unique($periodos));
+        
+        // Log para verificar que febrero está en la lista
+        $tieneFebreroSinCero = in_array('2-2025', $periodos);
+        $tieneFebreroConCero = in_array('02-2025', $periodos);
+        error_log("DEBUG FEBRERO - ¿Tiene '2-2025'? " . ($tieneFebreroSinCero ? 'SI' : 'NO') . ", ¿Tiene '02-2025'? " . ($tieneFebreroConCero ? 'SI' : 'NO'));
+        
+        // Log para debug
+        error_log("obtenerGastosPorMes - Sucursal: {$idSucursal}, Períodos buscados: " . implode(", ", $periodos));
         
         $periodosStr = "'" . implode("','", $periodos) . "'";
         
+        // Usar LTRIM y RTRIM para eliminar espacios en blanco del campo PERIODO
         $sql = "
             SELECT 
                 d.PERIODO,
@@ -134,7 +158,7 @@ class CostoOcupacionService
             FROM RO_T_DETALLE_ALQUILERES d
             INNER JOIN RO_T_CONCEPTOS_ALQUILERES c ON d.ID_CA = c.ID_CA
             WHERE d.NRO_SUCURS = ?
-            AND d.PERIODO IN ({$periodosStr})
+            AND LTRIM(RTRIM(d.PERIODO)) IN ({$periodosStr})
             ORDER BY c.CONCEPTO, d.PERIODO
         ";
         
@@ -150,15 +174,37 @@ class CostoOcupacionService
             
             // Almacenar datos por ID_CA
             $datosPorConcepto = [];
+            $registrosEncontrados = 0;
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $periodoNorm = $this->normalizarPeriodo($row['PERIODO']);
+                $registrosEncontrados++;
+                $periodoOriginal = $row['PERIODO'];
+                $periodoNorm = $this->normalizarPeriodo($periodoOriginal);
                 $idCa = $row['ID_CA'];
+                
+                // Log detallado para febrero
+                if (strpos($periodoOriginal, '2-2025') !== false || strpos($periodoOriginal, '02-2025') !== false) {
+                    error_log("FEBRERO ENCONTRADO - Original: [{$periodoOriginal}], Normalizado: [{$periodoNorm}], ID_CA: {$idCa}, Importe: {$row['IMPORTE']}");
+                }
                 
                 if (!isset($datosPorConcepto[$idCa])) {
                     $datosPorConcepto[$idCa] = [];
                 }
                 
                 $datosPorConcepto[$idCa][$periodoNorm] = $row['IMPORTE'];
+            }
+            
+            // Log para debug
+            error_log("obtenerGastosPorMes - Registros encontrados: {$registrosEncontrados}");
+            if ($registrosEncontrados > 0 && count($datosPorConcepto) > 0) {
+                $primerConcepto = array_key_first($datosPorConcepto);
+                error_log("obtenerGastosPorMes - Primer concepto ({$primerConcepto}) tiene meses: " . implode(", ", array_keys($datosPorConcepto[$primerConcepto])));
+                
+                // Verificar específicamente febrero
+                if (isset($datosPorConcepto[$primerConcepto]['2025-02'])) {
+                    error_log("obtenerGastosPorMes - Concepto {$primerConcepto} TIENE febrero con valor: " . $datosPorConcepto[$primerConcepto]['2025-02']);
+                } else {
+                    error_log("obtenerGastosPorMes - Concepto {$primerConcepto} NO TIENE clave '2025-02'. Claves disponibles: " . implode(", ", array_keys($datosPorConcepto[$primerConcepto])));
+                }
             }
             
             // Calcular Llave (25% de suma de conceptos 1, 2 y 8)
@@ -227,15 +273,23 @@ class CostoOcupacionService
     {
         $meses = $this->generarMeses($fechaDesde, $fechaHasta);
         
-        // Construir lista de periodos
+        // Construir lista de periodos en ambos formatos
         $periodos = [];
         foreach ($meses as $mes) {
-            $fecha = DateTime::createFromFormat('Y-m', $mes);
-            $periodos[] = (int)$fecha->format('n') . '-' . $fecha->format('Y');
+            // Usar explode en lugar de DateTime para evitar problemas con días del mes
+            list($anio, $mesNum) = explode('-', $mes);
+            $periodos[] = (int)$mesNum . '-' . $anio; // Ej: "2-2025"
+            $periodos[] = $mesNum . '-' . $anio;      // Ej: "02-2025"
         }
+        
+        // Eliminar duplicados y reindexar
+        $periodos = array_values(array_unique($periodos));
+        
+        error_log("obtenerVentaBrutaPorMes - Sucursal: {$idSucursal}, Períodos: " . implode(", ", $periodos));
         
         $periodosStr = "'" . implode("','", $periodos) . "'";
         
+        // Usar LTRIM y RTRIM para eliminar espacios en blanco del campo PERIODO
         $sql = "
             SELECT 
                 PERIODO,
@@ -243,7 +297,7 @@ class CostoOcupacionService
                 CAST(IMPORTE AS FLOAT) as IMPORTE
             FROM RO_V_VENTAS_BRUTAS_IE
             WHERE NRO_SUCURSAL = ?
-            AND PERIODO IN ({$periodosStr})
+            AND LTRIM(RTRIM(PERIODO)) IN ({$periodosStr})
         ";
         
         try {
@@ -257,10 +311,14 @@ class CostoOcupacionService
             sqlsrv_execute($stmt);
             
             $ventas = [];
+            $registrosEncontrados = 0;
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $registrosEncontrados++;
                 $periodoNorm = $this->normalizarPeriodo($row['PERIODO']);
                 $ventas[$periodoNorm] = $row['IMPORTE'];
             }
+            
+            error_log("obtenerVentaBrutaPorMes - Registros encontrados: {$registrosEncontrados}");
             
             // Completar meses faltantes con 0
             $resultado = [];
@@ -287,6 +345,8 @@ class CostoOcupacionService
     {
         $meses = $this->generarMeses($fechaDesde, $fechaHasta);
         
+        error_log("obtenerVentaNetaPorMes - Sucursal: {$idSucursal}, Meses: " . implode(", ", $meses));
+        
         $ventas = [];
         
         foreach ($meses as $mes) {
@@ -296,10 +356,11 @@ class CostoOcupacionService
             $sql = "
                 SELECT 
                     NRO_SUCURS,
-                    CAST(VENTA AS FLOAT) as VENTA
+                    SUM(CAST(VENTA AS FLOAT)) as VENTA
                 FROM RO_T_RENTABILIDAD_BRUTA
                 WHERE NRO_SUCURS = ?
                 AND FECHA LIKE ?
+                GROUP BY NRO_SUCURS
             ";
             
             try {
@@ -307,6 +368,7 @@ class CostoOcupacionService
                 $stmt = sqlsrv_prepare($this->cid_central, $sql, $params);
                 
                 if (!$stmt) {
+                    error_log("obtenerVentaNetaPorMes - Error preparando query para mes {$mes}");
                     $ventas[$mes] = 0;
                     continue;
                 }
@@ -314,13 +376,15 @@ class CostoOcupacionService
                 sqlsrv_execute($stmt);
                 
                 if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                    $ventas[$mes] = $row['VENTA'];
+                    $ventas[$mes] = $row['VENTA'] !== null ? floatval($row['VENTA']) : 0;
+                    error_log("obtenerVentaNetaPorMes - Mes {$mes}: " . $ventas[$mes]);
                 } else {
+                    error_log("obtenerVentaNetaPorMes - No hay datos para mes {$mes}");
                     $ventas[$mes] = 0;
                 }
                 
             } catch (Exception $e) {
-                error_log("Error en obtenerVentaNetaPorMes para {$mes}: " . $e->getMessage());
+                error_log("obtenerVentaNetaPorMes - Exception para {$mes}: " . $e->getMessage());
                 $ventas[$mes] = 0;
             }
         }

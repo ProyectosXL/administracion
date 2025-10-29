@@ -151,11 +151,17 @@ function aplicarFiltrosReporte() {
  * Renderiza la tabla del reporte con los datos recibidos
  */
 function renderizarReporteFecha(data) {
+    // Destruir DataTable existente primero
+    if (tablaReporteFecha) {
+        tablaReporteFecha.destroy();
+        tablaReporteFecha = null;
+    }
+    
     const headerRow = $('#headerRowReporte');
     const tableBody = $('#tableBodyReporte');
     const footerRow = $('#footerRowReporte');
     
-    // Limpiar contenido previo
+    // Limpiar contenido previo completamente
     headerRow.find('th:not(.fixed-column)').remove();
     tableBody.empty();
     footerRow.find('td:not(.fixed-column)').remove();
@@ -260,28 +266,28 @@ function renderizarReporteFecha(data) {
     
     // NO calcular ni mostrar footer con totales
     
-    // Inicializar DataTable si no existe
-    if (tablaReporteFecha) {
-        tablaReporteFecha.destroy();
-    }
-    
-    tablaReporteFecha = $('#tablaReporteFecha').DataTable({
-        responsive: false,
-        scrollX: true,
-        scrollCollapse: true,
-        paging: false,
-        searching: false,
-        info: false,
-        ordering: false,
-        fixedColumns: {
-            leftColumns: 1
-        },
-        language: {
-            decimal: ",",
-            thousands: ".",
-            emptyTable: "No hay datos disponibles"
-        }
-    });
+    // Asegurarse de que la tabla esté completamente renderizada antes de inicializar DataTable
+    // Esperar un breve momento para que el DOM se actualice
+    setTimeout(function() {
+        // Inicializar DataTable
+        tablaReporteFecha = $('#tablaReporteFecha').DataTable({
+            responsive: false,
+            scrollX: true,
+            scrollCollapse: true,
+            paging: false,
+            searching: false,
+            info: false,
+            ordering: false,
+            fixedColumns: {
+                leftColumns: 1
+            },
+            language: {
+                decimal: ",",
+                thousands: ".",
+                emptyTable: "No hay datos disponibles"
+            }
+        });
+    }, 100);
 }
 
 /**
