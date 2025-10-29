@@ -117,17 +117,19 @@ session_start();
                                         <!-- Botones para móvil -->
                                         <div class="d-md-none mb-2">
                                             <div class="btn-group w-100" role="group">
+                                                <!-- Input para cámara: solo captura desde cámara trasera -->
                                                 <input type="file" class="d-none" id="fotoGastoCamera" 
                                                        accept="image/*" 
                                                        capture="environment"
                                                        onchange="previsualizarFotoGasto(this)">
+                                                <!-- Input para galería: sin capture permite elegir archivo -->
                                                 <input type="file" class="d-none" id="fotoGastoGallery" 
                                                        accept="image/*"
                                                        onchange="previsualizarFotoGasto(this)">
                                                 
                                                 <button type="button" class="btn btn-outline-primary" 
                                                         onclick="document.getElementById('fotoGastoCamera').click()">
-                                                    <i class="bi bi-camera"></i> Tomar Foto
+                                                    <i class="bi bi-camera"></i> Cámara
                                                 </button>
                                                 <button type="button" class="btn btn-outline-secondary" 
                                                         onclick="document.getElementById('fotoGastoGallery').click()">
@@ -143,7 +145,7 @@ session_start();
                                         
                                         <div class="form-text">
                                             <small>
-                                                <strong>Móvil:</strong> Usa los botones para tomar foto o seleccionar de galería<br>
+                                                <strong>Móvil:</strong> <span class="text-primary">Cámara</span> abre directamente la cámara para tomar foto | <span class="text-secondary">Galería</span> permite elegir imagen guardada<br>
                                                 <strong>Escritorio:</strong> Arrastra o selecciona archivo<br>
                                                 <strong>Formatos:</strong> JPG, PNG, GIF, BMP, WebP, TIFF, HEIC, HEIF
                                             </small>
