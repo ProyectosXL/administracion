@@ -94,8 +94,10 @@ const totalizar = (div = null) => {
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
 
                 let value = inputActual.value.replace(/[$.]/g, "")
+                let ajustado = inputActual.getAttribute('attr-ajustado');
             
-                if(value != ""  && value != "0" ) {
+                // Deshabilitar solo si está marcado como ajustado en la BD
+                if(ajustado == "1") {
                     inputActual.disabled = true;
                 }
 
@@ -920,7 +922,10 @@ const AplicarAjuste = () => {
     let sucursales = document.querySelectorAll("#sucursal");
     let newArray = {};
     let periodo = document.querySelector("#periodo").textContent;
-   
+    
+    // LOG: Ver qué período se está enviando
+    console.log("DEBUG AplicarAjuste - Período desde #periodo:", periodo);
+    console.log("DEBUG AplicarAjuste - Tipo de dato:", typeof periodo);
 
     sucursales.forEach((sucursal) => {
         const sucursalName = sucursal.textContent;
@@ -928,28 +933,41 @@ const AplicarAjuste = () => {
 
         ["4", "5", "18"].forEach((concepto) => {
             const div = document.querySelector(`#input-${concepto}-${sucursalName}`);
-            const valor = div.value.replace(/[$.]/g, "").trim();
+            if (!div) {
+                console.log(`DEBUG - Input concepto ${concepto} sucursal ${sucursalName} NO ENCONTRADO`);
+                return;
+            }
+            
+            const valor = div.value.replace(/[$.]/g, "").replace(/-/g, "").trim();
+            const estaDeshabilitado = div.disabled;
+
+            console.log(`DEBUG - Concepto ${concepto} Sucursal ${sucursalName}: valor="${valor}", disabled=${estaDeshabilitado}, valorOriginal="${div.value}"`);
 
             // Solo incluir si NO está deshabilitado y tiene valor > 0
-            if (valor > 0 && !div.disabled) {
+            if (valor > 0 && !estaDeshabilitado) {
+                console.log(`  → INCLUIDO`);
                 newArray[sucursalName].push({
                     concepto: concepto,
                     value: valor,
                 });
+            } else {
+                console.log(`  → OMITIDO (valor=${valor}, disabled=${estaDeshabilitado})`);
             }
         });
     });
 
-  
+    console.log("DEBUG AplicarAjuste - Array de datos a enviar:", newArray);
 
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=aplicarAjuste',
         method: 'POST',
         data: {
-            arrayData: newArray,
+            arrayData: JSON.stringify(newArray),  // Convertir a JSON string
             periodo: periodo
         },
         success: function (response) {
+            console.log("DEBUG AplicarAjuste - Respuesta del servidor:", response);
+            
             try {
                 // Intentar parsear como JSON
                 const data = JSON.parse(response);
@@ -1001,6 +1019,9 @@ const AplicarAjuste = () => {
                 }
                 
             } catch (e) {
+                console.error("DEBUG AplicarAjuste - Error al parsear JSON:", e);
+                console.log("DEBUG AplicarAjuste - Respuesta cruda:", response);
+                
                 // Fallback para compatibilidad con respuesta legacy
                 if(response != 1){
                     Swal.fire({
@@ -1021,6 +1042,7 @@ const AplicarAjuste = () => {
             }
         },
         error: function(xhr, status, error) {
+            console.error("DEBUG AplicarAjuste - Error en AJAX:", {xhr, status, error});
             Swal.fire({
                 icon: 'error',
                 title: 'Error de conexión',

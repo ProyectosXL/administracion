@@ -671,8 +671,22 @@ class Alquiler
 
     public function traerCoeficiente ($periodo ) {
 
+        // LOG: Período original recibido
+        error_log("DEBUG traerCoeficiente - Período original: " . $periodo);
+
+        // Normalizar el período: separar mes y año, convertir mes a entero, y reconstruir
+        // Esto asegura que "07-2025" se convierta en "7-2025" para coincidir con la BD
+        $partes = explode('-', $periodo);
+        if (count($partes) == 2) {
+            $mes = (int)$partes[0]; // Elimina ceros a la izquierda
+            $anio = $partes[1];
+            $periodo = $mes . '-' . $anio;
+        }
+
+        error_log("DEBUG traerCoeficiente - Período normalizado: " . $periodo);
+
         $sql="SELECT COEFICIENTE FROM RO_T_COEFICIENTES_AJUSTE  WHERE PERIODO = '$periodo'";
- 
+        error_log("DEBUG traerCoeficiente - SQL: " . $sql);
 
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -680,26 +694,60 @@ class Alquiler
             if (sqlsrv_fetch($stmt) === true) {
       
                 $coeficiente = sqlsrv_get_field($stmt, 0);
+                error_log("DEBUG traerCoeficiente - Coeficiente encontrado: " . $coeficiente);
                 return $coeficiente;
             } else{
+                error_log("DEBUG traerCoeficiente - NO se encontró coeficiente (sqlsrv_fetch retornó false)");
+                
+                // Verificar si hay error en la consulta
+                $errors = sqlsrv_errors();
+                if ($errors) {
+                    error_log("DEBUG traerCoeficiente - Errores SQL: " . print_r($errors, true));
+                }
+                
                 return 0;
             }
 
         } catch (\Throwable $th) {
+            error_log("DEBUG traerCoeficiente - Exception: " . $th->getMessage());
             throw $th; 
         }
     }
 
     public function aplicarAjuste ($nroSucursal, $concepto,$importe, $periodo ) {
 
-        $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe', FECHA_MODIF = GETDATE() ,FECHA_AJUSTE = GETDATE(), AJUSTADO = 1 WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$nroSucursal' AND ID_CA = '$concepto'";
-
+        // Primero verificar si ya está ajustado
+        $sqlCheck = "SELECT AJUSTADO, IMPORTE FROM RO_T_DETALLE_ALQUILERES WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$nroSucursal' AND ID_CA = '$concepto'";
+        
         try{
+            $stmtCheck = sqlsrv_query($this->cid_central, $sqlCheck);
+            
+            if (sqlsrv_fetch($stmtCheck) === true) {
+                $ajustado = sqlsrv_get_field($stmtCheck, 0);
+                $importeActual = sqlsrv_get_field($stmtCheck, 1);
+                
+                // Si ya está ajustado, no hacer nada
+                if($ajustado == 1) {
+                    error_log("DEBUG aplicarAjuste - Registro ya ajustado: Sucursal=$nroSucursal, Concepto=$concepto, Periodo=$periodo");
+                    return false; // Ya está ajustado
+                }
+            }
+            
+            // Si no está ajustado, proceder con el UPDATE
+            $sql = "UPDATE RO_T_DETALLE_ALQUILERES SET IMPORTE = '$importe', FECHA_MODIF = GETDATE() ,FECHA_AJUSTE = GETDATE(), AJUSTADO = 1 WHERE PERIODO = '$periodo' AND NRO_SUCURS = '$nroSucursal' AND ID_CA = '$concepto' AND (AJUSTADO IS NULL OR AJUSTADO = 0)";
+
             $stmt = sqlsrv_query($this->cid_central, $sql);
-            return true;
+            
+            // Verificar cuántas filas se afectaron
+            $rowsAffected = sqlsrv_rows_affected($stmt);
+            error_log("DEBUG aplicarAjuste - Filas afectadas: $rowsAffected para Sucursal=$nroSucursal, Concepto=$concepto");
+            
+            return ($rowsAffected > 0);
             
         } catch (\Throwable $th){
+            error_log("DEBUG aplicarAjuste - Exception: " . $th->getMessage());
             print_r($th);
+            return false;
         }
 
     }

@@ -385,6 +385,7 @@
 
                                                             $porcentajeDelLocal = 0;
                                                             $rentabilidadDelConcepto = 0;
+                                                            $ajustado = 0; // Flag para saber si el concepto ya tiene ajuste aplicado
                                                             
                                                             // solo lectura inputs automaticos
                                                             $readOn = [6,7,9,13,14,15,16,17];   
@@ -398,6 +399,7 @@
                                                                             if($det['NRO_SUCURS'] == $k && $det['ID_CA'] == $value['ID_CA']){
 
                                                                                 $porcentajeDelLocal = $det['PORCENTAJE_APLICADO'];
+                                                                                $ajustado = isset($det['AJUSTADO']) ? intval($det['AJUSTADO']) : 0;
 
                                                                             }
                                                                            
@@ -405,6 +407,13 @@
                                                                     }else{
 
                                                                         $porcentajeDelLocal = $porcentaje['PORCENTAJE'];
+                                                                        
+                                                                        // También obtener el flag de ajustado cuando no está cerrado
+                                                                        foreach ($detalle as $key => $det) {
+                                                                            if($det['NRO_SUCURS'] == $k && $det['ID_CA'] == $value['ID_CA']){
+                                                                                $ajustado = isset($det['AJUSTADO']) ? intval($det['AJUSTADO']) : 0;
+                                                                            }
+                                                                        }
 
                                                                     }
                                                                     
@@ -445,7 +454,7 @@
                                                             } 
                                                 
                                                     ?>  
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" attr-ajustado="<?= $ajustado ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
 
                                                     <?php 
                                                         }

@@ -731,8 +731,14 @@ function aplicarAjuste () {
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
     
-    $data = $_POST['arrayData'];  
+    // Decodificar el JSON que viene del frontend
+    $data = isset($_POST['arrayData']) ? json_decode($_POST['arrayData'], true) : [];  
     $periodo = $_POST['periodo'];
+
+    // LOG: Ver qué se está recibiendo
+    error_log("DEBUG aplicarAjuste - Período recibido: " . $periodo);
+    error_log("DEBUG aplicarAjuste - Tipo de dato: " . gettype($periodo));
+    error_log("DEBUG aplicarAjuste - Array data: " . print_r($data, true));
 
     // Verificar si hay datos para ajustar
     $hayDatosParaAjustar = false;
@@ -743,8 +749,12 @@ function aplicarAjuste () {
         }
     }
 
+    error_log("DEBUG aplicarAjuste - Hay datos para ajustar: " . ($hayDatosParaAjustar ? 'SI' : 'NO'));
+
     // Si no hay datos, verificar si ya están ajustados
     if (!$hayDatosParaAjustar) {
+        error_log("DEBUG aplicarAjuste - No hay datos para ajustar, verificando estado en BD");
+        
         // Obtener todas las sucursales y verificar si tienen conceptos 4, 5, 18 con valores
         $detalle = $alquiler->traerDetalle($periodo);
         $conceptosConValor = [];
@@ -766,6 +776,9 @@ function aplicarAjuste () {
             }
         }
         
+        error_log("DEBUG aplicarAjuste - Conceptos con valor: " . count($conceptosConValor));
+        error_log("DEBUG aplicarAjuste - Conceptos ajustados: " . count($conceptosAjustados));
+        
         if (count($conceptosConValor) == 0) {
             echo json_encode([
                 'status' => 'warning',
@@ -785,19 +798,24 @@ function aplicarAjuste () {
                 'message' => 'Algunos conceptos ya tienen ajuste aplicado. Verifique los datos.'
             ]);
         } else {
+            // Hay valores pero no fueron enviados desde el frontend
+            // Esto puede pasar si los campos están deshabilitados en el frontend pero no marcados como ajustados en BD
             echo json_encode([
                 'status' => 'error',
                 'code' => 5,
-                'message' => 'Hay valores para ajustar pero no se enviaron en la solicitud. Recargue la página.'
+                'message' => 'Error de sincronización. Los campos parecen estar bloqueados pero no hay registro de ajuste en la base de datos. Intente abrir el período y volver a cargar.'
             ]);
         }
         die();
     }
 
     // Verificar coeficiente
+    error_log("DEBUG aplicarAjuste - Llamando a traerCoeficiente con período: " . $periodo);
     $coeficiente = $alquiler->traerCoeficiente($periodo);
+    error_log("DEBUG aplicarAjuste - Coeficiente recibido: " . $coeficiente);
 
     if($coeficiente == 0 || $coeficiente == null){
+        error_log("DEBUG aplicarAjuste - ERROR: Coeficiente es 0 o null");
         echo json_encode([
             'status' => 'error',
             'code' => 0,
@@ -808,21 +826,41 @@ function aplicarAjuste () {
 
     // Aplicar ajuste
     $registrosActualizados = 0;
+    $registrosOmitidos = 0;
+    
     foreach ($data as $key => $value) {
         foreach ($value as $detalle) {
             $importe = $detalle['value'] * $coeficiente;
-            $alquiler->aplicarAjuste($key, $detalle['concepto'], $importe, $periodo);
-            $registrosActualizados++;
+            $resultado = $alquiler->aplicarAjuste($key, $detalle['concepto'], $importe, $periodo);
+            
+            if($resultado) {
+                $registrosActualizados++;
+            } else {
+                $registrosOmitidos++;
+                error_log("DEBUG aplicarAjuste - Registro omitido (ya ajustado): Sucursal=$key, Concepto={$detalle['concepto']}");
+            }
         }
     }
 
-    echo json_encode([
-        'status' => 'success',
-        'code' => 1,
-        'message' => 'Ajuste aplicado correctamente',
-        'registros_actualizados' => $registrosActualizados,
-        'coeficiente' => $coeficiente
-    ]);
+    error_log("DEBUG aplicarAjuste - Total actualizados: $registrosActualizados, Total omitidos: $registrosOmitidos");
+
+    if($registrosActualizados == 0 && $registrosOmitidos > 0) {
+        echo json_encode([
+            'status' => 'info',
+            'code' => 2,
+            'message' => 'Todos los registros ya tenían el ajuste aplicado anteriormente',
+            'registros_omitidos' => $registrosOmitidos
+        ]);
+    } else {
+        echo json_encode([
+            'status' => 'success',
+            'code' => 1,
+            'message' => 'Ajuste aplicado correctamente',
+            'registros_actualizados' => $registrosActualizados,
+            'registros_omitidos' => $registrosOmitidos,
+            'coeficiente' => $coeficiente
+        ]);
+    }
 }
 
 function comprobarAjuste () {
