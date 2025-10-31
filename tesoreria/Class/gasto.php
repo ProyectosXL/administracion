@@ -544,5 +544,46 @@ class Gasto
 
         return $resultados;
     }
+        public function eliminarGasto($codComp, $nComp, $codCta) {
+        $codComp = trim($codComp);
+        $nComp = trim($nComp);
+        $codCta = trim($codCta);
+
+        try {
+            // 1. Obtener y eliminar todos los archivos asociados
+            $fotosAEliminar = $this->obtenerFotos($codComp, $nComp, $codCta);
+            error_log("Revirtiendo gasto: $codComp, $nComp, $codCta. Fotos a eliminar: " . count($fotosAEliminar));
+
+            foreach ($fotosAEliminar as $foto) {
+                $rutaFoto = $this->directorioFotos . $foto;
+                if (file_exists($rutaFoto)) {
+                    if (!unlink($rutaFoto)) {
+                        // Si falla la eliminación de un archivo, detenemos la operación
+                        error_log("Error al eliminar el archivo: $rutaFoto. Permisos insuficientes?");
+                        return ['success' => false, 'error' => "No se pudo eliminar el archivo: $foto. Verifique los permisos."];
+                    }
+                }
+            }
+            error_log("Todos los archivos asociados han sido eliminados.");
+
+            // 2. Eliminar el registro de la tabla de seguimiento
+            $sql = "DELETE FROM RO_T_GASTOS_TESORERIA WHERE COD_COMP = ? AND LTRIM(RTRIM(N_COMP)) = ? AND COD_CTA = ?";
+            $params = array($codComp, $nComp, $codCta);
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("Error al eliminar registro de RO_T_GASTOS_TESORERIA: " . print_r($errors, true));
+                return ['success' => false, 'error' => 'Error al revertir el registro en la base de datos.'];
+            }
+            
+            error_log("Gasto revertido a estado pendiente exitosamente.");
+            return ['success' => true, 'mensaje' => 'Fotos eliminadas y estado revertido correctamente.'];
+
+        } catch (Exception $e) {
+            error_log("Exception en eliminarGasto/revertir: " . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
 }
 ?>

@@ -6,7 +6,8 @@ ini_set('log_errors', 1);
 
 require_once '../Class/gasto.php';
 
-$accion = isset($_GET['accion']) ? $_GET['accion'] : '';
+// CORRECCIÓN: Usamos $_REQUEST para que la acción pueda venir por GET o POST
+$accion = isset($_REQUEST['accion']) ? $_REQUEST['accion'] : '';
 
 // Función para enviar respuesta JSON limpia
 function enviarRespuestaJSON($data) {
@@ -35,6 +36,13 @@ switch ($accion) {
     case 'obtenerFotosYEstado':
         obtenerFotosYEstado();
         break;
+
+    // ===== NUEVO CASE AÑADIDO =====
+    case 'eliminarGasto':
+        eliminarGasto();
+        break;
+    // ===============================
+
     default:
         enviarRespuestaJSON(['error' => 'Acción no reconocida']);
         break;
@@ -105,17 +113,14 @@ function eliminarFoto() {
         $codComp = $_POST['codComp'];
         $nComp = $_POST['nComp'];
         
-        // También necesitamos codCta para verificar el estado después
         $codCta = isset($_POST['codCta']) ? $_POST['codCta'] : null;
         if (!$codCta) {
-            // Intentar extraer codCta del nombre del archivo
             $partes = explode('_', $foto);
             $codCta = (count($partes) >= 3) ? $partes[2] : null;
         }
 
         $resultado = $gasto->eliminarFoto($foto, $codComp, $nComp);
         
-        // Si se eliminó exitosamente, verificar si quedan fotos
         if ($resultado['success'] && $codCta) {
             $estado = $gasto->verificarEstado($codComp, $nComp, $codCta);
             $resultado['fotosRestantes'] = $estado['numeroFotos'];
@@ -168,7 +173,6 @@ function guardarRegistro() {
         $nComp = $_POST['nComp'];
         $codCta = $_POST['codCta'];
         
-        // Verificar que realmente existen fotos antes de guardar
         $estado = $gasto->verificarEstado($codComp, $nComp, $codCta);
         
         if (!$estado['tieneFotos']) {
@@ -225,4 +229,33 @@ function obtenerFotosYEstado() {
         ]);
     }
 }
+
+// ===== NUEVA FUNCIÓN AÑADIDA =====
+function eliminarGasto() {
+    try {
+        // Los datos vienen por POST desde el JS
+        if (!isset($_POST['codComp']) || !isset($_POST['nComp']) || !isset($_POST['codCta'])) {
+            enviarRespuestaJSON(['success' => false, 'error' => 'Faltan parámetros para eliminar el gasto.']);
+            return;
+        }
+
+        $gasto = new Gasto();
+        $codComp = $_POST['codComp'];
+        $nComp = $_POST['nComp'];
+        $codCta = $_POST['codCta'];
+
+        // Llamamos al método de la clase Gasto que borra las fotos y el registro
+        $resultado = $gasto->eliminarGasto($codComp, $nComp, $codCta);
+
+        enviarRespuestaJSON($resultado);
+
+    } catch (Exception $e) {
+        error_log("Error en eliminarGasto controller: " . $e->getMessage());
+        enviarRespuestaJSON([
+            'success' => false,
+            'error' => 'Error interno del servidor al eliminar: ' . $e->getMessage()
+        ]);
+    }
+}
+// ===================================
 ?>
