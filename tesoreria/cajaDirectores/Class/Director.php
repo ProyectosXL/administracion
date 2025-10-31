@@ -14,12 +14,12 @@ class Director {
     
     /**
      * Obtiene la lista de directores desde la base de datos sistemas
-     * Consulta: SELECT NOMBRE FROM RO_T_DIRECTORES
+     * Consulta: SELECT NOMBRE FROM RO_V_DIRECTORES
      * @return array
      */
     public function obtenerDirectores() {
         try {
-            $sql = "SELECT NOMBRE FROM RO_T_DIRECTORES";
+            $sql = "SELECT NOMBRE FROM [SERVIDOR].LAKER_SA.DBO.RO_V_DIRECTORES ORDER BY NOMBRE";
             $stmt = sqlsrv_query($this->db, $sql);
             
             if ($stmt === false) {
@@ -28,7 +28,8 @@ class Director {
             
             $directores = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $directores[] = $row['NOMBRE'];
+                // Convertir a formato capitalizado (primera letra mayúscula, resto minúscula)
+                $directores[] = ucwords(strtolower($row['NOMBRE']));
             }
             
             sqlsrv_free_stmt($stmt);
@@ -36,7 +37,7 @@ class Director {
             return $directores;
         } catch (Exception $e) {
             error_log("Error al obtener directores: " . $e->getMessage());
-
+            return []; // Retornar array vacío en caso de error
         }
     }
     
@@ -47,7 +48,7 @@ class Director {
      */
     public function existeDirector($nombreDirector) {
         try {
-            $sql = "SELECT COUNT(*) as total FROM RO_T_DIRECTORES WHERE NOMBRE = ?";
+            $sql = "SELECT COUNT(*) as total FROM [SERVIDOR].LAKER_SA.DBO.RO_V_DIRECTORES WHERE NOMBRE = ?";
             $params = [$nombreDirector];
             $stmt = sqlsrv_query($this->db, $sql, $params);
             

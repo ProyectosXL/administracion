@@ -1,5 +1,9 @@
 <?php
+
 session_start();
+
+$usuario = ucwords(strtolower($_SESSION['descLocal']));
+
 ?>
 <!DOCTYPE html>
 <html lang="es">

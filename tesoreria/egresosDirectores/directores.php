@@ -1,5 +1,12 @@
 <?php
-$titulo_pagina = 'Directores';
+
+session_start();
+
+// Convertir el nombre del usuario a formato capitalizado (primera letra en mayúscula)
+$usuario = ucwords(strtolower($_SESSION['descLocal']));
+
+$titulo_pagina = $usuario;
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -32,6 +39,10 @@ $titulo_pagina = 'Directores';
                 </h1>
                 <div class="btn-toolbar mb-2 mb-md-0">
                     <div class="btn-group me-2">
+                        <!-- Botón volver -->
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.location.href='../../../ppp/index.php'">
+                            <i class="bi bi-arrow-left me-1"></i>Volver
+                        </button>
                         <!-- Botón actualizar con icono Bootstrap sutil -->
                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="location.reload()">
                             <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
@@ -67,12 +78,14 @@ $titulo_pagina = 'Directores';
                             <div class="col-lg-8">
                                 <form id="formSolicitud">
                                     <div class="mb-3">
-                                        <label for="idDirector" class="form-label">
-                                            Director <span class="text-danger">*</span>
+                                        <label class="form-label">
+                                            Director
                                         </label>
-                                        <select class="form-select" id="idDirector" required>
-                                            <option value="">Seleccione un director</option>
-                                        </select>
+                                        <div class="p-2 bg-light rounded border">
+                                            <strong><?php echo htmlspecialchars($usuario); ?></strong>
+                                        </div>
+                                        <input type="hidden" id="nombreDirectorSession" 
+                                               value="<?php echo htmlspecialchars($usuario); ?>">
                                     </div>
                                     
                                     <div class="mb-3">
@@ -187,7 +200,6 @@ $titulo_pagina = 'Directores';
                                     <div class="card-body">
                                         <h6>¿Cómo funciona?</h6>
                                         <ol class="small">
-                                            <li>Selecciona tu nombre de la lista</li>
                                             <li>Elige el motivo del egreso</li>
                                             <li>Ingresa el importe</li>
                                             <li>Si es compra personal, adjunta la factura</li>

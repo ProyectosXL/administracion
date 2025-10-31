@@ -34,7 +34,7 @@ async function cargarDirectores() {
         
         if (result.success) {
             directoresCache = result.data;
-            llenarSelectDirectores();
+            // Ya no es necesario llenar el select, solo guardamos en caché
         } else {
             console.error('Error al cargar directores:', result.message);
             mostrarAlerta('Error', 'No se pudieron cargar los directores');
@@ -48,20 +48,23 @@ async function cargarDirectores() {
 }
 
 /**
- * Llena los selects de directores
+ * Obtiene el ID del director actual basándose en el nombre de la sesión
  */
-function llenarSelectDirectores() {
-    const selectSolicitud = document.getElementById('idDirector');
+function obtenerIdDirectorActual() {
+    const nombreDirectorSession = document.getElementById('nombreDirectorSession');
+    if (!nombreDirectorSession) {
+        console.error('No se encontró el campo nombreDirectorSession');
+        return null;
+    }
     
-    // Llenar select del formulario de nueva solicitud
-    if (selectSolicitud) {
-        selectSolicitud.innerHTML = '<option value="">Seleccione un director</option>';
-        directoresCache.forEach(director => {
-            const option = document.createElement('option');
-            option.value = director.id_director;
-            option.textContent = director.nombre_director;
-            selectSolicitud.appendChild(option);
-        });
+    const nombreDirector = nombreDirectorSession.value;
+    const director = directoresCache.find(d => d.nombre_director === nombreDirector);
+    
+    if (director) {
+        return director.id_director;
+    } else {
+        console.error('No se encontró el director con nombre:', nombreDirector);
+        return null;
     }
 }
 
@@ -347,18 +350,20 @@ async function crearSolicitud() {
     mostrarLoading();
     
     try {
+        // Obtener el ID del director actual
+        const idDirector = obtenerIdDirectorActual();
+        if (!idDirector) {
+            throw new Error('No se pudo identificar el director. Por favor, recargue la página.');
+        }
+        
         const formData = new FormData();
         formData.append('accion', 'crear');
-        formData.append('id_director', document.getElementById('idDirector').value);
+        formData.append('id_director', idDirector);
         formData.append('motivo', document.getElementById('motivoSolicitud').value);
         formData.append('importe', document.getElementById('importeSolicitud').value);
         formData.append('observaciones', document.getElementById('observacionesSolicitud').value || '');
         
         // Validar datos requeridos
-        if (!formData.get('id_director')) {
-            throw new Error('Debe seleccionar un director');
-        }
-        
         if (!formData.get('motivo')) {
             throw new Error('Debe seleccionar un motivo');
         }
