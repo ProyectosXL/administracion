@@ -5,7 +5,7 @@
     <div class="navbar-nav d-none d-md-flex">
         <div class="nav-item text-nowrap">
             <a class="nav-link px-3" href="#">
-                <i class="bi bi-person-circle"></i> Usuario
+                <i class="bi bi-person-circle"></i> <?php echo $usuario; ?>
             </a>
         </div>
     </div>
