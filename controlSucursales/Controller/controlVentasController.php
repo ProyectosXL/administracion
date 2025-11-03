@@ -23,36 +23,63 @@ try {
             $hasta = $_POST['hasta'] ?? '';
             if (empty($desde) || empty($hasta)) throw new Exception('Las fechas son obligatorias.');
 
-            $conexion_maestra = $conn->conectar('locales');
-            if (!$conexion_maestra) throw new Exception('No se pudo conectar a la base de datos maestra.');
-
-            $condicion_canal = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy')
-                ? "CANAL = 'EXTERIOR' AND HABILITADO = 1"
-                : "CANAL = 'PROPIOS' AND HABILITADO = 1";
-
-            $sql_sucursales = "SELECT NRO_SUCURSAL FROM dbo.SUCURSALES_LAKERS WHERE {$condicion_canal}";
-            $stmt_sucursales = sqlsrv_query($conexion_maestra, $sql_sucursales);
-            if ($stmt_sucursales === false) throw new Exception('Error al obtener la lista de sucursales maestra.');
-            
-            $lista_sucursales = [];
-            while ($row = sqlsrv_fetch_array($stmt_sucursales, SQLSRV_FETCH_ASSOC)) {
-                $lista_sucursales[] = $row['NRO_SUCURSAL'];
-            }
-            sqlsrv_close($conexion_maestra);
+            // --- INICIO DE LA OPTIMIZACIÓN DE CACHÉ ---
+            $cache_lifetime_minutes = 30; // Tiempo de vida del caché en minutos. Puedes ajustarlo.
+            $procesar_datos = true; // Asumimos que debemos procesar por defecto.
 
             $db_alias_procesamiento = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'suc_uy' : 'locales';
-            $conexion_procesamiento = $conn->conectar($db_alias_procesamiento);
-            if (!$conexion_procesamiento) throw new Exception('No se pudo conectar a la base de datos de procesamiento.');
+            $conexion_cache_check = $conn->conectar($db_alias_procesamiento);
+            if (!$conexion_cache_check) throw new Exception('No se pudo conectar a la base de datos para verificar el caché.');
 
-            foreach ($lista_sucursales as $nroSucursal) {
-                $sql_individual = "EXEC dbo.RO_SP_COMPARAR_VENTAS_SUCURSAL @NRO_SUCURSAL = ?, @DESDE = ?, @HASTA = ?";
-                $params_individual = [$nroSucursal, $desde, $hasta];
-                $stmt_individual = sqlsrv_query($conexion_procesamiento, $sql_individual, $params_individual);
-                if ($stmt_individual === false) error_log("Error al procesar sucursal $nroSucursal: " . print_r(sqlsrv_errors(), true));
+            $sql_cache_check = "SELECT TOP 1 REFRESHED_AT FROM dbo.RO_T_COMPARA_VENTAS WHERE DESDE = ? AND HASTA = ? ORDER BY REFRESHED_AT DESC";
+            $params_cache_check = [$desde, $hasta];
+            $stmt_cache_check = sqlsrv_query($conexion_cache_check, $sql_cache_check, $params_cache_check);
+            
+            if ($stmt_cache_check && $row_cache = sqlsrv_fetch_array($stmt_cache_check, SQLSRV_FETCH_ASSOC)) {
+                if ($row_cache['REFRESHED_AT']) {
+                    $last_refresh = $row_cache['REFRESHED_AT'];
+                    $cache_expiry_time = new DateTime("-{$cache_lifetime_minutes} minutes");
+                    if ($last_refresh > $cache_expiry_time) {
+                        // Los datos son recientes, no es necesario volver a procesar.
+                        $procesar_datos = false;
+                    }
+                }
             }
-            sqlsrv_close($conexion_procesamiento);
+            sqlsrv_close($conexion_cache_check);
 
-            $response = ['success' => true, 'message' => 'Proceso masivo ejecutado correctamente.'];
+            if ($procesar_datos) {
+                // Si la caché expiró o no existe, ejecutamos el proceso pesado.
+                $conexion_maestra = $conn->conectar('locales');
+                if (!$conexion_maestra) throw new Exception('No se pudo conectar a la base de datos maestra.');
+
+                $condicion_canal = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy')
+                    ? "CANAL = 'EXTERIOR' AND HABILITADO = 1"
+                    : "CANAL = 'PROPIOS' AND HABILITADO = 1";
+
+                $sql_sucursales = "SELECT NRO_SUCURSAL FROM dbo.SUCURSALES_LAKERS WHERE {$condicion_canal}";
+                $stmt_sucursales = sqlsrv_query($conexion_maestra, $sql_sucursales);
+                if ($stmt_sucursales === false) throw new Exception('Error al obtener la lista de sucursales maestra.');
+                
+                $lista_sucursales = [];
+                while ($row = sqlsrv_fetch_array($stmt_sucursales, SQLSRV_FETCH_ASSOC)) {
+                    $lista_sucursales[] = $row['NRO_SUCURSAL'];
+                }
+                sqlsrv_close($conexion_maestra);
+
+                $conexion_procesamiento = $conn->conectar($db_alias_procesamiento);
+                if (!$conexion_procesamiento) throw new Exception('No se pudo conectar a la base de datos de procesamiento.');
+
+                foreach ($lista_sucursales as $nroSucursal) {
+                    $sql_individual = "EXEC dbo.RO_SP_COMPARAR_VENTAS_SUCURSAL @NRO_SUCURSAL = ?, @DESDE = ?, @HASTA = ?";
+                    $params_individual = [$nroSucursal, $desde, $hasta];
+                    $stmt_individual = sqlsrv_query($conexion_procesamiento, $sql_individual, $params_individual);
+                    if ($stmt_individual === false) error_log("Error al procesar sucursal $nroSucursal: " . print_r(sqlsrv_errors(), true));
+                }
+                sqlsrv_close($conexion_procesamiento);
+            }
+            // --- FIN DE LA OPTIMIZACIÓN DE CACHÉ ---
+
+            $response = ['success' => true, 'message' => 'Proceso masivo verificado y listo.'];
             break;
 
         case 'ejecutar_sucursal':
@@ -100,20 +127,17 @@ try {
             $conexion_procesamiento = $conn->conectar($db_alias_procesamiento);
             if (!$conexion_procesamiento) throw new Exception('No se pudo conectar a la base de datos de procesamiento.');
 
-            // --- INICIO DE LA CORRECCIÓN DE LA DIFERENCIA ---
             $sql_resultados = "
                 SELECT 
                     NRO_SUCURS, 
                     IMPORTE_CENTRAL, 
                     IMPORTE_LOCAL, 
-                    -- Si la diferencia es NULL, la calculamos aquí mismo
                     ISNULL(DIFERENCIA, ISNULL(IMPORTE_CENTRAL, 0) - ISNULL(IMPORTE_LOCAL, 0)) AS DIFERENCIA,
                     ESTADO, 
                     REFRESHED_AT 
                 FROM dbo.RO_T_COMPARA_VENTAS 
                 WHERE DESDE = ? AND HASTA = ?
             ";
-            // --- FIN DE LA CORRECCIÓN DE LA DIFERENCIA ---
 
             $params_resultados = [$desde, $hasta];
             $stmt_resultados = sqlsrv_query($conexion_procesamiento, $sql_resultados, $params_resultados);

@@ -28,16 +28,36 @@ $banderaActual = ($checkedValue === 'suc_uy') ? '../assets/images/UY.png' : '../
             background-color: #007bff;
             color: white;
         }
-        #loading-spinner {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        .table-responsive {
-            margin-top: 20px;
-        }
+    #loading-overlay {
+        display: none; /* Oculto por defecto */
+        position: fixed; /* Cubre toda la pantalla */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6); /* Fondo negro semitransparente */
+        z-index: 9999; /* Asegura que esté por encima de todo */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column; /* Para alinear el texto debajo del spinner */
+    }
+
+    #loading-overlay .spinner-border {
+        width: 3rem; /* Hacemos el spinner un poco más grande */
+        height: 3rem;
+    }
+
+    #loading-overlay .loading-text {
+        color: white;
+        margin-top: 15px;
+        font-size: 1.2rem;
+    }
+    /* --- FIN DEL NUEVO CSS --- */
+
+    .table-responsive {
+        margin-top: 20px;
+    }
     </style>
 </head>
 <body>
@@ -82,11 +102,6 @@ $banderaActual = ($checkedValue === 'suc_uy') ? '../assets/images/UY.png' : '../
             </form>
 
             <div id="resultado-consulta" class="mt-4 position-relative">
-                <div id="loading-spinner" class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Cargando...</span>
-                    </div>
-                </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped table-hover">
                         <thead class="thead-dark">
@@ -115,6 +130,17 @@ $banderaActual = ($checkedValue === 'suc_uy') ? '../assets/images/UY.png' : '../
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="js/controlVentasSucursales.js"></script>
+
+<!-- ===== INICIO: NUEVO SPINNER OVERLAY ===== -->
+<div id="loading-overlay">
+    <div class="spinner-container">
+        <div class="spinner-border text-light" role="status">
+            <span class="sr-only">Cargando...</span>
+        </div>
+        <p class="loading-text">Procesando...</p>
+    </div>
+</div>
+<!-- ===== FIN: NUEVO SPINNER OVERLAY ===== -->
 
 </body>
 </html>
