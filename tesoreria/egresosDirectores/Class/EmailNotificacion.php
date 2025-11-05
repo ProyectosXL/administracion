@@ -17,14 +17,17 @@ use PHPMailer\PHPMailer\Exception;
 class EmailNotificacion {
     
     // Direcciones de correo
-    private const EMAIL_TESORERIA = 'federico.trejo@xl.com.ar';
-    private const EMAIL_PROVEEDORES = 'cfedetrejo@gmail.com';
+    private const EMAIL_TESORERIA = 'tesoreria@xl.com.ar';
+    private const EMAIL_PROVEEDORES = [
+        'rodrigo.alganaraz@xl.com.ar',
+        'julieta.bianculli@xl.com.ar'  // Agrega aquí el segundo email
+    ];
     
     // Nombre del remitente
     private const EMAIL_FROM_NAME = 'Sistema Egresos Directores';
     
     // Modo desarrollo: enviar todos los emails a federico.trejo@xl.com.ar
-    private const DEVELOP = true;
+    private const DEVELOP = false;
     private const EMAIL_DEVELOP = 'federico.trejo@xl.com.ar';
     
     private $db;
@@ -56,9 +59,17 @@ class EmailNotificacion {
             }
             
             if ($motivo === 'COMPRA_PERSONAL') {
-                // Enviar a Tesorería y Proveedores
+                // Enviar a Tesorería
                 $resultadoTesoreria = $this->enviarEmailNuevaCompraPersonal($datosCompletos, self::EMAIL_TESORERIA);
-                $resultadoProveedores = $this->enviarEmailNuevaCompraPersonal($datosCompletos, self::EMAIL_PROVEEDORES);
+                
+                // Enviar a Proveedores (puede ser uno o múltiples)
+                $resultadoProveedores = true;
+                $emailsProveedores = is_array(self::EMAIL_PROVEEDORES) ? self::EMAIL_PROVEEDORES : [self::EMAIL_PROVEEDORES];
+                
+                foreach ($emailsProveedores as $emailProveedor) {
+                    $resultado = $this->enviarEmailNuevaCompraPersonal($datosCompletos, $emailProveedor);
+                    $resultadoProveedores = $resultadoProveedores && $resultado;
+                }
                 
                 return $resultadoTesoreria && $resultadoProveedores;
             } else {
