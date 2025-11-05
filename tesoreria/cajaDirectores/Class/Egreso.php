@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Director.php';
+require_once __DIR__ . '/Config.php';
 
 /**
  * Clase Egreso
@@ -202,14 +203,18 @@ class Egreso {
     }
     
     /**
-     * Obtiene el total de egresos (excluyendo gastos COD_COMP='GAS')
+     * Obtiene el total de egresos desde la fecha de inicio de la app (excluyendo gastos COD_COMP='GAS')
      */
     public function obtenerTotal(): float {
         try {
+            // Aplicar filtro de fecha de inicio de la app
+            $fechaInicioApp = Config::getFechaInicioApp();
+            
             $sql = "SELECT COALESCE(SUM(importe), 0) as total 
                     FROM egresos 
-                    WHERE COD_COMP != 'GAS'";
-            $stmt = sqlsrv_query($this->db, $sql);
+                    WHERE COD_COMP != 'GAS'
+                      AND fecha >= ?";
+            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
             
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
@@ -582,15 +587,19 @@ class Egreso {
     }
     
     /**
-     * Obtiene el total de gastos (COD_COMP = 'GAS')
+     * Obtiene el total de gastos desde la fecha de inicio de la app (COD_COMP = 'GAS')
      */
     public function obtenerTotalGastos() {
         try {
+            // Aplicar filtro de fecha de inicio de la app
+            $fechaInicioApp = Config::getFechaInicioApp();
+            
             $sql = "SELECT ISNULL(SUM(importe), 0) as total 
                     FROM egresos 
-                    WHERE COD_COMP = 'GAS'";
+                    WHERE COD_COMP = 'GAS'
+                      AND fecha >= ?";
             
-            $stmt = sqlsrv_query($this->db, $sql);
+            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
             
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));

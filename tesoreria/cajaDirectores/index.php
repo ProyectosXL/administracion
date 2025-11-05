@@ -2,7 +2,7 @@
 
 session_start();
 
-$usuario = ucwords(strtolower($_SESSION['descLocal']));
+$usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLocal'])) : 'Usuario';
 
 ?>
 <!DOCTYPE html>

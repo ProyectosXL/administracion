@@ -3,6 +3,11 @@
  */
 
 // ===========================================
+// VARIABLE GLOBAL PARA FECHA DE INICIO
+// ===========================================
+let FECHA_INICIO_APP = null;
+
+// ===========================================
 // DIAGNÓSTICO DE VERSIÓN Y DEBUGGING
 // ===========================================
 console.log('[SYSTEM] ✅ caja_reporte.js cargado correctamente');
@@ -34,6 +39,27 @@ window.diagnosticarSistemaTesoreria = function() {
 // ===========================================
 // FUNCIONES PRINCIPALES
 // ===========================================
+
+// Cargar fecha de inicio de la aplicación desde el servidor
+async function cargarFechaInicioApp() {
+    try {
+        const response = await fetch('controller/caja_reporte_controller.php?accion=fecha_inicio_app');
+        const result = await response.json();
+        
+        if (result.success && result.fecha_inicio) {
+            FECHA_INICIO_APP = result.fecha_inicio;
+            console.log('[CONFIG] Fecha de inicio de la app cargada:', FECHA_INICIO_APP);
+        } else {
+            // Fallback a fecha por defecto si falla
+            FECHA_INICIO_APP = '2025-11-05';
+            console.warn('[CONFIG] No se pudo cargar fecha de inicio, usando fallback:', FECHA_INICIO_APP);
+        }
+    } catch (error) {
+        // Fallback a fecha por defecto si falla
+        FECHA_INICIO_APP = '2025-11-05';
+        console.error('[CONFIG] Error al cargar fecha de inicio, usando fallback:', FECHA_INICIO_APP, error);
+    }
+}
 
 // Mostrar/ocultar indicador de carga en las tarjetas
 function mostrarCargandoTarjetas(mostrar = true) {
@@ -67,6 +93,11 @@ function mostrarCargandoTarjetas(mostrar = true) {
 async function actualizarResumen(soloSaldo = false, filtrosActivos = null) {
     console.log('Actualizando resumen de caja...');
     
+    // Asegurar que tenemos la fecha de inicio cargada
+    if (!FECHA_INICIO_APP) {
+        await cargarFechaInicioApp();
+    }
+    
     // Mostrar indicador de carga
     mostrarCargandoTarjetas(true);
     
@@ -74,13 +105,12 @@ async function actualizarResumen(soloSaldo = false, filtrosActivos = null) {
     mostrarCargandoTarjetas(true);
     
     try {
-        // Para calcular SALDO: siempre usar rango amplio (últimos 2 años hasta hoy)
+        // Para calcular SALDO: usar desde la fecha de inicio de la app hasta hoy
         const hoy = new Date();
-        const hace2Anos = new Date(hoy);
-        hace2Anos.setFullYear(hoy.getFullYear() - 2);
-        
-        const fechaDesdeSaldo = hace2Anos.toISOString().split('T')[0];
+        const fechaDesdeSaldo = FECHA_INICIO_APP; // Usar la fecha de inicio configurada
         const fechaHastaSaldo = hoy.toISOString().split('T')[0];
+        
+        console.log('[DEBUG] Calculando saldo desde:', fechaDesdeSaldo, 'hasta:', fechaHastaSaldo);
         
         let urlSaldo = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
         urlSaldo += `&fecha_desde=${fechaDesdeSaldo}`;
@@ -962,7 +992,12 @@ async function exportarReporteExcel() {
 }
 
 // Cargar reporte al mostrar la pestaña
-document.getElementById('reporte-tab')?.addEventListener('shown.bs.tab', function() {
+document.getElementById('reporte-tab')?.addEventListener('shown.bs.tab', async function() {
+    // Asegurar que tenemos la fecha de inicio cargada
+    if (!FECHA_INICIO_APP) {
+        await cargarFechaInicioApp();
+    }
+    
     // Primero cargar totales generales
     actualizarResumen();
     // Luego inicializar fechas y cargar datos específicos
@@ -1019,6 +1054,9 @@ function limpiarFiltrosReporte() {
 
 // Cargar datos al iniciar la página
 document.addEventListener('DOMContentLoaded', function() {
+    // Cargar la fecha de inicio de la app
+    cargarFechaInicioApp();
+    
     // Las tarjetas ahora están solo en la pestaña de reporte
     // Se cargarán cuando el usuario vaya a esa pestaña
     console.log('Página cargada - las tarjetas se actualizarán al ir a la pestaña Reporte');

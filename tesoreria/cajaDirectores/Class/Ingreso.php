@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/Config.php';
 
 /**
  * Clase Ingreso
@@ -125,6 +126,12 @@ class Ingreso {
      */
     public function obtenerIngresosTesoreria($desde, $hasta) {
         try {
+            // Aplicar filtro de fecha de inicio de la app
+            $fechaInicioApp = Config::getFechaInicioApp();
+            if (strtotime($desde) < strtotime($fechaInicioApp)) {
+                $desde = $fechaInicioApp;
+            }
+            
             $sql = "SELECT    
                         ID_SBA05,    
                         CAST(FECHA AS DATE) FECHA,    
@@ -179,6 +186,12 @@ class Ingreso {
      */
     public function obtenerIngresos599($desde, $hasta) {
         try {
+            // Aplicar filtro de fecha de inicio de la app
+            $fechaInicioApp = Config::getFechaInicioApp();
+            if (strtotime($desde) < strtotime($fechaInicioApp)) {
+                $desde = $fechaInicioApp;
+            }
+            
             $sql = "SELECT 
                         CAST(fecha_cobro AS DATE) FECHA, 
                         ID, 
@@ -248,6 +261,12 @@ class Ingreso {
      * Obtiene ingresos combinados de todas las fuentes
      */
     public function obtenerIngresosCombinados($desde, $hasta) {
+        // Aplicar filtro de fecha de inicio de la app
+        $fechaInicioApp = Config::getFechaInicioApp();
+        if (strtotime($desde) < strtotime($fechaInicioApp)) {
+            $desde = $fechaInicioApp;
+        }
+        
         $resultados = [];
         
         // 1. Ingresos MANUALES (desde tabla ingresos local)
@@ -396,14 +415,18 @@ class Ingreso {
     }
     
     /**
-     * Obtiene el total de ingresos recibidos
+     * Obtiene el total de ingresos recibidos desde la fecha de inicio de la app
      */
     public function obtenerTotalRecibido(): float {
         try {
+            // Aplicar filtro de fecha de inicio de la app
+            $fechaInicioApp = Config::getFechaInicioApp();
+            
             $sql = "SELECT COALESCE(SUM(importe), 0) as total 
                     FROM ingresos 
-                    WHERE recibido = 1";
-            $stmt = sqlsrv_query($this->db, $sql);
+                    WHERE recibido = 1
+                      AND fecha >= ?";
+            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
             
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));

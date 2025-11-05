@@ -2,11 +2,20 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../class/Ingreso.php';
 require_once __DIR__ . '/../class/Egreso.php';
+require_once __DIR__ . '/../class/Config.php';
 
 try {
     $accion = $_GET['accion'] ?? '';
     
     switch ($accion) {
+        case 'fecha_inicio_app':
+            // Devolver la fecha de inicio de la aplicación
+            echo json_encode([
+                'success' => true,
+                'fecha_inicio' => Config::getFechaInicioApp()
+            ]);
+            break;
+            
         case 'saldo':
             $ingreso = new Ingreso();
             $egreso = new Egreso();
@@ -41,6 +50,12 @@ try {
             
             if (empty($filtros['fecha_desde']) || empty($filtros['fecha_hasta'])) {
                 throw new Exception('Fechas desde y hasta son requeridas');
+            }
+            
+            // Aplicar filtro de fecha de inicio de la app
+            $fechaInicioApp = Config::getFechaInicioApp();
+            if (strtotime($filtros['fecha_desde']) < strtotime($fechaInicioApp)) {
+                $filtros['fecha_desde'] = $fechaInicioApp;
             }
             
             // Obtener ingresos combinados de todas las fuentes
