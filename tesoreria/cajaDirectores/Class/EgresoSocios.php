@@ -100,6 +100,7 @@ class EgresoSocios {
                     FROM solicitudes_egresos s
                     INNER JOIN RO_T_DIRECTORES d ON s.id_director = d.ID_DIRECTOR
                     WHERE s.estado = 'PAGADO'
+                        AND s.fecha_modificacion IS NOT NULL
                         AND s.fecha_modificacion BETWEEN ? AND ?
                     GROUP BY CAST(s.fecha_modificacion AS DATE), d.NOMBRE
                     ORDER BY CAST(s.fecha_modificacion AS DATE) ASC";
@@ -249,6 +250,7 @@ class EgresoSocios {
                         FROM solicitudes_egresos s
                         INNER JOIN RO_T_DIRECTORES d ON s.id_director = d.ID_DIRECTOR
                         WHERE s.estado = 'PAGADO'
+                          AND s.fecha_modificacion IS NOT NULL
                           AND s.fecha_modificacion BETWEEN ? AND ?
                     ) AS egresos_combinados
                     ORDER BY fecha DESC, origen, director";
@@ -304,6 +306,7 @@ class EgresoSocios {
                         SELECT importe as importe_ajustado
                         FROM solicitudes_egresos 
                         WHERE estado = 'PAGADO' 
+                          AND fecha_modificacion IS NOT NULL
                           AND fecha_modificacion BETWEEN ? AND ?
                     ) AS egresos_combinados";
             
