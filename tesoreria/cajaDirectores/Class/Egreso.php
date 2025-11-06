@@ -16,6 +16,7 @@ class Egreso {
     public const MOTIVO_PROVEEDORES = 'PROVEEDORES';
     public const MOTIVO_RETIROS = 'RETIROS';
     public const MOTIVO_COMPENSACION_IVA = 'COMPENSACION_IVA';
+    public const MOTIVO_AJUSTE = 'AJUSTE';
     
     public function __construct() {
         $this->db = Database::getInstance()->getAppsConnection();

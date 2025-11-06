@@ -18,7 +18,8 @@ try {
                 Egreso::MOTIVO_SUELDOS,
                 Egreso::MOTIVO_PROVEEDORES,
                 Egreso::MOTIVO_RETIROS,
-                Egreso::MOTIVO_COMPENSACION_IVA
+                Egreso::MOTIVO_COMPENSACION_IVA,
+                Egreso::MOTIVO_AJUSTE
             ];
             
             if (!in_array($_POST['motivo'], $motivosValidos)) {

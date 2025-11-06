@@ -294,6 +294,9 @@ document.getElementById('motivoEgreso')?.addEventListener('change', function() {
     } else if (this.value === 'PROVEEDORES') {
         divProveedor.classList.remove('d-none');
         selectProveedor.required = true;
+    } else if (this.value === 'AJUSTE') {
+        // AJUSTE: no se muestra ningún campo adicional, solo importe y observaciones
+        // Todos los campos ya están ocultos por el reset inicial
     }
 });
 

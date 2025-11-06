@@ -199,7 +199,8 @@ class Ingreso {
                         CAST(importe_efectivo AS FLOAT) MONTO 
                     FROM sj_administracion_cobros 
                     WHERE importe_efectivo > 0
-                      AND fecha_cobro BETWEEN ? AND ?
+                      AND CAST(fecha_cobro AS DATE) BETWEEN ? AND ?
+                      AND rendido = 1
                     ORDER BY fecha_cobro DESC";
             
             $params = [$desde, $hasta];
