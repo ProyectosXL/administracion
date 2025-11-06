@@ -4,6 +4,7 @@ session_start();
 
 // Convertir el nombre del usuario a formato capitalizado (primera letra en mayúscula)
 $usuario = ucwords(strtolower($_SESSION['descLocal']));
+$id_usuario = $_SESSION['idUsuario'] ?? null;
 
 $titulo_pagina = $usuario;
 
@@ -86,6 +87,8 @@ $titulo_pagina = $usuario;
                                         </div>
                                         <input type="hidden" id="nombreDirectorSession" 
                                                value="<?php echo htmlspecialchars($usuario); ?>">
+                                        <input type="hidden" id="idDirectorSession" 
+                                               value="<?php echo htmlspecialchars($id_usuario); ?>">
                                     </div>
                                     
                                     <div class="mb-3">
@@ -294,13 +297,50 @@ $titulo_pagina = $usuario;
     <script src="js/directores_solicitud.js?v=<?php echo time(); ?>"></script>
     
     <script>
+        // Obtener el ID del director desde PHP (asegurar que sea número)
+        const ID_DIRECTOR_ACTUAL = parseInt(<?php echo json_encode($id_usuario); ?>, 10);
+        
         // Cargar solicitudes cuando se muestra listado
         document.getElementById('listado-tab')?.addEventListener('shown.bs.tab', async function() {
-            // Cargar solicitudes
+            // Cargar solicitudes filtrando por el director actual
             if (typeof cargarSolicitudes === 'function') {
-                cargarSolicitudes();
+                if (ID_DIRECTOR_ACTUAL && !isNaN(ID_DIRECTOR_ACTUAL)) {
+                    cargarSolicitudes({ id_director: ID_DIRECTOR_ACTUAL });
+                } else {
+                    console.error('ID del director no válido:', ID_DIRECTOR_ACTUAL);
+                    cargarSolicitudes();
+                }
             }
         });
+        
+        // También filtrar cuando se aplican filtros
+        window.aplicarFiltros = function() {
+            const filtros = {
+                estado: document.getElementById('filtroEstado')?.value || '',
+                fecha_desde: document.getElementById('filtroFechaDesde')?.value || '',
+                fecha_hasta: document.getElementById('filtroFechaHasta')?.value || ''
+            };
+            
+            // Agregar el filtro de director si está disponible
+            if (ID_DIRECTOR_ACTUAL && !isNaN(ID_DIRECTOR_ACTUAL)) {
+                filtros.id_director = ID_DIRECTOR_ACTUAL;
+            }
+            
+            cargarSolicitudes(filtros);
+        };
+        
+        // Asegurar que al limpiar filtros también se mantenga el filtro del director
+        window.limpiarFiltros = function() {
+            document.getElementById('filtroEstado').value = '';
+            document.getElementById('filtroFechaDesde').value = '';
+            document.getElementById('filtroFechaHasta').value = '';
+            
+            if (ID_DIRECTOR_ACTUAL && !isNaN(ID_DIRECTOR_ACTUAL)) {
+                cargarSolicitudes({ id_director: ID_DIRECTOR_ACTUAL });
+            } else {
+                cargarSolicitudes();
+            }
+        };
     </script>
 </body>
 </html>

@@ -1,0 +1,3 @@
+# Ignorar logs
+*.log
+logs/

@@ -27,12 +27,8 @@ async function cargarSolicitudes(filtros = {}) {
             url += `&fecha_hasta=${filtros.fecha_hasta}`;
         }
         
-        console.log('Cargando solicitudes desde:', url);
-        
         const response = await fetch(url);
         const result = await response.json();
-        
-        console.log('Resultado de solicitudes:', result);
         
         if (result.success) {
             mostrarListaSolicitudes(result.data);
@@ -599,11 +595,8 @@ function limpiarFiltros() {
     cargarSolicitudes();
 }
 
-// Cargar solicitudes cuando se muestra la pestaña
-document.getElementById('listado-tab')?.addEventListener('shown.bs.tab', function() {
-    console.log('Pestaña de listado mostrada, cargando solicitudes...');
-    cargarSolicitudes();
-});
+// NOTA: El listener para cargar solicitudes está en cada página específica (directores.php, proveedores.php)
+// para permitir filtrado personalizado por usuario
 
 // Botón actualizar
 document.getElementById('btnActualizar')?.addEventListener('click', function(e) {

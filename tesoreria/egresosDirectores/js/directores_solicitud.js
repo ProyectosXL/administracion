@@ -13,13 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     configurarFormulario();
     configurarFiltros();
     
-    // Cargar solicitudes si estamos en la pestaña de listado
-    const tabListado = document.getElementById('listado-tab');
-    if (tabListado) {
-        tabListado.addEventListener('shown.bs.tab', function() {
-            cargarSolicitudes();
-        });
-    }
+    // NOTA: El listener para cargar solicitudes está en directores.php
+    // para permitir filtrado por el director actual (ID de sesión)
 });
 
 /**
@@ -48,9 +43,20 @@ async function cargarDirectores() {
 }
 
 /**
- * Obtiene el ID del director actual basándose en el nombre de la sesión
+ * Obtiene el ID del director actual basándose en el campo oculto de la sesión
  */
 function obtenerIdDirectorActual() {
+    // Primero intentar obtenerlo del campo oculto directo
+    const idDirectorSession = document.getElementById('idDirectorSession');
+    if (idDirectorSession && idDirectorSession.value) {
+        const idDirector = parseInt(idDirectorSession.value, 10);
+        if (!isNaN(idDirector) && idDirector > 0) {
+            console.log('ID Director obtenido directamente:', idDirector);
+            return idDirector;
+        }
+    }
+    
+    // Fallback: buscar por nombre en el cache
     const nombreDirectorSession = document.getElementById('nombreDirectorSession');
     if (!nombreDirectorSession) {
         console.error('No se encontró el campo nombreDirectorSession');
@@ -61,7 +67,9 @@ function obtenerIdDirectorActual() {
     const director = directoresCache.find(d => d.nombre_director === nombreDirector);
     
     if (director) {
-        return director.id_director;
+        const idDirector = parseInt(director.id_director, 10);
+        console.log('ID Director obtenido por nombre:', idDirector);
+        return idDirector;
     } else {
         console.error('No se encontró el director con nombre:', nombreDirector);
         return null;
@@ -386,15 +394,22 @@ async function crearSolicitud() {
             
             console.log('Adjuntando', inputArchivos.files.length, 'archivo(s) al FormData...');
             
-            // Agregar cada archivo al FormData (sin [] para que PHP lo reciba correctamente)
+            // Agregar cada archivo al FormData con el nombre 'archivos[]'
+            // Esto es importante: el servidor espera $_FILES['archivos'] como array
             for (let i = 0; i < inputArchivos.files.length; i++) {
-                formData.append('archivos[]', inputArchivos.files[i]);
+                formData.append('archivos[]', inputArchivos.files[i], inputArchivos.files[i].name);
                 console.log(`Archivo ${i + 1}: ${inputArchivos.files[i].name} (${inputArchivos.files[i].size} bytes)`);
             }
             
             // Debug: verificar que se agregaron al FormData
+            const archivosEnFormData = formData.getAll('archivos[]');
             console.log('FormData keys:', Array.from(formData.keys()));
-            console.log('Archivos en FormData:', formData.getAll('archivos[]').length)
+            console.log('Archivos en FormData:', archivosEnFormData.length);
+            
+            // Verificar cada archivo
+            archivosEnFormData.forEach((archivo, index) => {
+                console.log(`FormData archivo ${index}:`, archivo.name, archivo.size, 'bytes');
+            });
         }
         
         const response = await fetch('controller/solicitud_controller.php', {
@@ -485,5 +500,6 @@ function obtenerNombreDirector(idDirector) {
 window.cargarDirectores = cargarDirectores;
 window.crearSolicitud = crearSolicitud;
 window.obtenerNombreDirector = obtenerNombreDirector;
+window.obtenerIdDirectorActual = obtenerIdDirectorActual;
 window.eliminarArchivo = eliminarArchivo;
 window.previsualizarImagen = previsualizarImagen;

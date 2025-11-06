@@ -74,10 +74,14 @@ class ArchivoSolicitud {
             $archivoHex = bin2hex($archivoData);
             $tamañoBytes = strlen($archivoData);
             
+            error_log("DEBUG ArchivoSolicitud - Tamaño final: " . $tamañoBytes . " bytes");
+            error_log("DEBUG ArchivoSolicitud - Tamaño hex: " . strlen($archivoHex) . " caracteres");
+            
             // Insertar usando consulta directa con hex (más confiable para VARBINARY)
+            // IMPORTANTE: Agregar fecha_carga = GETDATE() para evitar error de NULL
             $sql = "INSERT INTO archivos_solicitud 
-                        (id_solicitud, tipo_archivo, nombre_archivo, archivo, mime_type, tamanio_bytes)
-                    VALUES (?, ?, ?, 0x{$archivoHex}, ?, ?)";
+                        (id_solicitud, tipo_archivo, nombre_archivo, archivo, mime_type, tamanio_bytes, fecha_carga)
+                    VALUES (?, ?, ?, 0x{$archivoHex}, ?, ?, GETDATE())";
             
             $params = [
                 $idSolicitud,
@@ -86,6 +90,8 @@ class ArchivoSolicitud {
                 $mimeType,
                 $tamañoBytes
             ];
+            
+            error_log("DEBUG ArchivoSolicitud - Ejecutando INSERT...");
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
             

@@ -168,9 +168,12 @@ class SolicitudEgreso {
             
             $params = [];
             
-            if (!empty($filtros['id_director'])) {
+            error_log("DEBUG obtenerTodas - Filtros recibidos: " . print_r($filtros, true));
+            
+            if (isset($filtros['id_director']) && $filtros['id_director'] > 0) {
                 $sql .= " AND s.id_director = ?";
-                $params[] = $filtros['id_director'];
+                $params[] = (int)$filtros['id_director'];
+                error_log("DEBUG obtenerTodas - Agregando filtro id_director: " . $filtros['id_director']);
             }
             
             if (!empty($filtros['nombre_director'])) {

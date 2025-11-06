@@ -142,9 +142,14 @@ function mostrarHistorialFacturas(facturas) {
                     </button>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="verHistorialEstados('${factura.id_solicitud}')">
-                        <i class="bi bi-clock-history"></i> Historial
-                    </button>
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button class="btn btn-sm btn-outline-info" onclick="verDetalle('${factura.id_solicitud}')" title="Ver detalle">
+                            <i class="bi bi-eye"></i> Detalle
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="verHistorialEstados('${factura.id_solicitud}')">
+                            <i class="bi bi-clock-history"></i> Historial
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -214,9 +219,14 @@ function mostrarFacturasPendientes(facturas) {
                     </button>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-outline-primary" onclick="abrirModalOrdenCompra('${factura.id_solicitud}')">
-                        <i class="bi bi-file-earmark-check"></i> Cargar O.C.
-                    </button>
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button class="btn btn-sm btn-outline-info" onclick="verDetalle('${factura.id_solicitud}')" title="Ver detalle">
+                            <i class="bi bi-eye"></i> Detalle
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="abrirModalOrdenCompra('${factura.id_solicitud}')">
+                            <i class="bi bi-file-earmark-check"></i> Cargar O.C.
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -602,6 +612,164 @@ function mostrarModalHistorial(idSolicitud, historial) {
     modal.show();
 }
 
+/**
+ * Ver detalle de una solicitud
+ */
+async function verDetalle(idSolicitud) {
+    mostrarLoading();
+    
+    try {
+        const response = await fetch(`controller/solicitud_controller.php?accion=obtener&id_solicitud=${idSolicitud}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const solicitud = result.data;
+            const formatoMoneda = new Intl.NumberFormat('es-AR', { 
+                style: 'currency', 
+                currency: 'ARS',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+            
+            const fecha = new Date(solicitud.fecha_solicitud).toLocaleDateString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const motivoTexto = solicitud.motivo === 'COMPRA_PERSONAL' ? 'Compra Personal' : 'Retiro de Dinero';
+            const estadoTexto = obtenerTextoEstado(solicitud.estado);
+            
+            // Crear modal personalizado para detalle
+            const modalId = 'modalDetalleSolicitud';
+            let modalElement = document.getElementById(modalId);
+            
+            if (!modalElement) {
+                modalElement = document.createElement('div');
+                modalElement.id = modalId;
+                modalElement.className = 'modal fade';
+                modalElement.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-file-text"></i> Detalle de Solicitud
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body" id="modalDetalleContenido"></div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modalElement);
+            }
+            
+            const contenidoHtml = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-info-circle"></i> Información General</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td width="45%" class="text-muted">ID Solicitud:</td>
+                                <td><strong>${solicitud.id_solicitud}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Director:</td>
+                                <td>${solicitud.nombre_director}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Motivo:</td>
+                                <td>${motivoTexto}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Importe:</td>
+                                <td class="text-success fs-5"><strong>${formatoMoneda.format(solicitud.importe)}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Estado:</td>
+                                <td><span class="badge estado-${solicitud.estado.toLowerCase()}">${estadoTexto}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-calendar-check"></i> Detalles Adicionales</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td width="45%" class="text-muted">Fecha Solicitud:</td>
+                                <td>${fecha}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Archivos Adjuntos:</td>
+                                <td><span class="badge bg-secondary">${solicitud.cantidad_archivos || 0}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                ${solicitud.observaciones || solicitud.observaciones_proveedores || solicitud.observaciones_tesoreria ? `
+                    <div class="mt-3">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-chat-left-text"></i> Observaciones</h6>
+                        ${solicitud.observaciones ? `
+                            <div class="mb-2">
+                                <strong class="text-primary d-block mb-1">
+                                    <i class="bi bi-person-circle"></i> Director:
+                                </strong>
+                                <p class="bg-light p-2 rounded small mb-0">${solicitud.observaciones}</p>
+                            </div>
+                        ` : ''}
+                        ${solicitud.observaciones_proveedores ? `
+                            <div class="mb-2">
+                                <strong class="text-info d-block mb-1">
+                                    <i class="bi bi-building"></i> Proveedores:
+                                </strong>
+                                <p class="bg-light p-2 rounded small mb-0">${solicitud.observaciones_proveedores}</p>
+                            </div>
+                        ` : ''}
+                        ${solicitud.observaciones_tesoreria ? `
+                            <div class="mb-2">
+                                <strong class="text-success d-block mb-1">
+                                    <i class="bi bi-cash-stack"></i> Tesorería:
+                                </strong>
+                                <p class="bg-light p-2 rounded small mb-0">${solicitud.observaciones_tesoreria}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('modalDetalleContenido').innerHTML = contenidoHtml;
+            
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            mostrarAlerta('Error', result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error', 'No se pudo obtener el detalle');
+    } finally {
+        ocultarLoading();
+    }
+}
+
+/**
+ * Obtiene el texto del estado
+ */
+function obtenerTextoEstado(estado) {
+    const estados = {
+        'SOLICITADO': 'Solicitado',
+        'CARGADO': 'Cargado',
+        'PAGADO': 'Pagado'
+    };
+    return estados[estado] || estado;
+}
+
 // Exportar funciones para uso global
 window.verImagenCompleta = verImagenCompleta;
 window.verHistorialEstados = verHistorialEstados;
+window.verDetalle = verDetalle;

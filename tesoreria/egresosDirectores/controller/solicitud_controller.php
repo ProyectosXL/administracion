@@ -9,12 +9,15 @@ try {
     $solicitud = new SolicitudEgreso();
     $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
     
+    
     switch ($accion) {
         case 'crear':
+            
             // Validar datos requeridos
             if (empty($_POST['id_director']) || empty($_POST['motivo']) || empty($_POST['importe'])) {
                 throw new Exception('Faltan datos obligatorios');
             }
+            
             
             // Validar motivo
             $motivosValidos = [
@@ -28,7 +31,9 @@ try {
             
             // Validar archivos para compra personal
             if ($_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
+                
                 // Debug: log de lo que llega
+                
                 error_log("DEBUG - FILES structure: " . print_r($_FILES, true));
                 error_log("DEBUG - POST data: " . print_r($_POST, true));
                 
@@ -38,6 +43,7 @@ try {
                     throw new Exception('Para compras personales es obligatorio adjuntar la factura');
                 }
                 
+                
                 // Manejar tanto el formato array como el formato individual
                 $archivos = $_FILES['archivos'];
                 $cantidadArchivos = 0;
@@ -45,6 +51,7 @@ try {
                 // Si name es un array, hay múltiples archivos
                 if (is_array($archivos['name'])) {
                     $cantidadArchivos = count(array_filter($archivos['name']));
+                    
                     if ($cantidadArchivos === 0) {
                         throw new Exception('Para compras personales es obligatorio adjuntar la factura');
                     }
@@ -88,7 +95,9 @@ try {
                     }
                 }
                 
-                foreach ($archivosParaValidar as $archivo) {
+                
+                foreach ($archivosParaValidar as $idx => $archivo) {
+                    
                     if (!in_array($archivo['type'], $archivosPermitidos)) {
                         throw new Exception('Formato de archivo no permitido. Use JPG, PNG, GIF o PDF');
                     }
@@ -96,7 +105,9 @@ try {
                     if ($archivo['size'] > $tamaño_maximo) {
                         throw new Exception('El archivo no puede superar los 15MB');
                     }
+                    
                 }
+                
             }
             
             // Limpiar y validar importe
@@ -134,6 +145,7 @@ try {
             
             // Si se creó exitosamente y hay archivos, procesarlos
             if ($resultado['success'] && $_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
+                
                 error_log("DEBUG - Intentando procesar archivos...");
                 error_log("DEBUG - FILES: " . print_r($_FILES, true));
                 
@@ -158,7 +170,9 @@ try {
                         
                         error_log("DEBUG - Archivos procesados: " . count($archivosProcesados));
                         error_log("DEBUG - Detalle archivos: " . print_r($archivosProcesados, true));
+                    } else {
                     }
+                } else {
                 }
             }
             
@@ -186,6 +200,7 @@ try {
             }
             
             echo json_encode($resultado);
+            
             break;
             
         case 'listar':
@@ -352,6 +367,7 @@ try {
  * Procesa los archivos adjuntos y los guarda en la base de datos
  */
 function procesarArchivos($idSolicitud) {
+    
     error_log("DEBUG procesarArchivos - Iniciando para solicitud: " . $idSolicitud);
     
     $archivo = new ArchivoSolicitud();
@@ -443,5 +459,6 @@ function procesarArchivos($idSolicitud) {
     }
     
     error_log("DEBUG procesarArchivos - Total archivos procesados: " . count($archivosProcesados));
+    
     return $archivosProcesados;
 }
