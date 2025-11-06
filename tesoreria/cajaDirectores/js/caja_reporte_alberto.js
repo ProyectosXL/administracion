@@ -230,7 +230,8 @@ function mostrarReporteAlberto(movimientos, filtros = {}) {
                         <th class="text-center align-middle">Fecha</th>
                         <th class="text-center align-middle">Tipo</th>
                         <th class="text-center align-middle">COMP.</th>
-                        <th class="text-center align-middle">TIPO_GASTO</th>
+                        <th class="text-center align-middle">TIPO GASTO</th>
+                        <th class="text-center align-middle">CENTRO COSTO</th>
                         <th class="align-middle">Observaciones</th>
                         <th class="text-end align-middle">Importe</th>
                         <th class="text-center align-middle">Foto</th>
@@ -250,6 +251,7 @@ function mostrarReporteAlberto(movimientos, filtros = {}) {
         
         const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
         const tipoGastoDisplay = mov.tipo_gasto || '-';
+        const centroCostoDisplay = mov.centro_costo || '-';
         
         let fotoBoton = '';
         // Mostrar botón de foto para EGRESOS y GASTOS si tienen foto
@@ -280,6 +282,7 @@ function mostrarReporteAlberto(movimientos, filtros = {}) {
                 <td class="text-center align-middle"><i class="bi bi-${tipoIcon} ${tipoClass}"></i> ${mov.tipo}</td>
                 <td class="text-center align-middle"><small>${compDisplay}</small></td>
                 <td class="text-center align-middle"><small>${tipoGastoDisplay}</small></td>
+                <td class="text-center align-middle"><small>${centroCostoDisplay}</small></td>
                 <td class="align-middle">${mov.concepto}</td>
                 <td class="text-end align-middle ${tipoClass}"><strong>${importe}</strong></td>
                 <td class="text-center align-middle">${fotoBoton}</td>
@@ -291,7 +294,7 @@ function mostrarReporteAlberto(movimientos, filtros = {}) {
                 </tbody>
                 <tfoot class="table-light">
                     <tr>
-                        <td colspan="5" class="text-end"><strong>Saldo (Rango Seleccionado):</strong></td>
+                        <td colspan="6" class="text-end"><strong>Saldo (Rango Seleccionado):</strong></td>
                         <td class="text-end"><strong>${formatoMoneda.format(saldoAcumulado)}</strong></td>
                         <td></td>
                     </tr>
@@ -355,7 +358,7 @@ async function exportarReporteAlbertoExcel() {
         const movimientosPaginados = movimientos.slice(0, cantidadSeleccionada);
         
         const datosExcel = [];
-        datosExcel.push(['Fecha', 'Tipo', 'COMP.', 'TIPO_GASTO', 'Observaciones', 'Importe']);
+        datosExcel.push(['Fecha', 'Tipo', 'COMP.', 'TIPO GASTO', 'CENTRO COSTO', 'Observaciones', 'Importe']);
         
         let saldoAcumulado = 0;
         
@@ -363,6 +366,7 @@ async function exportarReporteAlbertoExcel() {
             const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
             const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
             const tipoGastoDisplay = mov.tipo_gasto || '-';
+            const centroCostoDisplay = mov.centro_costo || '-';
             
             if (mov.tipo === 'EGRESO') {
                 saldoAcumulado += parseFloat(mov.importe);
@@ -375,24 +379,26 @@ async function exportarReporteAlbertoExcel() {
                 mov.tipo,
                 compDisplay,
                 tipoGastoDisplay,
+                centroCostoDisplay,
                 mov.concepto,
                 parseFloat(mov.importe)
             ]);
         });
         
         datosExcel.push([]);
-        datosExcel.push(['', '', '', '', 'Saldo (Rango Seleccionado):', saldoAcumulado]);
+        datosExcel.push(['', '', '', '', '', 'Saldo (Rango Seleccionado):', saldoAcumulado]);
         
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(datosExcel);
         
         ws['!cols'] = [
-            { wch: 12 },
-            { wch: 10 },
-            { wch: 10 },
-            { wch: 25 },
-            { wch: 40 },
-            { wch: 15 }
+            { wch: 12 },  // Fecha
+            { wch: 10 },  // Tipo
+            { wch: 10 },  // COMP
+            { wch: 25 },  // TIPO GASTO
+            { wch: 30 },  // CENTRO COSTO
+            { wch: 40 },  // Observaciones
+            { wch: 15 }   // Importe
         ];
         
         XLSX.utils.book_append_sheet(wb, ws, 'Reporte Alberto');

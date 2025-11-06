@@ -99,6 +99,11 @@ try {
                     $concepto .= ' - ' . $egr['nombre_director'];
                 }
                 
+                // COMPENSACION_IVA: Compensación IVA - director (observaciones)
+                if ($egr['motivo'] === 'COMPENSACION_IVA' && !empty($egr['nombre_director'])) {
+                    $concepto = 'Compensación IVA - ' . $egr['nombre_director'];
+                }
+                
                 // SUELDOS: motivo - centro_costo (observaciones)
                 if ($egr['motivo'] === 'SUELDOS' && !empty($egr['centro_costo'])) {
                     // Buscar el nombre del centro de costo en la base de datos CENTRAL

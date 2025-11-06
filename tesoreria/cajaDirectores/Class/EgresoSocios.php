@@ -45,13 +45,17 @@ class EgresoSocios {
     /**
      * Obtiene egresos EFECTIVO por director y fecha
      * Fuente: tabla egresos WHERE nombre_director IS NOT NULL
+     * COMPENSACION_IVA: se RESTA del total (signo negativo)
      */
     public function obtenerEgresosEfectivo($fechaDesde, $fechaHasta) {
         try {
             $sql = "SELECT 
                         CAST(e.fecha AS DATE) as fecha,
                         e.nombre_director,
-                        SUM(e.importe) as total
+                        SUM(CASE 
+                            WHEN e.motivo = 'COMPENSACION_IVA' THEN -e.importe 
+                            ELSE e.importe 
+                        END) as total
                     FROM egresos e
                     WHERE e.nombre_director IS NOT NULL
                         AND e.fecha BETWEEN ? AND ?
@@ -201,22 +205,30 @@ class EgresoSocios {
     
     /**
      * Obtiene detalle completo de egresos combinando ambas fuentes
-     * Columnas: FECHA | CODIGO | DIRECTOR | MOTIVO | ORIGEN | IMPORTE
+     * Columnas: FECHA | CODIGO | DIRECTOR | MOTIVO | ORIGEN | IMPORTE | PROVEEDOR | CBU
+     * COMPENSACION_IVA: se muestra con signo negativo
      */
     public function obtenerDetalleCompleto($fechaDesde, $fechaHasta) {
         try {
             // Query combinada con UNION ALL
             $sql = "SELECT 
-                        fecha, codigo, director, motivo, origen, importe
+                        fecha, codigo, director, motivo, origen, importe, 
+                        proveedor, cbu, descripcion_cbu
                     FROM (
                         -- Fuente 1: egresos (EFECTIVO)
                         SELECT 
                             CAST(e.fecha AS DATE) AS fecha,
-                            CONCAT(e.COD_COMP, e.N_COMP) AS codigo,
+                            ISNULL(e.COD_COMP, '') + ISNULL(e.N_COMP, '') AS codigo,
                             e.nombre_director AS director,
                             e.motivo,
                             'MANUAL' AS origen,
-                            e.importe
+                            CASE 
+                                WHEN e.motivo = 'COMPENSACION_IVA' THEN -e.importe 
+                                ELSE e.importe 
+                            END AS importe,
+                            NULL as proveedor,
+                            NULL as cbu,
+                            NULL as descripcion_cbu
                         FROM egresos e
                         WHERE e.nombre_director IS NOT NULL
                           AND e.fecha BETWEEN ? AND ?
@@ -230,7 +242,10 @@ class EgresoSocios {
                             d.NOMBRE AS director,
                             s.motivo,
                             'APP EGRESOS' AS origen,
-                            s.importe
+                            s.importe,
+                            ISNULL(s.NOM_PROVEE, '') as proveedor,
+                            ISNULL(s.CBU, '') as cbu,
+                            ISNULL(s.DESCRIPCION_CBU, '') as descripcion_cbu
                         FROM solicitudes_egresos s
                         INNER JOIN RO_T_DIRECTORES d ON s.id_director = d.ID_DIRECTOR
                         WHERE s.estado = 'PAGADO'
@@ -268,19 +283,26 @@ class EgresoSocios {
     
     /**
      * Obtiene el total de egresos de socios en el rango de fechas
+     * COMPENSACION_IVA: se resta del total en lugar de sumar
      */
     public function obtenerTotalEgresos($fechaDesde, $fechaHasta): float {
         try {
             $sql = "SELECT 
-                        COALESCE(SUM(importe), 0) as total
+                        COALESCE(SUM(importe_ajustado), 0) as total
                     FROM (
-                        SELECT importe FROM egresos 
+                        SELECT 
+                            CASE 
+                                WHEN motivo = 'COMPENSACION_IVA' THEN -importe 
+                                ELSE importe 
+                            END as importe_ajustado
+                        FROM egresos 
                         WHERE nombre_director IS NOT NULL 
                           AND fecha BETWEEN ? AND ?
                         
                         UNION ALL
                         
-                        SELECT importe FROM solicitudes_egresos 
+                        SELECT importe as importe_ajustado
+                        FROM solicitudes_egresos 
                         WHERE estado = 'PAGADO' 
                           AND fecha_modificacion BETWEEN ? AND ?
                     ) AS egresos_combinados";
@@ -312,7 +334,7 @@ class EgresoSocios {
                 // El código viene como COD_COMP + N_COMP concatenado
                 $sql = "SELECT 
                             CAST(fecha AS DATE) as fecha,
-                            CONCAT(COD_COMP, N_COMP) as codigo,
+                            ISNULL(COD_COMP, '') + ISNULL(N_COMP, '') as codigo,
                             nombre_director as director,
                             motivo,
                             importe,
@@ -321,7 +343,7 @@ class EgresoSocios {
                             CASE WHEN foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto,
                             foto
                         FROM egresos
-                        WHERE CONCAT(COD_COMP, N_COMP) = ?
+                        WHERE ISNULL(COD_COMP, '') + ISNULL(N_COMP, '') = ?
                           AND nombre_director IS NOT NULL";
                 
                 $stmt = sqlsrv_query($this->db, $sql, [$codigo]);
@@ -341,6 +363,9 @@ class EgresoSocios {
                             s.fecha_solicitud,
                             s.fecha_modificacion,
                             s.usuario_modificacion,
+                            ISNULL(s.NOM_PROVEE, '') as proveedor,
+                            ISNULL(s.CBU, '') as cbu,
+                            ISNULL(s.DESCRIPCION_CBU, '') as descripcion_cbu,
                             0 as tiene_foto,
                             NULL as foto
                         FROM solicitudes_egresos s

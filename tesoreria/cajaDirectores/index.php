@@ -139,6 +139,7 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                                 <option value="SUELDOS">Sueldos</option>
                                                 <option value="PROVEEDORES">Pagos a Proveedores</option>
                                                 <option value="RETIROS">Retiros de Socios</option>
+                                                <option value="COMPENSACION_IVA">Compensación IVA</option>
                                             </select>
                                         </div>
                                         <div class="mb-3 d-none" id="divDirector">

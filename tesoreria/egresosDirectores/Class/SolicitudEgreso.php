@@ -95,11 +95,32 @@ class SolicitudEgreso {
                 ? self::ESTADO_CARGADO 
                 : self::ESTADO_SOLICITADO;
             
+            // Preparar datos de proveedor (solo para compras personales)
+            $nomProvee = null;
+            $cbu = null;
+            $descripcionCbu = null;
+            
+            if ($datos['motivo'] === self::MOTIVO_COMPRA_PERSONAL) {
+                // Si se seleccionó "MANUAL", guardar NULL en nom_provee
+                $nomProvee = isset($datos['nom_provee']) && $datos['nom_provee'] !== 'MANUAL' 
+                    ? $datos['nom_provee'] 
+                    : null;
+                
+                $cbu = isset($datos['cbu']) && !empty($datos['cbu']) 
+                    ? $datos['cbu'] 
+                    : null;
+                
+                $descripcionCbu = isset($datos['descripcion_cbu']) && !empty($datos['descripcion_cbu']) 
+                    ? $datos['descripcion_cbu'] 
+                    : null;
+            }
+            
             // Insertar solicitud
             $sql = "INSERT INTO solicitudes_egresos (
                         id_solicitud, id_director, motivo, importe, 
-                        estado, observaciones, fecha_solicitud
-                    ) VALUES (?, ?, ?, ?, ?, ?, GETDATE())";
+                        estado, observaciones, fecha_solicitud,
+                        NOM_PROVEE, CBU, DESCRIPCION_CBU
+                    ) VALUES (?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?)";
             
             $params = [
                 $idSolicitud,
@@ -107,7 +128,10 @@ class SolicitudEgreso {
                 $datos['motivo'],
                 $importe,
                 $estadoInicial,
-                $datos['observaciones'] ?? ''
+                $datos['observaciones'] ?? '',
+                $nomProvee,
+                $cbu,
+                $descripcionCbu
             ];
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
@@ -117,14 +141,6 @@ class SolicitudEgreso {
             }
             
             sqlsrv_free_stmt($stmt);
-            
-            // Registrar en historial con el usuario apropiado
-            $usuarioCreacion = 'DIRECTORES';
-            $observacionCreacion = ($datos['motivo'] === self::MOTIVO_RETIRO_DINERO) 
-                ? 'Solicitud de retiro de dinero creada y lista para pago'
-                : 'Solicitud de compra personal creada';
-            
-            $this->registrarHistorial($idSolicitud, null, $estadoInicial, $observacionCreacion, $usuarioCreacion);
             
             return [
                 'success' => true,
@@ -147,7 +163,9 @@ class SolicitudEgreso {
      */
     public function obtenerTodas(array $filtros = []) {
         try {
-            // Consultar directamente las tablas en lugar de la vista
+            // Consultar directamente las tablas
+            // Los campos NOM_PROVEE, CBU, DESCRIPCION_CBU ya están en solicitudes_egresos
+            // No necesitamos JOIN con CPA01 para consultas normales
             $sql = "SELECT 
                         s.id_solicitud,
                         s.id_director,
@@ -161,6 +179,9 @@ class SolicitudEgreso {
                         s.fecha_solicitud,
                         s.fecha_modificacion,
                         s.usuario_modificacion,
+                        ISNULL(s.NOM_PROVEE, '') as NOM_PROVEE,
+                        ISNULL(s.CBU, '') as CBU,
+                        ISNULL(s.DESCRIPCION_CBU, '') as DESCRIPCION_CBU,
                         (SELECT COUNT(*) FROM archivos_solicitud WHERE id_solicitud = s.id_solicitud) as cantidad_archivos
                     FROM solicitudes_egresos s
                     INNER JOIN RO_T_DIRECTORES d ON s.id_director = d.ID_DIRECTOR
@@ -251,6 +272,9 @@ class SolicitudEgreso {
                         s.fecha_solicitud,
                         s.fecha_modificacion,
                         s.usuario_modificacion,
+                        ISNULL(s.NOM_PROVEE, '') as NOM_PROVEE,
+                        ISNULL(s.CBU, '') as CBU,
+                        ISNULL(s.DESCRIPCION_CBU, '') as DESCRIPCION_CBU,
                         (SELECT COUNT(*) FROM archivos_solicitud WHERE id_solicitud = s.id_solicitud) as cantidad_archivos
                     FROM solicitudes_egresos s
                     INNER JOIN RO_T_DIRECTORES d ON s.id_director = d.ID_DIRECTOR
@@ -322,9 +346,6 @@ class SolicitudEgreso {
             
             sqlsrv_free_stmt($stmt);
             
-            // Registrar en historial (el trigger también lo hace, pero esto es explícito)
-            $this->registrarHistorial($idSolicitud, $estadoAnterior, $nuevoEstado, $observaciones, $usuario);
-            
             return true;
         } catch (Exception $e) {
             error_log("Error al actualizar estado: " . $e->getMessage());
@@ -385,74 +406,6 @@ class SolicitudEgreso {
         } catch (Exception $e) {
             error_log("Error al actualizar observaciones de tesorería: " . $e->getMessage());
             return false;
-        }
-    }
-    
-    /**
-     * Registra un cambio en el historial
-     * @param string $idSolicitud
-     * @param string|null $estadoAnterior
-     * @param string $estadoNuevo
-     * @param string $observaciones
-     * @param string $usuario
-     * @return bool
-     */
-    private function registrarHistorial(string $idSolicitud, $estadoAnterior, string $estadoNuevo, string $observaciones = '', string $usuario = 'SISTEMA') {
-        try {
-            $sql = "INSERT INTO historial_estados 
-                        (id_solicitud, estado_anterior, estado_nuevo, usuario, observaciones)
-                    VALUES (?, ?, ?, ?, ?)";
-            
-            $stmt = sqlsrv_query($this->db, $sql, [
-                $idSolicitud,
-                $estadoAnterior,
-                $estadoNuevo,
-                $usuario,
-                $observaciones
-            ]);
-            
-            if ($stmt === false) {
-                throw new Exception("Error al registrar historial: " . print_r(sqlsrv_errors(), true));
-            }
-            
-            sqlsrv_free_stmt($stmt);
-            return true;
-        } catch (Exception $e) {
-            error_log("Error en registrarHistorial: " . $e->getMessage());
-            return false;
-        }
-    }
-    
-    /**
-     * Obtiene el historial de cambios de una solicitud
-     * @param string $idSolicitud
-     * @return array
-     */
-    public function obtenerHistorial(string $idSolicitud) {
-        try {
-            $sql = "SELECT * FROM historial_estados 
-                    WHERE id_solicitud = ? 
-                    ORDER BY fecha_cambio DESC";
-            
-            $stmt = sqlsrv_query($this->db, $sql, [$idSolicitud]);
-            
-            if ($stmt === false) {
-                return [];
-            }
-            
-            $historial = [];
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                if (is_object($row['fecha_cambio'])) {
-                    $row['fecha_cambio'] = $row['fecha_cambio']->format('Y-m-d H:i:s');
-                }
-                $historial[] = $row;
-            }
-            
-            sqlsrv_free_stmt($stmt);
-            return $historial;
-        } catch (Exception $e) {
-            error_log("Error al obtener historial: " . $e->getMessage());
-            return [];
         }
     }
 }

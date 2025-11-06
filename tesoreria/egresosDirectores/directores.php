@@ -23,6 +23,9 @@ $titulo_pagina = $usuario;
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/global.css?v=<?php echo time(); ?>">
@@ -126,6 +129,51 @@ $titulo_pagina = $usuario;
                                         </label>
                                         <textarea class="form-control" id="observacionesSolicitud" 
                                                   rows="3" placeholder="Detalles adicionales (opcional)"></textarea>
+                                    </div>
+                                    
+                                    <!-- Sección de datos de proveedor (solo para compras personales) -->
+                                    <div id="divProveedor" class="mb-3 d-none">
+                                        <h5 class="border-bottom pb-2 mb-3">
+                                            <i class="bi bi-building"></i> Datos del Proveedor
+                                        </h5>
+                                        
+                                        <div class="mb-3">
+                                            <label for="proveedorSelect" class="form-label">
+                                                Proveedor <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-control" id="proveedorSelect" style="width: 100%;">
+                                                <option value=""></option>
+                                            </select>
+                                            <div class="form-text">
+                                                Busque por nombre o CUIT del proveedor. Escriba al menos 2 caracteres para buscar.
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="cbuProveedor" class="form-label">
+                                                CBU <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control" id="cbuProveedor" 
+                                                   placeholder="22 dígitos" maxlength="22" pattern="\d{22}">
+                                            <div class="form-text">
+                                                CBU de 22 dígitos (se completará automáticamente si el proveedor lo tiene cargado)
+                                            </div>
+                                            <div id="alertaCBU" class="alert alert-warning d-none mt-2">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                <strong>Atención:</strong> Este proveedor aún no cargó su CBU en la base, por favor completar
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="descripcionCbuProveedor" class="form-label">
+                                                Descripción CBU
+                                            </label>
+                                            <input type="text" class="form-control" id="descripcionCbuProveedor" 
+                                                   placeholder="Ej: Cuenta Corriente Banco Galicia">
+                                            <div class="form-text">
+                                                Descripción de la cuenta (opcional, se completará automáticamente si el proveedor la tiene cargada)
+                                            </div>
+                                        </div>
                                     </div>
                                     
                                     <!-- Alerta de factura requerida -->
@@ -290,6 +338,12 @@ $titulo_pagina = $usuario;
     
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery (requerido para Select2) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    
+    <!-- Select2 JS (requiere jQuery) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <!-- Scripts personalizados -->
     <script src="js/modal_global.js?v=<?php echo time(); ?>"></script>

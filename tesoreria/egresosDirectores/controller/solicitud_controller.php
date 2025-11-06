@@ -132,6 +132,32 @@ try {
                 'observaciones' => $_POST['observaciones'] ?? ''
             ];
             
+            // Agregar datos de proveedor si es compra personal
+            if ($_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
+                // Validar CBU si se proporciona
+                if (!empty($_POST['cbu'])) {
+                    // Limpiar CBU (eliminar espacios)
+                    $cbu = str_replace(' ', '', $_POST['cbu']);
+                    
+                    // Validar formato (22 dígitos)
+                    if (!preg_match('/^\d{22}$/', $cbu)) {
+                        throw new Exception('El CBU debe tener exactamente 22 dígitos');
+                    }
+                    
+                    $datos['cbu'] = $cbu;
+                }
+                
+                // Agregar nombre de proveedor si se seleccionó
+                if (!empty($_POST['nom_provee'])) {
+                    $datos['nom_provee'] = $_POST['nom_provee'];
+                }
+                
+                // Agregar descripción CBU si se proporcionó
+                if (!empty($_POST['descripcion_cbu'])) {
+                    $datos['descripcion_cbu'] = $_POST['descripcion_cbu'];
+                }
+            }
+            
             // Agregar indicador de archivos si es compra personal
             if ($_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
                 // Indicar que hay archivos (ya fueron validados arriba)
@@ -329,16 +355,55 @@ try {
             break;
             
         case 'historial':
+            // El historial se maneja con los campos de auditoría en la misma tabla
+            // fecha_solicitud, fecha_modificacion, usuario_modificacion, observaciones_*
             if (empty($_GET['id_solicitud'])) {
                 throw new Exception('ID de solicitud requerido');
             }
             
-            $historial = $solicitud->obtenerHistorial($_GET['id_solicitud']);
+            // Devolver los datos de auditoría de la solicitud
+            $solicitudData = $solicitud->obtenerPorId($_GET['id_solicitud']);
             
-            echo json_encode([
-                'success' => true,
-                'data' => $historial
-            ]);
+            if ($solicitudData) {
+                $historial = [];
+                
+                // Evento 1: Creación de la solicitud
+                $estadoInicial = ($solicitudData['motivo'] === 'RETIRO_DINERO') ? 'CARGADO' : 'SOLICITADO';
+                
+                $historial[] = [
+                    'fecha_cambio' => $solicitudData['fecha_solicitud'],
+                    'estado_anterior' => null,
+                    'estado_nuevo' => $estadoInicial,
+                    'usuario' => 'DIRECTORES',
+                    'observaciones' => $solicitudData['observaciones']
+                ];
+                
+                // Evento 2: Si hay modificación (cambio de estado)
+                if ($solicitudData['fecha_modificacion'] && $solicitudData['usuario_modificacion']) {
+                    // Determinar observaciones según el usuario que modificó
+                    $observaciones = '';
+                    if ($solicitudData['usuario_modificacion'] === 'PROVEEDORES' && !empty($solicitudData['observaciones_proveedores'])) {
+                        $observaciones = $solicitudData['observaciones_proveedores'];
+                    } elseif ($solicitudData['usuario_modificacion'] === 'TESORERIA' && !empty($solicitudData['observaciones_tesoreria'])) {
+                        $observaciones = $solicitudData['observaciones_tesoreria'];
+                    }
+                    
+                    $historial[] = [
+                        'fecha_cambio' => $solicitudData['fecha_modificacion'],
+                        'estado_anterior' => $estadoInicial,
+                        'estado_nuevo' => $solicitudData['estado'],
+                        'usuario' => $solicitudData['usuario_modificacion'],
+                        'observaciones' => $observaciones
+                    ];
+                }
+                
+                echo json_encode([
+                    'success' => true,
+                    'data' => $historial
+                ]);
+            } else {
+                throw new Exception('Solicitud no encontrada');
+            }
             break;
             
         case 'obtener_directores':

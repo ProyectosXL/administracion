@@ -525,27 +525,41 @@ function mostrarModalHistorial(idSolicitud, historial) {
         html = '<div class="alert alert-info">No hay historial de cambios para esta solicitud.</div>';
     } else {
         historial.forEach((cambio, index) => {
-            const fecha = new Date(cambio.fecha_cambio).toLocaleString('es-AR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            // Formatear fecha si existe
+            let fecha = '';
+            if (cambio.fecha_cambio) {
+                const fechaObj = new Date(cambio.fecha_cambio);
+                if (!isNaN(fechaObj.getTime())) {
+                    fecha = fechaObj.toLocaleDateString('es-AR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+            }
             
-            const estadoAnterior = cambio.estado_anterior || 'INICIO';
-            const estadoNuevo = cambio.estado_nuevo;
+            // Determinar texto del cambio
+            let cambioTexto = '';
+            if (!cambio.estado_anterior) {
+                // Es la creación
+                cambioTexto = `Solicitud creada (${cambio.estado_nuevo})`;
+            } else {
+                // Es un cambio de estado
+                cambioTexto = `${cambio.estado_anterior} → ${cambio.estado_nuevo}`;
+            }
             
             let iconoEstado = 'bi-circle-fill';
             let colorEstado = 'text-secondary';
             
-            if (estadoNuevo === 'SOLICITADO') {
+            if (cambio.estado_nuevo === 'SOLICITADO') {
                 iconoEstado = 'bi-file-earmark-plus';
                 colorEstado = 'text-primary';
-            } else if (estadoNuevo === 'CARGADO') {
+            } else if (cambio.estado_nuevo === 'CARGADO') {
                 iconoEstado = 'bi-file-earmark-check';
                 colorEstado = 'text-warning';
-            } else if (estadoNuevo === 'PAGADO') {
+            } else if (cambio.estado_nuevo === 'PAGADO') {
                 iconoEstado = 'bi-cash-coin';
                 colorEstado = 'text-success';
             }
@@ -558,10 +572,10 @@ function mostrarModalHistorial(idSolicitud, historial) {
                         </div>
                         <div class="flex-grow-1">
                             <div class="d-flex justify-content-between align-items-start mb-1">
-                                <h6 class="mb-0">${estadoAnterior} → ${estadoNuevo}</h6>
-                                <small class="text-muted">${fecha}</small>
+                                <h6 class="mb-0">${cambioTexto}</h6>
+                                ${fecha ? `<small class="text-muted">${fecha}</small>` : ''}
                             </div>
-                            <p class="mb-1"><strong>Usuario:</strong> ${cambio.usuario}</p>
+                            <p class="mb-1"><strong>Usuario:</strong> ${cambio.usuario || 'Sistema'}</p>
                             ${cambio.observaciones ? `<p class="mb-0 text-muted small">${cambio.observaciones}</p>` : ''}
                         </div>
                     </div>
@@ -710,6 +724,47 @@ async function verDetalle(idSolicitud) {
                         </table>
                     </div>
                 </div>
+                
+                ${solicitud.motivo === 'COMPRA_PERSONAL' && (solicitud.NOM_PROVEE || solicitud.CBU) ? `
+                    <div class="mt-3">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-building"></i> Información del Proveedor</h6>
+                        <div class="bg-light p-3 rounded">
+                            <table class="table table-sm table-borderless mb-0">
+                                ${solicitud.NOM_PROVEE && solicitud.NOM_PROVEE !== 'MANUAL' ? `
+                                    <tr>
+                                        <td width="30%" class="text-muted">
+                                            <i class="bi bi-shop"></i> Proveedor:
+                                        </td>
+                                        <td><strong>${solicitud.NOM_PROVEE}</strong></td>
+                                    </tr>
+                                ` : solicitud.NOM_PROVEE === 'MANUAL' || !solicitud.NOM_PROVEE ? `
+                                    <tr>
+                                        <td width="30%" class="text-muted">
+                                            <i class="bi bi-shop"></i> Proveedor:
+                                        </td>
+                                        <td><span class="badge bg-warning text-dark">Cargado manualmente</span></td>
+                                    </tr>
+                                ` : ''}
+                                ${solicitud.CBU ? `
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="bi bi-bank"></i> CBU:
+                                        </td>
+                                        <td><code>${solicitud.CBU}</code></td>
+                                    </tr>
+                                ` : ''}
+                                ${solicitud.DESCRIPCION_CBU ? `
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="bi bi-info-circle"></i> Descripción:
+                                        </td>
+                                        <td>${solicitud.DESCRIPCION_CBU}</td>
+                                    </tr>
+                                ` : ''}
+                            </table>
+                        </div>
+                    </div>
+                ` : ''}
                 
                 ${solicitud.observaciones || solicitud.observaciones_proveedores || solicitud.observaciones_tesoreria ? `
                     <div class="mt-3">

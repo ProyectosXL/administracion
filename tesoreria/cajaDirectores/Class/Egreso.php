@@ -15,6 +15,7 @@ class Egreso {
     public const MOTIVO_SUELDOS = 'SUELDOS';
     public const MOTIVO_PROVEEDORES = 'PROVEEDORES';
     public const MOTIVO_RETIROS = 'RETIROS';
+    public const MOTIVO_COMPENSACION_IVA = 'COMPENSACION_IVA';
     
     public function __construct() {
         $this->db = Database::getInstance()->getAppsConnection();
@@ -65,6 +66,15 @@ class Egreso {
             // Validar director si es retiro de socio
             $nombreDirector = null;
             if ($datos['motivo'] === self::MOTIVO_RETIROS) {
+                if (empty($datos['nombre_director']) || 
+                    !$this->director->existeDirector($datos['nombre_director'])) {
+                    throw new Exception("Director no válido");
+                }
+                $nombreDirector = $datos['nombre_director'];
+            }
+            
+            // Validar director si es compensación IVA
+            if ($datos['motivo'] === self::MOTIVO_COMPENSACION_IVA) {
                 if (empty($datos['nombre_director']) || 
                     !$this->director->existeDirector($datos['nombre_director'])) {
                     throw new Exception("Director no válido");
@@ -142,6 +152,11 @@ class Egreso {
                 $sql .= " AND COD_COMP != 'GAS'";
             }
             
+            // Por defecto, excluir COMPENSACION_IVA a menos que se especifique incluirlos
+            if (!isset($filtros['incluir_compensacion_iva']) || $filtros['incluir_compensacion_iva'] !== true) {
+                $sql .= " AND motivo != 'COMPENSACION_IVA'";
+            }
+            
             if (!empty($filtros['fecha_desde'])) {
                 $sql .= " AND fecha >= ?";
                 $params[] = $filtros['fecha_desde'];
@@ -203,7 +218,7 @@ class Egreso {
     }
     
     /**
-     * Obtiene el total de egresos desde la fecha de inicio de la app (excluyendo gastos COD_COMP='GAS')
+     * Obtiene el total de egresos desde la fecha de inicio de la app (excluyendo gastos COD_COMP='GAS' y COMPENSACION_IVA)
      */
     public function obtenerTotal(): float {
         try {
@@ -213,6 +228,7 @@ class Egreso {
             $sql = "SELECT COALESCE(SUM(importe), 0) as total 
                     FROM egresos 
                     WHERE COD_COMP != 'GAS'
+                      AND motivo != 'COMPENSACION_IVA'
                       AND fecha >= ?";
             $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
             
@@ -490,7 +506,7 @@ class Egreso {
                         NULL, 'GAS', ?, ?, 'PROVEEDORES',
                         NULL, 'OGROLL', ?, ?,
                         ?, ?, 1, GETDATE(),
-                        NULL
+                        ?
                     )";
             
             // Procesar foto si se proporciona
@@ -505,7 +521,8 @@ class Egreso {
                 $datos['tipo_gasto'],
                 $datos['importe'],
                 $datos['observaciones'] ?? '',
-                $fotoComprimida
+                $fotoComprimida,
+                $datos['centro_costo'] ?? null
             ];
             
             $stmt = sqlsrv_query($this->db, $sql, $params);

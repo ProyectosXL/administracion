@@ -86,6 +86,13 @@ session_start();
                                         </select>
                                     </div>
                                     
+                                    <div class="mb-3">
+                                        <label for="centroCostoAlberto" class="form-label">Centro de Costo *</label>
+                                        <select class="form-select" id="centroCostoAlberto" required>
+                                            <option value="">Seleccione un centro de costo</option>
+                                        </select>
+                                    </div>
+                                    
                                     <div class="row">
                                         <div class="col-12 col-sm-6 mb-3">
                                             <label for="importeGasto" class="form-label">Importe *</label>

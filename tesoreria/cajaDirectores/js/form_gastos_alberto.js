@@ -128,6 +128,30 @@ async function cargarUltimosGastosAlberto() {
     }
 }
 
+// Cargar centros de costo
+async function cargarCentrosCosto() {
+    try {
+        const response = await fetch(`controller/gastos_alberto_controller.php?accion=centros_costo&_=${Date.now()}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const select = document.getElementById('centroCostoAlberto');
+            select.innerHTML = '<option value="">Seleccione un centro de costo</option>';
+            
+            result.data.forEach(centro => {
+                const option = document.createElement('option');
+                option.value = centro.cod_auxiliar;
+                option.textContent = centro.centro_costo;
+                select.appendChild(option);
+            });
+        } else {
+            console.error('Error al cargar centros de costo:', result.message);
+        }
+    } catch (error) {
+        console.error('Error en cargarCentrosCosto:', error);
+    }
+}
+
 // Mostrar lista de gastos
 function mostrarListaGastos(gastos) {
     const contenedor = document.getElementById('listaGastosAlberto');
@@ -209,9 +233,16 @@ document.getElementById('formGastoAlberto')?.addEventListener('submit', async fu
         return;
     }
     
+    const centroCosto = document.getElementById('centroCostoAlberto').value;
+    if (!centroCosto) {
+        mostrarAlerta('Error', 'Debe seleccionar un centro de costo');
+        return;
+    }
+    
     const formData = new FormData();
     formData.append('fecha', document.getElementById('fechaGasto').value);
     formData.append('tipo_gasto', tipoGasto);
+    formData.append('centro_costo', centroCosto);
     formData.append('importe', document.getElementById('importeGasto').value.replace(/\./g, ''));
     formData.append('observaciones', document.getElementById('observacionesGasto').value);
     
@@ -250,4 +281,5 @@ document.getElementById('formGastoAlberto')?.addEventListener('submit', async fu
 // Cargar gastos al iniciar
 document.addEventListener('DOMContentLoaded', function() {
     cargarUltimosGastosAlberto();
+    cargarCentrosCosto();
 });

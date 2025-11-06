@@ -285,6 +285,9 @@ document.getElementById('motivoEgreso')?.addEventListener('change', function() {
     if (this.value === 'RETIROS') {
         divDirector.classList.remove('d-none');
         selectDirector.required = true;
+    } else if (this.value === 'COMPENSACION_IVA') {
+        divDirector.classList.remove('d-none');
+        selectDirector.required = true;
     } else if (this.value === 'SUELDOS') {
         divCentroCosto.classList.remove('d-none');
         selectCentroCosto.required = false; // Opcional según requerimientos
@@ -388,6 +391,12 @@ function mostrarListaEgresos(egresos) {
             concepto += ` - ${egreso.nombre_director}`;
         }
         
+        // COMPENSACION_IVA: motivo - director
+        if (egreso.motivo === 'COMPENSACION_IVA' && egreso.nombre_director) {
+            concepto = 'Compensación IVA';
+            concepto += ` - ${egreso.nombre_director}`;
+        }
+        
         // SUELDOS: motivo - centro_costo
         if (egreso.motivo === 'SUELDOS' && egreso.centro_costo_nombre) {
             concepto += ` - ${egreso.centro_costo_nombre}`;
@@ -447,6 +456,13 @@ document.getElementById('formEgreso')?.addEventListener('submit', async function
         const director = document.getElementById('nombreDirector').value;
         if (!director) {
             mostrarAlerta('Error', 'Debe seleccionar un director para retiros de socios');
+            return;
+        }
+        formData.append('nombre_director', director);
+    } else if (motivo === 'COMPENSACION_IVA') {
+        const director = document.getElementById('nombreDirector').value;
+        if (!director) {
+            mostrarAlerta('Error', 'Debe seleccionar un director para compensación IVA');
             return;
         }
         formData.append('nombre_director', director);

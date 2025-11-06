@@ -258,6 +258,47 @@ async function verDetalle(idSolicitud) {
                     </div>
                 </div>
                 
+                ${solicitud.motivo === 'COMPRA_PERSONAL' && (solicitud.NOM_PROVEE || solicitud.CBU) ? `
+                    <div class="mt-3">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-building"></i> Información del Proveedor</h6>
+                        <div class="bg-light p-3 rounded">
+                            <table class="table table-sm table-borderless mb-0">
+                                ${solicitud.NOM_PROVEE && solicitud.NOM_PROVEE !== 'MANUAL' ? `
+                                    <tr>
+                                        <td width="30%" class="text-muted">
+                                            <i class="bi bi-shop"></i> Proveedor:
+                                        </td>
+                                        <td><strong>${solicitud.NOM_PROVEE}</strong></td>
+                                    </tr>
+                                ` : solicitud.NOM_PROVEE === 'MANUAL' || !solicitud.NOM_PROVEE ? `
+                                    <tr>
+                                        <td width="30%" class="text-muted">
+                                            <i class="bi bi-shop"></i> Proveedor:
+                                        </td>
+                                        <td><span class="badge bg-warning text-dark">Cargado manualmente</span></td>
+                                    </tr>
+                                ` : ''}
+                                ${solicitud.CBU ? `
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="bi bi-bank"></i> CBU:
+                                        </td>
+                                        <td><code>${solicitud.CBU}</code></td>
+                                    </tr>
+                                ` : ''}
+                                ${solicitud.DESCRIPCION_CBU ? `
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="bi bi-info-circle"></i> Descripción:
+                                        </td>
+                                        <td>${solicitud.DESCRIPCION_CBU}</td>
+                                    </tr>
+                                ` : ''}
+                            </table>
+                        </div>
+                    </div>
+                ` : ''}
+                
                 ${solicitud.observaciones || solicitud.observaciones_proveedores || solicitud.observaciones_tesoreria ? `
                     <div class="mt-3">
                         <h6 class="border-bottom pb-2 mb-3"><i class="bi bi-chat-left-text"></i> Observaciones</h6>
@@ -323,36 +364,39 @@ async function verHistorial(idSolicitud) {
                 let html = '';
                 
                 result.data.forEach(item => {
-                    const fecha = new Date(item.fecha_cambio).toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
+                    // Formatear fecha si existe
+                    let fecha = '';
+                    if (item.fecha_cambio) {
+                        const fechaObj = new Date(item.fecha_cambio);
+                        if (!isNaN(fechaObj.getTime())) {
+                            fecha = fechaObj.toLocaleDateString('es-AR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        }
+                    }
                     
-                    // Personalizar primer cambio según el tipo
-                    let estadoAnterior, estadoNuevo, usuario;
-                    
-                    if (!item.estado_anterior && (item.usuario === 'SISTEMA' || item.usuario === 'DIRECTORES')) {
-                        // Es el primer cambio (creación de la solicitud)
-                        estadoAnterior = 'Creado';
-                        estadoNuevo = obtenerTextoEstado(item.estado_nuevo);
-                        usuario = 'DIRECTORES';
+                    // Determinar texto del cambio
+                    let cambioTexto = '';
+                    if (!item.estado_anterior) {
+                        // Es la creación
+                        cambioTexto = `Solicitud creada (${obtenerTextoEstado(item.estado_nuevo)})`;
                     } else {
-                        estadoAnterior = item.estado_anterior ? obtenerTextoEstado(item.estado_anterior) : 'Ninguno';
-                        estadoNuevo = obtenerTextoEstado(item.estado_nuevo);
-                        usuario = item.usuario;
+                        // Es un cambio de estado
+                        cambioTexto = `${obtenerTextoEstado(item.estado_anterior)} → ${obtenerTextoEstado(item.estado_nuevo)}`;
                     }
                     
                     html += `
                         <div class="historial-item">
-                            <div class="historial-fecha">${fecha}</div>
+                            ${fecha ? `<div class="historial-fecha">${fecha}</div>` : ''}
                             <div class="historial-cambio">
-                                ${estadoAnterior} → ${estadoNuevo}
+                                ${cambioTexto}
                             </div>
                             <div class="historial-usuario">
-                                <i class="bi bi-person"></i> ${usuario}
+                                <i class="bi bi-person"></i> ${item.usuario || 'Sistema'}
                             </div>
                             ${item.observaciones ? `
                                 <div class="mt-1">

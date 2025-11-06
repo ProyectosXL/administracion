@@ -29,6 +29,7 @@ try {
             $errores = [];
             if (empty($_POST['fecha'])) $errores[] = 'fecha';
             if (empty($_POST['tipo_gasto'])) $errores[] = 'tipo_gasto';
+            if (empty($_POST['centro_costo'])) $errores[] = 'centro_costo';
             if (!isset($_POST['importe']) || trim($_POST['importe']) === '') $errores[] = 'importe';
             
             if (!empty($errores)) {
@@ -45,6 +46,7 @@ try {
                 'motivo' => 'PROVEEDORES', // Fijo
                 'proveedor' => 'OGROLL', // Fijo
                 'tipo_gasto' => $_POST['tipo_gasto'],
+                'centro_costo' => $_POST['centro_costo'],
                 'importe' => floatval($importeLimpio),
                 'observaciones' => $_POST['observaciones'] ?? '',
                 'foto' => $_POST['foto'] ?? null,
@@ -70,6 +72,16 @@ try {
             echo json_encode([
                 'success' => true,
                 'data' => $gastos
+            ]);
+            break;
+            
+        case 'centros_costo':
+            // Obtener centros de costo
+            $centrosCosto = $egreso->obtenerCentrosCosto();
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $centrosCosto
             ]);
             break;
             

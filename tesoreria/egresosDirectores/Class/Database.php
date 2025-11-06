@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../../class/classEnv.php';
 class Database {
     private static $instance = null;
     private $connections = [];
-    private $envVars;
+    public $envVars; // Hacer pública para acceso a HOST_CENTRAL
     
     /**
      * Constructor privado - Singleton

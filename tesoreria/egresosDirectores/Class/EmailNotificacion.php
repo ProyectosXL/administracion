@@ -17,17 +17,20 @@ use PHPMailer\PHPMailer\Exception;
 class EmailNotificacion {
     
     // Direcciones de correo
-    private const EMAIL_TESORERIA = 'tesoreria@xl.com.ar';
-    private const EMAIL_PROVEEDORES = [
+    private const EMAIL_TESORERIA = 'federico.trejo@xl.com.ar';
+    //private const EMAIL_TESORERIA = 'tesoreria@xl.com.ar';
+
+    private const EMAIL_PROVEEDORES = ['federico.trejo@xl.com.ar'];
+    /*private const EMAIL_PROVEEDORES = [
         'rodrigo.alganaraz@xl.com.ar',
         'julieta.bianculli@xl.com.ar'  // Agrega aquí el segundo email
-    ];
+    ];*/
     
     // Nombre del remitente
     private const EMAIL_FROM_NAME = 'Sistema Egresos Directores';
     
     // Modo desarrollo: enviar todos los emails a federico.trejo@xl.com.ar
-    private const DEVELOP = false;
+    private const DEVELOP = true;
     private const EMAIL_DEVELOP = 'federico.trejo@xl.com.ar';
     
     private $db;

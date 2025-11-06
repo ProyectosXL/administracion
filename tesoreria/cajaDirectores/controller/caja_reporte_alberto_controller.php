@@ -61,6 +61,18 @@ try {
                 $codComp = $gasto['COD_COMP'] ?? '';
                 $nComp = $gasto['N_COMP'] ?? '';
                 
+                // Obtener nombre del centro de costo si existe
+                $centroCostoNombre = null;
+                if (!empty($gasto['centro_costo'])) {
+                    $dbCentral = Database::getInstance()->getCentralConnection();
+                    $sqlCentro = "SELECT CENTRO_COSTO FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = ?";
+                    $stmtCentro = sqlsrv_query($dbCentral, $sqlCentro, [$gasto['centro_costo']]);
+                    if ($stmtCentro && $rowCentro = sqlsrv_fetch_array($stmtCentro, SQLSRV_FETCH_ASSOC)) {
+                        $centroCostoNombre = trim($rowCentro['CENTRO_COSTO']);
+                    }
+                    sqlsrv_free_stmt($stmtCentro);
+                }
+                
                 $movimientos[] = [
                     'tipo' => 'GASTO',
                     'fecha' => $fecha,
@@ -70,6 +82,7 @@ try {
                     'importe' => $gasto['importe'],
                     'id' => $gasto['id'],
                     'tipo_gasto' => $gasto['tipo_gasto'] ?? null,
+                    'centro_costo' => $centroCostoNombre,
                     'tiene_foto' => $gasto['tiene_foto'] ?? 0
                 ];
             }
