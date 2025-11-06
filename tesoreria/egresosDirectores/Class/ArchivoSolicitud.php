@@ -33,7 +33,14 @@ class ArchivoSolicitud {
      */
     public function guardar(string $idSolicitud, string $tipoArchivo, string $nombreArchivo, string $archivoBase64, string $mimeType) {
         try {
-            // Validar tipo de archivo
+            // Validar tipo de archivo (permitir tipos numerados como COMPROBANTE_TRANSFERENCIA_1)
+            $tipoBase = $tipoArchivo;
+            
+            // Si el tipo tiene un número al final (ej: COMPROBANTE_TRANSFERENCIA_1), extraer el tipo base
+            if (preg_match('/^(.+)_\d+$/', $tipoArchivo, $matches)) {
+                $tipoBase = $matches[1];
+            }
+            
             $tiposValidos = [
                 self::TIPO_FACTURA,
                 self::TIPO_COMPROBANTE_TRANSFERENCIA,
@@ -41,8 +48,8 @@ class ArchivoSolicitud {
                 self::TIPO_RETENCION
             ];
             
-            if (!in_array($tipoArchivo, $tiposValidos)) {
-                throw new Exception("Tipo de archivo no válido");
+            if (!in_array($tipoBase, $tiposValidos)) {
+                throw new Exception("Tipo de archivo no válido: {$tipoArchivo} (base: {$tipoBase})");
             }
             
             // Decodificar base64

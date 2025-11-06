@@ -209,10 +209,16 @@ $titulo_pagina = 'Tesorería';
                         <!-- Comprobante de transferencia (siempre) -->
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="bi bi-bank"></i> Comprobante de Transferencia <span class="text-danger">*</span>
+                                <i class="bi bi-bank"></i> Comprobantes de Transferencia <span class="text-danger">*</span>
                             </label>
                             <input type="file" class="form-control" id="comprobanteTransferencia" 
-                                   accept="image/*,application/pdf" required>
+                                   accept="image/*,application/pdf" multiple required>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> Puedes seleccionar múltiples archivos a la vez (mantén Ctrl presionado)
+                            </small>
+                            <div id="listaComprobantesTransferencia" class="mt-2">
+                                <!-- Vista previa de archivos seleccionados -->
+                            </div>
                         </div>
                         
                         <!-- Solo para compras personales -->
@@ -223,6 +229,9 @@ $titulo_pagina = 'Tesorería';
                                 </label>
                                 <input type="file" class="form-control" id="ordenPago" 
                                        accept="image/*,application/pdf">
+                                <div id="vistaOrdenPago" class="mt-2">
+                                    <!-- Vista previa del archivo -->
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -231,7 +240,12 @@ $titulo_pagina = 'Tesorería';
                                 </label>
                                 <input type="file" class="form-control" id="retenciones" 
                                        accept="image/*,application/pdf" multiple>
-                                <small class="form-text text-muted">Puedes seleccionar múltiples archivos si aplica</small>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> Puedes seleccionar múltiples archivos a la vez (mantén Ctrl presionado)
+                                </small>
+                                <div id="listaRetenciones" class="mt-2">
+                                    <!-- Vista previa de archivos seleccionados -->
+                                </div>
                             </div>
                         </div>
                         

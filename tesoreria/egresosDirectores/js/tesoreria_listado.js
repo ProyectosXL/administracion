@@ -2,11 +2,7 @@
  * Gestión del listado de facturas listas para Tesorería
  */
 
-let archivosComprobantes = {
-    comprobanteTransferencia: null,
-    ordenPago: null,
-    retenciones: []
-};
+// No necesitamos un objeto separado, usaremos directamente los inputs con multiple
 
 /**
  * Carga las facturas listas para pago
@@ -370,32 +366,41 @@ async function verImagenCompleta(idArchivo, nombreArchivo) {
             const modalId = 'modalImagenCompleta';
             let modalElement = document.getElementById(modalId);
             
-            if (!modalElement) {
-                console.log('Creando modal de imagen');
-                modalElement = document.createElement('div');
-                modalElement.id = modalId;
-                modalElement.className = 'modal fade';
-                modalElement.innerHTML = `
-                    <div class="modal-dialog modal-xl modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="modalImagenCompletaTitulo"></h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body text-center bg-light p-4">
-                                <img id="modalImagenCompletaImg" class="img-fluid" style="max-width: 100%; height: auto;" alt="">
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                <button type="button" class="btn btn-primary" onclick="descargarArchivo(${idArchivo})">
-                                    <i class="bi bi-download"></i> Descargar
-                                </button>
-                            </div>
+            // Si el modal ya existe, obtener la instancia de Bootstrap y destruirla
+            if (modalElement) {
+                const existingModal = bootstrap.Modal.getInstance(modalElement);
+                if (existingModal) {
+                    existingModal.dispose();
+                }
+                modalElement.remove();
+            }
+            
+            console.log('Creando modal de imagen');
+            modalElement = document.createElement('div');
+            modalElement.id = modalId;
+            modalElement.className = 'modal fade';
+            modalElement.setAttribute('tabindex', '-1');
+            modalElement.setAttribute('aria-hidden', 'true');
+            modalElement.innerHTML = `
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalImagenCompletaTitulo"></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center bg-light p-4">
+                            <img id="modalImagenCompletaImg" class="img-fluid" style="max-width: 100%; height: auto;" alt="">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-primary" onclick="descargarArchivo(${idArchivo})">
+                                <i class="bi bi-download"></i> Descargar
+                            </button>
                         </div>
                     </div>
-                `;
-                document.body.appendChild(modalElement);
-            }
+                </div>
+            `;
+            document.body.appendChild(modalElement);
             
             const titulo = document.getElementById('modalImagenCompletaTitulo');
             const imagen = document.getElementById('modalImagenCompletaImg');
@@ -408,7 +413,44 @@ async function verImagenCompleta(idArchivo, nombreArchivo) {
                 imagen.alt = nombreArchivo;
             }
             
-            const modal = new bootstrap.Modal(modalElement);
+            // Crear modal con backdrop propio y animación
+            const modal = new bootstrap.Modal(modalElement, {
+                backdrop: true,
+                keyboard: true,
+                focus: true
+            });
+            
+            // Evento cuando el modal se muestre - ajustar z-index
+            modalElement.addEventListener('shown.bs.modal', function handler() {
+                console.log('Modal imagen mostrado - ajustando z-index');
+                modalElement.style.zIndex = '1060';
+                const backdrop = document.querySelector('.modal-backdrop:last-of-type');
+                if (backdrop) {
+                    backdrop.style.zIndex = '1059';
+                    backdrop.classList.add('modal-backdrop-imagen');
+                }
+            }, { once: true });
+            
+            // Evento cuando el modal se oculte - limpiar
+            modalElement.addEventListener('hidden.bs.modal', function handler() {
+                console.log('Modal imagen cerrado - limpiando');
+                
+                // Eliminar el modal del DOM
+                modalElement.remove();
+                
+                // Limpiar backdrops específicos de la imagen
+                const backdropImagen = document.querySelector('.modal-backdrop-imagen');
+                if (backdropImagen) {
+                    backdropImagen.remove();
+                }
+                
+                // Resetear z-index de cualquier backdrop restante
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => {
+                    backdrop.style.zIndex = '';
+                });
+            }, { once: true });
+            
             modal.show();
             
             console.log('Modal mostrado');
@@ -468,17 +510,24 @@ function abrirModalPago(idSolicitud, tipo) {
     document.getElementById('idSolicitudPago').value = idSolicitud;
     document.getElementById('tipoSolicitudPago').value = tipo;
     
-    // Limpiar archivos previos
-    archivosComprobantes = {
-        comprobanteTransferencia: null,
-        ordenPago: null,
-        retenciones: []
-    };
+    // Limpiar inputs y vistas previas
+    const inputComprobantes = document.getElementById('comprobanteTransferencia');
+    const inputOrdenPago = document.getElementById('ordenPago');
+    const inputRetenciones = document.getElementById('retenciones');
     
-    document.getElementById('comprobanteTransferencia').value = '';
-    document.getElementById('ordenPago').value = '';
-    document.getElementById('retenciones').value = '';
+    inputComprobantes.value = '';
+    inputOrdenPago.value = '';
+    inputRetenciones.value = '';
+    
     document.getElementById('observacionesPago').value = '';
+    document.getElementById('listaComprobantesTransferencia').innerHTML = '';
+    document.getElementById('listaRetenciones').innerHTML = '';
+    document.getElementById('vistaOrdenPago').innerHTML = '';
+    
+    // Configurar eventos de cambio para mostrar vista previa automática
+    inputComprobantes.onchange = () => mostrarVistaPrevia(inputComprobantes, 'listaComprobantesTransferencia');
+    inputRetenciones.onchange = () => mostrarVistaPrevia(inputRetenciones, 'listaRetenciones');
+    inputOrdenPago.onchange = () => mostrarVistaPrevia(inputOrdenPago, 'vistaOrdenPago');
     
     // Mostrar/ocultar campos según el tipo
     const comprobantesExtra = document.getElementById('comprobantesExtra');
@@ -486,29 +535,62 @@ function abrirModalPago(idSolicitud, tipo) {
     
     if (tipo === 'COMPRA_PERSONAL') {
         comprobantesExtra.classList.remove('d-none');
-        document.getElementById('ordenPago').required = true;
-        document.getElementById('retenciones').required = false;
+        inputOrdenPago.required = true;
         
         infoComprobantes.innerHTML = `
             <strong>Compra Personal:</strong> Debes adjuntar:
             <ul class="mb-0">
-                <li>Comprobante de transferencia (obligatorio)</li>
+                <li>Comprobante(s) de transferencia (obligatorio, puedes seleccionar varios)</li>
                 <li>Orden de pago (obligatorio)</li>
-                <li>Retenciones (opcional, puedes adjuntar varios si aplica)</li>
+                <li>Retención(es) (opcional, puedes seleccionar varias)</li>
             </ul>
         `;
     } else {
         comprobantesExtra.classList.add('d-none');
-        document.getElementById('ordenPago').required = false;
-        document.getElementById('retenciones').required = false;
+        inputOrdenPago.required = false;
         
         infoComprobantes.innerHTML = `
-            <strong>Retiro de Dinero:</strong> Solo debes adjuntar el comprobante de transferencia.
+            <strong>Retiro de Dinero:</strong> Adjunta uno o más comprobantes de transferencia.
         `;
     }
     
     const modal = new bootstrap.Modal(document.getElementById('modalAdjuntarComprobantes'));
     modal.show();
+}
+
+/**
+ * Muestra vista previa de archivos seleccionados
+ */
+function mostrarVistaPrevia(input, contenedorId) {
+    const contenedor = document.getElementById(contenedorId);
+    const archivos = input.files;
+    
+    if (!archivos || archivos.length === 0) {
+        contenedor.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    
+    for (let i = 0; i < archivos.length; i++) {
+        const archivo = archivos[i];
+        const sizeKB = (archivo.size / 1024).toFixed(2);
+        const icono = obtenerIconoArchivo(archivo.type);
+        
+        html += `
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                <div>
+                    <i class="bi ${icono} text-primary"></i>
+                    <span class="ms-2">${archivo.name}</span>
+                    <small class="text-muted ms-2">(${sizeKB} KB)</small>
+                </div>
+                <span class="badge bg-success">Seleccionado</span>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    contenedor.innerHTML = html;
 }
 
 /**
@@ -519,40 +601,65 @@ async function guardarComprobantesPago() {
     const tipo = document.getElementById('tipoSolicitudPago').value;
     const observaciones = document.getElementById('observacionesPago').value;
     
-    // Validar que se hayan cargado los archivos
-    const comprobanteTransf = document.getElementById('comprobanteTransferencia').files[0];
-    if (!comprobanteTransf) {
-        mostrarAlerta('Error', 'Debe adjuntar el comprobante de transferencia');
+    // Obtener archivos de los inputs
+    const comprobantesTransf = document.getElementById('comprobanteTransferencia').files;
+    const ordenPago = document.getElementById('ordenPago').files[0];
+    const retenciones = document.getElementById('retenciones').files;
+    
+    // Validar que se hayan cargado comprobantes de transferencia
+    if (!comprobantesTransf || comprobantesTransf.length === 0) {
+        mostrarAlerta('Error', 'Debe adjuntar al menos un comprobante de transferencia');
         return;
     }
     
+    // Validar tamaño de archivos (máximo 10MB cada uno)
+    for (let i = 0; i < comprobantesTransf.length; i++) {
+        if (comprobantesTransf[i].size > 10 * 1024 * 1024) {
+            mostrarAlerta('Error', `El archivo "${comprobantesTransf[i].name}" supera los 10MB`);
+            return;
+        }
+    }
+    
     if (tipo === 'COMPRA_PERSONAL') {
-        const ordenPago = document.getElementById('ordenPago').files[0];
-        
         if (!ordenPago) {
             mostrarAlerta('Error', 'Debe adjuntar la orden de pago');
             return;
         }
         
-        // Las retenciones son opcionales, no validamos si están vacías
+        if (ordenPago.size > 10 * 1024 * 1024) {
+            mostrarAlerta('Error', 'La orden de pago supera los 10MB');
+            return;
+        }
+        
+        // Validar retenciones si existen
+        if (retenciones) {
+            for (let i = 0; i < retenciones.length; i++) {
+                if (retenciones[i].size > 10 * 1024 * 1024) {
+                    mostrarAlerta('Error', `La retención "${retenciones[i].name}" supera los 10MB`);
+                    return;
+                }
+            }
+        }
     }
     
     mostrarLoading();
     
     try {
-        // 1. Subir archivos
-        await subirComprobanteTransferencia(idSolicitud, comprobanteTransf);
+        // 1. Subir comprobantes de transferencia (múltiples)
+        for (let i = 0; i < comprobantesTransf.length; i++) {
+            const tipoArchivo = `COMPROBANTE_TRANSFERENCIA_${i + 1}`;
+            await subirArchivo(idSolicitud, comprobantesTransf[i], tipoArchivo);
+        }
         
         if (tipo === 'COMPRA_PERSONAL') {
-            const ordenPago = document.getElementById('ordenPago').files[0];
-            const retenciones = document.getElementById('retenciones').files;
-            
+            // Subir orden de pago
             await subirOrdenPago(idSolicitud, ordenPago);
             
-            // Subir retenciones solo si fueron adjuntadas
+            // Subir retenciones (múltiples) si existen
             if (retenciones && retenciones.length > 0) {
                 for (let i = 0; i < retenciones.length; i++) {
-                    await subirRetencion(idSolicitud, retenciones[i]);
+                    const tipoArchivo = `RETENCION_${i + 1}`;
+                    await subirArchivo(idSolicitud, retenciones[i], tipoArchivo);
                 }
             }
         }
@@ -580,22 +687,16 @@ async function guardarComprobantesPago() {
             
             // Recargar listados
             cargarFacturasListas();
+            cargarHistorialPagadas();
         } else {
             mostrarAlerta('Error', result.message);
         }
     } catch (error) {
         console.error('Error:', error);
-        mostrarAlerta('Error', 'No se pudo registrar el pago');
+        mostrarAlerta('Error', 'No se pudo registrar el pago: ' + error.message);
     } finally {
         ocultarLoading();
     }
-}
-
-/**
- * Sube el comprobante de transferencia
- */
-async function subirComprobanteTransferencia(idSolicitud, archivo) {
-    return subirArchivo(idSolicitud, archivo, 'COMPROBANTE_TRANSFERENCIA');
 }
 
 /**
@@ -603,13 +704,6 @@ async function subirComprobanteTransferencia(idSolicitud, archivo) {
  */
 async function subirOrdenPago(idSolicitud, archivo) {
     return subirArchivo(idSolicitud, archivo, 'ORDEN_PAGO');
-}
-
-/**
- * Sube una retención
- */
-async function subirRetencion(idSolicitud, archivo) {
-    return subirArchivo(idSolicitud, archivo, 'RETENCION');
 }
 
 /**
@@ -783,3 +877,7 @@ function mostrarModalHistorial(idSolicitud, historial) {
 // Exportar funciones para uso global
 window.verImagenCompleta = verImagenCompleta;
 window.verHistorialEstados = verHistorialEstados;
+window.abrirModalPago = abrirModalPago;
+window.guardarComprobantesPago = guardarComprobantesPago;
+window.verArchivosFactura = verArchivosFactura;
+window.descargarArchivo = descargarArchivo;

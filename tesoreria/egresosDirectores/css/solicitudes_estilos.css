@@ -518,3 +518,26 @@
         page-break-inside: avoid;
     }
 }
+
+/* Modal anidado - z-index superior para modal de imagen completa */
+#modalImagenCompleta {
+    z-index: 1060 !important;
+}
+
+#modalImagenCompleta + .modal-backdrop {
+    z-index: 1059 !important;
+}
+
+/* Asegurar que otros modales estén por debajo */
+.modal {
+    z-index: 1050;
+}
+
+.modal-backdrop {
+    z-index: 1049;
+}
+
+/* Cuando hay múltiples backdrops, el más reciente debe estar arriba */
+.modal-backdrop.show ~ .modal-backdrop.show {
+    z-index: 1059 !important;
+}

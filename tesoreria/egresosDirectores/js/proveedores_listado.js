@@ -334,32 +334,35 @@ async function verImagenCompleta(idArchivo, nombreArchivo) {
             const modalId = 'modalImagenCompleta';
             let modalElement = document.getElementById(modalId);
             
-            if (!modalElement) {
-                console.log('Creando modal de imagen');
-                modalElement = document.createElement('div');
-                modalElement.id = modalId;
-                modalElement.className = 'modal fade';
-                modalElement.innerHTML = `
-                    <div class="modal-dialog modal-xl modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="modalImagenCompletaTitulo"></h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body text-center bg-light p-4">
-                                <img id="modalImagenCompletaImg" class="img-fluid" style="max-width: 100%; height: auto;" alt="">
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                <button type="button" class="btn btn-primary" onclick="descargarArchivo(${idArchivo})">
-                                    <i class="bi bi-download"></i> Descargar
-                                </button>
-                            </div>
+            // Si el modal ya existe, eliminarlo para evitar listeners duplicados
+            if (modalElement) {
+                modalElement.remove();
+            }
+            
+            console.log('Creando modal de imagen');
+            modalElement = document.createElement('div');
+            modalElement.id = modalId;
+            modalElement.className = 'modal fade';
+            modalElement.innerHTML = `
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalImagenCompletaTitulo"></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center bg-light p-4">
+                            <img id="modalImagenCompletaImg" class="img-fluid" style="max-width: 100%; height: auto;" alt="">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-primary" onclick="descargarArchivo(${idArchivo})">
+                                <i class="bi bi-download"></i> Descargar
+                            </button>
                         </div>
                     </div>
-                `;
-                document.body.appendChild(modalElement);
-            }
+                </div>
+            `;
+            document.body.appendChild(modalElement);
             
             const titulo = document.getElementById('modalImagenCompletaTitulo');
             const imagen = document.getElementById('modalImagenCompletaImg');
@@ -372,7 +375,43 @@ async function verImagenCompleta(idArchivo, nombreArchivo) {
                 imagen.alt = nombreArchivo;
             }
             
-            const modal = new bootstrap.Modal(modalElement);
+            // Crear modal con backdrop propio
+            const modal = new bootstrap.Modal(modalElement, {
+                backdrop: true,
+                keyboard: true
+            });
+            
+            // Evento cuando el modal se muestre - ajustar z-index
+            modalElement.addEventListener('shown.bs.modal', function handler() {
+                console.log('Modal imagen mostrado - ajustando z-index');
+                modalElement.style.zIndex = '1060';
+                const backdrop = document.querySelector('.modal-backdrop:last-of-type');
+                if (backdrop) {
+                    backdrop.style.zIndex = '1059';
+                    backdrop.classList.add('modal-backdrop-imagen');
+                }
+            }, { once: true });
+            
+            // Evento cuando el modal se oculte - limpiar
+            modalElement.addEventListener('hidden.bs.modal', function handler() {
+                console.log('Modal imagen cerrado - limpiando');
+                
+                // Eliminar el modal del DOM
+                modalElement.remove();
+                
+                // Limpiar backdrops específicos de la imagen
+                const backdropImagen = document.querySelector('.modal-backdrop-imagen');
+                if (backdropImagen) {
+                    backdropImagen.remove();
+                }
+                
+                // Resetear z-index de cualquier backdrop restante
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => {
+                    backdrop.style.zIndex = '';
+                });
+            }, { once: true });
+            
             modal.show();
             
             console.log('Modal mostrado');
