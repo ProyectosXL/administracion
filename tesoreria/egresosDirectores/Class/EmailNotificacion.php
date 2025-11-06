@@ -270,12 +270,6 @@ class EmailNotificacion {
                 </ul>
                 ") . "
                 
-                <p style='margin-top: 30px;'>
-                    <a href='http://xl.com.ar/administracion/tesoreria/egresosDirectores/" . ($esTesoreria ? "tesoreria.php" : "proveedores.php") . "' 
-                       style='background-color: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>
-                        Ir al Portal de {$rol}
-                    </a>
-                </p>
             "
         ]);
         
@@ -337,12 +331,6 @@ class EmailNotificacion {
                     <p style='margin: 0;'>Esta solicitud está lista para realizar la transferencia. Una vez efectuado el pago, deberá adjuntar el comprobante de transferencia en el sistema.</p>
                 </div>
                 
-                <p style='margin-top: 30px;'>
-                    <a href='http://xl.com.ar/administracion/tesoreria/egresosDirectores/tesoreria.php' 
-                       style='background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>
-                        Ir al Portal de Tesorería
-                    </a>
-                </p>
             "
         ]);
         
@@ -409,12 +397,6 @@ class EmailNotificacion {
                     </ul>
                 </div>
                 
-                <p style='margin-top: 30px;'>
-                    <a href='http://xl.com.ar/administracion/tesoreria/egresosDirectores/tesoreria.php' 
-                       style='background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>
-                        Ir al Portal de Tesorería
-                    </a>
-                </p>
             "
         ]);
         
@@ -484,13 +466,6 @@ class EmailNotificacion {
                     <h4 style='margin-top: 0; color: #856404;'>Importante:</h4>
                     <p style='margin: 0;'>Los comprobantes de pago (transferencia, orden de pago y retenciones) están disponibles en el sistema. Puede consultarlos en cualquier momento.</p>
                 </div>
-                
-                <p style='margin-top: 30px;'>
-                    <a href='http://xl.com.ar/administracion/tesoreria/egresosDirectores/directores.php' 
-                       style='background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>
-                        Ver mis Solicitudes
-                    </a>
-                </p>
             "
         ]);
         
@@ -567,13 +542,6 @@ class EmailNotificacion {
                     <h4 style='margin-top: 0; color: #856404;'>Importante:</h4>
                     <p style='margin: 0;'>El comprobante de transferencia está disponible en el sistema. Puede consultarlo en cualquier momento.</p>
                 </div>
-                
-                <p style='margin-top: 30px;'>
-                    <a href='http://xl.com.ar/administracion/tesoreria/egresosDirectores/directores.php' 
-                       style='background-color: #17a2b8; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;'>
-                        Ver mis Solicitudes
-                    </a>
-                </p>
             "
         ]);
         
