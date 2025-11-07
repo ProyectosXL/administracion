@@ -1,4 +1,3 @@
-
 <?php
 /**
  * Controlador de exportación de ventas para locatarios IRSA
@@ -68,11 +67,20 @@ try {
         throw new Exception('Error al ejecutar la consulta: ' . print_r(sqlsrv_errors(), true));
     }
     
-    // Escribir datos al archivo CSV
+    // Escribir datos al archivo
     $rowCount = 0;
+    $first = true;
     while ($row = sqlsrv_fetch_array($query, SQLSRV_FETCH_ASSOC)) {
-        fputcsv($output, $row);
+        if (!$first) {
+            echo "\r\n";
+        }
+        // Limpiar valores nulos y asegurarse de que el array esté completo
+        $line = array_map(function($value) {
+            return $value === null ? '' : $value;
+        }, $row);
+        echo implode(';', $line);
         $rowCount++;
+        $first = false;
     }
     
     // Liberar recursos
@@ -84,12 +92,9 @@ try {
     
 } catch (Exception $e) {
     // Manejar errores
-    fclose($output);
     http_response_code(500);
     error_log("Error en exportación de locatarios: " . $e->getMessage());
     die('Error al generar el archivo de exportación');
 }
 
-fclose($output);
 exit;
-?>
