@@ -38,6 +38,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="formPagoServicios.php" target="_blank">
+                    <i class="bi bi-file-earmark-text"></i> Pago de Servicios
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="#" id="btnActualizarDatos">
                     <i class="bi bi-arrow-clockwise"></i> Actualizar Datos
                 </a>

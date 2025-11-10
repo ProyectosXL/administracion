@@ -369,10 +369,18 @@ function mostrarListaEgresos(egresos) {
     
     // Mostrar solo los últimos 5 egresos
     egresos.slice(0, 5).forEach(egreso => {
-        // Usar directamente el campo fecha del movimiento
-        const fechaMostrar = egreso.fecha;
-        let fecha;
+        // Para pagos de servicios, usar fecha_carga en lugar de fecha
+        const esPagoServicio = ['Pago de seguros', 'Pago de patentes', 'Pago de expensas'].includes(egreso.motivo);
+        let fechaMostrar;
         
+        if (esPagoServicio && egreso.fecha_carga) {
+            // Extraer solo la parte de fecha de fecha_carga (YYYY-MM-DD HH:MM:SS -> YYYY-MM-DD)
+            fechaMostrar = egreso.fecha_carga.split(' ')[0];
+        } else {
+            fechaMostrar = egreso.fecha;
+        }
+        
+        let fecha;
         if (fechaMostrar && fechaMostrar !== '0000-00-00') {
             fecha = new Date(fechaMostrar + 'T00:00:00').toLocaleDateString('es-AR');
         } else {
@@ -412,6 +420,13 @@ function mostrarListaEgresos(egresos) {
             }
             if (egreso.tipo_gasto) {
                 concepto += ` - ${egreso.tipo_gasto}`;
+            }
+        }
+        
+        // PAGO DE SEGUROS: motivo - proveedor (sin observaciones, ya se muestran abajo)
+        if (egreso.motivo === 'Pago de seguros') {
+            if (egreso.proveedor_nom) {
+                concepto += ` - ${egreso.proveedor_nom}`;
             }
         }
         

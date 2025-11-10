@@ -46,11 +46,16 @@ class EgresoSocios {
      * Obtiene egresos EFECTIVO por director y fecha
      * Fuente: tabla egresos WHERE nombre_director IS NOT NULL
      * COMPENSACION_IVA: se RESTA del total (signo negativo)
+     * Para pagos de servicios (Pago de seguros, patentes, expensas): usa fecha_carga
      */
     public function obtenerEgresosEfectivo($fechaDesde, $fechaHasta) {
         try {
             $sql = "SELECT 
-                        CAST(e.fecha AS DATE) as fecha,
+                        CASE 
+                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                            THEN CAST(e.fecha_carga AS DATE)
+                            ELSE CAST(e.fecha AS DATE)
+                        END as fecha,
                         e.nombre_director,
                         SUM(CASE 
                             WHEN e.motivo = 'COMPENSACION_IVA' THEN -e.importe 
@@ -58,11 +63,29 @@ class EgresoSocios {
                         END) as total
                     FROM egresos e
                     WHERE e.nombre_director IS NOT NULL
-                        AND e.fecha BETWEEN ? AND ?
-                    GROUP BY CAST(e.fecha AS DATE), e.nombre_director
-                    ORDER BY CAST(e.fecha AS DATE) ASC";
+                        AND (
+                            (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                             AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?)
+                            OR
+                            (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas')
+                             AND e.fecha BETWEEN ? AND ?)
+                        )
+                    GROUP BY 
+                        CASE 
+                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                            THEN CAST(e.fecha_carga AS DATE)
+                            ELSE CAST(e.fecha AS DATE)
+                        END, 
+                        e.nombre_director
+                    ORDER BY 
+                        CASE 
+                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                            THEN CAST(e.fecha_carga AS DATE)
+                            ELSE CAST(e.fecha AS DATE)
+                        END ASC";
             
-            $params = [$fechaDesde, $fechaHasta];
+            // Pasar las fechas 4 veces (2 para cada condición del WHERE)
+            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
@@ -208,6 +231,7 @@ class EgresoSocios {
      * Obtiene detalle completo de egresos combinando ambas fuentes
      * Columnas: FECHA | CODIGO | DIRECTOR | MOTIVO | ORIGEN | IMPORTE | PROVEEDOR | CBU
      * COMPENSACION_IVA: se muestra con signo negativo
+     * Para pagos de servicios (Pago de seguros, patentes, expensas): usa fecha_carga
      */
     public function obtenerDetalleCompleto($fechaDesde, $fechaHasta) {
         try {
@@ -218,7 +242,11 @@ class EgresoSocios {
                     FROM (
                         -- Fuente 1: egresos (EFECTIVO)
                         SELECT 
-                            CAST(e.fecha AS DATE) AS fecha,
+                            CASE 
+                                WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                                THEN CAST(e.fecha_carga AS DATE)
+                                ELSE CAST(e.fecha AS DATE)
+                            END AS fecha,
                             ISNULL(e.COD_COMP, '') + ISNULL(e.N_COMP, '') AS codigo,
                             e.nombre_director AS director,
                             e.motivo,
@@ -232,7 +260,13 @@ class EgresoSocios {
                             NULL as descripcion_cbu
                         FROM egresos e
                         WHERE e.nombre_director IS NOT NULL
-                          AND e.fecha BETWEEN ? AND ?
+                          AND (
+                            (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                             AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?)
+                            OR
+                            (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas')
+                             AND e.fecha BETWEEN ? AND ?)
+                          )
                         
                         UNION ALL
                         
@@ -255,7 +289,8 @@ class EgresoSocios {
                     ) AS egresos_combinados
                     ORDER BY fecha DESC, origen, director";
             
-            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
+            // Pasar las fechas 6 veces (4 para egresos MANUAL + 2 para solicitudes_egresos)
+            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
@@ -299,7 +334,13 @@ class EgresoSocios {
                             END as importe_ajustado
                         FROM egresos 
                         WHERE nombre_director IS NOT NULL 
-                          AND fecha BETWEEN ? AND ?
+                          AND (
+                              (motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                               AND CAST(fecha_carga AS DATE) BETWEEN ? AND ?)
+                              OR
+                              (motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                               AND fecha BETWEEN ? AND ?)
+                          )
                         
                         UNION ALL
                         
@@ -310,7 +351,7 @@ class EgresoSocios {
                           AND fecha_modificacion BETWEEN ? AND ?
                     ) AS egresos_combinados";
             
-            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
+            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
@@ -336,18 +377,22 @@ class EgresoSocios {
                 // Buscar en tabla egresos
                 // El código viene como COD_COMP + N_COMP concatenado
                 $sql = "SELECT 
-                            CAST(fecha AS DATE) as fecha,
-                            ISNULL(COD_COMP, '') + ISNULL(N_COMP, '') as codigo,
-                            nombre_director as director,
-                            motivo,
-                            importe,
-                            observaciones,
-                            fecha_carga,
-                            CASE WHEN foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto,
-                            foto
-                        FROM egresos
-                        WHERE ISNULL(COD_COMP, '') + ISNULL(N_COMP, '') = ?
-                          AND nombre_director IS NOT NULL";
+                            CAST(e.fecha AS DATE) as fecha,
+                            ISNULL(e.COD_COMP, '') + ISNULL(e.N_COMP, '') as codigo,
+                            e.nombre_director as director,
+                            e.motivo,
+                            e.importe,
+                            e.observaciones,
+                            e.fecha_carga,
+                            CASE WHEN e.foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto,
+                            e.foto,
+                            p.NOM_PROVEE as proveedor_nom,
+                            p.CBU as proveedor_cbu,
+                            p.DESCRIPCION_CBU as proveedor_descripcion_cbu
+                        FROM egresos e
+                        LEFT JOIN FT_T_PROVEEDORES p ON e.id = p.id_egresos
+                        WHERE ISNULL(e.COD_COMP, '') + ISNULL(e.N_COMP, '') = ?
+                          AND e.nombre_director IS NOT NULL";
                 
                 $stmt = sqlsrv_query($this->db, $sql, [$codigo]);
                 
@@ -406,6 +451,38 @@ class EgresoSocios {
                 
                 // Convertir importe a float
                 $result['importe'] = (float)$result['importe'];
+                
+                // Detectar tipo de archivo si tiene foto
+                if ($result['tiene_foto'] && !empty($result['foto'])) {
+                    $fotoCompleta = $result['foto'];
+                    $result['tipo_archivo'] = 'image/jpeg'; // Por defecto
+                    
+                    // Si el dato ya incluye el prefijo data:mime;base64, extraerlo
+                    if (strpos($fotoCompleta, 'data:') === 0) {
+                        // Formato: data:application/pdf;base64,JVBERi0...
+                        preg_match('/^data:([^;]+);base64,(.+)$/', $fotoCompleta, $matches);
+                        if ($matches) {
+                            $result['tipo_archivo'] = $matches[1];
+                            $result['foto'] = $matches[2]; // Actualizar con solo el base64
+                        }
+                    } else {
+                        // Es base64 puro, detectar por contenido
+                        $foto = $result['foto'];
+                        
+                        // Los PDFs en base64 empiezan con "JVBERi0"
+                        if (strpos($foto, 'JVBERi0') === 0) {
+                            $result['tipo_archivo'] = 'application/pdf';
+                        }
+                        // Las imágenes JPEG empiezan con "/9j/"
+                        else if (strpos($foto, '/9j/') === 0) {
+                            $result['tipo_archivo'] = 'image/jpeg';
+                        }
+                        // Las imágenes PNG empiezan con "iVBORw0KGgo"
+                        else if (strpos($foto, 'iVBORw0KGgo') === 0) {
+                            $result['tipo_archivo'] = 'image/png';
+                        }
+                    }
+                }
             }
             
             return $result;

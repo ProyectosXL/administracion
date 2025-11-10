@@ -164,11 +164,16 @@ try {
                 throw new Exception('ID de egreso requerido');
             }
             
-            $foto = $egreso->obtenerFoto($_GET['id']);
+            $resultado = $egreso->obtenerFoto($_GET['id']);
+            
+            if (!$resultado) {
+                throw new Exception('No se encontró el archivo');
+            }
             
             echo json_encode([
                 'success' => true,
-                'foto' => $foto
+                'foto' => $resultado['foto'],
+                'tipo' => $resultado['tipo']
             ]);
             break;
             

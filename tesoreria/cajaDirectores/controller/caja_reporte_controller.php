@@ -89,8 +89,21 @@ try {
             }
             
             foreach ($egresos as $egr) {
-                // Convertir fechas DateTime a string si es necesario
-                $fecha = is_object($egr['fecha']) ? $egr['fecha']->format('Y-m-d') : $egr['fecha'];
+                // Para pagos de servicios (Pago de seguros, patentes, expensas), usar fecha_carga en lugar de fecha
+                $esPagoServicio = in_array($egr['motivo'], ['Pago de seguros', 'Pago de patentes', 'Pago de expensas']);
+                
+                if ($esPagoServicio && !empty($egr['fecha_carga'])) {
+                    // Usar fecha_carga casteada a formato YYYY-MM-DD
+                    if (is_object($egr['fecha_carga'])) {
+                        $fecha = $egr['fecha_carga']->format('Y-m-d');
+                    } else {
+                        // Si es string, extraer solo la parte de fecha (antes del espacio)
+                        $fecha = explode(' ', $egr['fecha_carga'])[0];
+                    }
+                } else {
+                    // Para otros egresos, usar el campo fecha normal
+                    $fecha = is_object($egr['fecha']) ? $egr['fecha']->format('Y-m-d') : $egr['fecha'];
+                }
                 
                 $concepto = $egr['motivo'];
                 
@@ -129,6 +142,11 @@ try {
                     if (!empty($egr['tipo_gasto'])) {
                         $concepto .= ' - ' . $egr['tipo_gasto'];
                     }
+                }
+                
+                // PAGO DE SEGUROS: motivo - proveedor (observaciones)
+                if ($egr['motivo'] === 'Pago de seguros' && !empty($egr['proveedor_nom'])) {
+                    $concepto .= ' - ' . $egr['proveedor_nom'];
                 }
                 
                 // Agregar observaciones al final

@@ -143,42 +143,60 @@ class Egreso {
      */
     public function obtenerTodos($filtros = []) {
         try {
-            $sql = "SELECT *, CAST(fecha_carga AS DATE) as fecha_solo, 
-                           CASE WHEN foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto 
-                    FROM egresos WHERE 1=1";
+            $sql = "SELECT e.*, 
+                           CAST(e.fecha_carga AS DATE) as fecha_solo, 
+                           CASE WHEN e.foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto,
+                           p.NOM_PROVEE as proveedor_nom,
+                           p.CBU as proveedor_cbu,
+                           p.DESCRIPCION_CBU as proveedor_descripcion_cbu
+                    FROM egresos e
+                    LEFT JOIN FT_T_PROVEEDORES p ON e.id = p.id_egresos
+                    WHERE 1=1";
             $params = [];
             
             // Por defecto, excluir gastos (COD_COMP='GAS') a menos que se especifique incluirlos
             if (!isset($filtros['incluir_gastos']) || $filtros['incluir_gastos'] !== true) {
-                $sql .= " AND COD_COMP != 'GAS'";
+                $sql .= " AND e.COD_COMP != 'GAS'";
             }
             
             // Por defecto, excluir COMPENSACION_IVA a menos que se especifique incluirlos
             if (!isset($filtros['incluir_compensacion_iva']) || $filtros['incluir_compensacion_iva'] !== true) {
-                $sql .= " AND motivo != 'COMPENSACION_IVA'";
+                $sql .= " AND e.motivo != 'COMPENSACION_IVA'";
             }
             
             if (!empty($filtros['fecha_desde'])) {
-                $sql .= " AND fecha >= ?";
+                // Para pagos de servicios, filtrar por fecha_carga; para otros, por fecha
+                $sql .= " AND (
+                    (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') AND CAST(e.fecha_carga AS DATE) >= ?)
+                    OR
+                    (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') AND e.fecha >= ?)
+                )";
+                $params[] = $filtros['fecha_desde'];
                 $params[] = $filtros['fecha_desde'];
             }
             
             if (!empty($filtros['fecha_hasta'])) {
-                $sql .= " AND fecha <= ?";
+                // Para pagos de servicios, filtrar por fecha_carga; para otros, por fecha
+                $sql .= " AND (
+                    (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') AND CAST(e.fecha_carga AS DATE) <= ?)
+                    OR
+                    (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') AND e.fecha <= ?)
+                )";
+                $params[] = $filtros['fecha_hasta'];
                 $params[] = $filtros['fecha_hasta'];
             }
             
             if (!empty($filtros['motivo'])) {
-                $sql .= " AND motivo = ?";
+                $sql .= " AND e.motivo = ?";
                 $params[] = $filtros['motivo'];
             }
             
             if (!empty($filtros['proveedor'])) {
-                $sql .= " AND proveedor = ?";
+                $sql .= " AND e.proveedor = ?";
                 $params[] = $filtros['proveedor'];
             }
             
-            $sql .= " ORDER BY fecha DESC, id DESC";
+            $sql .= " ORDER BY e.fecha DESC, e.id DESC";
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
@@ -230,8 +248,14 @@ class Egreso {
                     FROM egresos 
                     WHERE COD_COMP != 'GAS'
                       AND motivo != 'COMPENSACION_IVA'
-                      AND fecha >= ?";
-            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
+                      AND (
+                          (motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                           AND CAST(fecha_carga AS DATE) >= ?)
+                          OR
+                          (motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                           AND fecha >= ?)
+                      )";
+            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp, $fechaInicioApp]);
             
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
@@ -400,7 +424,7 @@ class Egreso {
     /**
      * Obtiene la foto de un egreso específico
      */
-    public function obtenerFoto($id): ?string {
+    public function obtenerFoto($id): ?array {
         try {
             $sql = "SELECT foto FROM egresos WHERE id = ?";
             $stmt = sqlsrv_query($this->db, $sql, [$id]);
@@ -412,7 +436,43 @@ class Egreso {
             $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
             sqlsrv_free_stmt($stmt);
             
-            return $result ? $result['foto'] : null;
+            if (!$result || !$result['foto']) {
+                return null;
+            }
+            
+            // Detectar tipo de archivo desde el contenido
+            $fotoCompleta = $result['foto'];
+            $tipo = 'image/jpeg'; // Por defecto
+            $foto = $fotoCompleta;
+            
+            // Si el dato ya incluye el prefijo data:mime;base64, extraerlo
+            if (strpos($fotoCompleta, 'data:') === 0) {
+                // Formato: data:application/pdf;base64,JVBERi0...
+                preg_match('/^data:([^;]+);base64,(.+)$/', $fotoCompleta, $matches);
+                if ($matches) {
+                    $tipo = $matches[1];
+                    $foto = $matches[2];
+                }
+            } else {
+                // Es base64 puro, detectar por contenido
+                // Los PDFs en base64 empiezan con "JVBERi0" (que es "%PDF-" en base64)
+                if (strpos($foto, 'JVBERi0') === 0) {
+                    $tipo = 'application/pdf';
+                }
+                // Las imágenes JPEG empiezan con "/9j/"
+                else if (strpos($foto, '/9j/') === 0) {
+                    $tipo = 'image/jpeg';
+                }
+                // Las imágenes PNG empiezan con "iVBORw0KGgo"
+                else if (strpos($foto, 'iVBORw0KGgo') === 0) {
+                    $tipo = 'image/png';
+                }
+            }
+            
+            return [
+                'foto' => $foto,
+                'tipo' => $tipo
+            ];
         } catch (Exception $e) {
             error_log("Error al obtener foto: " . $e->getMessage());
             return null;

@@ -149,22 +149,20 @@ $titulo_pagina = $usuario;
                                             </div>
                                         </div>
                                         
-                                        <div class="mb-3">
-                                            <label for="cbuProveedor" class="form-label">
-                                                CBU <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" class="form-control" id="cbuProveedor" 
-                                                   placeholder="22 dígitos" maxlength="22" pattern="\d{22}">
-                                            <div class="form-text">
-                                                CBU de 22 dígitos (se completará automáticamente si el proveedor lo tiene cargado)
-                                            </div>
-                                            <div id="alertaCBU" class="alert alert-warning d-none mt-2">
-                                                <i class="bi bi-exclamation-triangle"></i>
-                                                <strong>Atención:</strong> Este proveedor aún no cargó su CBU en la base, por favor completar
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
+                        <div class="mb-3">
+                            <label for="cbuProveedor" class="form-label">
+                                CBU
+                            </label>
+                            <input type="text" class="form-control" id="cbuProveedor" 
+                                   placeholder="22 dígitos (opcional)" maxlength="22" pattern="\d{22}">
+                            <div class="form-text">
+                                CBU de 22 dígitos (opcional - se completará automáticamente si el proveedor lo tiene cargado)
+                            </div>
+                            <div id="alertaCBU" class="alert alert-info d-none mt-2">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Información:</strong> Este proveedor aún no tiene CBU cargado en la base. Puede completarlo si lo conoce.
+                            </div>
+                        </div>                                        <div class="mb-3">
                                             <label for="descripcionCbuProveedor" class="form-label">
                                                 Descripción CBU
                                             </label>

@@ -395,19 +395,17 @@ async function crearSolicitud() {
                 throw new Error('Debe seleccionar un proveedor');
             }
             
-            // Validar CBU
-            if (!cbuInput || !cbuInput.value) {
-                throw new Error('Debe ingresar el CBU del proveedor');
-            }
-            
-            const cbu = cbuInput.value.replace(/\s/g, '');
-            if (!validarCBU(cbu)) {
-                throw new Error('El CBU debe tener exactamente 22 dígitos');
-            }
-            
-            // Agregar al FormData
+            // Agregar nombre del proveedor
             formData.append('nom_provee', proveedorSelect.value);
-            formData.append('cbu', cbu);
+            
+            // CBU es opcional - solo validar formato si se proporciona
+            if (cbuInput && cbuInput.value && cbuInput.value.trim() !== '') {
+                const cbu = cbuInput.value.replace(/\s/g, '');
+                if (!validarCBU(cbu)) {
+                    throw new Error('Si ingresa un CBU, debe tener exactamente 22 dígitos');
+                }
+                formData.append('cbu', cbu);
+            }
             
             // Descripción CBU es opcional
             if (descripcionCbuInput && descripcionCbuInput.value.trim()) {
@@ -691,6 +689,7 @@ function inicializarSelect2Proveedores() {
             
             if (cbuInput) cbuInput.value = '';
             if (descripcionCbuInput) descripcionCbuInput.value = '';
+            // Mostrar alerta informativa (no obligatoria)
             if (alertaCBU) alertaCBU.classList.remove('d-none');
         }
     });

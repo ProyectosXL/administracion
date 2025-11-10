@@ -473,6 +473,20 @@ function mostrarReporte(movimientos, filtros = {}) {
         // Mostrar COMP solo si no está vacío
         const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
         
+        // Formatear concepto: si tiene datos de proveedor extendidos, mostrarlos
+        let conceptoDisplay = mov.concepto;
+        if (mov.tipo === 'EGRESO' && mov.proveedor_nom) {
+            conceptoDisplay += `<br><small class="text-muted">
+                <i class="bi bi-building"></i> ${mov.proveedor_nom}`;
+            if (mov.proveedor_cbu) {
+                conceptoDisplay += `<br><i class="bi bi-bank"></i> CBU: ${mov.proveedor_cbu}`;
+            }
+            if (mov.proveedor_descripcion_cbu) {
+                conceptoDisplay += ` - ${mov.proveedor_descripcion_cbu}`;
+            }
+            conceptoDisplay += `</small>`;
+        }
+        
         // Columna de foto (solo para egresos)
         let fotoBoton = '';
         if (mov.tipo === 'EGRESO' && mov.tiene_foto == 1) {
@@ -495,7 +509,7 @@ function mostrarReporte(movimientos, filtros = {}) {
                 <td class="text-center align-middle">${fecha}</td>
                 <td class="text-center align-middle"><i class="bi bi-${tipoIcon} ${tipoClass}"></i> ${mov.tipo}</td>
                 <td class="text-center align-middle"><small>${compDisplay}</small></td>
-                <td class="align-middle">${mov.concepto}</td>
+                <td class="align-middle">${conceptoDisplay}</td>
                 <td class="text-end align-middle ${tipoClass}"><strong>${importe}</strong></td>
                 <td class="text-center align-middle">${origenBadge}</td>
                 <td class="text-center align-middle">${fotoBoton}</td>
@@ -528,24 +542,48 @@ async function verFotoEgreso(idEgreso) {
         const result = await response.json();
         
         if (result.success && result.foto) {
-            // Configurar modal
-            const modalTitle = document.getElementById('modalFotoEgresoLabel');
-            modalTitle.textContent = `Foto del Egreso ID: ${idEgreso}`;
+            const esPdf = result.tipo === 'application/pdf';
             
-            // Mostrar imagen
-            const img = document.getElementById('imagenFotoEgreso');
-            img.src = `data:image/jpeg;base64,${result.foto}`;
-            
-            // Mostrar modal
-            const modal = new bootstrap.Modal(document.getElementById('modalFotoEgreso'));
-            modal.show();
+            if (esPdf) {
+                // Para PDFs, crear un enlace de descarga
+                const pdfBlob = base64ToBlob(result.foto, 'application/pdf');
+                const url = URL.createObjectURL(pdfBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `factura_egreso_${idEgreso}.pdf`;
+                link.click();
+                URL.revokeObjectURL(url);
+            } else {
+                // Para imágenes, mostrar en modal
+                const modalTitle = document.getElementById('modalFotoEgresoLabel');
+                modalTitle.textContent = `Foto del Egreso ID: ${idEgreso}`;
+                
+                const img = document.getElementById('imagenFotoEgreso');
+                img.src = `data:${result.tipo};base64,${result.foto}`;
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalFotoEgreso'));
+                modal.show();
+            }
         } else {
-            mostrarAlerta('Error', 'No se pudo cargar la foto del egreso');
+            mostrarAlerta('Error', 'No se pudo cargar el archivo');
         }
     } catch (error) {
-        console.error('Error al cargar foto:', error);
-        mostrarAlerta('Error', 'Error al cargar la foto');
+        console.error('Error al cargar archivo:', error);
+        mostrarAlerta('Error', 'Error al cargar el archivo');
     }
+}
+
+/**
+ * Convierte base64 a Blob
+ */
+function base64ToBlob(base64, contentType) {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: contentType });
 }
 
 // Cambiar cantidad de movimientos mostrados

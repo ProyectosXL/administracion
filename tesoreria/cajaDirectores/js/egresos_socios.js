@@ -625,6 +625,37 @@ function renderizarDetalleCompleto(detalle, origen) {
     html += '</div>';
     html += '</div>';
     
+    // Información del proveedor (para Pago de seguros)
+    if (detalle.motivo === 'Pago de seguros' && (detalle.proveedor_nom || detalle.proveedor)) {
+        html += '<hr>';
+        html += '<div class="mb-3">';
+        html += '<h6><i class="bi bi-person-badge-fill"></i> Información del Proveedor:</h6>';
+        html += '<div class="row">';
+        html += '<div class="col-md-6">';
+        
+        // Para origen MANUAL usa proveedor_nom, para APP usa proveedor
+        const nombreProveedor = detalle.proveedor_nom || detalle.proveedor || 'N/A';
+        html += `<div class="info-item"><strong>Nombre:</strong> ${nombreProveedor}</div>`;
+        
+        html += '</div>';
+        html += '<div class="col-md-6">';
+        
+        // CBU y descripción (puede venir de ambos orígenes)
+        const cbu = detalle.proveedor_cbu || detalle.cbu || '';
+        const descripcionCbu = detalle.proveedor_descripcion_cbu || detalle.descripcion_cbu || '';
+        
+        if (cbu) {
+            html += `<div class="info-item"><strong>CBU:</strong> ${cbu}</div>`;
+        }
+        if (descripcionCbu) {
+            html += `<div class="info-item"><strong>Banco:</strong> ${descripcionCbu}</div>`;
+        }
+        
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+    }
+    
     // Observaciones
     if (detalle.observaciones) {
         html += '<hr>';
@@ -658,17 +689,32 @@ function renderizarDetalleCompleto(detalle, origen) {
         }
     }
     
-    // Foto del comprobante
+    // Foto/PDF del comprobante
     if (detalle.tiene_foto) {
         html += '<hr>';
         html += '<div class="mb-3">';
-        html += '<h6><i class="bi bi-image"></i> Comprobante:</h6>';
-        html += `<div class="text-center foto-container">`;
-        html += `<img src="data:image/jpeg;base64,${detalle.foto}" class="img-thumbnail foto-comprobante-detalle" alt="Comprobante" onclick="toggleFotoTamano(this)">`;
-        html += `<p class="text-muted small mt-2 foto-hint">
-            <i class="bi bi-zoom-in"></i> <span>Haz clic en la imagen para ampliar</span>
-        </p>`;
-        html += `</div>`;
+        
+        const esPdf = detalle.tipo_archivo === 'application/pdf';
+        
+        if (esPdf) {
+            // Para PDFs, mostrar botón de descarga
+            html += '<h6><i class="bi bi-file-pdf"></i> Comprobante (PDF):</h6>';
+            html += `<div class="text-center">`;
+            html += `<button class="btn btn-primary" onclick="descargarPdfEgreso('${detalle.foto}', '${detalle.codigo}')">
+                <i class="bi bi-download"></i> Descargar PDF
+            </button>`;
+            html += `</div>`;
+        } else {
+            // Para imágenes, mostrar imagen
+            html += '<h6><i class="bi bi-image"></i> Comprobante:</h6>';
+            html += `<div class="text-center foto-container">`;
+            html += `<img src="data:${detalle.tipo_archivo || 'image/jpeg'};base64,${detalle.foto}" class="img-thumbnail foto-comprobante-detalle" alt="Comprobante" onclick="toggleFotoTamano(this)">`;
+            html += `<p class="text-muted small mt-2 foto-hint">
+                <i class="bi bi-zoom-in"></i> <span>Haz clic en la imagen para ampliar</span>
+            </p>`;
+            html += `</div>`;
+        }
+        
         html += '</div>';
     }
     
@@ -889,6 +935,31 @@ function exportarDetalleExcel() {
     mostrarAlerta('Éxito', `Detalle de Egresos Socios exportado correctamente como: ${nombreArchivo}`);
 }
 
+/**
+ * Descarga un PDF desde base64
+ */
+function descargarPdfEgreso(base64, codigo) {
+    try {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `factura_egreso_${codigo}.pdf`;
+        link.click();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error al descargar PDF:', error);
+        mostrarAlerta('Error', 'Error al descargar el PDF');
+    }
+}
+
 // Hacer funciones disponibles globalmente
 window.aplicarFiltrosEgresosSocios = aplicarFiltrosEgresosSocios;
 window.limpiarFiltrosEgresosSocios = limpiarFiltrosEgresosSocios;
@@ -897,3 +968,4 @@ window.exportarResumenExcel = exportarResumenExcel;
 window.exportarDetalleExcel = exportarDetalleExcel;
 window.verDetalleEgresoSocio = verDetalleEgresoSocio;
 window.toggleFotoTamano = toggleFotoTamano;
+window.descargarPdfEgreso = descargarPdfEgreso;
