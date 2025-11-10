@@ -163,6 +163,7 @@ class Ingreso {
                         'id' => 'EXT_TES_' . $row['ID_SBA05'], // ID único para identificar
                         'ID_SBA05' => $row['ID_SBA05'],
                         'fecha' => $row['FECHA'],
+                        'fecha_carga' => $row['FECHA'], // Usar la fecha como fecha_carga para ordenamiento
                         'COD_COMP' => $row['COD_COMP'], // Ya viene correctamente separado de SBA05
                         'N_COMP' => $row['N_COMP'],     // Ya viene correctamente separado de SBA05
                         'observaciones' => $row['OBSERVACIONES'],
@@ -216,6 +217,7 @@ class Ingreso {
                     'id' => 'EXT_599_' . $row['ID'], // ID único para identificar
                     'ID_SBA05' => null, // No aplica para 599
                     'fecha' => $row['FECHA'],
+                    'fecha_carga' => $row['FECHA'], // Usar la fecha como fecha_carga para ordenamiento
                     'COD_COMP' => '', // Vacío para 599
                     'N_COMP' => '', // Vacío para 599
                     'observaciones' => $row['OBSERVACIONES'],
@@ -300,11 +302,16 @@ class Ingreso {
         $ingresos599 = $this->obtenerIngresos599($desde, $hasta);
         $resultados = array_merge($resultados, $ingresos599);
         
-        // Ordenar por fecha descendente
+        // Ordenar por fecha_carga descendente (más reciente primero)
         usort($resultados, function($a, $b) {
-            $fechaA = is_object($a['fecha']) ? $a['fecha']->format('Y-m-d') : $a['fecha'];
-            $fechaB = is_object($b['fecha']) ? $b['fecha']->format('Y-m-d') : $b['fecha'];
-            return strtotime($fechaB) - strtotime($fechaA);
+            $fechaA = !empty($a['fecha_carga']) ? $a['fecha_carga'] : $a['fecha'];
+            $fechaB = !empty($b['fecha_carga']) ? $b['fecha_carga'] : $b['fecha'];
+            
+            // Convertir a timestamp para comparación
+            $timestampA = is_object($fechaA) ? strtotime($fechaA->format('Y-m-d H:i:s')) : strtotime($fechaA);
+            $timestampB = is_object($fechaB) ? strtotime($fechaB->format('Y-m-d H:i:s')) : strtotime($fechaB);
+            
+            return $timestampB - $timestampA;
         });
         
         return $resultados;

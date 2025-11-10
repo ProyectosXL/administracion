@@ -237,7 +237,7 @@ class EgresoSocios {
         try {
             // Query combinada con UNION ALL
             $sql = "SELECT 
-                        fecha, codigo, director, motivo, origen, importe, 
+                        fecha, fecha_hora_carga, codigo, director, motivo, origen, importe, 
                         proveedor, cbu, descripcion_cbu
                     FROM (
                         -- Fuente 1: egresos (EFECTIVO)
@@ -247,6 +247,7 @@ class EgresoSocios {
                                 THEN CAST(e.fecha_carga AS DATE)
                                 ELSE CAST(e.fecha AS DATE)
                             END AS fecha,
+                            ISNULL(e.fecha_carga, CAST(e.fecha AS DATETIME)) AS fecha_hora_carga,
                             ISNULL(e.COD_COMP, '') + ISNULL(e.N_COMP, '') AS codigo,
                             e.nombre_director AS director,
                             e.motivo,
@@ -273,6 +274,7 @@ class EgresoSocios {
                         -- Fuente 2: solicitudes_egresos (TRANSFERENCIA)
                         SELECT 
                             CAST(s.fecha_modificacion AS DATE) AS fecha,
+                            s.fecha_modificacion AS fecha_hora_carga,
                             s.id_solicitud AS codigo,
                             d.NOMBRE AS director,
                             s.motivo,
@@ -287,7 +289,7 @@ class EgresoSocios {
                           AND s.fecha_modificacion IS NOT NULL
                           AND s.fecha_modificacion BETWEEN ? AND ?
                     ) AS egresos_combinados
-                    ORDER BY fecha DESC, origen, director";
+                    ORDER BY fecha_hora_carga DESC";
             
             // Pasar las fechas 6 veces (4 para egresos MANUAL + 2 para solicitudes_egresos)
             $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];

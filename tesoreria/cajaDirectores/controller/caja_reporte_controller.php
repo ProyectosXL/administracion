@@ -69,6 +69,12 @@ try {
                 // Convertir fechas DateTime a string si es necesario
                 $fecha = is_object($ing['fecha']) ? $ing['fecha']->format('Y-m-d') : $ing['fecha'];
                 
+                // Obtener fecha_carga completa para ordenamiento
+                $fechaCarga = '';
+                if (isset($ing['fecha_carga'])) {
+                    $fechaCarga = is_object($ing['fecha_carga']) ? $ing['fecha_carga']->format('Y-m-d H:i:s') : $ing['fecha_carga'];
+                }
+                
                 // Para TESORERÍA, mostrar los campos COMP correctamente
                 $codComp = $ing['COD_COMP'] ?? '';
                 $nComp = $ing['N_COMP'] ?? '';
@@ -76,6 +82,7 @@ try {
                 $movimientos[] = [
                     'tipo' => 'INGRESO',
                     'fecha' => $fecha,
+                    'fecha_carga' => $fechaCarga,
                     'cod_comp' => $codComp,
                     'n_comp' => $nComp,
                     'concepto' => $ing['observaciones'] ?? 'Ingreso de caja',
@@ -91,6 +98,12 @@ try {
             foreach ($egresos as $egr) {
                 // Para pagos de servicios (Pago de seguros, patentes, expensas), usar fecha_carga en lugar de fecha
                 $esPagoServicio = in_array($egr['motivo'], ['Pago de seguros', 'Pago de patentes', 'Pago de expensas']);
+                
+                // Obtener fecha_carga completa para ordenamiento
+                $fechaCarga = '';
+                if (isset($egr['fecha_carga'])) {
+                    $fechaCarga = is_object($egr['fecha_carga']) ? $egr['fecha_carga']->format('Y-m-d H:i:s') : $egr['fecha_carga'];
+                }
                 
                 if ($esPagoServicio && !empty($egr['fecha_carga'])) {
                     // Usar fecha_carga casteada a formato YYYY-MM-DD
@@ -157,6 +170,7 @@ try {
                 $movimientos[] = [
                     'tipo' => 'EGRESO',
                     'fecha' => $fecha,
+                    'fecha_carga' => $fechaCarga,
                     'cod_comp' => $egr['COD_COMP'],
                     'n_comp' => $egr['N_COMP'],
                     'concepto' => $concepto,
@@ -168,9 +182,11 @@ try {
                 ];
             }
             
-            // Ordenar por fecha descendente
+            // Ordenar por fecha_carga descendente (más reciente primero), luego por fecha si no hay fecha_carga
             usort($movimientos, function($a, $b) {
-                return strtotime($b['fecha']) - strtotime($a['fecha']);
+                $fechaA = !empty($a['fecha_carga']) ? $a['fecha_carga'] : $a['fecha'] . ' 00:00:00';
+                $fechaB = !empty($b['fecha_carga']) ? $b['fecha_carga'] : $b['fecha'] . ' 00:00:00';
+                return strtotime($fechaB) - strtotime($fechaA);
             });
             
             echo json_encode([
