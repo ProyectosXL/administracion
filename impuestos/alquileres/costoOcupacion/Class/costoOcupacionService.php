@@ -207,16 +207,26 @@ class CostoOcupacionService
                 }
             }
             
-            // Calcular Llave (25% de suma de conceptos 1, 2 y 8)
+            // Calcular Llave (25% de suma de conceptos 1, 2 y 8) solo si hay valor en RO_V_CONTRATOS_VALOR_LLAVE
             $llaveCalculada = [];
             foreach ($meses as $mes) {
                 $suma = 0;
-                foreach ([1, 2, 8] as $idCa) {
-                    if (isset($datosPorConcepto[$idCa][$mes])) {
-                        $suma += $datosPorConcepto[$idCa][$mes];
+                
+                // Verificar si existe valor en la vista RO_V_CONTRATOS_VALOR_LLAVE para esta sucursal y período
+                $tieneValorLlave = $this->verificarValorLlaveNegocio($idSucursal, $mes);
+                
+                if ($tieneValorLlave) {
+                    // Si hay valor mayor a 0, aplicar cálculo actual
+                    foreach ([1, 2, 8] as $idCa) {
+                        if (isset($datosPorConcepto[$idCa][$mes])) {
+                            $suma += $datosPorConcepto[$idCa][$mes];
+                        }
                     }
+                    $llaveCalculada[$mes] = $suma * 0.25;
+                } else {
+                    // Si no hay valor o es 0, la llave debe ser 0
+                    $llaveCalculada[$mes] = 0;
                 }
-                $llaveCalculada[$mes] = $suma * 0.25;
             }
             
             // Agregar Llave calculada
@@ -813,6 +823,54 @@ class CostoOcupacionService
         } catch (Exception $e) {
             error_log("Error en obtenerVentasSucursal: " . $e->getMessage());
             return 0;
+        }
+    }
+
+    /**
+     * Verifica si existe un valor mayor a 0 en la vista RO_V_CONTRATOS_VALOR_LLAVE
+     * para la sucursal y período especificados
+     * 
+     * @param int $sucursalId ID de la sucursal
+     * @param string $periodo Período en formato Y-m (ej: "2025-02")
+     * @return bool True si hay un valor mayor a 0, False en caso contrario
+     */
+    private function verificarValorLlaveNegocio($sucursalId, $periodo)
+    {
+        try {
+            // Convertir período Y-m a formato que use la vista
+            list($anio, $mes) = explode('-', $periodo);
+            $periodoFormateado = (int)$mes . '-' . $anio; // Ej: "2-2025"
+            
+            $sql = "
+                SELECT TOP 1 CAST(IMPORTE AS FLOAT) as IMPORTE
+                FROM RO_V_CONTRATOS_VALOR_LLAVE
+                WHERE NRO_SUCURS = ?
+                AND LTRIM(RTRIM(PERIODO)) = ?
+                AND CAST(IMPORTE AS FLOAT) > 0
+            ";
+            
+            $params = [$sucursalId, $periodoFormateado];
+            $stmt = sqlsrv_prepare($this->cid_central, $sql, $params);
+            
+            if (!$stmt) {
+                error_log("Error al preparar consulta de verificación de llave de negocio");
+                return false;
+            }
+            
+            sqlsrv_execute($stmt);
+            
+            // Si encuentra al menos un registro con importe > 0, devuelve true
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            $tieneValor = ($row !== false && $row['IMPORTE'] > 0);
+            
+            // Log para debug
+            error_log("verificarValorLlaveNegocio - Sucursal: {$sucursalId}, Período: {$periodoFormateado}, Tiene valor: " . ($tieneValor ? 'SI' : 'NO'));
+            
+            return $tieneValor;
+            
+        } catch (Exception $e) {
+            error_log("Error en verificarValorLlaveNegocio: " . $e->getMessage());
+            return false; // En caso de error, asumir que no hay valor
         }
     }
 }
