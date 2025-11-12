@@ -167,9 +167,9 @@ class Egreso {
             if (!empty($filtros['fecha_desde'])) {
                 // Para pagos de servicios, filtrar por fecha_carga; para otros, por fecha
                 $sql .= " AND (
-                    (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') AND CAST(e.fecha_carga AS DATE) >= ?)
+                    (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') AND CAST(e.fecha_carga AS DATE) >= ?)
                     OR
-                    (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') AND e.fecha >= ?)
+                    (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') AND e.fecha >= ?)
                 )";
                 $params[] = $filtros['fecha_desde'];
                 $params[] = $filtros['fecha_desde'];
@@ -178,9 +178,9 @@ class Egreso {
             if (!empty($filtros['fecha_hasta'])) {
                 // Para pagos de servicios, filtrar por fecha_carga; para otros, por fecha
                 $sql .= " AND (
-                    (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') AND CAST(e.fecha_carga AS DATE) <= ?)
+                    (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') AND CAST(e.fecha_carga AS DATE) <= ?)
                     OR
-                    (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') AND e.fecha <= ?)
+                    (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') AND e.fecha <= ?)
                 )";
                 $params[] = $filtros['fecha_hasta'];
                 $params[] = $filtros['fecha_hasta'];
@@ -249,10 +249,10 @@ class Egreso {
                     WHERE COD_COMP != 'GAS'
                       AND motivo != 'COMPENSACION_IVA'
                       AND (
-                          (motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                          (motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                            AND CAST(fecha_carga AS DATE) >= ?)
                           OR
-                          (motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                          (motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                            AND fecha >= ?)
                       )";
             $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp, $fechaInicioApp]);

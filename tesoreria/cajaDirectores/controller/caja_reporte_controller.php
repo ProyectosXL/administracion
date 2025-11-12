@@ -96,8 +96,8 @@ try {
             }
             
             foreach ($egresos as $egr) {
-                // Para pagos de servicios (Pago de seguros, patentes, expensas), usar fecha_carga en lugar de fecha
-                $esPagoServicio = in_array($egr['motivo'], ['Pago de seguros', 'Pago de patentes', 'Pago de expensas']);
+                // Para pagos de servicios (Pago de seguros, patentes, expensas, tarjetas, haberes, otros), usar fecha_carga en lugar de fecha
+                $esPagoServicio = in_array($egr['motivo'], ['Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros']);
                 
                 // Obtener fecha_carga completa para ordenamiento
                 $fechaCarga = '';

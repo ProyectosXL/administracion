@@ -370,7 +370,7 @@ function mostrarListaEgresos(egresos) {
     // Mostrar solo los últimos 5 egresos
     egresos.slice(0, 5).forEach(egreso => {
         // Para pagos de servicios, usar fecha_carga en lugar de fecha
-        const esPagoServicio = ['Pago de seguros', 'Pago de patentes', 'Pago de expensas'].includes(egreso.motivo);
+        const esPagoServicio = ['Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros'].includes(egreso.motivo);
         let fechaMostrar;
         
         if (esPagoServicio && egreso.fecha_carga) {

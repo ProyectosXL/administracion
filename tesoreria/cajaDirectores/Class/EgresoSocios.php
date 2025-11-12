@@ -46,13 +46,13 @@ class EgresoSocios {
      * Obtiene egresos EFECTIVO por director y fecha
      * Fuente: tabla egresos WHERE nombre_director IS NOT NULL
      * COMPENSACION_IVA: se RESTA del total (signo negativo)
-     * Para pagos de servicios (Pago de seguros, patentes, expensas): usa fecha_carga
+     * Para pagos de servicios (Pago de seguros, patentes, expensas, tarjetas, haberes, otros): usa fecha_carga
      */
     public function obtenerEgresosEfectivo($fechaDesde, $fechaHasta) {
         try {
             $sql = "SELECT 
                         CASE 
-                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                             THEN CAST(e.fecha_carga AS DATE)
                             ELSE CAST(e.fecha AS DATE)
                         END as fecha,
@@ -64,22 +64,22 @@ class EgresoSocios {
                     FROM egresos e
                     WHERE e.nombre_director IS NOT NULL
                         AND (
-                            (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                            (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                              AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?)
                             OR
-                            (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas')
+                            (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros')
                              AND e.fecha BETWEEN ? AND ?)
                         )
                     GROUP BY 
                         CASE 
-                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                             THEN CAST(e.fecha_carga AS DATE)
                             ELSE CAST(e.fecha AS DATE)
                         END, 
                         e.nombre_director
                     ORDER BY 
                         CASE 
-                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                             THEN CAST(e.fecha_carga AS DATE)
                             ELSE CAST(e.fecha AS DATE)
                         END ASC";
@@ -231,7 +231,7 @@ class EgresoSocios {
      * Obtiene detalle completo de egresos combinando ambas fuentes
      * Columnas: FECHA | CODIGO | DIRECTOR | MOTIVO | ORIGEN | IMPORTE | PROVEEDOR | CBU
      * COMPENSACION_IVA: se muestra con signo negativo
-     * Para pagos de servicios (Pago de seguros, patentes, expensas): usa fecha_carga
+     * Para pagos de servicios (Pago de seguros, patentes, expensas, tarjetas, haberes, otros): usa fecha_carga
      */
     public function obtenerDetalleCompleto($fechaDesde, $fechaHasta) {
         try {
@@ -243,7 +243,7 @@ class EgresoSocios {
                         -- Fuente 1: egresos (EFECTIVO)
                         SELECT 
                             CASE 
-                                WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                                WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                                 THEN CAST(e.fecha_carga AS DATE)
                                 ELSE CAST(e.fecha AS DATE)
                             END AS fecha,
@@ -262,10 +262,10 @@ class EgresoSocios {
                         FROM egresos e
                         WHERE e.nombre_director IS NOT NULL
                           AND (
-                            (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                            (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                              AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?)
                             OR
-                            (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas')
+                            (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros')
                              AND e.fecha BETWEEN ? AND ?)
                           )
                         
@@ -337,10 +337,10 @@ class EgresoSocios {
                         FROM egresos 
                         WHERE nombre_director IS NOT NULL 
                           AND (
-                              (motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                              (motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                                AND CAST(fecha_carga AS DATE) BETWEEN ? AND ?)
                               OR
-                              (motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas') 
+                              (motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
                                AND fecha BETWEEN ? AND ?)
                           )
                         

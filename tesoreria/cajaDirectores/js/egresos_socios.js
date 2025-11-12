@@ -9,6 +9,7 @@ let fechaHastaEgresosSocios = '';
 let detalleCompletoEgresosSocios = []; // Almacena el detalle completo sin filtrar
 let directoresDisponibles = []; // Lista de directores disponibles
 let resumenCompletoEgresosSocios = null; // Almacena el resumen completo
+let cargandoDatosEgresosSocios = false; // Flag para evitar cargas concurrentes
 
 /**
  * Inicialización cuando el documento está listo
@@ -87,12 +88,39 @@ function formatearFecha(fecha) {
 
 /**
  * Formatea una fecha al formato DD/MM/YYYY
+ * Maneja tanto fechas (YYYY-MM-DD) como datetime (YYYY-MM-DD HH:MM:SS)
  */
 function formatearFechaDisplay(fechaStr) {
     if (!fechaStr) return '';
-    const partes = fechaStr.split('-');
+    
+    // Si es un datetime, extraer solo la parte de fecha
+    const soloFecha = fechaStr.split(' ')[0];
+    
+    const partes = soloFecha.split('-');
     if (partes.length !== 3) return fechaStr;
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+/**
+ * Formatea un datetime al formato DD/MM/YYYY HH:MM
+ */
+function formatearFechaHoraDisplay(fechaStr) {
+    if (!fechaStr) return '';
+    
+    const partes = fechaStr.split(' ');
+    if (partes.length !== 2) return formatearFechaDisplay(fechaStr);
+    
+    const fecha = partes[0];
+    const hora = partes[1];
+    
+    const partesFecha = fecha.split('-');
+    if (partesFecha.length !== 3) return fechaStr;
+    
+    // Extraer solo HH:MM (sin segundos)
+    const partesHora = hora.split(':');
+    const horaFormato = partesHora.length >= 2 ? `${partesHora[0]}:${partesHora[1]}` : hora;
+    
+    return `${partesFecha[2]}/${partesFecha[1]}/${partesFecha[0]} ${horaFormato}`;
 }
 
 /**
@@ -140,7 +168,23 @@ function limpiarFiltrosEgresosSocios() {
  * Carga todos los datos de egresos socios
  */
 async function cargarDatosEgresosSocios() {
+    // Evitar llamadas concurrentes
+    if (cargandoDatosEgresosSocios) {
+        console.log('⏸️ Ya hay una carga en progreso, ignorando nueva llamada');
+        return;
+    }
+    
+    cargandoDatosEgresosSocios = true;
+    
     try {
+        // Validar que las fechas estén configuradas
+        if (!fechaDesdeEgresosSocios || !fechaHastaEgresosSocios) {
+            console.warn('⚠️ Fechas no configuradas, configurando por defecto');
+            configurarFechasPorDefecto();
+        }
+        
+        console.log('📊 Cargando datos de Egresos Socios:', fechaDesdeEgresosSocios, 'a', fechaHastaEgresosSocios);
+        
         // Mostrar indicadores de carga
         mostrarCargando('tablaResumenSocios');
         mostrarCargando('tablaDetalleSocios');
@@ -164,11 +208,16 @@ async function cargarDatosEgresosSocios() {
         // Actualizar opciones del filtro de directores usando el resumen (tiene todos los directores)
         actualizarFiltroDirectores(resumen);
         
+        console.log('✅ Datos de Egresos Socios cargados correctamente');
+        
     } catch (error) {
-        console.error('Error al cargar datos:', error);
+        console.error('❌ Error al cargar datos de Egresos Socios:', error);
         mostrarError('tablaResumenSocios', 'Error al cargar el resumen');
         mostrarError('tablaDetalleSocios', 'Error al cargar el detalle');
-        mostrarAlerta('Error al cargar los datos de egresos socios', 'danger');
+        mostrarAlerta('Error al cargar los datos de egresos socios: ' + error.message, 'danger');
+    } finally {
+        // Siempre liberar el flag, incluso si hay error
+        cargandoDatosEgresosSocios = false;
     }
 }
 
@@ -182,19 +231,34 @@ async function cargarResumenEgresosSocios() {
         fecha_hasta: fechaHastaEgresosSocios
     });
     
-    const response = await fetch(`controller/egresos_socios_controller.php?${params}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
     
-    if (!response.ok) {
-        throw new Error('Error en la respuesta del servidor');
+    try {
+        const response = await fetch(`controller/egresos_socios_controller.php?${params}`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Error al obtener resumen');
+        }
+        
+        return data.data;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            throw new Error('La petición tardó demasiado tiempo');
+        }
+        throw error;
     }
-    
-    const data = await response.json();
-    
-    if (!data.success) {
-        throw new Error(data.message || 'Error al obtener resumen');
-    }
-    
-    return data.data;
 }
 
 /**
@@ -207,19 +271,34 @@ async function cargarDetalleEgresosSocios() {
         fecha_hasta: fechaHastaEgresosSocios
     });
     
-    const response = await fetch(`controller/egresos_socios_controller.php?${params}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
     
-    if (!response.ok) {
-        throw new Error('Error en la respuesta del servidor');
+    try {
+        const response = await fetch(`controller/egresos_socios_controller.php?${params}`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Error al obtener detalle');
+        }
+        
+        return data.data;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            throw new Error('La petición tardó demasiado tiempo');
+        }
+        throw error;
     }
-    
-    const data = await response.json();
-    
-    if (!data.success) {
-        throw new Error(data.message || 'Error al obtener detalle');
-    }
-    
-    return data.data;
 }
 
 /**
@@ -232,19 +311,34 @@ async function cargarTotalEgresosSocios() {
         fecha_hasta: fechaHastaEgresosSocios
     });
     
-    const response = await fetch(`controller/egresos_socios_controller.php?${params}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
     
-    if (!response.ok) {
-        throw new Error('Error en la respuesta del servidor');
+    try {
+        const response = await fetch(`controller/egresos_socios_controller.php?${params}`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Error al obtener total');
+        }
+        
+        return data.total;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            throw new Error('La petición tardó demasiado tiempo');
+        }
+        throw error;
     }
-    
-    const data = await response.json();
-    
-    if (!data.success) {
-        throw new Error(data.message || 'Error al obtener total');
-    }
-    
-    return data.total;
 }
 
 /**
@@ -615,7 +709,23 @@ function renderizarDetalleCompleto(detalle, origen) {
     html += '<div class="row mb-3">';
     html += '<div class="col-md-6">';
     html += `<div class="info-item"><strong>Código:</strong> <span class="badge bg-secondary">${detalle.codigo}</span></div>`;
-    html += `<div class="info-item"><strong>Fecha:</strong> ${formatearFechaDisplay(detalle.fecha)}</div>`;
+    
+    // Para pagos de servicios (nuevos motivos), mostrar fecha_carga como fecha principal
+    const motivosPagoServicio = ['Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros'];
+    const esPagoServicio = motivosPagoServicio.includes(detalle.motivo);
+    
+    if (esPagoServicio && detalle.fecha_carga) {
+        // Mostrar fecha de carga como fecha principal
+        html += `<div class="info-item"><strong>Fecha de Pago:</strong> ${formatearFechaDisplay(detalle.fecha_carga)}</div>`;
+        // Mostrar fecha de vencimiento como adicional
+        if (detalle.fecha && detalle.fecha !== detalle.fecha_carga.split(' ')[0]) {
+            html += `<div class="info-item text-muted"><small><strong>Vencimiento:</strong> ${formatearFechaDisplay(detalle.fecha)}</small></div>`;
+        }
+    } else {
+        // Para otros egresos, mostrar fecha normal
+        html += `<div class="info-item"><strong>Fecha:</strong> ${formatearFechaDisplay(detalle.fecha)}</div>`;
+    }
+    
     html += `<div class="info-item"><strong>Director:</strong> ${detalle.director}</div>`;
     html += '</div>';
     html += '<div class="col-md-6">';
@@ -723,7 +833,12 @@ function renderizarDetalleCompleto(detalle, origen) {
     html += '<div class="row text-muted small">';
     if (detalle.fecha_carga || detalle.fecha_solicitud) {
         html += '<div class="col-md-6">';
-        html += `<strong>Fecha de registro:</strong> ${formatearFechaDisplay(detalle.fecha_carga || detalle.fecha_solicitud)}`;
+        const fechaRegistro = detalle.fecha_carga || detalle.fecha_solicitud;
+        // Usar formateo con hora si es datetime, sino solo fecha
+        const fechaFormateada = fechaRegistro && fechaRegistro.includes(' ') 
+            ? formatearFechaHoraDisplay(fechaRegistro) 
+            : formatearFechaDisplay(fechaRegistro);
+        html += `<strong>Fecha de registro:</strong> ${fechaFormateada}`;
         html += '</div>';
     }
     if (detalle.fecha_modificacion) {

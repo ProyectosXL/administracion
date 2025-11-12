@@ -90,7 +90,13 @@ session_start();
                                             <option value="Pago de seguros">Pago de seguros</option>
                                             <option value="Pago de patentes">Pago de patentes</option>
                                             <option value="Pago de expensas">Pago de expensas</option>
+                                            <option value="Pago de tarjetas">Pago de tarjetas</option>
+                                            <option value="Transf. Haberes">Transf. Haberes</option>
+                                            <option value="Otros">Otros</option>
                                         </select>
+                                        <div class="form-text">
+                                            Seleccione el tipo de pago a realizar
+                                        </div>
                                     </div>
                                     
                                     <!-- Sección de Proveedor (solo visible para "Pago de seguros") -->

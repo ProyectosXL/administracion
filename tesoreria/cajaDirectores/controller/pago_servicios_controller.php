@@ -238,7 +238,7 @@ try {
             break;
             
         case 'listar_ultimos':
-            // Obtener últimos pagos de servicios (motivos: Pago de seguros, Pago de patentes, Pago de expensas)
+            // Obtener últimos pagos de servicios (motivos: Pago de seguros, Pago de patentes, Pago de expensas, Pago de tarjetas, Transf. Haberes, Otros)
             $limite = isset($_GET['limite']) ? (int)$_GET['limite'] : 10;
             
             $db = Database::getInstance()->getAppsConnection();
@@ -259,7 +259,7 @@ try {
                     FROM egresos e
                     LEFT JOIN FT_T_PROVEEDORES p ON e.id = p.id_egresos
                     WHERE e.COD_COMP = 'EGR'
-                      AND e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas')
+                      AND e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros')
                     ORDER BY e.fecha_carga DESC, e.id DESC";
             
             $stmt = sqlsrv_query($db, $sql);

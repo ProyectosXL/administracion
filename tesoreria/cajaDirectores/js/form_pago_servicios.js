@@ -588,6 +588,15 @@ function mostrarUltimosPagos(pagos) {
             case 'Pago de expensas':
                 motivoBadge = '<span class="badge bg-info">Expensas</span>';
                 break;
+            case 'Pago de tarjetas':
+                motivoBadge = '<span class="badge bg-warning text-dark">Tarjetas</span>';
+                break;
+            case 'Transf. Haberes':
+                motivoBadge = '<span class="badge bg-danger">Haberes</span>';
+                break;
+            case 'Otros':
+                motivoBadge = '<span class="badge bg-dark">Otros</span>';
+                break;
             default:
                 motivoBadge = '<span class="badge bg-secondary">' + pago.motivo + '</span>';
         }

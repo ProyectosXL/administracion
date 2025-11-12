@@ -193,15 +193,17 @@ async function actualizarResumen(soloSaldo = false, filtrosActivos = null) {
                     // Hay filtros activos: usar esas fechas
                     fechaDesdeIngEgr = filtrosActivos.fecha_desde;
                     fechaHastaIngEgr = filtrosActivos.fecha_hasta;
-                    console.log('Usando filtros de fecha:', fechaDesdeIngEgr, 'a', fechaHastaIngEgr);
+                    console.log('📅 Usando filtros de fecha:', fechaDesdeIngEgr, 'a', fechaHastaIngEgr);
                 } else {
                     // No hay filtros activos: usar rango por defecto (últimos 15 días)
                     const hace15Dias = new Date(hoy);
                     hace15Dias.setDate(hoy.getDate() - 15);
                     fechaDesdeIngEgr = hace15Dias.toISOString().split('T')[0];
                     fechaHastaIngEgr = hoy.toISOString().split('T')[0];
-                    console.log('Usando rango por defecto (últimos 15 días):', fechaDesdeIngEgr, 'a', fechaHastaIngEgr);
+                    console.log('📅 Usando rango por defecto (últimos 15 días):', fechaDesdeIngEgr, 'a', fechaHastaIngEgr);
                 }
+                
+                console.log('🌐 URL completa para movimientos:', `controller/caja_reporte_controller.php?accion=movimientos&fecha_desde=${fechaDesdeIngEgr}&fecha_hasta=${fechaHastaIngEgr}`);
                 
                 let urlIngEgr = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
                 urlIngEgr += `&fecha_desde=${fechaDesdeIngEgr}`;
@@ -233,15 +235,38 @@ async function actualizarResumen(soloSaldo = false, filtrosActivos = null) {
                     let totalIngresosRango = 0;
                     let totalEgresosRango = 0;
                     
+                    console.log('=== DEBUG: Procesando movimientos para tarjetas ===');
+                    console.log('Total de movimientos recibidos:', resultIngEgr.data.length);
+                    
+                    // Filtrar y mostrar solo egresos con nuevos motivos
+                    const egresosNuevosMotivos = resultIngEgr.data.filter(mov => 
+                        mov.tipo === 'EGRESO' && 
+                        (mov.concepto.includes('Pago de tarjetas') || 
+                         mov.concepto.includes('Transf. Haberes') || 
+                         mov.concepto.includes('Otros'))
+                    );
+                    
+                    if (egresosNuevosMotivos.length > 0) {
+                        console.log('✅ Egresos con nuevos motivos encontrados:', egresosNuevosMotivos);
+                    } else {
+                        console.log('⚠️ NO se encontraron egresos con nuevos motivos en la respuesta');
+                    }
+                    
                     resultIngEgr.data.forEach(mov => {
                         if (mov.tipo === 'INGRESO' && mov.recibido == 1) {
                             totalIngresosRango += parseFloat(mov.importe);
                         } else if (mov.tipo === 'EGRESO') {
                             totalEgresosRango += parseFloat(mov.importe);
+                            
+                            // Log especial para nuevos motivos
+                            if (mov.concepto.includes('Otros') || mov.concepto.includes('Pago de tarjetas') || mov.concepto.includes('Transf. Haberes')) {
+                                console.log('💰 Sumando egreso nuevo motivo:', mov.concepto, '- Importe:', mov.importe);
+                            }
                         }
                     });
                     
                     console.log('Tarjetas actualizadas - Ingresos:', totalIngresosRango, 'Egresos:', totalEgresosRango);
+                    console.log('=== FIN DEBUG ===');
                     
                     document.getElementById('totalIngresos').textContent = 
                         formatoMoneda.format(totalIngresosRango);
