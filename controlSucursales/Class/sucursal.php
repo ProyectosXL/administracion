@@ -571,6 +571,7 @@ class Sucursal
         LEFT JOIN RO_T_RECIBOS_VINCULADOS V
             ON A.COD_COMP = V.original_cod_comp COLLATE Latin1_General_BIN
             AND RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(V.original_n_comp)) COLLATE Latin1_General_BIN
+            AND (V.NRO_SUCURS IS NULL OR A.NRO_SUCURS = V.NRO_SUCURS)
         WHERE A.COD_CTA = '100100' AND A.COD_COMP IN ('RAF','REV')
             AND A.FECHA BETWEEN '$desde' AND '$hasta'
         ORDER BY A.FECHA DESC";
@@ -805,16 +806,16 @@ class Sucursal
         }
     }
 
-    public function vincularReciboDb($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario)
+    public function vincularReciboDb($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario, $nro_sucursal = null)
     {
         $sql = "
             INSERT INTO RO_T_RECIBOS_VINCULADOS
-                (original_cod_comp, original_n_comp, vinculado_cod_comp, vinculado_n_comp, usuario)
+                (original_cod_comp, original_n_comp, vinculado_cod_comp, vinculado_n_comp, usuario, NRO_SUCURS)
             VALUES
-                (?, ?, ?, ?, ?)
+                (?, ?, ?, ?, ?, ?)
         ";
 
-        $params = array($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario);
+        $params = array($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario, $nro_sucursal);
 
         try {
             $stmt = sqlsrv_prepare($this->cid_central, $sql, $params);

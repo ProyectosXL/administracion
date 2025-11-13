@@ -333,6 +333,7 @@ const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculad
             data.append('original_n_comp', currentRowData.nComp);
             data.append('vinculado_cod_comp', codCompVinculado);
             data.append('vinculado_n_comp', nCompVinculado);
+            data.append('nro_sucursal', currentRowData.nroSucursal);
 
             try {
                 const response = await fetch('Controller/ControlEgresosController.php?accion=vincularRecibo', {

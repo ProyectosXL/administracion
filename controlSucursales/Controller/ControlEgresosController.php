@@ -76,8 +76,9 @@ function vincularRecibo($sucursal) {
     $original_n_comp = $_POST['original_n_comp'];
     $vinculado_cod_comp = $_POST['vinculado_cod_comp'];
     $vinculado_n_comp = $_POST['vinculado_n_comp'];
+    $nro_sucursal = isset($_POST['nro_sucursal']) ? $_POST['nro_sucursal'] : null;
 
-    $resultado = $sucursal->vincularReciboDb($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario);
+    $resultado = $sucursal->vincularReciboDb($original_cod_comp, $original_n_comp, $vinculado_cod_comp, $vinculado_n_comp, $usuario, $nro_sucursal);
 
     ob_end_clean();
     header('Content-Type: application/json');
