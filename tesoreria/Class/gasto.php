@@ -585,5 +585,49 @@ class Gasto
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+        // CORRECCIÓN: Nuevo método para inserción por lotes (Batch Insert).
+    public function insertarMultiplesEgresos($nroRegistro, $egresos, $nroSucursal) {
+        if (empty($egresos)) {
+            return true;
+        }
+
+        try {
+            $sql = "INSERT INTO RO_EGRESOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_COMP, T_COMP, N_COMP, NRO_SUCURS) VALUES ";
+            
+            $params = [];
+            $valuePlaceholders = [];
+
+            foreach ($egresos as $egreso) {
+                // Preparamos los placeholders para la consulta preparada
+                $valuePlaceholders[] = "(?, ?, ?, ?, ?)";
+                
+                // Formateamos la fecha y la agregamos a los parámetros
+                $fechaObj = DateTime::createFromFormat('d/m/Y', $egreso['fecha']);
+                $fechaConvertida = $fechaObj ? $fechaObj->format('Y-m-d') : null;
+                
+                // Agregamos todos los valores al array de parámetros
+                $params[] = $nroRegistro;
+                $params[] = $fechaConvertida;
+                $params[] = $egreso['tipo'];
+                $params[] = $egreso['comprobante'];
+                $params[] = $nroSucursal;
+            }
+
+            // Unimos todos los placeholders: (?, ?, ?, ?, ?), (?, ?, ?, ?, ?), ...
+            $sql .= implode(', ', $valuePlaceholders);
+
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta de inserción múltiple de egresos: " . print_r(sqlsrv_errors(), true));
+            }
+
+            return true;
+        } catch (Exception $e) {
+            error_log("Error en insertarMultiplesEgresos: " . $e->getMessage());
+            // Relanzamos la excepción para que la transacción la capture
+            throw $e; 
+        }
+    }
 }
 ?>

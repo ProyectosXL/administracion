@@ -545,6 +545,74 @@ class Sucursal {
             throw $e;
         }
     }
+        // ========================================================================
+    // === NUEVOS MÉTODOS AÑADIDOS PARA LAS CORRECCIONES =====================
+    // ========================================================================
+
+    /**
+     * Devuelve el objeto de conexión a la base de datos.
+     * Necesario para que el controlador pueda manejar transacciones.
+     * @return resource La conexión a la base de datos.
+     */
+    public function getConexion() {
+        return $this->cid_central;
+    }
+
+    /**
+     * Inserta múltiples remitos en la base de datos en una sola operación (Batch Insert).
+     * Es mucho más eficiente que insertar uno por uno.
+     *
+     * @param string $nroRegistro El número de registro al que pertenecen los remitos.
+     * @param array $remitos Un array de objetos de remito.
+     * @param int $nroSucursal El número de la sucursal.
+     * @return bool True si la operación fue exitosa.
+     * @throws Exception Si ocurre un error en la base de datos.
+     */
+    public function insertarMultiplesRemitos($nroRegistro, $remitos, $nroSucursal) {
+        if (empty($remitos)) {
+            return true;
+        }
+
+        try {
+            $sql = "INSERT INTO RO_REMITOS_GUIA_RETIROS_SUC (NRO_REGISTRO, FECHA_REM, N_COMP, DESTINO, BULTOS, NRO_SUCURS) VALUES ";
+            
+            $params = [];
+            $valuePlaceholders = [];
+
+            foreach ($remitos as $remito) {
+                // Preparamos los placeholders (?, ?, ?, ?, ?, ?) para la consulta.
+                $valuePlaceholders[] = "(?, ?, ?, ?, ?, ?)";
+                
+                // Convertimos la fecha del formato d/m/Y a Y-m-d para la base de datos.
+                $fechaObj = DateTime::createFromFormat('d/m/Y', $remito['fecha']);
+                $fechaConvertida = $fechaObj ? $fechaObj->format('Y-m-d') : null;
+                
+                // Agregamos todos los valores al array de parámetros.
+                $params[] = $nroRegistro;
+                $params[] = $fechaConvertida;
+                $params[] = $remito['remito'];
+                $params[] = $remito['destino'];
+                $params[] = $remito['bultos'];
+                $params[] = $nroSucursal;
+            }
+
+            // Unimos los placeholders: (?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?), ...
+            $sql .= implode(', ', $valuePlaceholders);
+
+            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+            if ($stmt === false) {
+                // Si falla, lanzamos una excepción para que la transacción haga rollback.
+                throw new Exception("Error en la inserción múltiple de remitos: " . print_r(sqlsrv_errors(), true));
+            }
+
+            return true;
+        } catch (Exception $e) {
+            error_log("Error en insertarMultiplesRemitos: " . $e->getMessage());
+            // Relanzamos la excepción para que el controlador la capture.
+            throw $e;
+        }
+    }
 }
 
 ?>
