@@ -91,6 +91,9 @@ session_start();
                                             <option value="Pago de patentes">Pago de patentes</option>
                                             <option value="Pago de expensas">Pago de expensas</option>
                                             <option value="Pago de tarjetas">Pago de tarjetas</option>
+                                            <option value="Pago de telefonía">Pago de telefonía</option>
+                                            <option value="Pago de Peaje">Pago de Peaje</option>
+                                            <option value="Pago de Obra Social">Pago de Obra Social</option>
                                             <option value="Transf. Haberes">Transf. Haberes</option>
                                             <option value="Otros">Otros</option>
                                         </select>

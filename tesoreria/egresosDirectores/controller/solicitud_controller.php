@@ -1,4 +1,8 @@
 <?php
+// Deshabilitar output de errores en HTML para no romper el JSON
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
 header('Content-Type: application/json');
 require_once __DIR__ . '/../Class/SolicitudEgreso.php';
 require_once __DIR__ . '/../Class/Director.php';
@@ -12,6 +16,11 @@ try {
     
     switch ($accion) {
         case 'crear':
+            
+            // Log de datos recibidos
+            error_log("DEBUG - POST recibido: " . print_r($_POST, true));
+            error_log("DEBUG - Motivo: " . ($_POST['motivo'] ?? 'no definido'));
+            error_log("DEBUG - Tipo asignación: " . ($_POST['tipo_asignacion'] ?? 'no definido'));
             
             // Validar datos requeridos
             if (empty($_POST['id_director']) || empty($_POST['motivo']) || empty($_POST['importe'])) {
@@ -164,12 +173,39 @@ try {
                 $datos['archivos'] = true;
             }
             
-            // Crear la solicitud
-            $resultado = $solicitud->crear($datos);
+            // Verificar si es retiro múltiple
+            $esRetiroMultiple = false;
+            if ($_POST['motivo'] === SolicitudEgreso::MOTIVO_RETIRO_DINERO && 
+                isset($_POST['tipo_asignacion']) && 
+                $_POST['tipo_asignacion'] === 'MULTIPLE' &&
+                !empty($_POST['distribucion'])) {
+                
+                $esRetiroMultiple = true;
+                
+                // Decodificar distribución JSON
+                $distribucion = json_decode($_POST['distribucion'], true);
+                
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new Exception('Error al decodificar la distribución: ' . json_last_error_msg());
+                }
+                
+                if (empty($distribucion) || !is_array($distribucion)) {
+                    throw new Exception('La distribución no es válida');
+                }
+                
+                error_log("DEBUG - Creando retiro múltiple con " . count($distribucion) . " directores");
+                
+                // Usar el método crearMultiple
+                $resultado = $solicitud->crearMultiple($datos, $distribucion);
+            } else {
+                // Crear solicitud individual normal
+                $resultado = $solicitud->crear($datos);
+            }
             
             error_log("DEBUG - Resultado de crear solicitud: " . print_r($resultado, true));
             
             // Si se creó exitosamente y hay archivos, procesarlos
+            // NOTA: Los retiros múltiples NO tienen archivos (solo compras personales)
             if ($resultado['success'] && $_POST['motivo'] === SolicitudEgreso::MOTIVO_COMPRA_PERSONAL) {
                 
                 error_log("DEBUG - Intentando procesar archivos...");
@@ -205,17 +241,39 @@ try {
             // Enviar notificación por email si la solicitud se creó exitosamente
             if ($resultado['success']) {
                 try {
-                    error_log("DEBUG - Intentando enviar email para solicitud: " . $resultado['id_solicitud']);
                     $emailNotificacion = new EmailNotificacion();
-                    $emailEnviado = $emailNotificacion->notificarNuevaSolicitud([
-                        'id_solicitud' => $resultado['id_solicitud'],
-                        'motivo' => $_POST['motivo']
-                    ]);
                     
-                    if ($emailEnviado) {
-                        error_log("DEBUG - Notificación por email enviada correctamente");
+                    // Verificar si es solicitud múltiple
+                    if (isset($resultado['solicitudes_creadas']) && $resultado['solicitudes_creadas'] > 1) {
+                        // Es solicitud múltiple - enviar UN SOLO email con el detalle completo
+                        error_log("DEBUG - Enviando email de solicitud múltiple con " . $resultado['solicitudes_creadas'] . " solicitudes");
+                        
+                        $emailEnviado = $emailNotificacion->notificarNuevaSolicitudMultiple([
+                            'id_base' => $resultado['id_base'],
+                            'solicitudes_creadas' => $resultado['solicitudes_creadas'],
+                            'detalles' => $resultado['detalles'],
+                            'observaciones' => $_POST['observaciones'] ?? ''
+                        ]);
+                        
+                        if ($emailEnviado) {
+                            error_log("DEBUG - Email de solicitud múltiple enviado correctamente");
+                        } else {
+                            error_log("DEBUG - No se pudo enviar el email de solicitud múltiple");
+                        }
+                        
                     } else {
-                        error_log("DEBUG - No se pudo enviar la notificación por email");
+                        // Es solicitud individual
+                        error_log("DEBUG - Intentando enviar email para solicitud: " . $resultado['id_solicitud']);
+                        $emailEnviado = $emailNotificacion->notificarNuevaSolicitud([
+                            'id_solicitud' => $resultado['id_solicitud'],
+                            'motivo' => $_POST['motivo']
+                        ]);
+                        
+                        if ($emailEnviado) {
+                            error_log("DEBUG - Notificación por email enviada correctamente");
+                        } else {
+                            error_log("DEBUG - No se pudo enviar la notificación por email");
+                        }
                     }
                 } catch (Exception $emailException) {
                     // Capturar cualquier error de email pero no interrumpir el flujo
@@ -416,15 +474,39 @@ try {
             ]);
             break;
             
+        case 'obtener_directores_distribucion':
+            $director = new Director();
+            $directores = $director->obtenerDirectoresDistribucion();
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $directores
+            ]);
+            break;
+            
         default:
             throw new Exception('Acción no válida');
     }
     
 } catch (Exception $e) {
     http_response_code(400);
+    error_log("ERROR en solicitud_controller: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => $e->getMessage(),
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine()
+    ]);
+} catch (Error $e) {
+    http_response_code(500);
+    error_log("ERROR FATAL en solicitud_controller: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error fatal en el servidor: ' . $e->getMessage(),
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine()
     ]);
 }
 

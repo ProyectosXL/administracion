@@ -164,6 +164,11 @@ class Egreso {
                 $sql .= " AND e.motivo != 'COMPENSACION_IVA'";
             }
             
+            // Por defecto, excluir tipo_gasto = 'Servicios' a menos que se especifique incluirlos
+            if (!isset($filtros['incluir_servicios']) || $filtros['incluir_servicios'] !== true) {
+                $sql .= " AND (e.tipo_gasto IS NULL OR e.tipo_gasto != 'Servicios')";
+            }
+            
             if (!empty($filtros['fecha_desde'])) {
                 // Para pagos de servicios, filtrar por fecha_carga; para otros, por fecha
                 $sql .= " AND (
@@ -248,14 +253,9 @@ class Egreso {
                     FROM egresos 
                     WHERE COD_COMP != 'GAS'
                       AND motivo != 'COMPENSACION_IVA'
-                      AND (
-                          (motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                           AND CAST(fecha_carga AS DATE) >= ?)
-                          OR
-                          (motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                           AND fecha >= ?)
-                      )";
-            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp, $fechaInicioApp]);
+                      AND (tipo_gasto IS NULL OR tipo_gasto != 'Servicios')
+                      AND fecha >= ?";
+            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
             
             if ($stmt === false) {
                 throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));

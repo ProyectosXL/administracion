@@ -541,3 +541,93 @@
 .modal-backdrop.show ~ .modal-backdrop.show {
     z-index: 1059 !important;
 }
+
+/* ============================================
+   ESTILOS PARA DISTRIBUCIÓN MÚLTIPLE
+   ============================================ */
+
+/* Tabla de distribución */
+#tablaDistribucion {
+    margin-bottom: 0;
+}
+
+#tablaDistribucion thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#tablaDistribucion tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Inputs de importe en la tabla */
+.importe-distribucion {
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: right;
+    border: 1px solid #dee2e6;
+}
+
+.importe-distribucion:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Total distribuido */
+#totalDistribuido {
+    font-size: 1.1rem;
+    color: #0d6efd;
+}
+
+/* Alerta de validación */
+#alertaValidacion {
+    margin-top: 1rem;
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Radio buttons de tipo de asignación */
+#divTipoAsignacion .form-check {
+    padding: 0.75rem;
+    border: 2px solid #dee2e6;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+#divTipoAsignacion .form-check:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+}
+
+#divTipoAsignacion .form-check-input:checked ~ .form-check-label {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+#divTipoAsignacion .form-check:has(.form-check-input:checked) {
+    background-color: #e7f1ff;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15);
+}
+
+/* Responsivo para móviles */
+@media (max-width: 768px) {
+    #tablaDistribucion {
+        font-size: 0.9rem;
+    }
+    
+    .importe-distribucion {
+        font-size: 0.9rem;
+    }
+    
+    #totalDistribuido {
+        font-size: 1rem;
+    }
+}

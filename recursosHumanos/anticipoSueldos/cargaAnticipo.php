@@ -16,9 +16,8 @@ $nroSucurs = $_SESSION['numsuc'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carga de Anticipo de Sueldo</title>
-    <?php 
-            require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/assets/css/css.php';
-    ?>
+    <!-- ICONO DE XL -->
+    <link rel="icon" type="image/jpg" href="../../image/icono.jpg">
     
     <!-- CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">

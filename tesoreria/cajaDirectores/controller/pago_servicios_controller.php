@@ -158,9 +158,10 @@ try {
                             foto,
                             centro_costo,
                             proveedor,
+                            tipo_gasto,
                             fecha_carga
                         ) VALUES (
-                            ?, 'EGR', ?, ?, ?, 1, ?, ?, ?, NULL, ?, GETDATE()
+                            ?, 'EGR', ?, ?, ?, 1, ?, ?, ?, NULL, ?, 'Servicios', GETDATE()
                         );
                         SELECT SCOPE_IDENTITY() AS id_egreso;";
             

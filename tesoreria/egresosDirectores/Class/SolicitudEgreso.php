@@ -408,4 +408,144 @@ class SolicitudEgreso {
             return false;
         }
     }
+    
+    /**
+     * Crea múltiples solicitudes de egreso (una por cada director en la distribución)
+     * Utilizado para retiros de dinero con tipo de asignación múltiple
+     * @param array $datos Datos base de la solicitud
+     * @param array $distribucion Array con [id_director => importe, ...]
+     * @return array
+     */
+    public function crearMultiple(array $datos, array $distribucion) {
+        try {
+            // Validar que sea retiro de dinero
+            if ($datos['motivo'] !== self::MOTIVO_RETIRO_DINERO) {
+                throw new Exception("La creación múltiple solo aplica para retiros de dinero");
+            }
+            
+            // Validar que haya distribución
+            if (empty($distribucion) || !is_array($distribucion)) {
+                throw new Exception("Debe proporcionar una distribución válida");
+            }
+            
+            // Validar que la suma de importes coincida con el importe total
+            $importeTotal = (float)$datos['importe'];
+            $sumaDistribucion = 0;
+            
+            foreach ($distribucion as $item) {
+                if (!isset($item['id_director']) || !isset($item['importe'])) {
+                    throw new Exception("Formato de distribución inválido");
+                }
+                $sumaDistribucion += (float)$item['importe'];
+            }
+            
+            if (abs($importeTotal - $sumaDistribucion) > 0.01) {
+                throw new Exception("La suma de la distribución ($sumaDistribucion) no coincide con el importe total ($importeTotal)");
+            }
+            
+            // Generar un ID base para agrupar las solicitudes
+            $idBase = $this->generarIdSolicitud();
+            $observacionesBase = $datos['observaciones'] ?? '';
+            $idsCreados = [];
+            $errores = [];
+            
+            // Crear una solicitud por cada director
+            foreach ($distribucion as $index => $item) {
+                try {
+                    $idDirector = (int)$item['id_director'];
+                    $importe = (float)$item['importe'];
+                    
+                    // Saltar si el importe es 0
+                    if ($importe <= 0) {
+                        continue;
+                    }
+                    
+                    // Validar que el director exista
+                    if (!$this->director->existeDirector($idDirector)) {
+                        throw new Exception("Director con ID $idDirector no es válido");
+                    }
+                    
+                    // Generar ID único para esta solicitud (basado en el ID base + índice)
+                    $idSolicitud = $idBase . '-' . str_pad($index + 1, 2, '0', STR_PAD_LEFT);
+                    
+                    // Las solicitudes de retiro múltiple inician en CARGADO
+                    $estadoInicial = self::ESTADO_CARGADO;
+                    
+                    // Agregar referencia al grupo en observaciones
+                    $observaciones = $observacionesBase;
+                    if (!empty($observaciones)) {
+                        $observaciones .= ' | ';
+                    }
+                    $observaciones .= "Retiro múltiple - Grupo: $idBase";
+                    
+                    // Insertar solicitud
+                    $sql = "INSERT INTO solicitudes_egresos (
+                                id_solicitud, id_director, motivo, importe, 
+                                estado, observaciones, fecha_solicitud,
+                                NOM_PROVEE, CBU, DESCRIPCION_CBU
+                            ) VALUES (?, ?, ?, ?, ?, ?, GETDATE(), NULL, NULL, NULL)";
+                    
+                    $params = [
+                        $idSolicitud,
+                        $idDirector,
+                        self::MOTIVO_RETIRO_DINERO,
+                        $importe,
+                        $estadoInicial,
+                        $observaciones
+                    ];
+                    
+                    $stmt = sqlsrv_query($this->db, $sql, $params);
+                    
+                    if ($stmt === false) {
+                        throw new Exception("Error al crear solicitud: " . print_r(sqlsrv_errors(), true));
+                    }
+                    
+                    sqlsrv_free_stmt($stmt);
+                    
+                    // Obtener nombre del director para el log
+                    $nombreDirector = $this->director->obtenerNombrePorId($idDirector);
+                    
+                    $idsCreados[] = [
+                        'id_solicitud' => $idSolicitud,
+                        'id_director' => $idDirector,
+                        'nombre_director' => $nombreDirector,
+                        'importe' => $importe
+                    ];
+                    
+                    error_log("Solicitud múltiple creada: $idSolicitud - Director: $nombreDirector - Importe: $importe");
+                    
+                } catch (Exception $e) {
+                    $errores[] = "Director ID $idDirector: " . $e->getMessage();
+                    error_log("Error al crear solicitud para director $idDirector: " . $e->getMessage());
+                }
+            }
+            
+            // Verificar si se crearon solicitudes
+            if (empty($idsCreados)) {
+                throw new Exception("No se pudo crear ninguna solicitud. Errores: " . implode('; ', $errores));
+            }
+            
+            $resultado = [
+                'success' => true,
+                'id_base' => $idBase,
+                'solicitudes_creadas' => count($idsCreados),
+                'detalles' => $idsCreados,
+                'message' => count($idsCreados) . ' solicitudes creadas correctamente'
+            ];
+            
+            // Agregar advertencias si hubo errores parciales
+            if (!empty($errores)) {
+                $resultado['advertencias'] = $errores;
+            }
+            
+            return $resultado;
+            
+        } catch (Exception $e) {
+            error_log("Error en crearMultiple: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
 }

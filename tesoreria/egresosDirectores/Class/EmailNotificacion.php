@@ -27,7 +27,7 @@ class EmailNotificacion {
     private const EMAIL_FROM_NAME = 'Sistema Egresos Directores';
     
     // Modo desarrollo: enviar todos los emails a federico.trejo@xl.com.ar
-    private const DEVELOP = false;
+    private const DEVELOP = true;
     private const EMAIL_DEVELOP = 'federico.trejo@xl.com.ar';
     
     private $db;
@@ -78,6 +78,21 @@ class EmailNotificacion {
             }
         } catch (Exception $e) {
             error_log("Error al enviar notificación de nueva solicitud: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Envía notificación cuando se crea una solicitud múltiple de retiro
+     * @param array $datosMultiple Información de la solicitud múltiple (id_base, detalles, etc)
+     * @return bool
+     */
+    public function notificarNuevaSolicitudMultiple(array $datosMultiple) {
+        try {
+            // Enviar solo a Tesorería
+            return $this->enviarEmailNuevoRetiroMultiple($datosMultiple, self::EMAIL_TESORERIA);
+        } catch (Exception $e) {
+            error_log("Error al enviar notificación de solicitud múltiple: " . $e->getMessage());
             return false;
         }
     }
@@ -331,6 +346,107 @@ class EmailNotificacion {
                     <p style='margin: 0;'>Esta solicitud está lista para realizar la transferencia. Una vez efectuado el pago, deberá adjuntar el comprobante de transferencia en el sistema.</p>
                 </div>
                 
+            "
+        ]);
+        
+        return $this->enviarEmail($destinatario, $asunto, $mensaje);
+    }
+    
+    /**
+     * Envía email de nueva solicitud múltiple de retiro de dinero
+     * @param array $datosMultiple
+     * @param string $destinatario
+     * @return bool
+     */
+    private function enviarEmailNuevoRetiroMultiple(array $datosMultiple, string $destinatario) {
+        $fecha = date('d/m/Y H:i');
+        $idBase = $datosMultiple['id_base'];
+        $cantidadSolicitudes = $datosMultiple['solicitudes_creadas'];
+        $importeTotal = 0;
+        $observaciones = $datosMultiple['observaciones'] ?? '';
+        
+        // Calcular importe total y generar tabla de detalle
+        $filasTabla = '';
+        foreach ($datosMultiple['detalles'] as $detalle) {
+            $importeTotal += $detalle['importe'];
+            $importeFormateado = number_format($detalle['importe'], 2, ',', '.');
+            $filasTabla .= "
+                <tr>
+                    <td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{$detalle['id_solicitud']}</td>
+                    <td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{$detalle['nombre_director']}</td>
+                    <td style='padding: 8px; border-bottom: 1px solid #dee2e6; text-align: right; font-weight: bold;'>$ {$importeFormateado}</td>
+                </tr>
+            ";
+        }
+        
+        $importeTotalFormateado = number_format($importeTotal, 2, ',', '.');
+        
+        $asunto = "Retiro Múltiple - Grupo {$idBase} - {$cantidadSolicitudes} Solicitudes";
+        
+        $mensaje = $this->generarHtmlEmail([
+            'titulo' => 'Nueva Solicitud de Retiro Múltiple',
+            'contenido' => "
+                <p>Se ha registrado una solicitud de retiro múltiple que incluye transferencias para <strong>{$cantidadSolicitudes} directores</strong>.</p>
+                
+                <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                    <h3 style='color: #28a745; margin-top: 0;'>Resumen del Grupo</h3>
+                    <table style='width: 100%; border-collapse: collapse;'>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold; width: 180px;'>ID Grupo:</td>
+                            <td style='padding: 8px 0;'>{$idBase}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Fecha:</td>
+                            <td style='padding: 8px 0;'>{$fecha}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Cantidad de Solicitudes:</td>
+                            <td style='padding: 8px 0;'>{$cantidadSolicitudes}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Importe Total:</td>
+                            <td style='padding: 8px 0; color: #28a745; font-size: 18px; font-weight: bold;'>$ {$importeTotalFormateado}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 8px 0; font-weight: bold;'>Estado:</td>
+                            <td style='padding: 8px 0;'><span style='background-color: #17a2b8; color: #fff; padding: 5px 10px; border-radius: 3px;'>CARGADO - Listo para Pago</span></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div style='background-color: #fff; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;'>
+                    <h3 style='color: #333; margin-top: 0;'>Detalle de Distribución</h3>
+                    <table style='width: 100%; border-collapse: collapse;'>
+                        <thead>
+                            <tr style='background-color: #f8f9fa;'>
+                                <th style='padding: 10px; border-bottom: 2px solid #dee2e6; text-align: left;'>ID Solicitud</th>
+                                <th style='padding: 10px; border-bottom: 2px solid #dee2e6; text-align: left;'>Director</th>
+                                <th style='padding: 10px; border-bottom: 2px solid #dee2e6; text-align: right;'>Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {$filasTabla}
+                        </tbody>
+                        <tfoot>
+                            <tr style='background-color: #f8f9fa; font-weight: bold;'>
+                                <td colspan='2' style='padding: 10px; border-top: 2px solid #dee2e6; text-align: right;'>TOTAL:</td>
+                                <td style='padding: 10px; border-top: 2px solid #dee2e6; text-align: right; color: #28a745; font-size: 16px;'>$ {$importeTotalFormateado}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                " . ($observaciones ? "
+                <div style='background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;'>
+                    <h4 style='margin-top: 0; color: #856404;'>Observaciones:</h4>
+                    <p style='margin: 0;'>{$observaciones}</p>
+                </div>
+                " : "") . "
+                
+                <div style='background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8;'>
+                    <h4 style='margin-top: 0; color: #0c5460;'>Acción Requerida:</h4>
+                    <p style='margin: 0;'>Estas solicitudes están listas para realizar las transferencias. Cada solicitud requiere su propio comprobante de pago una vez efectuada la transferencia.</p>
+                </div>
             "
         ]);
         

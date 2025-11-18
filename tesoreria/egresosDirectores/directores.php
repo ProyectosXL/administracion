@@ -109,6 +109,33 @@ $titulo_pagina = $usuario;
                                         </div>
                                     </div>
                                     
+                                    <!-- Sección de tipo de asignación (solo para RETIRO_DINERO) -->
+                                    <div id="divTipoAsignacion" class="mb-3 d-none">
+                                        <label class="form-label">
+                                            Tipo de Asignación <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="tipoAsignacion" 
+                                                           id="tipoIndividual" value="INDIVIDUAL" checked>
+                                                    <label class="form-check-label" for="tipoIndividual">
+                                                        Individual
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="tipoAsignacion" 
+                                                           id="tipoMultiple" value="MULTIPLE">
+                                                    <label class="form-check-label" for="tipoMultiple">
+                                                        Múltiple
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <div class="mb-3">
                                         <label for="importeSolicitud" class="form-label">
                                             Importe SIN IVA <span class="text-danger">*</span>
@@ -120,6 +147,48 @@ $titulo_pagina = $usuario;
                                         </div>
                                         <div class="form-text">
                                             Ingrese el importe en pesos SIN IVA. 
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Sección de distribución entre directores (solo para tipo MULTIPLE) -->
+                                    <div id="divDistribucion" class="mb-3 d-none">
+                                        <h5 class="border-bottom pb-2 mb-3">
+                                            <i class="bi bi-people-fill"></i> Distribución entre Directores
+                                        </h5>
+                                        
+                                        <div class="alert alert-info mb-3">
+                                            <i class="bi bi-info-circle"></i>
+                                            El importe será distribuido entre los directores. Puede editar los valores manualmente. 
+                                            La suma debe coincidir exactamente con el importe total.
+                                        </div>
+                                        
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover" id="tablaDistribucion">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Director</th>
+                                                        <th style="width: 200px;">Importe Asignado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="cuerpoTablaDistribucion">
+                                                    <!-- Se llenará dinámicamente -->
+                                                </tbody>
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <th class="text-end">TOTAL:</th>
+                                                        <th>
+                                                            <span id="totalDistribuido" class="fw-bold">$ 0</span>
+                                                        </th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                        
+                                        <div id="alertaValidacion" class="alert alert-danger d-none">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            <strong>Error:</strong> La suma de los importes asignados 
+                                            (<span id="sumaActual">0</span>) no coincide con el importe total 
+                                            (<span id="importeTotal">0</span>).
                                         </div>
                                     </div>
                                     

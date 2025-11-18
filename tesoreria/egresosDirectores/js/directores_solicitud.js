@@ -111,18 +111,39 @@ function configurarFormulario() {
             const divArchivos = document.getElementById('divArchivos');
             const alertaFactura = document.getElementById('alertaFactura');
             const divProveedor = document.getElementById('divProveedor');
+            const divTipoAsignacion = document.getElementById('divTipoAsignacion');
+            const divDistribucion = document.getElementById('divDistribucion');
             
             if (this.value === 'COMPRA_PERSONAL') {
                 if (divArchivos) divArchivos.classList.remove('d-none');
                 if (alertaFactura) alertaFactura.classList.remove('d-none');
                 if (divProveedor) divProveedor.classList.remove('d-none');
+                // Ocultar sección de tipo de asignación
+                if (divTipoAsignacion) divTipoAsignacion.classList.add('d-none');
+                if (divDistribucion) divDistribucion.classList.add('d-none');
+            } else if (this.value === 'RETIRO_DINERO') {
+                if (divArchivos) divArchivos.classList.add('d-none');
+                if (alertaFactura) alertaFactura.classList.add('d-none');
+                if (divProveedor) divProveedor.classList.add('d-none');
+                // Mostrar sección de tipo de asignación
+                if (divTipoAsignacion) divTipoAsignacion.classList.remove('d-none');
+                // Verificar el tipo seleccionado
+                const tipoIndividual = document.getElementById('tipoIndividual');
+                if (tipoIndividual && tipoIndividual.checked) {
+                    if (divDistribucion) divDistribucion.classList.add('d-none');
+                }
             } else {
                 if (divArchivos) divArchivos.classList.add('d-none');
                 if (alertaFactura) alertaFactura.classList.add('d-none');
                 if (divProveedor) divProveedor.classList.add('d-none');
+                if (divTipoAsignacion) divTipoAsignacion.classList.add('d-none');
+                if (divDistribucion) divDistribucion.classList.add('d-none');
             }
         });
     }
+    
+    // Configurar radio buttons de tipo de asignación
+    configurarTipoAsignacion();
     
     // Configurar manejo de archivos
     configurarArchivos();
@@ -384,6 +405,33 @@ async function crearSolicitud() {
             throw new Error('Debe ingresar un importe válido');
         }
         
+        // Validar y agregar datos de distribución si es retiro múltiple
+        if (formData.get('motivo') === 'RETIRO_DINERO') {
+            const tipoMultiple = document.getElementById('tipoMultiple');
+            
+            if (tipoMultiple && tipoMultiple.checked) {
+                // Validar que la distribución sea correcta
+                if (!validarDistribucion()) {
+                    throw new Error('La suma de los importes asignados debe coincidir exactamente con el importe total');
+                }
+                
+                // Obtener datos de distribución
+                const distribucion = obtenerDatosDistribucion();
+                
+                if (distribucion.length === 0) {
+                    throw new Error('Debe asignar importes a los directores');
+                }
+                
+                // Agregar tipo de asignación y distribución
+                formData.append('tipo_asignacion', 'MULTIPLE');
+                formData.append('distribucion', JSON.stringify(distribucion));
+                
+                console.log('Distribución múltiple:', distribucion);
+            } else {
+                formData.append('tipo_asignacion', 'INDIVIDUAL');
+            }
+        }
+        
         // Agregar datos de proveedor si es compra personal
         if (formData.get('motivo') === 'COMPRA_PERSONAL') {
             const proveedorSelect = document.getElementById('proveedorSelect');
@@ -453,9 +501,33 @@ async function crearSolicitud() {
         const result = await response.json();
         
         if (result.success) {
-            let mensaje = `Solicitud creada correctamente. ID: ${result.id_solicitud}`;
-            if (result.archivos && result.archivos.length > 0) {
-                mensaje += `\nArchivos adjuntos: ${result.archivos.length}`;
+            let mensaje = '';
+            
+            // Verificar si es creación múltiple
+            if (result.solicitudes_creadas && result.solicitudes_creadas > 1) {
+                mensaje = `✅ ${result.solicitudes_creadas} solicitudes creadas correctamente\n\n`;
+                mensaje += `📋 Grupo: ${result.id_base}\n\n`;
+                
+                if (result.detalles && result.detalles.length > 0) {
+                    mensaje += 'Detalle:\n';
+                    result.detalles.forEach(detalle => {
+                        mensaje += `• ${detalle.nombre_director}: $ ${formatearNumero(detalle.importe.toString())}\n`;
+                    });
+                }
+                
+                // Agregar advertencias si las hay
+                if (result.advertencias && result.advertencias.length > 0) {
+                    mensaje += '\n⚠️ Advertencias:\n';
+                    result.advertencias.forEach(adv => {
+                        mensaje += `• ${adv}\n`;
+                    });
+                }
+            } else {
+                // Solicitud individual
+                mensaje = `Solicitud creada correctamente. ID: ${result.id_solicitud}`;
+                if (result.archivos && result.archivos.length > 0) {
+                    mensaje += `\nArchivos adjuntos: ${result.archivos.length}`;
+                }
             }
             
             mostrarAlerta('Éxito', mensaje);
@@ -486,11 +558,21 @@ async function crearSolicitud() {
             const alertaFactura = document.getElementById('alertaFactura');
             const divProveedor = document.getElementById('divProveedor');
             const alertaCBU = document.getElementById('alertaCBU');
+            const divTipoAsignacion = document.getElementById('divTipoAsignacion');
+            const divDistribucion = document.getElementById('divDistribucion');
+            const alertaValidacion = document.getElementById('alertaValidacion');
             
             if (divArchivos) divArchivos.classList.add('d-none');
             if (alertaFactura) alertaFactura.classList.add('d-none');
             if (divProveedor) divProveedor.classList.add('d-none');
             if (alertaCBU) alertaCBU.classList.add('d-none');
+            if (divTipoAsignacion) divTipoAsignacion.classList.add('d-none');
+            if (divDistribucion) divDistribucion.classList.add('d-none');
+            if (alertaValidacion) alertaValidacion.classList.add('d-none');
+            
+            // Resetear tipo de asignación a Individual
+            const tipoIndividual = document.getElementById('tipoIndividual');
+            if (tipoIndividual) tipoIndividual.checked = true;
             
             // Cambiar a la pestaña de listado para ver la solicitud
             const tabListado = document.getElementById('listado-tab');
@@ -777,3 +859,301 @@ window.inicializarSelect2Proveedores = inicializarSelect2Proveedores;
 window.validarCBU = validarCBU;
 window.formatProveedor = formatProveedor;
 window.formatProveedorSeleccion = formatProveedorSeleccion;
+
+// ============================================================================
+// FUNCIONES PARA DISTRIBUCIÓN MÚLTIPLE DE RETIROS
+// ============================================================================
+
+let directoresDistribucionCache = [];
+
+/**
+ * Configura los event listeners para tipo de asignación
+ */
+function configurarTipoAsignacion() {
+    const tipoIndividual = document.getElementById('tipoIndividual');
+    const tipoMultiple = document.getElementById('tipoMultiple');
+    const importeInput = document.getElementById('importeSolicitud');
+    
+    if (tipoIndividual) {
+        tipoIndividual.addEventListener('change', function() {
+            if (this.checked) {
+                ocultarDistribucion();
+            }
+        });
+    }
+    
+    if (tipoMultiple) {
+        tipoMultiple.addEventListener('change', function() {
+            if (this.checked) {
+                mostrarDistribucion();
+            }
+        });
+    }
+    
+    // Escuchar cambios en el importe para recalcular distribución
+    if (importeInput) {
+        importeInput.addEventListener('input', function() {
+            const tipoMultiple = document.getElementById('tipoMultiple');
+            if (tipoMultiple && tipoMultiple.checked) {
+                calcularDistribucionEquitativa();
+            }
+        });
+    }
+}
+
+/**
+ * Muestra la sección de distribución y carga los directores
+ */
+async function mostrarDistribucion() {
+    const divDistribucion = document.getElementById('divDistribucion');
+    if (!divDistribucion) return;
+    
+    divDistribucion.classList.remove('d-none');
+    
+    // Cargar directores si no están en caché
+    if (directoresDistribucionCache.length === 0) {
+        await cargarDirectoresDistribucion();
+    }
+    
+    // Generar tabla
+    generarTablaDistribucion();
+    
+    // Calcular distribución equitativa
+    calcularDistribucionEquitativa();
+}
+
+/**
+ * Oculta la sección de distribución
+ */
+function ocultarDistribucion() {
+    const divDistribucion = document.getElementById('divDistribucion');
+    if (divDistribucion) {
+        divDistribucion.classList.add('d-none');
+    }
+}
+
+/**
+ * Carga los directores para distribución desde el servidor
+ */
+async function cargarDirectoresDistribucion() {
+    try {
+        const response = await fetch('controller/solicitud_controller.php?accion=obtener_directores_distribucion');
+        const result = await response.json();
+        
+        if (result.success) {
+            directoresDistribucionCache = result.data;
+            console.log('Directores de distribución cargados:', directoresDistribucionCache.length);
+        } else {
+            console.error('Error al cargar directores de distribución:', result.message);
+            mostrarAlerta('Error', 'No se pudieron cargar los directores para distribución');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error', 'Error de conexión al cargar directores');
+    }
+}
+
+/**
+ * Genera la tabla de distribución con todos los directores
+ */
+function generarTablaDistribucion() {
+    const tbody = document.getElementById('cuerpoTablaDistribucion');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    directoresDistribucionCache.forEach(director => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${director.nombre_director}</td>
+            <td>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="text" 
+                           class="form-control importe-distribucion" 
+                           data-id-director="${director.id_director}"
+                           placeholder="0"
+                           value="0">
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    // Agregar event listeners a los inputs
+    const inputs = tbody.querySelectorAll('.importe-distribucion');
+    inputs.forEach(input => {
+        // Formatear en tiempo real
+        input.addEventListener('keyup', function(e) {
+            if (e.key !== 'Backspace' && e.key !== 'Delete') {
+                formatearImporteDistribucion(this);
+            }
+        });
+        
+        input.addEventListener('blur', function() {
+            formatearImporteDistribucion(this);
+        });
+        
+        // Recalcular total al cambiar
+        input.addEventListener('input', function() {
+            calcularTotalDistribuido();
+            validarDistribucion();
+        });
+    });
+}
+
+/**
+ * Formatea el input de importe de distribución
+ */
+function formatearImporteDistribucion(input) {
+    let valor = input.value;
+    
+    // Eliminar todo excepto números
+    let numeroLimpio = valor.replace(/\D/g, '');
+    
+    // Si está vacío, poner 0
+    if (numeroLimpio === '') {
+        numeroLimpio = '0';
+    }
+    
+    // Formatear con puntos cada 3 dígitos
+    let valorFormateado = numeroLimpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    // Solo actualizar si cambió
+    if (input.value !== valorFormateado) {
+        input.value = valorFormateado;
+    }
+}
+
+/**
+ * Calcula la distribución equitativa entre todos los directores
+ */
+function calcularDistribucionEquitativa() {
+    const importeInput = document.getElementById('importeSolicitud');
+    if (!importeInput) return;
+    
+    // Obtener importe total sin formato
+    const importeStr = importeInput.value.replace(/\./g, '');
+    const importeTotal = parseFloat(importeStr) || 0;
+    
+    if (importeTotal <= 0 || directoresDistribucionCache.length === 0) {
+        return;
+    }
+    
+    // Calcular importe por director (división entera)
+    const cantidadDirectores = directoresDistribucionCache.length;
+    const importePorDirector = Math.floor(importeTotal / cantidadDirectores);
+    const resto = importeTotal - (importePorDirector * cantidadDirectores);
+    
+    // Asignar importes a los inputs
+    const inputs = document.querySelectorAll('.importe-distribucion');
+    inputs.forEach((input, index) => {
+        let importe = importePorDirector;
+        
+        // Asignar el resto al primer director para que la suma sea exacta
+        if (index === 0) {
+            importe += resto;
+        }
+        
+        input.value = formatearNumero(importe.toString());
+    });
+    
+    // Recalcular total
+    calcularTotalDistribuido();
+    validarDistribucion();
+}
+
+/**
+ * Calcula el total distribuido sumando todos los importes
+ */
+function calcularTotalDistribuido() {
+    const inputs = document.querySelectorAll('.importe-distribucion');
+    let total = 0;
+    
+    inputs.forEach(input => {
+        const valor = input.value.replace(/\./g, '');
+        total += parseFloat(valor) || 0;
+    });
+    
+    // Actualizar el totalizador
+    const totalSpan = document.getElementById('totalDistribuido');
+    if (totalSpan) {
+        totalSpan.textContent = '$ ' + formatearNumero(total.toString());
+    }
+    
+    return total;
+}
+
+/**
+ * Valida que la distribución coincida con el importe total
+ */
+function validarDistribucion() {
+    const importeInput = document.getElementById('importeSolicitud');
+    const alertaValidacion = document.getElementById('alertaValidacion');
+    
+    if (!importeInput || !alertaValidacion) return true;
+    
+    // Obtener importe total
+    const importeStr = importeInput.value.replace(/\./g, '');
+    const importeTotal = parseFloat(importeStr) || 0;
+    
+    // Calcular total distribuido
+    const totalDistribuido = calcularTotalDistribuido();
+    
+    // Actualizar spans de la alerta
+    const sumaActualSpan = document.getElementById('sumaActual');
+    const importeTotalSpan = document.getElementById('importeTotal');
+    
+    if (sumaActualSpan) {
+        sumaActualSpan.textContent = '$ ' + formatearNumero(totalDistribuido.toString());
+    }
+    
+    if (importeTotalSpan) {
+        importeTotalSpan.textContent = '$ ' + formatearNumero(importeTotal.toString());
+    }
+    
+    // Validar
+    const esValido = totalDistribuido === importeTotal;
+    
+    if (esValido) {
+        alertaValidacion.classList.add('d-none');
+    } else {
+        alertaValidacion.classList.remove('d-none');
+    }
+    
+    return esValido;
+}
+
+/**
+ * Obtiene los datos de distribución para enviar al servidor
+ */
+function obtenerDatosDistribucion() {
+    const distribucion = [];
+    const inputs = document.querySelectorAll('.importe-distribucion');
+    
+    inputs.forEach(input => {
+        const idDirector = parseInt(input.dataset.idDirector);
+        const importeStr = input.value.replace(/\./g, '');
+        const importe = parseFloat(importeStr) || 0;
+        
+        if (importe > 0) {
+            distribucion.push({
+                id_director: idDirector,
+                importe: importe
+            });
+        }
+    });
+    
+    return distribucion;
+}
+
+// Exportar nuevas funciones
+window.configurarTipoAsignacion = configurarTipoAsignacion;
+window.mostrarDistribucion = mostrarDistribucion;
+window.ocultarDistribucion = ocultarDistribucion;
+window.cargarDirectoresDistribucion = cargarDirectoresDistribucion;
+window.generarTablaDistribucion = generarTablaDistribucion;
+window.calcularDistribucionEquitativa = calcularDistribucionEquitativa;
+window.calcularTotalDistribuido = calcularTotalDistribuido;
+window.validarDistribucion = validarDistribucion;
+window.obtenerDatosDistribucion = obtenerDatosDistribucion;

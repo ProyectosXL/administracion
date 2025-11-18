@@ -174,4 +174,45 @@ class Director {
         $director = $this->obtenerPorNombre($nombreDirector);
         return $director ? $director['id_director'] : null;
     }
+    
+    /**
+     * Obtiene directores para distribución de retiros múltiples
+     * Excluye el ID 1123 según requerimiento
+     * @return array
+     */
+    public function obtenerDirectoresDistribucion() {
+        try {
+            error_log("Director::obtenerDirectoresDistribucion - Iniciando consulta");
+            
+            $sql = "SELECT ID_DIRECTOR, NOMBRE 
+                    FROM RO_T_DIRECTORES 
+                    WHERE ID_DIRECTOR != 1123
+                    ORDER BY NOMBRE";
+            
+            $stmt = sqlsrv_query($this->db, $sql);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("Director::obtenerDirectoresDistribucion - Error SQL: " . print_r($errors, true));
+                throw new Exception("Error en consulta: " . print_r($errors, true));
+            }
+            
+            $directores = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $directores[] = [
+                    'id_director' => $row['ID_DIRECTOR'],
+                    'nombre_director' => $row['NOMBRE']
+                ];
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            
+            error_log("Director::obtenerDirectoresDistribucion - Encontrados " . count($directores) . " directores");
+            
+            return $directores;
+        } catch (Exception $e) {
+            error_log("Error al obtener directores de distribución: " . $e->getMessage());
+            return [];
+        }
+    }
 }
