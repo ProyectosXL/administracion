@@ -2,10 +2,13 @@ $(document).ready(function() {
     inicializarSelects();
     cargarDatosIniciales();
     generarNumeroRegistro();
+
+    // VINCULAMOS LOS BOTONES A LA NUEVA FUNCIÓN UNIFICADA
+    $('#btnGuardar').on('click', () => enviarFormulario(1)); // 1 para Borrador
+    $('#btnRegistrar').on('click', () => enviarFormulario(2)); // 2 para Registrar
 });
 
 function inicializarSelects() {
-    // Función genérica para inicializar Select2
     const initSelect2 = (selector, placeholder) => {
         $(selector).select2({
             theme: 'bootstrap-5',
@@ -33,8 +36,6 @@ function inicializarSelects() {
 
 async function cargarDatosIniciales() {
     const nroSucurs = $("#numSucurs").text();
-
-    // Cargamos todos los datos en paralelo para mayor eficiencia
     await Promise.all([
         cargarSelect('Controller/retiroController.php?accion=listarUsuarios', '#entrego', 'Seleccione una persona', 'NOMBRE_VEN', 'VALOR_COMPLETO'),
         cargarSelect('Controller/retiroController.php?accion=listarFleteros', '#recibio', 'Seleccione una persona', 'NOMBRE_APELLIDO', 'NOMBRE_APELLIDO'),
@@ -46,14 +47,10 @@ async function cargarDatosIniciales() {
 async function cargarSelect(url, selector, placeholder, texto, valor) {
     try {
         const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Error de red al cargar datos para ' + selector);
-        }
+        if (!response.ok) throw new Error('Error de red al cargar datos para ' + selector);
         const data = await response.json();
         const select = $(selector);
-        
-        select.empty(); // Limpiar opciones anteriores
-        select.append($('<option>', { value: '', text: placeholder }));
+        select.empty().append($('<option>', { value: '', text: placeholder }));
 
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
             data.data.forEach(item => {
@@ -63,9 +60,9 @@ async function cargarSelect(url, selector, placeholder, texto, valor) {
                 }));
             });
         } else {
-             select.empty().append($('<option>', { value: '', text: 'No hay opciones disponibles' }));
+             select.append($('<option>', { value: '', text: 'No hay opciones disponibles' }));
         }
-        select.trigger('change'); // Notificar a Select2 del cambio
+        select.trigger('change');
     } catch (error) {
         console.error('Error al cargar ' + selector, error);
         $(selector).empty().append($('<option>', { value: '', text: 'Error al cargar opciones' }));
@@ -73,37 +70,157 @@ async function cargarSelect(url, selector, placeholder, texto, valor) {
 }
 
 function generarNumeroRegistro() {
-    let codigo = document.querySelector("#anterior").textContent;
-    let nuevoCodigo;
-    if (codigo === '0' || !codigo) {
-        nuevoCodigo = "C00000000001";
-    } else {
-        let numero = parseInt(codigo) + 1;
-        nuevoCodigo = "C" + numero.toString().padStart(11, '0');
-    }
-    document.getElementById('numeroRegistro').value = nuevoCodigo;
+    let codigo = $("#anterior").text();
+    let nuevoCodigo = "C" + (parseInt(codigo) + 1 || 1).toString().padStart(11, '0');
+    $('#numeroRegistro').val(nuevoCodigo);
 }
 
-const validarRemitos = async () => {
-    const remitos = document.querySelectorAll('#bodyRemitos tr');
+// =======================================================
+// === NUEVA LÓGICA DE VALIDACIÓN Y ENVÍO UNIFICADA ======
+// =======================================================
 
-    if (document.getElementById('enviaValores').value !== 'SI' && remitos.length === 0) {
-        mostrarAlerta('Error', 'Debe cargar al menos un remito');
+async function validarFormulario(esBorrador = false) {
+    const entrego = $('#entrego').val();
+    const recibio = $('#recibio').val();
+    const enviaValores = $('#enviaValores').val();
+
+    // --- Validaciones para TODOS (Borrador y Registro) ---
+    if (entrego && recibio && entrego.split('++')[0] === recibio) {
+        await mostrarAlerta('Error', 'La persona que entrega no puede ser la misma que recibe.');
         return false;
     }
-    return true;
-};
+    
+    if (enviaValores !== 'SI' && $('#bodyRemitos tr').length === 0) {
+         await mostrarAlerta('Error', 'Debe cargar al menos un remito si no envía valores.');
+         return false;
+    }
 
-const validarEgresos = async () => {
-    if (document.getElementById('enviaValores').value === 'SI') {
-        const egresos = document.querySelectorAll('#bodyEgresos tr');
-        if (egresos.length === 0) {
-            mostrarAlerta('Error', 'Debe cargar al menos un egreso');
+    if (esBorrador) {
+        return true; // Si es borrador, pasamos las validaciones básicas y es suficiente
+    }
+
+    // --- Validaciones SÓLO para Registro Final (estado = 2) ---
+    if (!entrego || !recibio || !enviaValores) {
+        await mostrarAlerta('Error', 'Complete los campos: Entregó, Recibió y Envía Valores.');
+        return false;
+    }
+
+    if (enviaValores === 'SI') {
+        const numeroPrecinto = $('#numeroPrecinto').val().trim();
+        if (!numeroPrecinto || isNaN(numeroPrecinto) || parseInt(numeroPrecinto) <= 0) {
+            await mostrarAlerta('Error', 'El número de precinto es obligatorio y debe ser un número positivo.');
+            return false;
+        }
+        if ($('#bodyEgresos tr').length === 0) {
+            await mostrarAlerta('Error', 'Debe agregar al menos un egreso si envía valores.');
             return false;
         }
     }
+    
+    if (signaturePad.isEmpty()) {
+        await mostrarAlerta('Error', 'La firma es obligatoria para registrar.');
+        return false;
+    }
+
     return true;
-};
+}
+
+function obtenerDatosFormulario() {
+    const datos = {
+        numeroRegistro: $('#numeroRegistro').val(),
+        entrego: ($('#entrego').val() || '').split('++')[0],
+        recibio: $('#recibio').val(),
+        enviaValores: $('#enviaValores').val(),
+        observaciones: $('#observaciones').val(),
+    };
+
+    if (datos.enviaValores === 'SI') {
+        datos.numeroPrecinto = $('#numeroPrecinto').val().trim();
+        datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
+            tipo: tr.cells[0].textContent,
+            comprobante: tr.cells[1].textContent,
+            fecha: tr.cells[2].textContent
+        }));
+    }
+
+    const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
+        remito: tr.cells[0].textContent,
+        destino: tr.cells[1].textContent,
+        bultos: $(tr).find('.input-bultos').val(),
+        fecha: tr.cells[4].textContent,
+        t_comp: tr.cells[5].textContent
+    }));
+
+    return { datos, remitos };
+}
+
+async function enviarFormulario(estado) {
+    const esBorrador = (estado === 1);
+    const accionTexto = esBorrador ? 'guardar el borrador' : 'registrar la guía';
+    
+    if (!await validarFormulario(esBorrador)) {
+        return;
+    }
+    
+    const confirmar = await confirmarAccion(`¿Confirmar ${accionTexto}?`, 'Esta acción guardará los datos en el sistema.', 'question');
+    if (!confirmar) return;
+
+    try {
+        const { datos, remitos } = obtenerDatosFormulario();
+        const nroSucursal = $("#numSucurs").text();
+        let firmaPath = null;
+
+        const dataPayload = {
+            datos: datos,
+            remitos: remitos,
+            nroSucursal: nroSucursal,
+            estado: estado,
+            firma: firmaPath
+        };
+
+        // Solo procesamos la firma si es un registro final (estado=2) y si el canvas no está vacío
+        if (!esBorrador && !signaturePad.isEmpty()) {
+            const firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
+            const responseFirma = await fetch('Controller/upload_image.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firma: firmaBase64, nro_registro: datos.numeroRegistro, sucursal: nroSucursal })
+            });
+            const respuestaFirma = await responseFirma.json();
+            if (!responseFirma.ok || !respuestaFirma.filePath) {
+                throw new Error(respuestaFirma.error || 'Error al subir la firma.');
+            }
+            dataPayload.firma = respuestaFirma.filePath;
+        }
+
+        $.ajax({
+            url: 'Controller/retiroController.php?accion=registrar',
+            type: 'POST',
+            dataType: 'json',
+            data: dataPayload,
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire({ title: '¡Éxito!', text: response.message, icon: 'success' })
+                       .then(() => window.location.href = 'listarRetiros.php');
+                } else {
+                    mostrarAlerta('Error', response.message);
+                }
+            },
+            error: function(xhr) {
+                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : `Error al ${accionTexto}.`;
+                mostrarAlerta('Error', errorMsg);
+            }
+        });
+
+    } catch (error) {
+        await mostrarAlerta('Error', 'Error en el proceso de envío: ' + error.message);
+    }
+}
+
+
+// ===============================================
+// === RESTO DE FUNCIONES (AUXILIARES) ===========
+// ===============================================
 
 async function mostrarAlerta(titulo, texto, tipo = 'error') {
     return await Swal.fire({
@@ -112,9 +229,6 @@ async function mostrarAlerta(titulo, texto, tipo = 'error') {
         icon: tipo,
         confirmButtonText: 'Aceptar',
         confirmButtonColor: tipo === 'success' ? '#198754' : '#0d6efd',
-        customClass: {
-            popup: 'swal2-small'
-        }
     });
 }
 
@@ -127,343 +241,79 @@ async function confirmarAccion(titulo, texto, tipo = 'question') {
         confirmButtonColor: '#0d6efd',
         cancelButtonColor: '#6c757d',
         confirmButtonText: 'Confirmar',
-        cancelButtonText: 'Cancelar',
-        customClass: {
-            popup: 'swal2-small'
-        }
+        cancelButtonText: 'Cancelar'
     });
     return result.isConfirmed;
 }
 
 function crearFilaRemito(datos) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td class="text-nowrap">${datos.remito}</td>
-        <td title="${datos.destino}">${datos.destino}</td>
-        <td>
-            <input type="number" 
-                   class="form-control form-control-sm input-bultos" 
-                   value="1" 
-                   min="0">
-        </td>
-        <td class="text-center">
-            <button type="button" class="btn btn-danger btn-sm btn-quitar">
-                <i class="bi bi-trash"></i>
-            </button>
-        </td>
-        <td hidden>${datos.fecha}</td>
-        <td hidden>${datos.t_comp}</td>
-    `;
-
-    const inputBultos = tr.querySelector('.input-bultos');
-    inputBultos.addEventListener('input', function () {
-        if (this.value < 1) this.value = 0;
-        actualizarTotalBultos();
-    });
-
-    const btnQuitar = tr.querySelector('.btn-quitar');
-    btnQuitar.addEventListener('click', async function () {
-        const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este remito', 'warning');
-        if (confirmar) {
-            tr.remove();
+    tr.innerHTML = `<td class="text-nowrap">${datos.remito}</td><td title="${datos.destino}">${datos.destino}</td><td><input type="number" class="form-control form-control-sm input-bultos" value="1" min="0"></td><td class="text-center"><button type="button" class="btn btn-danger btn-sm btn-quitar"><i class="bi bi-trash"></i></button></td><td hidden>${datos.fecha}</td><td hidden>${datos.t_comp}</td>`;
+    $(tr).find('.input-bultos').on('input', function() { if (this.value < 1) this.value = 0; actualizarTotalBultos(); });
+    $(tr).find('.btn-quitar').on('click', async function() {
+        if (await confirmarAccion('¿Está seguro?', 'Se eliminará este remito', 'warning')) {
+            $(this).closest('tr').remove();
             actualizarTotalBultos();
         }
     });
+    return tr;
+}
 
+function crearFilaEgreso(datos) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="text-nowrap">${datos.tipo}</td><td class="text-nowrap">${datos.comprobante}</td><td>${datos.fecha}</td><td class="text-center"><button type="button" class="btn btn-danger btn-sm btn-quitar"><i class="bi bi-trash"></i></button></td>`;
+    $(tr).find('.btn-quitar').on('click', async function() {
+        if (await confirmarAccion('¿Está seguro?', 'Se eliminará este egreso', 'warning')) {
+            $(this).closest('tr').remove();
+        }
+    });
     return tr;
 }
 
 function actualizarTotalBultos() {
-    const inputs = document.querySelectorAll('.input-bultos');
-    const total = Array.from(inputs).reduce((sum, input) => sum + parseInt(input.value || 0), 0);
-    document.getElementById('totalBultos').textContent = total;
+    const total = Array.from(document.querySelectorAll('.input-bultos')).reduce((sum, input) => sum + parseInt(input.value || 0), 0);
+    $('#totalBultos').text(total);
 }
 
-function initSignaturePad() {
+const signaturePad = new SignaturePad(document.getElementById('signature-pad'), { backgroundColor: 'white', penColor: 'black' });
+(function resizeCanvas() {
     const canvas = document.getElementById('signature-pad');
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    const signaturePadWidth = canvas.parentElement.offsetWidth - 30;
-    canvas.width = signaturePadWidth * ratio;
+    const width = canvas.parentElement.offsetWidth - 30;
+    canvas.width = width * ratio;
     canvas.height = 150 * ratio;
-    canvas.style.width = `${signaturePadWidth}px`;
+    canvas.style.width = `${width}px`;
     canvas.style.height = '150px';
     const ctx = canvas.getContext('2d');
     ctx.scale(ratio, ratio);
-    return new SignaturePad(canvas, {
-        backgroundColor: 'white',
-        penColor: 'black'
-    });
-}
-const signaturePad = initSignaturePad();
-
-async function validarSelects() {
-    const entrego = document.getElementById('entrego').value;
-    const recibio = document.getElementById('recibio').value;
-    const enviaValores = document.getElementById('enviaValores').value;
-
-    if (!entrego || !recibio || !enviaValores) {
-        await mostrarAlerta('Error', 'Por favor, complete todos los campos obligatorios.');
-        return false;
-    }
-    
-    const nombreEntrego = entrego.split('++')[0];
-    if (nombreEntrego === recibio) {
-        await mostrarAlerta('Error', 'La persona que entrega no puede ser la misma que recibe.');
-        return false;
-    }
-
-    return true;
-}
-
-async function validarFirma() {
-    if (signaturePad.isEmpty()) {
-        await mostrarAlerta('Error', 'Por favor, proporcione una firma.');
-        return false;
-    }
-    return true;
-}
-
-async function validarPrecinto() {
-    const enviaValores = document.getElementById('enviaValores').value;
-    if (enviaValores === 'SI') {
-        const numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
-        if (!numeroPrecinto) {
-            await mostrarAlerta('Error', 'Debe ingresar el número de precinto cuando envía valores.');
-            return false;
-        }
-        if (isNaN(numeroPrecinto) || parseInt(numeroPrecinto) <= 0) {
-            await mostrarAlerta('Error', 'El número de precinto debe ser un valor numérico positivo.');
-            return false;
-        }
-    }
-    return true;
-}
-
-async function validarFormulario() {
-    return await validarSelects() &&
-           await validarFirma() &&
-           await validarPrecinto() &&
-           await validarRemitos() &&
-           await validarEgresos();
-}
-
-function obtenerDatosFormulario() {
-    const datos = {
-        numeroRegistro: document.getElementById('numeroRegistro').value,
-        entrego: (document.getElementById('entrego').value).split('++')[0],
-        recibio: document.getElementById('recibio').value,
-        enviaValores: document.getElementById('enviaValores').value,
-        observaciones: document.getElementById('observaciones').value
-        // La firma se manejará por separado en el envío
-    };
-    if (datos.enviaValores === 'SI') {
-        datos.numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
-        datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
-            tipo: tr.cells[0].textContent,
-            comprobante: tr.cells[1].textContent,
-            fecha: tr.cells[2].textContent
-        }));
-    }
-
-    const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
-        remito: tr.cells[0].textContent,
-        destino: tr.cells[1].textContent,
-        bultos: tr.querySelector('.input-bultos').value,
-        fecha : tr.cells[4].textContent,
-        t_comp : tr.cells[5].textContent
-    }));
-
-    return {
-        datos: datos,
-        remitos: remitos
-    };
-}
-
-document.getElementById('enviaValores').addEventListener('change', function() {
-    const precintoContainer = document.getElementById('precintoContainer');
-    const numeroPrecinto = document.getElementById('numeroPrecinto');
-    
-    if (this.value === 'SI') {
-        precintoContainer.style.display = 'block';
-    } else {
-        precintoContainer.style.display = 'none';
-        numeroPrecinto.value = '';
-    }
-});
-
-document.getElementById('btnAgregarRemito').addEventListener('click', async function () {
-    const select = document.getElementById('selectRemitos');
-    if (!select.value) {
-        await mostrarAlerta('Error', 'Por favor, seleccione un remito');
-        return;
-    }
-
-    const datos = JSON.parse(select.value);
-    const tbody = document.getElementById('bodyRemitos');
-
-    const remitosExistentes = tbody.querySelectorAll('tr td:first-child');
-    for (let td of remitosExistentes) {
-        if (td.textContent.trim() === datos.remito) {
-            await mostrarAlerta('Error', 'Este remito ya ha sido agregado');
-            return;
-        }
-    }
-
-    tbody.appendChild(crearFilaRemito(datos));
-    actualizarTotalBultos();
-    $('#selectRemitos').val('').trigger('change');
-});
-
-document.getElementById('clear').addEventListener('click', function () {
     signaturePad.clear();
+})();
+
+$('#clear').on('click', () => signaturePad.clear());
+
+$('#enviaValores').on('change', function() {
+    $('#precintoContainer').toggle(this.value === 'SI');
+}).trigger('change');
+
+$('#btnAgregarRemito').on('click', async function() {
+    const select = $('#selectRemitos');
+    if (!select.val()) return await mostrarAlerta('Error', 'Por favor, seleccione un remito');
+    const datos = JSON.parse(select.val());
+    if ($('#bodyRemitos td:first-child').filter(function() { return $(this).text().trim() === datos.remito; }).length > 0) {
+        return await mostrarAlerta('Error', 'Este remito ya ha sido agregado');
+    }
+    $('#bodyRemitos').append(crearFilaRemito(datos));
+    actualizarTotalBultos();
+    select.val('').trigger('change');
 });
 
-const registrar = async () => {
-    if (!(await validarFormulario())) {
-        return;
+$('#btnAgregarEgreso').on('click', async function() {
+    const select = $('#selectEgresos');
+    if (!select.val()) return await mostrarAlerta('Error', 'Por favor, seleccione un egreso');
+    const datos = JSON.parse(select.val());
+    if ($('#bodyEgresos td:nth-child(2)').filter(function() { return $(this).text() === datos.comprobante; }).length > 0) {
+        return await mostrarAlerta('Error', 'Este comprobante ya ha sido agregado');
     }
-    
-    try {
-        const confirmar = await confirmarAccion('¿Confirmar registro?', 'Esta acción no se puede deshacer.', 'question');
-        if (!confirmar) return;
-
-        const { datos, remitos } = obtenerDatosFormulario();
-        const nroSucursal = document.querySelector("#numSucurs").textContent;
-        const firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
-        
-        const response = await fetch('Controller/upload_image.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                firma: firmaBase64,
-                nro_registro: datos.numeroRegistro,
-                sucursal: nroSucursal
-            })
-        });
-            
-        const respuestaDatos = await response.json();
-        if (!response.ok || !respuestaDatos.filePath) {
-            throw new Error(respuestaDatos.error || 'Error al subir la firma');
-        }
-        const firmaPath = respuestaDatos.filePath;
-     
-        $.ajax({
-            url: 'Controller/retiroController.php?accion=registrar',
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                datos: datos,
-                remitos: remitos,
-                nroSucursal: nroSucursal,
-                firma: firmaPath,
-                estado: 2
-            },
-            success: function (data) {
-                if(data.success) {
-                    Swal.fire({
-                        title: '¡Éxito!',
-                        text: data.message || 'Formulario registrado correctamente',
-                        icon: 'success'
-                    }).then(() => window.location.href = 'listarRetiros.php');
-                } else {
-                    mostrarAlerta('Error', data.message || 'Ocurrió un error al registrar.');
-                }
-            },
-            error: function (xhr, status, error) {
-                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Error al registrar: ' + error;
-                mostrarAlerta('Error', errorMsg);
-            }
-        });
-            
-    } catch (error) {
-        await mostrarAlerta('Error', 'Error al procesar el registro: ' + error.message);
-    }
-};
-
-document.getElementById('btnAgregarEgreso').addEventListener('click', async function() {
-    const select = document.getElementById('selectEgresos');
-    if (!select.value) {
-        await mostrarAlerta('Error', 'Por favor, seleccione un egreso');
-        return;
-    }
-
-    const datos = JSON.parse(select.value);
-    const tbody = document.getElementById('bodyEgresos');
-    
-    const egresosExistentes = tbody.querySelectorAll('tr td:nth-child(2)');
-    for (let td of egresosExistentes) {
-        if (td.textContent === datos.comprobante) {
-            await mostrarAlerta('Error', 'Este comprobante ya ha sido agregado');
-            return;
-        }
-    }
-
-    tbody.appendChild(crearFilaEgreso(datos));
-    $('#selectEgresos').val('').trigger('change');
+    $('#bodyEgresos').append(crearFilaEgreso(datos));
+    select.val('').trigger('change');
 });
-
-function crearFilaEgreso(datos) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td class="text-nowrap">${datos.tipo}</td>
-        <td class="text-nowrap">${datos.comprobante}</td>
-        <td>${datos.fecha}</td>
-        <td class="text-center">
-            <button type="button" class="btn btn-danger btn-sm btn-quitar">
-                <i class="bi bi-trash"></i>
-            </button>
-        </td>
-    `;
-
-    const btnQuitar = tr.querySelector('.btn-quitar');
-    btnQuitar.addEventListener('click', async function() {
-        const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este egreso', 'warning');
-        if (confirmar) {
-            tr.remove();
-        }
-    });
-
-    return tr;
-}
-
-async function guardarFormulario() {
-    const remitosTr = document.querySelectorAll('#bodyRemitos tr');
-    if (remitosTr.length === 0) {
-        await mostrarAlerta('Error', 'Debe cargar al menos un remito.');
-        return;
-    }
-
-    try {
-        const { datos, remitos } = obtenerDatosFormulario();
-        const nroSucursal = document.querySelector("#numSucurs").textContent;
-
-        $.ajax({
-            url: 'Controller/retiroController.php?accion=registrar',
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                datos: datos,
-                remitos: remitos,
-                nroSucursal: nroSucursal,
-                estado: 1 
-            },
-            success: function (data) {
-                if(data.success) {
-                    Swal.fire({
-                        title: '¡Éxito!',
-                        text: data.message || 'Formulario guardado como borrador',
-                        icon: 'success'
-                    }).then(() => window.location.href = 'listarRetiros.php');
-                } else {
-                     mostrarAlerta('Error', data.message || 'Ocurrió un error al guardar.');
-                }
-            },
-            error: function (xhr) {
-                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Error al guardar.';
-                mostrarAlerta('Error', errorMsg);
-            }
-        });
-    } catch (error) {
-        await mostrarAlerta('Error', 'Error al procesar el guardado: ' + error.message);
-    }
-}
