@@ -571,7 +571,7 @@ class Sucursal
         LEFT JOIN RO_T_RECIBOS_VINCULADOS V
             ON A.COD_COMP = V.original_cod_comp COLLATE Latin1_General_BIN
             AND RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(V.original_n_comp)) COLLATE Latin1_General_BIN
-            AND (V.NRO_SUCURS IS NULL OR A.NRO_SUCURS = V.NRO_SUCURS)
+            AND  A.NRO_SUCURS = V.NRO_SUCURS
         WHERE A.COD_CTA = '100100' AND A.COD_COMP IN ('RAF','REV')
             AND A.FECHA BETWEEN '$desde' AND '$hasta'
         ORDER BY A.FECHA DESC";
@@ -771,7 +771,7 @@ class Sucursal
                 AND s.N_COMP = v.vinculado_n_comp collate Latin1_General_BIN
             WHERE
                 s.COD_CTA IN ('100101','100901')
-                AND s.FECHA >= GETDATE() - 15
+                AND s.FECHA >= GETDATE() - 30
                 AND s.D_H = 'D'
                 AND v.id IS NULL 
         ";

@@ -43,7 +43,7 @@ function mostrarAlerta(titulo, mensaje) {
         });
         
         if (tituloElement) tituloElement.textContent = titulo;
-        if (mensajeElement) mensajeElement.textContent = mensaje;
+        if (mensajeElement) mensajeElement.innerHTML = mensaje;
         
         // Agregar clase especial si el título es "Éxito"
         if (modalHeader) {

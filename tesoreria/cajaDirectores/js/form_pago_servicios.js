@@ -31,11 +31,23 @@ async function cargarDirectores() {
             llenarSelectDirectores();
         } else {
             console.error('Error al cargar directores:', result.message);
-            mostrarAlerta('Error', 'No se pudieron cargar los directores');
+            mostrarAlerta('Error al Cargar Datos', `
+                <div class="text-center">
+                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">No se pudieron cargar los directores</h5>
+                    <p class="mb-0 text-muted">Por favor, recargue la página o contacte al administrador.</p>
+                </div>
+            `);
         }
     } catch (error) {
         console.error('Error:', error);
-        mostrarAlerta('Error', 'Error de conexión al cargar directores');
+        mostrarAlerta('Error de Conexión', `
+            <div class="text-center">
+                <i class="bi bi-wifi-off text-danger" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 mb-2">Error de conexión</h5>
+                <p class="mb-0 text-muted">No se pudo conectar con el servidor. Verifique su conexión a internet.</p>
+            </div>
+        `);
     }
 }
 
@@ -380,30 +392,72 @@ async function registrarPago() {
         const importePago = document.getElementById('importePago');
         
         if (!directorSelect.value) {
-            throw new Error('Debe seleccionar un director');
+            mostrarAlerta('Campo Requerido', `
+                <div class="text-center">
+                    <i class="bi bi-person-fill-x text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">Director no seleccionado</h5>
+                    <p class="mb-0">Debe seleccionar un director antes de continuar.</p>
+                </div>
+            `);
+            return;
         }
         
         if (!motivoSelect.value) {
-            throw new Error('Debe seleccionar un motivo');
+            mostrarAlerta('Campo Requerido', `
+                <div class="text-center">
+                    <i class="bi bi-list-ul text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">Motivo no seleccionado</h5>
+                    <p class="mb-0">Debe seleccionar el tipo de pago a realizar.</p>
+                </div>
+            `);
+            return;
         }
         
         if (!fechaVencimiento.value) {
-            throw new Error('Debe ingresar la fecha de vencimiento');
+            mostrarAlerta('Campo Requerido', `
+                <div class="text-center">
+                    <i class="bi bi-calendar-x text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">Fecha no ingresada</h5>
+                    <p class="mb-0">Debe ingresar la fecha de vencimiento de la factura.</p>
+                </div>
+            `);
+            return;
         }
         
         if (!importePago.value || parseFloat(importePago.value.replace(/\./g, '')) <= 0) {
-            throw new Error('Debe ingresar un importe válido');
+            mostrarAlerta('Campo Requerido', `
+                <div class="text-center">
+                    <i class="bi bi-currency-dollar text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">Importe inválido</h5>
+                    <p class="mb-0">Debe ingresar un importe mayor a cero.</p>
+                </div>
+            `);
+            return;
         }
         
         if (!archivoSeleccionado) {
-            throw new Error('Debe adjuntar la factura');
+            mostrarAlerta('Archivo Requerido', `
+                <div class="text-center">
+                    <i class="bi bi-file-earmark-image text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">Factura no adjuntada</h5>
+                    <p class="mb-0">Debe adjuntar la foto o PDF de la factura.</p>
+                </div>
+            `);
+            return;
         }
         
         // Validar proveedor si el motivo es "Pago de seguros"
         if (motivoSelect.value === 'Pago de seguros') {
             const proveedorSelect = $('#proveedorSelect');
             if (!proveedorSelect.val()) {
-                throw new Error('Debe seleccionar un proveedor para pago de seguros');
+                mostrarAlerta('Proveedor Requerido', `
+                    <div class="text-center">
+                        <i class="bi bi-person-badge text-warning" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 mb-2">Proveedor no seleccionado</h5>
+                        <p class="mb-0">Para pagos de seguros debe seleccionar un proveedor.</p>
+                    </div>
+                `);
+                return;
             }
         }
         
@@ -411,7 +465,14 @@ async function registrarPago() {
         const cbuInput = document.getElementById('cbuProveedor');
         if (cbuInput && cbuInput.value.trim() !== '') {
             if (!validarCBU(cbuInput.value)) {
-                throw new Error('El CBU debe tener exactamente 22 dígitos');
+                mostrarAlerta('CBU Inválido', `
+                    <div class="text-center">
+                        <i class="bi bi-bank text-warning" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 mb-2">Formato de CBU incorrecto</h5>
+                        <p class="mb-0">El CBU debe tener exactamente 22 dígitos numéricos.</p>
+                    </div>
+                `);
+                return;
             }
         }
         
@@ -459,7 +520,14 @@ async function registrarPago() {
         const result = await response.json();
         
         if (result.success) {
-            mostrarAlerta('Éxito', 'Pago registrado correctamente');
+            mostrarAlerta('¡Registro Exitoso!', `
+                <div class="text-center">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">Pago de Servicio Registrado</h5>
+                    <p class="mb-1">El pago ha sido registrado correctamente en el sistema.</p>
+                    <p class="text-muted small mb-0">Comprobante N° ${result.n_comp || 'generado'}</p>
+                </div>
+            `);
             
             // Limpiar formulario
             document.getElementById('formPagoServicios').reset();
@@ -476,7 +544,14 @@ async function registrarPago() {
         
     } catch (error) {
         console.error('Error:', error);
-        mostrarAlerta('Error', error.message);
+        mostrarAlerta('Error al Procesar', `
+            <div class="text-center">
+                <i class="bi bi-exclamation-octagon-fill text-danger" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 mb-2">No se pudo completar la operación</h5>
+                <p class="mb-2">${error.message}</p>
+                <p class="text-muted small mb-0">Si el problema persiste, contacte al administrador del sistema.</p>
+            </div>
+        `);
     } finally {
         if (typeof ocultarLoading === 'function') {
             ocultarLoading();
@@ -509,15 +584,12 @@ function validarCBU(cbu) {
 }
 
 /**
- * Muestra un mensaje de alerta (usa modal_global.js si está disponible)
+ * Muestra un mensaje de alerta (usa modal_global.js)
+ * Nota: Esta función está definida en modal_global.js
+ * Si no está disponible, se usa alert nativo como fallback
  */
-function mostrarAlerta(titulo, mensaje) {
-    if (typeof mostrarModal === 'function') {
-        mostrarModal(titulo, mensaje);
-    } else {
-        alert(titulo + ': ' + mensaje);
-    }
-}
+// La función mostrarAlerta ya está definida en modal_global.js
+// No es necesario redefinirla aquí
 
 /**
  * Carga y muestra los últimos pagos de servicios registrados
@@ -531,16 +603,20 @@ async function cargarUltimosPagos() {
             mostrarUltimosPagos(result.data);
         } else {
             document.getElementById('listaPagosServicios').innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i> No se pudieron cargar los pagos
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                    <h6 class="mt-2 mb-1">No se pudieron cargar los pagos</h6>
+                    <small>Intente recargar la página</small>
                 </div>
             `;
         }
     } catch (error) {
         console.error('Error al cargar últimos pagos:', error);
         document.getElementById('listaPagosServicios').innerHTML = `
-            <div class="alert alert-danger">
-                <i class="bi bi-x-circle"></i> Error de conexión
+            <div class="alert alert-danger text-center">
+                <i class="bi bi-wifi-off" style="font-size: 2rem;"></i>
+                <h6 class="mt-2 mb-1">Error de conexión</h6>
+                <small>No se pudo conectar con el servidor</small>
             </div>
         `;
     }
@@ -554,8 +630,10 @@ function mostrarUltimosPagos(pagos) {
     
     if (!pagos || pagos.length === 0) {
         contenedor.innerHTML = `
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> No hay pagos registrados aún
+            <div class="alert alert-info text-center">
+                <i class="bi bi-inbox" style="font-size: 2.5rem;"></i>
+                <h6 class="mt-2 mb-1">No hay pagos registrados</h6>
+                <small>Los pagos que registre aparecerán aquí</small>
             </div>
         `;
         return;
@@ -714,11 +792,23 @@ async function verFotoEgreso(idEgreso) {
                 bsModal.show();
             }
         } else {
-            mostrarAlerta('Error', 'No se pudo cargar el archivo');
+            mostrarAlerta('Error al Cargar Archivo', `
+                <div class="text-center">
+                    <i class="bi bi-file-earmark-x text-danger" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">Archivo no disponible</h5>
+                    <p class="mb-0">No se pudo cargar el archivo solicitado.</p>
+                </div>
+            `);
         }
     } catch (error) {
         console.error('Error al cargar archivo:', error);
-        mostrarAlerta('Error', 'Error al cargar el archivo');
+        mostrarAlerta('Error al Cargar Archivo', `
+            <div class="text-center">
+                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 mb-2">Error al procesar el archivo</h5>
+                <p class="mb-0">${error.message || 'Ocurrió un error inesperado'}</p>
+            </div>
+        `);
     }
 }
 
