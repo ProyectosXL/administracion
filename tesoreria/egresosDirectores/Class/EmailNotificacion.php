@@ -27,7 +27,7 @@ class EmailNotificacion {
     private const EMAIL_FROM_NAME = 'Sistema Egresos Directores';
     
     // Modo desarrollo: enviar todos los emails a federico.trejo@xl.com.ar
-    private const DEVELOP = true;
+    private const DEVELOP = FALSE;
     private const EMAIL_DEVELOP = 'federico.trejo@xl.com.ar';
     
     private $db;
