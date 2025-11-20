@@ -47,7 +47,80 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 <style>
 .contenedor {
     display: flex;
-    flex-wrap: wrap; /* Permite el ajuste de los elementos en varias líneas */
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Estilos para las secciones del formulario */
+.seccion-formulario {
+    background: #f8f9fa;
+    border-left: 4px solid #7066e0;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.seccion-titulo {
+    color: #7066e0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+/* Estilos para labels de campos */
+.label-campo {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-auto {
+    background: #4caf50;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+/* Indicadores visuales para campos calculados */
+.campo-calculado {
+    background-color: #e8f5e9 !important;
+    border-left: 3px solid #4caf50 !important;
+}
+
+.campo-manual-override {
+    background-color: #fff3e0 !important;
+    border-left: 3px solid #ff9800 !important;
+}
+
+.campo-readonly {
+    background-color: #f5f5f5 !important;
+    cursor: not-allowed !important;
+}
+
+/* Estilos para el botón de agregar orden */
+#btnAddOrdenCompra {
+    background: #7066e0;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#btnAddOrdenCompra:hover {
+    background: #5a50d2;
+    transform: scale(1.05);
 }
 
 </style>
@@ -58,140 +131,187 @@ $todosLosProveedores = json_decode($todosLosProveedores);
             <div class="card card-1">
                 <div class="card-heading"></div>
                 <div class="card-body">
-                    <h2 class="title"><i class="bi bi-folder-check"></i> Datos de cabecera - Costos de Nacionalizacion</h2>
-
+                    <h2 class="title"><i class="bi bi-folder-check"></i> Datos de cabecera - Costos de Nacionalización</h2>
 
                     <div class="row" style="margin-bottom:10px;margin-left:8px">
-                    Orden De Compra Manual 
-           
-
+                        <span>Orden De Compra Manual</span>
                         <div class="col" id="checkOrden"><input type="checkbox" id="ordenManual" onchange="traerOrden()"></div>
-
-           
                     </div>
+                    
                     <div id="entorno" hidden><?= (isset($_SESSION['entorno'])) ? $_SESSION['entorno'] : 'central' ?></div>
+                    <input type="hidden" id="modoEdicion" value="false">
 
-                            <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                      <!--   <div class="rs-select2 js-select-simple select--no-search"> -->
-                                            <select id="proveedor" style="width: 283.16px;">
-                                            <option selected disabled>PROVEEDOR</option>
-                                            <?php
-                                        
-                                            foreach($todosLosProveedores as $valor => $value){
-                                            /* $cuenta=$value-> */
-                                            ?>
-                                            <option id="proveedor-" value="<?= $value->COD_PROVEE; ?>"><?= $value->NOM_PROVEE; ?></option>
-                                            <?php   
-                                            }
-                                            ?>
-                                            </select>
-                                            <div class="select-dropdown"></div>
-                                        <!-- </div>      -->   
-                                    </div>    
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" placeholder="Nº ORDEN PROVEEDOR" id="contenedor">
-                                    </div>    
-                                </div>
+                    <!-- ========== SECCIÓN 1: DATOS INICIALES ========== -->
+                    <div class="seccion-formulario mt-4 mb-4">
+                        <h4 class="seccion-titulo"><i class="bi bi-clipboard-data"></i> Sección 1 - Datos Iniciales</h4>
+                        
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Proveedor</label>
+                                <div class="input-group">
+                                    <select id="proveedor" style="width: 283.16px;" required>
+                                        <option selected disabled>Seleccione...</option>
+                                        <?php
+                                        foreach($todosLosProveedores as $valor => $value){
+                                        ?>
+                                        <option id="proveedor-" value="<?= $value->COD_PROVEE; ?>"><?= $value->NOM_PROVEE; ?></option>
+                                        <?php   
+                                        }
+                                        ?>
+                                    </select>
+                                    <div class="select-dropdown"></div>
+                                </div>    
                             </div>
-                            <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 js-datepicker4" type="text" placeholder="FECHA DESP. ADUANA" id="fechaDespacho">
-                                        <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar4"></i>
-                                    </div>
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" placeholder="DESPACHO N°" id="despacho" required>
-                                    </div>    
-                                </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Nº Orden Proveedor</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 mayusc" type="text" id="contenedor" required>
+                                </div>    
                             </div>
-                            <div class="row row-space">                                
-                            </div>
-                            
-                            <div class="row row-space">
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 soloNum" type="text" placeholder="NUMERO BL" id="numeroBl">
-                                    </div>    
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" placeholder="MATERIAL" id="material" oninput="validarTextoEntrada(this, '[a-záéíóúñ ]')">
-                                    </div>    
-                                </div>
-                            </div>
-                            <div class="row row-space">
-                                
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" placeholder="FACTURA PROVEEDOR" id="facturaProveedor">
-                                    </div>    
-                                </div>
-
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 mayusc" type="text" value="CHINA" placeholder="ORIGEN" id="origen">
-                                    </div>    
-                                </div>
-                            </div>
-                            <div class="row row-space">
-                                
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 decimales currencyInput" onkeyup="calcular()" type="text" placeholder="VALOR F.O.B. U$S" id="valorFobDolar">
-                                    </div>    
-                                </div>
-
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 decimales currencyInput" onkeyup="calcular()" type="text" placeholder="TIPO DE CAMBIO DESPACHO" id="tipoCambio">
-                                    </div>    
-                                </div>
-                            </div>
-                            <div class="row row-space">
-                              
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <input class="input--style-1 decimales" type="text" placeholder="VALOR F.O.B. $" id="valorFobPeso" readonly>
-                                    </div>
-                                </div>      
-                            </div>
-                            <div class="row row-space">
-                       
-                                
-                                    <div class="col-md-5" >
-                                        <div class="input-group">
-                                            <div style="margin-right:20px">ORDENES DE COMPRA</div>
-                                            <div><button id="btnAddOrdenCompra"><i class="bi bi-plus-circle-fill"></i></button></div>
-                                            
-                                        </div>    
-                                    <div id="ordenesSeleccionadas" class="contenedor"></div>
-                                    
-                                </div>
-                      
-
-                                <div class="col-md-5">
-                                    <div class="input-group">
-                                        <div class="rs-select2 js-select-simple select--no-search ">
-                                            <select id="formaPago" style="width: 283.16px;">
-                                                <option disabled="disabled" selected="selected">FORMA DE PAGO</option>
-                                                <option>PAGO ANTICIPADO</option>
-                                                <option>PAGO VISTA</option>
-                                                <option>PAGO DIFERIDO</option>
-                                            </select>
-                                            <div class="select-dropdown"></div>
-                                        </div>        
-                                    </div>    
-                                </div>
-                            </div>
-                        <div class="p-t-20">
-                            <button class="btn btn-primary" id="btnSave" onclick="guardarCabeceraUy()" >Guardar <i class="bi bi-cloud-download"></i></button>
                         </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Material</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 mayusc" type="text" id="material" required>
+                                </div>    
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Origen</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 mayusc" type="text" value="CHINA" id="origen" required>
+                                </div>    
+                            </div>
+                        </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Valor F.O.B. U$S</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 decimales currencyInput" onkeyup="recalcularFobPesos()" type="text" id="valorFobDolar" required>
+                                </div>    
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Órdenes de Compra</label>
+                                <div class="input-group">
+                                    <button type="button" id="btnAddOrdenCompra" style="width: 100%;"><i class="bi bi-plus-circle-fill"></i> Agregar Orden</button>
+                                </div>    
+                                <div id="ordenesSeleccionadas" class="contenedor"></div>
+                            </div>
+                        </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Fecha Estimada Embarque</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 js-datepicker-estimada" type="text" id="fechaEmb" required>
+                                    <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-estimada"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== SECCIÓN 2: DATOS DE EMBARQUE ========== -->
+                    <div class="seccion-formulario mt-4 mb-4">
+                        <h4 class="seccion-titulo"><i class="bi bi-ship"></i> Sección 2 - Datos de Embarque</h4>
+                        
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Fecha Embarque - ETD</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 js-datepicker-etd" type="text" id="fechaEtd">
+                                    <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-etd"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Fecha Arribo - ETA <span class="badge-auto">Auto</span></label>
+                                <div class="input-group">
+                                    <input class="input--style-1 js-datepicker-arribo" type="text" id="fechaArr">
+                                    <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-arribo"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Número BL</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 soloNum" type="text" id="numeroBl">
+                                </div>    
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Factura Proveedor</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 mayusc" type="text" id="factura">
+                                </div>    
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========== SECCIÓN 3: DATOS FINANCIEROS Y ADUANA ========== -->
+                    <div class="seccion-formulario mt-4 mb-4">
+                        <h4 class="seccion-titulo"><i class="bi bi-cash-coin"></i> Sección 3 - Datos Financieros y Aduana</h4>
+                        
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Tipo de Cambio</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 decimales currencyInput" onkeyup="recalcularFobPesos()" type="text" id="tipoCambio">
+                                </div>    
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Valor F.O.B. $ <span class="badge-auto">Auto</span></label>
+                                <div class="input-group">
+                                    <input class="input--style-1 decimales" type="text" id="valorFobPeso" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Forma de Pago</label>
+                                <div class="input-group">
+                                    <div class="rs-select2 js-select-simple select--no-search">
+                                        <select id="formaPago" style="width: 283.16px;">
+                                            <option disabled="disabled" selected="selected">Seleccione...</option>
+                                            <option>PAGO ANTICIPADO</option>
+                                            <option>PAGO VISTA</option>
+                                            <option>PAGO DIFERIDO</option>
+                                        </select>
+                                        <div class="select-dropdown"></div>
+                                    </div>        
+                                </div>    
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Fecha de Pago <span class="badge-auto">Auto</span></label>
+                                <div class="input-group">
+                                    <input class="input--style-1 js-datepicker-pago" type="text" id="fechaPago">
+                                    <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-pago"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Fecha Nacionalización <span class="badge-auto">Auto</span></label>
+                                <div class="input-group">
+                                    <input class="input--style-1 js-datepicker-despacho" type="text" id="fechaDespAdu">
+                                    <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-despacho"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Despacho N°</label>
+                                <div class="input-group">
+                                    <input class="input--style-1 mayusc" type="text" id="despacho">
+                                </div>    
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-t-20">
+                        <button class="btn btn-primary" id="btnSave" onclick="guardarCabecera()">Guardar <i class="bi bi-cloud-download"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -217,8 +337,308 @@ $todosLosProveedores = json_decode($todosLosProveedores);
 
 <script>
 
-// Reemplazar el modal actual con uno más moderno y funcional
+// ========== VARIABLES GLOBALES Y FLAGS ==========
+let fechaArriboIsManual = false;
+let fechaPagoIsManual = false;
+let fechaDespachoIsManual = false;
+
+// ========== FUNCIONES DE CÁLCULO AUTOMÁTICO ==========
+
+/**
+ * Obtiene la fecha base (FECHA_EMB - ETD)
+ * Esta es la fecha estimada de embarque
+ */
+function obtenerFechaBase() {
+    const fechaEmb = $('#fechaEmb').val();
+    
+    if (fechaEmb && fechaEmb.trim() !== '') {
+        return moment(fechaEmb, 'DD/MM/YYYY');
+    }
+    return null;
+}
+
+/**
+ * Suma días a una fecha y retorna en formato DD/MM/YYYY
+ */
+function sumarDias(fechaMoment, dias) {
+    if (!fechaMoment || !fechaMoment.isValid()) return '';
+    return fechaMoment.clone().add(dias, 'days').format('DD/MM/YYYY');
+}
+
+/**
+ * Recalcula la Fecha de Arribo - ETA (FECHA_ARR = FECHA_EMB + 45 días)
+ */
+function recalcularFechaArribo() {
+    if (fechaArriboIsManual) return; // No recalcular si está en modo manual
+    
+    const fechaBase = obtenerFechaBase();
+    if (fechaBase) {
+        const nuevaFechaArribo = sumarDias(fechaBase, 45);
+        $('#fechaArr').val(nuevaFechaArribo);
+        marcarCampoCalculado('#fechaArr');
+    }
+}
+
+/**
+ * Recalcula la Fecha de Pago (Fecha base + 5 días)
+ */
+function recalcularFechaPago() {
+    if (fechaPagoIsManual) return;
+    
+    const fechaBase = obtenerFechaBase();
+    if (fechaBase) {
+        const nuevaFechaPago = sumarDias(fechaBase, 5);
+        $('#fechaPago').val(nuevaFechaPago);
+        marcarCampoCalculado('#fechaPago');
+    }
+}
+
+/**
+ * Recalcula la Fecha de Nacionalización (FECHA_DESP_ADU = FECHA_ARR + 2 días)
+ */
+function recalcularFechaDespacho() {
+    if (fechaDespachoIsManual) return;
+    
+    const fechaArr = $('#fechaArr').val();
+    if (fechaArr && fechaArr.trim() !== '') {
+        const fechaArriboMoment = moment(fechaArr, 'DD/MM/YYYY');
+        const nuevaFechaDespacho = sumarDias(fechaArriboMoment, 2);
+        $('#fechaDespAdu').val(nuevaFechaDespacho);
+        marcarCampoCalculado('#fechaDespAdu');
+    }
+}
+
+/**
+ * Recalcula todos los campos de fechas automáticas
+ */
+function recalcularTodasLasFechas() {
+    recalcularFechaArribo();
+    recalcularFechaPago();
+    recalcularFechaDespacho();
+}
+
+/**
+ * Calcula FOB en Pesos = FOB U$S × Tipo de Cambio
+ */
+function recalcularFobPesos() {
+    const valorFobDolar = parseFloat($('#valorFobDolar').val().replace(/,/g, '')) || 0;
+    const tipoCambio = parseFloat($('#tipoCambio').val().replace(/,/g, '')) || 0;
+    
+    if (valorFobDolar > 0 && tipoCambio > 0) {
+        const valorFobPeso = valorFobDolar * tipoCambio;
+        $('#valorFobPeso').val(valorFobPeso.toFixed(2));
+    } else {
+        $('#valorFobPeso').val('');
+    }
+}
+
+// ========== FUNCIONES DE MANUAL OVERRIDE ==========
+
+/**
+ * Marca visualmente un campo como calculado automáticamente
+ */
+function marcarCampoCalculado(selector) {
+    $(selector).removeClass('campo-manual-override').addClass('campo-calculado');
+}
+
+/**
+ * Marca visualmente un campo como editado manualmente
+ */
+function marcarCampoManual(selector) {
+    $(selector).removeClass('campo-calculado').addClass('campo-manual-override');
+}
+
+/**
+ * Reactiva el cálculo automático cuando un campo se vacía
+ */
+function verificarCampoVacio(selector, flagVariable, flagName) {
+    $(selector).on('change', function() {
+        const valor = $(this).val();
+        if (!valor || valor.trim() === '') {
+            // Campo vacío: reactivar cálculo automático
+            window[flagName] = false;
+            $(this).removeClass('campo-manual-override campo-calculado');
+        }
+    });
+}
+
+/**
+ * Detecta edición manual en campos calculados
+ */
+function configurarManualOverride() {
+    // Fecha Arribo (FECHA_ARR - ETA)
+    $('#fechaArr').on('dp.change', function(e) {
+        if (e.date && $(this).val().trim() !== '') {
+            fechaArriboIsManual = true;
+            marcarCampoManual('#fechaArr');
+            // Al cambiar manualmente fecha arribo, recalcular despacho si no es manual
+            recalcularFechaDespacho();
+        }
+    });
+    verificarCampoVacio('#fechaArr', fechaArriboIsManual, 'fechaArriboIsManual');
+
+    // Fecha Pago
+    $('#fechaPago').on('dp.change', function(e) {
+        if (e.date && $(this).val().trim() !== '') {
+            fechaPagoIsManual = true;
+            marcarCampoManual('#fechaPago');
+        }
+    });
+    verificarCampoVacio('#fechaPago', fechaPagoIsManual, 'fechaPagoIsManual');
+
+    // Fecha Nacionalización (FECHA_DESP_ADU)
+    $('#fechaDespAdu').on('dp.change', function(e) {
+        if (e.date && $(this).val().trim() !== '') {
+            fechaDespachoIsManual = true;
+            marcarCampoManual('#fechaDespAdu');
+        }
+    });
+    verificarCampoVacio('#fechaDespAdu', fechaDespachoIsManual, 'fechaDespachoIsManual');
+}
+
+// ========== LÓGICA DE ETAPAS (ALTA vs EDICIÓN) ==========
+
+/**
+ * Controla el modo de edición del formulario
+ */
+function establecerModoFormulario(esEdicion) {
+    $('#modoEdicion').val(esEdicion ? 'true' : 'false');
+    
+    if (esEdicion) {
+        // MODO EDICIÓN: Sección 1 readonly excepto Valor FOB U$S
+        $('#proveedor').prop('disabled', true).addClass('campo-readonly');
+        $('#contenedor').prop('readonly', true).addClass('campo-readonly');
+        $('#material').prop('readonly', true).addClass('campo-readonly');
+        $('#origen').prop('readonly', true).addClass('campo-readonly');
+        $('#fechaEmb').prop('readonly', true).addClass('campo-readonly');
+        $('#btnAddOrdenCompra').prop('disabled', true).css('opacity', '0.5');
+        
+        // Valor FOB U$S sigue editable
+        $('#valorFobDolar').prop('readonly', false).removeClass('campo-readonly');
+        
+        // Secciones 2 y 3 editables
+        $('#fechaEtd, #numeroBl, #factura, #fechaArr').prop('readonly', false).removeClass('campo-readonly');
+        $('#tipoCambio, #formaPago, #fechaPago, #fechaDespAdu, #despacho').prop('readonly', false).removeClass('campo-readonly');
+        
+    } else {
+        // MODO ALTA INICIAL: Sección 1 obligatoria y editable
+        $('#proveedor').prop('disabled', false).removeClass('campo-readonly');
+        $('#contenedor, #material, #origen, #fechaEmb, #valorFobDolar').prop('readonly', false).removeClass('campo-readonly');
+        $('#btnAddOrdenCompra').prop('disabled', false).css('opacity', '1');
+        
+        // Secciones 2 y 3 visibles pero no editables (se calculan automáticamente)
+        $('#fechaEtd, #numeroBl, #factura').prop('readonly', true).addClass('campo-readonly');
+        $('#tipoCambio, #formaPago, #fechaPago, #fechaDespAdu, #despacho').prop('readonly', true).addClass('campo-readonly');
+        $('#fechaArr').prop('readonly', true); // Este siempre es calculado inicialmente
+    }
+}
+
+/**
+ * Valida campos obligatorios de Sección 1 en alta inicial
+ */
+function validarSeccion1() {
+    const proveedor = $('#proveedor').val();
+    const ordenProveedor = $('#contenedor').val();
+    const material = $('#material').val();
+    const origen = $('#origen').val();
+    const valorFobDolar = $('#valorFobDolar').val();
+    const fechaEmb = $('#fechaEmb').val();
+    const ordenesSeleccionadas = $('#ordenesSeleccionadas').children().length;
+    
+    if (!proveedor || proveedor === 'PROVEEDOR') {
+        Swal.fire({icon: 'error', title: 'Error', text: 'Debe seleccionar un proveedor', confirmButtonColor: '#3085d6'});
+        return false;
+    }
+    
+    if (!ordenProveedor || ordenProveedor.trim() === '') {
+        Swal.fire({icon: 'error', title: 'Error', text: 'Debe ingresar el número de orden del proveedor', confirmButtonColor: '#3085d6'});
+        return false;
+    }
+    
+    if (!material || material.trim() === '') {
+        Swal.fire({icon: 'error', title: 'Error', text: 'Debe ingresar el material', confirmButtonColor: '#3085d6'});
+        return false;
+    }
+    
+    if (!origen || origen.trim() === '') {
+        Swal.fire({icon: 'error', title: 'Error', text: 'Debe ingresar el origen', confirmButtonColor: '#3085d6'});
+        return false;
+    }
+    
+    if (!valorFobDolar || valorFobDolar.trim() === '') {
+        Swal.fire({icon: 'error', title: 'Error', text: 'Debe ingresar el valor FOB en dólares', confirmButtonColor: '#3085d6'});
+        return false;
+    }
+    
+    if (!fechaEmb || fechaEmb.trim() === '') {
+        Swal.fire({icon: 'error', title: 'Error', text: 'Debe ingresar la fecha estimada de embarque (ETD)', confirmButtonColor: '#3085d6'});
+        return false;
+    }
+    
+    if (ordenesSeleccionadas === 0 && !$('#ordenManual').is(':checked')) {
+        Swal.fire({icon: 'error', title: 'Error', text: 'Debe agregar al menos una orden de compra o marcar orden manual', confirmButtonColor: '#3085d6'});
+        return false;
+    }
+    
+    return true;
+}
+
+// ========== INICIALIZACIÓN Y EVENT LISTENERS ==========
+
 $(document).ready(function() {
+    // Establecer modo inicial (alta)
+    establecerModoFormulario(false);
+    
+    // Configurar manual override
+    configurarManualOverride();
+    
+    // Event listeners para recálculos automáticos
+    $('#fechaEmb').on('dp.change', function() {
+        recalcularTodasLasFechas();
+    });
+    
+    // Calcular fechas iniciales cuando se ingresa fecha estimada
+    $('#fechaEmb').on('change', function() {
+        recalcularTodasLasFechas();
+    });
+    
+    // Inicializar datepickers
+    $('.js-datepicker-estimada').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    });
+    
+    $('.js-datepicker-etd').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    });
+    
+    $('.js-datepicker-arribo').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    });
+    
+    $('.js-datepicker-pago').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    });
+    
+    $('.js-datepicker-despacho').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    });
+
+    // Reemplazar el modal actual con uno más moderno y funcional
     $('#btnAddOrdenCompra').on('click', function() {
         // Validaciones iniciales
         if(document.querySelector("#proveedor").value == 'PROVEEDOR') {
