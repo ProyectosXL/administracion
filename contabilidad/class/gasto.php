@@ -555,8 +555,37 @@ class Gasto
         return array('success' => true, 'message' => 'Proceso de reversión ejecutado correctamente');
     }
 
-    public function validarModulos() {
-        $sql = "SELECT DISTINCT (MODULO) AS MODULOS FROM RO_T_INTEGRAL_TANGO_2";
+    public function validarModulos($periodo) {
+        // Validar que el paso 7 esté ejecutado
+        $sqlPaso7 = "SELECT PASO_7 FROM RO_T_CONTROL_INFORME_ECONOMICO WHERE PERIODO = '$periodo'";
+        $stmtPaso7 = sqlsrv_query($this->cid_central, $sqlPaso7);
+
+        if ($stmtPaso7 === false) {
+            $errors = sqlsrv_errors();
+            $errorMessage = "Error al consultar el paso 7: ";
+            if ($errors) {
+                foreach ($errors as $error) {
+                    $errorMessage .= $error['message'] . " ";
+                }
+            }
+            return array('success' => false, 'message' => $errorMessage);
+        }
+
+        $rowPaso7 = sqlsrv_fetch_array($stmtPaso7, SQLSRV_FETCH_ASSOC);
+        
+        if (!$rowPaso7) {
+            return array('success' => false, 'message' => "No se encontró el período $periodo en la tabla de control");
+        }
+
+        if ($rowPaso7['PASO_7'] == 1) {
+            // El paso 7 está ejecutado, continuar con la validación de módulos
+        } else {
+            return array('success' => false, 'message' => "El paso 7 no ha sido ejecutado para el período $periodo");
+        }
+
+        // Validar módulos
+        $sql = "SELECT DISTINCT (MODULO) AS MODULOS FROM RO_T_INTEGRAL_TANGO_2
+                WHERE MODULO NOT IN ('ALQUILERES','CUENTAS2','VENTAS')";
         $stmt = sqlsrv_query($this->cid_central, $sql);
 
         if ($stmt === false) {
@@ -575,12 +604,12 @@ class Gasto
             $modulos[] = $row['MODULOS'];
         }
 
-        $modulosRequeridos = array('VENTAS', 'ALQUILERES', 'CONTABILIDAD', 'TESORERIA', 'CUENTAS2', 'COMPRAS');
+        $modulosRequeridos = array('CONTABILIDAD', 'TESORERIA', 'COMPRAS');
         
         $modulosFaltantes = array_diff($modulosRequeridos, $modulos);
         
         if (empty($modulosFaltantes)) {
-            return array('success' => true, 'message' => 'Todos los módulos están presentes', 'modulos' => $modulos);
+            return array('success' => true, 'message' => 'Paso 7 ejecutado correctamente y todos los módulos están presentes', 'modulos' => $modulos);
         } else {
             $modulosFaltantesStr = implode(', ', $modulosFaltantes);
             return array('success' => false, 'message' => "Faltan los siguientes módulos: $modulosFaltantesStr", 'modulos' => $modulos, 'modulosFaltantes' => $modulosFaltantes);

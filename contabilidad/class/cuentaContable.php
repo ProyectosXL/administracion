@@ -22,12 +22,12 @@ class CuentaContable
         }
 
     } 
-
+    
     public function traerCuentasContables(){
  
         if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
 
-            $sql =  "SELECT COD_CUENTA, DESC_CUENTA FROM CUENTA WHERE COD_CUENTA BETWEEN '500009' AND '500999' ORDER BY DESC_CUENTA;";
+            $sql = "SELECT COD_CUENTA, UPPER(DESC_CUENTA) DESC_CUENTA FROM CUENTA WHERE COD_CUENTA LIKE '5%' ORDER BY DESC_CUENTA;";
             
         }else{
 
