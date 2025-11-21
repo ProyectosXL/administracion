@@ -5,9 +5,21 @@ if (session_status() == PHP_SESSION_NONE) {
 
 include 'Class/proveedor.php';
 include 'Class/ordenDeCompra.php';
+include 'Class/encabezado.php';
 
 $proveedor = new Proveedor();
 $todosLosProveedores = [];
+
+// Detectar modo edición
+$modoEdicion = isset($_GET['modo']) && $_GET['modo'] === 'edicion';
+$idDespacho = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$despacho = null;
+
+if ($modoEdicion && $idDespacho > 0) {
+    $encabezadoClass = new Encabezado();
+    // Cargar datos del despacho (implementaremos este método)
+    $despacho = $encabezadoClass->obtenerDespachoPorId($idDespacho);
+}
 
 try {
     $proveedoresJson = $proveedor->traerProveedores();
@@ -65,21 +77,23 @@ try {
     <div class="carga-inicial-container">
         <div class="carga-inicial-header">
             <h1 class="page-title">
-                <i class="bi bi-file-earmark-plus"></i>
-                Nuevo Despacho de Importación
+                <i class="bi bi-<?= $modoEdicion ? 'pencil-square' : 'file-earmark-plus' ?>"></i>
+                <?= $modoEdicion ? 'Completar Despacho de Importación' : 'Nuevo Despacho de Importación' ?>
             </h1>
-            <p class="page-subtitle">Complete los datos del despacho de importación</p>
+            <p class="page-subtitle"><?= $modoEdicion ? 'Complete las secciones faltantes del despacho' : 'Complete los datos del despacho de importación' ?></p>
         </div>
         
         <div class="carga-inicial-content">
-
-                    <div class="row" style="margin-bottom:10px;margin-left:8px">
-                        <span>Orden De Compra Manual</span>
-                        <div class="col" id="checkOrden"><input type="checkbox" id="ordenManual" onchange="traerOrden()"></div>
-                    </div>
-                    
                     <div id="entorno" hidden><?= (isset($_SESSION['entorno'])) ? $_SESSION['entorno'] : 'central' ?></div>
-                    <input type="hidden" id="modoEdicion" value="false">
+                    <input type="hidden" id="modoEdicion" value="<?= $modoEdicion ? 'true' : 'false' ?>">
+                    <input type="hidden" id="idDespacho" value="<?= $idDespacho ?>">
+                    
+                    <?php if ($modoEdicion && $despacho): ?>
+                    <script>
+                        // Datos del despacho a cargar
+                        var datosDespacho = <?= json_encode($despacho) ?>;
+                    </script>
+                    <?php endif; ?>
 
                     <!-- ========== SECCIÓN 1: DATOS INICIALES ========== -->
                     <div class="seccion-formulario mt-4 mb-4">
@@ -135,7 +149,7 @@ try {
                             <div class="col-md-5">
                                 <label class="label-campo">Valor F.O.B. U$S</label>
                                 <div class="input-group">
-                                    <input class="input--style-1 decimales currencyInput" onkeyup="recalcularFobPesos()" type="text" id="valorFobDolar" required>
+                                    <input class="input--style-1 decimales currencyInput" type="text" id="valorFobDolar" required>
                                 </div>    
                             </div>
                             <div class="col-md-5">
@@ -151,22 +165,36 @@ try {
                             <div class="col-md-5">
                                 <label class="label-campo">Fecha Estimada Embarque</label>
                                 <div class="input-group">
-                                    <input class="input--style-1 js-datepicker-estimada" type="text" id="fechaEmb" required>
+                                    <input class="input--style-1 js-datepicker-estimada" type="text" id="fechaEstEmb" required>
                                     <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-estimada"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="orden-manual-container">
+                                    <label class="orden-manual-label">
+                                        <input type="checkbox" id="ordenManual" onchange="traerOrden()">
+                                        <span class="checkmark"></span>
+                                        <span class="label-text">
+                                            <i class="bi bi-gear-fill"></i>
+                                            Generar Orden de Compra Manual
+                                        </span>
+                                    </label>
+                                    <p class="orden-manual-hint">Activa esta opción si no tienes una orden de compra existente</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- ========== SECCIÓN 2: DATOS DE EMBARQUE ========== -->
+                    <!-- LÓGICA PRIORITARIA: Si existe Fecha Embarque (ETD), se usa para cálculos. Si no, se usa Fecha Estimada -->
                     <div class="seccion-formulario mt-4 mb-4">
                         <h4 class="seccion-titulo"><i class="bi bi-ship"></i> Sección 2 - Datos de Embarque</h4>
                         
                         <div class="row row-space">
                             <div class="col-md-5">
-                                <label class="label-campo">Fecha Embarque - ETD</label>
+                                <label class="label-campo">Fecha Embarque - ETD <i class="bi bi-exclamation-circle text-info" title="Fecha real de embarque (ETD). Tiene prioridad sobre la fecha estimada para los cálculos automáticos"></i></label>
                                 <div class="input-group">
-                                    <input class="input--style-1 js-datepicker-etd" type="text" id="fechaEtd">
+                                    <input class="input--style-1 js-datepicker-etd" type="text" id="fechaEmb">
                                     <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-etd"></i>
                                 </div>
                             </div>
@@ -203,7 +231,7 @@ try {
                             <div class="col-md-5">
                                 <label class="label-campo">Tipo de Cambio</label>
                                 <div class="input-group">
-                                    <input class="input--style-1 decimales currencyInput" onkeyup="recalcularFobPesos()" type="text" id="tipoCambio">
+                                    <input class="input--style-1 decimales currencyInput" type="text" id="tipoCambio">
                                 </div>    
                             </div>
                             <div class="col-md-5">
@@ -256,6 +284,9 @@ try {
                     </div>
 
                     <div class="form-actions">
+                        <a href="gestionDespachos.php" class="btn btn-secondary btn-back">
+                            <i class="bi bi-arrow-left"></i> Volver a Pendientes
+                        </a>
                         <button class="btn btn-primary btn-save" id="btnSave" onclick="guardarCabecera()">
                             <i class="bi bi-save"></i> Guardar Despacho
                         </button>
@@ -275,9 +306,34 @@ try {
 
     <!-- Main JS-->
     <script src="js/global.js"></script>
-    <script src="js/main.js"></script>
-    <!-- Carga Inicial JS -->
+    <!-- Carga Inicial JS - Contiene toda la lógica del formulario -->
     <script src="js/cargaInicial.js"></script>
+    
+    <script>
+    // Inicializar select de proveedor para cargar órdenes de compra
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectProveedor = document.getElementById('proveedor');
+        
+        if (selectProveedor) {
+            selectProveedor.addEventListener('change', function() {
+                const proveedor = this.value;
+                
+                if (proveedor && proveedor !== 'Seleccione...') {
+                    // Cargar órdenes de compra del proveedor
+                    fetch('Class/ordenDeCompra.php?proveedor=' + proveedor)
+                        .then(response => response.json())
+                        .then(ordenes => {
+                            localStorage.setItem('ordenes', JSON.stringify(ordenes));
+                            console.log('Órdenes de compra cargadas:', ordenes);
+                        })
+                        .catch(error => {
+                            console.error('Error al cargar órdenes:', error);
+                        });
+                }
+            });
+        }
+    });
+    </script>
 
 </body>
 

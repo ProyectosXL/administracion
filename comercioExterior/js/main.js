@@ -99,7 +99,11 @@ function guardarCabecera(){
         var material = document.getElementById('material').value; // MATERIAL
         var origen = document.getElementById('origen').value; // ORIGEN
         var valorFobDolar = document.getElementById('valorFobDolar').value; // VALOR_FOB_DOLAR
-        var fechaEmb = document.getElementById('fechaEmb').value; // FECHA_EMB (Fecha Estimada)
+        var fechaEstEmb = document.getElementById('fechaEstEmb').value; // FECHA_EST_EMB (Fecha Estimada Embarque)
+        
+        console.log('Datos Sección 1:', {
+            cod_proveedor, proveedor, contenedor, material, origen, valorFobDolar, fechaEstEmb
+        });
         
         let ocm = 0;
         let ordenManual = document.querySelector("#ordenManual");
@@ -113,7 +117,7 @@ function guardarCabecera(){
         }
 
         // Sección 2 - Datos de Embarque (mapeo a columnas de BD)
-        var fechaEtd = document.getElementById('fechaEtd').value; // Fecha Embarque ETD
+        var fechaEmb = document.getElementById('fechaEmb').value; // FECHA_EMB (ETD - Estimated Time of Departure)
         var numeroBl = document.getElementById('numeroBl').value; // NUMERO_BL
         var factura = document.getElementById('factura').value; // FACTURA
         var fechaArr = document.getElementById('fechaArr').value; // FECHA_ARR (ETA)
@@ -131,10 +135,7 @@ function guardarCabecera(){
         let url = (env == 1) ? 'insertarEncabezado.php' : 'test.php';
         let id = null;
         
-        $.ajax({
-            url: 'Controller/'+url,
-            method: 'POST',
-            data: {
+        const dataToSend = {
                 // Sección 1 - Datos Iniciales (mapeo exacto a BD)
                 cod_proveedor: cod_proveedor, // COD_PROVEE
                 proveedor: proveedor, // PROVEEDOR
@@ -142,34 +143,87 @@ function guardarCabecera(){
                 material: material, // MATERIAL
                 origen: origen, // ORIGEN
                 valorFobDolar: valorFobDolar.replace(/,/g, ""), // VALOR_FOB_DOLAR
-                fechaEmb: fechaEmb, // FECHA_EMB (Fecha Estimada Embarque)
+                fechaEstEmb: fechaEstEmb, // FECHA_EST_EMB (Fecha Estimada Embarque)
                 ordenCompra: ordenCompra, // ORDEN_COMPRA
                 ocm: ocm, // OCM
                 
+                // Campos calculados automáticamente (se guardan desde Sección 1)
+                fechaArr: fechaArr, // FECHA_ARR (ETA - Estimated Time of Arrival)
+                fechaPago: fechaPago, // FECHA_PAGO
+                fechaDespAdu: fechaDespAdu, // FECHA_DESP_ADU (Fecha Nacionalización)
+                
                 // Sección 2 - Datos de Embarque (mapeo exacto a BD)
-                fechaEtd: fechaEtd, // Fecha Embarque ETD
+                fechaEmb: fechaEmb, // FECHA_EMB (ETD - Estimated Time of Departure)
                 numeroBl: numeroBl, // NUMERO_BL
                 factura: factura, // FACTURA
-                fechaArr: fechaArr, // FECHA_ARR (ETA)
                 
                 // Sección 3 - Datos Financieros y Aduana (mapeo exacto a BD)
                 tipoCambio: tipoCambio.replace(/,/g, ""), // TIPO_CAMBIO
                 valorFobPeso: valorFobPeso.replace(/,/g, ""), // VALOR_FOB_PESO
                 formaPago: formaPago, // FORMA_PAGO
-                fechaPago: fechaPago, // FECHA_PAGO
-                fechaDespAdu: fechaDespAdu, // FECHA_DESP_ADU
                 despacho: despacho // DESPACHO
+        };
+        
+        console.log('Datos a enviar:', dataToSend);
+        
+        $.ajax({
+            url: 'Controller/'+url,
+            method: 'POST',
+            dataType: 'json',
+            data: dataToSend,
+            success: function(response) {
+                console.log('Respuesta del servidor:', response);
+                console.log('response.success:', response.success);
+                console.log('response.message:', response.message);
+                console.log('response.ids:', response.ids);
+                
+                if (response.success) {
+                    Swal.fire({
+                        title: '¡Despacho guardado correctamente!',
+                        text: response.message || 'Los datos han sido guardados exitosamente',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#7066e0'
+                    }).then(function () {
+                        // Recargar la página para mostrar un formulario limpio
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error al guardar',
+                        text: response.message || 'Ocurrió un error al guardar el despacho',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#d33'
+                    });
+                }
             },
-            success: function(data) {
-                let id = JSON.stringify(data);
+            error: function(xhr, status, error) {
+                console.error('Error al guardar:', error);
+                console.error('Respuesta del servidor:', xhr.responseText);
+                
+                let errorMessage = 'Error al conectar con el servidor';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = response.message || errorMessage;
+                } catch (e) {
+                    // Si no es JSON válido, usar mensaje genérico
+                }
                 
                 Swal.fire({
-                    title: 'Despacho guardado!',
-                    icon: 'success',
-                    confirmButtonText: 'Cargar detalle',
-                    confirmButtonColor: '#7066e0'
-                }).then(function () {
-                    window.location = "detalleCostos.php?ordenCompra="+ordenCompra+'&proveedor='+proveedor+'&valorFobPeso='+valorFobPeso+'&contenedor='+contenedor+'&tipoCambio='+tipoCambio+'&idEncabezado='+id;
+                    title: 'Error',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#d33'
+                });
+                
+                Swal.fire({
+                    title: 'Error al guardar',
+                    text: 'Hubo un problema al guardar el despacho. Por favor, intente nuevamente.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#dc2626'
                 });
             }
         });

@@ -78,8 +78,15 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
         <div class="tabs-container">
             <ul class="nav nav-tabs custom-tabs" id="mainTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="costos-tab" data-bs-toggle="tab" data-bs-target="#costos" 
-                            type="button" role="tab" aria-controls="costos" aria-selected="true">
+                    <button class="nav-link active" id="gestion-tab" data-bs-toggle="tab" data-bs-target="#gestion" 
+                            type="button" role="tab" aria-controls="gestion" aria-selected="true">
+                        <i class="bi bi-list-check"></i>
+                        <span>Gestión de Despachos</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="costos-tab" data-bs-toggle="tab" data-bs-target="#costos" 
+                            type="button" role="tab" aria-controls="costos" aria-selected="false">
                         <i class="bi bi-calculator"></i>
                         <span>Costos de Nacionalización</span>
                     </button>
@@ -91,20 +98,20 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
                         <span>Dashboard</span>
                     </button>
                 </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="carga-tab" data-bs-toggle="tab" data-bs-target="#carga" 
-                            type="button" role="tab" aria-controls="carga" aria-selected="false">
-                        <i class="bi bi-file-earmark-plus"></i>
-                        <span>Nuevo Despacho</span>
-                    </button>
-                </li>
             </ul>
         </div>
 
         <!-- Tab Content -->
         <div class="tab-content" id="mainTabsContent">
+            <!-- Gestión de Despachos Tab -->
+            <div class="tab-pane fade show active" id="gestion" role="tabpanel" aria-labelledby="gestion-tab">
+                <div class="tab-content-wrapper">
+                    <iframe src="gestionDespachos.php" class="content-iframe" id="gestionFrame"></iframe>
+                </div>
+            </div>
+
             <!-- Costos de Nacionalización Tab -->
-            <div class="tab-pane fade show active" id="costos" role="tabpanel" aria-labelledby="costos-tab">
+            <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
                 <div class="tab-content-wrapper">
                     <iframe src="mostrarOrden.php" class="content-iframe" id="costosFrame"></iframe>
                 </div>
@@ -114,13 +121,6 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
             <div class="tab-pane fade" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
                 <div class="tab-content-wrapper">
                     <iframe src="dashboard.php" class="content-iframe" id="dashboardFrame"></iframe>
-                </div>
-            </div>
-
-            <!-- Carga Inicial Tab -->
-            <div class="tab-pane fade" id="carga" role="tabpanel" aria-labelledby="carga-tab">
-                <div class="tab-content-wrapper">
-                    <iframe src="cargaInicial.php" class="content-iframe" id="cargaFrame"></iframe>
                 </div>
             </div>
         </div>
