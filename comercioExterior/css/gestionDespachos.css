@@ -112,6 +112,17 @@ body {
     transform: translateY(-1px);
 }
 
+.btn-costos {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-costos:hover {
+    background: #059669;
+    color: white;
+    transform: translateY(-1px);
+}
+
 .table {
     margin-bottom: 0;
 }

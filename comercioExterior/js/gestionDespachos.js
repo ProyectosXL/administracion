@@ -54,9 +54,14 @@ function mostrarDespachos(despachos) {
                 <td>${despacho.MATERIAL || '-'}</td>
                 <td>${despacho.ORDEN_COMPRA || '-'}</td>
                 <td>
-                    <a href="editarDespacho.php?id=${despacho.ID}" class="btn-action btn-editar">
-                        <i class="bi bi-pencil"></i> Completar
-                    </a>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <a href="editarDespacho.php?id=${despacho.ID}" class="btn-action btn-editar">
+                            <i class="bi bi-pencil"></i> Completar
+                        </a>
+                        <a href="cargarCostos.php?id=${despacho.ID}" class="btn-action btn-costos">
+                            <i class="bi bi-calculator"></i> Costos
+                        </a>
+                    </div>
                 </td>
             </tr>
         `;

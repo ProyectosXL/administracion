@@ -149,12 +149,26 @@ function cargarDatosDespacho(datos) {
     if (datos.IVA_ADICIONAL) $('#ivaAdicional').val(datos.IVA_ADICIONAL);
     if (datos.GASTO_DESPACHANTE) $('#gastoDespachante').val(datos.GASTO_DESPACHANTE);
     if (datos.ANTICIPO) $('#anticipo').val(datos.ANTICIPO);
-    if (datos.DESPACHO) $('#numeroDespacho').val(datos.DESPACHO);
+    
+    // IMPORTANTE: Guardar el número de despacho para cargarlo después de los recálculos
+    const numeroDespacho = datos.DESPACHO || null;
     
     // Desactivar flag de carga
     cargandoDatos = false;
     
     console.log('Datos cargados correctamente');
+    console.log('Todos los datos recibidos:', datos);
+    
+    // Cargar el número de despacho DESPUÉS de que se desactive cargandoDatos
+    // para que los recálculos no lo sobrescriban
+    if (numeroDespacho) {
+        console.log('Cargando número de despacho después de recálculos:', numeroDespacho);
+        // Usar setTimeout para asegurar que se ejecuta después de los recálculos
+        setTimeout(function() {
+            $('#despacho').val(numeroDespacho);
+            console.log('Número de despacho cargado:', numeroDespacho);
+        }, 100);
+    }
 }
 
 /**

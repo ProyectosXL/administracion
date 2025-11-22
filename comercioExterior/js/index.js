@@ -13,6 +13,7 @@ $(document).ready(function() {
         const isChecked = $(this).is(':checked');
         const entorno = isChecked ? 'uy' : 'central';
         const entornoNombre = isChecked ? 'Uruguay (UY)' : 'Argentina (ARG)';
+        const entornoCorto = isChecked ? 'UY' : 'ARG';
 
         // Mostrar loading
         Swal.fire({
@@ -37,7 +38,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     // Actualizar texto del entorno
-                    $('#environment-text').html(`Entorno: <strong>${entornoNombre}</strong>`);
+                    $('#environment-text').html(`Entorno: <strong>${entornoCorto}</strong>`);
 
                     // Intercambiar las banderas
                     const flagLeft = $('#flag-left');

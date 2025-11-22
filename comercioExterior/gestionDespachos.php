@@ -64,7 +64,7 @@ $proveedorClass = new Proveedor();
                             <th style="width: 120px;">Contenedor</th>
                             <th style="width: 150px;">Material</th>
                             <th style="width: 130px;">Orden Compra</th>
-                            <th style="width: 100px;">Acciones</th>
+                            <th style="width: 200px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>

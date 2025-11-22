@@ -56,21 +56,23 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
                     <p class="main-subtitle">Sistema de Gestión de Importaciones</p>
                 </div>
                 
-                <div class="country-toggle">
-                    <img src="<?php echo $imageOff; ?>" class="flag" id="flag-left" alt="<?php echo $dataOffValue; ?>">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="country-toggle" <?php echo $checked; ?> 
-                               data-on="<?php echo $dataOnValue; ?>" 
-                               data-off="<?php echo $dataOffValue; ?>">
-                        <span class="slider"></span>
-                    </label>
-                    <img src="<?php echo $imageOn; ?>" class="flag" id="flag-right" alt="<?php echo $dataOnValue; ?>">
+                <div class="header-right-section">
+                    <div class="environment-info">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <span id="environment-text">Entorno: <strong><?php echo ($checkedValue === 'central') ? 'ARG' : 'UY'; ?></strong></span>
+                    </div>
+                    
+                    <div class="country-toggle">
+                        <img src="<?php echo $imageOff; ?>" class="flag" id="flag-left" alt="<?php echo $dataOffValue; ?>">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="country-toggle" <?php echo $checked; ?> 
+                                   data-on="<?php echo $dataOnValue; ?>" 
+                                   data-off="<?php echo $dataOffValue; ?>">
+                            <span class="slider"></span>
+                        </label>
+                        <img src="<?php echo $imageOn; ?>" class="flag" id="flag-right" alt="<?php echo $dataOnValue; ?>">
+                    </div>
                 </div>
-            </div>
-            
-            <div class="environment-info">
-                <i class="bi bi-geo-alt-fill"></i>
-                <span id="environment-text">Entorno: <strong><?php echo ($checkedValue === 'central') ? 'Argentina (ARG)' : 'Uruguay (UY)'; ?></strong></span>
             </div>
         </div>
 
@@ -113,7 +115,7 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
             <!-- Costos de Nacionalización Tab -->
             <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
                 <div class="tab-content-wrapper">
-                    <iframe src="mostrarOrden.php" class="content-iframe" id="costosFrame"></iframe>
+                    <iframe src="costoNacionalizacion.php" class="content-iframe" id="costosFrame"></iframe>
                 </div>
             </div>
 

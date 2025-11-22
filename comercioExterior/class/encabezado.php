@@ -142,22 +142,24 @@ class Encabezado
     
     public function listarTodosLosDespachos() {
         $sql = "SELECT TOP 100
-                    ID,
-                    FECHA_MOV,
-                    COD_PROVEE,
-                    PROVEEDOR,
-                    CONTENEDOR,
-                    MATERIAL,
-                    ORDEN_COMPRA,
-                    FECHA_EST_EMB,
-                    FECHA_EMB,
-                    NUMERO_BL,
-                    FACTURA,
-                    TIPO_CAMBIO,
-                    VALOR_FOB_DOLAR
-                FROM RO_T_IMPORTACIONES_ENCABEZADO
-                WHERE DESPACHO IS NULL
-                ORDER BY ID DESC";
+                A.ID,
+                FECHA_MOV,
+                COD_PROVEE,
+                PROVEEDOR,
+                CONTENEDOR,
+                MATERIAL,
+                ORDEN_COMPRA,
+                FECHA_EST_EMB,
+                FECHA_EMB,
+                NUMERO_BL,
+                FACTURA,
+                A.TIPO_CAMBIO,
+                VALOR_FOB_DOLAR
+            FROM RO_T_IMPORTACIONES_ENCABEZADO A
+            LEFT JOIN RO_T_IMPORTACIONES_DETALLE B ON A.ID = B.ID_MG
+            WHERE DESPACHO IS NULL OR B.ID_MG IS NULL
+            AND A.FECHA_MOV >= GETDATE()-90
+            ORDER BY ID DESC";
         
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
