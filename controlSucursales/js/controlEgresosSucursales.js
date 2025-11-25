@@ -188,7 +188,7 @@ function procesarImagenes(response, carouselElement, startIndex) {
         let carousel = document.createElement('div');
         carousel.innerHTML = "";
         carousel.className = 'carousel slide';
-        carousel.setAttribute('data-bs-ride', 'carousel');
+        carousel.setAttribute('data-ride', 'carousel');
         carousel.id = 'imageCarousel';
 
         let carouselInner = document.createElement('div');
@@ -233,23 +233,25 @@ function procesarImagenes(response, carouselElement, startIndex) {
         modalContent.appendChild(modalBody);
         carouselElement.appendChild(modalContent);
 
-        let prevControl = document.createElement('button');
+        let prevControl = document.createElement('a');
         prevControl.className = 'carousel-control-prev';
-        prevControl.type = 'button';
-        prevControl.setAttribute('data-bs-target', '#imageCarousel');
-        prevControl.setAttribute('data-bs-slide', 'prev');
-        prevControl.innerHTML = '<span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span>';
-        prevControl.addEventListener('click', function() {
+        prevControl.href = '#imageCarousel';
+        prevControl.role = 'button';
+        prevControl.setAttribute('data-slide', 'prev');
+        prevControl.innerHTML = '<span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="sr-only">Previous</span>';
+        prevControl.addEventListener('click', function(e) {
+            e.preventDefault();
             pasarImagen(-1);
         });
 
-        let nextControl = document.createElement('button');
+        let nextControl = document.createElement('a');
         nextControl.className = 'carousel-control-next';
-        nextControl.type = 'button';
-        nextControl.setAttribute('data-bs-target', '#imageCarousel');
-        nextControl.setAttribute('data-bs-slide', 'next');
-        nextControl.innerHTML = '<span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span>';
-        nextControl.addEventListener('click', function() {
+        nextControl.href = '#imageCarousel';
+        nextControl.role = 'button';
+        nextControl.setAttribute('data-slide', 'next');
+        nextControl.innerHTML = '<span class="carousel-control-next-icon" aria-hidden="true"></span><span class="sr-only">Next</span>';
+        nextControl.addEventListener('click', function(e) {
+            e.preventDefault();
             pasarImagen(1);
         });
 
