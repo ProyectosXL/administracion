@@ -56,6 +56,8 @@ h2{
     position: relative;
     margin-top: 2rem;
     margin-left: 1rem;
+    margin-right: 1rem;
+    width: 100px;
 }
 
 form{
@@ -72,7 +74,7 @@ form{
 }
 
 .btn-group{
-    margin-left: 13rem;
+    margin-left: 16rem;
     height: 55px;
     margin-top: 1em;
 }

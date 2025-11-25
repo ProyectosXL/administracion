@@ -136,7 +136,8 @@ function revertir() {
 
 function validarModulos() {
     $gasto = new Gasto();
-    $result = $gasto->validarModulos();
+    $periodo = $_POST['periodo'];
+    $result = $gasto->validarModulos($periodo);
     
     echo json_encode($result);
 }

@@ -17,38 +17,29 @@ const btnEjecutar = document.querySelector("#btnEjecutar");
 const btnRevertir = document.querySelector("#btnRevertir");
 
 const validarModulos = () => {
+    let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
+    
     $.ajax({
         url: 'Controller/controlGastosController.php?accion=validarModulos',
-        method: 'GET',
+        method: 'POST',
+        data: {periodo: periodo},
         dataType: 'json',
         success: function (response) {
             if (!response.success) {
-                btnEjecutar.disabled = true;
-                btnEjecutar.style.opacity = '0.5';
-                btnEjecutar.style.cursor = 'not-allowed';
-                btnRevertir.disabled = true;
-                btnRevertir.style.opacity = '0.5';
-                btnRevertir.style.cursor = 'not-allowed';
-                
-                Swal.fire({
-                    title: 'Módulos Faltantes',
-                    text: response.message,
-                    icon: 'warning',
-                    confirmButtonText: 'Aceptar',
-                    allowOutsideClick: false
-                });
-            } else {
-                btnEjecutar.disabled = false;
-                btnEjecutar.style.opacity = '1';
-                btnEjecutar.style.cursor = 'pointer';
-                
+                // Solo mostrar alerta si hay módulos faltantes, no si el periodo no existe
+                if (response.modulosFaltantes && response.modulosFaltantes.length > 0) {
+                    Swal.fire({
+                        title: 'Módulos Faltantes',
+                        text: response.message,
+                        icon: 'warning',
+                        confirmButtonText: 'Aceptar',
+                        allowOutsideClick: false
+                    });
+                }
             }
         },
         error: function (xhr, status, error) {
             console.error('Error al validar módulos:', error);
-            btnEjecutar.disabled = true;
-            btnEjecutar.style.opacity = '0.5';
-            btnEjecutar.style.cursor = 'not-allowed';
         }
     });
 };
@@ -1565,27 +1556,28 @@ const resumen = () => {
 
 
 
-const cambiarEntorno = (t) =>{
+const cambiarEntorno = (t) => {
+    let entorno = 'central';
 
+    if(t.checked) {
+        // Si está checked, usar el valor de data-on
+        entorno = t.getAttribute("data-on") === "ARG" ? 'central' : 'uy';
+    } else {
+        // Si no está checked, usar el valor de data-off
+        entorno = t.getAttribute("data-off") === "ARG" ? 'central' : 'uy';
+    }
 
-  let entorno = 'central';
-
-  if(t.getAttribute("data-off") == "ARG" ){
-      entorno = 'central';
-  }else{
-      entorno = 'uy';
-  }
-
-
-  $.ajax({
-  url: "Controller/controlGastosController.php?accion=cambiarEntorno",
-  method: "POST",
-  data : {entorno: entorno},
-  success: function (data) {
-      location.reload();
-  }
-  });
-
+    $.ajax({
+        url: "Controller/controlGastosController.php?accion=cambiarEntorno",
+        method: "POST",
+        data: {entorno: entorno},
+        success: function (data) {
+            location.reload();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cambiar entorno:', error);
+        }
+    });
 }
 
 const revertir = () => {

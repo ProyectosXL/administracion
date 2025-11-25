@@ -133,8 +133,16 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         </div>
         <div>
             <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:10">Ejecutar <i class="bi bi-check2-square"></i></button>
-            <button class="btn btn-primary ml-1 mt-3" id="btnRevertir" onclick="revertir()" style="margin-right:300px">Revertir proceso <i class="bi bi-arrow-counterclockwise"></i></button>
-            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
+            <button class="btn btn-primary ml-1 mt-3" id="btnRevertir" onclick="revertir()" style="margin-right:10px">Revertir proceso <i class="bi bi-arrow-counterclockwise"></i></button>
+            
+            <div style="display: inline-block; vertical-align: middle; margin-left: 20px;">
+                <div class="alert alert-info" role="alert" style="margin: 0; padding: 8px 15px; display: inline-block;">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <span id="environment-info">Entorno actual: <strong><?php echo ($checkedValue === 'central') ? 'Argentina (ARG)' : 'Uruguay (UY)'; ?></strong></span>
+                </div>
+            </div>
+
+            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px;margin-left:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
 
             <!-- spinner -->
             <div id="boxLoading"></div>
@@ -147,18 +155,11 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                 <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos</h3>
             </div>
             <div class="form-row">
-                <form>
+                <form method="GET" action="controlGastos.php">
                     <div class="contenedor">
-                        <div class="col-" hidden>
-                            
-                            <label>Desde:</label>
-                            <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>" id="desde">
-                        </div>
-
-                        <div class="col-" hidden>
-                            <label>Hasta:</label>
-                            <input type="date" class="form-control form-control-sm" name="hasta" value="<?= $hasta ?>" id="hasta">
-                        </div>
+                        <input type="hidden" name="desde" value="<?= $desde ?>" id="desde">
+                        <input type="hidden" name="hasta" value="<?= $hasta ?>" id="hasta">
+                        
                         <div  class="col-">
                         <label > Mes :</label> 
                         <select name="mes" id="mes" style="width:55px" class="form-control form-control-sm">
@@ -217,11 +218,12 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                         <div>
                             <label for="Rubro">Rubro:</label>
                             <select class="form-control form-control-sm codRubro" name="codRubro" >
-                                <option selected disabled>Todos</option>
+                                <option value="%" <?= (isset($_GET['codRubro']) && $_GET['codRubro'] == '%') ? "selected" : "" ?>>Todos</option>
                                 <?php
+                                $codRubroSelected = isset($_GET['codRubro']) ? $_GET['codRubro'] : '%';
                                 foreach ($todosLosRubros as $valor => $value) {
                                 ?>
-                                    <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE; ?></option>
+                                    <option value="<?= $value->COD_RUBRO; ?>" <?= ($codRubroSelected == $value->COD_RUBRO) ? "selected" : "" ?>><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE; ?></option>
                                 <?php
                                 }
                                 ?>
@@ -244,7 +246,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                         </div>
                         
                         <div>
-                            <button type="submit" name="submit" class="btn btn-primary" id="search"><i class="bi bi-search"></i></button>
+                            <button type="submit" class="btn btn-primary" id="search"><i class="bi bi-funnel-fill"></i> Filtrar</button>
                         </div>
                     </div>
 
@@ -457,10 +459,32 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
     // Validar módulos al cargar la página
     validarModulos();
 
+    // Actualizar campos desde/hasta cuando cambian mes o año
+    $('#mes, #selectAño').on('change', function() {
+        actualizarFechas();
+    });
+
+    // Actualizar fechas antes de enviar el formulario
+    $('form').on('submit', function(e) {
+        actualizarFechas();
+    });
         
     });
     
     $('.codCuenta').select2();
+
+    function actualizarFechas() {
+        var mes = $('#mes').val();
+        var anio = $('#selectAño').val();
+        
+        // Calcular primer y último día del mes
+        var primerDia = anio + '-' + mes + '-01';
+        var ultimoDia = new Date(anio, mes, 0).getDate();
+        var ultimaFecha = anio + '-' + mes + '-' + ultimoDia;
+        
+        $('#desde').val(primerDia);
+        $('#hasta').val(ultimaFecha);
+    }
 
     $(function() {
         $('[data-toggle="tooltip"]').tooltip()
