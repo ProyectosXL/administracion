@@ -5,7 +5,7 @@ const checkFactura = (div) => {
     let nro_sucursal = allTd[1].textContent.trim();
     let tipoComprobante = allTd[2].textContent.trim();
     let nroComprobante = allTd[3].textContent.trim();
-    if(nroComprobante.length = 13){
+    if(nroComprobante.length === 13){
         nroComprobante = ' '+nroComprobante;
     }
     let codCuenta = allTd[4].textContent.trim();
@@ -54,7 +54,7 @@ const checkControl = (div) => {
     let nro_sucursal = allTd[1].textContent.trim();
     let tipoComprobante = allTd[2].textContent.trim();
     let nroComprobante = allTd[3].textContent.trim();
-    if(nroComprobante.length = 13){
+    if(nroComprobante.length === 13){
         nroComprobante = ' '+nroComprobante;
     }
     let codCuenta = allTd[4].textContent.trim();
@@ -185,81 +185,113 @@ function procesarImagenes(response, carouselElement, startIndex) {
         
         modalBody.appendChild(modalHeader);
 
-        let carousel = document.createElement('div');
-        carousel.innerHTML = "";
-        carousel.className = 'carousel slide';
-        carousel.setAttribute('data-ride', 'carousel');
-        carousel.id = 'imageCarousel';
+        // Contenedor personalizado del carrusel
+        let carouselContainer = document.createElement('div');
+        carouselContainer.style = 'position: relative; display: flex; align-items: center; justify-content: center; min-height: 80vh; background: #000;';
 
-        let carouselInner = document.createElement('div');
-        carouselInner.className = 'carousel-inner h-100';
-        carouselInner.style.overflowY = 'hidden';
+        // Contenedor de la imagen
+        let imageContainer = document.createElement('div');
+        imageContainer.id = 'imageContainer';
+        imageContainer.style = 'display: flex; align-items: center; justify-content: center; position: relative; width: 100%; height: 80vh;';
 
-        codigosImagenes.forEach((imagen, index) => {
-            validarExistenciaArchivo('../../../../Imagenes/egresosCaja/' + imagen, function (existe) {
-                if (existe) {
-                    let carouselItem = document.createElement('div');
-                    carouselItem.className = index === startIndex ? 'carousel-item active h-100' : 'carousel-item h-100';
-                    carouselItem.style = 'display:flex; align-items:center; justify-content:center; text-align:center; position: relative; min-height:80vh;';
-                    let imgElement = document.createElement('img');
-                    imgElement.src = '../../../../Imagenes/egresosCaja/' + imagen;
-                    imgElement.className = 'd-block img-fluid mx-auto';
-                    imgElement.style = 'max-height: 80vh; max-width: 90vw; width: auto; height: auto; margin: 0 auto;';
+        // Variable global para el índice actual
+        window.currentImageIndex = startIndex;
+        window.totalImages = codigosImagenes.length;
+        window.imagesList = codigosImagenes;
 
-                    carouselItem.appendChild(imgElement);
-                    carouselInner.appendChild(carouselItem);
+        // Función para mostrar imagen
+        function mostrarImagenActual() {
+            imageContainer.innerHTML = '';
+            
+            let imgElement = document.createElement('img');
+            imgElement.src = '../../../../Imagenes/egresosCaja/' + window.imagesList[window.currentImageIndex];
+            imgElement.className = 'd-block img-fluid mx-auto';
+            imgElement.style = 'max-height: 80vh; max-width: 90vw; width: auto; height: auto; margin: 0 auto;';
+            imgElement.setAttribute('data-rotation', '0');
 
-                    // Crear el botón de rotar
-                    let rotateButton = document.createElement('button');
-                    rotateButton.type = 'button';
-                    rotateButton.className = 'btn btn-primary';
-                    rotateButton.style.width = '150px';
-                    rotateButton.style.position = 'absolute';
-                    rotateButton.style.bottom = '20px';
-                    rotateButton.style.left = '50%';
-                    rotateButton.style.transform = 'translateX(-50%)';
-                    rotateButton.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Rotar Imagen';
-                    rotateButton.addEventListener('click', function () {
-                        rotarImagen();
-                    });
+            imageContainer.appendChild(imgElement);
 
-                    carouselItem.appendChild(rotateButton);
-                }
-            });
-        });
+            // Botón de rotar
+            let rotateButton = document.createElement('button');
+            rotateButton.type = 'button';
+            rotateButton.className = 'btn btn-primary';
+            rotateButton.style.width = '150px';
+            rotateButton.style.position = 'absolute';
+            rotateButton.style.bottom = '20px';
+            rotateButton.style.left = '50%';
+            rotateButton.style.transform = 'translateX(-50%)';
+            rotateButton.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Rotar Imagen';
+            rotateButton.onclick = function () {
+                let img = imageContainer.querySelector('img');
+                let currentRotation = parseInt(img.getAttribute('data-rotation')) || 0;
+                let newRotation = (currentRotation + 90) % 360;
+                img.style.transform = `rotate(${newRotation}deg)`;
+                img.setAttribute('data-rotation', newRotation);
+            };
 
-        carousel.appendChild(carouselInner);
-        modalBody.appendChild(carousel);
+            imageContainer.appendChild(rotateButton);
+
+            // Actualizar contador
+            if (document.getElementById('imageCounter')) {
+                document.getElementById('imageCounter').textContent = `${window.currentImageIndex + 1} / ${window.totalImages}`;
+            }
+        }
+
+        // Crear controles de navegación
+        let prevControl = document.createElement('button');
+        prevControl.className = 'btn btn-dark';
+        prevControl.style = 'position: absolute; left: 20px; top: 50%; transform: translateY(-50%); z-index: 10; width: 50px; height: 50px; border-radius: 50%; opacity: 0.8;';
+        prevControl.innerHTML = '<i class="bi bi-chevron-left" style="font-size: 1.5rem;"></i>';
+        prevControl.onclick = function() {
+            window.currentImageIndex = (window.currentImageIndex - 1 + window.totalImages) % window.totalImages;
+            mostrarImagenActual();
+        };
+
+        let nextControl = document.createElement('button');
+        nextControl.className = 'btn btn-dark';
+        nextControl.style = 'position: absolute; right: 20px; top: 50%; transform: translateY(-50%); z-index: 10; width: 50px; height: 50px; border-radius: 50%; opacity: 0.8;';
+        nextControl.innerHTML = '<i class="bi bi-chevron-right" style="font-size: 1.5rem;"></i>';
+        nextControl.onclick = function() {
+            window.currentImageIndex = (window.currentImageIndex + 1) % window.totalImages;
+            mostrarImagenActual();
+        };
+
+        // Contador de imágenes
+        let imageCounter = document.createElement('div');
+        imageCounter.id = 'imageCounter';
+        imageCounter.style = 'position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 20px; border-radius: 20px; font-weight: bold; z-index: 10;';
+        imageCounter.textContent = `${startIndex + 1} / ${codigosImagenes.length}`;
+
+        carouselContainer.appendChild(prevControl);
+        carouselContainer.appendChild(imageContainer);
+        carouselContainer.appendChild(nextControl);
+        carouselContainer.appendChild(imageCounter);
+
+        modalBody.appendChild(carouselContainer);
         modalContent.appendChild(modalBody);
         carouselElement.appendChild(modalContent);
 
-        let prevControl = document.createElement('a');
-        prevControl.className = 'carousel-control-prev';
-        prevControl.href = '#imageCarousel';
-        prevControl.role = 'button';
-        prevControl.setAttribute('data-slide', 'prev');
-        prevControl.innerHTML = '<span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="sr-only">Previous</span>';
-        prevControl.addEventListener('click', function(e) {
-            e.preventDefault();
-            pasarImagen(-1);
-        });
-
-        let nextControl = document.createElement('a');
-        nextControl.className = 'carousel-control-next';
-        nextControl.href = '#imageCarousel';
-        nextControl.role = 'button';
-        nextControl.setAttribute('data-slide', 'next');
-        nextControl.innerHTML = '<span class="carousel-control-next-icon" aria-hidden="true"></span><span class="sr-only">Next</span>';
-        nextControl.addEventListener('click', function(e) {
-            e.preventDefault();
-            pasarImagen(1);
-        });
-
-        carousel.appendChild(prevControl);
-        carousel.appendChild(nextControl);
-
-        // Usar Bootstrap 4 modal
+        // Mostrar el modal y la primera imagen
         $('#carruselImagenes').modal('show');
+        mostrarImagenActual();
+
+        // Soporte para teclado
+        $(document).off('keydown.carousel').on('keydown.carousel', function(e) {
+            if ($('#carruselImagenes').hasClass('show')) {
+                if (e.key === 'ArrowLeft') {
+                    window.currentImageIndex = (window.currentImageIndex - 1 + window.totalImages) % window.totalImages;
+                    mostrarImagenActual();
+                } else if (e.key === 'ArrowRight') {
+                    window.currentImageIndex = (window.currentImageIndex + 1) % window.totalImages;
+                    mostrarImagenActual();
+                }
+            }
+        });
+
+        // Limpiar event listener al cerrar modal
+        $('#carruselImagenes').on('hidden.bs.modal', function () {
+            $(document).off('keydown.carousel');
+        });
     } else {
         mostrarSinImagenes();
     }
@@ -277,47 +309,6 @@ function mostrarSinImagenes() {
         alert('No hay imágenes para mostrar.');
     }
 }
-
-// Función para pasar a la siguiente imagen
-const pasarImagen = (pos) => {
-    let items = document.querySelectorAll(".carousel-item");
-
-    for (let index = 0; index < items.length; index++) {
-        if (items[index].classList.contains("active")) {
-            items[index].classList.remove("active");
-
-            let newIndex = (index + pos + items.length) % items.length;
-            items[newIndex].classList.add("active");
-            break;
-        }
-    }
-};
-
-// Función para validar existencia de archivos
-const validarExistenciaArchivo = (rutaArchivo, callback) => {
-    const img = new Image();
-    img.onload = function() {
-        callback(true);
-    };
-    img.onerror = function() {
-        callback(false);
-    };
-    img.src = rutaArchivo;
-};
-
-// Función para rotar imagen
-const rotarImagen = () => {
-    let carousel = document.querySelector('#carruselImagenes .carousel-inner');
-    let activeItem = carousel.querySelector('.carousel-item.active img');
-
-    if (activeItem) {
-        let currentRotation = activeItem.getAttribute('data-rotation') || 0;
-        let newRotation = (parseInt(currentRotation) + 90) % 360;
-
-        activeItem.style.transform = `rotate(${newRotation}deg)`;
-        activeItem.setAttribute('data-rotation', newRotation);
-    }
-};
 
 $(document).ready(function () {
     // Inicializar tooltips
