@@ -147,6 +147,7 @@ try {
             
             // INSERT en tabla egresos
             $sqlEgreso = "INSERT INTO egresos (
+                            es_factura,
                             nombre_director,
                             COD_COMP,
                             N_COMP,
@@ -161,7 +162,7 @@ try {
                             tipo_gasto,
                             fecha_carga
                         ) VALUES (
-                            ?, 'EGR', ?, ?, ?, 1, ?, ?, ?, NULL, ?, 'Servicios', GETDATE()
+                            0, ?, 'EGR', ?, ?, ?, 1, ?, ?, ?, NULL, ?, 'Servicios', GETDATE()
                         );
                         SELECT SCOPE_IDENTITY() AS id_egreso;";
             

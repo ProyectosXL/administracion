@@ -246,6 +246,10 @@ document.getElementById('formGastoAlberto')?.addEventListener('submit', async fu
     formData.append('importe', document.getElementById('importeGasto').value.replace(/\./g, ''));
     formData.append('observaciones', document.getElementById('observacionesGasto').value);
     
+    // Agregar checkbox es_factura
+    const esFactura = document.getElementById('es_factura').checked ? 1 : 0;
+    formData.append('es_factura', esFactura);
+    
     // Agregar foto si existe
     if (imagenGastoBase64) {
         formData.append('foto', imagenGastoBase64);

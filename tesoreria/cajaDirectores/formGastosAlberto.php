@@ -111,6 +111,15 @@ session_start();
                                     </div>
                                     
                                     <div class="mb-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="es_factura" name="es_factura" value="1">
+                                            <label class="form-check-label" for="es_factura">
+                                                Es factura a nombre de Lakers
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
                                         <label for="observacionesGasto" class="form-label">Observaciones</label>
                                         <textarea class="form-control" id="observacionesGasto" 
                                                   rows="2" placeholder="Descripción del gasto"></textarea>

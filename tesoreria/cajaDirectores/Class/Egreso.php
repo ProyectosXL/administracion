@@ -51,12 +51,12 @@ class Egreso {
     public function crear($datos) {
         try {
             $sql = "INSERT INTO egresos (
-                        ID_SBA05, COD_COMP, N_COMP, fecha, motivo, 
+                        es_factura, COD_COMP, N_COMP, fecha, motivo, 
                         nombre_director, importe, observaciones, 
                         recibido, fecha_carga, foto, centro_costo,
                         proveedor, tipo_gasto
                     ) VALUES (
-                        ?, ?, ?, ?, ?,
+                        0, ?, ?, ?, ?,
                         ?, ?, ?, 
                         1, GETDATE(), ?, ?,
                         ?, ?
@@ -110,7 +110,6 @@ class Egreso {
             }
             
             $params = [
-                $datos['id_sba05'] ?? null,
                 'EGR',
                 $nComp,
                 $datos['fecha'],
@@ -559,12 +558,12 @@ class Egreso {
             $nComp = $this->generarNumeroComprobanteGAS();
             
             $sql = "INSERT INTO egresos (
-                        ID_SBA05, COD_COMP, N_COMP, fecha, motivo, 
+                        es_factura, COD_COMP, N_COMP, fecha, motivo, 
                         nombre_director, proveedor, tipo_gasto, importe, 
                         observaciones, foto, recibido, fecha_carga,
                         centro_costo
                     ) VALUES (
-                        NULL, 'GAS', ?, ?, 'PROVEEDORES',
+                        ?, 'GAS', ?, ?, 'PROVEEDORES',
                         NULL, 'OGROLL', ?, ?,
                         ?, ?, 1, GETDATE(),
                         ?
@@ -577,6 +576,7 @@ class Egreso {
             }
             
             $params = [
+                $datos['es_factura'] ?? 0,
                 $nComp,
                 $datos['fecha'],
                 $datos['tipo_gasto'],

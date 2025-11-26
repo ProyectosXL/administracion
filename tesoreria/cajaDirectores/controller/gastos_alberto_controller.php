@@ -41,6 +41,9 @@ try {
             $importeLimpio = str_replace('.', '', $_POST['importe']); // Remover separador de miles
             $importeLimpio = str_replace(',', '.', $importeLimpio); // Convertir coma decimal a punto
             
+            // Capturar checkbox es_factura
+            $esFactura = isset($_POST['es_factura']) ? (int)$_POST['es_factura'] : 0;
+            
             $datos = [
                 'fecha' => $_POST['fecha'],
                 'motivo' => 'PROVEEDORES', // Fijo
@@ -50,7 +53,8 @@ try {
                 'importe' => floatval($importeLimpio),
                 'observaciones' => $_POST['observaciones'] ?? '',
                 'foto' => $_POST['foto'] ?? null,
-                'cod_comp' => 'GAS' // Fijo para gastos
+                'cod_comp' => 'GAS', // Fijo para gastos
+                'es_factura' => $esFactura
             ];
             
             $resultado = $egreso->crearGasto($datos);
