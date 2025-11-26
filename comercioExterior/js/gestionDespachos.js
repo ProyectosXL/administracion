@@ -44,6 +44,13 @@ function mostrarDespachos(despachos) {
         return;
     }
     
+    // Destruir tooltips existentes antes de actualizar
+    const existingTooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    existingTooltips.forEach(el => {
+        const tooltip = bootstrap.Tooltip.getInstance(el);
+        if (tooltip) tooltip.dispose();
+    });
+    
     despachos.forEach(function(despacho) {
         const row = `
             <tr>
@@ -54,19 +61,38 @@ function mostrarDespachos(despachos) {
                 <td>${despacho.MATERIAL || '-'}</td>
                 <td>${despacho.ORDEN_COMPRA || '-'}</td>
                 <td>
-                    <div class="d-flex gap-1 flex-wrap">
-                        <a href="editarDespacho.php?id=${despacho.ID}" class="btn-action btn-editar">
-                            <i class="bi bi-pencil"></i> Completar
+                    <div class="d-flex gap-1" style="flex-wrap: nowrap;">
+                        <a href="editarDespacho.php?id=${despacho.ID}" 
+                           class="btn-action btn-editar" 
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="top" 
+                           data-bs-title="Completar despacho">
+                            <i class="bi bi-pencil"></i>
                         </a>
-                        <a href="cargarCostos.php?id=${despacho.ID}" class="btn-action btn-costos">
-                            <i class="bi bi-calculator"></i> Costos
+                        <a href="cargarCostos.php?id=${despacho.ID}" 
+                           class="btn-action btn-costos" 
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="top" 
+                           data-bs-title="Gestionar costos">
+                            <i class="bi bi-calculator"></i>
                         </a>
+                        <button onclick="eliminarDespacho(${despacho.ID}, '${despacho.CONTENEDOR}')" 
+                                class="btn-action btn-eliminar" 
+                                data-bs-toggle="tooltip" 
+                                data-bs-placement="top" 
+                                data-bs-title="Eliminar despacho">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
         `;
         tbody.append(row);
     });
+    
+    // Reinicializar tooltips después de agregar el contenido
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 }
 
 function formatearFecha(fecha) {
@@ -88,4 +114,55 @@ function mostrarEstadoVacio() {
             </td>
         </tr>
     `);
+}
+
+function eliminarDespacho(id, contenedor) {
+    Swal.fire({
+        title: '¿Eliminar despacho?',
+        html: `<p>Estás a punto de eliminar el despacho:</p><strong>${contenedor || 'ID: ' + id}</strong><p class="mt-2">Esta acción no se puede deshacer.</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: 'Controller/eliminarDespacho.php',
+                method: 'POST',
+                data: { id: id },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: '¡Eliminado!',
+                            text: 'El despacho ha sido eliminado correctamente.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        // Recargar la tabla
+                        cargarDespachos();
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: response.message || 'No se pudo eliminar el despacho',
+                            icon: 'error',
+                            confirmButtonColor: '#7066e0'
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Ocurrió un error al eliminar el despacho',
+                        icon: 'error',
+                        confirmButtonColor: '#7066e0'
+                    });
+                }
+            });
+        }
+    });
 }
