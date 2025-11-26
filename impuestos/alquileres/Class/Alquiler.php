@@ -217,43 +217,69 @@ class Alquiler
 
     public function conteoDetalle($periodo)
     {
-        $sql = "SELECT count(*) CONTEO FROM RO_T_DETALLE_ALQUILERES WHERE PERIODO LIKE '%$periodo%'";
+        // Usar = en lugar de LIKE para búsqueda exacta
+        $sql = "SELECT count(*) CONTEO FROM RO_T_DETALLE_ALQUILERES WHERE PERIODO = '$periodo'";
+
+        // DEBUG: Log de la consulta
+        error_log("🔍 conteoDetalle SQL: " . $sql);
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
 
         try{
             
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("❌ Error en conteoDetalle SQL: " . print_r($errors, true));
+                return array('CONTEO' => 0);
+            }
+            
            $v = sqlsrv_fetch_array($stmt);
+           error_log("✅ conteoDetalle encontró {$v['CONTEO']} registros para periodo '{$periodo}'");
             return $v;
         
         } catch (\Throwable $th){
+            error_log("❌ Exception en conteoDetalle: " . $th->getMessage());
             print_r($th);
+            return array('CONTEO' => 0);
         }
 
     }
 
     public function traerDetalle($periodo)
     {
+        // Usar = en lugar de LIKE para búsqueda exacta
         $sql = "SELECT *, CAST(IMPORTE AS FLOAT) IMPORTE_PARSE, 
                 ISNULL(AJUSTADO, 0) AS AJUSTADO 
                 FROM RO_T_DETALLE_ALQUILERES 
-                WHERE PERIODO LIKE '%$periodo%'";
+                WHERE PERIODO = '$periodo'";
+
+        // DEBUG: Log de la consulta
+        error_log("🔍 traerDetalle SQL: " . $sql);
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
        
         try{
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("❌ Error en traerDetalle SQL: " . print_r($errors, true));
+                return array();
+            }
             
             $rows = array();
     
             while ($v = sqlsrv_fetch_array($stmt)) {
                 $rows[] = $v;
             }
+            
+            error_log("✅ traerDetalle encontró " . count($rows) . " registros para periodo '{$periodo}'");
    
-    
             return $rows;
         
         } catch (\Throwable $th){
+            error_log("❌ Exception en traerDetalle: " . $th->getMessage());
             print_r($th);
+            return array();
         }
 
     }
@@ -261,9 +287,22 @@ class Alquiler
     {
         $sql = "INSERT INTO RO_T_DETALLE_ALQUILERES (PERIODO,NRO_SUCURS,DESC_SUCURS,IMPORTE,ID_CA) VALUES ".$data;
 
+        // DEBUG: Log de la query
+        error_log("🔧 SQL insertarDetalle - Longitud query: " . strlen($sql));
+        error_log("🔧 SQL (primeros 300 caracteres): " . substr($sql, 0, 300));
+
         $stmt = sqlsrv_query($this->cid_central, $sql);
        
         try{
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log("❌ Error en insertarDetalle SQL: " . print_r($errors, true));
+                throw new \Exception("Error al insertar: " . print_r($errors, true));
+            }
+            
+            $rowsAffected = sqlsrv_rows_affected($stmt);
+            error_log("✅ Filas insertadas correctamente: " . $rowsAffected);
             
             $rows = array();
     
@@ -275,7 +314,9 @@ class Alquiler
             return $rows;
         
         } catch (\Throwable $th){
+            error_log("❌ Exception en insertarDetalle: " . $th->getMessage());
             print_r($th);
+            throw $th;
         }
 
     }

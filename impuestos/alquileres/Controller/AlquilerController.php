@@ -64,8 +64,28 @@ function insertarDetalle () {
     $alquiler = new Alquiler();
 
     $data = $_POST['values'];
+    
+    // DEBUG: Log de inserción
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    $entornoActual = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $nombreEntorno = ($entornoActual === 'uy') ? 'URUGUAY' : 'URUGUAY';
+    
+    error_log("=====================================");
+    error_log("💾 DEBUG PHP - insertarDetalle");
+    error_log("📍 Entorno: " . $nombreEntorno);
+    error_log("📊 Longitud de datos: " . strlen($data) . " caracteres");
+    error_log("📝 Primeros 200 caracteres: " . substr($data, 0, 200));
+    
+    // Contar cuántos registros se van a insertar
+    $cantidadRegistros = substr_count($data, '),(') + 1;
+    error_log("🔢 Cantidad de registros a insertar: " . $cantidadRegistros);
 
     $result = $alquiler->insertarDetalle($data);
+    
+    error_log("✅ Resultado de insertarDetalle: " . ($result ? "SUCCESS" : "FAILED"));
+    error_log("=====================================");
 
     return true;
 }
@@ -82,7 +102,33 @@ function actualizarDetalle () {
     $importe = $_POST['importe'];
     $porcentaje = $_POST['porcentaje'];
 
+    // DEBUGGING: Log en el servidor
+    error_log("=====================================");
+    error_log("🔍 DEBUG PHP - actualizarDetalle");
+    error_log("📅 Periodo: " . $periodo);
+    error_log("🏢 Sucursal: " . $sucursal);
+    error_log("📋 Concepto: " . $concepto);
+    error_log("💰 Importe: " . $importe . " (tipo: " . gettype($importe) . ")");
+    error_log("📊 Porcentaje: " . $porcentaje);
+    
+    // Verificar si el valor es cero
+    if($importe == "0" || $importe == "" || floatval($importe) === 0.0) {
+        error_log("⚠️  ADVERTENCIA: Importe es CERO");
+    }
+    
+    // Obtener el entorno actual desde la sesión
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    $entornoActual = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $nombreEntorno = ($entornoActual === 'central') ? 'ARGENTINA (ARG)' : 'URUGUAY (UY)';
+    error_log("📍 Entorno: " . $nombreEntorno);
+    error_log("=====================================");
+
     $result = $alquiler->actualizarDetalle($periodo, $sucursal, $concepto, $importe, null, $porcentaje);
+    
+    // Log del resultado
+    error_log("✅ Resultado de actualizarDetalle: " . ($result ? "SUCCESS" : "FAILED"));
     
     return true;
 }
@@ -96,6 +142,15 @@ function cargarAlquieres ($fecha, $periodo) {
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
     $contrato = new Contrato();
+    
+    // DEBUG: Log inicio de función
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    $entornoActual = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $nombreEntorno = ($entornoActual === 'uy') ? 'URUGUAY' : 'ARGENTINA';
+    error_log("🆕 cargarAlquieres - Entorno: {$nombreEntorno}, Fecha: {$fecha}, Periodo: {$periodo}");
+    
     $conceptos = $alquiler->traerConceptos();
 
     $contratoAlquiler = $contrato->traerContratoAlquiler($fecha);
@@ -105,7 +160,15 @@ function cargarAlquieres ($fecha, $periodo) {
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
     
     $rentabilidadNeta = $alquiler->traerRentabilidadNeta($fecha);
-    $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo); 
+    $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo);
+    
+    // DEBUG: Log de datos obtenidos
+    error_log("  📋 Conceptos: " . count($conceptos));
+    error_log("  🏢 Locales: " . count($todosLosLocales));
+    error_log("  📊 Porcentajes: " . count($traerPorcentajes));
+    error_log("  💰 Rentabilidad Neta: " . count($rentabilidadNeta));
+    error_log("  💰 Rentabilidad Bruta: " . count($rentabilidadBruta));
+    error_log("  📄 Contratos: " . count($contratoAlquiler));
 
     $newArray = [];
 
@@ -228,6 +291,14 @@ function traerDetalleAlquiler ($fecha,$periodo) {
     $alquiler = new Alquiler();
     $sucursal = new Sucursal();
     $contrato = new Contrato();
+    
+    // DEBUG: Log inicio de función
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+    $entornoActual = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    $nombreEntorno = ($entornoActual === 'uy') ? 'URUGUAY' : 'ARGENTINA';
+    error_log("🔄 traerDetalleAlquiler - Entorno: {$nombreEntorno}, Fecha: {$fecha}, Periodo: {$periodo}");
 
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
 
@@ -242,173 +313,77 @@ function traerDetalleAlquiler ($fecha,$periodo) {
     $detalle = $alquiler->traerDetalle($periodo);
     $estado = $alquiler->traerEstado($periodo);
     $contratoAlquiler = $contrato->traerContratoAlquiler($fecha);
-
-    $newArray = [];
-
-    if($estado == 1){
-        foreach ($todosLosLocales as $k => $v) {
-
-            foreach ($conceptos as $key => $value) {  
-
-                foreach ($detalle as $det) {
-
-                    if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
-
-                        
-                        $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $det['IMPORTE_PARSE'];
-
-                        break;
-                
     
-                    }
-
-                }  
-
-            }
-        }
-
-
-
-    }else{
-
-        
-        
-        foreach ($todosLosLocales as $k => $v) {
-
-            $newArray[$v['NRO_SUCURSAL']] = [];
-
-            foreach ($conceptos as $key => $value) {  
-                $total = 0;
-
-                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = 0;
-
-                if($value['carga_manual'] != 1){
-
-                    if( in_array($value['ID_CA'], ["9", "13"]) ) {
-
-                        foreach ($traerPorcentajes as $porcentaje ) {
-
-                            if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-                                $total = $porcentaje['PORCENTAJE'];
-                            }
-
-                        }
-                    }
-
-                    if( in_array($value['ID_CA'], ["6", "15", "16"]) ) {
-
-                        foreach ($rentabilidadBruta as $rentabilidad) {
-
-                            if($rentabilidad['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']) {
-                                foreach ($traerPorcentajes as  $porcentaje) {
-                                    if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
-                                        $total = ( ( $rentabilidad['IMPORTE'] * $porcentaje['PORCENTAJE'] ) / 100 ) ;
-                                    }
-                                }   
-                            }
-
-                        }
-
-                    }
-
-                    if( in_array($value['ID_CA'], ["7", "14", "17"]) ) {
-
-                        foreach ($rentabilidadNeta  as $rentabilidad) {
-
-                            if($rentabilidad['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-
-                                foreach ($traerPorcentajes as  $porcentaje) {
-                                    
-                                    if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
-                                        $total = $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] / 100;
-
-                                        if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
-                                            // $total = ($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] - $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) * $porcentaje['PORCENTAJE'] / 100;
-                                            $total = $porcentaje['PORCENTAJE'] ;
-                                        }
-                                    }
-                                }   
-
-                            }
-
-                        }
-                    }
-
-                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $total;  
-
-                }else{
-                    
-
-                    if( in_array($value['ID_CA'], ["4", "5", "18"]) ) {
-
-                        foreach ($contratoAlquiler as  $contrato) {
-
-                            $vigDesde = new DateTime($contrato['VIG_DESDE']->format("Y-m-d")); // Primera fecha
-                            $vigHasta = new DateTime($contrato['VIG_HASTA']->format("Y-m-d")); // Segunda fecha
-                            $hoy = new DateTime(date("Y-m-d")); // Segunda fecha
-                             
-                    
-
-                            $diferenciaDeDias = $vigHasta->diff($vigDesde)->days;
-
-                            // Calcula la diferencia en meses
-                            $mesesDiferencia = round(($diferenciaDeDias / 365) * 12);
-
-                            if($mesesDiferencia == 0){
-                                $mesesDiferencia = 1;
-                            }
-          
-                            if($contrato['ID_CA'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-                                // var_dump($contratoAlquiler);
-                                // var_dump($v['NRO_SUCURSAL']);
-
-                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE'] / $mesesDiferencia);
-
-                            }
-
-                            if($contrato['ID_CA_2'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-
-                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE_2'] / $mesesDiferencia);
-
-                            }
-
-                            if($contrato['ID_CA_3'] == $value['ID_CA'] && $contrato['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-
-                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($contrato['IMPORTE_3'] / $mesesDiferencia);
-
-                            }
-
+    // DEBUG: Log de datos obtenidos
+    error_log("  📊 Porcentajes encontrados: " . count($traerPorcentajes));
+    error_log("  💰 Rentabilidad Neta: " . count($rentabilidadNeta));
+    error_log("  💰 Rentabilidad Bruta: " . count($rentabilidadBruta));
+    error_log("  📝 Detalle BD: " . count($detalle));
+    error_log("  📄 Contratos Alquiler: " . count($contratoAlquiler));
+    error_log("  🔒 Estado periodo: " . $estado);
     
-                        }
-                   
-                    }
-
-                    foreach ($detalle as $det) {
-
-                        if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
-
-                            if( in_array($det['ID_CA'], ["4", "5", "18"]) ) {
-                                if($det['AJUSTADO'] != "1"){
-                                    continue;
-                                }
-                            }
-
-                            $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $det['IMPORTE_PARSE'];
-
-                            break;
-                    
-        
-                        }
-
-                    }  
-                }
-
-            }
-    
+    // DEBUG: Mostrar algunos registros de detalle para verificar
+    if(count($detalle) > 0) {
+        error_log("📋 Primeros 3 registros del detalle:");
+        for($i = 0; $i < min(3, count($detalle)); $i++) {
+            error_log("  - Sucursal: {$detalle[$i]['NRO_SUCURS']}, Concepto: {$detalle[$i]['ID_CA']}, Importe: {$detalle[$i]['IMPORTE_PARSE']}");
         }
     }
 
+    $newArray = [];
+    
+    error_log("🔍 Iniciando construcción de newArray");
+    error_log("🔒 Estado del período: " . ($estado == 1 ? "CERRADO" : "ABIERTO"));
 
+    // SIEMPRE usar los datos de la base de datos cuando existen registros
+    // La diferencia es solo si el período está cerrado (no editable) o abierto (editable)
+    
+    foreach ($todosLosLocales as $k => $v) {
+        
+        $newArray[$v['NRO_SUCURSAL']] = [];
+        
+        foreach ($conceptos as $key => $value) {
+            
+            // Inicializar en 0
+            $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = 0;
+            
+            // Buscar el valor en los detalles guardados
+            $encontrado = false;
+            foreach ($detalle as $det) {
+                if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
+                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = $det['IMPORTE_PARSE'];
+                    $encontrado = true;
+                    
+                    // DEBUG: Log de asignación para primeras sucursales
+                    if($k < 2 && $key < 3) {
+                        error_log("✓ Asignado Suc: {$v['NRO_SUCURSAL']}, Concepto: {$value['ID_CA']} ({$value['CONCEPTO']}), Valor: {$det['IMPORTE_PARSE']}");
+                    }
+                    break;
+                }
+            }
+            
+            // DEBUG: Log para valores no encontrados
+            if(!$encontrado && $k < 2 && $key < 3) { // Solo primeras iteraciones para no saturar
+                error_log("⚠️  No se encontró detalle para Sucursal: {$v['NRO_SUCURSAL']}, Concepto: {$value['ID_CA']} ({$value['CONCEPTO']})");
+            }
+        }
+    }
+    
+    error_log("✅ Array construido con " . count($newArray) . " sucursales");
+    
+    // DEBUG: Mostrar contenido del array para la primera sucursal
+    if(count($newArray) > 0) {
+        $primeraSucursal = array_key_first($newArray);
+        error_log("📦 Contenido primera sucursal ({$primeraSucursal}):");
+        $count = 0;
+        foreach($newArray[$primeraSucursal] as $concepto => $valor) {
+            if($count < 5) {
+                error_log("  - {$concepto}: {$valor}");
+                $count++;
+            }
+        }
+    }
+    
     return $newArray;
 }
 

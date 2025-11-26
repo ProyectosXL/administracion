@@ -116,11 +116,21 @@ const totalizar = (div = null) => {
     if(div != null) {
 
     let sucursalActual = div.id.split("-")[2];
+    let conceptoActual = div.id.split("-")[1];
+    
+    // DEBUGGING: Log antes de actualizar
+    console.group("🎯 DEBUG - Evento onchange disparado");
+    console.log("🆔 Input ID:", div.id);
+    console.log("🏢 Sucursal:", sucursalActual);
+    console.log("📋 Concepto:", conceptoActual);
+    console.log("💾 Valor antes de formatear:", div.value);
+    console.groupEnd();
 
         actualizarDetalle(div);
 
         if(div.id.split("-")[1] == 8) {
         
+            console.log("🔄 Concepto 8 detectado - Actualizando conceptos dependientes");
             actualizarDetalle(document.querySelector(`#input-6-${sucursalActual}`));
             actualizarDetalle(document.querySelector(`#input-7-${sucursalActual}`));
             actualizarDetalle(document.querySelector(`#input-9-${sucursalActual}`));
@@ -138,10 +148,12 @@ const totalizar = (div = null) => {
         if(value < 0){
 
             div.value = "- $"+(parseNumber((value * -1),true)  )
+            console.log("💰 Valor final formateado (negativo):", div.value);
             
         }else{
 
             div.value = "$"+parseNumber(value)
+            console.log("💰 Valor final formateado (positivo):", div.value);
         }
 
     }
@@ -177,7 +189,13 @@ const insertarDetalle = () => {
     let periodo = document.querySelector("#periodo").textContent;
     let sucursales = document.querySelectorAll("#sucursal");
 
+    // DEBUG: Información inicial
+    console.group("💾 DEBUG - insertarDetalle");
+    console.log("📅 Periodo:", periodo);
+    console.log("🔢 Total de inputs:", inputs.length);
+    console.log("🏢 Total de sucursales:", sucursales.length);
 
+    let conteoRegistros = 0;
     inputs.forEach((e,x)=> {
         
         let data = e.id.split("-");
@@ -193,6 +211,7 @@ const insertarDetalle = () => {
             if(idSucursal == infoSucursal[1]) {
 
                 values += `('${periodo}','${idSucursal}','${infoSucursal[0]}','${valor}','${idConcepto}'),`;
+                conteoRegistros++;
 
             }
 
@@ -200,6 +219,10 @@ const insertarDetalle = () => {
 
     });
     values = values.substring(0, values.length - 1);
+    
+    console.log("📊 Total de registros a insertar:", conteoRegistros);
+    console.log("📝 Primeros 200 caracteres del SQL VALUES:", values.substring(0, 200) + "...");
+    console.groupEnd();
 
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=insertarDetalle',   
@@ -208,7 +231,19 @@ const insertarDetalle = () => {
             values: values
         },
         success : function(data) {
-                // console.log(data);
+            console.log("✅ Respuesta de insertarDetalle:", data);
+            console.log("🔄 Recargando página para mostrar datos insertados...");
+            // Recargar la página después de insertar para que muestre los datos
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        },
+        error: function(xhr, status, error) {
+            console.error("❌ Error en insertarDetalle:", {
+                status: status,
+                error: error,
+                responseText: xhr.responseText
+            });
         }
     });
 
@@ -221,11 +256,36 @@ const actualizarDetalle = (div) => {
     let concepto = div.id.split("-")[1];
 
     let porcentaje = div.getAttribute("attr-porcentaje");
+    
+    // Obtener valor anterior del atributo attr-realvalue
+    let valorAnterior = div.getAttribute("attr-realvalue");
 
     let importe = div.value.replace(/[$.]/g, "");
     let importe9 = 0;
     let importe13 = 0;
 
+    // DEBUGGING: Obtener el entorno actual
+    let entornoElement = document.querySelector("#checkEntorno");
+    let entorno = entornoElement && entornoElement.checked ? "ARGENTINA (ARG)" : "URUGUAY (UY)";
+    
+    // DEBUGGING: Mostrar información detallada en consola
+    console.group("🔍 DEBUG - Actualizando Detalle");
+    console.log("📍 Entorno:", entorno);
+    console.log("📅 Periodo:", periodo);
+    console.log("🏢 Sucursal:", sucursal);
+    console.log("📋 Concepto:", concepto);
+    console.log("📊 Porcentaje:", porcentaje);
+    console.log("⬅️  Valor Anterior:", valorAnterior);
+    console.log("➡️  Valor Nuevo:", importe);
+    console.log("🔢 Valor Formateado (input):", div.value);
+    console.log("🔄 Cambio:", parseFloat(importe) - parseFloat(valorAnterior));
+    
+    // Advertencia especial para valor cero
+    if(importe == "0" || importe == "" || parseFloat(importe) === 0) {
+        console.warn("⚠️  ADVERTENCIA: El valor nuevo es CERO");
+    }
+    
+    console.groupEnd();
 
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=actualizarDetalle',   
@@ -240,7 +300,17 @@ const actualizarDetalle = (div) => {
             porcentaje: porcentaje
         },
         success : function(data) {
-                // console.log(data);
+            console.log("✅ Respuesta del servidor (actualizarDetalle):", data);
+            
+            // Actualizar el attr-realvalue con el nuevo valor para futuras comparaciones
+            div.setAttribute("attr-realvalue", importe);
+        },
+        error: function(xhr, status, error) {
+            console.error("❌ Error al actualizar detalle:", {
+                status: status,
+                error: error,
+                responseText: xhr.responseText
+            });
         }
     });
 

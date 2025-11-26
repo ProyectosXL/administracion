@@ -35,14 +35,30 @@
     $rentabilidadNeta = $alquiler->traerRentabilidadNeta($fecha);
     $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo); 
     
+    // DEBUG: Información de carga de datos
+    error_log("===============================================");
+    error_log("🔍 DEBUG PHP - Cargando datos de alquileres");
+    error_log("📍 Entorno: " . ($_SESSION['entorno'] === 'uy' ? 'URUGUAY' : 'ARGENTINA'));
+    error_log("📅 Período: " . $periodo);
+    error_log("📅 Fecha: " . $fecha);
+    error_log("📊 Conteo de registros existentes: " . $result['CONTEO']);
+    error_log("🏢 Total de locales encontrados: " . count($todosLosLocales));
+    error_log("📋 Total de conceptos: " . count($conceptos));
+    error_log("📊 Total de porcentajes: " . count($traerPorcentajes));
+    error_log("📝 Total de detalles en BD: " . count($detalle));
+    error_log("💰 Rentabilidad Neta registros: " . count($rentabilidadNeta));
+    error_log("💰 Rentabilidad Bruta registros: " . count($rentabilidadBruta));
+    
     if($result['CONTEO'] > 0){
- 
+        error_log("✅ Usando traerDetalleAlquiler (registros existentes)");
         $newArray = traerDetalleAlquiler($fecha,$periodo);
     }else{
-
-
+        error_log("⚠️  Usando cargarAlquieres (sin registros previos)");
         $newArray = cargarAlquieres($fecha,$periodo);
     }
+    
+    error_log("📦 Array final generado con " . count($newArray) . " sucursales");
+    error_log("===============================================");
     
     // FUNCIONALIDAD DE SUCURSALES OCULTAS DESHABILITADA
     // $sucursalesOcultas = $alquiler->traerSucursalesOcultas($periodo);
@@ -519,10 +535,39 @@ $(document).ready(function() {
     })
 
     if(<?= $result['CONTEO'] ?> == 0){
+        console.log("📝 No hay registros previos - Insertando detalle inicial");
         insertarDetalle();
     }else{
+        console.log("✅ Registros existentes - Actualizando carga automática");
         actualizarCargaAutomatica(<?= $estado ?>);
     }
+    
+    // DEBUG: Agregar listener adicional para capturar cambios
+    $('#tablaAlquileres input[type="text"]').on('focus', function() {
+        // Guardar valor inicial cuando el input recibe focus
+        $(this).data('valorInicial', $(this).val());
+        $(this).data('realValueInicial', $(this).attr('attr-realvalue'));
+        
+        console.log("🎯 INPUT FOCUS:", {
+            id: this.id,
+            valorMostrado: $(this).val(),
+            valorReal: $(this).attr('attr-realvalue')
+        });
+    });
+    
+    $('#tablaAlquileres input[type="text"]').on('blur change', function() {
+        const valorInicial = $(this).data('valorInicial');
+        const valorNuevo = $(this).val();
+        
+        if(valorInicial !== valorNuevo) {
+            console.group("📝 CAMBIO DETECTADO en " + this.id);
+            console.log("⬅️  Valor inicial:", valorInicial);
+            console.log("➡️  Valor nuevo:", valorNuevo);
+            console.log("🔢 attr-realvalue inicial:", $(this).data('realValueInicial'));
+            console.log("🔢 attr-realvalue actual:", $(this).attr('attr-realvalue'));
+            console.groupEnd();
+        }
+    });
 
 });
 
