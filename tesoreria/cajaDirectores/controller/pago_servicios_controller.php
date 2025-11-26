@@ -162,7 +162,7 @@ try {
                             tipo_gasto,
                             fecha_carga
                         ) VALUES (
-                            0, ?, 'EGR', ?, ?, ?, 1, ?, ?, ?, NULL, ?, 'Servicios', GETDATE()
+                            NULL, ?, 'EGR', ?, ?, ?, 1, ?, ?, ?, NULL, ?, 'Servicios', GETDATE()
                         );
                         SELECT SCOPE_IDENTITY() AS id_egreso;";
             

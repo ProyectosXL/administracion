@@ -56,7 +56,7 @@ class Egreso {
                         recibido, fecha_carga, foto, centro_costo,
                         proveedor, tipo_gasto
                     ) VALUES (
-                        0, ?, ?, ?, ?,
+                        NULL, ?, ?, ?, ?,
                         ?, ?, ?, 
                         1, GETDATE(), ?, ?,
                         ?, ?
