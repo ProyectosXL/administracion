@@ -56,8 +56,8 @@ const totalizar = (div = null) => {
             
             if(e.textContent == 9 || e.textContent == 13 ) {
 
-                let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
-                let valorId8 = document.querySelector(`#input-8-${s.textContent}`).value.replace(/[$.]/g, "");
+                let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-porcentaje");
+                let valorId8 = document.querySelector(`#input-8-${s.textContent}`).value.replace(/[$.]/g, "").replace(/ /g,'');
                 document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId8) * parseFloat(porcentaje)) / 100);
 
             }

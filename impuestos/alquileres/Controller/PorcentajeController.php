@@ -14,6 +14,10 @@ switch ($_GET['accion']) {
         eliminarPorcentaje ();
         break;
     
+    case 'traerPorcentajesPorConcepto':
+        traerPorcentajesPorConcepto();
+        break;
+    
     default:
         break;
 
@@ -61,6 +65,21 @@ function eliminarPorcentaje () {
     $result = $alquiler->eliminarPorcentaje($idPorcentaje);
 
     echo ($result);
+    
+}
+
+function traerPorcentajesPorConcepto() {
+    
+    require_once '../Class/Alquiler.php';
+    
+    $alquiler = new Alquiler();
+    
+    $idConcepto = $_POST['idConcepto'];
+    
+    $result = $alquiler->traerPorcentajeSucursal($idConcepto);
+    
+    header('Content-Type: application/json');
+    echo json_encode($result);
     
 }
 

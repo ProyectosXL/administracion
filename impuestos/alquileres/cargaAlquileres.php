@@ -276,12 +276,17 @@
                 <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
                         <div class="card card-1">
 
-                            <div class="row" style="margin-left:50px">
-                                <a href="http://192.168.0.13:8000/" style="display:inline-block;">
-                                    <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                                </a>
-                                <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga de Gastos de Alquiler - <?= $fechaParaMostrar ?></strong></h3>
-                                <div class="environment-toggle" style="margin-left:30%">
+                            <div class="row" style="margin-left:50px; display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center;">
+                                    <a href="http://192.168.0.13:8000/" style="display:inline-block;">
+                                        <img src="../../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                                    </a>
+                                    <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga de Gastos de Alquiler - <?= $fechaParaMostrar ?></strong></h3>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 15px; margin-right: 50px;">
+                                    <button type="button" class="btn btn-secondary" onclick="abrirModalPorcentajes()" data-toggle="tooltip" data-placement="top" title="Gestionar porcentajes de conceptos por sucursal">
+                                        <i class="bi bi-gear-fill"></i> Porcentajes
+                                    </button>
                                     <div class="environment-controls">
                                         <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
                                                data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
@@ -470,7 +475,7 @@
                                                             } 
                                                 
                                                     ?>  
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" attr-ajustado="<?= $ajustado ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - VALOR DE RENTABILIDAD: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" attr-ajustado="<?= $ajustado ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - IMPORTE VENTA: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
 
                                                     <?php 
                                                         }
@@ -517,9 +522,13 @@
             <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
             <script src="js/cargaAlquileres.js"></script>
             <script src="js/ayuda.js"></script>
+            <script src="js/modalPorcentajes.js"></script>
 
             <!-- Incluir Modal de Ayuda -->
             <?php include 'components/modalAyuda.php'; ?>
+            
+            <!-- Incluir Modal de Gestión de Porcentajes -->
+            <?php include 'components/modalPorcentajes.php'; ?>
 
         </body>
 
