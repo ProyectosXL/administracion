@@ -164,7 +164,7 @@ function mostrarConfirmacion(titulo, mensaje, callback) {
     const botonAceptar = document.getElementById('modalConfirmarAceptar');
     
     if (tituloElement) tituloElement.textContent = titulo;
-    if (mensajeElement) mensajeElement.textContent = mensaje;
+    if (mensajeElement) mensajeElement.innerHTML = mensaje;
     
     // Crear nueva instancia del modal
     modalActual = new bootstrap.Modal(modalElement, {

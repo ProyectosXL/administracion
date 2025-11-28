@@ -67,6 +67,7 @@ session_start();
                             </div>
                             <div class="card-body">
                                 <form id="formPagoServicios">
+                                    <input type="hidden" id="pagoId" name="id">
                                     <!-- Selector de Director -->
                                     <div class="mb-3">
                                         <label for="directorSelect" class="form-label">
@@ -250,22 +251,77 @@ session_start();
                     </div>
                     
                     <!-- Panel de Últimos Pagos de Servicios -->
-                    <div class="col-12 col-lg-6">
-                        <div class="card h-100">
-                            <div class="card-header bg-secondary text-white">
-                                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Últimos Pagos de Servicios</h5>
-                            </div>
-                            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
-                                <div id="listaPagosServicios">
-                                    <p class="text-muted">Cargando pagos...</p>
-                                </div>
-                            </div>
-                        </div>
+<div class="col-12 col-lg-6">
+    <div class="card shadow">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Historial de Pagos</h5>
+        </div>
+        <div class="card-body">
+            <!-- Formulario de Filtros -->
+            <form id="formFiltros" class="mb-3">
+                <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                        <label for="filtroDirector" class="form-label small">Director</label>
+                        <select id="filtroDirector" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            <!-- Opciones se cargarán con JS -->
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="filtroMotivo" class="form-label small">Motivo</label>
+                        <select id="filtroMotivo" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            <option value="Pago de seguros">Pago de seguros</option>
+                            <option value="Pago de patentes">Pago de patentes</option>
+                            <option value="Pago de expensas">Pago de expensas</option>
+                            <option value="Pago de tarjetas">Pago de tarjetas</option>
+                            <option value="Pago de telefonía">Pago de telefonía</option>
+                            <option value="Pago de Peaje">Pago de Peaje</option>
+                            <option value="Pago de Obra Social">Pago de Obra Social</option>
+                            <option value="Transf. Haberes">Transf. Haberes</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="filtroFechaDesde" class="form-label small">Desde</label>
+                        <input type="date" id="filtroFechaDesde" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="filtroFechaHasta" class="form-label small">Hasta</label>
+                        <input type="date" id="filtroFechaHasta" class="form-control form-control-sm">
                     </div>
                 </div>
-            </main>
+                <div class="d-flex gap-2 mt-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                    <button type="reset" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-eraser"></i> Limpiar
+                    </button>
+                </div>
+            </form>
+
+            <!-- Tabla de Resultados -->
+            <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+                <table class="table table-sm table-striped table-hover" id="tablaPagosServicios">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Director</th>
+                            <th>Motivo</th>
+                            <th class="text-end">Importe</th>
+                            <th class="text-center">Adjunto</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyPagos">
+                        <!-- Filas se cargarán con JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+</div>
     
     <!-- Modal de confirmación -->
     <?php include 'components/modal_confirmar.php'; ?>

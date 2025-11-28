@@ -1,0 +1,72 @@
+[2025-11-28 18:01:10] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:02:20] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:03:52] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:07:22] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:11:43] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:12:19] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:14:19] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:17:06] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:22:09] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:22:35] FATAL ERROR en pago_servicios_controller.php: 
+Acción: crear
+Mensaje: Call to private method Egreso::comprimirImagen() from context ''
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 85
+--------------------------------------------------
+[2025-11-28 18:24:40] FATAL ERROR en pago_servicios_controller.php: 
+Acción: eliminar_pago
+Mensaje: No se pudo eliminar el pago o el pago no existe.
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 198
+--------------------------------------------------
+[2025-11-28 18:29:42] FATAL ERROR en pago_servicios_controller.php: 
+Acción: eliminar_pago
+Mensaje: No se pudo eliminar el pago o el pago no existe.
+Archivo: C:\xampp\htdocs\administracion\tesoreria\cajaDirectores\controller\pago_servicios_controller.php
+Línea: 198
+--------------------------------------------------

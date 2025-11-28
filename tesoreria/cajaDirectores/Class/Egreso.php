@@ -140,105 +140,119 @@ class Egreso {
     /**
      * Obtiene todos los egresos con filtros opcionales
      */
-    public function obtenerTodos($filtros = []) {
-        try {
-            $sql = "SELECT e.*, 
-                           CAST(e.fecha_carga AS DATE) as fecha_solo, 
-                           CASE WHEN e.foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto,
-                           p.NOM_PROVEE as proveedor_nom,
-                           p.CBU as proveedor_cbu,
-                           p.DESCRIPCION_CBU as proveedor_descripcion_cbu
-                    FROM egresos e
-                    LEFT JOIN FT_T_PROVEEDORES p ON e.id = p.id_egresos
-                    WHERE 1=1";
-            $params = [];
+public function obtenerTodos($filtros = []) {
+    try {
+        $sql = "SELECT e.*, 
+                       CAST(e.fecha_carga AS DATE) as fecha_solo, 
+                       CASE WHEN e.foto IS NOT NULL THEN 1 ELSE 0 END as tiene_foto,
+                       p.NOM_PROVEE as proveedor_nom,
+                       p.CBU as proveedor_cbu,
+                       p.DESCRIPCION_CBU as proveedor_descripcion_cbu
+                FROM egresos e
+                LEFT JOIN FT_T_PROVEEDORES p ON e.id = p.id_egresos
+                WHERE 1=1";
+        $params = [];
+        
+        // --- Lógica de filtrado mejorada ---
+
+        // Condición especial para buscar Pagos de Servicios
+        if (!empty($filtros['tipo_gasto_especifico']) && $filtros['tipo_gasto_especifico'] === 'Servicios') {
+            
+            $sql .= " AND e.tipo_gasto = 'Servicios'";
+            
+            // Para servicios, el filtro de fecha se aplica sobre `fecha_carga`
+            if (!empty($filtros['fecha_desde'])) {
+                $sql .= " AND CAST(e.fecha_carga AS DATE) >= ?";
+                $params[] = $filtros['fecha_desde'];
+            }
+            if (!empty($filtros['fecha_hasta'])) {
+                $sql .= " AND CAST(e.fecha_carga AS DATE) <= ?";
+                $params[] = $filtros['fecha_hasta'];
+            }
+
+        } else {
+            // Lógica original para otros tipos de egresos (que no son servicios)
+            
+            // Por defecto, excluir tipo_gasto = 'Servicios'
+            $sql .= " AND (e.tipo_gasto IS NULL OR e.tipo_gasto != 'Servicios')";
             
             // Por defecto, excluir gastos (COD_COMP='GAS') a menos que se especifique incluirlos
             if (!isset($filtros['incluir_gastos']) || $filtros['incluir_gastos'] !== true) {
                 $sql .= " AND e.COD_COMP != 'GAS'";
             }
-            
             // Por defecto, excluir COMPENSACION_IVA a menos que se especifique incluirlos
             if (!isset($filtros['incluir_compensacion_iva']) || $filtros['incluir_compensacion_iva'] !== true) {
                 $sql .= " AND e.motivo != 'COMPENSACION_IVA'";
             }
             
-            // Por defecto, excluir tipo_gasto = 'Servicios' a menos que se especifique incluirlos
-            if (!isset($filtros['incluir_servicios']) || $filtros['incluir_servicios'] !== true) {
-                $sql .= " AND (e.tipo_gasto IS NULL OR e.tipo_gasto != 'Servicios')";
-            }
-            
+            // Para otros egresos, el filtro de fecha se aplica sobre la `fecha` del egreso
             if (!empty($filtros['fecha_desde'])) {
-                // Para pagos de servicios, filtrar por fecha_carga; para otros, por fecha
-                $sql .= " AND (
-                    (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') AND CAST(e.fecha_carga AS DATE) >= ?)
-                    OR
-                    (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') AND e.fecha >= ?)
-                )";
-                $params[] = $filtros['fecha_desde'];
+                $sql .= " AND e.fecha >= ?";
                 $params[] = $filtros['fecha_desde'];
             }
-            
             if (!empty($filtros['fecha_hasta'])) {
-                // Para pagos de servicios, filtrar por fecha_carga; para otros, por fecha
-                $sql .= " AND (
-                    (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') AND CAST(e.fecha_carga AS DATE) <= ?)
-                    OR
-                    (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') AND e.fecha <= ?)
-                )";
-                $params[] = $filtros['fecha_hasta'];
+                $sql .= " AND e.fecha <= ?";
                 $params[] = $filtros['fecha_hasta'];
             }
-            
-            if (!empty($filtros['motivo'])) {
-                $sql .= " AND e.motivo = ?";
-                $params[] = $filtros['motivo'];
-            }
-            
-            if (!empty($filtros['proveedor'])) {
-                $sql .= " AND e.proveedor = ?";
-                $params[] = $filtros['proveedor'];
-            }
-            
-            $sql .= " ORDER BY e.fecha DESC, e.id DESC";
-            
-            $stmt = sqlsrv_query($this->db, $sql, $params);
-            
-            if ($stmt === false) {
-                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
-            }
-            
-            $resultados = [];
-            $dbCentral = Database::getInstance()->getCentralConnection();
-            
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                // Agregar nombres de centro de costo y proveedor
-                if (!empty($row['centro_costo'])) {
-                    $sqlCentro = "SELECT CENTRO_COSTO FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = ?";
-                    $stmtCentro = sqlsrv_query($dbCentral, $sqlCentro, [$row['centro_costo']]);
-                    if ($stmtCentro && $rowCentro = sqlsrv_fetch_array($stmtCentro, SQLSRV_FETCH_ASSOC)) {
-                        $row['centro_costo_nombre'] = $rowCentro['CENTRO_COSTO'];
-                    }
-                }
-                
-                if (!empty($row['proveedor'])) {
-                    $sqlProv = "SELECT NOM_PROVEE FROM RO_V_PROVEEDORES_EGRE_DIRECTORES WHERE COD_PROVEE = ?";
-                    $stmtProv = sqlsrv_query($dbCentral, $sqlProv, [$row['proveedor']]);
-                    if ($stmtProv && $rowProv = sqlsrv_fetch_array($stmtProv, SQLSRV_FETCH_ASSOC)) {
-                        $row['proveedor_nombre'] = $rowProv['NOM_PROVEE'];
-                    }
-                }
-                
-                $resultados[] = $row;
-            }
-            
-            sqlsrv_free_stmt($stmt);
-            return $resultados;
-        } catch (Exception $e) {
-            error_log("Error al obtener egresos: " . $e->getMessage());
-            return [];
         }
+        
+        // --- Filtros comunes que aplican a todos los casos ---
+        
+        if (!empty($filtros['nombre_director'])) {
+            $sql .= " AND e.nombre_director = ?";
+            $params[] = $filtros['nombre_director'];
+        }
+        
+        if (!empty($filtros['motivo'])) {
+            $sql .= " AND e.motivo = ?";
+            $params[] = $filtros['motivo'];
+        }
+        
+        if (!empty($filtros['proveedor'])) {
+            $sql .= " AND e.proveedor = ?";
+            $params[] = $filtros['proveedor'];
+        }
+        
+        // Ordenamiento consistente
+        $sql .= " ORDER BY e.fecha_carga DESC, e.id DESC";
+        
+        $stmt = sqlsrv_query($this->db, $sql, $params);
+        
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+        }
+        
+        $resultados = [];
+        $dbCentral = Database::getInstance()->getCentralConnection();
+        
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            // Agregar nombres de centro de costo y proveedor
+            if (!empty($row['centro_costo'])) {
+                $sqlCentro = "SELECT CENTRO_COSTO FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = ?";
+                $stmtCentro = sqlsrv_query($dbCentral, $sqlCentro, [$row['centro_costo']]);
+                if ($stmtCentro && $rowCentro = sqlsrv_fetch_array($stmtCentro, SQLSRV_FETCH_ASSOC)) {
+                    $row['centro_costo_nombre'] = $rowCentro['CENTRO_COSTO'];
+                }
+            }
+            
+            if (!empty($row['proveedor'])) {
+                $sqlProv = "SELECT NOM_PROVEE FROM RO_V_PROVEEDORES_EGRE_DIRECTORES WHERE COD_PROVEE = ?";
+                $stmtProv = sqlsrv_query($dbCentral, $sqlProv, [$row['proveedor']]);
+                if ($stmtProv && $rowProv = sqlsrv_fetch_array($stmtProv, SQLSRV_FETCH_ASSOC)) {
+                    $row['proveedor_nombre'] = $rowProv['NOM_PROVEE'];
+                }
+            }
+            
+            $resultados[] = $row;
+        }
+        
+        sqlsrv_free_stmt($stmt);
+        return $resultados;
+    } catch (Exception $e) {
+        error_log("Error al obtener egresos: " . $e->getMessage());
+        return [];
     }
+}
     
     /**
      * Obtiene el total de egresos desde la fecha de inicio de la app (excluyendo gastos COD_COMP='GAS' y COMPENSACION_IVA)
@@ -298,25 +312,34 @@ class Egreso {
      * Comprime imagen base64 para almacenamiento optimizado
      * Soporta múltiples formatos: JPEG, PNG, GIF, BMP, WebP
      */
-    private function comprimirImagen($imagenBase64) {
+    public function comprimirImagen($archivoBase64Completo) {
         try {
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Primero, verificamos si el archivo es un PDF por su prefijo.
+            // Si es así, no intentamos procesarlo como imagen.
+            if (strpos($archivoBase64Completo, 'data:application/pdf') === 0) {
+                // Es un PDF, simplemente extraemos el contenido base64 y lo devolvemos.
+                error_log("Archivo detectado como PDF. Se omitirá la compresión de imagen.");
+                return substr($archivoBase64Completo, strpos($archivoBase64Completo, ',') + 1);
+            }
+            // --- FIN DE LA CORRECCIÓN ---
+
             // Verificar si la extensión GD está disponible
             if (!extension_loaded('gd')) {
                 error_log("Extensión GD no disponible. Guardando imagen sin compresión.");
-                
-                // Remover el prefijo data:image si existe y devolver solo base64
-                if (strpos($imagenBase64, 'data:image') === 0) {
-                    return substr($imagenBase64, strpos($imagenBase64, ',') + 1);
+                if (strpos($archivoBase64Completo, 'data:image') === 0) {
+                    return substr($archivoBase64Completo, strpos($archivoBase64Completo, ',') + 1);
                 }
-                return $imagenBase64;
+                return $archivoBase64Completo; // Devuelve la data base64 si no tiene prefijo
             }
             
-            // Extraer información del tipo de imagen
-            $tipoImagen = '';
-            if (strpos($imagenBase64, 'data:image') === 0) {
-                preg_match('/data:image\/([^;]+)/', $imagenBase64, $matches);
+            // Extraer información del tipo de imagen y los datos
+            $tipoImagen = 'jpeg'; // Valor por defecto
+            $imagenBase64 = $archivoBase64Completo;
+            if (strpos($archivoBase64Completo, 'data:image') === 0) {
+                preg_match('/data:image\/([^;]+)/', $archivoBase64Completo, $matches);
                 $tipoImagen = isset($matches[1]) ? $matches[1] : 'jpeg';
-                $imagenBase64 = substr($imagenBase64, strpos($imagenBase64, ',') + 1);
+                $imagenBase64 = substr($archivoBase64Completo, strpos($archivoBase64Completo, ',') + 1);
             }
             
             // Decodificar base64
@@ -325,34 +348,38 @@ class Egreso {
                 throw new Exception("Error al decodificar imagen base64");
             }
             
-            // Crear imagen desde string (soporta JPEG, PNG, GIF, BMP, WebP automáticamente)
+            // Crear imagen desde string
             $imagen = imagecreatefromstring($imagenData);
             if ($imagen === false) {
-                throw new Exception("Error al crear imagen desde datos. Formato no soportado: " . $tipoImagen);
+                // Si llegamos aquí, es un formato de imagen no soportado por GD
+                throw new Exception("Error al crear imagen desde datos. Formato de imagen no soportado: " . $tipoImagen);
             }
             
             // Obtener dimensiones originales
             $ancho = imagesx($imagen);
             $alto = imagesy($imagen);
             
-            // Calcular nuevas dimensiones (máximo 1200px para fotos de móvil de alta calidad)
+            // Calcular nuevas dimensiones (máximo 1200px)
             $maxDimension = 1200;
-            if ($ancho > $alto) {
-                $nuevoAncho = min($ancho, $maxDimension);
-                $nuevoAlto = ($alto * $nuevoAncho) / $ancho;
-            } else {
-                $nuevoAlto = min($alto, $maxDimension);
-                $nuevoAncho = ($ancho * $nuevoAlto) / $alto;
+            $nuevoAncho = $ancho;
+            $nuevoAlto = $alto;
+
+            if ($ancho > $maxDimension || $alto > $maxDimension) {
+                if ($ancho > $alto) {
+                    $nuevoAncho = $maxDimension;
+                    $nuevoAlto = floor($alto * ($maxDimension / $ancho));
+                } else {
+                    $nuevoAlto = $maxDimension;
+                    $nuevoAncho = floor($ancho * ($maxDimension / $alto));
+                }
             }
             
             // Solo redimensionar si es necesario
             if ($nuevoAncho < $ancho || $nuevoAlto < $alto) {
-                // Crear imagen redimensionada
                 $imagenRedimensionada = imagecreatetruecolor($nuevoAncho, $nuevoAlto);
                 
                 // Preservar transparencia para PNG y GIF
                 if ($tipoImagen === 'png' || $tipoImagen === 'gif') {
-                    imagecolortransparent($imagenRedimensionada, imagecolorallocate($imagenRedimensionada, 0, 0, 0));
                     imagealphablending($imagenRedimensionada, false);
                     imagesavealpha($imagenRedimensionada, true);
                 }
@@ -367,56 +394,45 @@ class Egreso {
                 $imagen = $imagenRedimensionada;
             }
             
-            // Convertir según el tipo original, pero optimizar para web
+            // Convertir a formato optimizado (JPEG o WebP)
             ob_start();
             
             switch($tipoImagen) {
-                case 'png':
-                    imagepng($imagen, null, 6); // Compresión PNG nivel 6
+                case 'png': imagepng($imagen, null, 6); break;
+                case 'gif': imagegif($imagen, null); break;
+                case 'webp': 
+                    if (function_exists('imagewebp')) { imagewebp($imagen, null, 80); } 
+                    else { imagejpeg($imagen, null, 85); } 
                     break;
-                case 'gif':
-                    imagegif($imagen, null);
-                    break;
-                case 'webp':
-                    if (function_exists('imagewebp')) {
-                        imagewebp($imagen, null, 80); // 80% calidad WebP
-                    } else {
-                        imagejpeg($imagen, null, 85); // Fallback a JPEG
-                    }
-                    break;
-                default:
-                    imagejpeg($imagen, null, 85); // 85% calidad JPEG (mejor para fotos)
-                    break;
+                default: imagejpeg($imagen, null, 85); break;
             }
             
             $imagenComprimida = ob_get_contents();
             ob_end_clean();
             
-            // Limpiar memoria
             imagedestroy($imagen);
             
-            // Retornar base64 comprimido
             $resultado = base64_encode($imagenComprimida);
             
-            // Log de información de compresión
             $tamañoOriginal = strlen($imagenData);
             $tamañoComprimido = strlen($imagenComprimida);
-            $porcentajeReduccion = round((1 - $tamañoComprimido / $tamañoOriginal) * 100, 2);
-            
-            error_log("Imagen comprimida: {$ancho}x{$alto} -> {$nuevoAncho}x{$nuevoAlto}, " .
+            if ($tamañoOriginal > 0) {
+                 $porcentajeReduccion = round((1 - $tamañoComprimido / $tamañoOriginal) * 100, 2);
+                 error_log("Imagen comprimida: {$ancho}x{$alto} -> {$nuevoAncho}x{$nuevoAlto}, " .
                      "Tamaño: " . number_format($tamañoOriginal/1024, 2) . "KB -> " . 
                      number_format($tamañoComprimido/1024, 2) . "KB ({$porcentajeReduccion}% reducción)");
-            
+            }
+
             return $resultado;
             
         } catch (Exception $e) {
             error_log("Error al comprimir imagen: " . $e->getMessage());
             
-            // Si falla, remover prefijo y devolver imagen original
-            if (strpos($imagenBase64, 'data:image') === 0) {
-                return substr($imagenBase64, strpos($imagenBase64, ',') + 1);
+            // Si falla, devolver la imagen original sin el prefijo data:
+            if (preg_match('/^data:[^;]+;base64,/', $archivoBase64Completo, $matches)) {
+                return substr($archivoBase64Completo, strlen($matches[0]));
             }
-            return $imagenBase64;
+            return $archivoBase64Completo;
         }
     }
     
@@ -717,4 +733,164 @@ class Egreso {
             return 0;
         }
     }
+public function eliminar($id): bool {
+    // Iniciar la transacción
+    if (sqlsrv_begin_transaction($this->db) === false) {
+        error_log("Error al iniciar la transacción: " . print_r(sqlsrv_errors(), true));
+        return false;
+    }
+
+    try {
+        // 1. Borrar de la tabla de proveedores si existe
+        $sqlProveedor = "DELETE FROM FT_T_PROVEEDORES WHERE id_egresos = ?";
+        $stmtProveedor = sqlsrv_query($this->db, $sqlProveedor, [$id]);
+        
+        if ($stmtProveedor === false) {
+            sqlsrv_rollback($this->db);
+            throw new Exception("Error al eliminar datos del proveedor: " . print_r(sqlsrv_errors(), true));
+        }
+        sqlsrv_free_stmt($stmtProveedor);
+
+        // 2. Borrar el registro principal de egresos
+        $sqlEgreso = "DELETE FROM egresos WHERE id = ?";
+        $stmtEgreso = sqlsrv_query($this->db, $sqlEgreso, [$id]);
+
+        if ($stmtEgreso === false) {
+            sqlsrv_rollback($this->db);
+            throw new Exception("Error al eliminar el egreso principal: " . print_r(sqlsrv_errors(), true));
+        }
+        sqlsrv_free_stmt($stmtEgreso);
+
+        // --- CORRECCIÓN CLAVE ---
+        // Si llegamos hasta aquí sin errores, la operación fue exitosa.
+        // No confiamos en sqlsrv_rows_affected().
+        sqlsrv_commit($this->db);
+        return true;
+
+    } catch (Exception $e) {
+        // En caso de cualquier excepción, asegurarse de deshacer la transacción
+        sqlsrv_rollback($this->db);
+        error_log("Error en transacción de eliminación para ID {$id}: " . $e->getMessage());
+        return false;
+    }
+}
+public function obtenerPorId($id) {
+    try {
+        $sql = "SELECT e.*,
+                       p.NOM_PROVEE as proveedor_nom,
+                       p.CBU as proveedor_cbu,
+                       p.DESCRIPCION_CBU as proveedor_descripcion_cbu
+                FROM egresos e
+                LEFT JOIN FT_T_PROVEEDORES p ON e.id = p.id_egresos
+                WHERE e.id = ?";
+        
+        $stmt = sqlsrv_query($this->db, $sql, [$id]);
+        if ($stmt === false) {
+            throw new Exception("Error al obtener el pago: " . print_r(sqlsrv_errors(), true));
+        }
+        
+        $pago = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        sqlsrv_free_stmt($stmt);
+        
+        // Formatear la fecha para que sea compatible con input type="date"
+        if ($pago && $pago['fecha'] instanceof DateTime) {
+            $pago['fecha'] = $pago['fecha']->format('Y-m-d');
+        }
+
+        return $pago;
+
+    } catch (Exception $e) {
+        error_log("Error al obtener egreso por ID {$id}: " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Actualiza un egreso existente y sus datos de proveedor asociados.
+ */
+public function actualizar($id, $datos) {
+    if (sqlsrv_begin_transaction($this->db) === false) {
+        throw new Exception("Error al iniciar la transacción de actualización.");
+    }
+
+    try {
+        // 1. Actualizar la tabla principal de egresos
+        $sqlEgreso = "UPDATE egresos SET 
+                        nombre_director = ?,
+                        motivo = ?,
+                        fecha = ?,
+                        importe = ?,
+                        observaciones = ?,
+                        proveedor = ?,
+                        foto = IIF(? IS NOT NULL, ?, foto) -- Solo actualiza la foto si se envía una nueva
+                      WHERE id = ?";
+        
+        $paramsEgreso = [
+            $datos['nombre_director'],
+            $datos['motivo'],
+            $datos['fecha_vencimiento'],
+            $datos['importe'],
+            $datos['observaciones'],
+            $datos['proveedor'],
+            $datos['foto'], $datos['foto'], // Se usa dos veces para la condición IIF
+            $id
+        ];
+        
+        $stmtEgreso = sqlsrv_query($this->db, $sqlEgreso, $paramsEgreso);
+        if ($stmtEgreso === false) {
+            throw new Exception("Error al actualizar el egreso: " . print_r(sqlsrv_errors(), true));
+        }
+        sqlsrv_free_stmt($stmtEgreso);
+
+        // 2. Manejar datos del proveedor si el motivo es "Pago de seguros"
+        if ($datos['motivo'] === 'Pago de seguros') {
+            // Intentar actualizar primero
+            $sqlUpdProv = "UPDATE FT_T_PROVEEDORES SET NOM_PROVEE = ?, CBU = ?, DESCRIPCION_CBU = ? WHERE id_egresos = ?";
+            $paramsProv = [
+                $datos['nom_provee'],
+                $datos['cbu'] ?? '',
+                $datos['descripcion_cbu'] ?? '',
+                $id
+            ];
+            $stmtUpdProv = sqlsrv_query($this->db, $sqlUpdProv, $paramsProv);
+            if ($stmtUpdProv === false) throw new Exception("Error al actualizar proveedor.");
+
+            // Si no se afectó ninguna fila, significa que no existía, entonces lo insertamos
+if (sqlsrv_rows_affected($stmtUpdProv) === 0) {
+    $sqlInsProv = "INSERT INTO FT_T_PROVEEDORES (id_egresos, NOM_PROVEE, CBU, DESCRIPCION_CBU) VALUES (?, ?, ?, ?)";
+    
+    // --- ESTA ES LA CORRECCIÓN ---
+    // Construimos el array de parámetros de forma manual para máxima compatibilidad
+    $paramsInsertProv = [
+        $id,
+        $datos['nom_provee'],
+        $datos['cbu'] ?? '',
+        $datos['descripcion_cbu'] ?? ''
+    ];
+    // --- FIN DE LA CORRECCIÓN ---
+
+    $stmtInsProv = sqlsrv_query($this->db, $sqlInsProv, $paramsInsertProv); // Usamos $this->db
+    if ($stmtInsProv === false) {
+        throw new Exception("Error al insertar proveedor: " . print_r(sqlsrv_errors(), true));
+    }
+    sqlsrv_free_stmt($stmtInsProv);
+}
+            sqlsrv_free_stmt($stmtUpdProv);
+        } else {
+            // Si el motivo ya no es "Pago de seguros", borrar el registro de proveedor asociado
+            $sqlDelProv = "DELETE FROM FT_T_PROVEEDORES WHERE id_egresos = ?";
+            $stmtDelProv = sqlsrv_query($this->db, $sqlDelProv, [$id]);
+            if ($stmtDelProv === false) throw new Exception("Error al limpiar datos de proveedor.");
+            sqlsrv_free_stmt($stmtDelProv);
+        }
+
+        sqlsrv_commit($this->db);
+        return true;
+
+    } catch (Exception $e) {
+        sqlsrv_rollback($this->db);
+        error_log("Error al actualizar pago ID {$id}: " . $e->getMessage());
+        return false;
+    }
+}
 }

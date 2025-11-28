@@ -1677,3 +1677,14 @@ body.sidebar-open::before {
         padding: 0.75rem;
     }
 }
+/* =============================================
+   AJUSTES PARA LA TABLA DE HISTORIAL DE PAGOS
+   ============================================= */
+
+/* Centrar contenido en columnas específicas de la tabla de historial */
+#tablaPagosServicios td:nth-child(5) /* Columna "Adjunto" */
+{
+    text-align: center;
+    padding-left: 3%;
+    vertical-align: center; /* Opcional: Centra verticalmente los botones, muy útil */
+}

@@ -52,6 +52,14 @@ switch ($accion) {
         revertirProcesamiento(); 
         break;
 
+    case 'obtenerSucursalesSinCostos':
+        obtenerSucursalesSinCostos(); 
+        break;
+
+    case 'eliminarSucursalDelPeriodo':
+        eliminarSucursalDelPeriodo(); 
+        break;
+
     default:
         // No hacer nada si no hay acción válida
         break;
@@ -877,6 +885,59 @@ function revertirProcesamiento() {
             'status' => 'error',
             'message' => 'Error al revertir procesamiento: ' . $th->getMessage(),
             'periodo' => $periodo
+        ]);
+    }
+}
+
+function obtenerSucursalesSinCostos() {
+    
+    require_once __DIR__ . "/../Class/Alquiler.php";
+    
+    $alquiler = new Alquiler();
+    
+    $periodo = $_POST['periodo'];
+
+    try {
+        $sucursales = $alquiler->obtenerSucursalesSinCostos($periodo);
+        
+        echo json_encode([
+            'status' => 'success',
+            'sucursales' => $sucursales,
+            'cantidad' => count($sucursales)
+        ]);
+        
+    } catch (\Throwable $th) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Error al obtener sucursales sin costos: ' . $th->getMessage()
+        ]);
+    }
+}
+
+function eliminarSucursalDelPeriodo() {
+    
+    require_once __DIR__ . "/../Class/Alquiler.php";
+    
+    $alquiler = new Alquiler();
+    
+    $periodo = $_POST['periodo'];
+    $nroSucursal = $_POST['nroSucursal'];
+
+    try {
+        $result = $alquiler->eliminarSucursalDelPeriodo($periodo, $nroSucursal);
+        
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Sucursal eliminada correctamente del período',
+            'sucursal' => $nroSucursal,
+            'periodo' => $periodo,
+            'registrosEliminados' => $result['rowsAffected']
+        ]);
+        
+    } catch (\Throwable $th) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Error al eliminar sucursal: ' . $th->getMessage()
         ]);
     }
 }

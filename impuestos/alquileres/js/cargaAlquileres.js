@@ -370,120 +370,285 @@ const procesar = () => {
     }
 
     // VALIDACIÓN 2: Verificar si fue aplicado el ajuste
-    // Ahora solo necesitamos enviar el período
     $.ajax({
-
         url: 'Controller/AlquilerController.php?accion=comprobarAjuste',
         method: 'POST',
         data: {
             periodo: periodo
         },
         success : function(data) {
-            console.log('Respuesta comprobarAjuste:', data); // Debug
+            console.log('Respuesta comprobarAjuste:', data);
             
             if(data == 1){
-
                 Swal.fire({
                     icon: 'warning',
                     title: 'Atención',
                     text: 'Debe aplicar el ajuste antes de procesar!'
                 })
-                
             }else{
-
-                // VALIDACIÓN 3: Verificar que todos los totales sean mayores a 0
-                let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
-                let error = false;
-
-
-                for (let i = 0; i < allTd.length; i++) {
-
-                    if(i >= 2){
-
-                        let element = allTd[i];
-
-                        let value = element.textContent.replace(/[$.]/g, "");
-
-                
-                        if(value == 0){
-
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'Atención',
-                                text: 'Complete los gastos de todas las sucursales!'
-                            })
-                            error = true;
-                            break;
-
-                        }
-
-
-                    }
-                };
-
-                if(error == false){ 
-                    $.ajax({
-                        url: 'Controller/AlquilerController.php?accion=procesar',
-                        method: 'POST',
-                        data: {
-                            periodo: periodo
-                        },
-                        success : function(data) {
-                            try {
-                                // Intentar parsear como JSON
-                                const response = JSON.parse(data);
-                                
-                                if(response.status === 'error'){
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error',
-                                        text: response.message
-                                    });
-                                } else if(response.status === 'success') {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Procesado',
-                                        text: response.message
-                                    }).then((result) => {
-                                        location.reload();
-                                    });
-                                }
-                                
-                            } catch (e) {
-                                // Fallback para respuestas que no sean JSON (compatibilidad)
-                                if(data == 1){
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error',
-                                        text: 'El período ya se encuentra procesado!'
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Procesado',
-                                        text: 'Se ha procesado correctamente!'
-                                    }).then((result) => {
-                                        location.reload();
-                                    });
-                                }
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error de conexión',
-                                text: 'No se pudo procesar la solicitud. Error: ' + error
-                            });
-                        }
-                    });
-                }
-
-
+                // VALIDACIÓN 3: Verificar sucursales con total = 0
+                verificarSucursalesSinCostosYProcesar(periodo);
             }
         }
     })
+}
 
+const verificarSucursalesSinCostosYProcesar = (periodo) => {
+    // Obtener la fila de totales (última fila de la tabla)
+    let filaTotales = document.querySelector("tbody tr:last-child");
+    if(!filaTotales) {
+        console.error("No se encontró la fila de totales");
+        ejecutarProcesamiento(periodo);
+        return;
+    }
+    
+    let celdasTotales = filaTotales.querySelectorAll("td");
+    let sucursalesSinCostos = [];
+    let sucursalesYaProcesadas = new Set(); // Para evitar duplicados
 
+    // Iterar desde la tercera celda (índice 2) en adelante, saltando las dos primeras columnas
+    for (let i = 2; i < celdasTotales.length; i++) {
+        let element = celdasTotales[i];
+        
+        // Obtener el número de sucursal del id de la celda (ej: "total-02")
+        let idTotal = element.id;
+        if(!idTotal || !idTotal.startsWith('total-')) continue;
+        
+        let nroSucursal = idTotal.replace('total-', '');
+        
+        // Evitar duplicados
+        if(sucursalesYaProcesadas.has(nroSucursal)) continue;
+        
+        // Limpiar el valor del total
+        let valorTotal = element.textContent.replace(/[$.\s]/g, "").replace(/-/g, "");
+        let total = parseInt(valorTotal) || 0;
+        
+        console.log(`Verificando sucursal ${nroSucursal}: total = ${total}, texto original = "${element.textContent}"`);
+        
+        if(total === 0){
+            sucursalesSinCostos.push({
+                numero: nroSucursal
+            });
+            sucursalesYaProcesadas.add(nroSucursal);
+        }
+    }
+
+    console.log("Sucursales sin costos detectadas:", sucursalesSinCostos);
+
+    if(sucursalesSinCostos.length > 0) {
+        // Hay sucursales sin costos, preguntar qué hacer
+        mostrarModalSucursalesSinCostos(sucursalesSinCostos, periodo);
+    } else {
+        // No hay sucursales sin costos, proceder directamente
+        ejecutarProcesamiento(periodo);
+    }
+}
+
+const mostrarModalSucursalesSinCostos = (sucursales, periodo) => {
+    // Crear listado simple de sucursales sin costos
+    let listaSucursales = sucursales.map(suc => `<strong>${suc.numero}</strong>`).join(', ');
+    
+    let contenidoHTML = `
+        <div style="text-align: center; padding: 20px;">
+            <p style="font-size: 15px; margin-bottom: 20px;">
+                Las siguientes sucursales tienen costos totales en <strong style="color: #dc3545;">$0</strong>:
+            </p>
+            <div style="background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <p style="font-size: 18px; margin: 0; color: #856404;">
+                    ${listaSucursales}
+                </p>
+            </div>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; text-align: left;">
+                <p style="margin: 0 0 10px 0; font-size: 13px;">
+                    <i class="fas fa-info-circle" style="color: #17a2b8;"></i> 
+                    <strong>Opciones:</strong>
+                </p>
+                <ul style="font-size: 13px; margin: 0; padding-left: 25px;">
+                    <li style="margin-bottom: 8px;"><strong>Continuar Procesamiento:</strong> Procesa solo las sucursales con costos (las que están en $0 serán ignoradas)</li>
+                    <li style="margin-bottom: 8px;"><strong>Cancelar:</strong> Vuelve a la pantalla principal sin procesar</li>
+                </ul>
+            </div>
+        </div>
+    `;
+    
+    Swal.fire({
+        icon: 'warning',
+        title: '⚠️ Sucursales sin costos detectadas',
+        html: contenidoHTML,
+        width: '550px',
+        showCancelButton: true,
+        showDenyButton: true,
+        cancelButtonText: '<i class="fas fa-check-circle"></i> Continuar Procesamiento',
+        denyButtonText: '<i class="fas fa-times"></i> Cancelar',
+        cancelButtonColor: '#28a745',
+        denyButtonColor: '#6c757d',
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        customClass: {
+            cancelButton: 'btn-icon-swal',
+            denyButton: 'btn-icon-swal'
+        }
+    }).then((result) => {
+        if (result.isDismissed && result.dismiss === Swal.DismissReason.cancel) {
+            // Continuar procesamiento solo con las sucursales que tienen costos
+            ejecutarProcesamiento(periodo);
+        }
+        // Si es Deny, simplemente no hace nada (cancelar)
+    });
+}
+
+const eliminarSucursalSinCostos = (nroSucursal, periodo) => {
+    Swal.fire({
+        title: '¿Confirmar eliminación?',
+        html: `¿Está seguro que desea eliminar la sucursal <strong>${nroSucursal}</strong> del período <strong>${periodo}</strong>?<br><br>
+               <small style="color: #dc3545;"><i class="fas fa-exclamation-triangle"></i> Esta acción eliminará todos los registros de esta sucursal para este período.</small>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Realizar la eliminación
+            $.ajax({
+                url: 'Controller/AlquilerController.php?accion=eliminarSucursalDelPeriodo',
+                method: 'POST',
+                data: {
+                    periodo: periodo,
+                    nroSucursal: nroSucursal
+                },
+                success: function(response) {
+                    try {
+                        const data = JSON.parse(response);
+                        
+                        if(data.status === 'success') {
+                            // Eliminar la fila de la tabla del modal
+                            const row = document.querySelector(`#row-suc-${nroSucursal}`);
+                            if(row) {
+                                row.remove();
+                            }
+                            
+                            // Mostrar notificación de éxito
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Eliminada',
+                                text: `Sucursal ${nroSucursal} eliminada correctamente`,
+                                timer: 2000,
+                                showConfirmButton: false,
+                                toast: true,
+                                position: 'top-end'
+                            });
+                            
+                            // Verificar si quedan más sucursales en la tabla
+                            const tablaSucursales = document.querySelector('#tablaSucursalesSinCostos');
+                            if(tablaSucursales && tablaSucursales.children.length === 0) {
+                                // No quedan más sucursales, cerrar el modal y proceder
+                                Swal.close();
+                                ejecutarProcesamiento(periodo);
+                            }
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message
+                            });
+                        }
+                    } catch (e) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error al procesar la respuesta: ' + e.message
+                        });
+                    }
+                },
+                error: function(xhr, status, error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de conexión',
+                        text: 'No se pudo eliminar la sucursal. Error: ' + error
+                    });
+                }
+            });
+        }
+    });
+}
+
+const validarYProcesarConTodas = (periodo) => {
+    // Validar que TODAS las sucursales tengan costos > 0
+    let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
+    
+    for (let i = 2; i < allTd.length; i++) {
+        let element = allTd[i];
+        let value = element.textContent.replace(/[$.]/g, "").replace(/ /g,'');
+        
+        if(value == 0 || value == ""){
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atención',
+                text: 'Complete los gastos de todas las sucursales antes de procesar!'
+            });
+            return false;
+        }
+    }
+    
+    // Si todas tienen valores, procesar
+    ejecutarProcesamiento(periodo);
+}
+
+const ejecutarProcesamiento = (periodo) => {
+    $.ajax({
+        url: 'Controller/AlquilerController.php?accion=procesar',
+        method: 'POST',
+        data: {
+            periodo: periodo
+        },
+        success : function(data) {
+            try {
+                const response = JSON.parse(data);
+                
+                if(response.status === 'error'){
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response.message
+                    });
+                } else if(response.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Procesado',
+                        text: response.message
+                    }).then((result) => {
+                        location.reload();
+                    });
+                }
+            } catch (e) {
+                // Fallback para respuestas que no sean JSON
+                if(data == 1){
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'El período ya se encuentra procesado!'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Procesado',
+                        text: 'Se ha procesado correctamente!'
+                    }).then((result) => {
+                        location.reload();
+                    });
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo procesar la solicitud. Error: ' + error
+            });
+        }
+    });
 }
 
 const cerrarPeriodo = () => {

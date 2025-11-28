@@ -395,41 +395,21 @@ class Alquiler
             $fechaUltimoDia = null;
         }
         
-        // Verificamos usando la misma lógica que el SP
-        // El SP verifica contra PERIODO (que se graba como "4-2025") y FECHA (último día del mes)
-        if ($fechaUltimoDia) {
-            $verificarSql = "SELECT CASE
-                WHEN EXISTS (
-                    SELECT 1 FROM RO_T_INTEGRAL_TANGO_2 
-                    WHERE MODULO = 'ALQUILERES' 
-                    AND (FECHA = '$fechaUltimoDia' OR PERIODO = '$periodo')
-                ) THEN 1
-                ELSE 0
-            END AS RegistroExiste;";
-            
-            try {
-                $stmtVerif = sqlsrv_query($this->cid_central, $verificarSql);
-                if ($stmtVerif) {
-                    $resultVerif = sqlsrv_fetch_array($stmtVerif);
-                    if ($resultVerif && $resultVerif['RegistroExiste'] == 1) {
-                        echo json_encode([
-                            'status' => 'error',
-                            'code' => 1,
-                            'message' => 'El período ya se encuentra procesado',
-                            'periodo' => $periodo,
-                            'fecha_verificada' => $fechaUltimoDia
-                        ]);
-                        return;
-                    }
-                }
-            } catch (\Throwable $th) {
-                // Si hay error en la verificación, continúa con el SP para obtener el mensaje apropiado
-                error_log("Error en verificación previa: " . $th->getMessage());
-            }
-        }
+        // LOG: Información del entorno actual
+        $entornoActual = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+        $nombreEntorno = ($entornoActual === 'uy') ? 'URUGUAY' : 'ARGENTINA';
+        error_log("🔍 execSpAlquileres - Entorno: {$nombreEntorno}, Periodo: {$periodo}, Fecha: {$fechaUltimoDia}");
         
-        // Enviamos el período original al SP (el SP maneja internamente el formato)
+        // NOTA: Eliminamos la verificación previa porque:
+        // 1. La tabla RO_T_INTEGRAL_TANGO_2 puede contener datos de ambos entornos
+        // 2. La conexión $this->cid_central ya está configurada para el entorno correcto
+        // 3. El Stored Procedure RO_SP_INTEGRAL_ALQUILERES debe manejar la validación internamente
+        // 4. Esto evita falsos positivos al cambiar entre entornos
+        
+        // Enviamos el período original al SP (el SP maneja internamente el formato y validación)
         $sql = " EXEC RO_SP_INTEGRAL_ALQUILERES '$periodo';";
+        
+        error_log("📤 Ejecutando SP: {$sql}");
  
         try {
 
@@ -437,6 +417,7 @@ class Alquiler
             
             if (!$stmt) {
                 $errors = sqlsrv_errors();
+                error_log("❌ Error al ejecutar SP: " . print_r($errors, true));
                 echo json_encode([
                     'status' => 'error',
                     'code' => 3,
@@ -453,8 +434,15 @@ class Alquiler
                 $rows[] = $v;
             }
             
+            // LOG: Ver qué devolvió el SP
+            error_log("📥 Respuesta del SP - Total filas: " . count($rows));
+            if(count($rows) > 0) {
+                error_log("📋 Primera fila del SP: " . print_r($rows[0], true));
+            }
+            
             // Si no hay resultados, significa que se procesó correctamente sin insertar registros
             if(empty($rows)) {
+                error_log("✅ SP sin resultados - Procesado correctamente");
                 echo json_encode([
                     'status' => 'success', 
                     'code' => 0,
@@ -467,14 +455,72 @@ class Alquiler
             }
             
             if(isset($rows[0][0])){
+                error_log("🔍 Verificando rows[0][0]: '{$rows[0][0]}'");
+                
                 if($rows[0][0] == 'ERROR') {
+                    error_log("❌ SP devolvió ERROR - período ya procesado según el SP");
+                    
+                    // Verificar manualmente si realmente existe
+                    $verificarManual = "SELECT COUNT(*) as Total FROM RO_T_INTEGRAL_TANGO_2 
+                                       WHERE MODULO = 'ALQUILERES' 
+                                       AND (FECHA = '$fechaUltimoDia' OR PERIODO = '$periodo')";
+                    $stmtVerif = sqlsrv_query($this->cid_central, $verificarManual);
+                    $resultVerif = sqlsrv_fetch_array($stmtVerif);
+                    
+                    $totalEncontrado = intval($resultVerif['Total'] ?? 0);
+                    
+                    error_log("🔎 Verificación manual - Registros encontrados: {$totalEncontrado}");
+                    
+                    // Si la verificación manual confirma que NO hay registros, hay un problema con el SP
+                    if($totalEncontrado == 0) {
+                        error_log("⚠️ INCONSISTENCIA DETECTADA:");
+                        error_log("  - El SP devuelve ERROR (indica que ya existe)");
+                        error_log("  - Pero la verificación manual NO encuentra registros");
+                        error_log("  - Periodo enviado al SP: '{$periodo}'");
+                        error_log("  - Fecha calculada: '{$fechaUltimoDia}'");
+                        
+                        // Verificar qué registros existen con condiciones similares
+                        $debugSql = "SELECT TOP 5 * FROM RO_T_INTEGRAL_TANGO_2 
+                                    WHERE MODULO = 'ALQUILERES' 
+                                    ORDER BY FECHA DESC";
+                        $stmtDebug = sqlsrv_query($this->cid_central, $debugSql);
+                        
+                        error_log("🔎 Últimos 5 registros de ALQUILERES en RO_T_INTEGRAL_TANGO_2:");
+                        $debugCount = 0;
+                        while($rowDebug = sqlsrv_fetch_array($stmtDebug, SQLSRV_FETCH_ASSOC)) {
+                            $fechaDebug = $rowDebug['FECHA'];
+                            if($fechaDebug instanceof DateTime) {
+                                $fechaDebug = $fechaDebug->format('Y-m-d');
+                            }
+                            error_log("  #{$debugCount}: FECHA={$fechaDebug}, PERIODO={$rowDebug['PERIODO']}, NUM_SUCURSAL={$rowDebug['NUM_SUCURSAL']}");
+                            $debugCount++;
+                        }
+                        
+                        echo json_encode([
+                            'status' => 'error',
+                            'code' => 5,
+                            'message' => 'Error: El SP indica que el período ya está procesado, pero no se encontraron registros en la base de datos',
+                            'periodo' => $periodo,
+                            'fecha_verificada' => $fechaUltimoDia,
+                            'entorno' => $nombreEntorno,
+                            'verificacion_manual' => $totalEncontrado,
+                            'detalle' => 'Posible causa: El SP puede estar usando un formato de fecha/período diferente o validando contra otra tabla. Revisa los logs del servidor para ver los últimos registros existentes.',
+                            'sugerencia' => 'Verifica que no haya registros previos con fechas similares o períodos en formato diferente (ej: "03-2024" vs "3-2024")'
+                        ]);
+                        return;
+                    }
+                    
+                    // Si realmente hay registros, entonces sí está procesado
                     echo json_encode([
                         'status' => 'error',
                         'code' => 1,
-                        'message' => 'El período ya se encuentra procesado (confirmado por SP)',
+                        'message' => 'El período ya se encuentra procesado',
                         'raw_response' => $rows[0][0],
                         'periodo' => $periodo,
-                        'detalle' => 'El stored procedure indica que ya existe un registro para este período en RO_T_INTEGRAL_TANGO_2'
+                        'fecha_verificada' => $fechaUltimoDia,
+                        'entorno' => $nombreEntorno,
+                        'verificacion_manual' => $totalEncontrado,
+                        'detalle' => "Verificación confirmó {$totalEncontrado} registro(s) existente(s) en RO_T_INTEGRAL_TANGO_2"
                     ]);
                     return;
                 }
@@ -818,6 +864,78 @@ class Alquiler
             ];
             
         } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+
+    /**
+     * Elimina todos los registros de una sucursal específica para un período
+     * Esto permite excluir sucursales sin costos del procesamiento
+     */
+    public function eliminarSucursalDelPeriodo($periodo, $nroSucursal) {
+        
+        $sql = "DELETE FROM RO_T_DETALLE_ALQUILERES 
+                WHERE PERIODO = '$periodo' 
+                AND NRO_SUCURS = '$nroSucursal'";
+
+        try {
+            error_log("🗑️ Eliminando sucursal $nroSucursal del período $periodo");
+            
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                throw new \Exception("Error al eliminar sucursal: " . print_r($errors, true));
+            }
+            
+            $rowsAffected = sqlsrv_rows_affected($stmt);
+            
+            error_log("✅ Eliminados $rowsAffected registros de sucursal $nroSucursal");
+            
+            return [
+                'rowsAffected' => $rowsAffected,
+                'sucursal' => $nroSucursal,
+                'periodo' => $periodo
+            ];
+            
+        } catch (\Throwable $th) {
+            error_log("❌ Error al eliminar sucursal: " . $th->getMessage());
+            throw $th;
+        }
+    }
+
+    /**
+     * Obtiene las sucursales que tienen total = 0 en un período
+     */
+    public function obtenerSucursalesSinCostos($periodo) {
+        
+        $sql = "SELECT 
+                    NRO_SUCURS,
+                    DESC_SUCURS,
+                    SUM(CAST(IMPORTE AS FLOAT)) AS TOTAL
+                FROM RO_T_DETALLE_ALQUILERES
+                WHERE PERIODO = '$periodo'
+                GROUP BY NRO_SUCURS, DESC_SUCURS
+                HAVING SUM(CAST(IMPORTE AS FLOAT)) = 0
+                ORDER BY NRO_SUCURS";
+
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                throw new \Exception("Error al obtener sucursales sin costos: " . print_r($errors, true));
+            }
+            
+            $rows = array();
+            while ($v = sqlsrv_fetch_array($stmt)) {
+                $rows[] = $v;
+            }
+            
+            return $rows;
+            
+        } catch (\Throwable $th) {
+            error_log("❌ Error al obtener sucursales sin costos: " . $th->getMessage());
             throw $th;
         }
     }
