@@ -22,6 +22,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="#resumen-servicios" data-bs-toggle="tab">
+                    <i class="bi bi-gear-fill"></i> Resumen Servicios
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="#reporte-alberto" data-bs-toggle="tab">
                     <i class="bi bi-person-badge"></i> Reporte Alberto
                 </a>

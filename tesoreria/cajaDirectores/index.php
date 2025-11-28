@@ -73,6 +73,12 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="resumen-servicios-tab" data-bs-toggle="tab" 
+                                data-bs-target="#resumen-servicios" type="button" role="tab">
+                            <i class="bi bi-gear-fill"></i> Resumen de Servicios
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="reporte-alberto-tab" data-bs-toggle="tab" 
                                 data-bs-target="#reporte-alberto" type="button" role="tab">
                             <i class="bi bi-person-badge"></i> Reporte Alberto
@@ -427,6 +433,76 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                         </div>
                     </div>
                     
+                    <!-- Pestaña Resumen de Servicios -->
+                    <div class="tab-pane fade" id="resumen-servicios" role="tabpanel">
+                        <div class="pt-2 pb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+                                <h3 class="mb-0">Resumen de Servicios por Director</h3>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-success btn-sm" onclick="exportarResumenServiciosExcel()">
+                                        <i class="bi bi-file-earmark-excel"></i> Exportar Resumen
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Filtros de fecha -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-funnel"></i> Filtro de Período
+                                    </h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label for="fechaResumenServiciosDesde" class="form-label">Desde</label>
+                                            <input type="date" class="form-control" id="fechaResumenServiciosDesde">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="fechaResumenServiciosHasta" class="form-label">Hasta</label>
+                                            <input type="date" class="form-control" id="fechaResumenServiciosHasta">
+                                        </div>
+                                        <div class="col-md-4 d-flex align-items-end gap-2">
+                                            <button type="button" class="btn btn-primary" onclick="aplicarFiltrosResumenServicios()">
+                                                <i class="bi bi-search"></i> Filtrar
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" onclick="limpiarFiltrosResumenServicios()">
+                                                <i class="bi bi-arrow-clockwise"></i> Limpiar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tarjeta de total -->
+                            <div class="row mb-4 justify-content-center">
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card text-white bg-success mb-3">
+                                        <div class="card-header">
+                                            <i class="bi bi-gear"></i> Total Servicios (Rango Seleccionado)
+                                        </div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="totalResumenServicios">$0</h3>
+                                            <p class="card-text">Gastos en servicios</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tabla Resumen por Motivo -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-table"></i> Resumen por Motivo y Director
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <div id="tablaResumenServicios"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Pestaña Reporte Alberto -->
                     <div class="tab-pane fade" id="reporte-alberto" role="tabpanel">
                         <div class="pt-2 pb-4">
@@ -581,6 +657,7 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
     <script src="js/caja_reporte.js?v=<?php echo time(); ?>"></script>
     <script src="js/caja_reporte_alberto.js?v=<?php echo time(); ?>"></script>
     <script src="js/egresos_socios.js?v=<?php echo time(); ?>"></script>
+    <script src="js/resumen_servicios.js?v=<?php echo time(); ?>"></script>
     <script src="js/sincronizar_vistas.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>
