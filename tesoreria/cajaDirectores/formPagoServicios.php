@@ -88,15 +88,7 @@ session_start();
                                         </label>
                                         <select class="form-select" id="motivoSelect" required>
                                             <option value="">Seleccione un motivo</option>
-                                            <option value="Pago de seguros">Pago de seguros</option>
-                                            <option value="Pago de patentes">Pago de patentes</option>
-                                            <option value="Pago de expensas">Pago de expensas</option>
-                                            <option value="Pago de tarjetas">Pago de tarjetas</option>
-                                            <option value="Pago de telefonía">Pago de telefonía</option>
-                                            <option value="Pago de Peaje">Pago de Peaje</option>
-                                            <option value="Pago de Obra Social">Pago de Obra Social</option>
-                                            <option value="Transf. Haberes">Transf. Haberes</option>
-                                            <option value="Otros">Otros</option>
+                                            <!-- Opciones se cargarán con JS desde la base de datos -->
                                         </select>
                                         <div class="form-text">
                                             Seleccione el tipo de pago a realizar
@@ -271,15 +263,7 @@ session_start();
                         <label for="filtroMotivo" class="form-label small">Motivo</label>
                         <select id="filtroMotivo" class="form-select form-select-sm">
                             <option value="">Todos</option>
-                            <option value="Pago de seguros">Pago de seguros</option>
-                            <option value="Pago de patentes">Pago de patentes</option>
-                            <option value="Pago de expensas">Pago de expensas</option>
-                            <option value="Pago de tarjetas">Pago de tarjetas</option>
-                            <option value="Pago de telefonía">Pago de telefonía</option>
-                            <option value="Pago de Peaje">Pago de Peaje</option>
-                            <option value="Pago de Obra Social">Pago de Obra Social</option>
-                            <option value="Transf. Haberes">Transf. Haberes</option>
-                            <option value="Otros">Otros</option>
+                            <!-- Opciones se cargarán con JS desde la base de datos -->
                         </select>
                     </div>
                     <div class="col-12 col-md-6">

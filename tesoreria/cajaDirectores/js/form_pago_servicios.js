@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function inicializarFormularioPrincipal() {
     await cargarDirectores(); // Esperar a que los directores se carguen
+    await cargarMotivos(); // Cargar motivos desde la base de datos
     configurarFormulario();
     configurarMotivo();
     inicializarSelect2Proveedores();
@@ -24,10 +25,105 @@ async function inicializarFormularioPrincipal() {
 
 function inicializarHistorialPagos() {
     llenarFiltroDirectores();
+    llenarFiltroMotivos();
     setFechasDefault(); // Llenar el filtro del historial
     configurarFiltros();
     cargarPagosFiltrados(); // Carga inicial
 }
+
+/**
+ * Carga la lista de motivos desde el servidor
+ */
+async function cargarMotivos() {
+    try {
+        const response = await fetch('controller/pago_servicios_controller.php?accion=obtener_motivos');
+        const result = await response.json();
+        
+        if (result.success) {
+            llenarSelectMotivos(result.data);
+            llenarFiltroMotivos(result.data);
+        } else {
+            console.error('Error al cargar motivos:', result.message);
+            mostrarAlerta('Error al Cargar Datos', `
+                <div class="text-center">
+                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 mb-2">No se pudieron cargar los motivos</h5>
+                    <p class="mb-0 text-muted">Por favor, recargue la página o contacte al administrador.</p>
+                </div>
+            `);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error de Conexión', `
+            <div class="text-center">
+                <i class="bi bi-wifi-off text-danger" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 mb-2">Error de conexión</h5>
+                <p class="mb-0 text-muted">No se pudo conectar con el servidor. Verifique su conexión a internet.</p>
+            </div>
+        `);
+    }
+}
+
+/**
+ * Llena el select de motivos con los datos cargados
+ */
+function llenarSelectMotivos(motivos) {
+    const select = document.getElementById('motivoSelect');
+    if (!select) return;
+    
+    // Limpiar opciones existentes excepto la primera
+    select.innerHTML = '<option value="">Seleccione un motivo</option>';
+    
+    // Agregar motivos
+    motivos.forEach(motivo => {
+        const option = document.createElement('option');
+        option.value = motivo.nombre;
+        option.textContent = motivo.nombre;
+        if (motivo.descripcion) {
+            option.title = motivo.descripcion;
+        }
+        select.appendChild(option);
+    });
+}
+
+/**
+ * Llena el filtro de motivos en el historial
+ */
+function llenarFiltroMotivos(motivos = null) {
+    const select = document.getElementById('filtroMotivo');
+    if (!select) return;
+    
+    // Si no se pasan motivos, intentar cargarlos
+    if (!motivos) {
+        fetch('controller/pago_servicios_controller.php?accion=obtener_motivos')
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    llenarFiltroMotivos(result.data);
+                }
+            })
+            .catch(error => console.error('Error al cargar motivos para filtro:', error));
+        return;
+    }
+    
+    // Mantener opción "Todos"
+    const valorActual = select.value;
+    select.innerHTML = '<option value="">Todos</option>';
+    
+    // Agregar motivos
+    motivos.forEach(motivo => {
+        const option = document.createElement('option');
+        option.value = motivo.nombre;
+        option.textContent = motivo.nombre;
+        select.appendChild(option);
+    });
+    
+    // Restaurar selección si existía
+    if (valorActual) {
+        select.value = valorActual;
+    }
+}
+
 /**
  * Carga la lista de directores desde el servidor
  */

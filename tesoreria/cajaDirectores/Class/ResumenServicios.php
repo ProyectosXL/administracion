@@ -29,6 +29,43 @@ class ResumenServicios {
      */
     public function obtenerResumenPorMotivo($fechaDesde, $fechaHasta) {
         try {
+            // Primero obtener TODOS los motivos activos de la tabla maestra
+            $sqlMotivos = "SELECT NOMBRE 
+                          FROM RO_T_MOTIVOS_PAGO_SERVICIOS 
+                          WHERE ACTIVO = 1 
+                          ORDER BY ORDEN, NOMBRE";
+            
+            $stmtMotivos = sqlsrv_query($this->db, $sqlMotivos);
+            
+            if ($stmtMotivos === false) {
+                throw new Exception("Error al obtener motivos: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $todosMotivos = [];
+            while ($row = sqlsrv_fetch_array($stmtMotivos, SQLSRV_FETCH_ASSOC)) {
+                $todosMotivos[] = $row['NOMBRE'];
+            }
+            sqlsrv_free_stmt($stmtMotivos);
+            
+            // Obtener todos los directores
+            $sqlDirectores = "SELECT DISTINCT nombre_director 
+                             FROM egresos 
+                             WHERE nombre_director IS NOT NULL 
+                             ORDER BY nombre_director";
+            
+            $stmtDirectores = sqlsrv_query($this->db, $sqlDirectores);
+            
+            if ($stmtDirectores === false) {
+                throw new Exception("Error al obtener directores: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $todosDirectores = [];
+            while ($row = sqlsrv_fetch_array($stmtDirectores, SQLSRV_FETCH_ASSOC)) {
+                $todosDirectores[] = $row['nombre_director'];
+            }
+            sqlsrv_free_stmt($stmtDirectores);
+            
+            // Ahora obtener los gastos reales del período
             $sql = "SELECT 
                         e.motivo,
                         e.nombre_director,
@@ -37,8 +74,7 @@ class ResumenServicios {
                     WHERE e.tipo_gasto = 'Servicios'
                         AND e.nombre_director IS NOT NULL
                         AND e.fecha_carga BETWEEN ? AND ?
-                    GROUP BY e.motivo, e.nombre_director
-                    ORDER BY e.motivo ASC, e.nombre_director ASC";
+                    GROUP BY e.motivo, e.nombre_director";
             
             $params = [$fechaDesde, $fechaHasta];
             $stmt = sqlsrv_query($this->db, $sql, $params);
@@ -47,49 +83,47 @@ class ResumenServicios {
                 throw new Exception("Error al obtener resumen de servicios: " . print_r(sqlsrv_errors(), true));
             }
             
-            // Inicializar estructura
-            $motivos = [];
-            $directores = [];
+            // Inicializar estructura con TODOS los motivos y directores
             $datos = [];
             $totalesPorDirector = [];
             $totalesPorMotivo = [];
             
-            // Procesar resultados
+            // Inicializar todos los motivos con ceros
+            foreach ($todosMotivos as $motivo) {
+                $datos[$motivo] = [];
+                $totalesPorMotivo[$motivo] = 0;
+                foreach ($todosDirectores as $director) {
+                    $datos[$motivo][$director] = 0;
+                }
+            }
+            
+            // Inicializar todos los directores con ceros
+            foreach ($todosDirectores as $director) {
+                $totalesPorDirector[$director] = 0;
+            }
+            
+            // Procesar resultados reales y actualizar valores
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $motivo = $row['motivo'];
                 $director = $row['nombre_director'];
                 $total = (float)$row['total'];
                 
-                // Agregar motivo si no existe
-                if (!in_array($motivo, $motivos)) {
-                    $motivos[] = $motivo;
-                    $datos[$motivo] = [];
-                    $totalesPorMotivo[$motivo] = 0;
+                // Solo actualizar si el motivo está en la lista de motivos activos
+                if (in_array($motivo, $todosMotivos)) {
+                    // Guardar dato
+                    $datos[$motivo][$director] = $total;
+                    
+                    // Actualizar totales
+                    $totalesPorDirector[$director] += $total;
+                    $totalesPorMotivo[$motivo] += $total;
                 }
-                
-                // Agregar director si no existe
-                if (!in_array($director, $directores)) {
-                    $directores[] = $director;
-                    $totalesPorDirector[$director] = 0;
-                }
-                
-                // Guardar dato
-                $datos[$motivo][$director] = $total;
-                
-                // Actualizar totales
-                $totalesPorDirector[$director] += $total;
-                $totalesPorMotivo[$motivo] += $total;
             }
             
             sqlsrv_free_stmt($stmt);
             
-            // Ordenar arrays
-            sort($motivos);
-            sort($directores);
-            
             return [
-                'motivos' => $motivos,
-                'directores' => $directores,
+                'motivos' => $todosMotivos,
+                'directores' => $todosDirectores,
                 'datos' => $datos,
                 'totales_por_director' => $totalesPorDirector,
                 'totales_por_motivo' => $totalesPorMotivo

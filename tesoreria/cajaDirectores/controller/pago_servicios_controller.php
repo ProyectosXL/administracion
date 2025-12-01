@@ -6,6 +6,7 @@ try {
     require_once __DIR__ . '/../Class/Egreso.php';
     require_once __DIR__ . '/../Class/Director.php';
     require_once __DIR__ . '/../Class/Proveedor.php';
+    require_once __DIR__ . '/../Class/MotivoPagoServicio.php';
     require_once __DIR__ . '/../Class/Database.php';
 
     $accion = $_GET['accion'] ?? $_POST['accion'] ?? '';
@@ -23,6 +24,12 @@ try {
                 ];
             }
             echo json_encode(['success' => true, 'data' => $directores]);
+            break;
+            
+        case 'obtener_motivos':
+            $motivo = new MotivoPagoServicio();
+            $motivos = $motivo->obtenerMotivosActivos();
+            echo json_encode(['success' => true, 'data' => $motivos]);
             break;
             
         case 'buscar_proveedores':
