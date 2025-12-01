@@ -32,10 +32,6 @@
                 </h1>
                 <p class="page-subtitle">Estimación de costos de nacionalización por despacho</p>
             </div>
-            <a href="../index.php" class="btn-volver">
-                <i class="bi bi-arrow-left-circle"></i>
-                Volver al menú principal
-            </a>
         </div>
 
         <!-- Content Card -->
