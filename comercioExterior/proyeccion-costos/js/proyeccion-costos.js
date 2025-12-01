@@ -173,10 +173,11 @@ function realizarConfirmacion(id) {
                     title: '¡Confirmado!',
                     text: response.message,
                     icon: 'success',
-                    timer: 2000,
+                    timer: 1500,
                     showConfirmButton: false
                 }).then(() => {
-                    location.reload();
+                    // Recargar la tabla de despachos
+                    cargarDespachos();
                 });
             } else {
                 Swal.fire({

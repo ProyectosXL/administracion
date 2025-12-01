@@ -433,7 +433,11 @@ function guardarEstimacion() {
                     title: '¡Guardado!',
                     text: response.message,
                     icon: 'success',
-                    confirmButtonColor: '#198754'
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    // Volver a la pestaña de proyección de costos
+                    window.location.href = 'index.php';
                 });
             } else {
                 Swal.fire({
