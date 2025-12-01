@@ -62,6 +62,11 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
                         <span id="environment-text">Entorno: <strong><?php echo ($checkedValue === 'central') ? 'ARG' : 'UY'; ?></strong></span>
                     </div>
                     
+                    <!-- Botón de Parámetros -->
+                    <a href="parametros/index.php" class="btn-parametros" title="Parámetros de Importación">
+                        <i class="bi bi-gear-fill"></i>
+                    </a>
+                    
                     <div class="country-toggle">
                         <img src="<?php echo $imageOff; ?>" class="flag" id="flag-left" alt="<?php echo $dataOffValue; ?>">
                         <label class="toggle-switch">
@@ -87,6 +92,13 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pci-tab" data-bs-toggle="tab" data-bs-target="#pci" 
+                            type="button" role="tab" aria-controls="pci" aria-selected="false">
+                        <i class="bi bi-calculator-fill"></i>
+                        <span>Proyección de Costos</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="costos-tab" data-bs-toggle="tab" data-bs-target="#costos" 
                             type="button" role="tab" aria-controls="costos" aria-selected="false">
                         <i class="bi bi-calculator"></i>
@@ -109,6 +121,14 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
             <div class="tab-pane fade show active" id="gestion" role="tabpanel" aria-labelledby="gestion-tab">
                 <div class="tab-content-wrapper">
                     <iframe src="gestionDespachos.php" class="content-iframe" id="gestionFrame"></iframe>
+                </div>
+            </div>
+
+            
+            <!-- Estimación de Costos Tab -->
+            <div class="tab-pane fade" id="pci" role="tabpanel" aria-labelledby="pci-tab">
+                <div class="tab-content-wrapper">
+                    <iframe src="proyeccion-costos/index.php" class="content-iframe" id="pciFrame"></iframe>
                 </div>
             </div>
 

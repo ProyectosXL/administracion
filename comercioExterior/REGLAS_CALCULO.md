@@ -222,4 +222,113 @@ establecerModoFormulario() // Controla modo alta/edición
 
 ---
 
+## 🔧 Sistema de Parámetros de Importación
+
+### 📊 Parámetros Configurables
+
+El sistema cuenta con 13 conceptos configurables que se utilizan en los cálculos de estimación de costos:
+
+| ID | Concepto | Tipo | Descripción |
+|----|----------|------|-------------|
+| 1 | Flete | I | Importe fijo del flete en USD |
+| 2 | Seguro | P | Porcentaje sobre (FOB + Flete) |
+| 3 | Derechos | P | Porcentaje sobre CIF |
+| 4 | Tasa estadística | P | Porcentaje sobre CIF |
+| 5 | IVA General | P | Porcentaje sobre Base Imponible |
+| 6 | IVA Adicional | P | Porcentaje sobre Base Imponible |
+| 7 | IIGG | P | Porcentaje sobre Base Imponible |
+| 8 | IIBB | P | Porcentaje sobre Base Imponible |
+| 9 | SIM | I | Importe fijo en moneda local |
+| 10 | Antidumping | P/I | Variable según contexto |
+| 11 | Despachante | I | Honorario base × multiplicador |
+| 12 | Terminal | I | Costo fijo de terminal |
+| 13 | Suma asegurada | P | Multiplicadores para cálculo |
+
+### 🔑 Tipos de Valor
+
+- **P (Porcentaje):** Se multiplica por el valor base (ej: 0.21 = 21%)
+- **I (Importe):** Valor fijo en moneda (ej: 5000.00 = USD 5,000)
+
+### 📝 Lógica de Aplicación de Parámetros
+
+> **REGLA FUNDAMENTAL:** Los cambios en parámetros **SOLO** afectan a **nuevas estimaciones** que se creen después de modificar los valores.
+
+#### ✅ Cuándo se aplican los parámetros:
+
+1. **Nueva Estimación:**
+   - Al crear una nueva estimación desde cero
+   - Los valores `VALOR_DEFAULT_1` y `VALOR_DEFAULT_2` se copian de `RO_T_CONCEPTOS_ESTIMACION_COMEX`
+   - Se insertan en `RO_T_IMPORTACIONES_ESTIMACION_DETALLE` como valores iniciales
+
+#### ❌ Cuándo NO se modifican automáticamente:
+
+1. **Estimaciones existentes en estado BORRADOR:**
+   - NO se actualizan automáticamente cuando cambian los parámetros
+   - Mantienen los valores con los que fueron creadas
+   - Solo si el usuario manualmente re-confirma con nuevos valores
+
+2. **Estimaciones en estado CONFIRMADO:**
+   - NUNCA se modifican
+   - Son valores históricos congelados
+   - Reflejan las condiciones del momento de confirmación
+
+### 🔄 Flujo de Datos
+
+```
+┌─────────────────────────────────────┐
+│  RO_T_CONCEPTOS_ESTIMACION_COMEX   │
+│  (Parámetros Maestros)             │
+│  - VALOR_DEFAULT_1                  │
+│  - VALOR_DEFAULT_2                  │
+└─────────────────┬───────────────────┘
+                  │
+                  │ SOLO al crear
+                  │ nueva estimación
+                  ↓
+┌─────────────────────────────────────────┐
+│  RO_T_IMPORTACIONES_ESTIMACION_DETALLE │
+│  (Valores de cada estimación)           │
+│  - VALOR_DEFAULT_1 (copia inicial)      │
+│  - VALOR_DEFAULT_2 (copia inicial)      │
+│  - CONFIRMADO (bit)                     │
+└─────────────────────────────────────────┘
+```
+
+### ⚙️ Gestión de Parámetros
+
+**Acceso:** Botón ⚙️ en el header de Comercio Exterior
+
+**Funcionalidades:**
+- Visualización de todos los parámetros configurables
+- Edición de valores por defecto (VALOR_DEFAULT_1 y VALOR_DEFAULT_2)
+- Registro de última actualización (ULT_ACTUA)
+- Interfaz visual con badges indicando tipo de valor
+
+**Campos editables:**
+- Parámetro 1: Valor principal del concepto
+- Parámetro 2: Valor secundario (solo ciertos conceptos)
+
+**Validaciones:**
+- Tipo numérico con hasta 4 decimales
+- Obligatorio para Parámetro 1
+- Opcional para Parámetro 2 (según concepto)
+
+### 📌 Consideraciones Importantes
+
+1. **Historial Inmutable:**
+   - Las estimaciones confirmadas son registros históricos
+   - Reflejan las condiciones económicas del momento
+   - No deben alterarse automáticamente
+
+2. **Estimaciones en Borrador:**
+   - Se crean con los parámetros vigentes en ese momento
+   - Si luego cambian los parámetros, el borrador NO se actualiza solo
+   - El usuario debe re-confirmar manualmente si desea nuevos valores
+
+3. **Trazabilidad:**
+   - Campo `ULT_ACTUA` registra cuándo se modificó cada parámetro
+   - Permite auditar cambios en configuración
+
+---
+
 **Última actualización:** 20/11/2025

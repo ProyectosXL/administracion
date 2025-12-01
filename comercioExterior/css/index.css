@@ -106,6 +106,41 @@ body {
     gap: 1.5rem;
 }
 
+/* Botón de Parámetros */
+.btn-parametros {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+    color: var(--white);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-parametros:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--shadow-md);
+    color: var(--white);
+}
+
+.btn-parametros i {
+    font-size: 1.3rem;
+    transition: transform 0.3s ease;
+}
+
+@keyframes rotateGear {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.btn-parametros:hover i {
+    animation: rotateGear 2s linear infinite;
+}
+
 /* ===========================
    COUNTRY TOGGLE
    =========================== */
