@@ -1,14 +1,6 @@
 <?php
 session_start();
 require_once '../../class/conexion.php';
-require_once '../../vendor/autoload.php';
-
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 try {
     // Obtener parámetros
@@ -91,146 +83,167 @@ try {
         }
     }
 
-    // Crear el archivo Excel
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-
-    // Establecer el título
+    // Crear el archivo Excel usando formato XML (no requiere librerías externas)
     $pais = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'Uruguay' : 'Argentina';
-    $sheet->setTitle('Control Ventas');
-
-    // Agregar encabezado
-    $sheet->setCellValue('A1', 'CONTROL DE VENTAS POR SUCURSAL');
-    $sheet->mergeCells('A1:H1');
-    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-    // Agregar información del período
-    $sheet->setCellValue('A2', 'País: ' . $pais);
-    $sheet->setCellValue('C2', 'Período: ' . date('d/m/Y', strtotime($desde)) . ' - ' . date('d/m/Y', strtotime($hasta)));
-    $sheet->getStyle('A2:C2')->getFont()->setBold(true);
-
-    // Agregar encabezados de columnas
-    $row = 4;
-    $headers = ['Nro. Sucursal', 'Cod. Sucursal', 'Importe Central', 'Importe Local', 'Diferencia', 'Estado', 'Últ. Actualización'];
-    $col = 'A';
-    foreach ($headers as $header) {
-        $sheet->setCellValue($col . $row, $header);
-        $col++;
-    }
-
-    // Estilo de encabezados
-    $sheet->getStyle('A' . $row . ':G' . $row)->applyFromArray([
-        'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-        'fill' => [
-            'fillType' => Fill::FILL_SOLID,
-            'startColor' => ['rgb' => '007BFF']
-        ],
-        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        'borders' => [
-            'allBorders' => [
-                'borderStyle' => Border::BORDER_THIN,
-                'color' => ['rgb' => '000000']
-            ]
-        ]
-    ]);
-
-    // Agregar datos
-    $row++;
+    
+    // Calcular totales
     $totalImporteCentral = 0;
     $totalImporteLocal = 0;
     $totalDiferencia = 0;
-
+    
     foreach ($data_final as $fila) {
-        $sheet->setCellValue('A' . $row, $fila['NUM_SUC']);
-        $sheet->setCellValue('B' . $row, $fila['COD_SUCURSAL']);
-        $sheet->setCellValue('C' . $row, floatval($fila['IMPORTE_CENTRAL']));
-        $sheet->setCellValue('D' . $row, floatval($fila['IMPORTE_LOCAL']));
-        $sheet->setCellValue('E' . $row, floatval($fila['DIFERENCIA']));
-        $sheet->setCellValue('F' . $row, $fila['ESTADO']);
-        
-        // Formatear la fecha
+        $totalImporteCentral += floatval($fila['IMPORTE_CENTRAL']);
+        $totalImporteLocal += floatval($fila['IMPORTE_LOCAL']);
+        $totalDiferencia += floatval($fila['DIFERENCIA']);
+    }
+
+    // Preparar el nombre del archivo
+    $filename = 'Control_Ventas_' . date('Ymd', strtotime($desde)) . '_' . date('Ymd', strtotime($hasta)) . '.xls';
+    
+    // Configurar headers para la descarga
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment;filename="' . $filename . '"');
+    header('Cache-Control: max-age=0');
+    
+    // Generar el contenido del archivo Excel en formato XML
+    echo '<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Created>' . date('Y-m-d\TH:i:s\Z') . '</Created>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="s62">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Font ss:FontName="Calibri" ss:Size="14" ss:Color="#000000" ss:Bold="1"/>
+  </Style>
+  <Style ss:ID="s63">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#000000" ss:Bold="1"/>
+  </Style>
+  <Style ss:ID="s64">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#007BFF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s65">
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="s66">
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <NumberFormat ss:Format="&quot;$&quot;#,##0.00"/>
+  </Style>
+  <Style ss:ID="s67">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#343A40" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="s68">
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#343A40" ss:Pattern="Solid"/>
+   <NumberFormat ss:Format="&quot;$&quot;#,##0.00"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Control Ventas">
+  <Table>
+   <Column ss:Width="80"/>
+   <Column ss:Width="80"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="80"/>
+   <Column ss:Width="120"/>
+   <Row>
+    <Cell ss:MergeAcross="6" ss:StyleID="s62"><Data ss:Type="String">CONTROL DE VENTAS POR SUCURSAL</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="s63"><Data ss:Type="String">País: ' . htmlspecialchars($pais) . '</Data></Cell>
+    <Cell></Cell>
+    <Cell ss:MergeAcross="1" ss:StyleID="s63"><Data ss:Type="String">Período: ' . date('d/m/Y', strtotime($desde)) . ' - ' . date('d/m/Y', strtotime($hasta)) . '</Data></Cell>
+   </Row>
+   <Row></Row>
+   <Row>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Nro. Sucursal</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Cod. Sucursal</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Importe Central</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Importe Local</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Diferencia</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Estado</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Últ. Actualización</Data></Cell>
+   </Row>';
+
+    // Agregar filas de datos
+    foreach ($data_final as $fila) {
         $refreshedDate = 'N/A';
         if ($fila['REFRESHED_AT']) {
             $refreshedDate = $fila['REFRESHED_AT']->format('d/m/Y H:i');
         }
-        $sheet->setCellValue('G' . $row, $refreshedDate);
-
-        // Acumular totales
-        $totalImporteCentral += floatval($fila['IMPORTE_CENTRAL']);
-        $totalImporteLocal += floatval($fila['IMPORTE_LOCAL']);
-        $totalDiferencia += floatval($fila['DIFERENCIA']);
-
-        // Aplicar formato de moneda a las columnas de importes
-        $sheet->getStyle('C' . $row)->getNumberFormat()->setFormatCode('$#,##0.00');
-        $sheet->getStyle('D' . $row)->getNumberFormat()->setFormatCode('$#,##0.00');
-        $sheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('$#,##0.00');
-
-        // Aplicar bordes
-        $sheet->getStyle('A' . $row . ':G' . $row)->applyFromArray([
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => 'CCCCCC']
-                ]
-            ]
-        ]);
-
-        $row++;
+        
+        echo '
+   <Row>
+    <Cell ss:StyleID="s65"><Data ss:Type="Number">' . htmlspecialchars($fila['NUM_SUC']) . '</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">' . htmlspecialchars($fila['COD_SUCURSAL']) . '</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['IMPORTE_CENTRAL']), 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['IMPORTE_LOCAL']), 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['DIFERENCIA']), 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">' . htmlspecialchars($fila['ESTADO']) . '</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">' . htmlspecialchars($refreshedDate) . '</Data></Cell>
+   </Row>';
     }
 
     // Agregar fila de totales
-    $sheet->setCellValue('A' . $row, 'TOTALES');
-    $sheet->mergeCells('A' . $row . ':B' . $row);
-    $sheet->setCellValue('C' . $row, $totalImporteCentral);
-    $sheet->setCellValue('D' . $row, $totalImporteLocal);
-    $sheet->setCellValue('E' . $row, $totalDiferencia);
-
-    // Estilo de la fila de totales
-    $sheet->getStyle('A' . $row . ':G' . $row)->applyFromArray([
-        'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-        'fill' => [
-            'fillType' => Fill::FILL_SOLID,
-            'startColor' => ['rgb' => '343A40']
-        ],
-        'borders' => [
-            'allBorders' => [
-                'borderStyle' => Border::BORDER_THIN,
-                'color' => ['rgb' => '000000']
-            ]
-        ]
-    ]);
-
-    // Formato de moneda para totales
-    $sheet->getStyle('C' . $row)->getNumberFormat()->setFormatCode('$#,##0.00');
-    $sheet->getStyle('D' . $row)->getNumberFormat()->setFormatCode('$#,##0.00');
-    $sheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('$#,##0.00');
-
-    // Alinear totales
-    $sheet->getStyle('A' . $row . ':B' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-    // Ajustar anchos de columna
-    $sheet->getColumnDimension('A')->setWidth(15);
-    $sheet->getColumnDimension('B')->setWidth(15);
-    $sheet->getColumnDimension('C')->setWidth(18);
-    $sheet->getColumnDimension('D')->setWidth(18);
-    $sheet->getColumnDimension('E')->setWidth(18);
-    $sheet->getColumnDimension('F')->setWidth(12);
-    $sheet->getColumnDimension('G')->setWidth(20);
-
-    // Generar el archivo
-    $writer = new Xlsx($spreadsheet);
+    echo '
+   <Row>
+    <Cell ss:MergeAcross="1" ss:StyleID="s67"><Data ss:Type="String">TOTALES</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="Number">' . number_format($totalImporteCentral, 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="Number">' . number_format($totalImporteLocal, 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="Number">' . number_format($totalDiferencia, 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String"></Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="String"></Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>';
     
-    // Preparar el nombre del archivo
-    $filename = 'Control_Ventas_' . date('Ymd', strtotime($desde)) . '_' . date('Ymd', strtotime($hasta)) . '.xlsx';
-    
-    // Configurar headers para la descarga
-    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment;filename="' . $filename . '"');
-    header('Cache-Control: max-age=0');
-    
-    // Guardar el archivo en el output
-    $writer->save('php://output');
     exit;
 
 } catch (Exception $e) {
