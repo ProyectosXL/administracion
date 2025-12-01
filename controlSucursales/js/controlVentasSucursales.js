@@ -16,6 +16,11 @@ $(document).ready(function() {
         ejecutarSPPorSucursal(nroSucursal);
     });
 
+    // El botón "Descargar Excel" descarga los datos actuales en formato Excel.
+    $('#btn-descargar-excel').on('click', function() {
+        descargarExcel();
+    });
+
     // --- LÓGICA DE CARGA INICIAL (OPTIMISTA) ---
     
     // 1. Cargamos los datos existentes inmediatamente para que el usuario vea algo rápido.
@@ -137,8 +142,13 @@ $(document).ready(function() {
         tablaResultados.empty();
         if (!data || data.length === 0) {
             tablaResultados.html('<tr><td colspan="8" class="text-center">No se encontraron resultados para el período seleccionado.</td></tr>');
+            actualizarTotales(0, 0, 0);
             return;
         }
+
+        let totalImporteCentral = 0;
+        let totalImporteLocal = 0;
+        let totalDiferencia = 0;
 
         $.each(data, function(index, fila) {
             const estadoBadge = fila.ESTADO === 'OK' 
@@ -153,6 +163,11 @@ $(document).ready(function() {
                     hour: '2-digit', minute: '2-digit'
                 });
             }
+
+            // Acumular totales
+            totalImporteCentral += parseFloat(fila.IMPORTE_CENTRAL) || 0;
+            totalImporteLocal += parseFloat(fila.IMPORTE_LOCAL) || 0;
+            totalDiferencia += parseFloat(fila.DIFERENCIA) || 0;
 
             const filaHtml = `
                 <tr>
@@ -172,6 +187,9 @@ $(document).ready(function() {
             `;
             tablaResultados.append(filaHtml);
         });
+
+        // Actualizar los totales en el footer
+        actualizarTotales(totalImporteCentral, totalImporteLocal, totalDiferencia);
     }
 
     /**
@@ -208,6 +226,44 @@ $(document).ready(function() {
             return '$ 0.00';
         }
         return number.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+    }
+
+    function actualizarTotales(totalCentral, totalLocal, totalDiferencia) {
+        $('#total-importe-central').text(formatCurrency(totalCentral));
+        $('#total-importe-local').text(formatCurrency(totalLocal));
+        $('#total-diferencia').text(formatCurrency(totalDiferencia));
+    }
+
+    function descargarExcel() {
+        const fechaDesde = $('#fecha-desde').val();
+        const fechaHasta = $('#fecha-hasta').val();
+
+        if (!fechaDesde || !fechaHasta) {
+            alert('Por favor, seleccione un rango de fechas.');
+            return;
+        }
+
+        // Crear un formulario temporal para descargar el archivo
+        const form = $('<form>', {
+            method: 'POST',
+            action: 'Controller/exportarExcel.php'
+        });
+
+        form.append($('<input>', {
+            type: 'hidden',
+            name: 'desde',
+            value: fechaDesde
+        }));
+
+        form.append($('<input>', {
+            type: 'hidden',
+            name: 'hasta',
+            value: fechaHasta
+        }));
+
+        $('body').append(form);
+        form.submit();
+        form.remove();
     }
 });
 

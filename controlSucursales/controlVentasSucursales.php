@@ -71,21 +71,26 @@ $banderaActual = ($checkedValue === 'suc_uy') ? '../assets/images/UY.png' : '../
             <form id="form-consulta">
                 <!-- --- INICIO DE MODIFICACIÓN DEL FORMULARIO --- -->
                 <div class="form-row align-items-end">
-                    <div class="form-group col-md-3">
+                    <div class="form-group col-md-2">
                         <label for="fecha-desde">Desde:</label>
                         <input type="date" class="form-control" id="fecha-desde" value="<?php echo $previous_month_first; ?>">
                     </div>
-                    <div class="form-group col-md-3">
+                    <div class="form-group col-md-2">
                         <label for="fecha-hasta">Hasta:</label>
                         <input type="date" class="form-control" id="fecha-hasta" value="<?php echo $previous_month_last; ?>">
                     </div>
-                    <div class="form-group col-md-3">
+                    <div class="form-group col-md-2">
                         <button type="button" id="btn-consultar" class="btn btn-primary btn-block">
                             <i class="fas fa-search"></i> Consultar
                         </button>
                     </div>
+                    <div class="form-group col-md-2">
+                        <button type="button" id="btn-descargar-excel" class="btn btn-success btn-block">
+                            <i class="fas fa-file-excel"></i> Descargar Excel
+                        </button>
+                    </div>
                     <!-- NUEVO SELECTOR DE PAÍS -->
-                    <div class="form-group col-md-3 d-flex align-items-end justify-content-end">
+                    <div class="form-group col-md-4 d-flex align-items-end justify-content-end">
                         <div style="text-align: right;">
                             <label>País:</label>
                             <div class="d-flex align-items-center">
@@ -119,6 +124,15 @@ $banderaActual = ($checkedValue === 'suc_uy') ? '../assets/images/UY.png' : '../
                         <tbody id="tabla-resultados">
                             <!-- Los datos se cargarán aquí dinámicamente -->
                         </tbody>
+                        <tfoot class="thead-dark">
+                            <tr>
+                                <th colspan="2" class="text-right">TOTALES:</th>
+                                <th id="total-importe-central">$ 0.00</th>
+                                <th id="total-importe-local">$ 0.00</th>
+                                <th id="total-diferencia">$ 0.00</th>
+                                <th colspan="3"></th>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
