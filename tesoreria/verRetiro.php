@@ -24,7 +24,7 @@ $datosGuia = $datosGuia[0];
 $remitos = $guiaRetiro->listarRemitosPorGuia($id, $nroSucurs); 
 $totalBultos = 0;
 foreach ($remitos as $key => $remito) {
-    $totalBultos += $remito['BULTOS'];
+    $totalBultos += $remito['bultos'];
     
 }
 
@@ -95,86 +95,82 @@ $egresos = $gasto->listarEgresosPorGuia($id, $nroSucurs);
                         <i class="bi bi-cash-coin"></i>
                         Envía Valores
                     </label>
-                    <select class="form-select" id="enviaValores" name="enviaValores" disabled>
-                        <option value="SI" <?php echo ($datosGuia['ENVIA_VALORES'] == '1') ? 'selected' : ''; ?>>SI</option>
-                        <option value="NO" <?php echo ($datosGuia['ENVIA_VALORES'] == '0') ? 'selected' : ''; ?>>NO</option>
-                    </select>
+<select class="form-select" id="enviaValores" ... disabled>
+    <option value="SI" <?php echo ($datosGuia['ENVIA_VALORES'] == 'SI') ? 'selected' : ''; ?>>SI</option>
+    <option value="NO" <?php echo ($datosGuia['ENVIA_VALORES'] == 'NO') ? 'selected' : ''; ?>>NO</option>
+</select>
                 </div>
 
             
-            <?php if ($datosGuia['ENVIA_VALORES'] == '1'): ?>
-                <div class="mb-3" id="precintoContainer">
-                    <label for="numeroPrecinto" class="form-label">
-                        <i class="bi bi-lock-fill"></i>
-                        <strong>Número de Precinto</strong>
-                    </label>
-                    <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto"
-                        value="<?php echo htmlspecialchars($datosGuia['PRECINTO'] ?? ''); ?>" readonly>
-                </div>
+<?php if ($datosGuia['ENVIA_VALORES'] == 'SI'): ?>
+    <!-- Sección de Precinto y Egresos -->
+    <div class="mb-3" id="precintoContainer">
+        <label class="form-label">
+            <i class="bi bi-lock-fill"></i>
+            <strong>Número de Precinto</strong>
+        </label>
+        <input type="text" class="form-control" value="<?php echo htmlspecialchars($datosGuia['NRO_PRECINTO'] ?? ''); ?>" readonly>
+    </div>
 
-
-                <div class="mb-3 mt-2" id="egresosContainer">
-                
-                <div class="table-responsive">
-                    <table class="table table-sm table-egresos" id="tablaEgresos">
-                        <thead>
+    <div class="mb-3 mt-2" id="egresosContainer">
+        <div class="table-responsive">
+            <table class="table table-sm table-egresos">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Comprobante</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($egresos)): ?>
+                        <?php foreach ($egresos as $egreso): ?>
                             <tr>
-                                <th>Tipo</th>
-                                <th>Comprobante</th>
-                                <th>Fecha</th>
+                                <td><?php echo htmlspecialchars($egreso['tipo']); ?></td>
+                                <td><?php echo htmlspecialchars($egreso['comprobante']); ?></td>
+                                <td><?php echo htmlspecialchars($egreso['fecha']); ?></td>
                             </tr>
-                        </thead>
-                        <tbody id="bodyEgresos">
-                            <?php if (!empty($egresos)): ?>
-                                <?php foreach ($egresos as $egreso): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($egreso['T_COMP']); ?></td>
-                                        <td><?php echo htmlspecialchars($egreso['N_COMP']); ?></td>
-                                        <td><?php echo $egreso['FECHA_COMP']->format("d/m/Y");; ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="3">No hay egresos asociados.</td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr><td colspan="3">No hay egresos asociados.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>
 
-                        </table>
-                    </div>
-                </div>
-                <?php endif; ?>
-
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Remito</th>
-                                    <th>Destino</th>
-                                    <th>Bultos</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($remitos as $remito){ ?>
-                                    <tr>
-                                        <td><?php echo $remito['REMITO']; ?></td>
-                                        <td><?php echo $remito['DESTINO']; ?></td>
-                                        <td><?php echo $remito['BULTOS']; ?></td>
-                                        <td></td>
-                                    </tr>
-                                <?php }; ?>
-                            </tbody>                                           
-
-                    <tfoot>
-                        <tr class="total">
-                            <td colspan="2" class="text-end pe-2"><strong>Total:</strong></td>
-                            <td id="totalBultos" class="fw-bold"><?php echo $totalBultos; ?></td>
-                            <th></th>
-                        </tr>                        
-                    </tfoot>
-                    </table>
-                    </div>
+<!-- Sección de Remitos -->
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Remito</th>
+                <th>Destino</th>
+                <th>Bultos</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (!empty($remitos)): ?>
+                <?php foreach ($remitos as $remito): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($remito['remito']); ?></td>
+                        <td><?php echo htmlspecialchars($remito['destino']); ?></td>
+                        <td><?php echo htmlspecialchars($remito['bultos']); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr><td colspan="3">No hay remitos asociados.</td></tr>
+            <?php endif; ?>
+        </tbody>
+        <tfoot>
+            <tr class="total">
+                <td colspan="2" class="text-end pe-2"><strong>Total:</strong></td>
+                <td id="totalBultos" class="fw-bold"><?php echo $totalBultos; ?></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
 
 
                 <div class="mb-3">

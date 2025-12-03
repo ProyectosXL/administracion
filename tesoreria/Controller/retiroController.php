@@ -96,6 +96,10 @@ switch ($accion) {
     case 'actualizar':
         actualizarRetiro();
         break;
+    
+    case 'verificarConexionLocal':
+        verificarConexion();
+        break;
 
     case 'traerDatos': 
         $numeroRegistro = $_GET['numeroRegistro'] ?? '';
@@ -122,20 +126,15 @@ switch ($accion) {
 function registrarRetiro() {
     global $sucursal, $gasto;
 
-    // IMPORTANTE: Debes implementar un método en tu clase `Sucursal` o `Conexion` 
-    // para obtener la conexión a la DB y así poder manejar la transacción.
-    // Ejemplo: $conn = $sucursal->getConexion();
-    $conn = $sucursal->getConexion(); // Asumiendo que este método existe
+    $conn = $sucursal->getConexion();
     if (!$conn) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error crítico de conexión a la base de datos.']);
         return;
     }
-
     if (sqlsrv_begin_transaction($conn) === false) {
         http_response_code(500);
-        // Usar die() puede cortar la ejecución abruptamente, mejor es un echo + return
-        echo json_encode(['success' => false, 'message' => 'No se pudo iniciar la transacción. '. print_r(sqlsrv_errors(), true)]);
+        echo json_encode(['success' => false, 'message' => 'No se pudo iniciar la transacción: '. print_r(sqlsrv_errors(), true)]);
         return;
     }
 
@@ -145,88 +144,144 @@ function registrarRetiro() {
         $remitos = $_POST['remitos'] ?? [];
         $nroSucursal = $_POST['nroSucursal'] ?? null;
         $estado = $_POST['estado'] ?? null;
-   
-        // Validación más estricta de los datos necesarios
-        if ($estado != 1 && (empty($datos) || ($estado == 2 && empty($firma)))) {
-            throw new Exception('Faltan datos esenciales para completar el registro.');
+
+        if ($estado == 2) {
+            if (empty($datos) || empty($firma)) {
+                throw new Exception('Faltan datos esenciales (encabezado o firma) para completar el registro.');
+            }
+            if (isset($datos['enviaValores']) && $datos['enviaValores'] === 'SI') {
+                if (!isset($datos['egresos']) || empty($datos['egresos'])) {
+                    throw new Exception('Para registrar una guía con "Envío de Valores", es obligatorio agregar al menos un egreso (RAF).');
+                }
+            }
         }
 
         $existingRecord = $sucursal->checkExistingRetiro($datos['numeroRegistro'], $nroSucursal);
         if ($existingRecord) {
-            throw new Exception('Ya existe un registro con este número para esta sucursal.');
+            throw new Exception('Ya existe un registro con este número para esta sucursal. Por favor, refresque la página.');
         }
-
+        
         $resultado = $sucursal->insertarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
         if (!$resultado['success']) {
+            
             throw new Exception('Error al guardar el encabezado del registro: ' . ($resultado['message'] ?? 'Error desconocido'));
         }
 
+        
         if (!empty($remitos)) {
-            $sucursal->limpiarRemitos($datos['numeroRegistro'], $nroSucursal);
-            // ¡IMPORTANTE! Debes crear este método `insertarMultiplesRemitos` en tu clase `Sucursal`.
+            
             $sucursal->insertarMultiplesRemitos($datos['numeroRegistro'], $remitos, $nroSucursal);
         }
 
+        
         if (isset($datos['egresos']) && !empty($datos['egresos'])) {
-            $gasto->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
-            // ¡IMPORTANTE! Debes añadir el método `insertarMultiplesEgresos` en tu clase `Gasto`.
+            
             $gasto->insertarMultiplesEgresos($datos['numeroRegistro'], $datos['egresos'], $nroSucursal);
         }
 
-        // Si todo salió bien, confirmamos la transacción
+        
         sqlsrv_commit($conn);
-        $message = ($estado == 1) ? 'Borrador guardado correctamente' : 'Registro guardado correctamente';
+
+        
+        $message = ($estado == 1) ? 'Borrador guardado correctamente' : 'Guía registrada correctamente';
         echo json_encode(['success' => true, 'message' => $message]);
 
     } catch (Exception $e) {
-        // Si algo falla, revertimos todos los cambios
+        
         sqlsrv_rollback($conn);
+        
+        
         error_log("Error en registrarRetiro: " . $e->getMessage());
+        
+        
         http_response_code(500); 
         echo json_encode(['success' => false, 'message' => 'Se produjo un error y la operación fue revertida: ' . $e->getMessage()]);
     }
 }
 
-function actualizarRetiro() {
-    // Tomamos el código original que proporcionaste, ya que no solicitaste refactorizarlo,
-    // pero se mantiene la recomendación de usar transacciones aquí también para mayor seguridad.
-    global $sucursal, $gasto;
+function verificarConexion() {
+    require_once '../../Class/conexion.php';
+    
+    $nroSucursal = $_GET['nroSucurs'] ?? $_SESSION['numsuc'] ?? null;
+
+    if (!$nroSucursal) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'No se especificó un número de sucursal.']);
+        return;
+    }
 
     try {
+        $conexion = new Conexion();
+        
+        if ($conexion->setearDnsBaseName($nroSucursal)) {
+            $conn_local = $conexion->conectar('');
+            
+            if ($conn_local) {
+                sqlsrv_close($conn_local);
+                echo json_encode(['success' => true, 'message' => 'Conexión con el local establecida.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se pudo conectar a la base de datos del local. Verifique que el local esté online y accesible en la red.']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se encontró la configuración de conexión para la sucursal ' . $nroSucursal]);
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        error_log("Error en verificarConexion: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Ocurrió un error interno en el servidor al verificar la conexión.']);
+    }
+}
+
+function actualizarRetiro() {
+    global $sucursal, $gasto;
+
+    $conn = $sucursal->getConexion();
+    if (!$conn || sqlsrv_begin_transaction($conn) === false) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error: No se pudo iniciar la transacción.']);
+        return;
+    }
+
+    try {
+        // 1. Extraer todos los datos del POST
         $datos = $_POST['datos'] ?? null;
         $firma = $_POST['firma'] ?? null;
         $remitos = $_POST['remitos'] ?? [];
         $nroSucursal = $_POST['nroSucursal'] ?? null;
         $estado = $_POST['estado'] ?? null;
         
-        if ($estado != 1 && (empty($datos) || ($estado == 2 && empty($firma)))) {
-            echo json_encode(['success' => false, 'message' => 'Datos no proporcionados.']);
-            exit;
+        // 2. Extraer los egresos que vienen DENTRO del array 'datos'
+        $egresos = $datos['egresos'] ?? []; 
+        
+        if (empty($datos) || empty($nroSucursal) || empty($estado)) {
+            throw new Exception('Faltan datos esenciales para la actualización.');
         }
 
-        $resultado = $sucursal->actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
+        // 3. Actualizar el encabezado (esta función ya sabe buscar el precinto dentro de $datos)
+        $sucursal->actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado);
 
+        // 4. Limpiar los detalles antiguos para reemplazarlos
+        $sucursal->limpiarRemitos($datos['numeroRegistro'], $nroSucursal);
+        $gasto->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
+        
+        // 5. Insertar los nuevos detalles que llegaron del formulario
         if (!empty($remitos)) {
-            $sucursal->limpiarRemitos($datos['numeroRegistro'], $nroSucursal);
-            // RECOMENDACIÓN: Usar también un método de inserción múltiple aquí.
-            foreach ($remitos as $remito) {    
-                $sucursal->insertarRemitos($datos['numeroRegistro'], $remito['fecha'], $remito['remito'], $remito['destino'], $remito['bultos'], $nroSucursal);
-            }
+            $sucursal->insertarMultiplesRemitos($datos['numeroRegistro'], $remitos, $nroSucursal);
         }
 
-        if (isset($datos['egresos']) && !empty($datos['egresos'])) {
-            $gasto->limpiarEgresos($datos['numeroRegistro'], $nroSucursal);
-            // RECOMENDACIÓN: Usar también un método de inserción múltiple aquí.
-            foreach ($datos['egresos'] as $egreso) {
-                $gasto->insertarEgresos($datos['numeroRegistro'], $egreso['fecha'], $egreso['tipo'], $egreso['comprobante'], $nroSucursal);
-            }
+        if (!empty($egresos)) {
+            $gasto->insertarMultiplesEgresos($datos['numeroRegistro'], $egresos, $nroSucursal);
         }
 
+        // 6. Si todo salió bien, confirmar los cambios
+        sqlsrv_commit($conn);
         echo json_encode(['success' => true, 'message' => 'Registro actualizado correctamente']);
 
     } catch (Exception $e) {
+        // Si algo falló en cualquier punto, deshacer todo
+        sqlsrv_rollback($conn);
         error_log("Error en actualizarRetiro: " . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Error interno del servidor: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Error al actualizar y la operación fue revertida: ' . $e->getMessage()]);
     }
 }

@@ -51,11 +51,7 @@ class EgresoSocios {
     public function obtenerEgresosEfectivo($fechaDesde, $fechaHasta) {
         try {
             $sql = "SELECT 
-                        CASE 
-                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                            THEN CAST(e.fecha_carga AS DATE)
-                            ELSE CAST(e.fecha AS DATE)
-                        END as fecha,
+                        CAST(e.fecha_carga AS DATE) as fecha,
                         e.nombre_director,
                         SUM(CASE 
                             WHEN e.motivo = 'COMPENSACION_IVA' THEN -e.importe 
@@ -63,29 +59,11 @@ class EgresoSocios {
                         END) as total
                     FROM egresos e
                     WHERE e.nombre_director IS NOT NULL
-                        AND (
-                            (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                             AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?)
-                            OR
-                            (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros')
-                             AND e.fecha BETWEEN ? AND ?)
-                        )
-                    GROUP BY 
-                        CASE 
-                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                            THEN CAST(e.fecha_carga AS DATE)
-                            ELSE CAST(e.fecha AS DATE)
-                        END, 
-                        e.nombre_director
-                    ORDER BY 
-                        CASE 
-                            WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                            THEN CAST(e.fecha_carga AS DATE)
-                            ELSE CAST(e.fecha AS DATE)
-                        END ASC";
+                        AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?
+                    GROUP BY CAST(e.fecha_carga AS DATE), e.nombre_director
+                    ORDER BY CAST(e.fecha_carga AS DATE) ASC";
             
-            // Pasar las fechas 4 veces (2 para cada condición del WHERE)
-            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
+            $params = [$fechaDesde, $fechaHasta];
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
@@ -242,12 +220,8 @@ class EgresoSocios {
                     FROM (
                         -- Fuente 1: egresos (EFECTIVO)
                         SELECT 
-                            CASE 
-                                WHEN e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                                THEN CAST(e.fecha_carga AS DATE)
-                                ELSE CAST(e.fecha AS DATE)
-                            END AS fecha,
-                            ISNULL(e.fecha_carga, CAST(e.fecha AS DATETIME)) AS fecha_hora_carga,
+                            CAST(e.fecha_carga AS DATE) AS fecha,
+                            e.fecha_carga AS fecha_hora_carga,
                             ISNULL(e.COD_COMP, '') + ISNULL(e.N_COMP, '') AS codigo,
                             e.nombre_director AS director,
                             e.motivo,
@@ -261,13 +235,7 @@ class EgresoSocios {
                             NULL as descripcion_cbu
                         FROM egresos e
                         WHERE e.nombre_director IS NOT NULL
-                          AND (
-                            (e.motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                             AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?)
-                            OR
-                            (e.motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros')
-                             AND e.fecha BETWEEN ? AND ?)
-                          )
+                          AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?
                         
                         UNION ALL
                         
@@ -291,8 +259,8 @@ class EgresoSocios {
                     ) AS egresos_combinados
                     ORDER BY fecha_hora_carga DESC";
             
-            // Pasar las fechas 6 veces (4 para egresos MANUAL + 2 para solicitudes_egresos)
-            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
+            // Pasar las fechas 4 veces (2 para egresos MANUAL + 2 para solicitudes_egresos)
+            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
@@ -336,13 +304,7 @@ class EgresoSocios {
                             END as importe_ajustado
                         FROM egresos 
                         WHERE nombre_director IS NOT NULL 
-                          AND (
-                              (motivo IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                               AND CAST(fecha_carga AS DATE) BETWEEN ? AND ?)
-                              OR
-                              (motivo NOT IN ('Pago de seguros', 'Pago de patentes', 'Pago de expensas', 'Pago de tarjetas', 'Transf. Haberes', 'Otros') 
-                               AND fecha BETWEEN ? AND ?)
-                          )
+                          AND CAST(fecha_carga AS DATE) BETWEEN ? AND ?
                         
                         UNION ALL
                         
@@ -353,7 +315,7 @@ class EgresoSocios {
                           AND fecha_modificacion BETWEEN ? AND ?
                     ) AS egresos_combinados";
             
-            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
+            $params = [$fechaDesde, $fechaHasta, $fechaDesde, $fechaHasta];
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
