@@ -806,29 +806,31 @@ class Novedades {
                      ", fecha_permiso=" . var_export($datosAdaptados['fecha_permiso'], true));
             
             $sql = "INSERT INTO novedades (
-                        legajo, nombre, apellido, centro_costos, fecha_vigencia, fecha_vigencia_hasta, puesto, 
-                        valor_numerico, fecha_permiso, compensa, tipo_permiso, tipo_nuevo_puesto,
-                        observaciones, periodo_mes, periodo_anio, tipo_novedad, estado
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        legajo, nombre, apellido, fecha_vigencia, puesto, 
+                        valor_numerico, fecha_permiso, compensa, tipo_permiso,
+                        observaciones, periodo_mes, periodo_anio, fecha_creacion, tipo_novedad, 
+                        tipo_nuevo_puesto, estado, fecha_vigencia_hasta, centro_costos
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?)";
 
             $params = [
                 $datosAdaptados['legajo'],
                 $datosAdaptados['nombre'],
                 $datosAdaptados['apellido'],
-                $datosAdaptados['centro_costos'],
                 $datosAdaptados['fecha_vigencia'],
-                $datosAdaptados['fecha_vigencia_hasta'],
                 $datosAdaptados['puesto'],
                 $datosAdaptados['valor_numerico'],
                 $datosAdaptados['fecha_permiso'],
                 $datosAdaptados['compensa'],
                 $datosAdaptados['tipo_permiso'],
-                $datosAdaptados['tipo_nuevo_puesto'],
                 $datosAdaptados['observaciones'],
                 $periodo['month'], // PeriodoUtils devuelve 'month', no 'periodo_mes'
                 $periodo['year'],  // PeriodoUtils devuelve 'year', no 'periodo_anio'
+                // fecha_creacion se inserta con GETDATE() directamente en SQL
                 $datosAdaptados['tipo_novedad'],
-                self::ESTADO_ENVIADA // Estado inicial por defecto: Enviada
+                $datosAdaptados['tipo_nuevo_puesto'],
+                self::ESTADO_ENVIADA, // Estado inicial por defecto: Enviada
+                $datosAdaptados['fecha_vigencia_hasta'],
+                $datosAdaptados['centro_costos']
             ];
 
             // Log para debugging - mostrar período usado
@@ -3046,31 +3048,33 @@ class Novedades {
             
             // SQL ACTUALIZADO CON NUEVOS CAMPOS
             $sql = "INSERT INTO novedades (
-                        legajo, nombre, apellido, centro_costos, fecha_vigencia, fecha_vigencia_hasta, puesto, 
-                        valor_numerico, fecha_permiso, compensa, tipo_permiso, tipo_nuevo_puesto,
-                        observaciones, periodo_mes, periodo_anio, tipo_novedad, estado,
+                        legajo, nombre, apellido, fecha_vigencia, puesto, 
+                        valor_numerico, fecha_permiso, compensa, tipo_permiso,
+                        observaciones, periodo_mes, periodo_anio, fecha_creacion, tipo_novedad, 
+                        tipo_nuevo_puesto, estado, fecha_vigencia_hasta, centro_costos,
                         tiene_tope, porcentaje_1, porcentaje_2, tipo_comision, 
                         aplica_vendedora, aplica_sub_encargada
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $params = [
                 $datosAdaptados['legajo'],
                 $datosAdaptados['nombre'],
                 $datosAdaptados['apellido'],
-                $datosAdaptados['centro_costos'],
                 $datosAdaptados['fecha_vigencia'],
-                $datosAdaptados['fecha_vigencia_hasta'],
                 $datosAdaptados['puesto'],
                 $datosAdaptados['valor_numerico'],
                 $datosAdaptados['fecha_permiso'],
                 $datosAdaptados['compensa'],
                 $datosAdaptados['tipo_permiso'],
-                $datosAdaptados['tipo_nuevo_puesto'],
                 $datosAdaptados['observaciones'],
                 $periodo['month'],
                 $periodo['year'],
+                // fecha_creacion se inserta con GETDATE() directamente en SQL
                 $datosAdaptados['tipo_novedad'],
+                $datosAdaptados['tipo_nuevo_puesto'],
                 self::ESTADO_ENVIADA,
+                $datosAdaptados['fecha_vigencia_hasta'],
+                $datosAdaptados['centro_costos'],
                 // NUEVOS PARÁMETROS
                 $datosAdaptados['tiene_tope'],
                 $datosAdaptados['porcentaje_1'],
