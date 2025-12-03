@@ -170,6 +170,21 @@ try {
                                 </div>
                             </div>
                             <div class="col-md-5">
+                                <label class="label-campo">Despachante</label>
+                                <div class="input-group">
+                                    <div class="rs-select2 js-select-simple select--no-search">
+                                        <select id="despachante" style="width: 283.16px;" required>
+                                            <option value="Laffitte" selected>Laffitte</option>
+                                            <option value="Farre">Farre</option>
+                                        </select>
+                                        <div class="select-dropdown"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-10">
                                 <div class="orden-manual-container">
                                     <label class="orden-manual-label">
                                         <input type="checkbox" id="ordenManual" onchange="traerOrden()">

@@ -108,6 +108,9 @@ function cargarDatosDespacho(datos) {
     if (datos.ORIGEN) $('#origen').val(datos.ORIGEN);
     if (datos.VALOR_FOB_DOLAR) $('#valorFobDolar').val(datos.VALOR_FOB_DOLAR);
     if (datos.FECHA_EST_EMB) $('#fechaEstEmb').val(datos.FECHA_EST_EMB);
+    if (datos.DESPACHANTE) {
+        $('#despachante').val(datos.DESPACHANTE).trigger('change');
+    }
     if (datos.ORDEN_COMPRA) {
         // Cargar órdenes de compra (manejar múltiples si están separadas por coma)
         const ordenes = datos.ORDEN_COMPRA.split(',');
@@ -310,6 +313,13 @@ function establecerModoFormulario(esEdicion) {
         $('#material').prop('readonly', true).addClass('campo-readonly');
         $('#origen').prop('readonly', true).addClass('campo-readonly');
         $('#fechaEstEmb').prop('readonly', true).addClass('campo-readonly');
+        // Para select2, deshabilitar el select y el contenedor
+        $('#despachante').prop('disabled', true).addClass('campo-readonly');
+        $('#despachante').next('.select-dropdown').find('.select2-container').css({
+            'pointer-events': 'none',
+            'opacity': '0.6',
+            'background-color': '#e9ecef'
+        });
         $('#btnAddOrdenCompra').prop('disabled', true).css('opacity', '0.5');
         
         // Valor FOB U$S sigue editable
@@ -323,6 +333,13 @@ function establecerModoFormulario(esEdicion) {
         // MODO ALTA INICIAL: Sección 1 obligatoria y editable
         $('#proveedor').prop('disabled', false).removeClass('campo-readonly');
         $('#contenedor, #material, #origen, #fechaEstEmb, #valorFobDolar').prop('readonly', false).removeClass('campo-readonly');
+        // Para select2, habilitar el select y el contenedor
+        $('#despachante').prop('disabled', false).removeClass('campo-readonly');
+        $('#despachante').next('.select-dropdown').find('.select2-container').css({
+            'pointer-events': 'auto',
+            'opacity': '1',
+            'background-color': ''
+        });
         $('#btnAddOrdenCompra').prop('disabled', false).css('opacity', '1');
         
         // Secciones 2 y 3 visibles pero no editables (se calculan automáticamente)
@@ -861,6 +878,7 @@ function guardarCabecera() {
             fechaEstEmb: fechaEstEmb,
             ordenCompra: JSON.stringify(ordenCompra),
             ocm: ocm,
+            despachante: $('#despachante').val() || 'Laffitte', // DESPACHANTE
             
             // Campos calculados automáticamente
             fechaArr: fechaArr,

@@ -159,7 +159,8 @@ class EstimacionCostos
                     MATERIAL,
                     ORIGEN,
                     VALOR_FOB_DOLAR,
-                    ORDEN_COMPRA
+                    ORDEN_COMPRA,
+                    DESPACHANTE
                 FROM RO_T_IMPORTACIONES_ENCABEZADO
                 WHERE ID = ?";
         
@@ -213,11 +214,75 @@ class EstimacionCostos
     }
 
     /**
+     * Obtener parámetros dinámicos para concepto DESPACHANTE según despachante del despacho
+     */
+    private function obtenerParametrosDespachante($idMg, $idCe, &$valor1, &$valor2) {
+        // Verificar si es el concepto DESPACHANTE
+        $sqlCheck = "SELECT CONCEPTO FROM RO_T_CONCEPTOS_ESTIMACION_COMEX WHERE ID_CE = ?";
+        $stmtCheck = sqlsrv_query($this->cid_central, $sqlCheck, array($idCe));
+        
+        if ($stmtCheck === false) {
+            return false;
+        }
+        
+        $rowCheck = sqlsrv_fetch_array($stmtCheck, SQLSRV_FETCH_ASSOC);
+        if (!$rowCheck || strcasecmp($rowCheck['CONCEPTO'], 'DESPACHANTE') !== 0) {
+            return false; // No es el concepto DESPACHANTE, mantener valores originales
+        }
+        
+        // Obtener despachante del despacho y valores del concepto
+        $sql = "SELECT 
+                    enc.DESPACHANTE,
+                    conc.VALOR_DEFAULT_1,
+                    conc.VALOR_DEFAULT_2
+                FROM RO_T_IMPORTACIONES_ENCABEZADO enc
+                CROSS JOIN RO_T_CONCEPTOS_ESTIMACION_COMEX conc
+                WHERE enc.ID = ?
+                  AND conc.ID_CE = ?";
+        
+        $params = array($idMg, $idCe);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+        
+        if ($stmt === false) {
+            error_log("Error obteniendo parámetros despachante: " . print_r(sqlsrv_errors(), true));
+            return false;
+        }
+        
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        
+        if ($row) {
+            $despachante = $row['DESPACHANTE'];
+            
+            // Lógica de asignación según despachante
+            if ($despachante === 'Farre') {
+                // Farre usa VALOR_DEFAULT_2
+                $valor1 = $row['VALOR_DEFAULT_2'];
+                $valor2 = null;
+            } else {
+                // Laffitte o cualquier otro caso usa VALOR_DEFAULT_1
+                $valor1 = $row['VALOR_DEFAULT_1'];
+                $valor2 = null;
+            }
+            
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
      * Insertar nueva estimación
      */
     private function insertarEstimacion($idMg, $conceptos) {
         try {
             foreach ($conceptos as $concepto) {
+                // Valores por defecto
+                $valor1 = isset($concepto['valor_default_1']) ? $concepto['valor_default_1'] : null;
+                $valor2 = isset($concepto['valor_default_2']) ? $concepto['valor_default_2'] : null;
+                
+                // Aplicar lógica dinámica para concepto DESPACHANTE
+                $this->obtenerParametrosDespachante($idMg, $concepto['id_ce'], $valor1, $valor2);
+                
                 $sql = "INSERT INTO RO_T_IMPORTACIONES_ESTIMACION_DETALLE 
                         (ID_MG, ID_CE, VALOR_DEFAULT_1, VALOR_DEFAULT_2, IMPORTE, CONFIRMADO, FECHA_MOD)
                         VALUES (?, ?, ?, ?, ?, 0, GETDATE())";
@@ -225,8 +290,8 @@ class EstimacionCostos
                 $params = array(
                     $idMg,
                     $concepto['id_ce'],
-                    isset($concepto['valor_default_1']) ? $concepto['valor_default_1'] : null,
-                    isset($concepto['valor_default_2']) ? $concepto['valor_default_2'] : null,
+                    $valor1,
+                    $valor2,
                     $concepto['importe']
                 );
                 
@@ -252,6 +317,13 @@ class EstimacionCostos
     private function actualizarEstimacion($idMg, $conceptos) {
         try {
             foreach ($conceptos as $concepto) {
+                // Valores por defecto
+                $valor1 = isset($concepto['valor_default_1']) ? $concepto['valor_default_1'] : null;
+                $valor2 = isset($concepto['valor_default_2']) ? $concepto['valor_default_2'] : null;
+                
+                // Aplicar lógica dinámica para concepto DESPACHANTE
+                $this->obtenerParametrosDespachante($idMg, $concepto['id_ce'], $valor1, $valor2);
+                
                 $sql = "UPDATE RO_T_IMPORTACIONES_ESTIMACION_DETALLE 
                         SET VALOR_DEFAULT_1 = ?,
                             VALOR_DEFAULT_2 = ?,
@@ -260,8 +332,8 @@ class EstimacionCostos
                         WHERE ID_MG = ? AND ID_CE = ?";
                 
                 $params = array(
-                    isset($concepto['valor_default_1']) ? $concepto['valor_default_1'] : null,
-                    isset($concepto['valor_default_2']) ? $concepto['valor_default_2'] : null,
+                    $valor1,
+                    $valor2,
                     $concepto['importe'],
                     $idMg,
                     $concepto['id_ce']

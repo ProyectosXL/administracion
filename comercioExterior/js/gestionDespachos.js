@@ -1,19 +1,8 @@
+let tablaDespachos = null;
+
 $(document).ready(function() {
     // Cargar despachos
     cargarDespachos();
-    
-    // Inicializar DataTable
-    const table = $('#tablaDespachos').DataTable({
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/1.13.1/i18n/es-ES.json'
-        },
-        order: [[0, 'desc']], // Ordenar por ID descendente
-        pageLength: 15,
-        lengthMenu: [[10, 15, 25, 50, -1], [10, 15, 25, 50, "Todos"]],
-        responsive: true,
-        autoWidth: false,
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
-    });
 });
 
 function cargarDespachos() {
@@ -93,6 +82,24 @@ function mostrarDespachos(despachos) {
     // Reinicializar tooltips después de agregar el contenido
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    
+    // Destruir DataTable existente si existe
+    if ($.fn.DataTable.isDataTable('#tablaDespachos')) {
+        $('#tablaDespachos').DataTable().destroy();
+    }
+    
+    // Inicializar DataTable con los datos cargados
+    tablaDespachos = $('#tablaDespachos').DataTable({
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.1/i18n/es-ES.json'
+        },
+        order: [[0, 'desc']], // Ordenar por ID descendente
+        pageLength: 15,
+        lengthMenu: [[10, 15, 25, 50, -1], [10, 15, 25, 50, "Todos"]],
+        responsive: true,
+        autoWidth: false,
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
+    });
 }
 
 function formatearFecha(fecha) {

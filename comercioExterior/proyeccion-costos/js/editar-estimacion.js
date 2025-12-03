@@ -79,6 +79,27 @@ function cargarDatosEstimacion(idDespacho) {
                 estimacionExistente = response.data.estimacion;
                 estaConfirmada = response.data.confirmada;
                 
+                // DEBUG: Ver valores del concepto DESPACHANTE
+                console.log('=== DEBUG DESPACHANTE ===');
+                console.log('Despachante del despacho:', datosDespacho.DESPACHANTE);
+                console.log('TODOS los conceptos:', conceptos);
+                const conceptoDespachante = conceptos.find(c => c.CONCEPTO === 'DESPACHANTE' || c.CONCEPTO === 'Despachante');
+                if (conceptoDespachante) {
+                    console.log('Concepto DESPACHANTE encontrado:', conceptoDespachante);
+                } else {
+                    console.log('Concepto DESPACHANTE NO encontrado');
+                }
+                if (estimacionExistente) {
+                    console.log('TODA la estimacion existente:', estimacionExistente);
+                    const estimacionDespachante = estimacionExistente.find(e => e.CONCEPTO === 'DESPACHANTE' || e.CONCEPTO === 'Despachante');
+                    if (estimacionDespachante) {
+                        console.log('Estimacion DESPACHANTE encontrada:', estimacionDespachante);
+                    } else {
+                        console.log('Estimacion DESPACHANTE NO encontrada');
+                    }
+                }
+                console.log('=========================');
+                
                 $('#estaConfirmada').val(estaConfirmada ? '1' : '0');
                 
                 mostrarInformacionDespacho();
@@ -306,10 +327,21 @@ function calcularTodosLosConceptos() {
     setValorCalculado('Total nacionalización', totalNac);
     
     // 15. Despachante (ID_CE=11): Cálculo especial
-    // Fórmula: ((FOB * 0.01) + Param1) * Param2
+    // Fórmula: ((FOB * 0.01) + Param1) * 1.21
+    // Param1 = valor base (450 Laffitte, 120 Farre)
+    // 1.21 = IVA fijo del 21%
     const despachanteParam1 = getConceptoParam1(CONCEPTOS_ID.DESPACHANTE);
-    const despachanteParam2 = getConceptoParam2(CONCEPTOS_ID.DESPACHANTE);
-    const despachante = ((fob * 0.01) + despachanteParam1) * despachanteParam2;
+    const despachante = ((fob * 0.01) + despachanteParam1) * 1.21;
+    
+    // Debug: mostrar valores en consola
+    console.log('=== CÁLCULO DESPACHANTE ===');
+    console.log('FOB:', fob);
+    console.log('FOB * 0.01:', fob * 0.01);
+    console.log('Parámetro 1:', despachanteParam1);
+    console.log('(FOB * 0.01) + Param1:', (fob * 0.01) + despachanteParam1);
+    console.log('Despachante final:', despachante);
+    console.log('==========================');
+    
     setConceptoValorCalculado(CONCEPTOS_ID.DESPACHANTE, despachante);
     
     // 16. Terminal (ID_CE=12): Importe fijo editable

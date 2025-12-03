@@ -59,6 +59,13 @@ try {
     $datosDeCabezera['fechaEstEmb'] = convertirFecha($_POST['fechaEstEmb']);
     $datosDeCabezera['ocm'] = $_POST['ocm'];
     
+    // DESPACHANTE - con valor por defecto 'Laffitte' si no se especifica
+    $datosDeCabezera['despachante'] = isset($_POST['despachante']) && !empty($_POST['despachante']) 
+        ? $_POST['despachante'] 
+        : 'Laffitte';
+    
+    error_log("DESPACHANTE capturado: " . $datosDeCabezera['despachante']);
+    
     // Campos calculados automáticamente desde Sección 1
     if (isset($_POST['fechaArr']) && !empty($_POST['fechaArr'])) {
         $datosDeCabezera['fechaArr'] = convertirFecha($_POST['fechaArr']);

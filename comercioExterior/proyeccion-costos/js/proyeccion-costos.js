@@ -2,6 +2,8 @@
  * proyeccion-costos.js - Gestión de listado de despachos para PCI
  */
 
+let tablaDespachos = null;
+
 $(document).ready(function() {
     cargarDespachos();
 });
@@ -64,8 +66,13 @@ function mostrarDespachos(despachos) {
         tbody.append(row);
     });
     
+    // Destruir DataTable existente si existe
+    if ($.fn.DataTable.isDataTable('#tablaDespachos')) {
+        $('#tablaDespachos').DataTable().destroy();
+    }
+    
     // Inicializar DataTable
-    $('#tablaDespachos').DataTable({
+    tablaDespachos = $('#tablaDespachos').DataTable({
         language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.1/i18n/es-ES.json'
         },
@@ -169,15 +176,15 @@ function realizarConfirmacion(id) {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
+                // Actualizar la fila específica sin recargar toda la tabla
+                actualizarFilaConfirmada(id);
+                
                 Swal.fire({
                     title: '¡Confirmado!',
                     text: response.message,
                     icon: 'success',
                     timer: 1500,
                     showConfirmButton: false
-                }).then(() => {
-                    // Recargar la tabla de despachos
-                    cargarDespachos();
                 });
             } else {
                 Swal.fire({
@@ -196,6 +203,43 @@ function realizarConfirmacion(id) {
                 icon: 'error',
                 confirmButtonColor: '#7066e0'
             });
+        }
+    });
+}
+
+function actualizarFilaConfirmada(id) {
+    // Buscar la fila con el ID específico
+    $('#tablaDespachos tbody tr').each(function() {
+        const $row = $(this);
+        const rowId = $row.find('td:first strong').text().replace('#', '');
+        
+        if (parseInt(rowId) === parseInt(id)) {
+            // Actualizar el badge de estado
+            const $estadoCell = $row.find('td:eq(6)');
+            $estadoCell.html('<span class="badge bg-success">CONFIRMADO</span>');
+            
+            // Actualizar los botones de acción
+            const $accionesCell = $row.find('td:eq(7)');
+            $accionesCell.html(`
+                <div class="d-flex gap-1">
+                    <a href="editar-estimacion.php?id=${id}" 
+                       class="btn btn-sm btn-primary" 
+                       title="Editar estimación">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <span class="badge bg-success">
+                        <i class="bi bi-check-circle-fill"></i> Confirmado
+                    </span>
+                </div>
+            `);
+            
+            // Resaltar la fila brevemente
+            $row.addClass('table-success');
+            setTimeout(() => {
+                $row.removeClass('table-success');
+            }, 2000);
+            
+            return false; // Salir del each
         }
     });
 }

@@ -100,9 +100,10 @@ function guardarCabecera(){
         var origen = document.getElementById('origen').value; // ORIGEN
         var valorFobDolar = document.getElementById('valorFobDolar').value; // VALOR_FOB_DOLAR
         var fechaEstEmb = document.getElementById('fechaEstEmb').value; // FECHA_EST_EMB (Fecha Estimada Embarque)
+        var despachante = $('#despachante').val() || 'Laffitte'; // DESPACHANTE (usar jQuery para select2)
         
         console.log('Datos Sección 1:', {
-            cod_proveedor, proveedor, contenedor, material, origen, valorFobDolar, fechaEstEmb
+            cod_proveedor, proveedor, contenedor, material, origen, valorFobDolar, fechaEstEmb, despachante
         });
         
         let ocm = 0;
@@ -146,6 +147,7 @@ function guardarCabecera(){
                 fechaEstEmb: fechaEstEmb, // FECHA_EST_EMB (Fecha Estimada Embarque)
                 ordenCompra: ordenCompra, // ORDEN_COMPRA
                 ocm: ocm, // OCM
+                despachante: despachante, // DESPACHANTE
                 
                 // Campos calculados automáticamente (se guardan desde Sección 1)
                 fechaArr: fechaArr, // FECHA_ARR (ETA - Estimated Time of Arrival)

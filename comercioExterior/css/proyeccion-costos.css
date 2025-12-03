@@ -33,7 +33,7 @@ body {
 .page-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 2rem;
+    padding: 1.5rem 2rem;
     border-radius: 12px;
     margin-bottom: 2rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -43,7 +43,7 @@ body {
 }
 
 .page-title {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
     display: flex;
@@ -52,13 +52,13 @@ body {
 }
 
 .page-title i {
-    font-size: 2rem;
+    font-size: 1.75rem;
 }
 
 .page-subtitle {
     margin: 0.5rem 0 0 0;
     opacity: 0.9;
-    font-size: 1rem;
+    font-size: 0.875rem;
 }
 
 .header-actions {
@@ -70,12 +70,13 @@ body {
     background: rgba(255, 255, 255, 0.2);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 0.625rem 1.25rem;
+    padding: 0.5rem 1rem;
     border-radius: 8px;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.875rem;
     font-weight: 500;
     transition: all 0.3s ease;
 }
@@ -108,7 +109,7 @@ body {
 }
 
 .card-title-custom {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
     margin: 0;
     color: var(--pci-text);
@@ -120,7 +121,7 @@ body {
 .card-subtitle-custom {
     margin: 0.5rem 0 0 0;
     color: var(--pci-secondary);
-    font-size: 0.875rem;
+    font-size: 0.813rem;
 }
 
 /* Info Card */
@@ -131,13 +132,13 @@ body {
 .info-label {
     font-weight: 600;
     color: var(--pci-secondary);
-    font-size: 0.875rem;
+    font-size: 0.813rem;
     display: block;
     margin-bottom: 0.25rem;
 }
 
 .info-value {
-    font-size: 1rem;
+    font-size: 0.938rem;
     color: var(--pci-text);
     display: block;
 }
@@ -146,11 +147,11 @@ body {
 .estado-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 4px;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
 }
 
 .badge-warning {
@@ -168,37 +169,68 @@ body {
     overflow-x: auto;
 }
 
-.table-estimation {
+.table-estimation,
+#tablaDespachos {
     width: 100%;
     margin-bottom: 0;
 }
 
-.table-estimation thead {
+.table-estimation thead,
+#tablaDespachos thead {
     background-color: #f8fafc;
 }
 
-.table-estimation thead th {
+.table-estimation thead th,
+#tablaDespachos thead th {
     font-weight: 600;
     color: var(--pci-secondary);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 1rem;
+    padding: 0.75rem 0.5rem;
     border-bottom: 2px solid var(--pci-border);
 }
 
-.table-estimation tbody tr {
+.table-estimation tbody tr,
+#tablaDespachos tbody tr {
     border-bottom: 1px solid var(--pci-border);
     transition: background-color 0.2s ease;
 }
 
-.table-estimation tbody tr:hover {
+.table-estimation tbody tr:hover,
+#tablaDespachos tbody tr:hover {
     background-color: #f8fafc;
 }
 
-.table-estimation tbody td {
-    padding: 0.875rem 1rem;
+.table-estimation tbody td,
+#tablaDespachos tbody td {
+    padding: 0.75rem 0.5rem;
     vertical-align: middle;
+    font-size: 0.85rem;
+}
+
+/* Filas calculadas - resaltado sutil */
+.table-estimation tbody tr.fila-calculada {
+    background: linear-gradient(90deg, #ede9fe 0%, #f5f3ff 100%);
+    border-left: 3px solid #a78bfa;
+}
+
+.table-estimation tbody tr.fila-calculada:hover {
+    background: linear-gradient(90deg, #ddd6fe 0%, #ede9fe 100%);
+}
+
+.table-estimation tbody tr.fila-calculada td {
+    font-weight: 600;
+}
+
+.table-estimation tbody tr.fila-calculada .concepto-nombre {
+    color: #5b21b6;
+}
+
+.table-estimation tbody tr.fila-calculada .importe-calculado {
+    background-color: #f5f3ff;
+    color: #5b21b6;
+    border-color: #c4b5fd;
 }
 
 .concepto-nombre {
@@ -212,7 +244,7 @@ body {
     color: #3730a3;
     padding: 0.25rem 0.625rem;
     border-radius: 4px;
-    font-size: 0.813rem;
+    font-size: 0.75rem;
     font-weight: 500;
     font-family: 'Courier New', monospace;
 }
@@ -262,7 +294,7 @@ body {
 
 .total-label {
     display: block;
-    font-size: 0.875rem;
+    font-size: 0.813rem;
     opacity: 0.9;
     margin-bottom: 0.5rem;
     font-weight: 500;
@@ -270,7 +302,7 @@ body {
 
 .total-value {
     display: block;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
 }
 
@@ -288,10 +320,21 @@ body {
 
 /* Badge States */
 .badge {
-    padding: 0.375rem 0.75rem;
-    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
     font-weight: 600;
-    font-size: 0.813rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+/* Badge en columna de acciones (más compacto) */
+#tablaDespachos td .badge {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+}
+
+#tablaDespachos td .badge i {
+    font-size: 0.7rem;
 }
 
 .bg-success {
@@ -308,10 +351,31 @@ body {
 
 /* Buttons */
 .btn {
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    padding: 0.35rem 0.75rem;
     font-weight: 500;
+    font-size: 0.813rem;
     transition: all 0.2s ease;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Botones en la tabla (más compactos) */
+#tablaDespachos td .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+}
+
+#tablaDespachos td .btn-sm i {
+    font-size: 0.7rem;
+}
+
+/* Reducir gap entre botones en tabla */
+#tablaDespachos td .d-flex {
+    gap: 0.25rem !important;
 }
 
 .btn-primary {
@@ -402,11 +466,11 @@ body {
     }
     
     .page-title {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
     
     .total-value {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
     
     .table-estimation thead th,

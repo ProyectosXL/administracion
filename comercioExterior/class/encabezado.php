@@ -23,7 +23,7 @@ class Encabezado
         // Sección 1 - Datos Iniciales (campos obligatorios)
         $sql = "INSERT INTO RO_T_IMPORTACIONES_ENCABEZADO(
             FECHA_MOV, COD_PROVEE, PROVEEDOR, CONTENEDOR, MATERIAL, ORIGEN, 
-            VALOR_FOB_DOLAR, FECHA_EST_EMB, ORDEN_COMPRA, OCM";
+            VALOR_FOB_DOLAR, FECHA_EST_EMB, ORDEN_COMPRA, OCM, DESPACHANTE";
         
         $values = "VALUES (
             GETDATE(),
@@ -35,7 +35,8 @@ class Encabezado
             '".$datosDeCabezera['valorFobDolar']."',
             '".$datosDeCabezera['fechaEstEmb']."',
             '".$datosDeCabezera['ordenCompra']."',
-            '".$datosDeCabezera['ocm']."'";
+            '".$datosDeCabezera['ocm']."',
+            '".(isset($datosDeCabezera['despachante']) ? $datosDeCabezera['despachante'] : 'Laffitte')."'";
         
         // Campos calculados automáticamente que se guardan desde la Sección 1
         if (isset($datosDeCabezera['fechaArr']) && !empty($datosDeCabezera['fechaArr'])) {
@@ -245,6 +246,11 @@ class Encabezado
         $updates[] = "FECHA_EST_EMB = '".$datosDeCabezera['fechaEstEmb']."'";
         $updates[] = "ORDEN_COMPRA = '".$datosDeCabezera['ordenCompra']."'";
         $updates[] = "OCM = '".$datosDeCabezera['ocm']."'";
+        
+        // Despachante (con valor por defecto si no viene)
+        if (isset($datosDeCabezera['despachante']) && !empty($datosDeCabezera['despachante'])) {
+            $updates[] = "DESPACHANTE = '".$datosDeCabezera['despachante']."'";
+        }
         
         // Campos opcionales
         if (isset($datosDeCabezera['fechaArr']) && !empty($datosDeCabezera['fechaArr'])) {
