@@ -38,8 +38,11 @@ class EstimacionCostos
                         ELSE 'PENDIENTE'
                     END as ESTADO
                 FROM RO_T_IMPORTACIONES_ENCABEZADO E
-                WHERE E.FECHA_MOV >= DATEADD(MONTH, -6, GETDATE())
-                ORDER BY E.FECHA_MOV DESC";
+                LEFT JOIN RO_T_IMPORTACIONES_DETALLE F
+                ON E.ID = F.ID_MG
+                WHERE E.FECHA_MOV >= DATEADD(MONTH, -6, GETDATE()) AND F.ID_MG IS NULL
+                ORDER BY E.FECHA_MOV DESC
+                ";
         
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
