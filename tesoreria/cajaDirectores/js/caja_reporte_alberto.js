@@ -229,65 +229,113 @@ function mostrarReporteAlberto(movimientos, filtros = {}) {
                     <tr>
                         <th class="text-center align-middle">Fecha</th>
                         <th class="text-center align-middle">Tipo</th>
-                        <th class="text-center align-middle">COMP.</th>
+                        <th class="text-center align-middle">N° COMP</th>
                         <th class="text-center align-middle">TIPO GASTO</th>
-                        <th class="text-center align-middle">CENTRO COSTO</th>
+                        <th class="text-center align-middle">DISTRIBUCIÓN</th>
                         <th class="align-middle">Observaciones</th>
                         <th class="text-end align-middle">Importe</th>
-                        <th class="text-center align-middle">Foto</th>
+                        <th class="text-center align-middle">Archivo</th>
                     </tr>
                 </thead>
                 <tbody>
     `;
     
     let saldoAcumulado = 0;
+    let contadorFilas = 0;
     
     movimientosPaginados.forEach(mov => {
-        const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+        contadorFilas++;
+        const fecha = mov.fecha ? new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR') : '';
         const importe = formatoMoneda.format(mov.importe);
         
         const tipoClass = mov.tipo === 'EGRESO' ? 'text-danger' : 'text-warning';
         const tipoIcon = mov.tipo === 'EGRESO' ? 'arrow-up-circle' : 'wallet2';
         
-        const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
+        const nCompDisplay = mov.n_comp || '-';
         const tipoGastoDisplay = mov.tipo_gasto || '-';
-        const centroCostoDisplay = mov.centro_costo || '-';
         
-        let fotoBoton = '';
-        // Mostrar botón de foto para EGRESOS y GASTOS si tienen foto
+        // Determinar si la fila es expandible
+        let distribucionDisplay = mov.centro_costo || '-';
+        if (mov.es_expandible) {
+            const filaId = `fila-${contadorFilas}`;
+            distribucionDisplay = `
+                <span class="d-flex align-items-center justify-content-center gap-2" 
+                      style="cursor: pointer;" 
+                      onclick="toggleDistribucion('${filaId}')">
+                    <i class="bi bi-chevron-right" id="icono-${filaId}"></i>
+                    <span class="badge bg-info">${mov.centro_costo}</span>
+                </span>
+            `;
+        }
+        
+        let archivoBoton = '';
         if ((mov.tipo === 'EGRESO' || mov.tipo === 'GASTO') && mov.tiene_foto == 1) {
-            fotoBoton = `
-                <div class="d-flex justify-content-center">
-                    <button class="btn btn-outline-primary btn-sm" 
-                            onclick="verFotoEgreso(${mov.id})"
-                            title="Ver foto"
-                            style="width: 32px; height: 32px; padding: 0;">
-                        <i class="bi bi-camera"></i>
-                    </button>
-                </div>
+            archivoBoton = `
+                <button class="btn btn-outline-primary btn-sm" 
+                        onclick="verFotoEgreso(${mov.id})"
+                        title="Ver archivo"
+                        style="width: 32px; height: 32px; padding: 0;">
+                    <i class="bi bi-file-earmark"></i>
+                </button>
             `;
         } else {
-            fotoBoton = '<div class="d-flex justify-content-center"><span class="text-muted">-</span></div>';
+            archivoBoton = '-';
         }
         
         if (mov.tipo === 'EGRESO') {
             saldoAcumulado += parseFloat(mov.importe);
-        } else {
+        } else if (mov.tipo === 'GASTO') {
             saldoAcumulado -= parseFloat(mov.importe);
         }
         
         html += `
             <tr>
-                <td class="text-center align-middle">${fecha}</td>
-                <td class="text-center align-middle"><i class="bi bi-${tipoIcon} ${tipoClass}"></i> ${mov.tipo}</td>
-                <td class="text-center align-middle"><small>${compDisplay}</small></td>
-                <td class="text-center align-middle"><small>${tipoGastoDisplay}</small></td>
-                <td class="text-center align-middle"><small>${centroCostoDisplay}</small></td>
-                <td class="align-middle">${mov.concepto}</td>
-                <td class="text-end align-middle ${tipoClass}"><strong>${importe}</strong></td>
-                <td class="text-center align-middle">${fotoBoton}</td>
+                <td class="text-center">${fecha}</td>
+                <td class="text-center"><i class="bi bi-${tipoIcon} ${tipoClass}"></i> ${mov.tipo}</td>
+                <td class="text-center"><small>${nCompDisplay}</small></td>
+                <td class="text-center"><small>${tipoGastoDisplay}</small></td>
+                <td class="text-center"><small>${distribucionDisplay}</small></td>
+                <td>${mov.concepto}</td>
+                <td class="text-end ${tipoClass}"><strong>${importe}</strong></td>
+                <td class="text-center">${archivoBoton}</td>
             </tr>
         `;
+        
+        // Si es expandible, agregar fila oculta con el detalle
+        if (mov.es_expandible && mov.distribucion_detalle) {
+            const filaId = `fila-${contadorFilas}`;
+            html += `
+                <tr id="detalle-${filaId}" style="display: none;">
+                    <td colspan="8" class="p-0">
+                        <div class="bg-light border-top border-bottom p-3">
+                            <div class="row g-2">
+            `;
+            
+            mov.distribucion_detalle.forEach((dist, idx) => {
+                const importeDist = formatoMoneda.format(dist.importe);
+                html += `
+                    <div class="col-12 col-md-6">
+                        <div class="d-flex align-items-center justify-content-between p-2 bg-white rounded border">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-arrow-return-right text-primary"></i>
+                                <strong>${dist.nombre_centro}</strong>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-secondary me-2">${dist.porcentaje.toFixed(1)}%</span>
+                                <strong class="text-warning">${importeDist}</strong>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
     });
     
     html += `
@@ -462,8 +510,79 @@ function limpiarFiltrosReporteAlberto() {
     actualizarResumenAlberto();
 }
 
+// Ver foto o descargar PDF de egreso/gasto
+async function verFotoEgreso(idEgreso) {
+    try {
+        const response = await fetch(`controller/caja_reporte_alberto_controller.php?accion=obtener_foto&id=${idEgreso}`);
+        const result = await response.json();
+        
+        if (result.success && result.foto) {
+            const esPdf = result.tipo === 'application/pdf';
+            
+            if (esPdf) {
+                // Para PDFs, crear un enlace de descarga
+                const pdfBlob = base64ToBlob(result.foto, 'application/pdf');
+                const url = URL.createObjectURL(pdfBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `comprobante_alberto_${idEgreso}.pdf`;
+                link.click();
+                URL.revokeObjectURL(url);
+            } else {
+                // Para imágenes, mostrar en modal
+                const modalTitle = document.getElementById('modalFotoEgresoLabel');
+                modalTitle.textContent = `Comprobante ID: ${idEgreso}`;
+                
+                const img = document.getElementById('imagenFotoEgreso');
+                img.src = `data:${result.tipo};base64,${result.foto}`;
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalFotoEgreso'));
+                modal.show();
+            }
+        } else {
+            mostrarAlerta('Error', 'No se pudo cargar el archivo');
+        }
+    } catch (error) {
+        console.error('Error al cargar archivo:', error);
+        mostrarAlerta('Error', 'Error al cargar el archivo');
+    }
+}
+
+/**
+ * Convierte base64 a Blob
+ */
+function base64ToBlob(base64, contentType) {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: contentType });
+}
+
+/**
+ * Toggle para expandir/colapsar distribución de centros de costo
+ */
+function toggleDistribucion(filaId) {
+    const detalleRow = document.getElementById(`detalle-${filaId}`);
+    const icono = document.getElementById(`icono-${filaId}`);
+    
+    if (detalleRow.style.display === 'none') {
+        detalleRow.style.display = '';
+        icono.classList.remove('bi-chevron-right');
+        icono.classList.add('bi-chevron-down');
+    } else {
+        detalleRow.style.display = 'none';
+        icono.classList.remove('bi-chevron-down');
+        icono.classList.add('bi-chevron-right');
+    }
+}
+
 // Exponer funciones al scope global
 window.cambiarCantidadMovimientosAlberto = cambiarCantidadMovimientosAlberto;
 window.aplicarFiltrosReporteAlberto = aplicarFiltrosReporteAlberto;
 window.limpiarFiltrosReporteAlberto = limpiarFiltrosReporteAlberto;
 window.exportarReporteAlbertoExcel = exportarReporteAlbertoExcel;
+window.verFotoEgreso = verFotoEgreso;
+window.toggleDistribucion = toggleDistribucion;

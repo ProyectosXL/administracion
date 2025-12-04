@@ -445,3 +445,69 @@ main {
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+/* Módulo de Distribución de Centros de Costo */
+.fila-distribucion {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.fila-distribucion:hover {
+    background-color: #e9ecef;
+}
+
+.fila-distribucion .input-porcentaje {
+    text-align: center;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Ocultar flechas de input number en Chrome, Safari, Edge, Opera */
+.fila-distribucion .input-porcentaje::-webkit-outer-spin-button,
+.fila-distribucion .input-porcentaje::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Ocultar flechas de input number en Firefox */
+.fila-distribucion .input-porcentaje[type=number] {
+    -moz-appearance: textfield;
+}
+
+.fila-distribucion .importe-calculado {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #495057;
+}
+
+.fila-distribucion .btn-outline-danger {
+    min-width: 32px;
+    height: 31px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fila-distribucion .btn-outline-danger i {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+/* Alineación mejorada para dispositivos móviles */
+@media (max-width: 767.98px) {
+    .fila-distribucion .importe-calculado {
+        line-height: 31px;
+    }
+    
+    .fila-distribucion .btn-outline-danger {
+        width: 100%;
+        height: auto;
+        padding: 0.375rem 0.5rem;
+    }
+}
+
+/* Asegurar altura consistente */
+.fila-distribucion .form-control-sm,
+.fila-distribucion .form-select-sm {
+    height: calc(1.5em + 0.5rem + 2px);
+}

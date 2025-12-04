@@ -87,35 +87,56 @@ session_start();
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label for="centroCostoAlberto" class="form-label">Centro de Costo *</label>
-                                        <select class="form-select" id="centroCostoAlberto" required>
-                                            <option value="">Seleccione un centro de costo</option>
-                                        </select>
+                                        <label for="importeGasto" class="form-label">Importe Total *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="text" class="form-control importe-input" 
+                                                   id="importeGasto" placeholder="0" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Módulo de Distribución por Centro de Costo -->
+                                    <div class="mb-3">
+                                        <div class="card">
+                                            <div class="card-header bg-info bg-opacity-10">
+                                                <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Distribución por Centro de Costo</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="contenedorDistribucion" class="mb-3">
+                                                    <!-- Las filas de distribución se agregarán dinámicamente aquí -->
+                                                </div>
+                                                
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarFilaDistribucion()">
+                                                        <i class="bi bi-plus-circle"></i> Agregar Centro de Costo
+                                                    </button>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-secondary me-2">Total: <span id="totalPorcentaje">0</span>%</span>
+                                                        <span class="badge bg-success">Importe: $<span id="totalImporteDistribucion">0</span></span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div id="alertaDistribucion" class="alert alert-warning d-none mb-0" role="alert">
+                                                    <i class="bi bi-exclamation-triangle"></i> <span id="mensajeAlerta"></span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     
                                     <div class="row">
-                                        <div class="col-12 col-sm-6 mb-3">
-                                            <label for="importeGasto" class="form-label">Importe *</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text">$</span>
-                                                <input type="text" class="form-control importe-input" 
-                                                       id="importeGasto" placeholder="0" required>
-                                            </div>
-                                        </div>
-                                        
                                         <div class="col-12 col-sm-6 mb-3">
                                             <label for="fechaGasto" class="form-label">Fecha *</label>
                                             <input type="date" class="form-control" id="fechaGasto" 
                                                    value="<?php echo date('Y-m-d'); ?>" required>
                                         </div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="form-check">
-                                            <input type="checkbox" class="form-check-input" id="es_factura" name="es_factura" value="1">
-                                            <label class="form-check-label" for="es_factura">
-                                                Es factura a nombre de Lakers
-                                            </label>
+                                        
+                                        <div class="col-12 col-sm-6 mb-3">
+                                            <div class="form-check mt-4">
+                                                <input type="checkbox" class="form-check-input" id="es_factura" name="es_factura" value="1">
+                                                <label class="form-check-label" for="es_factura">
+                                                    Es factura a nombre de Lakers
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                     
@@ -127,7 +148,7 @@ session_start();
                                     
                                     <div class="mb-3">
                                         <label for="fotoGasto" class="form-label">
-                                            Foto del Comprobante <span class="text-muted">(opcional)</span>
+                                            Comprobante <span class="text-muted">(opcional - Imagen o PDF)</span>
                                         </label>
                                         
                                         <!-- Botones para móvil -->
@@ -138,9 +159,9 @@ session_start();
                                                        accept="image/*" 
                                                        capture="environment"
                                                        onchange="previsualizarFotoGasto(this)">
-                                                <!-- Input para galería: sin capture permite elegir archivo -->
+                                                <!-- Input para galería: sin capture permite elegir archivo (incluye PDF) -->
                                                 <input type="file" class="d-none" id="fotoGastoGallery" 
-                                                       accept="image/*"
+                                                       accept="image/*,application/pdf"
                                                        onchange="previsualizarFotoGasto(this)">
                                                 
                                                 <button type="button" class="btn btn-outline-primary" 
@@ -149,28 +170,34 @@ session_start();
                                                 </button>
                                                 <button type="button" class="btn btn-outline-secondary" 
                                                         onclick="document.getElementById('fotoGastoGallery').click()">
-                                                    <i class="bi bi-image"></i> Galería
+                                                    <i class="bi bi-file-earmark"></i> Archivo
                                                 </button>
                                             </div>
                                         </div>
                                         
                                         <!-- Input tradicional para escritorio -->
                                         <input type="file" class="form-control d-none d-md-block" id="fotoGasto" 
-                                               accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp,image/tiff,image/heic,image/heif"
+                                               accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp,image/tiff,image/heic,image/heif,application/pdf"
                                                onchange="previsualizarFotoGasto(this)">
                                         
                                         <div class="form-text">
                                             <small>
-                                                <strong>Móvil:</strong> <span class="text-primary">Cámara</span> abre directamente la cámara para tomar foto | <span class="text-secondary">Galería</span> permite elegir imagen guardada<br>
+                                                <strong>Móvil:</strong> <span class="text-primary">Cámara</span> abre la cámara | <span class="text-secondary">Archivo</span> permite elegir imagen o PDF<br>
                                                 <strong>Escritorio:</strong> Arrastra o selecciona archivo<br>
-                                                <strong>Formatos:</strong> JPG, PNG, GIF, BMP, WebP, TIFF, HEIC, HEIF
+                                                <strong>Formatos:</strong> JPG, PNG, GIF, BMP, WebP, TIFF, HEIC, HEIF, PDF
                                             </small>
                                         </div>
                                         
                                         <div id="previewFotoGasto" class="mt-2 d-none">
                                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                <img id="imgPreviewGasto" src="" class="img-thumbnail" 
-                                                     style="max-width: 150px; max-height: 120px;">
+                                                <div id="contenedorPreviewGasto">
+                                                    <img id="imgPreviewGasto" src="" class="img-thumbnail d-none" 
+                                                         style="max-width: 150px; max-height: 120px;">
+                                                    <div id="pdfPreviewGasto" class="d-none">
+                                                        <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 48px;"></i>
+                                                        <p class="mb-0 text-muted small" id="pdfNameGasto"></p>
+                                                    </div>
+                                                </div>
                                                 <button type="button" class="btn btn-sm btn-outline-danger" 
                                                         onclick="eliminarPreviewFotoGasto()">
                                                     <i class="bi bi-trash"></i> Quitar
@@ -189,11 +216,11 @@ session_start();
                     
                     <!-- Panel de Últimos Gastos -->
                     <div class="col-12 col-lg-6">
-                        <div class="card h-100">
+                        <div class="card h-100 d-flex flex-column">
                             <div class="card-header bg-secondary text-white">
                                 <h5 class="mb-0"><i class="bi bi-clock-history"></i> Últimos Gastos Registrados</h5>
                             </div>
-                            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                            <div class="card-body overflow-auto flex-grow-1">
                                 <div id="listaGastosAlberto">
                                     <p class="text-muted">Cargando gastos...</p>
                                 </div>

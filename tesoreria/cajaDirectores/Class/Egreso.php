@@ -568,6 +568,79 @@ public function obtenerTodos($filtros = []) {
     /**
      * Crea un nuevo gasto (COD_COMP = 'GAS') con numeración independiente
      */
+    /**
+     * Crea un gasto con distribución múltiple de centros de costo
+     * Inserta múltiples filas con el mismo N_COMP pero diferentes centros e importes
+     */
+    public function crearGastoConDistribucion($datosComunes, $distribucion, $importeTotal) {
+        try {
+            // Generar UN SOLO número de comprobante para todos los registros
+            $nComp = $this->generarNumeroComprobanteGAS();
+            
+            // Validar que la suma de importes coincida con el total (con tolerancia de centavos)
+            $sumaImportes = array_sum(array_column($distribucion, 'importe'));
+            if (abs($sumaImportes - $importeTotal) > 0.02) {
+                throw new Exception("La suma de importes no coincide con el total");
+            }
+            
+            // Procesar foto/PDF si se proporciona (UNA SOLA VEZ, se replica en todas las filas)
+            $archivoComprimido = null;
+            if (!empty($datosComunes['foto'])) {
+                $tipoArchivo = $datosComunes['tipo_archivo'] ?? 'image/jpeg';
+                if ($tipoArchivo === 'application/pdf') {
+                    // Para PDF, guardar directamente sin comprimir
+                    $archivoComprimido = $datosComunes['foto'];
+                } else {
+                    // Para imágenes, comprimir
+                    $archivoComprimido = $this->comprimirImagen($datosComunes['foto']);
+                }
+            }
+            
+            // SQL para insertar cada línea de distribución (sin tipo_archivo)
+            $sql = "INSERT INTO egresos (
+                        es_factura, COD_COMP, N_COMP, fecha, motivo, 
+                        nombre_director, proveedor, tipo_gasto, importe, 
+                        observaciones, foto, recibido, fecha_carga,
+                        centro_costo
+                    ) VALUES (
+                        ?, 'GAS', ?, ?, 'PROVEEDORES',
+                        NULL, 'OGROLL', ?, ?,
+                        ?, ?, 1, GETDATE(),
+                        ?
+                    )";
+            
+            // Insertar una fila por cada centro de costo en la distribución
+            foreach ($distribucion as $item) {
+                $params = [
+                    $datosComunes['es_factura'] ?? 0,
+                    $nComp,  // MISMO N_COMP para todas las filas
+                    $datosComunes['fecha'],
+                    $datosComunes['tipo_gasto'],
+                    $item['importe'],  // Importe proporcional
+                    $datosComunes['observaciones'] ?? '',
+                    $archivoComprimido,  // MISMA foto/PDF para todas las filas
+                    $item['centro_costo']  // Centro de costo específico
+                ];
+                
+                $stmt = sqlsrv_query($this->db, $sql, $params);
+                
+                if ($stmt === false) {
+                    throw new Exception("Error al insertar distribución: " . print_r(sqlsrv_errors(), true));
+                }
+                
+                sqlsrv_free_stmt($stmt);
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log("Error al crear gasto con distribución: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Crea un gasto simple (mantener para compatibilidad)
+     */
     public function crearGasto($datos) {
         try {
             // Generar número de comprobante para GAS
@@ -676,6 +749,118 @@ public function obtenerTodos($filtros = []) {
             return $resultados;
         } catch (Exception $e) {
             error_log("Error al obtener gastos: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtiene gastos agrupados por N_COMP (para mostrar gastos distribuidos)
+     */
+    public function obtenerGastosAgrupados($filtros = []) {
+        try {
+            $sql = "SELECT 
+                        N_COMP,
+                        fecha,
+                        tipo_gasto,
+                        SUM(importe) as importe_total,
+                        COUNT(*) as cantidad_centros,
+                        MAX(observaciones) as observaciones,
+                        MAX(es_factura) as es_factura,
+                        MAX(CASE WHEN foto IS NOT NULL THEN 1 ELSE 0 END) as tiene_foto,
+                        MAX(id) as id_representativo
+                    FROM egresos 
+                    WHERE COD_COMP = 'GAS'";
+            $params = [];
+            
+            if (!empty($filtros['fecha_desde'])) {
+                $sql .= " AND fecha >= ?";
+                $params[] = $filtros['fecha_desde'];
+            }
+            
+            if (!empty($filtros['fecha_hasta'])) {
+                $sql .= " AND fecha <= ?";
+                $params[] = $filtros['fecha_hasta'];
+            }
+            
+            $sql .= " GROUP BY N_COMP, fecha, tipo_gasto
+                      ORDER BY fecha DESC, N_COMP DESC";
+            
+            $stmt = sqlsrv_query($this->db, $sql, $params);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $resultados = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $resultados[] = $row;
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return $resultados;
+        } catch (Exception $e) {
+            error_log("Error al obtener gastos agrupados: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtiene el detalle de distribución de un gasto específico por N_COMP
+     */
+    public function obtenerDetalleDistribucion($nComp) {
+        try {
+            // Primero obtener los centros de costo de la tabla egresos (base APPS)
+            $sql = "SELECT 
+                        centro_costo as cod_centro,
+                        importe
+                    FROM egresos
+                    WHERE COD_COMP = 'GAS' AND N_COMP = ?
+                    ORDER BY importe DESC";
+            
+            $stmt = sqlsrv_query($this->db, $sql, [$nComp]);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $distribucion = [];
+            $importeTotal = 0;
+            
+            // Obtener conexión CENTRAL para buscar nombres
+            $dbCentral = Database::getInstance()->getCentralConnection();
+            
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $importe = floatval($row['importe']);
+                $importeTotal += $importe;
+                $codCentro = trim($row['cod_centro']);
+                
+                // Buscar nombre del centro de costo en la base CENTRAL
+                $nombreCentro = $codCentro; // Por defecto usar el código
+                if (!empty($codCentro)) {
+                    $sqlNombre = "SELECT CENTRO_COSTO FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = ?";
+                    $stmtNombre = sqlsrv_query($dbCentral, $sqlNombre, [$codCentro]);
+                    if ($stmtNombre && $rowNombre = sqlsrv_fetch_array($stmtNombre, SQLSRV_FETCH_ASSOC)) {
+                        $nombreCentro = trim($rowNombre['CENTRO_COSTO']);
+                    }
+                    if ($stmtNombre) sqlsrv_free_stmt($stmtNombre);
+                }
+                
+                $distribucion[] = [
+                    'cod_centro' => $codCentro,
+                    'nombre_centro' => $nombreCentro,
+                    'importe' => $importe
+                ];
+            }
+            
+            // Calcular porcentajes
+            foreach ($distribucion as &$item) {
+                $item['porcentaje'] = $importeTotal > 0 ? ($item['importe'] / $importeTotal * 100) : 0;
+            }
+            
+            sqlsrv_free_stmt($stmt);
+            return $distribucion;
+        } catch (Exception $e) {
+            error_log("Error al obtener detalle de distribución: " . $e->getMessage());
             return [];
         }
     }

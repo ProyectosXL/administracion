@@ -44,8 +44,8 @@ try {
                 throw new Exception('Fechas desde y hasta son requeridas');
             }
             
-            // Obtener gastos (egresos con COD_COMP='GAS')
-            $gastos = $egreso->obtenerGastos($filtros);
+            // Obtener gastos AGRUPADOS por N_COMP (para mostrar gastos distribuidos correctamente)
+            $gastosAgrupados = $egreso->obtenerGastosAgrupados($filtros);
             
             // Obtener egresos del proveedor OGROLL (por defecto ya excluye COD_COMP='GAS')
             $filtros['proveedor'] = 'OGROLL';
@@ -54,37 +54,49 @@ try {
             // Combinar y ordenar movimientos
             $movimientos = [];
             
-            // Agregar gastos (ahora desde egresos con COD_COMP='GAS')
-            foreach ($gastos as $gasto) {
+            // Agregar gastos - mostrar fila resumen con opción de expandir
+            foreach ($gastosAgrupados as $gasto) {
                 $fecha = is_object($gasto['fecha']) ? $gasto['fecha']->format('Y-m-d') : $gasto['fecha'];
                 
-                $codComp = $gasto['COD_COMP'] ?? '';
                 $nComp = $gasto['N_COMP'] ?? '';
                 
-                // Obtener nombre del centro de costo si existe
-                $centroCostoNombre = null;
-                if (!empty($gasto['centro_costo'])) {
-                    $dbCentral = Database::getInstance()->getCentralConnection();
-                    $sqlCentro = "SELECT CENTRO_COSTO FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = ?";
-                    $stmtCentro = sqlsrv_query($dbCentral, $sqlCentro, [$gasto['centro_costo']]);
-                    if ($stmtCentro && $rowCentro = sqlsrv_fetch_array($stmtCentro, SQLSRV_FETCH_ASSOC)) {
-                        $centroCostoNombre = trim($rowCentro['CENTRO_COSTO']);
-                    }
-                    sqlsrv_free_stmt($stmtCentro);
-                }
+                // Obtener detalle de distribución
+                $distribucion = $egreso->obtenerDetalleDistribucion($nComp);
                 
-                $movimientos[] = [
-                    'tipo' => 'GASTO',
-                    'fecha' => $fecha,
-                    'cod_comp' => $codComp,
-                    'n_comp' => $nComp,
-                    'concepto' => $gasto['observaciones'] ?? 'Gasto',
-                    'importe' => $gasto['importe'],
-                    'id' => $gasto['id'],
-                    'tipo_gasto' => $gasto['tipo_gasto'] ?? null,
-                    'centro_costo' => $centroCostoNombre,
-                    'tiene_foto' => $gasto['tiene_foto'] ?? 0
-                ];
+                if (count($distribucion) > 1) {
+                    // FILA RESUMEN: Mostrar total del gasto con indicador expandible
+                    $movimientos[] = [
+                        'tipo' => 'GASTO',
+                        'fecha' => $fecha,
+                        'cod_comp' => 'GAS',
+                        'n_comp' => $nComp,
+                        'concepto' => ($gasto['observaciones'] ?? 'Gasto'),
+                        'importe' => $gasto['importe_total'],
+                        'id' => $gasto['id_representativo'],
+                        'tipo_gasto' => $gasto['tipo_gasto'] ?? null,
+                        'centro_costo' => count($distribucion) . ' centros',
+                        'tiene_foto' => $gasto['tiene_foto'] ?? 0,
+                        'es_expandible' => true,
+                        'distribucion_detalle' => $distribucion  // Pasar el detalle completo
+                    ];
+                } else {
+                    // Si es un solo centro, mostrar fila simple
+                    $centroNombre = count($distribucion) > 0 ? $distribucion[0]['nombre_centro'] : '-';
+                    
+                    $movimientos[] = [
+                        'tipo' => 'GASTO',
+                        'fecha' => $fecha,
+                        'cod_comp' => 'GAS',
+                        'n_comp' => $nComp,
+                        'concepto' => ($gasto['observaciones'] ?? 'Gasto'),
+                        'importe' => $gasto['importe_total'],
+                        'id' => $gasto['id_representativo'],
+                        'tipo_gasto' => $gasto['tipo_gasto'] ?? null,
+                        'centro_costo' => $centroNombre,
+                        'tiene_foto' => $gasto['tiene_foto'] ?? 0,
+                        'es_expandible' => false
+                    ];
+                }
             }
             
             // Agregar egresos del proveedor OGROLL (sin gastos)
@@ -115,6 +127,25 @@ try {
             echo json_encode([
                 'success' => true,
                 'data' => $movimientos
+            ]);
+            break;
+            
+        case 'obtener_foto':
+            if (empty($_GET['id'])) {
+                throw new Exception('ID de egreso requerido');
+            }
+            
+            $egreso = new Egreso();
+            $resultado = $egreso->obtenerFoto($_GET['id']);
+            
+            if (!$resultado) {
+                throw new Exception('No se encontró el archivo');
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'foto' => $resultado['foto'],
+                'tipo' => $resultado['tipo']
             ]);
             break;
             
