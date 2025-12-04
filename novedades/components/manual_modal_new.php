@@ -648,11 +648,11 @@ $esUsuarioRRHH = (isset($_SESSION['TipoUsuario']) && $_SESSION['TipoUsuario'] ==
                                 </div>
                             </div>
 
-                            <!-- Tipo 2: Nuevo Puesto -->
+                            <!-- Tipo 2: Nueva Posición -->
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tipo2">
-                                        <i class="fas fa-user-tie me-2 text-info"></i>2. Nuevo Puesto
+                                        <i class="fas fa-user-tie me-2 text-info"></i>2. Nueva Posición
                                     </button>
                                 </h2>
                                 <div id="tipo2" class="accordion-collapse collapse">
@@ -661,16 +661,14 @@ $esUsuarioRRHH = (isset($_SESSION['TipoUsuario']) && $_SESSION['TipoUsuario'] ==
                                             <div class="col-md-6">
                                                 <h6><i class="fas fa-check-square text-success me-2"></i>Campos Requeridos:</h6>
                                                 <ul class="list-unstyled">
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Nuevo Puesto:</strong> Autocompletado desde sistema</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Tipo:</strong> Permanente o Temporario</li>
+                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Nueva Posición:</strong> Autocompletado desde sistema</li>
                                                     <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha de Vigencia:</strong> Desde cuándo</li>
-                                                    <li><i class="fas fa-caret-right text-primary me-2"></i><strong>Fecha Hasta:</strong> Solo si es temporario</li>
                                                 </ul>
                                             </div>
                                             <div class="col-md-6">
-                                                <div class="alert alert-warning small">
-                                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                                    Si es <strong>temporario</strong> debe especificar fecha de finalización.
+                                                <div class="alert alert-info small">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    Todas las nuevas posiciones son <strong>permanentes</strong>.
                                                 </div>
                                             </div>
                                         </div>

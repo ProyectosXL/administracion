@@ -18,6 +18,57 @@ function mapearEstado(numeroEstado) {
     return ESTADOS_MAP[numeroEstado] || 'Enviada';
 }
 
+/**
+ * Convertir fecha de dd/mm/aaaa a aaaa-mm-dd para campos input type="date"
+ */
+function convertirFechaParaInput(fecha) {
+    if (!fecha) return '';
+    
+    // Convertir a string si es necesario
+    const fechaStr = String(fecha);
+    
+    // Si ya está en formato ISO (aaaa-mm-dd), devolverla tal cual (sin hora)
+    if (/^\d{4}-\d{2}-\d{2}/.test(fechaStr)) {
+        return fechaStr.split(' ')[0].split('T')[0];
+    }
+    
+    // Si está en formato dd/mm/aaaa, convertir
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(fechaStr)) {
+        const partes = fechaStr.split(' ')[0].split('/');
+        return `${partes[2]}-${partes[1]}-${partes[0]}`;
+    }
+    
+    console.warn('⚠️ Formato de fecha no reconocido:', fecha);
+    return '';
+}
+
+/**
+ * Convertir fecha de dd/mm/aaaa a aaaa-mm-dd para enviar al backend
+ */
+function convertirFechaParaBackend(fecha) {
+    if (!fecha) return '';
+    
+    // Convertir a string si es necesario
+    const fechaStr = String(fecha).trim();
+    
+    // Si ya está en formato ISO (aaaa-mm-dd), devolverla tal cual
+    if (/^\d{4}-\d{2}-\d{2}/.test(fechaStr)) {
+        return fechaStr.split(' ')[0].split('T')[0];
+    }
+    
+    // Si está en formato dd/mm/aaaa, convertir a aaaa-mm-dd
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(fechaStr)) {
+        const partes = fechaStr.split('/');
+        const dia = partes[0].padStart(2, '0');
+        const mes = partes[1].padStart(2, '0');
+        const anio = partes[2];
+        return `${anio}-${mes}-${dia}`;
+    }
+    
+    console.warn('⚠️ Formato de fecha no reconocido para backend:', fecha);
+    return fecha; // Devolver tal cual si no coincide con ningún formato
+}
+
 let novedadesData = [];
 let filtrosActivos = {};
 let vistaActual = 'tabla';
@@ -279,12 +330,10 @@ function mostrarTabla(datos) {
                     <small>${fechaRegistro}</small>
                 </td>
                 <td>
-                    <div class="d-flex align-items-center">
-                        <div>
-                            <strong>${novedad.nombre} ${novedad.apellido}</strong><br>
-                            <small class="text-muted">Legajo: ${novedad.legajo}</small>
-                        </div>
-                    </div>
+                    <strong>${novedad.legajo}</strong>
+                </td>
+                <td>
+                    <strong>${novedad.nombre} ${novedad.apellido}</strong>
                 </td>
                 <td>
                     <span class="badge bg-light text-dark">${novedad.centro_costos_display || (novedad.descripcion_centro_costos || 'Sin centro') + ' (' + (novedad.codigo_centro_costos || '') + ')'}</span>
@@ -590,9 +639,9 @@ function mostrarModalDetalleCompleto(novedad) {
                 </div>`;
             break;
             
-        case 2: // Nuevo puesto
-            // Extraer nuevo puesto de las observaciones
-            // Extraer detalle del nuevo puesto - USAR CAMPOS DIRECTOS EN LUGAR DE OBSERVACIONES
+        case 2: // Nueva Posición
+            // Extraer nueva posición de las observaciones
+            // Extraer detalle de la nueva posición - USAR CAMPOS DIRECTOS EN LUGAR DE OBSERVACIONES
             let nuevoPuestoDetalle = '';
             
             // PRIORITARIO: Usar el campo puesto directo si existe
@@ -613,54 +662,26 @@ function mostrarModalDetalleCompleto(novedad) {
                 }
             }
             
-            // Determinar tipo de puesto y fechas
-            const tipoPuesto = novedad.tipo_nuevo_puesto || 'permanente';
-            const esPermanente = tipoPuesto === 'permanente';
-            const iconoTipo = esPermanente ? 'fa-check-circle text-success' : 'fa-clock text-warning';
-            const textTipo = esPermanente ? 'Permanente' : 'Temporario';
-            
+            // Nueva Posición - siempre permanente, sin tipo ni fecha hasta
             html += `
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-success text-white">
-                            <h6 class="mb-0"><i class="fas fa-briefcase me-2"></i>Detalles del Nuevo Puesto</h6>
+                            <h6 class="mb-0"><i class="fas fa-briefcase me-2"></i>Detalles de la Nueva Posición</h6>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
-                                    <strong>Nuevo Puesto:</strong><br>
+                                <div class="col-md-6">
+                                    <strong>Nueva Posición:</strong><br>
                                     <span class="badge bg-success">${nuevoPuestoDetalle || 'No especificado'}</span>
                                 </div>
-                                <div class="col-md-4">
-                                    <strong>Tipo de Cambio:</strong><br>
-                                    <span class="badge ${esPermanente ? 'bg-success' : 'bg-warning text-dark'}">
-                                        <i class="fas ${iconoTipo} me-1"></i>${textTipo}
-                                    </span>
-                                </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-4">
-                                    <strong>Fecha de Inicio:</strong><br>
+                                <div class="col-md-6">
+                                    <strong>Fecha de vigencia:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
                                 ` : ''}
                             </div>
-                            ${(!esPermanente && novedad.fecha_vigencia_hasta) ? `
-                            <div class="row mt-2">
-                                <div class="col-md-12">
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-calendar-times me-2"></i>
-                                        <strong>Fecha de Finalización:</strong> ${(() => {
-                                            console.log('🐛 DEBUG fecha_vigencia_hasta:', novedad.fecha_vigencia_hasta);
-                                            console.log('🐛 DEBUG tipo:', typeof novedad.fecha_vigencia_hasta);
-                                            if (typeof novedad.fecha_vigencia_hasta === 'object') {
-                                                console.log('🐛 DEBUG objeto completo:', JSON.stringify(novedad.fecha_vigencia_hasta));
-                                            }
-                                            return NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta);
-                                        })()}
-                                    </div>
-                                </div>
-                            </div>
-                            ` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -1186,8 +1207,8 @@ function mostrarModalDetalleCompleto(novedad) {
                 </div>`;
             break;
 
-        case 53: // Reemplazo
-            // Reemplazo: Similar a Nuevo Puesto
+        case 53: // Reemplazo - siempre temporario
+            // Reemplazo: Similar a Nueva Posición
             let puestoReemplazoDetalle = '';
             
             // PRIORITARIO: Usar el campo puesto directo si existe
@@ -1207,13 +1228,6 @@ function mostrarModalDetalleCompleto(novedad) {
                 }
             }
             
-            // Determinar tipo de reemplazo y fechas
-            // IMPORTANTE: El campo en la BD es tipo_nuevo_puesto, no tipo_reemplazo
-            const tipoReemplazo = novedad.tipo_nuevo_puesto || 'permanente';
-            const esPermanenteReemplazo = tipoReemplazo === 'permanente';
-            const iconoTipoReemplazo = esPermanenteReemplazo ? 'fa-check-circle text-success' : 'fa-clock text-warning';
-            const textTipoReemplazo = esPermanenteReemplazo ? 'Permanente' : 'Temporario';
-            
             html += `
                 <div class="col-12">
                     <div class="card">
@@ -1226,19 +1240,13 @@ function mostrarModalDetalleCompleto(novedad) {
                                     <strong>Puesto de Reemplazo:</strong><br>
                                     <span class="badge bg-info">${puestoReemplazoDetalle || 'No especificado'}</span>
                                 </div>
-                                <div class="col-md-4">
-                                    <strong>Tipo de Reemplazo:</strong><br>
-                                    <span class="badge ${esPermanenteReemplazo ? 'bg-success' : 'bg-warning text-dark'}">
-                                        <i class="fas ${iconoTipoReemplazo} me-1"></i>${textTipoReemplazo}
-                                    </span>
-                                </div>
                                 ${novedad.fecha_vigencia ? `
                                 <div class="col-md-4">
                                     <strong>Fecha de Inicio:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
                                 </div>
                                 ` : ''}
-                                ${!esPermanenteReemplazo && novedad.fecha_vigencia_hasta ? `
+                                ${novedad.fecha_vigencia_hasta ? `
                                 <div class="col-md-4">
                                     <strong>Fecha de Fin:</strong><br>
                                     ${NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta)}
@@ -2192,27 +2200,14 @@ async function imprimirNovedad(id) {
                 </div>`;
             break;
 
-        case 2: // Nuevo puesto
-            const tipoPuesto = novedad.tipo_nuevo_puesto || 'permanente';
-            const esPermanente = tipoPuesto === 'permanente';
-            let fechaHasta = '';
-            if (novedad.fecha_vigencia_hasta) {
-                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
-                    fechaHasta = novedad.fecha_vigencia_hasta.date.split(' ')[0];
-                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
-                    fechaHasta = novedad.fecha_vigencia_hasta.split(' ')[0];
-                }
-            }
+        case 2: // Nueva Posición
             html += `
                 <div class="section">
                     <h2 class="section-title">Detalles del Cambio de Puesto</h2>
                     <table>
-                        <tr><th>Nuevo Puesto</th><td>${novedad.puesto || 'No especificado'}</td></tr>
-                        <tr><th>Tipo de Cambio</th><td><span class="badge ${esPermanente ? 'badge-success' : 'badge-warning'}">${esPermanente ? 'Permanente' : 'Temporario'}</span></td></tr>
-                        ${novedad.fecha_vigencia ? `<tr><th>Fecha de Inicio</th><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
-                        ${(!esPermanente && fechaHasta) ? `<tr><th>Fecha de Finalización</th><td>${NovedadesApp.formatearFecha(fechaHasta)}</td></tr>` : ''}
+                        <tr><th>Nueva Posición</th><td>${novedad.puesto || 'No especificado'}</td></tr>
+                        ${novedad.fecha_vigencia ? `<tr><th>Fecha de vigencia</th><td>${novedad.fecha_vigencia}</td></tr>` : ''}
                     </table>
-                    ${(!esPermanente && fechaHasta) ? `<div class="alert-box">Cambio temporario. El empleado regresará a su puesto original el ${NovedadesApp.formatearFecha(fechaHasta)}.</div>` : ''}
                 </div>`;
             break;
 
@@ -2407,27 +2402,17 @@ async function imprimirNovedad(id) {
             }
             break;
 
-        case 53: // Reemplazo
-            const tipoReemplazo = novedad.tipo_nuevo_puesto || 'permanente';
-            const esReemplazoPermanente = tipoReemplazo === 'permanente';
-            let fechaFinReemplazo = '';
-            if (novedad.fecha_vigencia_hasta) {
-                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
-                    fechaFinReemplazo = novedad.fecha_vigencia_hasta.date.split(' ')[0];
-                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
-                    fechaFinReemplazo = novedad.fecha_vigencia_hasta.split(' ')[0];
-                }
-            }
+        case 53: // Reemplazo - siempre temporario
+            const fechaFinReemplazoFormateada = novedad.fecha_vigencia_hasta || '';
             html += `
                 <div class="section">
                     <h2 class="section-title">Detalles del Reemplazo</h2>
                     <table>
                         <tr><th>Puesto de Reemplazo</th><td>${novedad.puesto || 'No especificado'}</td></tr>
-                        <tr><th>Tipo de Reemplazo</th><td><span class="badge ${esReemplazoPermanente ? 'badge-success' : 'badge-warning'}">${esReemplazoPermanente ? 'Permanente' : 'Temporario'}</span></td></tr>
-                        ${novedad.fecha_vigencia ? `<tr><th>Fecha de Inicio</th><td>${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}</td></tr>` : ''}
-                        ${(!esReemplazoPermanente && fechaFinReemplazo) ? `<tr><th>Fecha de Finalización</th><td>${NovedadesApp.formatearFecha(fechaFinReemplazo)}</td></tr>` : ''}
+                        ${novedad.fecha_vigencia ? `<tr><th>Fecha de Inicio</th><td>${novedad.fecha_vigencia}</td></tr>` : ''}
+                        ${fechaFinReemplazoFormateada ? `<tr><th>Fecha de Finalización</th><td>${fechaFinReemplazoFormateada}</td></tr>` : ''}
                     </table>
-                    ${(!esReemplazoPermanente && fechaFinReemplazo) ? `<div class="alert-box">Reemplazo temporario. El empleado regresará a su puesto original el ${NovedadesApp.formatearFecha(fechaFinReemplazo)}.</div>` : ''}
+                    ${fechaFinReemplazoFormateada ? `<div class="alert-box">El empleado regresará a su puesto original el ${fechaFinReemplazoFormateada}.</div>` : ''}
                 </div>`;
             break;
 
@@ -2993,11 +2978,13 @@ function generarCamposDinamicosEdicion(novedad) {
     
     // Fecha de vigencia (común para varios tipos)
     if ([1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 32, 33, 34, 35, 36, 37, 38].includes(tipo)) {
-        const fechaVigencia = novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : '';
         campos += `
             <div class="col-md-6">
                 <label for="edit-fecha-vigencia" class="form-label">Fecha de Vigencia</label>
-                <input type="date" class="form-control" id="edit-fecha-vigencia" value="${fechaVigencia}" required>
+                <input type="text" class="form-control" id="edit-fecha-vigencia" 
+                       value="${novedad.fecha_vigencia || ''}" 
+                       placeholder="dd/mm/aaaa" required>
+                <small class="text-muted">Formato: dd/mm/aaaa</small>
             </div>
         `;
     }
@@ -3043,12 +3030,12 @@ function generarCamposDinamicosEdicion(novedad) {
             } else if (novedad.observaciones) {
                 // Solo como fallback: extraer de observaciones si no hay puesto directo
                 // Buscar el patrón más completo primero
-                let match = novedad.observaciones.match(/Nuevo puesto:\s*([^-]*?)\s*(?:\([^)]*?\))?(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?(?:\s*-|$)/);
+                let match = novedad.observaciones.match(/Nueva Posición:\s*([^-]*?)\s*(?:\([^)]*?\))?(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?(?:\s*-|$)/);
                 if (match) {
                     nuevoPuesto = match[1].trim();
                 } else {
                     // Buscar con etiquetas HTML
-                    match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
+                    match = novedad.observaciones.match(/Nueva Posición:\s*<[^>]*>([^<]+)<[^>]*>/);
                     if (match) {
                         nuevoPuesto = match[1].trim();
                     }
@@ -3058,64 +3045,15 @@ function generarCamposDinamicosEdicion(novedad) {
             // Determinar tipo actual (permanente/temporario)
             const tipoActual = novedad.tipo_nuevo_puesto || 'permanente';
             
-            // Extraer fecha de finalización manejando objeto DateTime
-            let fechaHasta = '';
-            if (novedad.fecha_vigencia_hasta) {
-                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
-                    // Es un objeto DateTime de PHP
-                    fechaHasta = novedad.fecha_vigencia_hasta.date.split(' ')[0];
-                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
-                    // Es una cadena
-                    fechaHasta = novedad.fecha_vigencia_hasta.split(' ')[0];
-                }
-            }
-            
             campos += `
-                <div class="col-md-6">
-                    <label for="edit-puesto" class="form-label">Nuevo Puesto</label>
+                <div class="col-md-12">
+                    <label for="edit-puesto" class="form-label">Nueva Posición</label>
                     <select class="form-select" id="edit-puesto" required>
                         <option value="">Seleccionar puesto...</option>
                         <!-- Se llenarán dinámicamente -->
                     </select>
                     <!-- Campo oculto para almacenar el puesto original como fallback -->
                     <input type="hidden" id="edit-puesto-original" value="${nuevoPuesto || ''}">
-                </div>
-                
-                <!-- Tipo de Cambio de Puesto -->
-                <div class="col-md-12">
-                    <label class="form-label">Tipo de Cambio</label>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="edit-tipo-puesto" id="edit-tipo-permanente" 
-                                       value="permanente" ${tipoActual === 'permanente' ? 'checked' : ''} 
-                                       onchange="toggleFechaFinEdicion()">
-                                <label class="form-check-label" for="edit-tipo-permanente">
-                                    <i class="fas fa-check-circle text-success me-2"></i>
-                                    <strong>Permanente</strong>
-                                    <br><small class="text-muted">Cambio definitivo de puesto</small>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="edit-tipo-puesto" id="edit-tipo-temporario" 
-                                       value="temporario" ${tipoActual === 'temporario' ? 'checked' : ''} 
-                                       onchange="toggleFechaFinEdicion()">
-                                <label class="form-check-label" for="edit-tipo-temporario">
-                                    <i class="fas fa-clock text-warning me-2"></i>
-                                    <strong>Temporario</strong>
-                                    <br><small class="text-muted">Cambio temporal con fecha de fin</small>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Fecha de fin (solo para temporario) -->
-                <div class="col-md-6" id="edit-campo-fecha-fin" style="display: ${tipoActual === 'temporario' ? 'block' : 'none'};">
-                    <label for="edit-fecha-fin" class="form-label">Fecha de Finalización</label>
-                    <input type="date" class="form-control" id="edit-fecha-fin" value="${fechaHasta}">
                 </div>
             `;
             
@@ -3155,12 +3093,13 @@ function generarCamposDinamicosEdicion(novedad) {
             break;
             
         case 7: // Permisos
-            const fechaPermiso = novedad.fecha_permiso ? novedad.fecha_permiso.split(' ')[0] : '';
             campos += `
                 <div class="col-md-6">
                     <label for="edit-fecha-permiso" class="form-label">Fecha del Permiso</label>
-                    <input type="date" class="form-control" id="edit-fecha-permiso" 
-                           value="${fechaPermiso}" required>
+                    <input type="text" class="form-control" id="edit-fecha-permiso" 
+                           value="${novedad.fecha_permiso || ''}" 
+                           placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">¿Compensa?</label>
@@ -3328,8 +3267,10 @@ function generarCamposDinamicosEdicion(novedad) {
                 </div>
                 <div class="col-md-6">
                     <label for="edit_fecha_vigencia_comision_individual" class="form-label">Fecha Vigencia</label>
-                    <input type="date" class="form-control" id="edit_fecha_vigencia_comision_individual" 
-                        value="${novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : ''}" required>
+                    <input type="text" class="form-control" id="edit_fecha_vigencia_comision_individual" 
+                        value="${novedad.fecha_vigencia || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
                 </div>
             `;
             break;
@@ -3352,8 +3293,10 @@ function generarCamposDinamicosEdicion(novedad) {
                 </div>
                 <div class="col-md-4">
                     <label for="edit_fecha_vigencia_comision_local" class="form-label">Fecha Vigencia</label>
-                    <input type="date" class="form-control" id="edit_fecha_vigencia_comision_local" 
-                        value="${novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : ''}" required>
+                    <input type="text" class="form-control" id="edit_fecha_vigencia_comision_local" 
+                        value="${novedad.fecha_vigencia || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
                 </div>
                 
                 <!-- Campos para sin tope -->
@@ -3404,52 +3347,8 @@ function generarCamposDinamicosEdicion(novedad) {
             `;
             break;
 
-        case 53: // Reemplazo
-            // IMPORTANTE: El campo en la BD es tipo_nuevo_puesto, no tipo_reemplazo
-            const tipoReemplazoEdit = novedad.tipo_nuevo_puesto || 'permanente';
-            
-            // Extraer fecha de finalización manejando objeto DateTime
-            let fechaHastaReemplazo = '';
-            if (novedad.fecha_vigencia_hasta) {
-                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
-                    // Es un objeto DateTime de PHP
-                    fechaHastaReemplazo = novedad.fecha_vigencia_hasta.date.split(' ')[0];
-                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
-                    // Es una cadena
-                    fechaHastaReemplazo = novedad.fecha_vigencia_hasta.split(' ')[0];
-                }
-            }
-            
+        case 53: // Reemplazo - siempre temporario
             campos += `
-                <!-- Tipo de Reemplazo -->
-                <div class="col-md-12 mb-3">
-                    <label class="form-label">Tipo de Reemplazo <span class="text-danger">*</span></label>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="edit-tipo-reemplazo" 
-                                    id="edit-tipo-reemplazo-permanente" value="permanente" 
-                                    ${tipoReemplazoEdit === 'permanente' ? 'checked' : ''} 
-                                    onchange="toggleFechaFinReemplazoEdicion()">
-                                <label class="form-check-label" for="edit-tipo-reemplazo-permanente">
-                                    <i class="fas fa-check-circle text-success me-2"></i>Permanente
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="edit-tipo-reemplazo" 
-                                    id="edit-tipo-reemplazo-temporario" value="temporario" 
-                                    ${tipoReemplazoEdit === 'temporario' ? 'checked' : ''} 
-                                    onchange="toggleFechaFinReemplazoEdicion()">
-                                <label class="form-check-label" for="edit-tipo-reemplazo-temporario">
-                                    <i class="fas fa-clock text-warning me-2"></i>Temporario
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="col-md-6">
                     <label for="edit-puesto-reemplazo" class="form-label">Puesto de Reemplazo <span class="text-danger">*</span></label>
                     <select class="form-select" id="edit-puesto-reemplazo" required>
@@ -3460,14 +3359,18 @@ function generarCamposDinamicosEdicion(novedad) {
 
                 <div class="col-md-3">
                     <label for="edit-fecha-vigencia-reemplazo" class="form-label">Fecha de Inicio <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control" id="edit-fecha-vigencia-reemplazo" 
-                        value="${novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : ''}" required>
+                    <input type="text" class="form-control" id="edit-fecha-vigencia-reemplazo" 
+                        value="${novedad.fecha_vigencia || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
                 </div>
 
-                <div class="col-md-3" id="edit-campo-fecha-fin-reemplazo" style="display: ${tipoReemplazoEdit === 'temporario' ? 'block' : 'none'}">
+                <div class="col-md-3" id="edit-campo-fecha-fin-reemplazo">
                     <label for="edit-fecha-hasta-reemplazo" class="form-label">Fecha de Fin <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control" id="edit-fecha-hasta-reemplazo" 
-                        value="${fechaHastaReemplazo}">
+                    <input type="text" class="form-control" id="edit-fecha-hasta-reemplazo" 
+                        value="${novedad.fecha_vigencia_hasta || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
                 </div>
             `;
             break;
@@ -3528,8 +3431,10 @@ function generarCamposDinamicosEdicion(novedad) {
 
                 <div class="col-md-4">
                     <label for="edit-fecha-vigencia-aumento" class="form-label">Fecha de Vigencia <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control" id="edit-fecha-vigencia-aumento" 
-                        value="${novedad.fecha_vigencia ? novedad.fecha_vigencia.split(' ')[0] : ''}" required>
+                    <input type="text" class="form-control" id="edit-fecha-vigencia-aumento" 
+                        value="${novedad.fecha_vigencia || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
                 </div>
             `;
             break;
@@ -3598,13 +3503,13 @@ async function guardarEdicionNovedad() {
         // Agregar campos específicos según tipo
         const tipo = parseInt(datos.tipo_novedad);
         
-        // Fecha de vigencia
+        // Fecha de vigencia - convertir al formato del backend
         const fechaVigencia = document.getElementById('edit-fecha-vigencia');
-        if (fechaVigencia) {
-            datos.fecha_vigencia = fechaVigencia.value;
-            console.log(`📅 Fecha de vigencia capturada:`, fechaVigencia.value);
+        if (fechaVigencia && fechaVigencia.value) {
+            datos.fecha_vigencia = convertirFechaParaBackend(fechaVigencia.value);
+            console.log(`📅 Fecha de vigencia capturada:`, fechaVigencia.value, '→', datos.fecha_vigencia);
         } else {
-            console.error('❌ No se encontró el campo edit-fecha-vigencia');
+            console.error('❌ No se encontró el campo edit-fecha-vigencia o está vacío');
         }
         
         // Campos específicos por tipo
@@ -3633,30 +3538,9 @@ async function guardarEdicionNovedad() {
                     console.error('❌ No se pudo obtener el valor del puesto - verificar que el campo esté cargado');
                 }
                 
-                // Obtener tipo de puesto (permanente/temporario)
-                const tipoPuestoRadios = document.getElementsByName('edit-tipo-puesto');
-                let tipoPuesto = 'permanente'; // default
-                for (let radio of tipoPuestoRadios) {
-                    if (radio.checked) {
-                        tipoPuesto = radio.value;
-                        break;
-                    }
-                }
-                datos.tipo_nuevo_puesto = tipoPuesto;
-                console.log(`🔄 Tipo de puesto capturado:`, tipoPuesto);
-                
-                // Si es temporario, agregar fecha de fin
-                if (tipoPuesto === 'temporario') {
-                    const fechaFin = document.getElementById('edit-fecha-fin');
-                    if (fechaFin && fechaFin.value) {
-                        datos.fecha_vigencia_hasta = fechaFin.value;
-                        console.log(`📅 Fecha de fin capturada:`, fechaFin.value);
-                    }
-                } else {
-                    // Si cambió de temporario a permanente, limpiar fecha de fin
-                    datos.fecha_vigencia_hasta = null;
-                    console.log(`🗑️ Fecha de fin limpiada (cambio a permanente)`);
-                }
+                // Siempre permanente
+                datos.tipo_nuevo_puesto = 'permanente';
+                datos.fecha_vigencia_hasta = null;
                 break;
                 
             case 3: // Nuevo salario
@@ -3773,7 +3657,7 @@ async function guardarEdicionNovedad() {
                 // Agregar fecha de vigencia específica para comisión individual
                 const fechaVigenciaComisionInd = document.getElementById('edit_fecha_vigencia_comision_individual');
                 if (fechaVigenciaComisionInd && fechaVigenciaComisionInd.value) {
-                    datos.fecha_vigencia = fechaVigenciaComisionInd.value;
+                    datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaComisionInd.value);
                 }
                 break;
 
@@ -3801,7 +3685,7 @@ async function guardarEdicionNovedad() {
                 // Agregar fecha de vigencia específica para comisión sobre local
                 const fechaVigenciaComisionLocal = document.getElementById('edit_fecha_vigencia_comision_local');
                 if (fechaVigenciaComisionLocal && fechaVigenciaComisionLocal.value) {
-                    datos.fecha_vigencia = fechaVigenciaComisionLocal.value;
+                    datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaComisionLocal.value);
                 }
                 break;
 
@@ -3823,33 +3707,16 @@ async function guardarEdicionNovedad() {
                 // IMPORTANTE: Capturar fecha de inicio de vigencia
                 const fechaVigenciaReemplazo = document.getElementById('edit-fecha-vigencia-reemplazo');
                 if (fechaVigenciaReemplazo && fechaVigenciaReemplazo.value) {
-                    datos.fecha_vigencia = fechaVigenciaReemplazo.value;
-                    console.log(`📅 Fecha de inicio de reemplazo capturada:`, fechaVigenciaReemplazo.value);
+                    datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaReemplazo.value);
+                    console.log(`📅 Fecha de inicio de reemplazo capturada:`, fechaVigenciaReemplazo.value, '→', datos.fecha_vigencia);
                 }
                 
-                // Obtener tipo de reemplazo (permanente/temporario)
-                const tipoReemplazoRadios = document.getElementsByName('edit-tipo-reemplazo');
-                let tipoReemplazo = 'permanente'; // default
-                for (let radio of tipoReemplazoRadios) {
-                    if (radio.checked) {
-                        tipoReemplazo = radio.value;
-                        break;
-                    }
-                }
-                datos.tipo_reemplazo = tipoReemplazo; // Enviamos como tipo_reemplazo, el backend lo mapea a tipo_nuevo_puesto
-                console.log(`🔄 Tipo de reemplazo capturado:`, tipoReemplazo);
-                
-                // Si es temporario, agregar fecha de fin
-                if (tipoReemplazo === 'temporario') {
-                    const fechaFinReemplazo = document.getElementById('edit-fecha-hasta-reemplazo');
-                    if (fechaFinReemplazo && fechaFinReemplazo.value) {
-                        datos.fecha_vigencia_hasta = fechaFinReemplazo.value;
-                        console.log(`📅 Fecha de fin de reemplazo capturada:`, fechaFinReemplazo.value);
-                    }
-                } else {
-                    // Si cambió de temporario a permanente, limpiar fecha de fin
-                    datos.fecha_vigencia_hasta = null;
-                    console.log(`🗑️ Fecha de fin de reemplazo limpiada (cambio a permanente)`);
+                // Siempre temporario
+                datos.tipo_reemplazo = 'temporario';
+                const fechaFinReemplazo = document.getElementById('edit-fecha-hasta-reemplazo');
+                if (fechaFinReemplazo && fechaFinReemplazo.value) {
+                    datos.fecha_vigencia_hasta = convertirFechaParaBackend(fechaFinReemplazo.value);
+                    console.log(`📅 Fecha de fin de reemplazo capturada:`, fechaFinReemplazo.value, '→', datos.fecha_vigencia_hasta);
                 }
                 break;
 
@@ -3857,8 +3724,8 @@ async function guardarEdicionNovedad() {
                 // IMPORTANTE: Capturar fecha de vigencia
                 const fechaVigenciaAumento = document.getElementById('edit-fecha-vigencia-aumento');
                 if (fechaVigenciaAumento && fechaVigenciaAumento.value) {
-                    datos.fecha_vigencia = fechaVigenciaAumento.value;
-                    console.log(`📅 Fecha de vigencia de aumento capturada:`, fechaVigenciaAumento.value);
+                    datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaAumento.value);
+                    console.log(`📅 Fecha de vigencia de aumento capturada:`, fechaVigenciaAumento.value, '→', datos.fecha_vigencia);
                 }
                 
                 // Obtener tipo de aumento (porcentaje/monto)
@@ -4256,12 +4123,16 @@ function limpiarObservaciones(observaciones, tipoNovedad) {
             break;
             
         case 2: // Cambio de puesto
-            // Remover " - Nuevo puesto: [NOMBRE]" incluyendo etiquetas y detalles completos
-            // Patrón para HTML: - Nuevo puesto: <tag>NOMBRE</tag> (Tipo) hasta DD/MM/YYYY
+            // Remover " - Nueva Posición: [NOMBRE]" incluyendo etiquetas y detalles completos
+            // Patrón para HTML: - Nueva Posición: <tag>NOMBRE</tag> (Tipo) hasta DD/MM/YYYY
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nueva Posición:\s*<[^>]*>([^<]+)<[^>]*>\s*\([^)]*\)(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?/gi, '');
+            // Patrón para texto plano: - Nueva Posición: NOMBRE (Tipo) hasta DD/MM/YYYY
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nueva Posición:\s*[^-]*?\([^)]*?\)(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?/gi, '');
+            // Patrón para texto simple: - Nueva Posición: NOMBRE
+            observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nueva Posición:\s*([^-<\n]*?)(?=\s*-|\s*$|<|\n)/gi, '');
+            // Mantener compatibilidad con formato anterior "Nuevo puesto:"
             observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>\s*\([^)]*\)(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?/gi, '');
-            // Patrón para texto plano: - Nuevo puesto: NOMBRE (Tipo) hasta DD/MM/YYYY
             observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*[^-]*?\([^)]*?\)(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?/gi, '');
-            // Patrón para texto simple: - Nuevo puesto: NOMBRE
             observacionesLimpias = observacionesLimpias.replace(/\s*-\s*Nuevo puesto:\s*([^-<\n]*?)(?=\s*-|\s*$|<|\n)/gi, '');
             break;
             
@@ -4614,38 +4485,6 @@ function toggleCamposComisionLocalEdicion() {
         if (porcentaje2) porcentaje2.value = '';
         
         console.log('Mostrando campos SIN tope');
-    }
-}
-
-/**
- * Toggle fecha fin para reemplazo en edición
- */
-function toggleFechaFinReemplazoEdicion() {
-    const radioTemporario = document.getElementById('edit-tipo-reemplazo-temporario');
-    const campoFechaFin = document.getElementById('edit-campo-fecha-fin-reemplazo');
-    const fechaFinInput = document.getElementById('edit-fecha-hasta-reemplazo');
-    
-    console.log('🔄 toggleFechaFinReemplazoEdicion ejecutado');
-    
-    if (radioTemporario && radioTemporario.checked) {
-        // Mostrar campo de fecha de fin
-        if (campoFechaFin) {
-            campoFechaFin.style.display = 'block';
-            console.log('✅ Campo fecha fin reemplazo edición mostrado');
-        }
-        if (fechaFinInput) {
-            fechaFinInput.setAttribute('required', 'required');
-        }
-    } else {
-        // Ocultar campo de fecha de fin
-        if (campoFechaFin) {
-            campoFechaFin.style.display = 'none';
-            console.log('🔒 Campo fecha fin reemplazo edición ocultado');
-        }
-        if (fechaFinInput) {
-            fechaFinInput.removeAttribute('required');
-            fechaFinInput.value = '';
-        }
     }
 }
 

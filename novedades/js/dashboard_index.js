@@ -95,15 +95,26 @@ function mostrarUltimasNovedades(novedades) {
                 break;
                 
             case 2: // Cambio de puesto
-                // Extraer nuevo puesto de las observaciones
+                // Extraer nueva posición de las observaciones
                 if (novedad.observaciones) {
-                    let match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
+                    let match = novedad.observaciones.match(/Nueva Posición:\s*<[^>]*>([^<]+)<[^>]*>/);
                     if (match) {
                         tipoDetalle = `<br><small class="text-success">→ ${match[1].trim()}</small>`;
                     } else {
-                        match = novedad.observaciones.match(/Nuevo puesto:\s*([^-<\n]+)/);
+                        match = novedad.observaciones.match(/Nueva Posición:\s*([^-<\n]+)/);
                         if (match) {
                             tipoDetalle = `<br><small class="text-success">→ ${match[1].trim()}</small>`;
+                        } else {
+                            // Mantener compatibilidad con formato anterior
+                            match = novedad.observaciones.match(/Nuevo puesto:\s*<[^>]*>([^<]+)<[^>]*>/);
+                            if (match) {
+                                tipoDetalle = `<br><small class="text-success">→ ${match[1].trim()}</small>`;
+                            } else {
+                                match = novedad.observaciones.match(/Nuevo puesto:\s*([^-<\n]+)/);
+                                if (match) {
+                                    tipoDetalle = `<br><small class="text-success">→ ${match[1].trim()}</small>`;
+                                }
+                            }
                         }
                     }
                 }
@@ -118,13 +129,9 @@ function mostrarUltimasNovedades(novedades) {
                 }
                 break;
 
-            case 53: // Reemplazo
-                // Mostrar puesto de reemplazo y tipo
-                const tipoReemplazoIcon = novedad.tipo_nuevo_puesto === 'temporario' ? 
-                    '<i class="fas fa-clock text-warning"></i>' : 
-                    '<i class="fas fa-check-circle text-success"></i>';
+            case 53: // Reemplazo - siempre temporario
                 const puestoReemplazo = novedad.puesto || 'No especificado';
-                tipoDetalle = `<br><small class="text-info">${tipoReemplazoIcon} ${puestoReemplazo}</small>`;
+                tipoDetalle = `<br><small class="text-info"><i class="fas fa-clock text-warning"></i> ${puestoReemplazo}</small>`;
                 break;
 
             case 54: // Aumento Salarial
@@ -348,48 +355,26 @@ function mostrarModalDetalle(novedad) {
                 </div>`;
             break;
             
-        case 2: // Nuevo puesto
-            // Determinar tipo de puesto y fechas
-            const tipoPuesto = novedad.tipo_nuevo_puesto || 'permanente';
-            const esPermanente = tipoPuesto === 'permanente';
-            const iconoTipo = esPermanente ? 'fa-check-circle text-success' : 'fa-clock text-warning';
-            const textTipo = esPermanente ? 'Permanente' : 'Temporario';
-            
+        case 2: // Nueva Posición
             modalHtml += `
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-success text-white">
-                            <h6 class="mb-0"><i class="fas fa-briefcase me-2"></i>Detalles del Nuevo Puesto</h6>
+                            <h6 class="mb-0"><i class="fas fa-briefcase me-2"></i>Detalles de la Nueva Posición</h6>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
-                                    <strong>Nuevo Puesto:</strong><br>
+                                <div class="col-md-6">
+                                    <strong>Nueva Posición:</strong><br>
                                     <span class="badge bg-success">${novedad.puesto || 'No especificado'}</span>
                                 </div>
-                                <div class="col-md-4">
-                                    <strong>Tipo de Cambio:</strong><br>
-                                    <span class="badge ${esPermanente ? 'bg-success' : 'bg-warning text-dark'}">
-                                        <i class="fas ${iconoTipo} me-1"></i>${textTipo}
-                                    </span>
-                                </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <strong>Fecha de Inicio:</strong><br>
                                     ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : novedad.fecha_vigencia}
                                 </div>
                                 ` : ''}
                             </div>
-                            ${(!esPermanente && novedad.fecha_vigencia_hasta) ? `
-                            <div class="row mt-2">
-                                <div class="col-md-12">
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-calendar-times me-2"></i>
-                                        <strong>Fecha de Finalización:</strong> ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta) : novedad.fecha_vigencia_hasta}
-                                    </div>
-                                </div>
-                            </div>
-                            ` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -711,12 +696,8 @@ function mostrarModalDetalle(novedad) {
             }
             break;
 
-        case 53: // Reemplazo
+        case 53: // Reemplazo - siempre temporario
             // IMPORTANTE: usar tipo_nuevo_puesto no tipo_reemplazo
-            const tipoReemplazo = novedad.tipo_nuevo_puesto || 'permanente';
-            const esReemplazoPermanente = tipoReemplazo === 'permanente';
-            const iconoReemplazo = esReemplazoPermanente ? 'fa-check-circle text-success' : 'fa-clock text-warning';
-            const textoReemplazo = esReemplazoPermanente ? 'Permanente' : 'Temporario';
             
             // Manejar fecha_vigencia_hasta como objeto DateTime si es necesario
             let fechaFinReemplazo = '';
@@ -736,24 +717,18 @@ function mostrarModalDetalle(novedad) {
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <strong>Puesto de Reemplazo:</strong><br>
                                     <span class="badge" style="background: #f5576c;">${novedad.puesto || 'No especificado'}</span>
                                 </div>
-                                <div class="col-md-4">
-                                    <strong>Tipo de Reemplazo:</strong><br>
-                                    <span class="badge ${esReemplazoPermanente ? 'bg-success' : 'bg-warning text-dark'}">
-                                        <i class="fas ${iconoReemplazo} me-1"></i>${textoReemplazo}
-                                    </span>
-                                </div>
                                 ${novedad.fecha_vigencia ? `
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <strong>Fecha de Inicio:</strong><br>
                                     ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : novedad.fecha_vigencia}
                                 </div>
                                 ` : ''}
                             </div>
-                            ${(!esReemplazoPermanente && fechaFinReemplazo) ? `
+                            ${fechaFinReemplazo ? `
                             <div class="row mt-2">
                                 <div class="col-md-12">
                                     <div class="alert alert-warning">

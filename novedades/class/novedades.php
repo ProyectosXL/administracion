@@ -68,6 +68,33 @@ class Novedades {
     }
     
     /**
+     * Abreviar nombre de centro de costos
+     * Elimina el contenido entre paréntesis excepto en casos especiales
+     * Ejemplos:
+     * - "PASEO ALDREY (LOC033)" -> "PASEO ALDREY"
+     * - "ADMINISTRACION (ADM)" -> "ADM"
+     */
+    private function abreviarCentroCostos($descripcion, $codigo) {
+        // Si la descripción está vacía, retornar el código
+        if (empty($descripcion)) {
+            return !empty($codigo) ? $codigo : '';
+        }
+        
+        // Detectar caso especial: ADMINISTRACION (ADM) -> solo ADM
+        if (preg_match('/^ADMINISTRACION\s*\(([^)]+)\)$/i', $descripcion, $matches)) {
+            return trim($matches[1]);
+        }
+        
+        // Caso general: eliminar todo lo que está entre paréntesis
+        $nombreAbreviado = preg_replace('/\s*\([^)]*\)\s*/', '', $descripcion);
+        
+        // Limpiar espacios adicionales
+        $nombreAbreviado = trim($nombreAbreviado);
+        
+        return $nombreAbreviado;
+    }
+    
+    /**
      * Inicializar todas las tablas necesarias
      */
     private function inicializarTablas() {
@@ -696,7 +723,7 @@ class Novedades {
         // user_rrhh siempre será 1 (puede ver todos los tipos)
         $tipos = [
             ['CAMBIO_SUCURSAL', 'Cambio de sucursal', 1, 1, 0, 1],
-            ['NUEVO_PUESTO', 'Nuevo puesto', 1, 1, 0, 1],
+            ['NUEVO_PUESTO', 'Nueva Posición', 1, 1, 0, 1],
             ['NUEVO_SALARIO', 'Nuevo salario neto', 1, 0, 0, 1],
             ['AJUSTE_PREMIOS', 'Ajuste de premios', 1, 1, 0, 1],
             ['HORAS_EXTRAS', 'Horas extras', 1, 1, 1, 1],
@@ -972,31 +999,19 @@ class Novedades {
                 }
                 break;
 
-            case 2: // Nuevo puesto
+            case 2: // Nueva Posición
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 
-                // Manejar tipo de puesto (permanente/temporario)
-                $tipoPuesto = isset($datos['tipo_nuevo_puesto']) ? $datos['tipo_nuevo_puesto'] : 'permanente';
-                $datosAdaptados['tipo_nuevo_puesto'] = $tipoPuesto;
+                // Siempre permanente - no se permite temporario
+                $datosAdaptados['tipo_nuevo_puesto'] = 'permanente';
+                $datosAdaptados['fecha_vigencia_hasta'] = null;
                 
-                // Si es temporario, agregar fecha de fin
-                if ($tipoPuesto === 'temporario' && isset($datos['fecha_vigencia_hasta'])) {
-                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
-                }
-                
-                // Guardar el nuevo puesto en el campo puesto
+                // Guardar la nueva posición en el campo puesto
                 $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : '';
                 
-                // Agregar detalles en observaciones
+                // Agregar detalles en observaciones (sin tipo, siempre permanente)
                 if (isset($datos['puesto'])) {
-                    $detalleObservaciones = " - Nuevo puesto: " . $datos['puesto'];
-                    $detalleObservaciones .= " (" . ucfirst($tipoPuesto) . ")";
-                    
-                    if ($tipoPuesto === 'temporario' && isset($datos['fecha_vigencia_hasta'])) {
-                        $fechaFinFormateada = date('d/m/Y', strtotime($datos['fecha_vigencia_hasta']));
-                        $detalleObservaciones .= " hasta " . $fechaFinFormateada;
-                    }
-                    
+                    $detalleObservaciones = " - Nueva Posición: " . $datos['puesto'];
                     $datosAdaptados['observaciones'] .= $detalleObservaciones;
                 }
                 break;
@@ -1104,16 +1119,20 @@ class Novedades {
                 $observacionesLimpias = preg_replace('/ - Nueva sucursal: [^-]*/', '', $observacionesLimpias);
                 break;
 
-            case 2: // Nuevo puesto
-                // Remover cualquier mención de "Nuevo puesto:" con todo su contenido
+            case 2: // Nueva Posición
+                // Remover cualquier mención de "Nueva Posición:" con todo su contenido
                 // Patrón mejorado para capturar: 
-                // - Nuevo puesto: NOMBRE_PUESTO (Tipo) hasta DD/MM/YYYY
-                // - Nuevo puesto: NOMBRE_PUESTO (Tipo)
-                // - Nuevo puesto: NOMBRE_PUESTO
+                // - Nueva Posición: NOMBRE_PUESTO (Tipo) hasta DD/MM/YYYY
+                // - Nueva Posición: NOMBRE_PUESTO (Tipo)
+                // - Nueva Posición: NOMBRE_PUESTO
                 $patterns = [
-                    '/ - Nuevo puesto: [^-]*?\([^)]*?\)\s*hasta\s*\d{2}\/\d{2}\/\d{4}/',  // Con tipo y fecha
-                    '/ - Nuevo puesto: [^-]*?\([^)]*?\)/',                                   // Con tipo sin fecha
-                    '/ - Nuevo puesto: [^-]*?(?=\s*-|\s*$)/'                               // Sin tipo, hasta siguiente - o final
+                    '/ - Nueva Posición: [^-]*?\([^)]*?\)\s*hasta\s*\d{2}\/\d{2}\/\d{4}/',  // Con tipo y fecha
+                    '/ - Nueva Posición: [^-]*?\([^)]*?\)/',                                   // Con tipo sin fecha
+                    '/ - Nueva Posición: [^-]*?(?=\s*-|\s*$)/',                               // Sin tipo, hasta siguiente - o final
+                    // Mantener compatibilidad con formato anterior
+                    '/ - Nuevo puesto: [^-]*?\([^)]*?\)\s*hasta\s*\d{2}\/\d{2}\/\d{4}/',
+                    '/ - Nuevo puesto: [^-]*?\([^)]*?\)/',
+                    '/ - Nuevo puesto: [^-]*?(?=\s*-|\s*$)/'
                 ];
                 
                 foreach ($patterns as $pattern) {
@@ -1221,14 +1240,16 @@ class Novedades {
             
             // Procesar los resultados para agregar campos calculados
             foreach ($novedades as &$novedad) {
-                // Agregar display de centro de costos
+                // Agregar display de centro de costos (abreviado)
                 $novedad['centro_costos_display'] = '';
-                if (!empty($novedad['descripcion_centro_costos']) && !empty($novedad['codigo_centro_costos'])) {
-                    $novedad['centro_costos_display'] = $novedad['descripcion_centro_costos'] . ' (' . $novedad['codigo_centro_costos'] . ')';
-                } elseif (!empty($novedad['descripcion_centro_costos'])) {
-                    $novedad['centro_costos_display'] = $novedad['descripcion_centro_costos'];
+                if (!empty($novedad['descripcion_centro_costos'])) {
+                    // Usar función de abreviación
+                    $novedad['centro_costos_display'] = $this->abreviarCentroCostos(
+                        $novedad['descripcion_centro_costos'], 
+                        $novedad['codigo_centro_costos'] ?? ''
+                    );
                 } elseif (!empty($novedad['codigo_centro_costos'])) {
-                    $novedad['centro_costos_display'] = 'Centro ' . $novedad['codigo_centro_costos'];
+                    $novedad['centro_costos_display'] = $novedad['codigo_centro_costos'];
                 }
                 
                 // Mantener compatibilidad con nombre_sucursal para el frontend
@@ -1242,8 +1263,8 @@ class Novedades {
                     case 1: // Cambio de centro de costos
                         $novedad['valor_display'] = 'Cambio de centro de costos';
                         break;
-                    case 2: // Nuevo puesto
-                        $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nuevo puesto';
+                    case 2: // Nueva Posición
+                        $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nueva Posición';
                         break;
                     case 3: // Nuevo salario neto
                         $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Ajuste salarial';
@@ -1280,6 +1301,7 @@ class Novedades {
                 // Arreglar fecha display - usar fecha_creacion correctamente formateada
                 $fechaRegistro = null;
                 $fechaVigencia = null;
+                $fechaVigenciaHasta = null;
                 
                 // Procesar fecha_creacion (registro)
                 if (!empty($novedad['fecha_creacion'])) {
@@ -1304,6 +1326,7 @@ class Novedades {
                         } else {
                             $fechaVigencia = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
                         }
+                        $novedad['fecha_vigencia'] = $fechaVigencia; // Sobrescribir con formato correcto
                         $fechaClave = $fechaVigencia;
                     } catch (Exception $e) {
                         $fechaVigencia = null;
@@ -1312,26 +1335,38 @@ class Novedades {
                     try {
                         if ($novedad['fecha_permiso'] instanceof DateTime) {
                             $fechaClave = $novedad['fecha_permiso']->format('d/m/Y');
+                            $novedad['fecha_permiso'] = $fechaClave;
                         } else {
                             $fechaClave = date('d/m/Y', strtotime($novedad['fecha_permiso']));
+                            $novedad['fecha_permiso'] = $fechaClave;
                         }
                     } catch (Exception $e) {
                         $fechaClave = null;
                     }
                 }
                 
+                // Procesar fecha_vigencia_hasta
+                if (!empty($novedad['fecha_vigencia_hasta'])) {
+                    try {
+                        if ($novedad['fecha_vigencia_hasta'] instanceof DateTime) {
+                            $fechaVigenciaHasta = $novedad['fecha_vigencia_hasta']->format('d/m/Y');
+                        } else {
+                            $fechaVigenciaHasta = date('d/m/Y', strtotime($novedad['fecha_vigencia_hasta']));
+                        }
+                        $novedad['fecha_vigencia_hasta'] = $fechaVigenciaHasta; // Sobrescribir con formato correcto
+                    } catch (Exception $e) {
+                        $fechaVigenciaHasta = null;
+                    }
+                }
+                
+                // Procesar fecha_creacion y sobrescribir
+                if ($fechaRegistro) {
+                    $novedad['fecha_creacion'] = $fechaRegistro;
+                }
+                
                 // Asignar fechas procesadas
                 $novedad['fecha_registro'] = $fechaRegistro ?: 'N/A';
                 $novedad['fecha_display'] = $fechaClave ?: $fechaRegistro ?: 'N/A';
-
-                // Normalizar campos de fecha crudos a string ISO para JSON limpio
-                foreach (['fecha_creacion','fecha_vigencia','fecha_permiso'] as $campoF) {
-                    if (!empty($novedad[$campoF])) {
-                        if ($novedad[$campoF] instanceof DateTime) {
-                            $novedad[$campoF] = $novedad[$campoF]->format('Y-m-d H:i:s');
-                        }
-                    }
-                }
                 
                 // Agregar estado_numero para compatibilidad con frontend
                 $novedad['estado_numero'] = $this->mapearEstadoANumero($novedad['estado']);
@@ -1422,14 +1457,16 @@ class Novedades {
             
             // Procesar los resultados igual que en getNovedadesPeriodoActual
             foreach ($novedades as &$novedad) {
-                // Agregar display de centro de costos
+                // Agregar display de centro de costos (abreviado)
                 $novedad['centro_costos_display'] = '';
-                if (!empty($novedad['descripcion_centro_costos']) && !empty($novedad['codigo_centro_costos'])) {
-                    $novedad['centro_costos_display'] = $novedad['descripcion_centro_costos'] . ' (' . $novedad['codigo_centro_costos'] . ')';
-                } elseif (!empty($novedad['descripcion_centro_costos'])) {
-                    $novedad['centro_costos_display'] = $novedad['descripcion_centro_costos'];
+                if (!empty($novedad['descripcion_centro_costos'])) {
+                    // Usar función de abreviación
+                    $novedad['centro_costos_display'] = $this->abreviarCentroCostos(
+                        $novedad['descripcion_centro_costos'], 
+                        $novedad['codigo_centro_costos'] ?? ''
+                    );
                 } elseif (!empty($novedad['codigo_centro_costos'])) {
-                    $novedad['centro_costos_display'] = 'Centro ' . $novedad['codigo_centro_costos'];
+                    $novedad['centro_costos_display'] = $novedad['codigo_centro_costos'];
                 }
                 
                 // Mantener compatibilidad con nombre_sucursal para el frontend
@@ -1443,8 +1480,8 @@ class Novedades {
                     case 1: // Cambio de centro de costos
                         $novedad['valor_display'] = 'Cambio de centro de costos';
                         break;
-                    case 2: // Nuevo puesto
-                        $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nuevo puesto';
+                    case 2: // Nueva Posición
+                        $novedad['valor_display'] = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nueva Posición';
                         break;
                     case 3: // Nuevo salario neto
                         $novedad['valor_display'] = $valorNumerico != 0 ? '$' . number_format($valorNumerico, 2) : 'Ajuste salarial';
@@ -1481,6 +1518,7 @@ class Novedades {
                 // Procesar fechas igual que en el método original
                 $fechaRegistro = null;
                 $fechaVigencia = null;
+                $fechaVigenciaHasta = null;
                 
                 // Procesar fecha_creacion (registro)
                 if (!empty($novedad['fecha_creacion'])) {
@@ -1504,6 +1542,7 @@ class Novedades {
                         } else {
                             $fechaVigencia = date('d/m/Y', strtotime($novedad['fecha_vigencia']));
                         }
+                        $novedad['fecha_vigencia'] = $fechaVigencia; // Sobrescribir con formato correcto
                         $fechaClave = $fechaVigencia;
                     } catch (Exception $e) {
                         $fechaVigencia = null;
@@ -1512,26 +1551,38 @@ class Novedades {
                     try {
                         if ($novedad['fecha_permiso'] instanceof DateTime) {
                             $fechaClave = $novedad['fecha_permiso']->format('d/m/Y');
+                            $novedad['fecha_permiso'] = $fechaClave;
                         } else {
                             $fechaClave = date('d/m/Y', strtotime($novedad['fecha_permiso']));
+                            $novedad['fecha_permiso'] = $fechaClave;
                         }
                     } catch (Exception $e) {
                         $fechaClave = null;
                     }
                 }
                 
+                // Procesar fecha_vigencia_hasta
+                if (!empty($novedad['fecha_vigencia_hasta'])) {
+                    try {
+                        if ($novedad['fecha_vigencia_hasta'] instanceof DateTime) {
+                            $fechaVigenciaHasta = $novedad['fecha_vigencia_hasta']->format('d/m/Y');
+                        } else {
+                            $fechaVigenciaHasta = date('d/m/Y', strtotime($novedad['fecha_vigencia_hasta']));
+                        }
+                        $novedad['fecha_vigencia_hasta'] = $fechaVigenciaHasta; // Sobrescribir con formato correcto
+                    } catch (Exception $e) {
+                        $fechaVigenciaHasta = null;
+                    }
+                }
+                
+                // Procesar fecha_creacion y sobrescribir
+                if ($fechaRegistro) {
+                    $novedad['fecha_creacion'] = $fechaRegistro;
+                }
+                
                 // Asignar fechas procesadas
                 $novedad['fecha_registro'] = $fechaRegistro ?: 'N/A';
                 $novedad['fecha_display'] = $fechaClave ?: $fechaRegistro ?: 'N/A';
-
-                // Normalizar campos de fecha crudos a string ISO para JSON limpio
-                foreach (['fecha_creacion','fecha_vigencia','fecha_permiso'] as $campoF) {
-                    if (!empty($novedad[$campoF])) {
-                        if ($novedad[$campoF] instanceof DateTime) {
-                            $novedad[$campoF] = $novedad[$campoF]->format('Y-m-d H:i:s');
-                        }
-                    }
-                }
                 
                 // Mapear estado string de BD a número para frontend
                 $novedad['estado_numero'] = $this->mapearEstadoANumero($novedad['estado']);
@@ -1639,26 +1690,34 @@ class Novedades {
         $novedad = $stmt->fetch();
 
         if ($novedad) {
-            // Centro de costos en lugar de sucursal
-            $novedad['centro_costos_display'] = !empty($novedad['descripcion_centro_costos']) 
-                ? $novedad['descripcion_centro_costos'] . ' (' . $novedad['codigo_centro_costos'] . ')'
-                : 'Centro ' . ($novedad['codigo_centro_costos'] ?? $novedad['sucursal']);
+            // Centro de costos en lugar de sucursal (abreviado)
+            $novedad['centro_costos_display'] = '';
+            if (!empty($novedad['descripcion_centro_costos'])) {
+                // Usar función de abreviación
+                $novedad['centro_costos_display'] = $this->abreviarCentroCostos(
+                    $novedad['descripcion_centro_costos'], 
+                    $novedad['codigo_centro_costos'] ?? ''
+                );
+            } elseif (!empty($novedad['codigo_centro_costos'])) {
+                $novedad['centro_costos_display'] = $novedad['codigo_centro_costos'];
+            } elseif (!empty($novedad['sucursal'])) {
+                $novedad['centro_costos_display'] = 'Centro ' . $novedad['sucursal'];
+            }
 
             // Mantener compatibilidad con campos de sucursal por ahora
             $novedad['nombre_sucursal'] = $novedad['centro_costos_display'];
 
-            // Fechas seguras - Convertir DateTime a string antes de JSON
-            foreach (['fecha_vigencia','fecha_permiso','fecha_creacion'] as $campoFecha) {
+            // Formatear fechas a dd/mm/aaaa
+            foreach (['fecha_vigencia','fecha_vigencia_hasta','fecha_permiso','fecha_creacion'] as $campoFecha) {
                 if (!empty($novedad[$campoFecha])) {
-                    if ($novedad[$campoFecha] instanceof DateTime) {
-                        $novedad[$campoFecha] = $novedad[$campoFecha]->format('Y-m-d H:i:s');
-                    }
-                    // Formatear para mostrar
-                    $raw = $novedad[$campoFecha];
-                    $str = (string)$raw;
-                    $ts = strtotime($str);
-                    if ($ts) {
-                        $novedad[$campoFecha . '_formateada'] = ($campoFecha === 'fecha_creacion') ? date('d/m/Y H:i', $ts) : date('d/m/Y', $ts);
+                    try {
+                        if ($novedad[$campoFecha] instanceof DateTime) {
+                            $novedad[$campoFecha] = $novedad[$campoFecha]->format('d/m/Y');
+                        } else {
+                            $novedad[$campoFecha] = date('d/m/Y', strtotime($novedad[$campoFecha]));
+                        }
+                    } catch (Exception $e) {
+                        // Mantener valor original si hay error
                     }
                 }
             }
@@ -1672,8 +1731,8 @@ class Novedades {
 
             // Valor display - MEJORADO para tipo 2
             if ((int)$novedad['tipo_novedad'] === 2) {
-                // Para nuevo puesto, construir display desde campos directos
-                $puestoDisplay = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nuevo puesto';
+                // Para nueva posición, construir display desde campos directos
+                $puestoDisplay = !empty($novedad['puesto']) ? $novedad['puesto'] : 'Nueva Posición';
                 $tipoPuesto = isset($novedad['tipo_nuevo_puesto']) ? ucfirst($novedad['tipo_nuevo_puesto']) : 'Permanente';
                 $novedad['valor_display'] = $puestoDisplay . ' (' . $tipoPuesto . ')';
             } else {
@@ -1721,18 +1780,12 @@ class Novedades {
                 }
                 break;
 
-            case 2: // Nuevo puesto
-                $detalle['tipo'] = 'Nuevo puesto';
+            case 2: // Nueva Posición
+                $detalle['tipo'] = 'Nueva Posición';
                 $detalle['nuevo_puesto'] = $novedad['puesto'];
-                $detalle['tipo_puesto'] = isset($novedad['tipo_nuevo_puesto']) ? ucfirst($novedad['tipo_nuevo_puesto']) : 'Permanente';
                 
                 if (!empty($novedad['fecha_vigencia'])) {
                     $detalle['fecha_vigencia'] = $this->formatearFecha($novedad['fecha_vigencia']);
-                }
-                
-                // Si es temporario, agregar fecha de finalización
-                if (isset($novedad['tipo_nuevo_puesto']) && $novedad['tipo_nuevo_puesto'] === 'temporario' && !empty($novedad['fecha_vigencia_hasta'])) {
-                    $detalle['fecha_vigencia_hasta'] = $this->formatearFecha($novedad['fecha_vigencia_hasta']);
                 }
                 break;
 
@@ -2517,14 +2570,11 @@ class Novedades {
                 }
                 break;
 
-            case 2: // Nuevo puesto
+            case 2: // Nueva Posición
                 $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Cambio de Puesto';
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['tipo_nuevo_puesto'] = isset($datos['tipo_nuevo_puesto']) ? $datos['tipo_nuevo_puesto'] : 'permanente';
-                
-                if ($datosAdaptados['tipo_nuevo_puesto'] === 'temporario' && !empty($datos['fecha_vigencia_hasta'])) {
-                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
-                }
+                $datosAdaptados['tipo_nuevo_puesto'] = 'permanente';
+                $datosAdaptados['fecha_vigencia_hasta'] = null;
                 break;
 
             case 3: // Nuevo salario neto
@@ -2649,12 +2699,13 @@ class Novedades {
                 $datosAdaptados['tipo_comision'] = 'individual';
                 
                 // COMISIÓN INDIVIDUAL: Solo un porcentaje simple, sin estructura de tope
+                // Convertir de porcentaje (25) a decimal (0.25) dividiendo entre 100
                 $datosAdaptados['tiene_tope'] = false;
-                $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_individual']) ? (float)$datos['porcentaje_individual'] : null;
+                $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_individual']) ? ((float)$datos['porcentaje_individual'] / 100) : null;
                 $datosAdaptados['porcentaje_2'] = null;
                 
-                // Observaciones simples para comisión individual
-                $pDisplay = $datosAdaptados['porcentaje_1'] ? number_format($datosAdaptados['porcentaje_1'], 2) : 0;
+                // Observaciones simples para comisión individual (mostrar como porcentaje)
+                $pDisplay = isset($datos['porcentaje_individual']) ? number_format($datos['porcentaje_individual'], 2) : 0;
                 $datosAdaptados['observaciones'] .= " - Porcentaje: {$pDisplay}%";
                 break;
 
@@ -2665,20 +2716,21 @@ class Novedades {
                 $datosAdaptados['tipo_comision'] = 'local';
                 
                 // COMISIÓN SOBRE LOCAL: Con estructura de tope/sin tope
+                // Convertir porcentajes de formato humano (25) a decimal (0.25)
                 $datosAdaptados['tiene_tope'] = isset($datos['tiene_tope']) ? (bool)$datos['tiene_tope'] : false;
                 
                 if ($datosAdaptados['tiene_tope']) {
                     // Con tope: dos porcentajes
-                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_1']) ? (float)$datos['porcentaje_1'] : null;
-                    $datosAdaptados['porcentaje_2'] = isset($datos['porcentaje_2']) ? (float)$datos['porcentaje_2'] : null;
-                    $p1Display = $datosAdaptados['porcentaje_1'] ? number_format($datosAdaptados['porcentaje_1'], 2) : 0;
-                    $p2Display = $datosAdaptados['porcentaje_2'] ? number_format($datosAdaptados['porcentaje_2'], 2) : 0;
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_1']) ? ((float)$datos['porcentaje_1'] / 100) : null;
+                    $datosAdaptados['porcentaje_2'] = isset($datos['porcentaje_2']) ? ((float)$datos['porcentaje_2'] / 100) : null;
+                    $p1Display = isset($datos['porcentaje_1']) ? number_format($datos['porcentaje_1'], 2) : 0;
+                    $p2Display = isset($datos['porcentaje_2']) ? number_format($datos['porcentaje_2'], 2) : 0;
                     $datosAdaptados['observaciones'] .= " - Con tope: {$p1Display}% y {$p2Display}%";
                 } else {
                     // Sin tope: un porcentaje
-                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? (float)$datos['porcentaje_unico'] : null;
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? ((float)$datos['porcentaje_unico'] / 100) : null;
                     $datosAdaptados['porcentaje_2'] = null;
-                    $pDisplay = $datosAdaptados['porcentaje_1'] ? number_format($datosAdaptados['porcentaje_1'], 2) : 0;
+                    $pDisplay = isset($datos['porcentaje_unico']) ? number_format($datos['porcentaje_unico'], 2) : 0;
                     $datosAdaptados['observaciones'] .= " - Sin tope: {$pDisplay}%";
                 }
                 break;
@@ -2690,14 +2742,11 @@ class Novedades {
                 $datosAdaptados['puesto'] = 'Premios - Ajuste General';
                 break;
 
-            case 53: // Reemplazo
+            case 53: // Reemplazo - siempre temporario
                 $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Reemplazo';
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['tipo_nuevo_puesto'] = isset($datos['tipo_reemplazo']) ? $datos['tipo_reemplazo'] : 'permanente';
-                
-                if ($datosAdaptados['tipo_nuevo_puesto'] === 'temporario' && !empty($datos['fecha_vigencia_hasta'])) {
-                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
-                }
+                $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 break;
 
             case 54: // Aumento Salarial
@@ -2782,14 +2831,11 @@ class Novedades {
                 $datosAdaptados['puesto'] = 'Cambio de Sucursal';
                 break;
 
-            case 2: // Nuevo puesto
+            case 2: // Nueva Posición
                 $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Cambio de Puesto';
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['tipo_nuevo_puesto'] = isset($datos['tipo_nuevo_puesto']) ? $datos['tipo_nuevo_puesto'] : 'permanente';
-                
-                if ($datosAdaptados['tipo_nuevo_puesto'] === 'temporario' && !empty($datos['fecha_vigencia_hasta'])) {
-                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
-                }
+                $datosAdaptados['tipo_nuevo_puesto'] = 'permanente';
+                $datosAdaptados['fecha_vigencia_hasta'] = null;
                 break;
 
             case 3: // Nuevo salario neto
@@ -2914,12 +2960,13 @@ class Novedades {
                 $datosAdaptados['tipo_comision'] = 'individual';
                 
                 // COMISIÓN INDIVIDUAL: Solo un porcentaje simple, sin estructura de tope
+                // Convertir de porcentaje (25) a decimal (0.25)
                 $datosAdaptados['tiene_tope'] = false;
-                $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_individual']) ? (float)$datos['porcentaje_individual'] : null;
+                $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_individual']) ? ((float)$datos['porcentaje_individual'] / 100) : null;
                 $datosAdaptados['porcentaje_2'] = null;
                 
-                // Observaciones simples para comisión individual
-                $p_display = $datosAdaptados['porcentaje_1'];
+                // Observaciones usando el valor original (no dividido)
+                $p_display = isset($datos['porcentaje_individual']) ? $datos['porcentaje_individual'] : 0;
                 $datosAdaptados['observaciones'] = "Comisión individual: {$p_display}%";
                 break;
 
@@ -2930,22 +2977,23 @@ class Novedades {
                 $datosAdaptados['tipo_comision'] = isset($datos['tipo_comision']) ? $datos['tipo_comision'] : 'local';
                 
                 // Configurar tope y porcentajes directamente en campos específicos
+                // Convertir de porcentaje (25) a decimal (0.25)
                 $datosAdaptados['tiene_tope'] = isset($datos['tiene_tope']) ? (bool)$datos['tiene_tope'] : false;
                 
                 if ($datosAdaptados['tiene_tope']) {
-                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_1']) ? (float)$datos['porcentaje_1'] : null;
-                    $datosAdaptados['porcentaje_2'] = isset($datos['porcentaje_2']) ? (float)$datos['porcentaje_2'] : null;
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_1']) ? ((float)$datos['porcentaje_1'] / 100) : null;
+                    $datosAdaptados['porcentaje_2'] = isset($datos['porcentaje_2']) ? ((float)$datos['porcentaje_2'] / 100) : null;
                     
-                    // Observaciones con porcentajes tal como se almacenan
-                    $p1_display = $datosAdaptados['porcentaje_1'];
-                    $p2_display = $datosAdaptados['porcentaje_2'];
+                    // Observaciones con porcentajes en formato original
+                    $p1_display = isset($datos['porcentaje_1']) ? $datos['porcentaje_1'] : 0;
+                    $p2_display = isset($datos['porcentaje_2']) ? $datos['porcentaje_2'] : 0;
                     $datosAdaptados['observaciones'] = "Comisión sobre local con tope: {$p1_display}% / {$p2_display}%";
                 } else {    
-                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? (float)$datos['porcentaje_unico'] : null;
+                    $datosAdaptados['porcentaje_1'] = isset($datos['porcentaje_unico']) ? ((float)$datos['porcentaje_unico'] / 100) : null;
                     $datosAdaptados['porcentaje_2'] = null;
                     
-                    // Observaciones con porcentaje tal como se almacena
-                    $p_display = $datosAdaptados['porcentaje_1'];
+                    // Observaciones con porcentaje en formato original
+                    $p_display = isset($datos['porcentaje_unico']) ? $datos['porcentaje_unico'] : 0;
                     $datosAdaptados['observaciones'] = "Comisión sobre local sin tope: {$p_display}%";
                 }
                 break;
@@ -2957,14 +3005,11 @@ class Novedades {
                 $datosAdaptados['puesto'] = 'Premios - Ajuste General';
                 break;
 
-            case 53: // Reemplazo
+            case 53: // Reemplazo - siempre temporario
                 $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Reemplazo';
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
-                $datosAdaptados['tipo_nuevo_puesto'] = isset($datos['tipo_reemplazo']) ? $datos['tipo_reemplazo'] : 'permanente';
-                
-                if ($datosAdaptados['tipo_nuevo_puesto'] === 'temporario' && !empty($datos['fecha_vigencia_hasta'])) {
-                    $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta']);
-                }
+                $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 break;
 
             case 54: // Aumento Salarial

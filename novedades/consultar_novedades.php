@@ -235,6 +235,12 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>
                                 </th>
+                                <th class="sortable" data-column="legajo" style="cursor: pointer;">
+                                    Legajo 
+                                    <span class="sort-arrow">
+                                        <i class="fas fa-sort text-muted"></i>
+                                    </span>
+                                </th>
                                 <th class="sortable" data-column="empleado" style="cursor: pointer;">
                                     Empleado 
                                     <span class="sort-arrow">
@@ -242,13 +248,13 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                     </span>
                                 </th>
                                 <th class="sortable" data-column="centro_costos" style="cursor: pointer;">
-                                    Centro de Costos 
+                                    Centro Costo
                                     <span class="sort-arrow">
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>
                                 </th>
                                 <th class="sortable" data-column="tipo" style="cursor: pointer;">
-                                    Tipo de Novedad 
+                                    Novedad 
                                     <span class="sort-arrow">
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>
@@ -260,13 +266,13 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                                     </span>
                                 </th>
                                 <th class="sortable" data-column="vigencia" style="cursor: pointer;">
-                                    Vigencia desde 
+                                    Vig. desde 
                                     <span class="sort-arrow">
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>
                                 </th>
                                 <th class="sortable" data-column="vigencia_hasta" style="cursor: pointer;">
-                                    Vigencia hasta 
+                                    Vig. hasta 
                                     <span class="sort-arrow">
                                         <i class="fas fa-sort text-muted"></i>
                                     </span>

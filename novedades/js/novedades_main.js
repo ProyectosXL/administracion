@@ -145,23 +145,37 @@ const NovedadesApp = {
     },
 
     /**
-     * Formatear fecha para mostrar - MEJORADO PARA OBJETOS DATETIME
+     * Formatear fecha para mostrar - Formato: dd/mm/aaaa (español)
+     * MEJORADO PARA OBJETOS DATETIME Y FECHAS YA FORMATEADAS
      */
     formatearFecha(fecha) {
         if (!fecha) return '';
         
         try {
+            // Si ya está en formato dd/mm/aaaa, devolverla tal cual
+            if (typeof fecha === 'string' && /^\d{2}\/\d{2}\/\d{4}/.test(fecha)) {
+                return fecha.split(' ')[0]; // Remover hora si existe
+            }
+            
+            // Manejar objetos DateTime de PHP
             if (typeof fecha === 'object' && fecha.date) {
                 console.log('🔧 Procesando objeto DateTime:', fecha);
                 fecha = fecha.date;
             }
             
+            // Si es una cadena en formato ISO (YYYY-MM-DD), parsear directamente sin timezone
+            if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}/.test(fecha)) {
+                const partes = fecha.split(/[-T\s]/);
+                const anio = partes[0];
+                const mes = partes[1];
+                const dia = partes[2];
+                return `${dia}/${mes}/${anio}`;
+            }
+            
+            // Para otros formatos, usar Date.parse
             let normalizada = fecha;
             if (typeof fecha === 'string') {
                 normalizada = fecha.replace('T', ' ').replace(/\.\d+Z?$/, '');
-                if (/^\d{4}-\d{2}-\d{2}$/.test(normalizada)) {
-                    normalizada += ' 00:00:00';
-                }
             }
             
             const ts = Date.parse(normalizada);
@@ -171,7 +185,10 @@ const NovedadesApp = {
             }
             
             const d = new Date(ts);
-            return d.toLocaleDateString('es-AR');
+            const dia = String(d.getDate()).padStart(2, '0');
+            const mes = String(d.getMonth() + 1).padStart(2, '0');
+            const anio = d.getFullYear();
+            return `${dia}/${mes}/${anio}`;
         } catch (error) {
             console.error('❌ Error formateando fecha:', error, 'Fecha original:', fecha);
             return 'Error en fecha';

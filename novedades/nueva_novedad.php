@@ -283,7 +283,7 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                 </div>
 
-                <!-- 2. Nuevo puesto -->
+                <!-- 2. Nueva Posición -->
                 <div class="form-section campo-dinamico" id="config-nuevo-puesto">
                     <h5>
                         <i class="fas fa-briefcase me-2"></i>
@@ -298,41 +298,9 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </div>
                         </div>
                         
-                        <!-- Tipo de Cambio de Puesto -->
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">
-                                Tipo de Cambio <span class="required">*</span>
-                            </label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo_nuevo_puesto" id="tipo_puesto_permanente" value="permanente" checked onchange="toggleFechaFinModoIndividual()">
-                                        <label class="form-check-label" for="tipo_puesto_permanente">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            <strong>Permanente</strong>
-                                            <br><small class="text-muted">Cambio definitivo de puesto</small>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo_nuevo_puesto" id="tipo_puesto_temporario" value="temporario" onchange="toggleFechaFinModoIndividual()">
-                                        <label class="form-check-label" for="tipo_puesto_temporario">
-                                            <i class="fas fa-clock text-warning me-2"></i>
-                                            <strong>Temporario</strong>
-                                            <br><small class="text-muted">Cambio temporal con fecha de fin</small>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="invalid-feedback" id="tipo_puesto_error">
-                                Debe seleccionar el tipo de cambio de puesto
-                            </div>
-                        </div>
-                        
                         <div class="col-md-6">
                             <label for="nuevo_puesto" class="form-label">
-                                Nuevo Puesto <span class="required">*</span>
+                                Nueva Posición <span class="required">*</span>
                             </label>
                             <select class="form-select" id="nuevo_puesto" name="puesto">
                                 <option value="">Buscar y seleccionar puesto...</option>
@@ -342,24 +310,13 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </div>
                         </div>
                         
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label for="fecha_vigencia_puesto" class="form-label">
-                                Fecha de inicio <span class="required">*</span>
+                                Fecha de vigencia <span class="required">*</span>
                             </label>
                             <input type="date" class="form-control" id="fecha_vigencia_puesto" name="fecha_vigencia">
                             <div class="invalid-feedback">
-                                La fecha de inicio es obligatoria
-                            </div>
-                        </div>
-                        
-                        <!-- Fecha de fin (solo para temporario) -->
-                        <div class="col-md-3" id="campo_fecha_fin" style="display: none;">
-                            <label for="fecha_vigencia_hasta_puesto" class="form-label">
-                                Fecha de fin <span class="required">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_hasta_puesto" name="fecha_vigencia_hasta">
-                            <div class="invalid-feedback">
-                                La fecha de fin es obligatoria para cambios temporarios
+                                La fecha de vigencia es obligatoria
                             </div>
                         </div>
                     </div>
@@ -1001,38 +958,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </div>
                         </div>
                         
-                        <!-- Tipo de Reemplazo -->
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">
-                                Tipo de Reemplazo <span class="required">*</span>
-                            </label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo_reemplazo" id="tipo_reemplazo_permanente" value="permanente" checked onchange="toggleFechaFinReemplazo()">
-                                        <label class="form-check-label" for="tipo_reemplazo_permanente">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            <strong>Permanente</strong>
-                                            <br><small class="text-muted">Reemplazo definitivo</small>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo_reemplazo" id="tipo_reemplazo_temporario" value="temporario" onchange="toggleFechaFinReemplazo()">
-                                        <label class="form-check-label" for="tipo_reemplazo_temporario">
-                                            <i class="fas fa-clock text-warning me-2"></i>
-                                            <strong>Temporario</strong>
-                                            <br><small class="text-muted">Reemplazo temporal con fecha de fin</small>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="invalid-feedback" id="tipo_reemplazo_error">
-                                Debe seleccionar el tipo de reemplazo
-                            </div>
-                        </div>
-                        
                         <div class="col-md-6">
                             <label for="puesto_reemplazo" class="form-label">
                                 Puesto de Reemplazo <span class="required">*</span>
@@ -1055,14 +980,14 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                             </div>
                         </div>
                         
-                        <!-- Fecha de fin (solo para temporario) -->
-                        <div class="col-md-3" id="campo_fecha_fin_reemplazo" style="display: none;">
+                        <!-- Fecha de fin - siempre requerida para reemplazos -->
+                        <div class="col-md-3" id="campo_fecha_fin_reemplazo">
                             <label for="fecha_vigencia_hasta_reemplazo" class="form-label">
                                 Fecha de fin <span class="required">*</span>
                             </label>
-                            <input type="date" class="form-control" id="fecha_vigencia_hasta_reemplazo" name="fecha_vigencia_hasta">
+                            <input type="date" class="form-control" id="fecha_vigencia_hasta_reemplazo" name="fecha_vigencia_hasta" required>
                             <div class="invalid-feedback">
-                                La fecha de fin es obligatoria para reemplazos temporarios
+                                La fecha de fin es obligatoria para reemplazos
                             </div>
                         </div>
                     </div>
@@ -1879,74 +1804,6 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
     <script src="js/periodo_utils.js"></script>
 
     <script>
-        /**
-         * Función específica para toggle de fecha fin en modo individual
-         */
-        function toggleFechaFinModoIndividual() {
-            const radioTemporario = document.getElementById('tipo_puesto_temporario');
-            const campoFechaFin = document.getElementById('campo_fecha_fin');
-            const fechaFinInput = document.getElementById('fecha_vigencia_hasta_puesto');
-            
-            console.log('🔄 toggleFechaFinModoIndividual ejecutado');
-            console.log('📍 Radio temporario checked:', radioTemporario ? radioTemporario.checked : 'no encontrado');
-            console.log('📍 Campo fecha fin:', campoFechaFin ? 'encontrado' : 'no encontrado');
-            
-            if (radioTemporario && radioTemporario.checked) {
-                // Mostrar campo de fecha de fin
-                if (campoFechaFin) {
-                    campoFechaFin.style.display = 'block';
-                    console.log('✅ Campo fecha fin mostrado');
-                }
-                if (fechaFinInput) {
-                    fechaFinInput.setAttribute('required', 'required');
-                    console.log('✅ Campo fecha fin marcado como requerido');
-                }
-            } else {
-                // Ocultar campo de fecha de fin
-                if (campoFechaFin) {
-                    campoFechaFin.style.display = 'none';
-                    console.log('🔒 Campo fecha fin ocultado');
-                }
-                if (fechaFinInput) {
-                    fechaFinInput.removeAttribute('required');
-                    fechaFinInput.value = '';
-                    console.log('🧹 Campo fecha fin limpiado');
-                }
-            }
-        }
-
-        /**
-         * Función para toggle de fecha fin en Reemplazo
-         */
-        function toggleFechaFinReemplazo() {
-            const radioTemporario = document.getElementById('tipo_reemplazo_temporario');
-            const campoFechaFin = document.getElementById('campo_fecha_fin_reemplazo');
-            const fechaFinInput = document.getElementById('fecha_vigencia_hasta_reemplazo');
-            
-            console.log('🔄 toggleFechaFinReemplazo ejecutado');
-            
-            if (radioTemporario && radioTemporario.checked) {
-                // Mostrar campo de fecha de fin
-                if (campoFechaFin) {
-                    campoFechaFin.style.display = 'block';
-                    console.log('✅ Campo fecha fin reemplazo mostrado');
-                }
-                if (fechaFinInput) {
-                    fechaFinInput.setAttribute('required', 'required');
-                }
-            } else {
-                // Ocultar campo de fecha de fin
-                if (campoFechaFin) {
-                    campoFechaFin.style.display = 'none';
-                    console.log('🔒 Campo fecha fin reemplazo ocultado');
-                }
-                if (fechaFinInput) {
-                    fechaFinInput.removeAttribute('required');
-                    fechaFinInput.value = '';
-                }
-            }
-        }
-
         /**
          * Función para toggle entre porcentaje y monto en Aumento Salarial
          */

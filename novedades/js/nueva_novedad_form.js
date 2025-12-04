@@ -21,10 +21,10 @@ const tiposNovedadConfigActualizada = {
         campos: ['nueva_sucursal', 'fecha_vigencia_sucursal'],
         validaciones: ['nueva_sucursal', 'fecha_vigencia']
     },
-    2: { // Nuevo puesto
+    2: { // Nueva Posición
         config: 'config-nuevo-puesto',
-        campos: ['nuevo_puesto', 'fecha_vigencia_puesto', 'tipo_nuevo_puesto'],
-        validaciones: ['puesto', 'fecha_vigencia', 'tipo_nuevo_puesto']
+        campos: ['nuevo_puesto', 'fecha_vigencia_puesto'],
+        validaciones: ['puesto', 'fecha_vigencia']
     },
     3: { // Nuevo salario neto
         config: 'config-nuevo-salario',
@@ -145,8 +145,8 @@ const tiposNovedadConfigActualizada = {
     },
     53: { // Reemplazo
         config: 'config-reemplazo',
-        campos: ['puesto_reemplazo', 'fecha_vigencia_reemplazo', 'tipo_reemplazo'],
-        validaciones: ['puesto', 'fecha_vigencia', 'tipo_reemplazo']
+        campos: ['puesto_reemplazo', 'fecha_vigencia_reemplazo', 'fecha_vigencia_hasta_reemplazo'],
+        validaciones: ['puesto', 'fecha_vigencia', 'fecha_vigencia_hasta']
     },
     54: { // Aumento Salarial
         config: 'config-aumento-salarial',
@@ -798,11 +798,10 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
             }
             break;
 
-        case 53: // Reemplazo
+        case 53: // Reemplazo - siempre temporario
             const puestoReemplazo = document.getElementById('puesto_reemplazo');
             const fechaVigenciaReemplazo = document.getElementById('fecha_vigencia_reemplazo');
-            const tipoReemplazoPermanente = document.getElementById('tipo_reemplazo_permanente');
-            const tipoReemplazoTemporario = document.getElementById('tipo_reemplazo_temporario');
+            const fechaFinReemplazo = document.getElementById('fecha_vigencia_hasta_reemplazo');
 
             if (!puestoReemplazo || !puestoReemplazo.value) {
                 errores.push('El puesto de reemplazo es obligatorio');
@@ -814,19 +813,9 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
                 valido = false;
             }
 
-            if ((!tipoReemplazoPermanente || !tipoReemplazoPermanente.checked) && 
-                (!tipoReemplazoTemporario || !tipoReemplazoTemporario.checked)) {
-                errores.push('Debe seleccionar el tipo de reemplazo');
+            if (!fechaFinReemplazo || !fechaFinReemplazo.value) {
+                errores.push('La fecha de fin del reemplazo es obligatoria');
                 valido = false;
-            }
-
-            // Si es temporario, validar fecha de fin
-            if (tipoReemplazoTemporario && tipoReemplazoTemporario.checked) {
-                const fechaFinReemplazo = document.getElementById('fecha_vigencia_hasta_reemplazo');
-                if (!fechaFinReemplazo || !fechaFinReemplazo.value) {
-                    errores.push('La fecha de fin es obligatoria para reemplazos temporarios');
-                    valido = false;
-                }
             }
             break;
 
@@ -962,42 +951,16 @@ async function recopilarDatosFormularioActualizado(tipoNovedad) {
             }
             break;
 
-        case 2: // Nuevo puesto
+        case 2: // Nueva Posición
             datos.puesto = document.getElementById('nuevo_puesto').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_puesto').value;
+            // Siempre permanente, no se permite temporario
+            datos.tipo_nuevo_puesto = 'permanente';
+            datos.fecha_vigencia_hasta = null;
             
-            // Obtener tipo de puesto (permanente/temporario) - MEJORADO
-            let tipoPuesto = 'permanente'; // default seguro
-            
-            // Verificar radio buttons
-            const radioPermanente = document.getElementById('tipo_puesto_permanente');
-            const radioTemporario = document.getElementById('tipo_puesto_temporario');
-            
-            if (radioTemporario && radioTemporario.checked) {
-                tipoPuesto = 'temporario';
-            } else if (radioPermanente && radioPermanente.checked) {
-                tipoPuesto = 'permanente';
-            }
-            // Si ninguno está seleccionado, queda 'permanente' por defecto
-            
-            datos.tipo_nuevo_puesto = tipoPuesto;
-            
-            // Si es temporario, agregar fecha de fin
-            if (tipoPuesto === 'temporario') {
-                const fechaHasta = document.getElementById('fecha_vigencia_hasta_puesto');
-                datos.fecha_vigencia_hasta = fechaHasta ? fechaHasta.value : '';
-            } else {
-                // Para permanente, asegurar que fecha_vigencia_hasta sea null
-                datos.fecha_vigencia_hasta = null;
-            }
-            
-            console.log('🔍 NUEVO PUESTO - Datos recopilados:', {
+            console.log('🔍 NUEVA POSICIÓN - Datos recopilados:', {
                 puesto: datos.puesto,
-                fecha_vigencia: datos.fecha_vigencia,
-                tipo_nuevo_puesto: datos.tipo_nuevo_puesto,
-                fecha_vigencia_hasta: datos.fecha_vigencia_hasta || 'N/A',
-                radioPermanenteChecked: radioPermanente ? radioPermanente.checked : 'no encontrado',
-                radioTemporarioChecked: radioTemporario ? radioTemporario.checked : 'no encontrado'
+                fecha_vigencia: datos.fecha_vigencia
             });
             break;
 
@@ -1136,39 +1099,17 @@ async function recopilarDatosFormularioActualizado(tipoNovedad) {
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_ajuste').value;
             break;
 
-        case 53: // Reemplazo
+        case 53: // Reemplazo - siempre temporario
             datos.puesto = document.getElementById('puesto_reemplazo').value;
             datos.fecha_vigencia = document.getElementById('fecha_vigencia_reemplazo').value;
-            
-            // Obtener tipo de reemplazo (permanente/temporario)
-            let tipoReemplazo = 'permanente'; // default seguro
-            
-            // Verificar radio buttons
-            const radioPermanenteReemplazo = document.getElementById('tipo_reemplazo_permanente');
-            const radioTemporarioReemplazo = document.getElementById('tipo_reemplazo_temporario');
-            
-            if (radioTemporarioReemplazo && radioTemporarioReemplazo.checked) {
-                tipoReemplazo = 'temporario';
-            } else if (radioPermanenteReemplazo && radioPermanenteReemplazo.checked) {
-                tipoReemplazo = 'permanente';
-            }
-            
-            datos.tipo_reemplazo = tipoReemplazo;
-            
-            // Si es temporario, agregar fecha de fin
-            if (tipoReemplazo === 'temporario') {
-                const fechaHastaReemplazo = document.getElementById('fecha_vigencia_hasta_reemplazo');
-                datos.fecha_vigencia_hasta = fechaHastaReemplazo ? fechaHastaReemplazo.value : '';
-            } else {
-                // Para permanente, asegurar que fecha_vigencia_hasta sea null
-                datos.fecha_vigencia_hasta = null;
-            }
+            datos.tipo_reemplazo = 'temporario';
+            datos.fecha_vigencia_hasta = document.getElementById('fecha_vigencia_hasta_reemplazo').value;
             
             console.log('🔍 REEMPLAZO - Datos recopilados:', {
                 puesto: datos.puesto,
                 fecha_vigencia: datos.fecha_vigencia,
                 tipo_reemplazo: datos.tipo_reemplazo,
-                fecha_vigencia_hasta: datos.fecha_vigencia_hasta || 'N/A'
+                fecha_vigencia_hasta: datos.fecha_vigencia_hasta
             });
             break;
 
@@ -1488,11 +1429,12 @@ function calcularPeriodoConDiaCierre(diaCierre, fechaReferencia = null, esPrimer
 async function calcularFechaPeriodoParaVigencia(tipoNovedadId) {
     const periodo = await calcularPeriodoSegunCierre(tipoNovedadId);
     
-    // La fecha de vigencia es el primer día del mes del período
-    const fechaInicioPeriodo = new Date(periodo.year, periodo.month - 1, 1); // periodo.month - 1 porque Date usa 0-based
+    // Formatear manualmente como YYYY-MM-DD sin usar Date para evitar problemas de timezone
+    const year = periodo.year;
+    const month = String(periodo.month).padStart(2, '0');
+    const day = '01';
     
-    // Formatear como YYYY-MM-DD para input date
-    return fechaInicioPeriodo.toISOString().split('T')[0];
+    return `${year}-${month}-${day}`;
 }
 
 /**
@@ -1501,11 +1443,12 @@ async function calcularFechaPeriodoParaVigencia(tipoNovedadId) {
 async function calcularFechaPeriodoSiguienteParaVigencia(tipoNovedadId) {
     const periodo = await calcularPeriodoSiguienteSegunCierre(tipoNovedadId);
     
-    // La fecha de vigencia es el primer día del mes del período siguiente
-    const fechaInicioPeriodo = new Date(periodo.year, periodo.month - 1, 1); // periodo.month - 1 porque Date usa 0-based
+    // Formatear manualmente como YYYY-MM-DD sin usar Date para evitar problemas de timezone
+    const year = periodo.year;
+    const month = String(periodo.month).padStart(2, '0');
+    const day = '01';
     
-    // Formatear como YYYY-MM-DD para input date
-    return fechaInicioPeriodo.toISOString().split('T')[0];
+    return `${year}-${month}-${day}`;
 }
 /**
  * Configurar fecha de vigencia según tipo de corte
@@ -1597,7 +1540,11 @@ async function configurarFechaVigencia(tipoNovedadId, campoFechaId) {
             // Fallback al cálculo simple
             const hoy = new Date();
             const fechaFallback = new Date(hoy.getFullYear(), hoy.getMonth(), 28);
-            campoFecha.value = fechaFallback.toISOString().split('T')[0];
+            // Formatear manualmente para evitar problemas de timezone
+            const year = fechaFallback.getFullYear();
+            const month = String(fechaFallback.getMonth() + 1).padStart(2, '0');
+            const day = String(fechaFallback.getDate()).padStart(2, '0');
+            campoFecha.value = `${year}-${month}-${day}`;
             
             const mensajeInfo = document.createElement('div');
             mensajeInfo.className = 'fecha-vigencia-info mt-2';
@@ -1663,7 +1610,11 @@ async function configurarFechaVigencia(tipoNovedadId, campoFechaId) {
             const yearProximo = mesProximo > 11 ? hoy.getFullYear() + 1 : hoy.getFullYear();
             const mesAjustado = mesProximo > 11 ? 0 : mesProximo;
             const fechaFallback = new Date(yearProximo, mesAjustado, 28);
-            campoFecha.value = fechaFallback.toISOString().split('T')[0];
+            // Formatear manualmente para evitar problemas de timezone
+            const year = fechaFallback.getFullYear();
+            const month = String(fechaFallback.getMonth() + 1).padStart(2, '0');
+            const day = String(fechaFallback.getDate()).padStart(2, '0');
+            campoFecha.value = `${year}-${month}-${day}`;
             
             const mensajeInfo = document.createElement('div');
             mensajeInfo.className = 'fecha-vigencia-info mt-2';
@@ -1680,15 +1631,28 @@ async function configurarFechaVigencia(tipoNovedadId, campoFechaId) {
         // Si es Fecha Vigencia, limpiar campo y permitir selección libre
         campoFecha.value = '';
         
-        // Agregar mensaje informativo
+        // Agregar mensaje informativo personalizado según el campo
         const mensajeInfo = document.createElement('div');
         mensajeInfo.className = 'fecha-vigencia-info mt-2';
-        mensajeInfo.innerHTML = `
-            <div class="alert alert-primary alert-sm py-2">
-                <i class="fas fa-calendar-alt me-2"></i>
-                <strong>Fecha de vigencia libre:</strong> Seleccione la fecha específica de entrada en vigencia.
-            </div>
-        `;
+        
+        // Personalizar mensaje para fecha de fin de reemplazo
+        if (campoFechaId === 'fecha_vigencia_hasta_reemplazo') {
+            mensajeInfo.innerHTML = `
+                <div class="alert alert-primary alert-sm py-2">
+                    <i class="fas fa-calendar-times me-2"></i>
+                    <strong>Fecha de finalización:</strong> Seleccione la fecha en que finaliza el reemplazo temporario.
+                </div>
+            `;
+        } else {
+            // Mensaje estándar para otras fechas de vigencia
+            mensajeInfo.innerHTML = `
+                <div class="alert alert-primary alert-sm py-2">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    <strong>Fecha de vigencia libre:</strong> Seleccione la fecha específica de entrada en vigencia.
+                </div>
+            `;
+        }
+        
         contenedorCampo.appendChild(mensajeInfo);
     }
     
@@ -2253,8 +2217,7 @@ async function configurarCambioPuesto() {
             }
         }
         
-        // Configurar event listeners para tipo de puesto (Permanente/Temporario)
-        configurarTipoPuesto();
+        // No se necesita configuración adicional para tipo de puesto (siempre permanente)
         
     } catch (error) {
         console.error('❌ Error obteniendo puesto actual:', error);
@@ -2262,56 +2225,6 @@ async function configurarCambioPuesto() {
         if (puestoActualInfo) {
             puestoActualInfo.style.display = 'none';
         }
-    }
-}
-
-/**
- * Configurar lógica de tipo de puesto (Permanente/Temporario)
- */
-function configurarTipoPuesto() {
-    const radioPermanente = document.getElementById('tipo_puesto_permanente');
-    const radioTemporario = document.getElementById('tipo_puesto_temporario');
-    const campoFechaFin = document.getElementById('campo_fecha_fin');
-    const fechaHastaCampo = document.getElementById('fecha_vigencia_hasta_puesto');
-    
-    // Event listener para cambio de tipo
-    function manejarCambioTipoPuesto() {
-        if (radioTemporario && radioTemporario.checked) {
-            // Mostrar campo de fecha de fin para temporario
-            if (campoFechaFin) {
-                campoFechaFin.style.display = 'block';
-                campoFechaFin.classList.add('fade-in');
-            }
-            if (fechaHastaCampo) {
-                fechaHastaCampo.setAttribute('required', 'required');
-            }
-            console.log('🕐 Cambio temporario seleccionado - mostrando fecha de fin');
-        } else {
-            // Ocultar campo de fecha de fin para permanente
-            if (campoFechaFin) {
-                campoFechaFin.style.display = 'none';
-                campoFechaFin.classList.remove('fade-in');
-            }
-            if (fechaHastaCampo) {
-                fechaHastaCampo.removeAttribute('required');
-                fechaHastaCampo.value = ''; // Limpiar valor
-            }
-            console.log('✅ Cambio permanente seleccionado - ocultando fecha de fin');
-        }
-    }
-    
-    // Agregar event listeners
-    if (radioPermanente) {
-        radioPermanente.addEventListener('change', manejarCambioTipoPuesto);
-    }
-    if (radioTemporario) {
-        radioTemporario.addEventListener('change', manejarCambioTipoPuesto);
-    }
-    
-    // Configurar estado inicial (permanente por defecto)
-    if (radioPermanente) {
-        radioPermanente.checked = true;
-        manejarCambioTipoPuesto();
     }
 }
 
@@ -2642,9 +2555,12 @@ function inicializarConfiguracionGlobal() {
     // Configurar fecha de vigencia por defecto
     const fechaVigenciaGlobal = document.getElementById('fecha_vigencia_global');
     if (fechaVigenciaGlobal) {
-        // Establecer fecha mínima como hoy
-        const hoy = new Date().toISOString().split('T')[0];
-        fechaVigenciaGlobal.min = hoy;
+        // Establecer fecha mínima como hoy - Formatear manualmente
+        const hoy = new Date();
+        const year = hoy.getFullYear();
+        const month = String(hoy.getMonth() + 1).padStart(2, '0');
+        const day = String(hoy.getDate()).padStart(2, '0');
+        fechaVigenciaGlobal.min = `${year}-${month}-${day}`;
     }
 }
 
@@ -2869,7 +2785,7 @@ function generarConfiguracionEspecificaMultiple(tipoNovedad, novedadId) {
     switch (tipoNovedad) {
         case 1: // Cambio de sucursal
             return generarConfigCambioSucursalMultiple(novedadId);
-        case 2: // Nuevo puesto
+        case 2: // Nueva Posición
             return generarConfigNuevoPuestoMultiple(novedadId);
         case 3: // Nuevo salario
             return generarConfigNuevoSalarioMultiple(novedadId);
@@ -3075,51 +2991,19 @@ function generarConfigNuevoPuestoMultiple(novedadId) {
         <div class="row">
             <div class="col-md-6">
                 <label for="nuevo_puesto_${novedadId}" class="form-label">
-                    Nuevo Puesto <span class="required">*</span>
+                    Nueva Posición <span class="required">*</span>
                 </label>
                 <select class="form-select" id="nuevo_puesto_${novedadId}" name="nuevo_puesto_${novedadId}" required>
-                    <option value="">Seleccione nuevo puesto...</option>
+                    <option value="">Seleccione nueva posición...</option>
                 </select>
-                <div class="invalid-feedback">El nuevo puesto es obligatorio</div>
+                <div class="invalid-feedback">La nueva posición es obligatoria</div>
             </div>
             <div class="col-md-6">
-                <label class="form-label">Tipo de Cambio <span class="required">*</span></label>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_nuevo_puesto_${novedadId}" 
-                                   id="tipo_puesto_permanente_${novedadId}" value="permanente" checked>
-                            <label class="form-check-label" for="tipo_puesto_permanente_${novedadId}">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                <strong>Permanente</strong>
-                                <br><small class="text-muted">Cambio definitivo de puesto</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_nuevo_puesto_${novedadId}" 
-                                   id="tipo_puesto_temporario_${novedadId}" value="temporario">
-                            <label class="form-check-label" for="tipo_puesto_temporario_${novedadId}">
-                                <i class="fas fa-clock text-warning me-2"></i>
-                                <strong>Temporario</strong>
-                                <br><small class="text-muted">Cambio temporal con fecha de fin</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Fecha de fin (solo para temporario) -->
-        <div class="row mt-3" id="campo_fecha_fin_${novedadId}" style="display: none;">
-            <div class="col-md-6">
-                <label for="fecha_vigencia_hasta_puesto_${novedadId}" class="form-label">
-                    Fecha de fin <span class="required">*</span>
+                <label for="fecha_vigencia_puesto_${novedadId}" class="form-label">
+                    Fecha de vigencia <span class="required">*</span>
                 </label>
-                <input type="date" class="form-control" id="fecha_vigencia_hasta_puesto_${novedadId}" name="fecha_vigencia_hasta_${novedadId}">
-                <div class="invalid-feedback">
-                    La fecha de fin es obligatoria para cambios temporarios
-                </div>
+                <input type="date" class="form-control" id="fecha_vigencia_puesto_${novedadId}" name="fecha_vigencia_${novedadId}" required>
+                <div class="invalid-feedback">La fecha de vigencia es obligatoria</div>
             </div>
         </div>
     `;
@@ -3436,40 +3320,6 @@ function generarConfigPremiosAjusteGeneralMultiple(novedadId) {
 function generarConfigReemplazoMultiple(novedadId) {
     return `
         <div class="row">
-            <!-- Tipo de Reemplazo -->
-            <div class="col-md-12 mb-3">
-                <label class="form-label">
-                    Tipo de Reemplazo <span class="required">*</span>
-                </label>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_reemplazo_${novedadId}" 
-                                   id="tipo_reemplazo_permanente_${novedadId}" value="permanente" checked 
-                                   onchange="toggleFechaFinReemplazoMultiple('${novedadId}')">
-                            <label class="form-check-label" for="tipo_reemplazo_permanente_${novedadId}">
-                                <i class="fas fa-check-circle text-success me-2"></i>
-                                <strong>Permanente</strong>
-                                <br><small class="text-muted">Reemplazo definitivo</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="tipo_reemplazo_${novedadId}" 
-                                   id="tipo_reemplazo_temporario_${novedadId}" value="temporario" 
-                                   onchange="toggleFechaFinReemplazoMultiple('${novedadId}')">
-                            <label class="form-check-label" for="tipo_reemplazo_temporario_${novedadId}">
-                                <i class="fas fa-clock text-warning me-2"></i>
-                                <strong>Temporario</strong>
-                                <br><small class="text-muted">Reemplazo temporal con fecha de fin</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="invalid-feedback">Debe seleccionar el tipo de reemplazo</div>
-            </div>
-            
             <div class="col-md-6">
                 <label for="puesto_reemplazo_${novedadId}" class="form-label">
                     Puesto de Reemplazo <span class="required">*</span>
@@ -3480,14 +3330,14 @@ function generarConfigReemplazoMultiple(novedadId) {
                 <div class="invalid-feedback">El puesto de reemplazo es obligatorio</div>
             </div>
             
-            <!-- Fecha de fin (solo para temporario) -->
-            <div class="col-md-6" id="campo_fecha_fin_reemplazo_${novedadId}" style="display: none;">
+            <!-- Fecha de fin - siempre requerida -->
+            <div class="col-md-6" id="campo_fecha_fin_reemplazo_${novedadId}">
                 <label for="fecha_vigencia_hasta_reemplazo_${novedadId}" class="form-label">
                     Fecha de fin <span class="required">*</span>
                 </label>
                 <input type="date" class="form-control" id="fecha_vigencia_hasta_reemplazo_${novedadId}" 
-                       name="fecha_vigencia_hasta_reemplazo_${novedadId}">
-                <div class="invalid-feedback">La fecha de fin es obligatoria para reemplazos temporarios</div>
+                       name="fecha_vigencia_hasta_reemplazo_${novedadId}" required>
+                <div class="invalid-feedback">La fecha de fin es obligatoria para reemplazos</div>
             </div>
         </div>
     `;
@@ -3573,9 +3423,9 @@ function aplicarConfiguracionesEspecificasMultiple(tipoNovedad, novedadId) {
         case 1: // Cambio de sucursal
             cargarSucursalesEnSelectMultiple(`nueva_sucursal_${novedadId}`);
             break;
-        case 2: // Nuevo puesto
+        case 2: // Nueva Posición
             cargarPuestosEnSelectMultiple(`nuevo_puesto_${novedadId}`);
-            configurarTipoPuestoMultiple(novedadId);
+            // No requiere configuración adicional (siempre permanente)
             break;
         case 12: // Plus de caja
         case 32:
@@ -3631,7 +3481,7 @@ async function cargarPuestosEnSelectMultiple(selectId) {
         const select = document.getElementById(selectId);
         
         if (select && puestos) {
-            select.innerHTML = '<option value="">Seleccione nuevo puesto...</option>';
+            select.innerHTML = '<option value="">Seleccione nueva posición...</option>';
             puestos.forEach(puesto => {
                 select.innerHTML += `<option value="${puesto.nombre_puesto}">${puesto.nombre_puesto}</option>`;
             });
@@ -3639,35 +3489,6 @@ async function cargarPuestosEnSelectMultiple(selectId) {
         }
     } catch (error) {
         console.error(`Error cargando puestos en ${selectId}:`, error);
-    }
-}
-
-/**
- * Configurar tipo de puesto (permanente/temporario)
- */
-function configurarTipoPuestoMultiple(novedadId) {
-    const radioTemporario = document.getElementById(`tipo_puesto_temporario_${novedadId}`);
-    const radioPermanente = document.getElementById(`tipo_puesto_permanente_${novedadId}`);
-    const campoFechaFin = document.getElementById(`campo_fecha_fin_${novedadId}`);
-    
-    if (radioTemporario && radioPermanente && campoFechaFin) {
-        // Event listener para mostrar/ocultar fecha fin
-        [radioTemporario, radioPermanente].forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (radioTemporario.checked) {
-                    campoFechaFin.style.display = 'block';
-                    const fechaInput = document.getElementById(`fecha_vigencia_hasta_puesto_${novedadId}`);
-                    if (fechaInput) fechaInput.required = true;
-                } else {
-                    campoFechaFin.style.display = 'none';
-                    const fechaInput = document.getElementById(`fecha_vigencia_hasta_puesto_${novedadId}`);
-                    if (fechaInput) {
-                        fechaInput.required = false;
-                        fechaInput.value = '';
-                    }
-                }
-            });
-        });
     }
 }
 
@@ -3822,48 +3643,6 @@ function configurarComisionLocalMultiple(novedadId) {
     }
 }
 
-function configurarTipoPuestoMultiple(novedadId) {
-    const radioPermanente = document.getElementById(`tipo_puesto_permanente_${novedadId}`);
-    const radioTemporario = document.getElementById(`tipo_puesto_temporario_${novedadId}`);
-    const campoFechaFin = document.getElementById(`campo_fecha_fin_${novedadId}`);
-    const fechaHastaCampo = document.getElementById(`fecha_vigencia_hasta_puesto_${novedadId}`);
-    
-    function manejarCambioTipoPuesto() {
-        if (radioTemporario && radioTemporario.checked) {
-            // Mostrar campo de fecha de fin para temporario
-            if (campoFechaFin) {
-                campoFechaFin.style.display = 'block';
-            }
-            if (fechaHastaCampo) {
-                fechaHastaCampo.setAttribute('required', 'required');
-            }
-        } else {
-            // Ocultar campo de fecha de fin para permanente
-            if (campoFechaFin) {
-                campoFechaFin.style.display = 'none';
-            }
-            if (fechaHastaCampo) {
-                fechaHastaCampo.removeAttribute('required');
-                fechaHastaCampo.value = '';
-            }
-        }
-    }
-    
-    // Agregar event listeners
-    if (radioPermanente) {
-        radioPermanente.addEventListener('change', manejarCambioTipoPuesto);
-    }
-    if (radioTemporario) {
-        radioTemporario.addEventListener('change', manejarCambioTipoPuesto);
-    }
-    
-    // Configurar estado inicial (permanente por defecto)
-    if (radioPermanente) {
-        radioPermanente.checked = true;
-        manejarCambioTipoPuesto();
-    }
-}
-
 /**
  * Cargar puestos en select del modo múltiple
  */
@@ -3873,7 +3652,7 @@ async function cargarPuestosEnSelectMultiple(selectId) {
         const select = document.getElementById(selectId);
         
         if (select && puestos) {
-            select.innerHTML = '<option value="">Seleccione nuevo puesto...</option>';
+            select.innerHTML = '<option value="">Seleccione nueva posición...</option>';
             puestos.forEach(puesto => {
                 // Usar nombre_puesto como value para mantener consistencia con modo simple
                 select.innerHTML += `<option value="${puesto.nombre_puesto}">${puesto.nombre_puesto}</option>`;
@@ -4057,12 +3836,11 @@ function agregarCamposEspecificosNovedad(novedad, tipoNovedad, novedadId) {
                 novedad.sucursal_actual = empleadoSeleccionado.sucursal_numero;
             }
             break;
-        case 2: // Nuevo puesto
+        case 2: // Nueva Posición
             novedad.puesto = document.getElementById(`nuevo_puesto_${novedadId}`)?.value;
-            novedad.tipo_nuevo_puesto = document.querySelector(`input[name="tipo_nuevo_puesto_${novedadId}"]:checked`)?.value;
-            if (novedad.tipo_nuevo_puesto === 'temporario') {
-                novedad.fecha_vigencia_hasta = document.getElementById(`fecha_vigencia_hasta_puesto_${novedadId}`)?.value;
-            }
+            // Siempre permanente
+            novedad.tipo_nuevo_puesto = 'permanente';
+            novedad.fecha_vigencia_hasta = null;
             break;
         case 3: // Nuevo salario
             novedad.importe = document.getElementById(`importe_salario_${novedadId}`)?.value;
@@ -4160,12 +3938,10 @@ function agregarCamposEspecificosNovedad(novedad, tipoNovedad, novedadId) {
         case 38:
             novedad.importe = document.getElementById(`importe_ajuste_general_${novedadId}`)?.value;
             break;
-        case 53: // Reemplazo
+        case 53: // Reemplazo - siempre temporario
             novedad.puesto = document.getElementById(`puesto_reemplazo_${novedadId}`)?.value;
-            novedad.tipo_reemplazo = document.querySelector(`input[name="tipo_reemplazo_${novedadId}"]:checked`)?.value;
-            if (novedad.tipo_reemplazo === 'temporario') {
-                novedad.fecha_vigencia_hasta = document.getElementById(`fecha_vigencia_hasta_reemplazo_${novedadId}`)?.value;
-            }
+            novedad.tipo_reemplazo = 'temporario';
+            novedad.fecha_vigencia_hasta = document.getElementById(`fecha_vigencia_hasta_reemplazo_${novedadId}`)?.value;
             break;
         case 54: // Aumento Salarial
             novedad.tipo_aumento = document.querySelector(`input[name="tipo_aumento_${novedadId}"]:checked`)?.value;
@@ -4423,7 +4199,7 @@ const tiposNovedadInfo = {
         descripcion: "Información sobre cambio de centro de costos será agregada próximamente."
     },
     2: {
-        nombre: "Nuevo Puesto",
+        nombre: "Nueva Posición",
         descripcion: "Información sobre cambio de puesto será agregada próximamente."
     },
     3: {
@@ -4625,38 +4401,6 @@ function mostrarInfoTipoNovedad(mode) {
     // Mostrar modal
     const modal = new bootstrap.Modal(document.getElementById('modalTipoNovedadInfo'));
     modal.show();
-}
-
-/**
- * Toggle fecha fin para reemplazo en modo múltiple
- */
-function toggleFechaFinReemplazoMultiple(novedadId) {
-    const radioTemporario = document.getElementById(`tipo_reemplazo_temporario_${novedadId}`);
-    const campoFechaFin = document.getElementById(`campo_fecha_fin_reemplazo_${novedadId}`);
-    const fechaFinInput = document.getElementById(`fecha_vigencia_hasta_reemplazo_${novedadId}`);
-    
-    console.log('🔄 toggleFechaFinReemplazoMultiple ejecutado para', novedadId);
-    
-    if (radioTemporario && radioTemporario.checked) {
-        // Mostrar campo de fecha de fin
-        if (campoFechaFin) {
-            campoFechaFin.style.display = 'block';
-            console.log('✅ Campo fecha fin reemplazo múltiple mostrado');
-        }
-        if (fechaFinInput) {
-            fechaFinInput.setAttribute('required', 'required');
-        }
-    } else {
-        // Ocultar campo de fecha de fin
-        if (campoFechaFin) {
-            campoFechaFin.style.display = 'none';
-            console.log('🔒 Campo fecha fin reemplazo múltiple ocultado');
-        }
-        if (fechaFinInput) {
-            fechaFinInput.removeAttribute('required');
-            fechaFinInput.value = '';
-        }
-    }
 }
 
 /**
