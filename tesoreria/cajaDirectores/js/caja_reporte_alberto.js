@@ -82,10 +82,12 @@ async function actualizarResumenAlberto(soloSaldo = false, filtrosActivos = null
                     fechaDesde = filtrosActivos.fecha_desde;
                     fechaHasta = filtrosActivos.fecha_hasta;
                 } else {
-                    const hace15Dias = new Date(hoy);
-                    hace15Dias.setDate(hoy.getDate() - 15);
-                    fechaDesde = hace15Dias.toISOString().split('T')[0];
-                    fechaHasta = hoy.toISOString().split('T')[0];
+                    // Primer día del mes actual
+                    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                    // Último día del mes actual
+                    const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+                    fechaDesde = primerDiaMes.toISOString().split('T')[0];
+                    fechaHasta = ultimoDiaMes.toISOString().split('T')[0];
                 }
                 
                 let url = `controller/caja_reporte_alberto_controller.php?accion=movimientos&_=${Date.now()}`;
@@ -136,11 +138,13 @@ async function cargarReporteAlberto(filtros = {}) {
     try {
         if (!filtros.fecha_desde || !filtros.fecha_hasta) {
             const hoy = new Date();
-            const hace15Dias = new Date(hoy);
-            hace15Dias.setDate(hoy.getDate() - 15);
+            // Primer día del mes actual
+            const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            // Último día del mes actual
+            const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
             
-            filtros.fecha_desde = hace15Dias.toISOString().split('T')[0];
-            filtros.fecha_hasta = hoy.toISOString().split('T')[0];
+            filtros.fecha_desde = primerDiaMes.toISOString().split('T')[0];
+            filtros.fecha_hasta = ultimoDiaMes.toISOString().split('T')[0];
         }
         
         let url = `controller/caja_reporte_alberto_controller.php?accion=movimientos&_=${Date.now()}`;
@@ -471,11 +475,13 @@ document.getElementById('reporte-alberto-tab')?.addEventListener('shown.bs.tab',
 // Inicializar fechas
 function inicializarFechasReporteAlberto() {
     const hoy = new Date();
-    const hace15Dias = new Date(hoy);
-    hace15Dias.setDate(hoy.getDate() - 15);
+    // Primer día del mes actual
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    // Último día del mes actual
+    const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
     
-    document.getElementById('fechaReporteAlbertoDesde').value = hace15Dias.toISOString().split('T')[0];
-    document.getElementById('fechaReporteAlbertoHasta').value = hoy.toISOString().split('T')[0];
+    document.getElementById('fechaReporteAlbertoDesde').value = primerDiaMes.toISOString().split('T')[0];
+    document.getElementById('fechaReporteAlbertoHasta').value = ultimoDiaMes.toISOString().split('T')[0];
 }
 
 // Aplicar filtros

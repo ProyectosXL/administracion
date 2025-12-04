@@ -421,41 +421,57 @@ class Sucursal {
         }
     }
 
-    public function traerDatosGuiaRetiro($id, $nroSucurs) {
-
-        try {
-            $sql = "SELECT 
+public function traerDatosGuiaRetiro($id, $nroSucurs) {
+    try {
+        // --- PASO 1: Traer los datos del encabezado ---
+        $sqlEncabezado = "
+            SELECT 
                 FORMAT(FECHA_REG, 'dd/MM/yyyy HH:mm') as FECHA,
                 NRO_REGISTRO,
                 ENTREGO,
                 RECIBIO,
-                ENVIA_VALORES,
+                CASE WHEN ENVIA_VALORES = 1 THEN 'SI' ELSE 'NO' END AS ENVIA_VALORES,
                 OBSERVACIONES,
-                PRECINTO,
+                PRECINTO AS NRO_PRECINTO,
                 FIRMA
             FROM RO_ENC_GUIA_RETIROS_SUC
-            WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
-
-            $params = array($id, $nroSucurs);
-            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-            
-            if ($stmt === false) {
-                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
-            }
-
-            $resultados = [];
-
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $resultados[] = $row;
-            }
-
-            return $resultados;
-
-        } catch (Exception $e) {
-            error_log("Error en listarGuiasRetiro: " . $e->getMessage());
-            throw new Exception("Error al obtener las guías: " . $e->getMessage());
+            WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?
+        ";
+        $paramsEncabezado = array($id, $nroSucurs);
+        $stmtEncabezado = sqlsrv_query($this->cid_central, $sqlEncabezado, $paramsEncabezado);
+        
+        if ($stmtEncabezado === false) {
+            throw new Exception("Error en la consulta del encabezado: " . print_r(sqlsrv_errors(), true));
         }
+
+        $resultado = sqlsrv_fetch_array($stmtEncabezado, SQLSRV_FETCH_ASSOC);
+
+        // Si no se encontró el encabezado, no hay nada más que hacer.
+        if (!$resultado) {
+            return [];
+        }
+
+        // --- PASO 2: Traer los remitos asociados (reutilizando tu propia función) ---
+        // Tu clase ya tiene una función para esto, ¡usémosla!
+        $remitos = $this->listarRemitosPorGuia($id, $nroSucurs);
+        $resultado['remitos'] = $remitos; // Añadimos el array de remitos al resultado
+
+        // --- PASO 3: Traer los egresos asociados ---
+        require_once __DIR__.'../gasto.php'; // Incluimos la clase Gasto
+        $gasto = new Gasto();
+        // Llamamos a la función que ya confirmamos que existe y funciona en gasto.php
+        $egresos = $gasto->listarEgresosPorGuia($id, $nroSucurs);
+        $resultado['egresos'] = $egresos; // Añadimos el array de egresos al resultado
+
+        // --- PASO 4: Devolver todo junto ---
+        // Devolvemos un único array que contiene el encabezado y los subarrays de detalles
+        return [$resultado];
+
+    } catch (Exception $e) {
+        error_log("Error en traerDatosGuiaRetiro: " . $e->getMessage());
+        throw new Exception("Error al obtener los datos de la guía: " . $e->getMessage());
     }
+}
 
 
 
@@ -485,37 +501,37 @@ class Sucursal {
 
     }
 
-    public function listarRemitosPorGuia($id, $nroSucurs) {
-        try {
-            $sql = "SELECT 
-                        CAST(FECHA_REM AS DATE) FECHA, 
-                        N_COMP REMITO, 
-                        DESTINO, 
-                        BULTOS 
-                    FROM RO_REMITOS_GUIA_RETIROS_SUC 
-                    WHERE NRO_REGISTRO = ? 
-                    AND NRO_SUCURS = ?
-                    ORDER BY FECHA_REM DESC, N_COMP DESC";
-    
-            $params = array($id, $nroSucurs);   
-            $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-            
-            if ($stmt === false) {
-                throw new Exception("Error en la consulta de remitos: " . print_r(sqlsrv_errors(), true));
-            }
-    
-            $resultados = [];
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $row['FECHA'] = $row['FECHA']->format('d/m/Y');
-                $resultados[] = $row;
-            }
-    
-            return $resultados;
-        } catch (Exception $e) {
-            error_log("Error en listarRemitosPorGuia: " . $e->getMessage());
-            return [];
+public function listarRemitosPorGuia($id, $nroSucurs) {
+    try {
+        // CORRECCIÓN: Volvemos a añadir el filtro por NRO_SUCURS
+        $sql = "SELECT 
+                    FORMAT(FECHA_REM, 'dd/MM/yyyy') AS fecha,
+                    N_COMP AS remito,
+                    DESTINO AS destino,
+                    BULTOS AS bultos
+                FROM RO_REMITOS_GUIA_RETIROS_SUC 
+                WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?
+                ORDER BY N_COMP";
+
+        // CORRECCIÓN: Volvemos a usar ambos parámetros
+        $params = array($id, $nroSucurs);
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+        
+        if ($stmt === false) {
+            throw new Exception("Error en la consulta de remitos por guía: " . print_r(sqlsrv_errors(), true));
         }
+
+        $resultados = [];
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $resultados[] = $row;
+        }
+
+        return $resultados;
+    } catch (Exception $e) {
+        error_log("Error en listarRemitosPorGuia: " . $e->getMessage());
+        return [];
     }
+}
     
     public function actualizarEncabezadoGuiaRetiro($datos, $nroSucursal, $firma, $estado) {
         try {

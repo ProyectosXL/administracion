@@ -1,30 +1,4 @@
 
-$(document).ready(function() {
-    // Inicializar Select2 en el select de entrego
-    $('#entrego').select2({
-        theme: 'bootstrap-5',
-        width: '100%',
-        placeholder: 'Seleccione una persona',
-        allowClear: true,
-        language: {
-            noResults: function() {
-                return "No se encontraron resultados";
-            },
-            searching: function() {
-                return "Buscando...";
-            }
-        }
-    });
-
-    // Ajustar estilos específicos
-    $('.select2-container--bootstrap-5 .select2-selection--single').css({
-        'height': 'calc(3.5rem + 2px)',
-        'padding': '1rem 0.75rem',
-        'font-size': '1rem',
-        'line-height': '1.5',
-        'border-radius': '0.375rem'
-    });
-});
 
     // Variables globales
     let numeroRegistro = 1;
@@ -43,6 +17,77 @@ $(document).ready(function() {
             }
         });
     }
+
+function obtenerNumeroRegistroDesdeURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id'); // <-- Cambiado a 'id' para que coincida con tu URL
+}
+
+async function cargarDatosParaEditar(numeroRegistro) {
+    if (!numeroRegistro) {
+        mostrarAlerta('Error', 'No se ha especificado un número de registro para editar.');
+        return;
+    }
+
+    try {
+        // Hacemos la llamada al controlador para traer TODOS los datos
+        const url = `/administracion/Controller/retiroController.php?accion=traerDatos&numeroRegistro=${numeroRegistro}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error de red al contactar el servidor.');
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'No se encontraron datos para este registro.');
+        }
+
+        const datos = result.data;
+
+        // --- 1. Llenar el encabezado del formulario ---
+        $('#numeroRegistro').val(datos.NRO_REGISTRO);
+        
+        // Para Select2, es importante establecer el valor y luego disparar 'change'
+        // Asumiendo que 'ENTREGO_VALOR_COMPLETO' es el value que guardaste
+        $('#entrego').val(datos.ENTREGO_VALOR_COMPLETO).trigger('change'); 
+        $('#recibio').val(datos.RECIBIO).trigger('change');
+        $('#enviaValores').val(datos.ENVIA_VALORES).trigger('change');
+        $('#numeroPrecinto').val(datos.NRO_PRECINTO);
+        $('#observaciones').val(datos.OBSERVACIONES);
+
+        // --- 2. Llenar la tabla de REMITOS (¡LA PARTE CLAVE!) ---
+        $('#bodyRemitos').empty(); // Limpiamos la tabla primero
+        if (datos.remitos && Array.isArray(datos.remitos)) {
+            datos.remitos.forEach(remito => {
+                const fila = crearFilaRemito({
+                    remito: remito.N_COMP,
+                    destino: remito.DESTINO,
+                    fecha: remito.FECHA_REM,
+                    t_comp: remito.T_COMP
+                });
+                // Importante: Asignar el valor de bultos que ya estaba guardado
+                $(fila).find('.input-bultos').val(remito.BULTOS);
+                $('#bodyRemitos').append(fila);
+            });
+            actualizarTotalBultos(); // Actualizamos el contador total
+        }
+
+        // --- 3. Llenar la tabla de EGRESOS (¡LA OTRA PARTE CLAVE!) ---
+        $('#bodyEgresos').empty(); // Limpiamos la tabla
+        if (datos.egresos && Array.isArray(datos.egresos)) {
+            datos.egresos.forEach(egreso => {
+                const fila = crearFilaEgreso({
+                    tipo: egreso.T_COMP,
+                    comprobante: egreso.N_COMP,
+                    fecha: egreso.FECHA_COMP
+                });
+                $('#bodyEgresos').append(fila);
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar datos para editar:', error);
+        mostrarAlerta('Error Crítico', error.message);
+    }
+}
     
 
     async function confirmarAccion(titulo, texto, tipo = 'question') {
@@ -461,7 +506,7 @@ const registrar = async () => {
     let firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
     let nroSucursal = document.querySelector("#numSucurs").textContent;
     
-    const response = await fetch('Controller/upload_image.php', {
+    const response = await fetch('/administracion/tesoreria/Controller/upload_image.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -492,7 +537,7 @@ const registrar = async () => {
      
 
             $.ajax({
-                url: 'Controller/retiroController.php?accion=actualizar',
+                url: '/administracion/tesoreria/Controller/retiroController.php?accion=actualizar',
                 type: 'POST',
                 dataType: 'json',
                 data: {
@@ -546,22 +591,20 @@ function obtenerDatosFormulario() {
     };
     if (datos.enviaValores === 'SI') {
         datos.numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
-        datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
-            tipo: tr.cells[0].textContent,
-            comprobante: tr.cells[1].textContent,
-            fecha: tr.cells[2].textContent
-        }));
+datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
+    tipo: tr.dataset.tipo,           // <-- Lee desde el data attribute
+    comprobante: tr.dataset.comprobante, // <-- Lee desde el data attribute
+    fecha: tr.dataset.fecha          // <-- Lee desde el data attribute
+}));
     }
 
-    const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
-        remito: tr.cells[0].textContent,
-        destino: tr.cells[1].textContent,
-        bultos: tr.querySelectorAll("td")[2].querySelector("input").value,
-        fecha : tr.cells[4].textContent,
-        // t_comp : tr.cells[5].textContent
-
-        
-    }));
+const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
+    remito: tr.cells[0].textContent,
+    destino: tr.cells[1].textContent,
+    bultos: tr.querySelector('.input-bultos').value,
+    fecha: tr.dataset.fecha,   // <-- Lee desde el data attribute
+    t_comp: tr.dataset.tcomp   // <-- Lee desde el data attribute
+}));
 
     return {
         datos: datos,

@@ -524,26 +524,36 @@ class Gasto
         }
     }
 
-    public function listarEgresosPorGuia($idGuia, $nroSucurs) {
-        $sql = "SELECT T_COMP, N_COMP, FECHA_COMP
+public function listarEgresosPorGuia($idGuia, $nroSucurs) {
+    try {
+        // CORRECCIÓN: Volvemos a añadir el filtro por NRO_SUCURS
+        $sql = "SELECT 
+                    FORMAT(FECHA_COMP, 'dd/MM/yyyy') AS fecha,
+                    T_COMP AS tipo,
+                    N_COMP AS comprobante                     
                 FROM RO_EGRESOS_GUIA_RETIROS_SUC
-                WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?";
-        $params = array($idGuia, $nroSucurs);
+                WHERE NRO_REGISTRO = ? AND NRO_SUCURS = ?
+                ORDER BY N_COMP";
 
+        // CORRECCIÓN: Volvemos a usar ambos parámetros
+        $params = array($idGuia, $nroSucurs);
         $stmt = sqlsrv_query($this->cid_central, $sql, $params);
 
         if ($stmt === false) {
-            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            throw new Exception("Error en la consulta de egresos por guía: " . print_r(sqlsrv_errors(), true));
         }
 
         $resultados = [];
-
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
             $resultados[] = $row;
         }
 
         return $resultados;
+    } catch (Exception $e) {
+        error_log("Error en listarEgresosPorGuia: " . $e->getMessage());
+        return [];
     }
+}
         public function eliminarGasto($codComp, $nComp, $codCta) {
         $codComp = trim($codComp);
         $nComp = trim($nComp);

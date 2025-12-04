@@ -157,6 +157,44 @@ function obtenerDatosFormulario() {
 async function enviarFormulario(estado) {
     const esBorrador = (estado === 1);
     const accionTexto = esBorrador ? 'guardar el borrador' : 'registrar la guía';
+    const nroSucursal = $("#numSucurs").text();
+
+    // =================================================================
+    // === PASO 1: VERIFICAR LA CONEXIÓN ANTES DE HACER NADA MÁS ===
+    // =================================================================
+    
+    // Mostramos un mensaje de espera al usuario
+    Swal.fire({
+        title: 'Verificando conexión con el local...',
+        text: 'Por favor, espere.',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    try {
+        const url = `Controller/retiroController.php?accion=verificarConexionLocal&nroSucurs=${nroSucursal}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            Swal.close(); // Cerramos el mensaje de espera
+            // Mostramos el error devuelto por el servidor y detenemos todo.
+            await mostrarAlerta('Error de Conexión', result.message || 'No se pudo conectar con la base de datos del local. No se puede continuar.');
+            return; 
+        }
+    } catch (error) {
+        Swal.close(); // Cerramos el mensaje de espera
+        await mostrarAlerta('Error de Red', 'No se pudo comunicar con el servidor para verificar la conexión. Revise su conexión a internet.');
+        return; // Detenemos todo.
+    }
+    
+    Swal.close(); // Si la conexión fue exitosa, cerramos el mensaje de espera.
+
+    // =================================================================
+    // === PASO 2: SI LA CONEXIÓN FUE EXITOSA, CONTINUAR CON EL PROCESO NORMAL ===
+    // =================================================================
     
     if (!await validarFormulario(esBorrador)) {
         return;
@@ -167,7 +205,6 @@ async function enviarFormulario(estado) {
 
     try {
         const { datos, remitos } = obtenerDatosFormulario();
-        const nroSucursal = $("#numSucurs").text();
         let firmaPath = null;
 
         const dataPayload = {
@@ -178,7 +215,6 @@ async function enviarFormulario(estado) {
             firma: firmaPath
         };
 
-        // Solo procesamos la firma si es un registro final (estado=2) y si el canvas no está vacío
         if (!esBorrador && !signaturePad.isEmpty()) {
             const firmaBase64 = signaturePad.toDataURL('image/jpeg', 0.8);
             const responseFirma = await fetch('Controller/upload_image.php', {
@@ -196,8 +232,7 @@ async function enviarFormulario(estado) {
         $.ajax({
             url: 'Controller/retiroController.php?accion=registrar',
             type: 'POST',
-            dataType: 'json',
-            data: dataPayload,
+            data: dataPayload, // Envío como FormData
             success: function(response) {
                 if (response.success) {
                     Swal.fire({ title: '¡Éxito!', text: response.message, icon: 'success' })
@@ -216,7 +251,6 @@ async function enviarFormulario(estado) {
         await mostrarAlerta('Error', 'Error en el proceso de envío: ' + error.message);
     }
 }
-
 
 // ===============================================
 // === RESTO DE FUNCIONES (AUXILIARES) ===========

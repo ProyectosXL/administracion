@@ -47,66 +47,87 @@ class Conexion{
 
     }
 
-    public function setearDnsBaseName($nroSucursal) {
+public function setearDnsBaseName($nroSucursal) {
 
-        $sql = "SELECT CONEXION_DNS, BASE_NOMBRE 
-                FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS 
-                WHERE NRO_SUC_MADRE IS NULL 
-                AND NRO_SUCURSAL = ?";
-    
-     
-        $conn = $this->conectar('central');
-    
-        if (!$conn) {
-            die("Error de conexión: " . print_r(sqlsrv_errors(), true));
-        }
-    
-      
-        $params = array($nroSucursal);;
-        $stmt = sqlsrv_query($conn, $sql, $params);
-    
-        if (!$stmt) {
-            die("Error en la consulta: " . print_r(sqlsrv_errors(), true));
-        }
-    
-        if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            $_SESSION['conexion_dns'] = $row['CONEXION_DNS'];
-            $_SESSION['base_nombre'] = $row['BASE_NOMBRE'];
-            return true;
-        } else {
-            return false;
-        }
+    // La consulta ahora incluye USUARIO_DNS y CLAVE_DNS
+    $sql = "SELECT CONEXION_DNS, BASE_NOMBRE, USUARIO_DNS, CLAVE_DNS
+            FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS 
+            WHERE NRO_SUC_MADRE IS NULL 
+            AND NRO_SUCURSAL = ?";
+
+    $conn = $this->conectar('central');
+
+    if (!$conn) {
+        // En un entorno de producción, es mejor registrar el error que detener la ejecución.
+        error_log("Error de conexión a la base de datos central en setearDnsBaseName.");
+        return false;
     }
 
-    public function conectar($nameServer = null) {
-        try {
+    $params = array($nroSucursal);
+    $stmt = sqlsrv_query($conn, $sql, $params);
 
-            $serverDB = $this->servidor($nameServer);
+    if ($stmt === false) {
+        error_log("Error en la consulta de setearDnsBaseName: " . print_r(sqlsrv_errors(), true));
+        return false;
+    }
 
-            $pass = $this->pass;
-            // $pass = ($nameServer == 'locales') ? $this->pass_locales : $this->pass;
+    if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        // Guardamos los 4 valores en la sesión para ser usados por el método conectar()
+        $_SESSION['conexion_dns'] = $row['CONEXION_DNS'];
+        $_SESSION['base_nombre'] = $row['BASE_NOMBRE'];
+        $_SESSION['usuario_dns'] = $row['USUARIO_DNS']; // Puede ser NULL
+        $_SESSION['clave_dns'] = $row['CLAVE_DNS'];     // Puede ser NULL
+        return true;
+    } else {
+        // No se encontró configuración para esta sucursal
+        return false;
+    }
+}
 
-            if($nameServer == 'locales' || $nameServer == 'tangoBis' || $nameServer == "suc_uy"){
+// REEMPLAZA este método en Class/conexion.php
+public function conectar($nameServer = null) {
+    try {
+        $serverDB = $this->servidor($nameServer);
 
-                $pass = $this->pass_locales;
-                
+        // --- LÓGICA DE CREDENCIALES DINÁMICAS ---
+
+        $usuario_final = $this->user;
+        $clave_final = $this->pass; 
+
+        // Si es una conexión a una sucursal local (sin nombre de servidor específico)
+        if (empty($nameServer)) {
+            // Usamos las credenciales de la sesión SI existen y NO están vacías.
+            // Si son NULL o vacías en la BD, se usarán los valores por defecto del .env.
+            if (isset($_SESSION['usuario_dns']) && !empty($_SESSION['usuario_dns'])) {
+                $usuario_final = $_SESSION['usuario_dns'];
             }
-            
-            $params = array( 
-                "Database" => $serverDB[1], 
-                "UID" => $this->user, 
-                "PWD" => $pass, 
-                "CharacterSet" => $this->character
-            );
-
-            $cid = sqlsrv_connect($serverDB[0], $params);
-
-            return $cid;
-            
-        } catch (PDOException $e) {
-            echo $e->getMessage();
+            if (isset($_SESSION['clave_dns']) && !empty($_SESSION['clave_dns'])) {
+                $clave_final = $_SESSION['clave_dns'];
+            }
+        } 
+        elseif ($nameServer == 'locales' || $nameServer == 'tangoBis' || $nameServer == "suc_uy") {
+            $clave_final = $this->pass_locales; 
         }
+        
+        // --- FIN DE LA LÓGICA ---
+
+        $params = array( 
+            "Database" => $serverDB[1], 
+            "UID" => $usuario_final, 
+            "PWD" => $clave_final, 
+            "CharacterSet" => $this->character
+        );
+
+        $cid = sqlsrv_connect($serverDB[0], $params);
+
+        return $cid;
+        
+    } catch (PDOException $e) {
+        // Es mejor registrar el error que mostrarlo en pantalla.
+        error_log("PDOException en conectar(): " . $e->getMessage());
+        return false;
     }
+}
 
     private function buscarLocal($nameLocal){
 

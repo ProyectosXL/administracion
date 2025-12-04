@@ -181,23 +181,23 @@ $egresosCargados = $gasto->listarEgresosPorGuia($id, $nroSucurs);
                 <label for="enviaValores" class="form-label">
                     <i class="bi bi-cash-coin"></i> Envía Valores
                 </label>
-                <select class="form-select" id="enviaValores" name="enviaValores" required>
-                    <option value="SI" <?php echo ($datosGuia['ENVIA_VALORES'] == '1') ? 'selected' : ''; ?>>SI</option>
-                    <option value="NO" <?php echo ($datosGuia['ENVIA_VALORES'] == '0') ? 'selected' : ''; ?>>NO</option>
-                </select>
+<select class="form-select" id="enviaValores" ...>
+    <option value="SI" <?php echo ($datosGuia['ENVIA_VALORES'] == 'SI') ? 'selected' : ''; ?>>SI</option>
+    <option value="NO" <?php echo ($datosGuia['ENVIA_VALORES'] == 'NO') ? 'selected' : ''; ?>>NO</option>
+</select>
             </div>
 
 
-        <div class="mb-3" id="precintoContainer" style="display: <?php echo ($datosGuia['ENVIA_VALORES'] == '1') ? 'block' : 'none'; ?>;">
+        <div class="mb-3" id="precintoContainer" style="display: <?php echo ($datosGuia['ENVIA_VALORES'] == 'SI') ? 'block' : 'none'; ?>;">
             <label for="numeroPrecinto" class="form-label">
                 <i class="bi bi-lock-fill"></i>
                 <strong>Número de Precinto</strong>
             </label>
-            <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto" value="<?php echo htmlspecialchars($datosGuia['PRECINTO'] ?? ''); ?>">
+            <input type="text" class="form-control" id="numeroPrecinto" name="numeroPrecinto" value="<?php echo htmlspecialchars($datosGuia['NRO_PRECINTO'] ?? ''); ?>">
         </div>
 
 
-    <div class="mb-3 mt-2" id="egresosContainer" style="display: <?php echo ($datosGuia['ENVIA_VALORES'] == '1') ? 'block' : 'none'; ?>;">
+    <div class="mb-3 mt-2" id="egresosContainer" style="display: <?php echo ($datosGuia['ENVIA_VALORES'] == 'SI') ? 'block' : 'none'; ?>;">
         <label for="selectEgresos" class="form-label">
             <i class="bi bi-cash"></i> Seleccionar Egresos
         </label>
@@ -239,18 +239,18 @@ $egresosCargados = $gasto->listarEgresosPorGuia($id, $nroSucurs);
                 </tr>
             </thead>
             <tbody id="bodyEgresos">
-                <?php foreach ($egresosCargados as $egreso): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($egreso['T_COMP']); ?></td>
-                        <td><?php echo htmlspecialchars($egreso['N_COMP']); ?></td>
-                        <td><?php echo htmlspecialchars($egreso['FECHA_COMP']->format('d/m/Y')); ?></td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-danger btn-sm btn-quitar" onclick="eliminarEgreso('<?php echo htmlspecialchars($egreso['N_COMP']); ?>')">
-                                <i class="bi bi-trash-fill"></i>
-                            </button>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
+<?php foreach ($egresosCargados as $egreso): ?>
+    <tr data-tipo="<?php echo htmlspecialchars($egreso['tipo']); ?>" data-comprobante="<?php echo htmlspecialchars($egreso['comprobante']); ?>" data-fecha="<?php echo htmlspecialchars($egreso['fecha']); ?>">
+        <td><?php echo htmlspecialchars($egreso['tipo']); ?></td>
+        <td><?php echo htmlspecialchars($egreso['comprobante']); ?></td>
+        <td><?php echo htmlspecialchars($egreso['fecha']); ?></td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove();">
+                <i class="bi bi-trash-fill"></i>
+            </button>
+        </td>
+    </tr>
+<?php endforeach; ?>
                 
             </tbody>
         </table>
@@ -311,19 +311,18 @@ $egresosCargados = $gasto->listarEgresosPorGuia($id, $nroSucurs);
                     </tr>
                 </thead>
                 <tbody id="bodyRemitos">
-                    <?php foreach ($remitosCargados as $remito): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($remito['REMITO']); ?></td>
-                            <td><?php echo htmlspecialchars($remito['DESTINO']); ?></td>
-                            <td><input type="number" class="form-control form-control-sm input-bultos" value="<?= $remito['BULTOS'] ?>" min="1"></td>
-                            <td>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarRemito('<?php echo htmlspecialchars($remito['REMITO']); ?>')">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
-                            </td>
-                            <td hidden><?= $remito['FECHA'] ?></td>
-                        </tr>
-                    <?php endforeach; ?>
+<?php foreach ($remitosCargados as $remito): ?>
+    <tr data-fecha="<?php echo htmlspecialchars($remito['fecha']); ?>" data-tcomp="<?php echo htmlspecialchars($remito['t_comp'] ?? 'REM'); ?>">
+        <td><?php echo htmlspecialchars($remito['remito']); ?></td>
+        <td><?php echo htmlspecialchars($remito['destino']); ?></td>
+        <td><input type="number" class="form-control form-control-sm input-bultos" value="<?= htmlspecialchars($remito['bultos']) ?>" min="1"></td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove(); actualizarTotalBultos();">
+                <i class="bi bi-trash-fill"></i>
+            </button>
+        </td>
+    </tr>
+<?php endforeach; ?>
                 </tbody>
 
                 <tfoot>

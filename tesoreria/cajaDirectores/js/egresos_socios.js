@@ -58,15 +58,19 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Configura las fechas por defecto (últimos 15 días)
+ * Configura las fechas por defecto (mes actual completo)
  */
 function configurarFechasPorDefecto() {
     const hoy = new Date();
-    const hace15Dias = new Date();
-    hace15Dias.setDate(hoy.getDate() - 15);
     
-    fechaHastaEgresosSocios = formatearFecha(hoy);
-    fechaDesdeEgresosSocios = formatearFecha(hace15Dias);
+    // Primer día del mes actual
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    
+    // Último día del mes actual
+    const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    
+    fechaDesdeEgresosSocios = formatearFecha(primerDiaMes);
+    fechaHastaEgresosSocios = formatearFecha(ultimoDiaMes);
     
     // Actualizar inputs
     const inputDesde = document.getElementById('fechaEgresosSociosDesde');
