@@ -1,6 +1,6 @@
 
 <?php
-require_once __DIR__ ."./Controller/listarOrden.php";
+require_once __DIR__ . "/Controller/listarOrden.php";
 $ordenCompra = $_GET['idEncabezado']; 
 $orden = listarPorOrdenCompra($ordenCompra);
 

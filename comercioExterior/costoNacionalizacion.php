@@ -1,7 +1,7 @@
 
 <?php
 
-require_once __DIR__ ."./Controller/listarOrden.php";
+require_once __DIR__ ."/Controller/listarOrden.php";
 
 $fecha_actual = date("Y-m-d");
 
@@ -116,13 +116,6 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
                         <i class="bi bi-file-earmark-excel"></i>
                         Exportar Excel
                     </button>
-                </div>
-
-                <div class="filter-group">
-                    <a href="dashboard.php" class="btn-modern" style="background: var(--warning-color); color: white; text-decoration: none;">
-                        <i class="bi bi-graph-up-arrow"></i>
-                        Dashboard
-                    </a>
                 </div>
             </form>
         </div>

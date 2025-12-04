@@ -4,15 +4,26 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-if($_POST['entorno'] == 0){
+header('Content-Type: application/json');
 
-    $_SESSION['entorno'] = 'central';
-
-}else{
-
-    $_SESSION['entorno'] = 'uy';
-
+if(isset($_POST['entorno'])) {
+    $entorno = $_POST['entorno'];
+    
+    if($entorno == 'central' || $entorno == 0) {
+        $_SESSION['entorno'] = 'central';
+    } else {
+        $_SESSION['entorno'] = 'uy';
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'entorno' => $_SESSION['entorno']
+    ]);
+} else {
+    echo json_encode([
+        'success' => false,
+        'message' => 'No se recibió el parámetro entorno'
+    ]);
 }
-echo true;
 
 ?>

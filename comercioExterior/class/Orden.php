@@ -3,7 +3,7 @@ class Orden{
 
     function __construct() {
 
-        require_once __DIR__.'/../../class/conexion.php';
+        require_once __DIR__ . '/../../class/conexion.php';
         $cid = new Conexion();
         if (session_status() == PHP_SESSION_NONE) {
             session_start();

@@ -66,143 +66,171 @@ const limpiarSelect = () => {
 
   
 //Guarda datos de cabecera//  
-function guardarCabeceraUy(){
+function guardarCabecera(){
 
-    let b=0;
-    let proveedor = document.querySelector("#proveedor");
-    let origen = document.querySelector("#origen");
-    let ordenCompra = document.querySelector("#ordenesSeleccionadas");
-    let ordenManual = document.querySelector("#ordenManual");
-
-
-
-    if (ordenCompra.innerHTML == "") {
-        ordenCompra.style.border="1px solid red";
-        b=1;
-    }
-
+    // Si es modo alta inicial, validar solo Sección 1
+    const modoEdicion = document.getElementById('modoEdicion').value === 'true';
     
-    if (origen.value == "") {
-        origen.style.border="1px solid red";
-        b=1;
-    }
-    
-    if (proveedor.selectedIndex == 0) {
-        proveedor.style.border="1px solid red";
-        b=1;
+    if (!modoEdicion) {
+        // Validar campos obligatorios de Sección 1
+        if (!validarSeccion1()) {
+            return;
+        }
     }
 
-    inputs.forEach(el=>{
-
-        if(el.value == ''){
-            el.parentElement.style.border="1px solid red";
-            b=1;
-        }else{
-            el.parentElement.style.border="";
+    // Mostrar confirmación antes de procesar
+    Swal.fire({
+        title: '¿Desea guardar los cambios?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#7066e0',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, guardar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (!result.isConfirmed) {
+            return;
         }
-   
-        selected.forEach(el=>{ if(el.value == '' || el.value.includes("PROVEEDOR")|| el.value.includes("FORMA") ){
-            el.parentElement.style.border="1px solid red";
-            b=1;
-        }else{
-            el.parentElement.style.border="";
-        }
-        });
 
-        var cod_proveedor = document.getElementById('proveedor').value;
-        var proveedor = document.getElementById('proveedor').selectedOptions[0].innerHTML;
-        var contenedor = document.getElementById('contenedor').value;
-        var despacho = document.getElementById('despacho').value;
-        var material = document.getElementById('material').value;
-        var origen = document.getElementById('origen').value;
+        // Sección 1 - Datos Iniciales (mapeo a columnas de BD)
+        var cod_proveedor = document.getElementById('proveedor').value; // COD_PROVEE
+        var proveedor = document.getElementById('proveedor').selectedOptions[0].innerHTML; // PROVEEDOR
+        var contenedor = document.getElementById('contenedor').value; // CONTENEDOR
+        var material = document.getElementById('material').value; // MATERIAL
+        var origen = document.getElementById('origen').value; // ORIGEN
+        var valorFobDolar = document.getElementById('valorFobDolar').value; // VALOR_FOB_DOLAR
+        var fechaEstEmb = document.getElementById('fechaEstEmb').value; // FECHA_EST_EMB (Fecha Estimada Embarque)
+        var despachante = $('#despachante').val() || 'Laffitte'; // DESPACHANTE (usar jQuery para select2)
         
-        var facturaProveedor = document.getElementById('facturaProveedor').value;
+        console.log('Datos Sección 1:', {
+            cod_proveedor, proveedor, contenedor, material, origen, valorFobDolar, fechaEstEmb, despachante
+        });
         
         let ocm = 0;
+        let ordenManual = document.querySelector("#ordenManual");
         let ordenCompra = document.querySelectorAll("#nroOrdenSpan")
         ordenCompra = Array.from(ordenCompra).map((el)=>el.innerHTML.trim().split(" ")[0]);
         console.log(ordenCompra, 'ordenes')
-        ordenCompra = JSON.stringify (ordenCompra);
-
+        ordenCompra = JSON.stringify (ordenCompra); // ORDEN_COMPRA
 
         if(ordenManual.checked == true){
-            ocm = 1;
+            ocm = 1; // OCM
         }
-        var formaPago = document.getElementById('formaPago').value;
-        var numeroBl = document.getElementById('numeroBl').value;
-        var tipoCambio = document.getElementById('tipoCambio').value;
-        var valorFobDolar = document.getElementById('valorFobDolar').value;
-        var valorFobPeso = document.getElementById('valorFobPeso').value;
-        var fechaDespacho = document.getElementById('fechaDespacho').value;
- 
-        if(b==1){
-            Swal.fire({
-            icon: 'error',
-            title: 'Error...',
-            text: 'Debe completar todos los campos!',
-            });
-        }
-        else{
-            Swal.fire({
-            title: 'Desea guardar los cambios?',
-            icon: 'info',
-            showDenyButton: true,
-            showCancelButton: true,
-            cancelButtonText: 'Cancelar',
-            confirmButtonText: 'Guardar',
-            denyButtonText: `Descartar`,
-            }).then((result) => {
-                /* Read more about isConfirmed, isDenied below */
-                if (result.isConfirmed) {
-                    let env = 1;
-                    let url = (env == 1) ? 'insertarEncabezado.php' : 'test.php';
-                    let id = null;
-                    $.ajax({
-                        url: 'Controller/'+url,
-                        method: 'POST',
-                        data: {
-                            cod_proveedor: cod_proveedor, 
-                            proveedor: proveedor, 
-                            contenedor: contenedor, 
-                            despacho: despacho, 
-                            material: material, 
-                            origen: origen,
-                            facturaProveedor: facturaProveedor, 
-                            ordenCompra: ordenCompra, 
-                            formaPago: formaPago,
-                            numeroBl: numeroBl, 
-                            tipoCambio: tipoCambio.replace(/,/g, ""), 
-                            valorFobDolar: valorFobDolar.replace(/,/g, ""), 
-                            valorFobPeso: valorFobPeso.replace(/,/g, ""), 
 
-                            fechaDespacho: fechaDespacho,
-                            ocm: ocm
-                        },
-                        success : function(data) {
-                        
-                        let id = JSON.stringify(data)
-                            
-                        Swal.fire({
-                            title: 'Despacho guardado!',
-                            icon: 'success',
-                            showDenyButton: true,
-                            showCancelButton: false,
-                            showConfirmButton: false,
-                            denyButtonText: `Cargar detalle`,
-                            })
-                            .then(function () {
-                                window.location = "detalleCostos.php?ordenCompra="+ordenCompra+'&proveedor='+proveedor+'&valorFobPeso='+valorFobPeso+'&contenedor='+contenedor+'&tipoCambio='+tipoCambio+'&idEncabezado='+id;
-                            });
-                        }
+        // Sección 2 - Datos de Embarque (mapeo a columnas de BD)
+        var fechaEmb = document.getElementById('fechaEmb').value; // FECHA_EMB (ETD - Estimated Time of Departure)
+        var numeroBl = document.getElementById('numeroBl').value; // NUMERO_BL
+        var factura = document.getElementById('factura').value; // FACTURA
+        var fechaArr = document.getElementById('fechaArr').value; // FECHA_ARR (ETA)
+        
+        // Sección 3 - Datos Financieros y Aduana (mapeo a columnas de BD)
+        var tipoCambio = document.getElementById('tipoCambio').value; // TIPO_CAMBIO
+        var valorFobPeso = document.getElementById('valorFobPeso').value; // VALOR_FOB_PESO
+        var formaPago = document.getElementById('formaPago').value; // FORMA_PAGO
+        var fechaPago = document.getElementById('fechaPago').value; // FECHA_PAGO
+        var fechaDespAdu = document.getElementById('fechaDespAdu').value; // FECHA_DESP_ADU
+        var despacho = document.getElementById('despacho').value; // DESPACHO
+ 
+        // Realizar el guardado
+        let env = 1;
+        let url = (env == 1) ? 'insertarEncabezado.php' : 'test.php';
+        let id = null;
+        
+        const dataToSend = {
+                // Sección 1 - Datos Iniciales (mapeo exacto a BD)
+                cod_proveedor: cod_proveedor, // COD_PROVEE
+                proveedor: proveedor, // PROVEEDOR
+                contenedor: contenedor, // CONTENEDOR
+                material: material, // MATERIAL
+                origen: origen, // ORIGEN
+                valorFobDolar: valorFobDolar.replace(/,/g, ""), // VALOR_FOB_DOLAR
+                fechaEstEmb: fechaEstEmb, // FECHA_EST_EMB (Fecha Estimada Embarque)
+                ordenCompra: ordenCompra, // ORDEN_COMPRA
+                ocm: ocm, // OCM
+                despachante: despachante, // DESPACHANTE
+                
+                // Campos calculados automáticamente (se guardan desde Sección 1)
+                fechaArr: fechaArr, // FECHA_ARR (ETA - Estimated Time of Arrival)
+                fechaPago: fechaPago, // FECHA_PAGO
+                fechaDespAdu: fechaDespAdu, // FECHA_DESP_ADU (Fecha Nacionalización)
+                
+                // Sección 2 - Datos de Embarque (mapeo exacto a BD)
+                fechaEmb: fechaEmb, // FECHA_EMB (ETD - Estimated Time of Departure)
+                numeroBl: numeroBl, // NUMERO_BL
+                factura: factura, // FACTURA
+                
+                // Sección 3 - Datos Financieros y Aduana (mapeo exacto a BD)
+                tipoCambio: tipoCambio.replace(/,/g, ""), // TIPO_CAMBIO
+                valorFobPeso: valorFobPeso.replace(/,/g, ""), // VALOR_FOB_PESO
+                formaPago: formaPago, // FORMA_PAGO
+                despacho: despacho // DESPACHO
+        };
+        
+        console.log('Datos a enviar:', dataToSend);
+        
+        $.ajax({
+            url: 'Controller/'+url,
+            method: 'POST',
+            dataType: 'json',
+            data: dataToSend,
+            success: function(response) {
+                console.log('Respuesta del servidor:', response);
+                console.log('response.success:', response.success);
+                console.log('response.message:', response.message);
+                console.log('response.ids:', response.ids);
+                
+                if (response.success) {
+                    Swal.fire({
+                        title: '¡Despacho guardado correctamente!',
+                        text: response.message || 'Los datos han sido guardados exitosamente',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#7066e0'
+                    }).then(function () {
+                        // Recargar la página para mostrar un formulario limpio
+                        window.location.reload();
                     });
-                    
-                } else if (result.isDenied) {
-                    Swal.fire('El despacho no fue guardado', '', 'info')
+                } else {
+                    Swal.fire({
+                        title: 'Error al guardar',
+                        text: response.message || 'Ocurrió un error al guardar el despacho',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#d33'
+                    });
                 }
-            })
-        }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al guardar:', error);
+                console.error('Respuesta del servidor:', xhr.responseText);
+                
+                let errorMessage = 'Error al conectar con el servidor';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = response.message || errorMessage;
+                } catch (e) {
+                    // Si no es JSON válido, usar mensaje genérico
+                }
+                
+                Swal.fire({
+                    title: 'Error',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#d33'
+                });
+                
+                Swal.fire({
+                    title: 'Error al guardar',
+                    text: 'Hubo un problema al guardar el despacho. Por favor, intente nuevamente.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar',
+                    confirmButtonColor: '#dc2626'
+                });
             }
-)};
+        });
+    });
+    }
 
     const parseNumber = (value)=>{
         return value.toLocaleString('en-US', {

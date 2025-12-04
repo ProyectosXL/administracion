@@ -25,7 +25,8 @@
 </head>
 
 <body>
-    <!-- Header -->
+    <div class="dashboard-container">
+        <!-- Header -->
         <div class="dashboard-header">
             <div>
                 <h1 class="dashboard-title">
@@ -33,12 +34,6 @@
                     Dashboard de Comercio Exterior
                 </h1>
                 <div class="dashboard-subtitle">Panel de control y análisis de costos de nacionalización</div>
-            </div>
-            <div class="header-actions">
-                <a href="mostrarOrden.php" class="back-btn">
-                    <i class="bi bi-arrow-left"></i>
-                    Volver a Despachos
-                </a>
             </div>
         </div>
 
@@ -239,6 +234,7 @@
                 </table>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- Scripts -->
