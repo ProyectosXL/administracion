@@ -1,0 +1,148 @@
+/* ---- ESTILO GENERAL ---- */
+body {
+    background-color: #f8f9fa; /* Un gris muy suave de fondo */
+}
+
+/* ---- ENCABEZADO Y TÍTULO ---- */
+.container-fluid h1 {
+    font-weight: 300; /* Tipografía más fina y moderna */
+}
+
+.container-fluid h1 .fa-solid {
+    margin-right: 10px;
+}
+
+/* ---- TARJETA PRINCIPAL ---- */
+.card {
+    border: none; /* Quitamos el borde por defecto */
+    border-radius: 0.5rem; /* Bordes más redondeados */
+}
+
+/* ---- PESTAÑAS (TABS) ---- */
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: #0d6efd;
+    color: #0d6efd;
+    background-color: transparent;
+}
+
+/* ---- ESTILOS PARA DATATABLES ---- */
+table.dataTable {
+    border-collapse: collapse !important;
+    margin-top: 1rem !important;
+}
+
+table.dataTable thead th {
+    font-weight: 500;
+    background-color: #f1f3f5;
+    color: #495057;
+}
+
+table.dataTable tbody tr:hover {
+    background-color: #e9ecef !important;
+    cursor: default; /* El cursor pointer solo lo queremos en el botón */
+}
+
+/* ---- BOTONES DE ACCIÓN ---- */
+.btn-detalle {
+    transition: all 0.2s ease-in-out;
+}
+.btn-detalle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* ---- MODAL ---- */
+.modal-header {
+    border-bottom: none;
+}
+.modal-content {
+    border-radius: 0.5rem;
+}
+/* ---- ESTILOS PARA MODAL DE PARÁMETROS ---- */
+.modal-body.bg-light {
+    background-color: #f1f3f5 !important;
+}
+
+#form-parametros .form-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+#tabla-parametros_wrapper {
+    padding: 1rem;
+    background-color: #fff;
+    border-radius: 0.25rem;
+}
+/* ---- ESTILOS PARA TARJETAS DE RESUMEN (KPI CARDS) ---- */
+.card .card-body {
+    padding: 1.5rem;
+}
+
+.text-xs {
+    font-size: 0.7rem;
+}
+
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+/* --- CORRECCIÓN DE APILAMIENTO DE MODALES --- */
+/* Asegura que el modal de confirmación siempre aparezca 
+   por encima de cualquier otro modal que ya esté abierto. */
+#confirmDeleteModal {
+    z-index: 1060; 
+}
+/* --- AJUSTE PARA EL ENCABEZADO FIJO (FIXEDHEADER) DE DATATABLES --- */
+/* Esto evita que el encabezado de la tabla se superponga con
+   el menú de navegación principal de tu aplicación si lo tuvieras fijo.
+   Si no tienes un menú fijo, este código no afecta negativamente. */
+table.dataTable.fixedHeader-floating {
+    top: 60px !important; /* Ajusta este valor si tu menú es más alto o más bajo */
+}
+/* --- ESTILOS PARA DATATABLES CON SCROLL VERTICAL (scrollY) --- */
+
+/* Asegura que el encabezado y el cuerpo de la tabla estén perfectamente alineados */
+.dataTables_scrollHeadInner, .table {
+    width: 100% !important;
+}
+
+/* Estilo moderno y sutil para el scrollbar del cuerpo de la tabla */
+.dataTables_scrollBody::-webkit-scrollbar {
+  width: 8px;
+}
+.dataTables_scrollBody::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+.dataTables_scrollBody::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 4px;
+}
+.dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
