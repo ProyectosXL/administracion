@@ -15,8 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="../css/proyeccion-costos.css">
-    <link rel="icon" type="image/jpg" href="../images/LOGO XL 2018.jpg">
+    <link rel="stylesheet" href="../../css/proyeccion-costos.css">
+    <link rel="icon" type="image/jpg" href="../../images/LOGO XL 2018.jpg">
 </head>
 <body>
     <div class="pci-edit-container">
@@ -110,7 +110,7 @@
         <div class="totals-card">
             <div class="row">
                 <div class="col-md-12 text-end">
-                    <button type="button" class="btn btn-lg btn-secondary me-2" onclick="window.location.href='index.php'">
+                    <button type="button" class="btn btn-lg btn-secondary me-2" onclick="window.location.href='../proyeccionCostos.php'">
                         <i class="bi bi-arrow-left"></i> Cancelar
                     </button>
                     <button type="button" class="btn btn-lg btn-success" id="btnGuardarBottom" onclick="guardarEstimacion()">
@@ -127,7 +127,7 @@
     </div>
 
     <!-- jQuery -->
-    <script src="../assets/jquery/jquery.min.js"></script>
+    <script src="../../assets/jquery/jquery.min.js"></script>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
@@ -136,6 +136,6 @@
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Custom JS -->
-    <script src="js/editar-estimacion.js"></script>
+    <script src="../../js/editar-estimacion.js"></script>
 </body>
 </html>

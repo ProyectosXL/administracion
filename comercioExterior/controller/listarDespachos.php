@@ -2,11 +2,10 @@
 header('Content-Type: application/json');
 
 try {
-    require_once '../Class/encabezado.php';
-    $cid = new Encabezado();
+    require_once '../class/estimacionCostos.php';
     
-    // Obtener todos los despachos ordenados por fecha descendente
-    $despachos = $cid->listarTodosLosDespachos();
+    $estimacion = new EstimacionCostos();
+    $despachos = $estimacion->listarDespachosConEstado();
     
     echo json_encode([
         'success' => true,

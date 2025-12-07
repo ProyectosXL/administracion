@@ -44,11 +44,6 @@ class Encabezado
             $values .= ", '".$datosDeCabezera['fechaArr']."'";
         }
         
-        if (isset($datosDeCabezera['fechaPago']) && !empty($datosDeCabezera['fechaPago'])) {
-            $sql .= ", FECHA_PAGO";
-            $values .= ", '".$datosDeCabezera['fechaPago']."'";
-        }
-        
         if (isset($datosDeCabezera['fechaDespAdu']) && !empty($datosDeCabezera['fechaDespAdu'])) {
             $sql .= ", FECHA_DESP_ADU";
             $values .= ", '".$datosDeCabezera['fechaDespAdu']."'";
@@ -71,6 +66,16 @@ class Encabezado
             $values .= ", '".$datosDeCabezera['facturaProveedor']."'";
         }
         
+        if (isset($datosDeCabezera['puertoOrigen']) && !empty($datosDeCabezera['puertoOrigen'])) {
+            $sql .= ", PUERTO_ORIGEN";
+            $values .= ", '".$datosDeCabezera['puertoOrigen']."'";
+        }
+        
+        if (isset($datosDeCabezera['terminal']) && !empty($datosDeCabezera['terminal'])) {
+            $sql .= ", TERMINAL";
+            $values .= ", '".$datosDeCabezera['terminal']."'";
+        }
+        
         if (isset($datosDeCabezera['tipoCambio']) && !empty($datosDeCabezera['tipoCambio'])) {
             $sql .= ", TIPO_CAMBIO";
             $values .= ", '".$datosDeCabezera['tipoCambio']."'";
@@ -79,11 +84,6 @@ class Encabezado
         if (isset($datosDeCabezera['valorFobPeso']) && !empty($datosDeCabezera['valorFobPeso'])) {
             $sql .= ", VALOR_FOB_PESO";
             $values .= ", '".(float)($datosDeCabezera['valorFobPeso'] + 0.15)."'";
-        }
-        
-        if (isset($datosDeCabezera['formaPago']) && !empty($datosDeCabezera['formaPago'])) {
-            $sql .= ", FORMA_PAGO";
-            $values .= ", '".$datosDeCabezera['formaPago']."'";
         }
         
         if (isset($datosDeCabezera['despacho']) && !empty($datosDeCabezera['despacho'])) {
@@ -257,10 +257,6 @@ class Encabezado
             $updates[] = "FECHA_ARR = '".$datosDeCabezera['fechaArr']."'";
         }
         
-        if (isset($datosDeCabezera['fechaPago']) && !empty($datosDeCabezera['fechaPago'])) {
-            $updates[] = "FECHA_PAGO = '".$datosDeCabezera['fechaPago']."'";
-        }
-        
         if (isset($datosDeCabezera['fechaDespAdu']) && !empty($datosDeCabezera['fechaDespAdu'])) {
             $updates[] = "FECHA_DESP_ADU = '".$datosDeCabezera['fechaDespAdu']."'";
         }
@@ -277,16 +273,20 @@ class Encabezado
             $updates[] = "FACTURA = '".$datosDeCabezera['facturaProveedor']."'";
         }
         
+        if (isset($datosDeCabezera['puertoOrigen']) && !empty($datosDeCabezera['puertoOrigen'])) {
+            $updates[] = "PUERTO_ORIGEN = '".$datosDeCabezera['puertoOrigen']."'";
+        }
+        
+        if (isset($datosDeCabezera['terminal']) && !empty($datosDeCabezera['terminal'])) {
+            $updates[] = "TERMINAL = '".$datosDeCabezera['terminal']."'";
+        }
+        
         if (isset($datosDeCabezera['tipoCambio']) && !empty($datosDeCabezera['tipoCambio'])) {
             $updates[] = "TIPO_CAMBIO = '".$datosDeCabezera['tipoCambio']."'";
         }
         
         if (isset($datosDeCabezera['valorFobPeso']) && !empty($datosDeCabezera['valorFobPeso'])) {
             $updates[] = "VALOR_FOB_PESO = '".$datosDeCabezera['valorFobPeso']."'";
-        }
-        
-        if (isset($datosDeCabezera['formaPago']) && !empty($datosDeCabezera['formaPago'])) {
-            $updates[] = "FORMA_PAGO = '".$datosDeCabezera['formaPago']."'";
         }
         
         if (isset($datosDeCabezera['despacho']) && !empty($datosDeCabezera['despacho'])) {

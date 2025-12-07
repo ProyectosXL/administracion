@@ -1,7 +1,7 @@
 
 <?php
 
-require_once __DIR__ ."/Controller/listarOrden.php";
+require_once __DIR__ ."/../Controller/listarOrden.php";
 
 $fecha_actual = date("Y-m-d");
 
@@ -63,8 +63,8 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
-    <link rel="stylesheet" href="css/mostrarOrden.css" class="css">
+    <link rel="icon" type="image/jpg" href="../images/LOGO XL 2018.jpg">
+    <link rel="stylesheet" href="../css/mostrarOrden.css" class="css">
     
 
 </head>
@@ -210,7 +210,7 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/jquery/jquery.min.js"></script>
+    <script src="../assets/jquery/jquery.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
@@ -221,11 +221,11 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
     <script>
         // Funciones de navegación
         const verDetalle = (id, prov, orden, codProv, valorFobPeso) => {
-            window.location = `editarOrden.php?idEncabezado=${id}&proveedor=${encodeURIComponent(prov)}&ordenDeCompra=${encodeURIComponent(orden)}&codProveedor=${codProv}&valorFobPeso=${valorFobPeso}`;
+            window.location = `components/editarOrden.php?idEncabezado=${id}&proveedor=${encodeURIComponent(prov)}&ordenDeCompra=${encodeURIComponent(orden)}&codProveedor=${codProv}&valorFobPeso=${valorFobPeso}`;
         }
 
         const imprimir = (id) => {
-            window.location = `imprimir.php?idEncabezado=${id}`;
+            window.location = `components/imprimir.php?idEncabezado=${id}`;
         }
 
         const eliminarDespacho = (id, numeroDespacho) => {
@@ -255,7 +255,7 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
 
                     // Realizar la eliminación
                     $.ajax({
-                        url: 'controller/eliminarDespacho.php',
+                        url: '../controller/eliminarDespacho.php',
                         type: 'POST',
                         data: {
                             id: id

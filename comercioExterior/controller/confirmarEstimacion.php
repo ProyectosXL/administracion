@@ -12,7 +12,7 @@ try {
     
     $idMg = intval($_POST['id']);
     
-    require_once '../../class/estimacionCostos.php';
+    require_once '../class/estimacionCostos.php';
     
     $estimacion = new EstimacionCostos();
     

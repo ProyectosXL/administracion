@@ -12,7 +12,7 @@ try {
     
     $idMg = intval($_GET['id_mg']);
     
-    require_once '../../class/estimacionCostos.php';
+    require_once '../class/estimacionCostos.php';
     
     $estimacion = new EstimacionCostos();
     
@@ -24,7 +24,7 @@ try {
     }
     
     // Obtener concepto DESPACHANTE de la BD
-    require_once '../../class/conexion.php';
+    require_once '../class/conexion.php';
     $cid = new Conexion();
     if (session_status() == PHP_SESSION_NONE) {
         session_start();

@@ -1,6 +1,6 @@
 <?php 
 
-require_once '../Class/Orden.php';
+require_once '../class/Orden.php';
 $cid = new Orden();
 $nroOrden = json_decode($_POST['nroOrdenDeCompra']);
 

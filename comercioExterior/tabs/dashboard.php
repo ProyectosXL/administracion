@@ -19,9 +19,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Dashboard CSS -->
-    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
 
-    <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
+    <link rel="icon" type="image/jpg" href="../images/LOGO XL 2018.jpg">
 </head>
 
 <body>
@@ -239,6 +239,6 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script src="../js/dashboard.js"></script>
 </body>
 </html>

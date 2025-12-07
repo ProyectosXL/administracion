@@ -10,7 +10,7 @@ $(document).ready(function() {
 
 function cargarDespachos() {
     $.ajax({
-        url: 'controller/listarDespachos.php',
+        url: '../controller/listarDespachos.php',
         method: 'GET',
         dataType: 'json',
         success: function(response) {
@@ -98,15 +98,17 @@ function getEstadoClass(estado) {
 }
 
 function generarBotonesAccion(despacho) {
+    // Cambiar texto del botón según estado
+    const esConfirmado = despacho.ESTADO === 'CONFIRMADO';
     const btnEditar = `
-        <a href="editar-estimacion.php?id=${despacho.ID}" 
-           class="btn btn-sm btn-primary" 
-           title="Editar estimación">
-            <i class="bi bi-pencil"></i> Editar
+        <a href="components/editar-estimacion.php?id=${despacho.ID}" 
+           class="btn btn-sm ${esConfirmado ? 'btn-info' : 'btn-primary'}" 
+           title="${esConfirmado ? 'Ver estimación' : 'Editar estimación'}">
+            <i class="bi bi-${esConfirmado ? 'eye' : 'pencil'}"></i> ${esConfirmado ? 'Ver Estimación' : 'Editar'}
         </a>
     `;
     
-    const btnConfirmar = despacho.ESTADO !== 'CONFIRMADO' ? `
+    const btnConfirmar = !esConfirmado ? `
         <button onclick="confirmarEstimacion(${despacho.ID}, '${despacho.CONTENEDOR}')" 
                 class="btn btn-sm btn-success" 
                 title="Confirmar estimación"
@@ -170,7 +172,7 @@ function realizarConfirmacion(id) {
     });
     
     $.ajax({
-        url: 'controller/confirmarEstimacion.php',
+        url: '../controller/confirmarEstimacion.php',
         method: 'POST',
         data: { id: id },
         dataType: 'json',
@@ -222,7 +224,7 @@ function actualizarFilaConfirmada(id) {
             const $accionesCell = $row.find('td:eq(7)');
             $accionesCell.html(`
                 <div class="d-flex gap-1">
-                    <a href="editar-estimacion.php?id=${id}" 
+                    <a href="components/editar-estimacion.php?id=${id}" 
                        class="btn btn-sm btn-primary" 
                        title="Editar estimación">
                         <i class="bi bi-pencil"></i> Editar

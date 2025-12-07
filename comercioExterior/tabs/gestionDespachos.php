@@ -3,8 +3,8 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once 'Class/proveedor.php';
-require_once 'Class/encabezado.php';
+require_once '../Class/proveedor.php';
+require_once '../Class/encabezado.php';
 
 $cid = new Encabezado();
 $proveedorClass = new Proveedor();
@@ -33,7 +33,7 @@ $proveedorClass = new Proveedor();
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/gestionDespachos.css">
+    <link rel="stylesheet" href="../css/gestionDespachos.css">
 </head>
 <body>
     <div class="gestion-container">
@@ -76,7 +76,7 @@ $proveedorClass = new Proveedor();
     </div>
 
     <!-- jQuery -->
-    <script src="assets/jquery/jquery.min.js"></script>
+    <script src="../assets/jquery/jquery.min.js"></script>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
@@ -89,7 +89,7 @@ $proveedorClass = new Proveedor();
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Custom JS -->
-    <script src="js/gestionDespachos.js"></script>
+    <script src="../js/gestionDespachos.js"></script>
     
     <script>
         // Inicializar tooltips de Bootstrap 5

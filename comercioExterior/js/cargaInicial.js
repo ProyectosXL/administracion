@@ -5,9 +5,9 @@
 
 // ========== VARIABLES GLOBALES Y FLAGS ==========
 let fechaArriboIsManual = false;
-let fechaPagoIsManual = false;
 let fechaDespachoIsManual = false;
 let cargandoDatos = false; // Flag para evitar marcar como manual durante carga inicial
+let pagosArray = []; // Array para almacenar los pagos
 
 // ========== FUNCIONES DE CÁLCULO AUTOMÁTICO ==========
 
@@ -67,28 +67,7 @@ function recalcularFechaArribo() {
     }
 }
 
-/**
- * Recalcula la Fecha de Pago (Fecha base + 5 días)
- * Usa fecha de embarque real si existe, sino fecha estimada
- */
-function recalcularFechaPago() {
-    if (fechaPagoIsManual) {
-        console.log('Fecha Pago en modo manual, no se recalcula');
-        return;
-    }
-    
-    const fechaBase = obtenerFechaBase();
-    console.log('Recalculando Fecha Pago. Fecha base:', fechaBase ? fechaBase.format('DD/MM/YYYY') : 'null');
-    
-    if (fechaBase) {
-        const nuevaFechaPago = sumarDias(fechaBase, 5);
-        console.log('Nueva Fecha Pago calculada:', nuevaFechaPago);
-        $('#fechaPago').val(nuevaFechaPago);
-        marcarCampoCalculado('#fechaPago');
-    } else {
-        $('#fechaPago').val('');
-    }
-}
+
 
 /**
  * Carga los datos de un despacho existente en el formulario (modo edición)
@@ -132,13 +111,15 @@ function cargarDatosDespacho(datos) {
     }
     if (datos.NUMERO_BL) $('#numeroBl').val(datos.NUMERO_BL);
     if (datos.FACTURA) $('#factura').val(datos.FACTURA);
+    if (datos.PUERTO_ORIGEN) $('#puertoOrigen').val(datos.PUERTO_ORIGEN).trigger('change');
+    if (datos.TERMINAL) $('#terminal').val(datos.TERMINAL).trigger('change');
     
     // Sección 3 - Datos Financieros y Aduana
     if (datos.TIPO_CAMBIO) $('#tipoCambio').val(datos.TIPO_CAMBIO);
-    if (datos.VALOR_FOB_PESO) $('#valorFobPeso').val(datos.VALOR_FOB_PESO);
-    if (datos.FORMA_PAGO) $('#formaPago').val(datos.FORMA_PAGO).trigger('change');
-    if (datos.FECHA_PAGO) {
-        $('#fechaPago').val(datos.FECHA_PAGO);
+    if (datos.VALOR_FOB_PESO) {
+        // Formatear FOB Peso con $ sin decimales y con separador de miles
+        const valorFormateado = '$' + Math.round(parseFloat(datos.VALOR_FOB_PESO)).toLocaleString('es-UY');
+        $('#valorFobPeso').val(valorFormateado);
     }
     if (datos.FECHA_DESP_ADU) {
         $('#fechaDespAdu').val(datos.FECHA_DESP_ADU);
@@ -171,6 +152,11 @@ function cargarDatosDespacho(datos) {
             $('#despacho').val(numeroDespacho);
             console.log('Número de despacho cargado:', numeroDespacho);
         }, 100);
+    }
+    
+    // Cargar pagos si estamos en modo edición
+    if (datos.ID) {
+        cargarPagos(datos.ID);
     }
 }
 
@@ -206,12 +192,269 @@ function recalcularFechaDespacho() {
  */
 function recalcularTodasLasFechas() {
     console.log('=== Iniciando recálculo de todas las fechas ===');
-    console.log('Estados manuales - Arribo:', fechaArriboIsManual, 'Pago:', fechaPagoIsManual, 'Despacho:', fechaDespachoIsManual);
+    console.log('Estados manuales - Arribo:', fechaArriboIsManual, 'Despacho:', fechaDespachoIsManual);
     recalcularFechaArribo();
-    recalcularFechaPago();
     // No llamar recalcularFechaDespacho aquí porque ya se llama dentro de recalcularFechaArribo
     // recalcularFechaDespacho();
     console.log('=== Fin de recálculo ===');
+}
+
+// ========== FUNCIONES DE GESTIÓN DE PAGOS ==========
+
+/**
+ * Calcula y actualiza el saldo pendiente de pago
+ */
+function calcularSaldoPendiente() {
+    // Remover $ y separadores de miles del valor FOB
+    const valorFobPeso = parseFloat($('#valorFobPeso').val().replace(/[$,.]/g, '')) || 0;
+    const totalPagado = pagosArray.reduce((sum, pago) => sum + parseFloat(pago.monto || 0), 0);
+    const saldoPendiente = valorFobPeso - totalPagado;
+    
+    const colorSaldo = saldoPendiente > 0 ? '#dc3545' : '#28a745';
+    $('#saldoPendiente').html(`Saldo Pendiente: <span style="color: ${colorSaldo};">$${Math.round(saldoPendiente).toLocaleString('es-UY')}</span>`);
+    
+    return saldoPendiente;
+}
+
+/**
+ * Renderiza la tabla de pagos
+ */
+function renderizarTablaPagos() {
+    const tbody = $('#tbodyPagos');
+    tbody.empty();
+    
+    if (pagosArray.length === 0) {
+        tbody.append(`
+            <tr id="sinPagos">
+                <td colspan="5" style="text-align: center; color: #999; padding: 30px;">
+                    <i class="bi bi-inbox" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                    No hay pagos registrados. Haz clic en "Agregar Pago" para comenzar.
+                </td>
+            </tr>
+        `);
+    } else {
+        pagosArray.forEach((pago, index) => {
+            const isReadonly = pago.guardado ? 'readonly disabled' : '';
+            const readonlyStyle = pago.guardado ? 'background-color: #e9ecef; cursor: not-allowed;' : '';
+            
+            const row = `
+                <tr>
+                    <td><input type="text" class="form-control form-control-sm js-datepicker-pagos" data-index="${index}" value="${pago.fechaPago}" style="font-size: 13px; ${readonlyStyle}" ${isReadonly}></td>
+                    <td>
+                        <select class="form-select form-select-sm" data-index="${index}" data-field="formaPago" style="font-size: 13px; ${readonlyStyle}" ${isReadonly}>
+                            <option value="">Seleccione...</option>
+                            <option value="PAGO ANTICIPADO" ${pago.formaPago === 'PAGO ANTICIPADO' ? 'selected' : ''}>PAGO ANTICIPADO</option>
+                            <option value="PAGO VISTA" ${pago.formaPago === 'PAGO VISTA' ? 'selected' : ''}>PAGO VISTA</option>
+                            <option value="PAGO DIFERIDO" ${pago.formaPago === 'PAGO DIFERIDO' ? 'selected' : ''}>PAGO DIFERIDO</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm" data-index="${index}" data-field="medioPago" style="font-size: 13px; ${readonlyStyle}" ${isReadonly}>
+                            <option value="">Seleccione...</option>
+                            <option value="Transferencia" ${pago.medioPago === 'Transferencia' ? 'selected' : ''}>Transferencia</option>
+                            <option value="Cheque" ${pago.medioPago === 'Cheque' ? 'selected' : ''}>Cheque</option>
+                            <option value="Tarjeta" ${pago.medioPago === 'Tarjeta' ? 'selected' : ''}>Tarjeta</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="form-control form-control-sm monto-input" data-index="${index}" data-field="monto" value="${pago.monto ? '$' + Math.round(parseFloat(pago.monto)).toLocaleString('es-UY') : ''}" style="font-size: 13px; ${readonlyStyle}" ${isReadonly}></td>
+                    <td style="text-align: center;">
+                        ${pago.guardado ? 
+                            '<span style="color: #28a745; font-size: 18px;" title="Pago guardado"><i class="bi bi-check-circle-fill"></i></span>' :
+                            `<button type="button" class="btn btn-sm btn-danger" onclick="eliminarPago(${index})" title="Eliminar pago">
+                                <i class="bi bi-trash"></i>
+                            </button>`
+                        }
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+        
+        // Reinicializar datepickers solo para los inputs editables
+        $('.js-datepicker-pagos:not([readonly])').daterangepicker({
+            singleDatePicker: true,
+            showDropdowns: true,
+            autoApply: true,
+            locale: {format: 'DD/MM/YYYY'}
+        }).on('apply.daterangepicker', function(ev, picker) {
+            const index = $(this).data('index');
+            pagosArray[index].fechaPago = picker.startDate.format('DD/MM/YYYY');
+            calcularSaldoPendiente();
+        });
+    }
+    
+    // Actualizar eventos de cambio para inputs
+    // Usar 'input' para guardar el valor sin formato
+    $('#tbodyPagos input[data-field="monto"]').on('input', function() {
+        const index = $(this).data('index');
+        // Remover $ y separadores de miles, mantener solo números
+        let valor = $(this).val().replace(/[$,.]/g, '');
+        
+        // Guardar el valor numérico sin formato
+        if (valor && !isNaN(valor)) {
+            pagosArray[index].monto = valor;
+        } else if (!valor) {
+            pagosArray[index].monto = '';
+        }
+        
+        calcularSaldoPendiente();
+    });
+    
+    // Usar 'blur' para formatear cuando pierde el foco
+    $('#tbodyPagos input[data-field="monto"]').on('blur', function() {
+        const index = $(this).data('index');
+        let valor = $(this).val().replace(/[$,.]/g, '');
+        
+        // Formatear el valor en el input solo al perder foco
+        if (valor && !isNaN(valor)) {
+            $(this).val('$' + Math.round(parseFloat(valor)).toLocaleString('es-UY'));
+        }
+    });
+    
+    // Usar 'focus' para quitar el formato al editar
+    $('#tbodyPagos input[data-field="monto"]').on('focus', function() {
+        const index = $(this).data('index');
+        // Al hacer foco, mostrar solo el número sin formato
+        if (pagosArray[index].monto) {
+            $(this).val(pagosArray[index].monto);
+        }
+    });
+    
+    $('#tbodyPagos select[data-field]').on('change', function() {
+        const index = $(this).data('index');
+        const field = $(this).data('field');
+        pagosArray[index][field] = $(this).val();
+    });
+    
+    calcularSaldoPendiente();
+}
+
+/**
+ * Agrega un nuevo pago vacío
+ */
+function agregarPago() {
+    const nuevoPago = {
+        id: null, // null para nuevos pagos
+        fechaPago: moment().format('DD/MM/YYYY'),
+        formaPago: '',
+        medioPago: '',
+        monto: '',
+        guardado: false // Marcar como no guardado para que sea editable
+    };
+    
+    pagosArray.push(nuevoPago);
+    renderizarTablaPagos();
+}
+
+/**
+ * Elimina un pago del array
+ */
+function eliminarPago(index) {
+    Swal.fire({
+        title: '¿Eliminar pago?',
+        text: 'Esta acción no se puede deshacer',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            pagosArray.splice(index, 1);
+            renderizarTablaPagos();
+        }
+    });
+}
+
+/**
+ * Carga los pagos desde el servidor
+ */
+function cargarPagos(idEncabezado) {
+    $.ajax({
+        url: '../controller/obtenerPagos.php',
+        method: 'GET',
+        data: { idEncabezado: idEncabezado },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.data) {
+                pagosArray = response.data.map(pago => {
+                    // SQL Server devuelve FECHA_PAGO como objeto con propiedad 'date'
+                    let fechaFormateada = '';
+                    if (pago.FECHA_PAGO) {
+                        if (typeof pago.FECHA_PAGO === 'object' && pago.FECHA_PAGO.date) {
+                            fechaFormateada = moment(pago.FECHA_PAGO.date).format('DD/MM/YYYY');
+                        } else if (typeof pago.FECHA_PAGO === 'string') {
+                            fechaFormateada = moment(pago.FECHA_PAGO).format('DD/MM/YYYY');
+                        }
+                    }
+                    
+                    return {
+                        id: pago.ID,
+                        fechaPago: fechaFormateada,
+                        formaPago: pago.FORMA_PAGO,
+                        medioPago: pago.MEDIO_PAGO,
+                        monto: pago.MONTO,
+                        guardado: true // Marcar como guardado para hacerlo readonly
+                    };
+                });
+                renderizarTablaPagos();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cargar pagos:', error);
+        }
+    });
+}
+
+/**
+ * Valida que todos los pagos tengan datos completos
+ */
+function validarPagos() {
+    for (let i = 0; i < pagosArray.length; i++) {
+        const pago = pagosArray[i];
+        if (!pago.fechaPago || !pago.formaPago || !pago.medioPago || !pago.monto || parseFloat(pago.monto) <= 0) {
+            Swal.fire({
+                title: 'Datos incompletos',
+                text: `El pago #${i + 1} tiene campos vacíos o inválidos`,
+                icon: 'warning',
+                confirmButtonColor: '#7066e0'
+            });
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Guarda los pagos en el servidor
+ */
+function guardarPagosEnServidor(idEncabezado, callback) {
+    // Convertir fechas al formato que espera SQL Server
+    const pagosParaEnviar = pagosArray.map(pago => ({
+        id: pago.id,
+        fechaPago: moment(pago.fechaPago, 'DD/MM/YYYY').format('YYYY-MM-DD'),
+        formaPago: pago.formaPago,
+        medioPago: pago.medioPago,
+        monto: parseFloat(pago.monto)
+    }));
+    
+    $.ajax({
+        url: '../controller/guardarPagos.php',
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            idEncabezado: idEncabezado,
+            pagos: JSON.stringify(pagosParaEnviar)
+        },
+        success: function(response) {
+            callback(response.success);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al guardar pagos:', error);
+            callback(false);
+        }
+    });
 }
 
 /**
@@ -224,7 +467,8 @@ function recalcularFobPesos() {
     
     if (valorFobDolar > 0 && tipoCambio > 0) {
         const valorFobPeso = valorFobDolar * tipoCambio;
-        $('#valorFobPeso').val(valorFobPeso.toFixed(2));
+        // Formatear con $ sin decimales y con separador de miles
+        $('#valorFobPeso').val('$' + Math.round(valorFobPeso).toLocaleString('es-UY'));
         marcarCampoCalculado('#valorFobPeso');
     } else {
         $('#valorFobPeso').val('');
@@ -277,16 +521,6 @@ function configurarManualOverride() {
     });
     verificarCampoVacio('#fechaArr', fechaArriboIsManual, 'fechaArriboIsManual');
 
-    // Fecha Pago
-    $('#fechaPago').on('dp.change', function(e) {
-        if (!cargandoDatos && e.date && $(this).val().trim() !== '') {
-            console.log('Usuario modificó Fecha Pago manualmente');
-            fechaPagoIsManual = true;
-            marcarCampoManual('#fechaPago');
-        }
-    });
-    verificarCampoVacio('#fechaPago', fechaPagoIsManual, 'fechaPagoIsManual');
-
     // Fecha Nacionalización (FECHA_DESP_ADU)
     $('#fechaDespAdu').on('dp.change', function(e) {
         if (!cargandoDatos && e.date && $(this).val().trim() !== '') {
@@ -327,7 +561,7 @@ function establecerModoFormulario(esEdicion) {
         
         // Secciones 2 y 3 editables
         $('#fechaEmb, #numeroBl, #factura, #fechaArr').prop('readonly', false).removeClass('campo-readonly');
-        $('#tipoCambio, #formaPago, #fechaPago, #fechaDespAdu, #despacho').prop('readonly', false).removeClass('campo-readonly');
+        $('#tipoCambio, #fechaDespAdu, #despacho').prop('readonly', false).removeClass('campo-readonly');
         
     } else {
         // MODO ALTA INICIAL: Sección 1 obligatoria y editable
@@ -480,7 +714,7 @@ const traerOrden = () => {
         `;
         
         $.ajax({
-            url: 'Controller/traerOrdenManualController.php',
+            url: '../controller/traerOrdenManualController.php',
             method: 'GET',
             success: function(data) {
                 ordenesSeleccionadas.innerHTML = '';
@@ -603,10 +837,17 @@ $(document).ready(function() {
     // Event listeners para cálculo de FOB en Pesos
     $('#valorFobDolar').on('input change', function() {
         recalcularFobPesos();
+        calcularSaldoPendiente(); // Actualizar saldo cuando cambia FOB
     });
     
     $('#tipoCambio').on('input change', function() {
         recalcularFobPesos();
+        calcularSaldoPendiente(); // Actualizar saldo cuando cambia tipo de cambio
+    });
+    
+    // Event listener para agregar pagos
+    $('#btnAgregarPago').on('click', function() {
+        agregarPago();
     });
     
     // Inicializar datepickers
@@ -631,13 +872,6 @@ $(document).ready(function() {
     });
     
     $('.js-datepicker-arribo').daterangepicker({
-        singleDatePicker: true,
-        showDropdowns: true,
-        autoApply: true,
-        locale: {format: 'DD/MM/YYYY'}
-    });
-    
-    $('.js-datepicker-pago').daterangepicker({
         singleDatePicker: true,
         showDropdowns: true,
         autoApply: true,
@@ -831,6 +1065,11 @@ function guardarCabecera() {
         if (!result.isConfirmed) {
             return;
         }
+        
+        // Validar pagos si hay alguno agregado
+        if (pagosArray.length > 0 && !validarPagos()) {
+            return;
+        }
 
         // Capturar datos del formulario
         const cod_proveedor = $('#proveedor').val();
@@ -852,13 +1091,13 @@ function guardarCabecera() {
         const fechaEmb = $('#fechaEmb').val();
         const numeroBl = $('#numeroBl').val();
         const factura = $('#factura').val();
+        const puertoOrigen = $('#puertoOrigen').val() !== 'Seleccione...' ? $('#puertoOrigen').val() : '';
+        const terminal = $('#terminal').val() !== 'Seleccione...' ? $('#terminal').val() : '';
         const fechaArr = $('#fechaArr').val();
         
         // Sección 3 - Datos Financieros y Aduana
         const tipoCambio = $('#tipoCambio').val();
         const valorFobPeso = $('#valorFobPeso').val();
-        const formaPago = $('#formaPago').val();
-        const fechaPago = $('#fechaPago').val();
         const fechaDespAdu = $('#fechaDespAdu').val();
         const despacho = $('#despacho').val();
  
@@ -882,26 +1121,29 @@ function guardarCabecera() {
             
             // Campos calculados automáticamente
             fechaArr: fechaArr,
-            fechaPago: fechaPago,
             fechaDespAdu: fechaDespAdu,
             
             // Sección 2 - Datos de Embarque (solo enviar en modo edición)
             fechaEmb: (modoEdicion && fechaEmb) ? fechaEmb : '',
             numeroBl: numeroBl,
             factura: factura,
+            puertoOrigen: puertoOrigen,
+            terminal: terminal,
             
             // Sección 3 - Datos Financieros y Aduana
             tipoCambio: tipoCambio.replace(/,/g, ""),
             valorFobPeso: valorFobPeso.replace(/,/g, ""),
-            formaPago: formaPago,
-            despacho: despacho
+            despacho: despacho,
+            
+            // Pagos
+            pagos: JSON.stringify(pagosArray)
         };
         
         console.log('Datos a enviar:', dataToSend);
         
         // Enviar datos al servidor
         $.ajax({
-            url: 'Controller/insertarEncabezado.php',
+            url: '../controller/insertarEncabezado.php',
             method: 'POST',
             dataType: 'json',
             data: dataToSend,
@@ -909,20 +1151,49 @@ function guardarCabecera() {
                 console.log('Respuesta del servidor:', response);
                 
                 if (response.success) {
-                    Swal.fire({
-                        title: '¡Despacho guardado correctamente!',
-                        text: response.message || 'Los datos han sido guardados exitosamente',
-                        icon: 'success',
-                        confirmButtonText: 'Aceptar',
-                        confirmButtonColor: '#7066e0'
-                    }).then(function () {
-                        // Si estamos en modo edición, regresar a la lista de pendientes
-                        if (modoEdicion) {
-                            window.location.href = 'gestionDespachos.php';
-                        } else {
-                            window.location.reload();
-                        }
-                    });
+                    // Si hay pagos, guardarlos
+                    if (pagosArray.length > 0) {
+                        const idEncabezado = response.id || $('#idDespacho').val();
+                        guardarPagosEnServidor(idEncabezado, function(success) {
+                            if (success) {
+                                Swal.fire({
+                                    title: '¡Despacho guardado correctamente!',
+                                    text: 'El despacho y sus pagos han sido guardados exitosamente',
+                                    icon: 'success',
+                                    confirmButtonText: 'Aceptar',
+                                    confirmButtonColor: '#7066e0'
+                                }).then(function () {
+                                    if (modoEdicion) {
+                                        window.location.href = 'gestionDespachos.php';
+                                    } else {
+                                        window.location.reload();
+                                    }
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Advertencia',
+                                    text: 'El despacho se guardó pero hubo un error al guardar los pagos',
+                                    icon: 'warning',
+                                    confirmButtonText: 'Aceptar',
+                                    confirmButtonColor: '#7066e0'
+                                });
+                            }
+                        });
+                    } else {
+                        Swal.fire({
+                            title: '¡Despacho guardado correctamente!',
+                            text: response.message || 'Los datos han sido guardados exitosamente',
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar',
+                            confirmButtonColor: '#7066e0'
+                        }).then(function () {
+                            if (modoEdicion) {
+                                window.location.href = 'gestionDespachos.php';
+                            } else {
+                                window.location.reload();
+                            }
+                        });
+                    }
                 } else {
                     Swal.fire({
                         title: 'Error al guardar',

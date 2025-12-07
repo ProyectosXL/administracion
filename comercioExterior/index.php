@@ -120,7 +120,7 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
             <!-- Gestión de Despachos Tab -->
             <div class="tab-pane fade show active" id="gestion" role="tabpanel" aria-labelledby="gestion-tab">
                 <div class="tab-content-wrapper">
-                    <iframe src="gestionDespachos.php" class="content-iframe" id="gestionFrame"></iframe>
+                    <iframe src="tabs/gestionDespachos.php" class="content-iframe" id="gestionFrame"></iframe>
                 </div>
             </div>
 
@@ -128,21 +128,21 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
             <!-- Estimación de Costos Tab -->
             <div class="tab-pane fade" id="pci" role="tabpanel" aria-labelledby="pci-tab">
                 <div class="tab-content-wrapper">
-                    <iframe src="proyeccion-costos/index.php" class="content-iframe" id="pciFrame"></iframe>
+                    <iframe src="tabs/proyeccionCostos.php" class="content-iframe" id="pciFrame"></iframe>
                 </div>
             </div>
 
             <!-- Costos de Nacionalización Tab -->
             <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
                 <div class="tab-content-wrapper">
-                    <iframe src="costoNacionalizacion.php" class="content-iframe" id="costosFrame"></iframe>
+                    <iframe src="tabs/costoNacionalizacion.php" class="content-iframe" id="costosFrame"></iframe>
                 </div>
             </div>
 
             <!-- Dashboard Tab -->
             <div class="tab-pane fade" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
                 <div class="tab-content-wrapper">
-                    <iframe src="dashboard.php" class="content-iframe" id="dashboardFrame"></iframe>
+                    <iframe src="tabs/dashboard.php" class="content-iframe" id="dashboardFrame"></iframe>
                 </div>
             </div>
         </div>

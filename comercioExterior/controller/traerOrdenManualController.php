@@ -1,5 +1,5 @@
 <?php
-require_once '../Class/encabezado.php';
+require_once '../class/encabezado.php';
 
 $encabezado = new Encabezado();
 

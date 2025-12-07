@@ -22,7 +22,7 @@ function convertirFecha($fecha) {
 }
 
 try {
-    require_once '../Class/encabezado.php';
+    require_once '../class/encabezado.php';
     $cid = new Encabezado();
 
     // Log de datos recibidos para debugging
@@ -71,10 +71,6 @@ try {
         $datosDeCabezera['fechaArr'] = convertirFecha($_POST['fechaArr']);
     }
     
-    if (isset($_POST['fechaPago']) && !empty($_POST['fechaPago'])) {
-        $datosDeCabezera['fechaPago'] = convertirFecha($_POST['fechaPago']);
-    }
-    
     if (isset($_POST['fechaDespAdu']) && !empty($_POST['fechaDespAdu'])) {
         $datosDeCabezera['fechaDespAdu'] = convertirFecha($_POST['fechaDespAdu']);
     }
@@ -93,16 +89,22 @@ try {
         $datosDeCabezera['facturaProveedor'] = $_POST['factura'];
     }
     
+    if (isset($_POST['puertoOrigen']) && !empty($_POST['puertoOrigen'])) {
+        $datosDeCabezera['puertoOrigen'] = $_POST['puertoOrigen'];
+        error_log("PUERTO_ORIGEN capturado: " . $datosDeCabezera['puertoOrigen']);
+    }
+    
+    if (isset($_POST['terminal']) && !empty($_POST['terminal'])) {
+        $datosDeCabezera['terminal'] = $_POST['terminal'];
+        error_log("TERMINAL capturado: " . $datosDeCabezera['terminal']);
+    }
+    
     if (isset($_POST['tipoCambio']) && !empty($_POST['tipoCambio'])) {
         $datosDeCabezera['tipoCambio'] = $_POST['tipoCambio'];
     }
     
     if (isset($_POST['valorFobPeso']) && !empty($_POST['valorFobPeso'])) {
         $datosDeCabezera['valorFobPeso'] = $_POST['valorFobPeso'];
-    }
-    
-    if (isset($_POST['formaPago']) && !empty($_POST['formaPago'])) {
-        $datosDeCabezera['formaPago'] = $_POST['formaPago'];
     }
     
     if (isset($_POST['despacho']) && !empty($_POST['despacho'])) {

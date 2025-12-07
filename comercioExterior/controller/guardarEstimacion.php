@@ -16,7 +16,7 @@ try {
     $idMg = intval($data['id_mg']);
     $conceptos = $data['conceptos'];
     
-    require_once '../../class/estimacionCostos.php';
+    require_once '../class/estimacionCostos.php';
     
     $estimacion = new EstimacionCostos();
     

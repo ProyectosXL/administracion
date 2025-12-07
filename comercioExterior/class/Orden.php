@@ -152,20 +152,46 @@ class Orden{
 
     public function eliminarDespacho($id) {
         try {
-            // Primero eliminar los detalles
+            // Primero eliminar los detalles de estimación
+            $sqlEstimacionDetalle = "DELETE FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE WHERE ID_MG = ?";
+            $stmtEstimacionDetalle = sqlsrv_prepare($this->cid_central, $sqlEstimacionDetalle, array(&$id));
+            
+            if ($stmtEstimacionDetalle === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error al preparar eliminación de detalles de estimación: " . print_r($errors, true));
+            }
+            
+            if (!sqlsrv_execute($stmtEstimacionDetalle)) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error al eliminar detalles de estimación: " . print_r($errors, true));
+            }
+            
+            // Luego eliminar los detalles del despacho
             $sqlDetalle = "DELETE FROM RO_T_IMPORTACIONES_DETALLE WHERE ID_MG = ?";
             $stmtDetalle = sqlsrv_prepare($this->cid_central, $sqlDetalle, array(&$id));
             
-            if (!sqlsrv_execute($stmtDetalle)) {
-                throw new Exception("Error al eliminar detalles del despacho");
+            if ($stmtDetalle === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error al preparar eliminación de detalles: " . print_r($errors, true));
             }
             
-            // Luego eliminar el encabezado
+            if (!sqlsrv_execute($stmtDetalle)) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error al eliminar detalles del despacho: " . print_r($errors, true));
+            }
+            
+            // Finalmente eliminar el encabezado
             $sqlEncabezado = "DELETE FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ID = ?";
             $stmtEncabezado = sqlsrv_prepare($this->cid_central, $sqlEncabezado, array(&$id));
             
+            if ($stmtEncabezado === false) {
+                $errors = sqlsrv_errors();
+                throw new Exception("Error al preparar eliminación de encabezado: " . print_r($errors, true));
+            }
+            
             if (!sqlsrv_execute($stmtEncabezado)) {
-                throw new Exception("Error al eliminar encabezado del despacho");
+                $errors = sqlsrv_errors();
+                throw new Exception("Error al eliminar encabezado del despacho: " . print_r($errors, true));
             }
             
             return true;

@@ -261,10 +261,13 @@ body {
     padding: 0.5rem 0.75rem;
     border-radius: 6px;
     font-weight: 600;
+    font-size: 0.85rem;
 }
 
-.importe-editable {
+.importe-editable,
+.importe-calculado {
     font-weight: 600;
+    font-size: 0.85rem !important;
     transition: all 0.2s ease;
 }
 

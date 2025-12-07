@@ -1,7 +1,7 @@
 <?php
 $datosDetalle = $input = json_decode(file_get_contents("php://input"), true);
 
-require_once '../Class/detalle.php';
+require_once '../class/detalle.php';
 $cid = new Detalle();
 // $datosDetalle = $_POST['array'];
 

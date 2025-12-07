@@ -87,6 +87,6 @@
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Custom JS -->
-    <script src="js/proyeccion-costos.js"></script>
+    <script src="../js/proyeccion-costos.js"></script>
 </body>
 </html>

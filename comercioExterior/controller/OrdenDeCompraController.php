@@ -1,5 +1,5 @@
 <?php
-require_once '../Class/OrdenDeCompra.php';
+require_once '../class/OrdenDeCompra.php';
 
 $ordenDeCompra = new OrdenDeCompra();
 $datosDetalle = $_POST['array'];

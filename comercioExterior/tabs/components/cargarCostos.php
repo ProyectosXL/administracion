@@ -11,8 +11,8 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $idDespacho = intval($_GET['id']);
 
 // Cargar datos del despacho
-require_once 'Class/encabezado.php';
-require_once 'Class/maestroGastos.php';
+require_once '../../Class/encabezado.php';
+require_once '../../Class/maestroGastos.php';
 
 $encabezadoClass = new Encabezado();
 $gastosClass = new Gastos();
@@ -43,8 +43,8 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     
     <!-- Icons font CSS-->
-    <link href="assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-    <link href="assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <link href="../../assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="../../assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
     
     <!-- Font special for pages-->
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
@@ -53,13 +53,13 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
     
     <!-- Vendor CSS-->
-    <link href="assets/select2/select2.min.css" rel="stylesheet" media="all">
-    <link href="assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+    <link href="../../assets/select2/select2.min.css" rel="stylesheet" media="all">
+    <link href="../../assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
 
-    <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
+    <link rel="icon" type="image/jpg" href="../../images/LOGO XL 2018.jpg">
     
     <!-- Main CSS-->
-    <link href="css/style.css" rel="stylesheet" media="all">
+    <link href="../../css/style.css" rel="stylesheet" media="all">
     
     <title>Carga de Costos - <?= $proveedor ?></title>
 </head>
@@ -200,7 +200,7 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
 
                     <!-- Botones de Acción -->
                     <div class="d-flex gap-2 justify-content-center">
-                        <a href="gestionDespachos.php" class="btn btn-secondary">
+                        <a href="../gestionDespachos.php" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> Volver
                         </a>
                         <button class="btn btn-primary" id="btnSaveDetalle">
@@ -214,10 +214,10 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
 
     <!-- Scripts -->
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="assets/jquery/jquery.min.js"></script>
+    <script src="../../assets/jquery/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk" crossorigin="anonymous"></script>
-    <script src="js/cargarCostos.js"></script>
+    <script src="../../js/cargarCostos.js"></script>
 
     <!-- Script para navegación con flechas -->
     <script>

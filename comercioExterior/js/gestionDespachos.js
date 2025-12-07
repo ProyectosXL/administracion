@@ -7,7 +7,7 @@ $(document).ready(function() {
 
 function cargarDespachos() {
     $.ajax({
-        url: 'Controller/listarDespachos.php',
+        url: '../controller/listarDespachos.php',
         method: 'GET',
         dataType: 'json',
         success: function(response) {
@@ -51,14 +51,14 @@ function mostrarDespachos(despachos) {
                 <td>${despacho.ORDEN_COMPRA || '-'}</td>
                 <td>
                     <div class="d-flex gap-1" style="flex-wrap: nowrap;">
-                        <a href="editarDespacho.php?id=${despacho.ID}" 
+                        <a href="components/editarDespacho.php?id=${despacho.ID}" 
                            class="btn-action btn-editar" 
                            data-bs-toggle="tooltip" 
                            data-bs-placement="top" 
                            data-bs-title="Completar despacho">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <a href="cargarCostos.php?id=${despacho.ID}" 
+                        <a href="components/cargarCostos.php?id=${despacho.ID}" 
                            class="btn-action btn-costos" 
                            data-bs-toggle="tooltip" 
                            data-bs-placement="top" 
@@ -136,7 +136,7 @@ function eliminarDespacho(id, contenedor) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: 'Controller/eliminarDespacho.php',
+                url: '../controller/eliminarDespacho.php',
                 method: 'POST',
                 data: { id: id },
                 dataType: 'json',
@@ -146,11 +146,13 @@ function eliminarDespacho(id, contenedor) {
                             title: '¡Eliminado!',
                             text: 'El despacho ha sido eliminado correctamente.',
                             icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
+                            timer: 1500,
+                            showConfirmButton: false,
+                            willClose: () => {
+                                // Recargar la página para actualizar la tabla
+                                location.reload();
+                            }
                         });
-                        // Recargar la tabla
-                        cargarDespachos();
                     } else {
                         Swal.fire({
                             title: 'Error',

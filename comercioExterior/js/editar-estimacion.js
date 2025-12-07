@@ -68,7 +68,7 @@ function cargarDatosEstimacion(idDespacho) {
     mostrarLoading(true);
     
     $.ajax({
-        url: 'controller/cargarEstimacion.php',
+        url: '../../controller/cargarEstimacion.php',
         method: 'GET',
         data: { id: idDespacho },
         dataType: 'json',
@@ -162,18 +162,26 @@ function generarFormularioConceptos() {
             
             const param1 = valorExistente ? valorExistente.VALOR_DEFAULT_1 : concepto.VALOR_DEFAULT_1;
             const param2 = valorExistente ? valorExistente.VALOR_DEFAULT_2 : concepto.VALOR_DEFAULT_2;
+            const confirmado = valorExistente ? valorExistente.CONFIRMADO : 0;
             
-            // Si existe estimación previa, usar ese importe
-            // Si NO existe, usar VALOR_DEFAULT_1 para tipos 'I' (Importe Fijo), 0 para 'P' (Porcentaje, se calculará)
-            let importe;
-            if (valorExistente) {
-                importe = parseFloat(valorExistente.IMPORTE);
+            // Determinar importe inicial según estado:
+            // - Si CONFIRMADO = 1: usar IMPORTE de BD (valor histórico congelado)
+            // - Si CONFIRMADO = 0: usar parámetro para inicializar, luego se recalculará
+            let importe = 0;
+            
+            if (confirmado === 1 && valorExistente && valorExistente.IMPORTE !== null) {
+                // Modo confirmado: usar valor guardado en BD
+                const importeGuardado = parseFloat(valorExistente.IMPORTE);
+                importe = !isNaN(importeGuardado) ? importeGuardado : 0;
             } else {
-                importe = (concepto.TIPO_VALOR === 'I' && concepto.VALOR_DEFAULT_1) ? 
-                          parseFloat(concepto.VALOR_DEFAULT_1) : 0;
+                // Modo borrador o nuevo: usar parámetro como valor inicial
+                if (param1 !== null && param1 !== undefined) {
+                    const param1Num = parseFloat(param1);
+                    importe = !isNaN(param1Num) ? param1Num : 0;
+                }
             }
             
-            fila = generarFilaConcepto(concepto, param1, param2, importe, index);
+            fila = generarFilaConcepto(concepto, param1, param2, importe, confirmado, index);
         }
         
         tbody.append(fila);
@@ -215,14 +223,24 @@ function generarFilaCalculada(nombre) {
 /**
  * Generar HTML para una fila de concepto
  */
-function generarFilaConcepto(concepto, param1, param2, importe, index) {
+function generarFilaConcepto(concepto, param1, param2, importe, confirmado, index) {
     const tipoValor = concepto.TIPO_VALOR; // 'P' = Porcentaje, 'I' = Importe
     const tipoTexto = tipoValor === 'P' ? 'Porcentaje' : 'Importe Fijo';
     const param1Display = param1 !== null ? formatearParametro(param1, tipoValor) : '-';
     const param2Display = param2 !== null ? formatearParametro(param2, tipoValor) : '-';
     
+    // Determinar si el campo debe ser readonly:
+    // - Si el concepto está CONFIRMADO (confirmado=1), entonces readonly
+    // - Si está en BORRADOR (confirmado=0 o undefined), entonces editable
+    const esConfirmado = confirmado === 1;
+    const readonlyAttr = esConfirmado ? 'readonly' : '';
+    const confirmadoClass = esConfirmado ? 'confirmado' : '';
+    
     return `
-        <tr data-concepto-id="${concepto.ID_CE}" data-concepto-nombre="${concepto.CONCEPTO}" data-tipo="${tipoValor}">
+        <tr data-concepto-id="${concepto.ID_CE}" 
+            data-concepto-nombre="${concepto.CONCEPTO}" 
+            data-tipo="${tipoValor}"
+            data-confirmado="${confirmado || 0}">
             <td class="concepto-nombre">
                 <strong>${concepto.CONCEPTO}</strong>
             </td>
@@ -239,9 +257,10 @@ function generarFilaConcepto(concepto, param1, param2, importe, index) {
             </td>
             <td>
                 <input type="text" 
-                       class="form-control importe-editable text-end" 
+                       class="form-control importe-editable text-end ${confirmadoClass}" 
                        value="${formatearMoneda(importe)}" 
                        data-valor="${importe}"
+                       ${readonlyAttr}
                        onkeyup="handleImporteChange(this)"
                        onblur="formatearCampoMoneda(this)">
             </td>
@@ -351,10 +370,10 @@ function calcularTodosLosConceptos() {
     const totalCashflow = totalNac + despachante + terminal;
     setValorCalculado('Total Cashflow', totalCashflow);
     
-    // 18. Suma Asegurada (ID_CE=13): (FOB + Flete) * Param1 * Param2
+    // 18. Suma Asegurada (ID_CE=13): ((FOB + Flete) * (1 + Param1)) * (1 + Param2)
     const sumaParam1 = getConceptoParam1(CONCEPTOS_ID.SUMA_ASEGURADA);
     const sumaParam2 = getConceptoParam2(CONCEPTOS_ID.SUMA_ASEGURADA);
-    const sumaAsegurada = (fob + flete) * sumaParam1 * sumaParam2;
+    const sumaAsegurada = ((fob + flete) * (1 + sumaParam1)) * (1 + sumaParam2);
     setConceptoValorCalculado(CONCEPTOS_ID.SUMA_ASEGURADA, sumaAsegurada);
 }
 
@@ -390,11 +409,17 @@ function getConceptoParam2(idCe) {
 function setConceptoValorCalculado(idCe, valor) {
     const $row = $(`tr[data-concepto-id="${idCe}"]`);
     const $input = $row.find('.importe-editable');
+    const confirmado = parseInt($row.data('confirmado')) || 0;
     
-    // Solo actualizar si no está siendo editado por el usuario
-    if (!$input.is(':focus')) {
-        $input.val(formatearMoneda(valor)).data('valor', valor);
+    // NO actualizar si:
+    // 1. El concepto está confirmado (valores congelados)
+    // 2. El usuario está editando el campo actualmente
+    if (confirmado === 1 || $input.is(':focus')) {
+        return;
     }
+    
+    // Actualizar el valor calculado en modo borrador
+    $input.val(formatearMoneda(valor)).data('valor', valor);
 }
 
 /**
@@ -454,7 +479,7 @@ function guardarEstimacion() {
     });
     
     $.ajax({
-        url: 'controller/guardarEstimacion.php',
+        url: '../../controller/guardarEstimacion.php',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(data),
@@ -469,7 +494,7 @@ function guardarEstimacion() {
                     showConfirmButton: false
                 }).then(() => {
                     // Volver a la pestaña de proyección de costos
-                    window.location.href = 'index.php';
+                    window.location.href = '../proyeccionCostos.php';
                 });
             } else {
                 Swal.fire({
@@ -553,6 +578,6 @@ function mostrarError(mensaje) {
         icon: 'error',
         confirmButtonColor: '#dc3545'
     }).then(() => {
-        window.location.href = 'index.php';
+        window.location.href = '../proyeccionCostos.php';
     });
 }

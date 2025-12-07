@@ -3,9 +3,9 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-include 'Class/proveedor.php';
-include 'Class/ordenDeCompra.php';
-include 'Class/encabezado.php';
+include '../Class/proveedor.php';
+include '../Class/ordenDeCompra.php';
+include '../Class/encabezado.php';
 
 $proveedor = new Proveedor();
 $todosLosProveedores = [];
@@ -55,21 +55,21 @@ try {
                         <!------------------------------------------------------------>
 
     <!-- Icons font CSS-->
-    <link href="assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-    <link href="assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <link href="../assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="../assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
     <!-- Font special for pages-->
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
     <!-- Vendor CSS-->
-    <link href="assets/select2/select2.min.css" rel="stylesheet" media="all">
-    <link href="assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+    <link href="../assets/select2/select2.min.css" rel="stylesheet" media="all">
+    <link href="../assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
 
-    <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
+    <link rel="icon" type="image/jpg" href="../images/LOGO XL 2018.jpg">
     <!-- Main CSS-->
-    <link href="css/style.css" rel="stylesheet" media="all">
+    <link href="../css/style.css" rel="stylesheet" media="all">
     <!-- Carga Inicial CSS-->
-    <link href="css/cargaInicial.css" rel="stylesheet" media="all">
+    <link href="../css/cargaInicial.css" rel="stylesheet" media="all">
     
 </head>
 
@@ -236,6 +236,44 @@ try {
                                 </div>    
                             </div>
                         </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Puerto Origen</label>
+                                <div class="input-group">
+                                    <div class="rs-select2 js-select-simple select--no-search">
+                                        <select id="puertoOrigen" style="width: 283.16px;">
+                                            <option disabled="disabled" selected="selected">Seleccione...</option>
+                                            <option value="Shanghai">Shanghai</option>
+                                            <option value="Shenzhen">Shenzhen</option>
+                                            <option value="Ningbo">Ningbo</option>
+                                            <option value="Guangzhou">Guangzhou</option>
+                                            <option value="Qingdao">Qingdao</option>
+                                            <option value="Tianjin">Tianjin</option>
+                                            <option value="Hong Kong">Hong Kong</option>
+                                            <option value="Xiamen">Xiamen</option>
+                                            <option value="Dalian">Dalian</option>
+                                            <option value="Yantian">Yantian</option>
+                                        </select>
+                                        <div class="select-dropdown"></div>
+                                    </div>        
+                                </div>    
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Terminal</label>
+                                <div class="input-group">
+                                    <div class="rs-select2 js-select-simple select--no-search">
+                                        <select id="terminal" style="width: 283.16px;">
+                                            <option disabled="disabled" selected="selected">Seleccione...</option>
+                                            <option value="EXOLGAN">EXOLGAN</option>
+                                            <option value="TRP">TRP</option>
+                                            <option value="T4">T4</option>
+                                        </select>
+                                        <div class="select-dropdown"></div>
+                                    </div>        
+                                </div>    
+                            </div>
+                        </div>
                     </div>
 
                     <!-- ========== SECCIÓN 3: DATOS FINANCIEROS Y ADUANA ========== -->
@@ -257,26 +295,43 @@ try {
                             </div>
                         </div>
 
+                        <!-- Sección de Pagos -->
                         <div class="row row-space">
-                            <div class="col-md-5">
-                                <label class="label-campo">Forma de Pago</label>
-                                <div class="input-group">
-                                    <div class="rs-select2 js-select-simple select--no-search">
-                                        <select id="formaPago" style="width: 283.16px;">
-                                            <option disabled="disabled" selected="selected">Seleccione...</option>
-                                            <option>PAGO ANTICIPADO</option>
-                                            <option>PAGO VISTA</option>
-                                            <option>PAGO DIFERIDO</option>
-                                        </select>
-                                        <div class="select-dropdown"></div>
-                                    </div>        
-                                </div>    
-                            </div>
-                            <div class="col-md-5">
-                                <label class="label-campo">Fecha de Pago <span class="badge-auto">Auto</span></label>
-                                <div class="input-group">
-                                    <input class="input--style-1 js-datepicker-pago" type="text" id="fechaPago">
-                                    <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-pago"></i>
+                            <div class="col-md-12">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <label class="label-campo" style="margin: 0;">Pagos del Despacho</label>
+                                    <div style="display: flex; gap: 15px; align-items: center;">
+                                        <span id="saldoPendiente" style="font-weight: 600; color: #333; font-size: 14px;">
+                                            Saldo Pendiente: <span style="color: #dc3545;">$0.00</span>
+                                        </span>
+                                        <button type="button" class="btn btn-sm" id="btnAgregarPago" 
+                                                style="background: #7066e0; color: white; border: none; padding: 6px 15px; border-radius: 4px; font-size: 13px; display: flex; align-items: center; gap: 5px;">
+                                            <i class="bi bi-plus-circle"></i> Agregar Pago
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered" id="tablaPagos" style="background: white; margin: 0;">
+                                        <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">
+                                            <tr>
+                                                <th style="width: 25%;">Fecha de Pago</th>
+                                                <th style="width: 25%;">Forma de Pago</th>
+                                                <th style="width: 25%;">Medio de Pago</th>
+                                                <th style="width: 20%;">Monto ($)</th>
+                                                <th style="width: 5%; text-align: center;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbodyPagos">
+                                            <!-- Los pagos se agregarán aquí dinámicamente -->
+                                            <tr id="sinPagos">
+                                                <td colspan="5" style="text-align: center; color: #999; padding: 30px;">
+                                                    <i class="bi bi-inbox" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                                                    No hay pagos registrados. Haz clic en "Agregar Pago" para comenzar.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -313,16 +368,16 @@ try {
     
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Jquery JS-->
-    <script src="assets/jquery/jquery.min.js"></script>
+    <script src="../assets/jquery/jquery.min.js"></script>
     <!-- Vendor JS-->
-    <script src="assets/select2/select2.min.js"></script>
-    <script src="assets/datepicker/moment.min.js"></script>
-    <script src="assets/datepicker/daterangepicker.js"></script>
+    <script src="../assets/select2/select2.min.js"></script>
+    <script src="../assets/datepicker/moment.min.js"></script>
+    <script src="../assets/datepicker/daterangepicker.js"></script>
 
     <!-- Main JS-->
-    <script src="js/global.js"></script>
+    <script src="../js/global.js"></script>
     <!-- Carga Inicial JS - Contiene toda la lógica del formulario -->
-    <script src="js/cargaInicial.js"></script>
+    <script src="../js/cargaInicial.js"></script>
     
     <script>
     // Inicializar select de proveedor para cargar órdenes de compra
@@ -335,7 +390,7 @@ try {
                 
                 if (proveedor && proveedor !== 'Seleccione...') {
                     // Cargar órdenes de compra del proveedor
-                    fetch('Class/ordenDeCompra.php?proveedor=' + proveedor)
+                    fetch('../Class/ordenDeCompra.php?proveedor=' + proveedor)
                         .then(response => response.json())
                         .then(ordenes => {
                             localStorage.setItem('ordenes', JSON.stringify(ordenes));
