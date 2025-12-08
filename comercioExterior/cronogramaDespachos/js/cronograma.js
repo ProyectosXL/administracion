@@ -92,8 +92,10 @@ function cargarDespachos() {
 function renderizarVista() {
     if (vistaActual === 'calendario') {
         renderizarCalendario();
+        renderizarPanelProximosArribos();
     } else {
         renderizarGrilla();
+        renderizarPanelProximosArribos();
     }
 }
 
@@ -291,6 +293,158 @@ function obtenerEventosPorFecha(fecha) {
     return eventos;
 }
 
+// ========== PANEL PRÓXIMOS ARRIBOS ==========
+function renderizarPanelProximosArribos() {
+    // Filtrar despachos que no han arribado y tienen fecha de arribo
+    const despachosConArribo = despachos.filter(d => {
+        return !d.FECHA_REC && !d.FECHA_DESP_ADU && !d.FECHA_ARR;
+    });
+    
+    // Ordenar por fecha de arribo (usar real si existe, sino estimada)
+    despachosConArribo.sort((a, b) => {
+        const fechaA = a.FECHA_ARR || calcularFechaArriboEstimada(a);
+        const fechaB = b.FECHA_ARR || calcularFechaArriboEstimada(b);
+        if (!fechaA) return 1;
+        if (!fechaB) return -1;
+        return new Date(fechaA) - new Date(fechaB);
+    });
+    
+    // Tomar solo los 3 primeros
+    const proximosArribos = despachosConArribo.slice(0, 3);
+    
+    let html = `
+        <div class="panel-proximos-arribos">
+            <div class="panel-header">
+                <h3><i class="bi bi-ship"></i> Próximos Arribos</h3>
+            </div>
+            <div class="panel-body">
+    `;
+    
+    if (proximosArribos.length === 0) {
+        html += '<div class="panel-empty">No hay arribos pendientes</div>';
+    } else {
+        proximosArribos.forEach(despacho => {
+            html += crearCardProximoArribo(despacho);
+        });
+    }
+    
+    html += `
+            </div>
+            <div class="panel-footer">
+                <a href="#" class="panel-link" id="verTodosLink">Ver todos →</a>
+            </div>
+        </div>
+    `;
+    
+    // Remover panel anterior si existe
+    $('.panel-proximos-arribos').remove();
+    
+    // Agregar nuevo panel
+    $('body').append(html);
+    
+    // Event listener para ver todos
+    $('#verTodosLink').on('click', function(e) {
+        e.preventDefault();
+        $('.btn-view').removeClass('active');
+        $('.btn-view[data-view="grilla"]').addClass('active');
+        vistaActual = 'grilla';
+        renderizarVista();
+    });
+}
+
+function calcularFechaArriboEstimada(despacho) {
+    if (despacho.FECHA_ARR) return despacho.FECHA_ARR;
+    
+    // Si hay fecha real de embarque, sumar 45 días
+    if (despacho.FECHA_EMB) {
+        const fechaEmb = new Date(despacho.FECHA_EMB + 'T00:00:00');
+        fechaEmb.setDate(fechaEmb.getDate() + 45);
+        return fechaEmb.toISOString().split('T')[0];
+    }
+    
+    // Si solo hay fecha estimada de embarque, sumar 45 días
+    if (despacho.FECHA_EST_EMB) {
+        const fechaEstEmb = new Date(despacho.FECHA_EST_EMB + 'T00:00:00');
+        fechaEstEmb.setDate(fechaEstEmb.getDate() + 45);
+        return fechaEstEmb.toISOString().split('T')[0];
+    }
+    
+    return null;
+}
+
+function crearCardProximoArribo(despacho) {
+    const fechaArribo = despacho.FECHA_ARR || calcularFechaArriboEstimada(despacho);
+    const diasRestantes = calcularDiasRestantes(fechaArribo);
+    const claseUrgencia = obtenerClaseUrgencia(diasRestantes);
+    const contenedor = despacho.CONTENEDOR || 'Sin contenedor';
+    
+    // Calcular progreso
+    const progreso = calcularProgreso(despacho);
+    
+    return `
+        <div class="card-proximo-arribo" onclick='abrirDetalleDespacho(${JSON.stringify(despacho)})'>
+            <div class="arribo-header">
+                <div class="arribo-contenedor">${contenedor}</div>
+                <div class="arribo-countdown ${claseUrgencia}">
+                    ${diasRestantes >= 0 ? `En ${diasRestantes} días` : `Atrasado ${Math.abs(diasRestantes)} días`}
+                </div>
+            </div>
+            <div class="arribo-proveedor">${despacho.PROVEEDOR}</div>
+            <div class="arribo-fecha">
+                <i class="bi bi-calendar-event"></i> ${formatearFecha(fechaArribo)}
+            </div>
+            <div class="arribo-progreso">
+                ${crearIndicadorProgreso(progreso)}
+            </div>
+        </div>
+    `;
+}
+
+function calcularDiasRestantes(fecha) {
+    if (!fecha) return 999;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const fechaObj = new Date(fecha + 'T00:00:00');
+    const diff = fechaObj - hoy;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function obtenerClaseUrgencia(dias) {
+    if (dias < 0) return 'urgencia-atrasado';
+    if (dias < 7) return 'urgencia-alta';
+    if (dias <= 14) return 'urgencia-media';
+    return 'urgencia-baja';
+}
+
+function calcularProgreso(despacho) {
+    // Retorna objeto con estado de cada etapa
+    return {
+        origen: true, // Siempre completado
+        embarque: !!despacho.FECHA_EMB,
+        arribo: !!despacho.FECHA_ARR,
+        despacho: !!despacho.FECHA_DESP_ADU,
+        recepcion: !!despacho.FECHA_REC
+    };
+}
+
+function crearIndicadorProgreso(progreso) {
+    const etapas = [
+        { key: 'origen', completado: progreso.origen },
+        { key: 'embarque', completado: progreso.embarque },
+        { key: 'arribo', completado: progreso.arribo },
+        { key: 'despacho', completado: progreso.despacho },
+        { key: 'recepcion', completado: progreso.recepcion }
+    ];
+    
+    let html = '';
+    etapas.forEach(etapa => {
+        const clase = etapa.completado ? 'punto-completado' : 'punto-pendiente';
+        html += `<span class="punto-progreso ${clase}"></span>`;
+    });
+    
+    return html;
+}
+
 function renderizarGrilla() {
     const container = $('#contenidoPrincipal');
     let html = '<div class="grilla-view">';
@@ -406,28 +560,97 @@ function crearTimeline(despacho) {
     // Si no hay FECHA_EMB, todas las fechas son estimadas
     const tieneEmbarqueReal = !!despacho.FECHA_EMB;
     
+    // Calcular fechas estimadas si hay embarque real
+    const fechasEstimadas = calcularFechasEstimadas(despacho);
+    
     const pasos = [
-        { key: 'origen', label: 'En Origen', icono: '🏭', fecha: null, completado: true, estimado: false },
-        { key: 'embarcado', label: tieneEmbarqueReal ? 'Embarcado' : 'Embarque (estimado)', icono: '🚢', fecha: despacho.FECHA_EMB || despacho.FECHA_EST_EMB, completado: !!despacho.FECHA_EMB, estimado: !tieneEmbarqueReal },
-        { key: 'arribado', label: tieneEmbarqueReal ? 'Arribado' : 'Arribo (estimado)', icono: '🛃', fecha: despacho.FECHA_ARR, completado: !!despacho.FECHA_ARR && tieneEmbarqueReal, estimado: !tieneEmbarqueReal },
-        { key: 'despachado', label: tieneEmbarqueReal ? 'Despachado' : 'Despacho (estimado)', icono: '🚚', fecha: despacho.FECHA_DESP_ADU, completado: !!despacho.FECHA_DESP_ADU && tieneEmbarqueReal, estimado: !tieneEmbarqueReal },
-        { key: 'recibido', label: tieneEmbarqueReal ? 'Recibido' : 'Recepción (estimada)', icono: '📦', fecha: despacho.FECHA_REC, completado: !!despacho.FECHA_REC && tieneEmbarqueReal, estimado: !tieneEmbarqueReal }
+        { 
+            key: 'origen', 
+            label: 'En Origen', 
+            icono: '🏭', 
+            fecha: null, 
+            fechaEstimada: null,
+            completado: true, 
+            estimado: false,
+            demorado: false
+        },
+        { 
+            key: 'embarcado', 
+            label: tieneEmbarqueReal ? 'Embarcado' : 'Embarque (estimado)', 
+            icono: '🚢', 
+            fecha: despacho.FECHA_EMB || despacho.FECHA_EST_EMB,
+            fechaEstimada: despacho.FECHA_EST_EMB,
+            completado: !!despacho.FECHA_EMB, 
+            estimado: !tieneEmbarqueReal,
+            demorado: verificarDemora(despacho.FECHA_EMB, despacho.FECHA_EST_EMB)
+        },
+        { 
+            key: 'arribado', 
+            label: tieneEmbarqueReal ? 'Arribado' : 'Arribo (estimado)', 
+            icono: '🛃', 
+            fecha: despacho.FECHA_ARR || fechasEstimadas.arribo,
+            fechaEstimada: fechasEstimadas.arribo,
+            completado: !!despacho.FECHA_ARR && tieneEmbarqueReal, 
+            estimado: !tieneEmbarqueReal || !despacho.FECHA_ARR,
+            demorado: verificarDemora(despacho.FECHA_ARR, fechasEstimadas.arribo)
+        },
+        { 
+            key: 'despachado', 
+            label: tieneEmbarqueReal ? 'Despachado' : 'Despacho (estimado)', 
+            icono: '🚚', 
+            fecha: despacho.FECHA_DESP_ADU || fechasEstimadas.despacho,
+            fechaEstimada: fechasEstimadas.despacho,
+            completado: !!despacho.FECHA_DESP_ADU && tieneEmbarqueReal, 
+            estimado: !tieneEmbarqueReal || !despacho.FECHA_DESP_ADU,
+            demorado: verificarDemora(despacho.FECHA_DESP_ADU, fechasEstimadas.despacho)
+        },
+        { 
+            key: 'recibido', 
+            label: tieneEmbarqueReal ? 'Recibido' : 'Recepción (estimada)', 
+            icono: '📦', 
+            fecha: despacho.FECHA_REC || fechasEstimadas.recepcion,
+            fechaEstimada: fechasEstimadas.recepcion,
+            completado: !!despacho.FECHA_REC && tieneEmbarqueReal, 
+            estimado: !tieneEmbarqueReal || !despacho.FECHA_REC,
+            demorado: verificarDemora(despacho.FECHA_REC, fechasEstimadas.recepcion)
+        }
     ];
     
     const pasosCompletados = pasos.filter(p => p.completado).length;
     const porcentajeProgreso = ((pasosCompletados - 1) / (pasos.length - 1)) * 100;
     
+    // Calcular countdown hasta recepción
+    const fechaRecepcion = despacho.FECHA_REC || fechasEstimadas.recepcion;
+    const diasHastaRecepcion = calcularDiasRestantes(fechaRecepcion);
+    const countdownTexto = diasHastaRecepcion > 0 
+        ? `Disponible en aproximadamente ${diasHastaRecepcion} días`
+        : diasHastaRecepcion === 0
+        ? 'Disponible hoy'
+        : `Recibido hace ${Math.abs(diasHastaRecepcion)} días`;
+    
     let pasosHtml = '';
-    pasos.forEach(paso => {
+    pasos.forEach((paso, index) => {
         const claseCompletado = paso.completado ? 'completed' : '';
         const claseRecibido = paso.key === 'recibido' ? 'recibido' : '';
         const claseEstimado = paso.estimado ? 'estimado' : '';
+        const claseDemorado = paso.demorado ? 'demorado' : '';
+        
+        // Determinar color de la barra para este segmento
+        let colorBarra = '';
+        if (index < pasosCompletados && index < pasos.length - 1) {
+            // Segmento completado - usar color del paso siguiente
+            const pasoSiguiente = pasos[index + 1];
+            if (pasoSiguiente.key === 'embarcado') colorBarra = 'var(--color-emb)';
+            else if (pasoSiguiente.key === 'arribado') colorBarra = 'var(--color-arr)';
+            else if (pasoSiguiente.key === 'despachado') colorBarra = 'var(--color-desp)';
+            else if (pasoSiguiente.key === 'recibido') colorBarra = 'var(--color-rec)';
+        }
         
         pasosHtml += `
-            <div class="timeline-step ${claseCompletado} ${claseRecibido} ${claseEstimado}">
+            <div class="timeline-step ${claseCompletado} ${claseRecibido} ${claseEstimado} ${claseDemorado}" data-color="${colorBarra}">
                 <div class="timeline-icon">${paso.icono}</div>
                 <div class="timeline-label">
-                    <div class="timeline-label-title">${paso.label}</div>
+                    <div class="timeline-label-title">${paso.label}${paso.demorado ? ' <i class="bi bi-exclamation-circle text-danger"></i>' : ''}</div>
                     <div class="timeline-label-date">${paso.fecha ? formatearFecha(paso.fecha) : '-'}</div>
                 </div>
             </div>
@@ -439,19 +662,101 @@ function crearTimeline(despacho) {
             <div class="timeline-title">Timeline de Proceso Logístico</div>
             <div class="timeline">
                 <div class="timeline-track">
-                    <div class="timeline-line">
-                        <div class="timeline-progress" style="width: ${porcentajeProgreso}%"></div>
-                    </div>
+                    <div class="timeline-line-background"></div>
+                    <div class="timeline-line-progress" id="timelineProgress"></div>
                     ${pasosHtml}
                 </div>
+            </div>
+            <div class="timeline-countdown">
+                <i class="bi bi-hourglass-split"></i> ${countdownTexto}
             </div>
         </div>
     `;
 }
 
+function calcularFechasEstimadas(despacho) {
+    const fechas = {
+        arribo: null,
+        despacho: null,
+        recepcion: null
+    };
+    
+    // Si hay fecha real de embarque, calcular desde ahí
+    if (despacho.FECHA_EMB) {
+        const fechaEmb = new Date(despacho.FECHA_EMB + 'T00:00:00');
+        
+        const fechaArr = new Date(fechaEmb);
+        fechaArr.setDate(fechaArr.getDate() + 45);
+        fechas.arribo = fechaArr.toISOString().split('T')[0];
+        
+        const fechaDesp = new Date(fechaArr);
+        fechaDesp.setDate(fechaDesp.getDate() + 7);
+        fechas.despacho = fechaDesp.toISOString().split('T')[0];
+        
+        const fechaRec = new Date(fechaDesp);
+        fechaRec.setDate(fechaRec.getDate() + 3);
+        fechas.recepcion = fechaRec.toISOString().split('T')[0];
+    }
+    // Si solo hay fecha estimada de embarque
+    else if (despacho.FECHA_EST_EMB) {
+        const fechaEstEmb = new Date(despacho.FECHA_EST_EMB + 'T00:00:00');
+        
+        const fechaArr = new Date(fechaEstEmb);
+        fechaArr.setDate(fechaArr.getDate() + 45);
+        fechas.arribo = fechaArr.toISOString().split('T')[0];
+        
+        const fechaDesp = new Date(fechaArr);
+        fechaDesp.setDate(fechaDesp.getDate() + 7);
+        fechas.despacho = fechaDesp.toISOString().split('T')[0];
+        
+        const fechaRec = new Date(fechaDesp);
+        fechaRec.setDate(fechaRec.getDate() + 3);
+        fechas.recepcion = fechaRec.toISOString().split('T')[0];
+    }
+    
+    return fechas;
+}
+
+function verificarDemora(fechaReal, fechaEstimada) {
+    if (!fechaReal || !fechaEstimada) return false;
+    
+    const real = new Date(fechaReal + 'T00:00:00');
+    const estimada = new Date(fechaEstimada + 'T00:00:00');
+    
+    return real > estimada;
+}
+
 function cerrarModal() {
     $('.modal-overlay').remove();
     despachoSeleccionado = null;
+}
+
+// Animar barra de progreso coloreada después de que se renderice el modal
+$(document).on('DOMNodeInserted', '.timeline-track', function() {
+    animarBarraProgresoColoreada();
+});
+
+function animarBarraProgresoColoreada() {
+    const steps = $('.timeline-step');
+    const progressContainer = $('#timelineProgress');
+    
+    if (steps.length === 0 || progressContainer.length === 0) return;
+    
+    let html = '';
+    steps.each(function(index) {
+        if (index === steps.length - 1) return; // No procesar el último
+        
+        const $step = $(this);
+        const isCompleted = $step.hasClass('completed');
+        const color = $step.data('color');
+        
+        if (isCompleted && color) {
+            const segmentWidth = 100 / (steps.length - 1);
+            html += `<div class="progress-segment" style="width: ${segmentWidth}%; background: ${color};"></div>`;
+        }
+    });
+    
+    progressContainer.html(html);
 }
 
 // ========== UTILIDADES ==========

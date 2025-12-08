@@ -85,6 +85,7 @@ class CronogramaDespachos {
         } else if (!empty($despacho['FECHA_EMB'])) {
             return 'embarcado';
         } else {
+            // Si solo existe FECHA_EST_EMB, está en origen
             return 'origen';
         }
     }

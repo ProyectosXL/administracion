@@ -47,6 +47,14 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     padding: 24px;
+    margin-right: 360px;
+    transition: margin-right 0.3s ease;
+}
+
+@media (max-width: 1200px) {
+    .cronograma-container {
+        margin-right: auto;
+    }
 }
 
 /* ========== HEADER ========== */
@@ -811,6 +819,267 @@ body {
         width: 4px;
         height: auto;
         transform: translateX(-50%);
+    }
+}
+
+/* ========== PANEL PRÓXIMOS ARRIBOS ========== */
+.panel-proximos-arribos {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    width: 340px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    z-index: 100;
+    max-height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header {
+    padding: 20px;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-header i {
+    color: var(--color-emb);
+    font-size: 22px;
+}
+
+.panel-body {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.panel-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gray-500);
+    font-size: 14px;
+}
+
+.card-proximo-arribo {
+    background: var(--gray-50);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid var(--color-arr);
+}
+
+.card-proximo-arribo:hover {
+    background: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateX(-4px);
+}
+
+.arribo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.arribo-contenedor {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.arribo-countdown {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.urgencia-baja {
+    background: #d4edda;
+    color: #155724;
+}
+
+.urgencia-media {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.urgencia-alta {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.urgencia-atrasado {
+    background: #dc3545;
+    color: white;
+}
+
+.arribo-proveedor {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+}
+
+.arribo-fecha {
+    font-size: 12px;
+    color: var(--gray-700);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.arribo-progreso {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.punto-progreso {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.punto-completado {
+    background: var(--color-emb);
+    box-shadow: 0 2px 4px rgba(74, 137, 220, 0.3);
+}
+
+.punto-pendiente {
+    background: var(--gray-300);
+}
+
+.panel-footer {
+    padding: 16px 20px;
+    border-top: 2px solid var(--gray-200);
+}
+
+.panel-link {
+    display: block;
+    text-align: center;
+    color: var(--color-emb);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.panel-link:hover {
+    color: var(--color-arr);
+}
+
+/* ========== TIMELINE MEJORADO ========== */
+.timeline-line-background {
+    position: absolute;
+    top: 32px;
+    left: 32px;
+    right: 32px;
+    height: 4px;
+    background: var(--gray-200);
+    border-radius: 2px;
+}
+
+.timeline-line-progress {
+    position: absolute;
+    top: 32px;
+    left: 32px;
+    height: 4px;
+    border-radius: 2px;
+    display: flex;
+    z-index: 1;
+}
+
+.progress-segment {
+    height: 100%;
+    transition: all 0.5s ease;
+}
+
+.timeline-countdown {
+    text-align: center;
+    margin-top: 24px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.timeline-step.demorado .timeline-icon {
+    border-color: #dc3545;
+    border-width: 4px;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+}
+
+.timeline-step.demorado .timeline-label-title {
+    color: #dc3545;
+}
+
+.text-danger {
+    color: #dc3545;
+}
+
+/* ========== RESPONSIVE PANEL ========== */
+@media (max-width: 1400px) {
+    .panel-proximos-arribos {
+        width: 300px;
+    }
+    
+    .cronograma-container {
+        margin-right: 340px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .panel-proximos-arribos {
+        position: static;
+        width: 100%;
+        max-height: none;
+        margin-bottom: 20px;
+        margin-top: 0;
+    }
+    
+    .panel-body {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+    }
+    
+    .card-proximo-arribo {
+        margin-bottom: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .panel-body {
+        grid-template-columns: 1fr;
     }
 }
 
