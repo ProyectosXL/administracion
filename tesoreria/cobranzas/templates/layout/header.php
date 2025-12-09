@@ -15,3 +15,10 @@
 </head>
 <body class="bg-light">
     <div class="container-fluid mt-4">
+        <header class="d-flex justify-content-end align-items-center mb-3">
+    <span class="me-3">Hola, <strong><?php echo htmlspecialchars($_SESSION['usuario_nombre']); ?></strong></span>
+    <a href="api/auth_controller.php?action=logout" class="btn btn-outline-danger btn-sm">
+        <i class="fa-solid fa-right-from-bracket"></i> Salir
+    </a>
+</header>
+<main>

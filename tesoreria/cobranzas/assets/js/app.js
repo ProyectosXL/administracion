@@ -1,4 +1,126 @@
+// ========================================================================
+//                              APP.JS - COMPLETO
+// ========================================================================
+
 $(document).ready(function() {
+    let chartEstadosInstance = null;
+    let chartActividadInstance = null;
+    
+    function cargarDashboardGestion() {
+        $.ajax({
+            url: 'api/propuestas_controller.php?action=obtener_dashboard_admin',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    // Actualizar KPIs
+                    $('#kpi-activas').text(data.kpis.totalActivas || 0);
+                    const monto = parseFloat(data.kpis.montoEnNegociacion || 0);
+                    $('#kpi-monto').text(monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+                    $('#kpi-accion').text(data.kpis.contrapropuestas || 0);
+                    $('#kpi-aceptadas').text(data.kpis.aceptadasMes || 0);
+                    
+                    // Renderizar Gráfico de Estados
+                    renderizarChartEstados(data.graficoEstados);
+                    renderizarChartActividad(data.graficoActividad);
+                }
+            }
+        });
+    }
+
+    function renderizarChartEstados(data) {
+        const ctx = document.getElementById('chartEstados').getContext('2d');
+        const labels = data.map(item => item.estado.replace(/_/g, ' '));
+        const cantidades = data.map(item => item.cantidad);
+
+        const backgroundColors = [
+            'rgba(255, 193, 7, 0.7)',  // Amarillo para Pendiente
+            'rgba(13, 110, 253, 0.7)', // Azul para Contrapropuesta
+            'rgba(25, 135, 84, 0.7)',  // Verde para Aceptada
+            'rgba(13, 202, 240, 0.7)'   // Cian para Pendiente Final
+        ];
+
+        if (chartEstadosInstance) {
+            chartEstadosInstance.destroy();
+        }
+        
+        chartEstadosInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Propuestas',
+                    data: cantidades,
+                    backgroundColor: backgroundColors,
+                    borderColor: backgroundColors.map(color => color.replace('0.7', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+    }
+
+    function renderizarChartActividad(data) {
+        const ctx = document.getElementById('chartActividadReciente').getContext('2d');
+        const labels = [];
+        const dataPoints = [];
+        const hoy = new Date();
+
+        for (let i = 6; i >= 0; i--) {
+            const fecha = new Date();
+            fecha.setDate(hoy.getDate() - i);
+            const fechaStr = fecha.toISOString().split('T')[0];
+            labels.push(fecha.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
+
+            const diaData = data.find(d => d.dia === fechaStr);
+            dataPoints.push(diaData ? diaData.cantidad : 0);
+        }
+
+        if (chartActividadInstance) {
+            chartActividadInstance.destroy();
+        }
+
+        chartActividadInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Propuestas Aceptadas',
+                    data: dataPoints,
+                    backgroundColor: 'rgba(25, 135, 84, 0.6)',
+                    borderColor: 'rgba(25, 135, 84, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1 
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
     
     // Columnas para la VISTA RESUMEN (la principal)
     const columnsResumen = [
@@ -20,184 +142,291 @@ $(document).ready(function() {
         }
     ];
 
-    // Columnas para la VISTA DETALLE (dentro del modal)
-// Mantén esta definición de columnas fuera para que sea accesible
+    // *** MODIFICADO ***: Columnas para la VISTA DETALLE (dentro del modal de creación)
 const columnsDetalle = [
     {
-        data: null,
-        orderable: false,
-        className: 'select-checkbox text-center',
+        data: null, orderable: false, className: 'select-checkbox text-center',
         title: '<input type="checkbox" class="form-check-input" id="select-all-invoices" title="Seleccionar Todo">',
         render: function(data, type, row) {
             return `<input type="checkbox" class="form-check-input invoice-checkbox" value="${row.N_COMP}">`;
         }
     },
     { data: 'FECHA_EMIS', title: 'F. Emisión' },
-    { data: 'T_COMP', title: 'Tipo' },
     { data: 'N_COMP', title: 'Comprobante' },
-    { data: 'IMPORTE', title: 'Importe Bruto', className: 'text-end', render: $.fn.dataTable.render.number('.', ',', 2, '$ ') },
-    { data: 'IMPORTE_NETO', title: 'Importe Neto', className: 'text-end', render: $.fn.dataTable.render.number('.', ',', 2, '$ ') },
+    { data: 'IMPORTE', title: 'Importe Bruto', className: 'text-end importe-bruto-cell', render: $.fn.dataTable.render.number('.', ',', 2, '$ ') },
+    { 
+        // ======================= INICIO DE LA CORRECCIÓN =======================
+        data: null, title: '% Descuento', className: 'text-center', orderable: false,
+        render: function(data, type, row) {
+            // Calculamos el descuento inicial basado en los importes
+            const bruto = parseFloat(row.IMPORTE) || 0;
+            const neto = parseFloat(row.IMPORTE_NETO) || 0;
+            let initialDiscount = 0;
+
+            if (bruto > 0 && bruto > neto) {
+                initialDiscount = ((bruto - neto) / bruto) * 100;
+            }
+            
+            return `<input type="number" class="form-control form-control-sm descuento-input" value="${initialDiscount.toFixed(2)}" min="0" max="100" step="0.01" style="width: 80px;">`;
+        }
+        // ======================== FIN DE LA CORRECCIÓN =========================
+    },
+    { 
+        data: 'IMPORTE_NETO', title: 'Importe Neto', className: 'text-end fw-bold importe-neto-cell', render: $.fn.dataTable.render.number('.', ',', 2, '$ ') 
+    },
     { data: 'FECHA_PROB_COBRO', title: 'F. Prob. Cobro' },
-    { data: 'PPP', title: 'PPP', className: 'text-center' } // Nueva columna PPP
 ];
 
-    // Función para inicializar las tablas principales (resumen)
-function initializeDataTable(tableId, url) {
-    if ($.fn.DataTable.isDataTable(tableId)) {
-        $(tableId).DataTable().ajax.url(url).load();
-    } else {
-        $(tableId).DataTable({
-            ajax: {
-                url: url,
-                dataSrc: function(json) {
-                    actualizarCardsDeResumen(json.summary);
-                    return json.data;
-                }
-            },
-            columns: columnsResumen,
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-            responsive: true,
-            autoWidth: false,
-            order: [[4, 'desc']],
-            
-            // --- CAMBIOS PRINCIPALES ---
-            // 1. Eliminamos fixedHeader porque scrollY lo reemplaza
-            // fixedHeader: true, 
-
-            // 2. Activamos el scroll vertical para el cuerpo de la tabla
-            scrollY: '55vh', // Altura del área de scroll (55% de la altura de la ventana)
-            scrollCollapse: true, // La tabla se encoge si hay pocos registros
-            paging: true // Mantenemos la paginación
-        });
+    function initializeDataTable(tableId, url) {
+        if ($.fn.DataTable.isDataTable(tableId)) {
+            $(tableId).DataTable().ajax.url(url).load();
+        } else {
+            $(tableId).DataTable({
+                ajax: {
+                    url: url,
+                    dataSrc: function(json) {
+                        actualizarCardsDeResumen(json.summary);
+                        return json.data;
+                    }
+                },
+                columns: columnsResumen,
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                responsive: true,
+                autoWidth: false,
+                order: [[4, 'desc']],
+                scrollY: '55vh',
+                scrollCollapse: true,
+                paging: true
+            });
+        }
     }
-}
 
-    // NUEVA FUNCIÓN PARA ACTUALIZAR LAS TARJETAS
-function actualizarCardsDeResumen(summary) {
-    const options = { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 };
-    
-    $('#summary-total-neto').text(summary.totalNeto.toLocaleString('es-AR', options));
-    $('#summary-total-comprobantes').text(summary.totalComprobantes.toLocaleString('es-AR'));
-    $('#summary-total-clientes').text(summary.totalClientes.toLocaleString('es-AR'));
-}
+    function actualizarCardsDeResumen(summary) {
+        const options = { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 };
+        $('#summary-total-neto').text(summary.totalNeto.toLocaleString('es-AR', options));
+        $('#summary-total-comprobantes').text(summary.totalComprobantes.toLocaleString('es-AR'));
+        $('#summary-total-clientes').text(summary.totalClientes.toLocaleString('es-AR'));
+    }
 
-    // Carga inicial de Franquicias
     initializeDataTable('#tabla-franquicias', 'api/cobranzas_controller.php?tipo=franquicias');
 
-    // Manejar el clic en las pestañas para cargar la tabla correspondiente
     $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
-        const target = $(e.target).attr("id");
-        if (target === 'franquicias-tab') {
-            initializeDataTable('#tabla-franquicias', 'api/cobranzas_controller.php?tipo=franquicias');
-        } else if (target === 'mayoristas-tab') {
-            initializeDataTable('#tabla-mayoristas', 'api/cobranzas_controller.php?tipo=mayoristas');
+        const targetId = $(e.target).attr("id");
+        if (targetId === 'gestion-tab') {
+            $('#summary-cards').hide();
+            $('#gestion-dashboard').show();
+            $('#btn-abrir-parametros').hide();
+            cargarDashboardGestion();
+            initializeGestionDataTable();
+        } else {
+            $('#gestion-dashboard').hide();
+            $('#summary-cards').show();
+            $('#btn-abrir-parametros').show();
+            const tipo = targetId.includes('franquicias') ? 'franquicias' : 'mayoristas';
+            initializeDataTable(`#tabla-${tipo}`, `api/cobranzas_controller.php?tipo=${tipo}`);
         }
     });
 
+    // --- LÓGICA PARA ABRIR Y CARGAR EL MODAL DE DETALLE (CREACIÓN DE PROPUESTA) ---
+    $('.tab-content').on('click', '.btn-detalle', function() {
+        const codClient = $(this).data('cod-client');
+        const razonSoci = $(this).data('razon-soci');
+        const tipo = $('.nav-tabs .nav-link.active').attr('id').includes('franquicias') ? 'franquicias' : 'mayoristas';
+        const urlDetalle = `api/cobranzas_controller.php?tipo=${tipo}&cod_client=${codClient}`;
+        
+        $('#nombreClienteModal').text(razonSoci);
+        const container = $('#detalle-content-container');
+        
+        const loadingHtml = `<div class="d-flex justify-content-center align-items-center" style="min-height: 250px;"><div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div><strong class="ms-3 h5">Cargando...</strong></div>`;
 
-    // --- LÓGICA PARA ABRIR Y CARGAR EL MODAL DE DETALLE ---
-    let detalleTable = null; // Variable para guardar la instancia de la tabla de detalle
+        container.html(loadingHtml);
+        $('#btn-enviar-propuesta').prop('disabled', true);
+        $('#nombreClienteModal').data('cod-cliente', codClient);
+        const detalleModal = new bootstrap.Modal(document.getElementById('detalleClienteModal'));
+        detalleModal.show();
 
-// --- LÓGICA PARA ABRIR Y CARGAR EL MODAL DE DETALLE (CON SELECCIÓN DE EMAIL) ---
+        $.ajax({
+            url: urlDetalle,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                container.empty();
+                // *** AÑADIDO ***: Agregamos un lugar para mostrar el total de la propuesta
+                container.append('<table id="tabla-detalle-cliente" class="table table-striped table-hover" style="width:100%"></table>');
+                $('#detalleClienteModal .modal-footer').prepend('<div id="total-propuesta-container" class="me-auto fs-5"><strong>Total Propuesto: <span id="total-propuesta-valor">$ 0,00</span></strong></div>');
 
-$('.tab-content').on('click', '.btn-detalle', function() {
-    const codClient = $(this).data('cod-client');
-    const razonSoci = $(this).data('razon-soci');
-    const tipo = $('.nav-tabs .nav-link.active').attr('id').includes('franquicias') ? 'franquicias' : 'mayoristas';
-    const urlDetalle = `api/cobranzas_controller.php?tipo=${tipo}&cod_client=${codClient}`;
+                $('#tabla-detalle-cliente').DataTable({
+                    data: response.data,
+                    columns: columnsDetalle,
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                    order: [[1, 'desc']],
+                    dom: 'Bfrtip',
+                    buttons: [{
+                        extend: 'excelHtml5', text: '<i class="fa-solid fa-file-excel"></i> Exportar a Excel',
+                        className: 'btn btn-success btn-sm', title: `Detalle Cobranza - ${razonSoci}`
+                    }],
+                    destroy: true,
+                    paging: false, // Desactivamos paginación para calcular totales fácilmente
+                    info: false
+                });
+
+                // *** AÑADIDO ***: Calculamos el total inicial (será 0)
+                actualizarTotalPropuesta();
+            },
+            error: function() {
+                container.html('<div class="alert alert-danger">Error al cargar los datos. Por favor, intente de nuevo.</div>');
+            }
+        });
+    });
+
+    // *** AÑADIDO ***: Limpiar el total del footer cuando se cierra el modal
+    $('#detalleClienteModal').on('hidden.bs.modal', function () {
+        $('#total-propuesta-container').remove();
+    });
+
+    // *** NUEVA FUNCIÓN ***: Para recalcular y mostrar el total de la propuesta
+    function actualizarTotalPropuesta() {
+        let total = 0;
+        const tablaDetalle = $('#tabla-detalle-cliente').DataTable();
+        
+        // Iteramos sobre las filas SELECCIONADAS con checkbox
+        $('#tabla-detalle-cliente .invoice-checkbox:checked').each(function() {
+            const tr = $(this).closest('tr');
+            const cellNeto = tr.find('.importe-neto-cell');
+            // Convertimos el texto formateado ($ 1.234,56) a un número
+            const valorNeto = parseFloat(cellNeto.text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
+            total += valorNeto;
+        });
+
+        $('#total-propuesta-valor').text(total.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+    }
+
+    // *** NUEVO EVENTO ***: Para recalcular el neto de una fila cuando cambia el descuento
+    $('#detalleClienteModal').on('input', '.descuento-input', function() {
+        const input = $(this);
+        const tr = input.closest('tr');
+        const tablaDetalle = $('#tabla-detalle-cliente').DataTable();
+        const rowData = tablaDetalle.row(tr).data();
+        
+        if (!rowData) return;
+
+        const importeBruto = parseFloat(rowData.IMPORTE);
+        let descuento = parseFloat(input.val());
+
+        if (isNaN(descuento) || descuento < 0) descuento = 0;
+        if (descuento > 100) {
+            descuento = 100;
+            input.val(100);
+        }
+
+        const importeNeto = importeBruto * (1 - (descuento / 100));
+
+        // Actualizamos la celda del importe neto en la tabla con el formato correcto
+        tr.find('.importe-neto-cell').text(importeNeto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+        
+        // Actualizamos el total general si la fila está seleccionada
+        actualizarTotalPropuesta();
+    });
+
+    function actualizarEstadoBotonPropuesta() {
+        const seleccionados = $('.invoice-checkbox:checked').length;
+        $('#btn-enviar-propuesta').prop('disabled', seleccionados === 0);
+    }
+
+    // *** MODIFICADO ***: Eventos de selección ahora también actualizan el total
+    $('#detalleClienteModal').on('click', '#select-all-invoices', function() {
+        $('.invoice-checkbox').prop('checked', this.checked);
+        actualizarEstadoBotonPropuesta();
+        actualizarTotalPropuesta();
+    });
+
+    $('#detalleClienteModal').on('click', '.invoice-checkbox', function() {
+        if (!this.checked) {
+            $('#select-all-invoices').prop('checked', false);
+        }
+        actualizarEstadoBotonPropuesta();
+        actualizarTotalPropuesta();
+    });
     
-    $('#nombreClienteModal').text(razonSoci);
-    const container = $('#detalle-content-container');
+    // *** MODIFICADO ***: Botón de Enviar Propuesta ahora recolecta los datos recalculados
+    $('#btn-enviar-propuesta').on('click', function() {
+        const codCliente = $('#nombreClienteModal').data('cod-cliente');
+        const btn = $(this);
+        
+        let comprobantesSeleccionados = [];
+        let totalNetoSeleccionado = 0;
+        const tablaDetalle = $('#tabla-detalle-cliente').DataTable();
     
-    const loadingHtml = `
-        <div class="d-flex justify-content-center align-items-center" style="min-height: 250px;">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
-            <strong class="ms-3 h5">Cargando...</strong>
-        </div>`;
+        $('#tabla-detalle-cliente .invoice-checkbox:checked').each(function() {
+            const tr = $(this).closest('tr');
+            const rowData = tablaDetalle.row(tr).data();
 
-    container.html(loadingHtml);
-    $('#btn-enviar-email-seleccion').prop('disabled', true); // Deshabilitar botón al cargar
+            if (rowData) {
+                // Obtenemos el descuento del input y el neto recalculado
+                const descuento = parseFloat(tr.find('.descuento-input').val()) || 0;
+                const importeNetoRecalculado = parseFloat(rowData.IMPORTE) * (1 - (descuento / 100));
+                
+                comprobantesSeleccionados.push({
+                    n_comp: rowData.N_COMP,
+                    importe_bruto: rowData.IMPORTE,
+                    importe_neto: importeNetoRecalculado,
+                    porcentaje_descuento: descuento // <-- ENVIAMOS EL NUEVO DATO
+                });
+                totalNetoSeleccionado += importeNetoRecalculado;
+            }
+        });
+        
+        if (comprobantesSeleccionados.length === 0) {
+            alert("Por favor, seleccione al menos un comprobante.");
+            return;
+        }
+
+    // ======================= INICIO DE LA CORRECCIÓN =======================
+    // Solicitamos la fecha al usuario ANTES de enviar el AJAX
+    const hoy = new Date().toISOString().split('T')[0];
+    const fechaPropuesta = prompt("Por favor, ingrese una fecha propuesta de pago (YYYY-MM-DD):", hoy);
     
-    const detalleModal = new bootstrap.Modal(document.getElementById('detalleClienteModal'));
-    detalleModal.show();
+    // Si el usuario cancela o deja el campo vacío, detenemos el proceso
+    if (!fechaPropuesta) {
+        alert("La fecha de propuesta de pago es obligatoria.");
+        return; 
+    }
+    // ======================== FIN DE LA CORRECCIÓN =========================
 
-    $.ajax({
-        url: urlDetalle,
-        type: 'GET',
-        dataType: 'json',
-        success: function(response) {
-            container.empty();
-            container.append('<table id="tabla-detalle-cliente" class="table table-striped table-hover" style="width:100%"></table>');
-            
-            $('#tabla-detalle-cliente').DataTable({
-                data: response.data,
-                columns: columnsDetalle,
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-                order: [[1, 'desc']], // Ordenar por F. Emisión
-                dom: 'Bfrtip',
-                buttons: [{
-                    extend: 'excelHtml5',
-                    text: '<i class="fa-solid fa-file-excel"></i> Exportar a Excel',
-                    className: 'btn btn-success btn-sm',
-                    title: `Detalle Cobranza - ${razonSoci}`
-                }],
-                destroy: true,
-                select: { // Necesario para que DataTables maneje la selección
-                    style: 'os',
-                    selector: 'td:first-child'
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...');
+
+        $.ajax({
+            url: 'api/cobranzas_controller.php?action=crear_propuesta',
+            type: 'POST',
+            data: {
+                cod_cliente: codCliente,
+                comprobantes: comprobantesSeleccionados,
+                total_propuesto: totalNetoSeleccionado,
+                fecha_propuesta_pago: fechaPropuesta
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    $('#detalleClienteModal').modal('hide');
+                    if ($.fn.DataTable.isDataTable('#tabla-gestion-propuestas')) {
+                        $('#tabla-gestion-propuestas').DataTable().ajax.reload();
+                    }
+                } else {
+                    alert('Error: ' + response.message);
                 }
-            });
-        },
-        error: function() {
-            container.html('<div class="alert alert-danger">Error al cargar los datos. Por favor, intente de nuevo.</div>');
-        }
-    });
-});
-
-// --- NUEVA LÓGICA PARA MANEJAR LA SELECCIÓN Y EL BOTÓN ---
-
-// Función para habilitar/deshabilitar el botón de envío
-function actualizarEstadoBotonEmail() {
-    const seleccionados = $('.invoice-checkbox:checked').length;
-    $('#btn-enviar-email-seleccion').prop('disabled', seleccionados === 0);
-}
-
-// Evento para el checkbox "Seleccionar Todo"
-$('#detalleClienteModal').on('click', '#select-all-invoices', function() {
-    $('.invoice-checkbox').prop('checked', this.checked);
-    actualizarEstadoBotonEmail();
-});
-
-// Evento para los checkboxes individuales
-$('#detalleClienteModal').on('click', '.invoice-checkbox', function() {
-    // Si se desmarca uno, desmarcar "Seleccionar Todo"
-    if (!this.checked) {
-        $('#select-all-invoices').prop('checked', false);
-    }
-    actualizarEstadoBotonEmail();
-});
-
-// Evento para el botón de Enviar Email
-$('#btn-enviar-email-seleccion').on('click', function() {
-    const comprobantesSeleccionados = [];
-    $('.invoice-checkbox:checked').each(function() {
-        comprobantesSeleccionados.push($(this).val());
+            },
+            error: function() {
+                alert('Error de conexión al servidor. No se pudo crear la propuesta.');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-2"></i> Enviar Propuesta');
+            }
+        });
     });
 
-    if (comprobantesSeleccionados.length > 0) {
-        alert("Comprobantes seleccionados para enviar por email:\n\n" + comprobantesSeleccionados.join('\n'));
-        // Futuro: Aquí iría la llamada AJAX para enviar el email
-        // $.post('api/enviar_email_controller.php', { comprobantes: comprobantesSeleccionados }, function(response) { ... });
-    } else {
-        alert("Por favor, seleccione al menos un comprobante.");
-    }
-});
-
-// --- LÓGICA PARA EL MODAL DE PARÁMETROS (REINTEGRADA Y MEJORADA) ---
-
-    let parametrosTable = null; // Variable para la instancia de la tabla de parámetros
-
-    // Función para mostrar alertas bonitas dentro del modal
+    // --- LÓGICA PARA EL MODAL DE PARÁMETROS (Sin cambios) ---
+    let parametrosTable = null; 
     function showAlert(message, type = 'success') {
         const alertHtml = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
                               ${message}
@@ -205,8 +434,6 @@ $('#btn-enviar-email-seleccion').on('click', function() {
                            </div>`;
         $('#alert-container').html(alertHtml);
     }
-
-    // Función para cargar o recargar los datos en la tabla de parámetros
     function cargarParametros() {
         const url = 'api/parametros_controller.php?action=read';
         if (parametrosTable) {
@@ -214,46 +441,24 @@ $('#btn-enviar-email-seleccion').on('click', function() {
         } else {
             parametrosTable = $('#tabla-parametros').DataTable({
                 ajax: { url: url, dataSrc: 'data' },
-columns: [
+                columns: [
                     { data: 'ID', title: 'ID' },
                     { data: 'COD_CLIENT', title: 'Cód. Cliente' },
                     { 
-                        data: 'DESC_COMPRA', 
-                        title: 'Desc. Compra',
-                        className: 'text-end', // Alinea los números a la derecha
-                        render: function(data) {
-                            // Si el dato es nulo o vacío, devuelve un string vacío
-                            if (data === null || data === '') return '';
-                            // Convierte a número y formatea a 4 decimales
-                            return parseFloat(data).toFixed(4);
-                        }
+                        data: 'DESC_COMPRA', title: 'Desc. Compra', className: 'text-end',
+                        render: data => (data === null || data === '') ? '' : parseFloat(data).toFixed(4)
                     },
                     { 
-                        data: 'DESC_FLETE', 
-                        title: 'Desc. Flete',
-                        className: 'text-end',
-                        render: function(data) {
-                            if (data === null || data === '') return '';
-                            return parseFloat(data).toFixed(4);
-                        }
+                        data: 'DESC_FLETE', title: 'Desc. Flete', className: 'text-end',
+                        render: data => (data === null || data === '') ? '' : parseFloat(data).toFixed(4)
                     },
                     { 
-                        data: 'DIAS_PP', 
-                        title: 'Días PP',
-                        className: 'text-center', // Centra los enteros
-                        render: function(data) {
-                            // Para los enteros, solo nos aseguramos de que no muestre 'null'
-                            return data === null ? '' : data;
-                        }
+                        data: 'DIAS_PP', title: 'Días PP', className: 'text-center',
+                        render: data => data === null ? '' : data
                     },
                     { 
-                        data: 'DESC_PP', 
-                        title: 'Desc. PP',
-                        className: 'text-end',
-                        render: function(data) {
-                            if (data === null || data === '') return '';
-                            return parseFloat(data).toFixed(4);
-                        }
+                        data: 'DESC_PP', title: 'Desc. PP', className: 'text-end',
+                        render: data => (data === null || data === '') ? '' : parseFloat(data).toFixed(4)
                     },
                     {
                         data: null, title: 'Acciones', orderable: false, className: 'text-center',
@@ -266,42 +471,32 @@ columns: [
                 language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
                 responsive: true,
                 autoWidth: false,
-                order: [[1, 'asc']] // Ordenar por código de cliente
+                order: [[1, 'asc']]
             });
         }
     }
-
-    // Evento que se dispara al hacer clic en el engranaje para abrir el modal
     $('#btn-abrir-parametros').on('click', function() {
-        $('#alert-container').html(''); // Limpiar alertas anteriores
+        $('#alert-container').html('');
         resetFormularioParametros();
         cargarParametros();
     });
-
-    // Enviar el formulario para Crear o Actualizar un parámetro
     $('#form-parametros').on('submit', function(e) {
         e.preventDefault();
         const action = $('#param-id').val() ? 'update' : 'create';
         let formData = $(this).serialize() + '&action=' + action;
-
         $.ajax({
-            url: 'api/parametros_controller.php',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
+            url: 'api/parametros_controller.php', type: 'POST', data: formData, dataType: 'json',
             success: function(response) {
                 if (response.success) {
                     showAlert(response.message, 'success');
                     resetFormularioParametros();
-                    parametrosTable.ajax.reload(); // Recargar la tabla eficientemente
+                    parametrosTable.ajax.reload();
                 } else {
                     showAlert('Error: ' + response.message, 'danger');
                 }
             }
         });
     });
-    
-    // Rellenar el formulario al hacer clic en el botón Editar
     $('#tabla-parametros').on('click', '.btn-editar', function() {
         const data = parametrosTable.row($(this).parents('tr')).data();
         $('#form-title').text('Editar Parámetro');
@@ -314,48 +509,35 @@ columns: [
         $('#btn-cancelar-edicion').show();
         $('.btn-text').text('Actualizar');
     });
-
-    // Eliminar un parámetro
-$('#tabla-parametros').on('click', '.btn-eliminar', function() {
-    const id = $(this).data('id');
-    // Guardamos el ID en el botón de confirmación del nuevo modal
-    $('#btn-confirmar-delete').data('id', id);
-    // Abrimos el modal de confirmación
-    const confirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-    confirmModal.show();
-});
-
-$('#btn-confirmar-delete').on('click', function() {
-    const id = $(this).data('id'); // Recuperamos el ID que guardamos antes
-
-    if (id) {
-        $.ajax({
-            url: 'api/parametros_controller.php',
-            type: 'POST',
-            data: { action: 'delete', id: id },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    showAlert(response.message, 'info'); // Muestra la alerta bonita
-                    parametrosTable.ajax.reload(); // Recarga la tabla
-                } else {
-                    showAlert('Error: ' + response.message, 'danger');
+    $('#tabla-parametros').on('click', '.btn-eliminar', function() {
+        const id = $(this).data('id');
+        $('#btn-confirmar-delete').data('id', id);
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+        confirmModal.show();
+    });
+    $('#btn-confirmar-delete').on('click', function() {
+        const id = $(this).data('id');
+        if (id) {
+            $.ajax({
+                url: 'api/parametros_controller.php', type: 'POST', data: { action: 'delete', id: id }, dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        showAlert(response.message, 'info');
+                        parametrosTable.ajax.reload();
+                    } else {
+                        showAlert('Error: ' + response.message, 'danger');
+                    }
+                },
+                complete: function() {
+                    const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+                    confirmModal.hide();
                 }
-            },
-            finally: function() {
-                // Ocultamos el modal de confirmación, haya funcionado o no
-                const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
-                confirmModal.hide();
-            }
-        });
-    }
-});
-
-    // Resetear el formulario con el botón Cancelar
+            });
+        }
+    });
     $('#btn-cancelar-edicion').on('click', function() {
         resetFormularioParametros();
     });
-
     function resetFormularioParametros() {
         $('#form-title').text('Agregar Nuevo Parámetro');
         $('#form-parametros')[0].reset();
@@ -365,4 +547,308 @@ $('#btn-confirmar-delete').on('click', function() {
         $('#alert-container').html('');
     }
 
+    // ========================================================================
+    //  LÓGICA PARA LA PESTAÑA DE GESTIÓN DE PROPUESTAS (ADMIN)
+    // ========================================================================
+    let tablaGestion = null;
+
+    function initializeGestionDataTable() {
+        if ($.fn.DataTable.isDataTable('#tabla-gestion-propuestas')) {
+            tablaGestion.ajax.reload();
+        } else {
+            tablaGestion = $('#tabla-gestion-propuestas').DataTable({
+                ajax: {
+                    url: 'api/propuestas_controller.php?action=listar_admin',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'id', title: 'ID' },
+                    { data: 'razon_social', title: 'Cliente' },
+                    { data: 'fecha_ultima_modificacion', title: 'Últ. Act.' },
+                    { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ ') },
+                    { 
+                        data: 'estado', 
+                        title: 'Estado',
+                        render: function(data, type, row) {
+                            let badgeClass = 'secondary';
+                            let icon = '';
+                            if (data === 'CONTRAPROPUESTA_CLIENTE') {
+                                badgeClass = 'primary';
+                                icon = '<i class="fa-solid fa-bell fa-shake me-2"></i>';
+                            }
+                            if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning';
+                            if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
+                            if (data === 'ACEPTADA') badgeClass = 'success';
+                            
+                            return `<span class="badge bg-${badgeClass}">${icon}${data.replace(/_/g, ' ')}</span>`;
+                        }
+                    },
+                    {
+                        data: null, title: 'Acciones', orderable: false, className: 'text-center',
+                        render: function(data, type, row) {
+                            return `<button class="btn btn-info btn-sm btn-ver-propuesta-admin" data-id="${row.id}" title="Ver Detalle y Historial">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                    </button>`;
+                        }
+                    }
+                ],
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                order: [[4, 'asc'], [2, 'desc']]
+            });
+        }
+    }
+
+    $('#tabla-gestion-propuestas').on('click', '.btn-ver-propuesta-admin', function() {
+        const idPropuesta = $(this).data('id');
+        const modal = new bootstrap.Modal(document.getElementById('detallePropuestaModal'));
+        const contentDiv = $('#detalle-propuesta-content');
+        
+        contentDiv.html('<div class="text-center p-5"><div class="spinner-border" role="status"></div></div>');
+        $('#detallePropuestaModalLabel').text(`Revisar Propuesta #${idPropuesta}`);
+        $('#detallePropuestaModal .modal-footer button').hide();
+        $('#detallePropuestaModal .modal-footer button[data-bs-dismiss="modal"]').show();
+        modal.show();
+        
+        $.ajax({
+            url: `api/propuestas_controller.php?action=ver_detalle&id=${idPropuesta}`,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    renderizarDetallePropuestaAdmin(response.data);
+                } else {
+                    contentDiv.html(`<div class="alert alert-danger">${response.message}</div>`);
+                }
+            }
+        });
+    });
+
+    // *** MODIFICADO ***: Renderiza el modal de gestión con descuentos editables si es necesario
+function renderizarDetallePropuestaAdmin(data) {
+    const { propuesta, items, historial } = data;
+    const contentDiv = $('#detalle-propuesta-content');
+    
+    // ======================= INICIO DE LA MODIFICACIÓN =======================
+    // Creamos las tarjetas de resumen, igual que en el portal del cliente.
+    let fechaHtml = propuesta.fecha_propuesta_pago 
+        ? new Date(propuesta.fecha_propuesta_pago + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'No definida';
+
+    let resumenHtml = `
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card bg-light shadow-sm">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-muted text-uppercase small">Total Propuesto</h6>
+                        <p class="card-text fs-4 fw-bold text-primary mb-0">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light shadow-sm">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-muted text-uppercase small">Fecha Propuesta de Pago</h6>
+                        <p class="card-text fs-4 fw-bold mb-0">${fechaHtml}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    // ======================== FIN DE LA MODIFICACIÓN =========================
+    
+    let esEditable = propuesta.estado === 'CONTRAPROPUESTA_CLIENTE';
+
+    let itemsHtml = `
+        <h5 class="mt-4">Facturas Incluidas</h5>
+        <table class="table table-sm table-bordered" id="tabla-detalle-propuesta-admin">
+            <thead class="table-light">
+                <tr>
+                    <th>Comprobante</th>
+                    <th class="text-end">Importe Bruto</th>
+                    <th class="text-center">% Descuento</th>
+                    <th class="text-end">Importe Neto</th>
+                    ${esEditable ? '<th class="text-center">Acciones</th>' : ''} <!-- NUEVA COLUMNA -->
+                </tr>
+            </thead>
+            <tbody>`;
+
+        let totalNeto = 0;
+        items.forEach(item => {
+            const bruto = parseFloat(item.importe_bruto) || 0;
+            const neto = parseFloat(item.importe_neto) || 0;
+            const descuento = parseFloat(item.porcentaje_descuento) || 0;
+            totalNeto += neto;
+            
+        const descuentoHtml = esEditable 
+            ? `<input type="number" class="form-control form-control-sm descuento-input-admin" value="${descuento.toFixed(2)}" min="0" max="100" step="0.01" style="width: 80px;">`
+            : `${descuento.toFixed(2)} %`;
+
+        // Añadimos el botón de eliminar solo si es editable
+        const accionesHtml = esEditable 
+            ? `<td class="text-center"><button class="btn btn-danger btn-sm btn-eliminar-factura-propuesta" title="Quitar factura de la propuesta"><i class="fa-solid fa-trash"></i></button></td>`
+            : '';
+
+        itemsHtml += `
+                <tr data-importe-bruto="${bruto}" data-ncomp="${item.n_comp_factura}">
+                    <td>${item.n_comp_factura}</td>
+                    <td class="text-end">${bruto.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
+                    <td class="text-center">${descuentoHtml}</td>
+                    <td class="text-end fw-bold importe-neto-cell-admin">${neto.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
+                    ${accionesHtml} <!-- NUEVO TD -->
+                </tr>`;
+    });
+    itemsHtml += `
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="${esEditable ? 4 : 3}" class="text-end"><strong>Total Propuesta:</strong></td>
+                    <td class="text-end fw-bolder fs-5" id="total-propuesta-admin">${totalNeto.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
+                    ${esEditable ? '<td></td>' : ''}
+                </tr>
+            </tfoot>
+        </table>`;
+        
+        let historialHtml = '<h5>Historial</h5><div class="timeline">';
+        historial.forEach(h => {
+            const icon = h.tipo_usuario === 'ADMIN' ? 'fa-user-shield' : 'fa-user-tie';
+            const align = h.tipo_usuario === 'ADMIN' ? 'left' : 'right';
+            historialHtml += `<div class="timeline-item timeline-item-${align}"><div class="timeline-icon"><i class="fas ${icon}"></i></div><div class="timeline-content"><span class="timeline-date">${h.fecha_evento}</span><p><strong>${h.descripcion}</strong></p>${h.comentario ? `<p class="fst-italic bg-light p-2 rounded">"${h.comentario}"</p>` : ''}</div></div>`;
+        });
+        historialHtml += '</div>';
+
+    let accionAdminHtml = '';
+    
+    if (esEditable) {
+
+        // Obtenemos la fecha actual en el formato YYYY-MM-DD para el input
+        const fechaActual = propuesta.fecha_propuesta_pago ? propuesta.fecha_propuesta_pago.split(' ')[0] : new Date().toISOString().split('T')[0];
+        
+        accionAdminHtml = `
+            <div class="card bg-light border-primary mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Acción Requerida</h5>
+                    <p>El cliente ha enviado una contrapropuesta. Ajuste los descuentos, quite facturas o cambie la fecha de pago si es necesario y envíe la propuesta final.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha-propuesta-admin" class="form-label"><strong>Fecha Propuesta de Pago:</strong></label>
+                            <input type="date" class="form-control" id="fecha-propuesta-admin" value="${fechaActual}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="comentario-admin" class="form-label"><strong>Comentario para el Cliente (Opcional):</strong></label>
+                        <textarea class="form-control" id="comentario-admin" rows="2" placeholder="Ej: Aceptamos quitar las facturas, se ajusta el monto final."></textarea>
+                    </div>
+
+                    <button class="btn btn-primary" id="btn-enviar-propuesta-final" data-id="${propuesta.id}">
+                        <i class="fa-solid fa-paper-plane"></i> Enviar Propuesta Final
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+        contentDiv.html(resumenHtml + itemsHtml + historialHtml + accionAdminHtml);
+    }
+    
+    // *** NUEVO EVENTO ***: Lógica de recálculo para el modal de GESTIÓN
+    $('#detallePropuestaModal').on('input', '.descuento-input-admin', function() {
+        const input = $(this);
+        const tr = input.closest('tr');
+        const importeBruto = parseFloat(tr.data('importe-bruto'));
+        let descuento = parseFloat(input.val());
+
+        if (isNaN(descuento) || descuento < 0) descuento = 0;
+        if (descuento > 100) {
+            descuento = 100;
+            input.val(100);
+        }
+
+        const importeNeto = importeBruto * (1 - (descuento / 100));
+        tr.find('.importe-neto-cell-admin').text(importeNeto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+
+        let totalGeneral = 0;
+        $('#tabla-detalle-propuesta-admin tbody tr').each(function() {
+             const cellNeto = $(this).find('.importe-neto-cell-admin');
+             const valorNeto = parseFloat(cellNeto.text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
+             totalGeneral += valorNeto;
+        });
+        $('#total-propuesta-admin').text(totalGeneral.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+    });
+    
+    // Evento para el botón de enviar propuesta final (la lógica de recolección está lista)
+$('#detallePropuestaModal').on('click', '#btn-enviar-propuesta-final', function() {
+    const idPropuesta = $(this).data('id');
+    const comentario = $('#comentario-admin').val();
+    const btn = $(this);
+    
+    // ======================= LÍNEA AÑADIDA PARA SOLUCIONAR EL ERROR =======================
+    // Aquí creamos la variable 'fechaPropuesta' que faltaba, tomando el valor del input de fecha.
+    const fechaPropuesta = $('#fecha-propuesta-admin').val(); 
+    // =======================================================================================
+    
+    let comprobantesActualizados = [];
+    let totalPropuestoActualizado = 0;
+
+    $('#tabla-detalle-propuesta-admin tbody tr').each(function() {
+        const tr = $(this);
+        const neto = parseFloat(tr.find('.importe-neto-cell-admin').text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
+        comprobantesActualizados.push({
+            n_comp: tr.data('ncomp'),
+            importe_bruto: tr.data('importe-bruto'),
+            porcentaje_descuento: parseFloat(tr.find('.descuento-input-admin').val()) || 0,
+            importe_neto: neto
+        });
+        totalPropuestoActualizado += neto;
+    });
+
+    // Validamos que la fecha no esté vacía
+    if (!fechaPropuesta) {
+        alert('Por favor, seleccione una fecha propuesta de pago.');
+        return;
+    }
+
+    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Enviando...');
+
+    $.ajax({
+        url: 'api/propuestas_controller.php?action=actualizar_propuesta_admin',
+        type: 'POST',
+        data: { 
+            id_propuesta: idPropuesta, 
+            nuevo_estado: 'PENDIENTE_APROBACION_FINAL',
+            comentario: comentario,
+            total_propuesto: totalPropuestoActualizado,
+            comprobantes: comprobantesActualizados,
+            fecha_propuesta_pago: fechaPropuesta // Ahora la variable 'fechaPropuesta' sí existe
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                alert(response.message);
+                $('#detallePropuestaModal').modal('hide');
+                tablaGestion.ajax.reload();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error de conexión al servidor.');
+        },
+        complete: function() {
+            btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane"></i> Enviar Propuesta Final');
+        }
+    });
 });
+// Añade este nuevo evento al final de tu archivo app.js
+$('#detallePropuestaModal').on('click', '.btn-eliminar-factura-propuesta', function() {
+    if (confirm('¿Estás seguro de que quieres quitar esta factura de la propuesta?')) {
+        const tr = $(this).closest('tr');
+        tr.fadeOut(400, function() { 
+            $(this).remove();
+            // Disparamos un evento 'input' en cualquier otro input para forzar el recálculo del total
+            $('.descuento-input-admin').first().trigger('input');
+        });
+    }
+});
+})

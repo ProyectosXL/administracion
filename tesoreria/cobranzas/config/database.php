@@ -1,70 +1,73 @@
 <?php
-/**
- * =========================================================================
- *  SOLUCIÓN DEFINITIVA - Usando la clase personalizada del proyecto
- * =========================================================================
- *  Este código utiliza la clase 'classEnv.php' que ya existe en tu
- *  proyecto, asegurando compatibilidad total.
- */
-
-// 1. Incluimos TU PROPIA clase para manejar el .env. Esta es la clave.
 require_once __DIR__ . '/../../../class/classEnv.php';
 
 class Database {
-    // Mantenemos el patrón Singleton y la conexión pública para que los otros archivos no fallen
-    private static $instance = null;
-    public $conn;
+    // Array para almacenar las instancias de conexión
+    private static $instances = [];
+
+    // Hacemos el constructor privado para forzar el uso de los métodos estáticos
+    private function __construct() {}
 
     /**
-     * El constructor ahora usa la clase DotEnv de tu proyecto
+     * Método estático para obtener una conexión por su nombre.
+     * Los nombres válidos son 'central' y 'apps'.
+     *
+     * @param string $connectionName El nombre de la conexión ('central' o 'apps')
+     * @return PDO|null La conexión PDO o null si falla
      */
-    private function __construct() {
-        try {
-            // 2. Creamos una instancia de TU clase DotEnv, tal como en el ejemplo funcional
-            $vars = new DotEnv(__DIR__ . '/../../../.env');
-            $envVars = $vars->listVars();
+    public static function getConnection(string $connectionName = 'central') {
+        // Si la instancia para esta conexión aún no existe, la creamos
+        if (!isset(self::$instances[$connectionName])) {
+            try {
+                $vars = new DotEnv(__DIR__ . '/../../../.env');
+                $envVars = $vars->listVars();
+                
+                $serverName = '';
+                $dbName = '';
 
-            // 3. Obtenemos las variables para la conexión CENTRAL del array que nos devuelve tu clase
-            $serverName = $envVars['HOST_CENTRAL'];
-            $dbName     = $envVars['DATABASE_CENTRAL'];
-            $uid        = $envVars['USER'];
-            $pwd        = $envVars['PASS']; // Usamos PASS_LOCALES de tu .env original
-            $charset    = $envVars['CHARACTER'];    // Usamos CHARACTER de tu .env
+                // Seleccionamos las credenciales según el nombre de la conexión
+                if ($connectionName === 'central') {
+                    $serverName = $envVars['HOST_CENTRAL'];
+                    $dbName     = $envVars['DATABASE_CENTRAL']; // LAKER_SA
+                } elseif ($connectionName === 'apps') {
+                    $serverName = $envVars['HOST_APPS'];     // 192.168.0.143
+                    $dbName     = $envVars['DATABASE_APPS'];  // sistemas
+                } else {
+                    throw new Exception("Nombre de conexión no válido: $connectionName");
+                }
+                
+                // Credenciales comunes
+                $uid        = $envVars['USER'];
+                $pwd        = $envVars['PASS'];
+                $charset    = $envVars['CHARACTER'];
 
-            $connectionInfo = [
-                "Database" => $dbName,
-                "UID" => $uid,
-                "PWD" => $pwd,
-                "CharacterSet" => $charset
-            ];
+                $connectionInfo = [
+                    "Database" => $dbName,
+                    "UID" => $uid,
+                    "PWD" => $pwd,
+                    "CharacterSet" => $charset,
+                    "ReturnDatesAsStrings" => true // Facilita el manejo de fechas
+                ];
 
-            // 4. Conectamos usando sqlsrv, como siempre
-            $this->conn = sqlsrv_connect($serverName, $connectionInfo);
+                $conn = sqlsrv_connect($serverName, $connectionInfo);
 
-            if ($this->conn === false) {
-                // Si la conexión falla, lanzamos un error claro
-                throw new Exception("Error al conectar con SQL Server: " . print_r(sqlsrv_errors(), true));
+                if ($conn === false) {
+                    throw new Exception("Error al conectar con SQL Server ($connectionName): " . print_r(sqlsrv_errors(), true));
+                }
+                
+                // Guardamos la conexión exitosa en nuestro array de instancias
+                self::$instances[$connectionName] = $conn;
+
+            } catch (Exception $e) {
+                die("Error Crítico al inicializar la base de datos: " . $e->getMessage());
             }
-
-        } catch (Exception $e) {
-            // Capturamos cualquier error (clase no encontrada, .env no encontrado, conexión fallida)
-            die("Error Crítico al inicializar la base de datos: " . $e->getMessage());
         }
+        
+        // Devolvemos la instancia (nueva o existente)
+        return self::$instances[$connectionName];
     }
-
-    /**
-     * Método para obtener la instancia única de la clase (Singleton)
-     */
-    public static function getInstance() {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-        return self::$instance;
-    }
-
-    // Prevenimos que se pueda clonar o deserializar la instancia para mantener el Singleton
+    
+    // Prevenimos clonación y deserialización
     private function __clone() {}
-    public function __wakeup() {
-        throw new Exception("No se puede deserializar un Singleton");
-    }
+    public function __wakeup() {}
 }
