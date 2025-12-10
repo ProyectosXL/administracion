@@ -112,7 +112,11 @@ include 'templates/layout/header.php';
 </main>
 
 <?php 
-// ** NO INCLUIR MODALES AQUÍ **
-// Los modales se incluyen globalmente en el footer para evitar conflictos.
 include 'templates/layout/footer.php'; 
 ?>
+
+<!-- Scripts específicos para el panel admin -->
+<script src="assets/js/app.js"></script>
+
+</body>
+</html>

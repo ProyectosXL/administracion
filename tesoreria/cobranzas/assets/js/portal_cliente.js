@@ -1,5 +1,29 @@
 $(document).ready(function() {
 
+        // ======================= INICIO DE LA NUEVA LÓGICA =======================
+    // Nueva función para cargar los KPIs
+    function cargarKPIsCliente() {
+        $.ajax({
+            url: 'api/propuestas_controller.php?action=obtener_kpis_cliente',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    const options = { style: 'currency', currency: 'ARS' };
+
+                    $('#kpi-deuda-total').text(parseFloat(data.deudaTotalPendiente).toLocaleString('es-AR', options));
+                    $('#kpi-monto-negociacion').text(parseFloat(data.montoEnNegociacion).toLocaleString('es-AR', options));
+                    $('#kpi-requiere-accion').text(data.propuestasRequierenAccion);
+                }
+            }
+        });
+    }
+
+    // Llamamos a la función al cargar la página
+    cargarKPIsCliente();
+    // ======================== FIN DE LA NUEVA LÓGICA =========================
+
     // 1. INICIALIZAR LA TABLA PRINCIPAL DE PROPUESTAS
     const tablaPropuestas = $('#tabla-propuestas-cliente').DataTable({
         ajax: {
@@ -184,24 +208,97 @@ function renderizarDetallePropuesta(data) {
         enviarAccion(idPropuesta, nuevoEstado, comentario);
     });
 
-    function enviarAccion(idPropuesta, nuevoEstado, comentario) {
+function enviarAccion(idPropuesta, nuevoEstado, comentario) {
+    $.ajax({
+        url: 'api/propuestas_controller.php?action=actualizar_estado',
+        type: 'POST',
+        data: { id_propuesta: idPropuesta, nuevo_estado: nuevoEstado, comentario: comentario },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                alert(response.message);
+                $('#detallePropuestaModal').modal('hide');
+                tablaPropuestas.ajax.reload(); // Recargar la tabla principal
+                
+                // ======================= LÍNEAS AÑADIDAS =======================
+                // Si la acción fue aceptar, refrescamos los KPIs y el calendario
+                // para que muestren la información actualizada inmediatamente.
+                if (nuevoEstado === 'ACEPTADA') {
+                    cargarKPIsCliente();
+                    // Limpiamos el calendario viejo antes de reinicializar
+                    $('#cronograma-calendario').empty();
+                    $('#cronograma-detalles').empty();
+                    inicializarCronograma();
+                }
+                // =============================================================
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error de conexión al realizar la acción.');
+        }
+    });
+}
+
+    function inicializarCronograma() {
         $.ajax({
-            url: 'api/propuestas_controller.php?action=actualizar_estado',
-            type: 'POST',
-            data: { id_propuesta: idPropuesta, nuevo_estado: nuevoEstado, comentario: comentario },
+            url: 'api/propuestas_controller.php?action=obtener_cronograma_cliente',
+            type: 'GET',
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    alert(response.message);
-                    $('#detallePropuestaModal').modal('hide');
-                    tablaPropuestas.ajax.reload(); // Recargar la tabla principal
-                } else {
-                    alert('Error: ' + response.message);
+                    const eventos = response.data;
+                    const fechasResaltadas = eventos.map(e => e.date.split(' ')[0]);
+
+                    function formatDate(d) {
+                        return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+                    }
+
+                    $("#cronograma-calendario").datepicker({
+                        dateFormat: "yy-mm-dd",
+                        beforeShowDay: function(date) {
+                            const dateString = formatDate(date);
+                            if (fechasResaltadas.includes(dateString)) {
+                                return [true, "highlight-date", "Tiene un vencimiento de pago"];
+                            }
+                            return [true, ""];
+                        },
+                        onSelect: function(dateText) {
+                            const contenedorDetalles = $('#cronograma-detalles');
+                            contenedorDetalles.empty();
+                            
+                            const eventosDelDia = eventos.filter(evento => evento.date.split(' ')[0] === dateText);
+
+                            if (eventosDelDia.length > 0) {
+                                let detallesHtml = `<h6 class="border-bottom pb-2">Vencimientos para el ${new Date(dateText + 'T00:00:00').toLocaleDateString('es-AR')}:</h6>`;
+                                detallesHtml += '<ul class="list-group list-group-flush">';
+                                eventosDelDia.forEach(evento => {
+                                    const montoFormateado = parseFloat(evento.monto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+                                    detallesHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">Propuesta #${evento.id}<span class="badge bg-primary rounded-pill">${montoFormateado}</span></li>`;
+                                });
+                                detallesHtml += '</ul>';
+                                contenedorDetalles.html(detallesHtml);
+                            } else {
+                                // ======================= MENSAJE MEJORADO =======================
+                                let noEventosHtml = `
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fa-solid fa-calendar-check fa-2x mb-2"></i>
+                                        <p class="mb-0">No hay vencimientos programados para esta fecha.</p>
+                                    </div>`;
+                                contenedorDetalles.html(noEventosHtml);
+                                // ================================================================
+                            }
+                        }
+                    });
                 }
-            },
-            error: function() {
-                alert('Error de conexión al realizar la acción.');
             }
         });
     }
+
+    // Carga inicial de todo
+    cargarKPIsCliente();
+    inicializarCronograma();
+
+
 });

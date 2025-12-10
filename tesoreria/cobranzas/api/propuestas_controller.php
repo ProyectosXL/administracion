@@ -293,44 +293,168 @@ case 'actualizar_propuesta_admin':
     exit; // Importante salir para no ejecutar más código
     break;
 
-        case 'actualizar_estado':
-            $id_propuesta = $_POST['id_propuesta'] ?? 0;
-            $nuevo_estado = $_POST['nuevo_estado'] ?? '';
-            $comentario = $_POST['comentario'] ?? null;
+            // ======================= NUEVO ENDPOINT PARA KPIs DEL CLIENTE =======================
+        case 'obtener_kpis_cliente':
+            if ($es_admin) { // Esta acción es solo para clientes
+                http_response_code(403);
+                exit;
+            }
+
             $cod_cliente = $_SESSION['usuario_cod_client'];
-            $id_usuario = $_SESSION['usuario_id'];
-
             $conn_apps = Database::getConnection('apps');
-            sqlsrv_begin_transaction($conn_apps);
+            $conn_central = Database::getConnection('central');
+            $response = [];
 
-            // CORRECCIÓN: Añadir prefijo FP_
-            $sql_update = "UPDATE FP_propuestas_pago SET estado = ?, fecha_ultima_modificacion = GETDATE() WHERE id = ? AND cod_cliente = ?";
-            $stmt_update = sqlsrv_query($conn_apps, $sql_update, [$nuevo_estado, $id_propuesta, $cod_cliente]);
+            // 1. Calcular Monto en Negociación y Propuestas que requieren acción
+            $sql_negociacion = "
+                SELECT
+                    SUM(CASE WHEN estado LIKE 'PENDIENTE%' OR estado = 'CONTRAPROPUESTA_CLIENTE' THEN total_propuesto ELSE 0 END) AS montoEnNegociacion,
+                    COUNT(CASE WHEN estado = 'PENDIENTE_APROBACION_CLIENTE' OR estado = 'PENDIENTE_APROBACION_FINAL' THEN 1 END) AS propuestasRequierenAccion
+                FROM FP_propuestas_pago
+                WHERE cod_cliente = ? AND estado NOT IN ('ACEPTADA', 'RECHAZADA')
+            ";
+            $stmt_negociacion = sqlsrv_query($conn_apps, $sql_negociacion, [$cod_cliente]);
+            $kpis_negociacion = sqlsrv_fetch_array($stmt_negociacion, SQLSRV_FETCH_ASSOC);
+            $response['montoEnNegociacion'] = $kpis_negociacion['montoEnNegociacion'] ?? 0;
+            $response['propuestasRequierenAccion'] = $kpis_negociacion['propuestasRequierenAccion'] ?? 0;
 
-            if ($stmt_update === false || sqlsrv_rows_affected($stmt_update) === 0) {
-                 sqlsrv_rollback($conn_apps);
-                 throw new Exception("No se pudo actualizar la propuesta o no tienes permiso.");
+
+            // 2. Calcular Deuda Total Pendiente (Facturas que NO están en propuestas activas)
+            // Primero, obtenemos la lista de facturas en propuestas activas
+            $facturas_en_propuesta_activa = [];
+            $sql_propuestas_activas = "
+                SELECT items.n_comp_factura FROM FP_propuestas_pago_items items
+                JOIN FP_propuestas_pago propuestas ON items.id_propuesta = propuestas.id
+                WHERE propuestas.cod_cliente = ? AND propuestas.estado NOT IN ('ACEPTADA', 'RECHAZADA')";
+            $stmt_prop_activas = sqlsrv_query($conn_apps, $sql_propuestas_activas, [$cod_cliente]);
+            while ($row = sqlsrv_fetch_array($stmt_prop_activas, SQLSRV_FETCH_ASSOC)) {
+                $facturas_en_propuesta_activa[] = $row['n_comp_factura'];
             }
 
-            $descripcion_historial = ($nuevo_estado === 'ACEPTADA') ? "El cliente aceptó la propuesta." : "El cliente ha generado una contrapropuesta.";
-            // CORRECCIÓN: Añadir prefijo FP_
-            $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)";
-            $params_historial = [$id_propuesta, $id_usuario, 'CLIENTE', $descripcion_historial, $comentario];
-            $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
-            
-            if ($stmt_historial === false) {
-                 sqlsrv_rollback($conn_apps);
-                 throw new Exception("Error al registrar el historial.");
+            // Segundo, consultamos las vistas de cobranzas en 'central'
+            // La consulta es la unión de franquicias y mayoristas para este cliente.
+            $sql_deuda_total = "
+                SELECT SUM(IMPORTE_NETO) as totalDeuda FROM RO_V_COBRANZA_PEND_FRANQUICIAS WHERE COD_CLIENT = ?
+                UNION ALL
+                SELECT SUM(IMPORTE_NETO) as totalDeuda FROM RO_V_COBRANZA_PEND_MAYORISTAS WHERE COD_CLIENT = ?
+            ";
+
+            // Si hay facturas en propuestas, las excluimos
+            if (!empty($facturas_en_propuesta_activa)) {
+                $placeholders = implode(',', array_fill(0, count($facturas_en_propuesta_activa), '?'));
+                $sql_deuda_total = "
+                    SELECT SUM(IMPORTE_NETO) as totalDeuda FROM (
+                        SELECT IMPORTE_NETO, N_COMP FROM RO_V_COBRANZA_PEND_FRANQUICIAS WHERE COD_CLIENT = ?
+                        UNION ALL
+                        SELECT IMPORTE_NETO, N_COMP FROM RO_V_COBRANZA_PEND_MAYORISTAS WHERE COD_CLIENT = ?
+                    ) as t
+                    WHERE t.N_COMP NOT IN ($placeholders)
+                ";
+                $params_deuda = array_merge([$cod_cliente, $cod_cliente], $facturas_en_propuesta_activa);
+            } else {
+                 $params_deuda = [$cod_cliente, $cod_cliente];
             }
             
-            sqlsrv_commit($conn_apps);
-            echo json_encode(['success' => true, 'message' => 'Propuesta actualizada correctamente.']);
+            // Sumamos los resultados de la unión
+            $stmt_deuda = sqlsrv_query($conn_central, $sql_deuda_total, $params_deuda);
+            $totalDeuda = 0;
+            while($row_deuda = sqlsrv_fetch_array($stmt_deuda, SQLSRV_FETCH_ASSOC)){
+                $totalDeuda += (float)$row_deuda['totalDeuda'];
+            }
+            $response['deudaTotalPendiente'] = $totalDeuda;
+
+            echo json_encode(['success' => true, 'data' => $response]);
+            exit;
             break;
+
+                // ======================= NUEVO ENDPOINT PARA CRONOGRAMA DE PAGOS =======================
+        case 'obtener_cronograma_cliente':
+            if ($es_admin) {
+                http_response_code(403);
+                exit;
+            }
+
+            $cod_cliente = $_SESSION['usuario_cod_client'];
+            $conn_apps = Database::getConnection('apps');
+
+            $sql = "
+                SELECT 
+                    id,
+                    fecha_propuesta_pago,
+                    total_propuesto
+                FROM 
+                    FP_propuestas_pago
+                WHERE 
+                    cod_cliente = ? 
+                    AND estado = 'ACEPTADA'
+                    AND fecha_propuesta_pago IS NOT NULL
+                ORDER BY
+                    fecha_propuesta_pago ASC
+            ";
             
-        default:
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Acción no válida.']);
+            $stmt = sqlsrv_query($conn_apps, $sql, [$cod_cliente]);
+            if ($stmt === false) {
+                throw new Exception("Error al consultar el cronograma.");
+            }
+
+            $eventos = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $eventos[] = [
+                    'date' => $row['fecha_propuesta_pago'],
+                    'id' => $row['id'],
+                    'monto' => $row['total_propuesto']
+                ];
+            }
+
+            echo json_encode(['success' => true, 'data' => $eventos]);
+            exit;
             break;
+
+case 'actualizar_estado':
+    $id_propuesta = $_POST['id_propuesta'] ?? 0;
+    $nuevo_estado = $_POST['nuevo_estado'] ?? '';
+    $comentario = $_POST['comentario'] ?? null;
+    $cod_cliente = $_SESSION['usuario_cod_client'];
+    $id_usuario = $_SESSION['usuario_id'];
+
+    $conn_apps = Database::getConnection('apps');
+    sqlsrv_begin_transaction($conn_apps);
+
+    try {
+        // 1. Actualizamos el estado de la propuesta
+        $sql_update = "UPDATE FP_propuestas_pago SET estado = ?, fecha_ultima_modificacion = GETDATE() WHERE id = ? AND cod_cliente = ?";
+        $stmt_update = sqlsrv_query($conn_apps, $sql_update, [$nuevo_estado, $id_propuesta, $cod_cliente]);
+
+        if ($stmt_update === false || sqlsrv_rows_affected($stmt_update) === 0) {
+             sqlsrv_rollback($conn_apps);
+             throw new Exception("No se pudo actualizar la propuesta o no tienes permiso.");
+        }
+
+        // 2. Insertamos en el historial
+        $descripcion_historial = ($nuevo_estado === 'ACEPTADA') ? "El cliente aceptó la propuesta." : "El cliente ha generado una contrapropuesta.";
+        $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)";
+        $params_historial = [$id_propuesta, $id_usuario, 'CLIENTE', $descripcion_historial, $comentario];
+        $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
+        
+        if ($stmt_historial === false) {
+             sqlsrv_rollback($conn_apps);
+             throw new Exception("Error al registrar el historial.");
+        }
+        
+        // NO SE NECESITA NADA MÁS AQUÍ.
+        // La propuesta ya tiene su fecha y monto, que es lo que leerá el calendario.
+        
+        sqlsrv_commit($conn_apps);
+        echo json_encode(['success' => true, 'message' => 'Propuesta actualizada correctamente.']);
+
+    } catch (Exception $e) {
+        sqlsrv_rollback($conn_apps);
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error del servidor: ' . $e->getMessage()]);
+    }
+
+    exit;
+    break;
     }
 } catch (Exception $e) {
     http_response_code(500);

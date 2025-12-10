@@ -208,3 +208,47 @@ table.dataTable.fixedHeader-floating {
     margin-bottom: 5px;
     display: block;
 }
+/* assets/css/style.css */
+
+/* --- ESTILOS PARA EL NUEVO CRONOGRAMA (jQuery UI Datepicker) --- */
+/* Resalta los días que tienen un evento */
+.highlight-date a {
+    background: #0d6efd !important; /* Color primario de Bootstrap */
+    color: #fff !important;
+    font-weight: bold;
+    border-radius: 50% !important;
+}
+
+/* Estilo general del calendario para que ocupe el contenedor */
+.ui-datepicker {
+    width: 100%;
+}
+/* assets/css/style.css */
+
+/* --- MEJORAS VISUALES PARA PORTAL DEL CLIENTE --- */
+
+/* Estilo para el día resaltado en el calendario */
+.highlight-date a {
+    background: #0d6efd !important; /* Color primario de Bootstrap */
+    color: #fff !important;
+    font-weight: bold;
+    border-radius: 50% !important;
+    transition: all 0.2s ease-in-out;
+}
+.highlight-date a:hover {
+    transform: scale(1.1);
+}
+
+/* Estilo para el encabezado del calendario (mes y año) */
+.ui-datepicker-header {
+    background-color: #f8f9fa; /* Un gris suave de Bootstrap */
+    border-radius: 0.375rem 0.375rem 0 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Estilo para el contenedor del calendario */
+.ui-datepicker {
+    width: 100%;
+    border: none !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}

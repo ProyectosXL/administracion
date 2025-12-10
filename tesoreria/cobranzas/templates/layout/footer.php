@@ -1,4 +1,6 @@
-</div> <!-- Cierre del container-fluid del header.php -->
+<!-- templates/layout/footer.php - VERSIÓN FINAL Y CORRECTA -->
+
+    </div> <!-- Cierre del container-fluid del header.php -->
 
     <!-- ======================= INCLUSIÓN GLOBAL DE MODALES ======================= -->
     
@@ -27,7 +29,7 @@
     <!-- Modal de Parámetros -->
     <?php include_once __DIR__ . '/../modals/parametros_modal.php'; ?>
 
-    <!-- Modal para Detalle de Propuesta (Gestión) -->
+    <!-- Modal para Detalle de Propuesta (Gestión y Cliente) -->
     <?php include_once __DIR__ . '/../modals/detalle_propuesta_modal.php'; ?>
 
     <!-- Modal de Confirmación de Eliminación -->
@@ -49,6 +51,12 @@
 
     <!-- ======================= SCRIPTS ======================= -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- ======================= SCRIPT FALTANTE AÑADIDO AQUÍ ======================= -->
+    <!-- JS para jQuery UI (necesario para el Datepicker). Debe ir DESPUÉS de jQuery. -->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+    <!-- =========================================================================== -->
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
@@ -56,6 +64,3 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="assets/js/app.js"></script>
-</body>
-</html>
