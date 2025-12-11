@@ -43,6 +43,7 @@ $(document).ready(function() {
                     if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
                     if (data === 'ACEPTADA') badgeClass = 'success';
                     if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
+                    if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
                     return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
                 }
             },
@@ -52,9 +53,19 @@ $(document).ready(function() {
                 orderable: false,
                 className: 'text-center',
                 render: function(data, type, row) {
-                    return `<button class="btn btn-primary btn-sm btn-detalle" data-id="${row.id}" title="Ver Detalle">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>`;
+                    // ======================= INICIO DE LA MODIFICACIÓN =======================
+                    let btnVer = `<button class="btn btn-primary btn-sm btn-detalle" data-id="${row.id}" title="Ver Detalle"><i class="fa-solid fa-eye"></i></button>`;
+                    
+                    let btnAdjuntar = '';
+                    // Mostramos el botón de adjuntar solo si el estado es 'ACEPTADA'
+                    if (row.estado === 'ACEPTADA') {
+                        btnAdjuntar = `<button class="btn btn-info btn-sm ms-1 btn-adjuntar" data-id="${row.id}" title="Adjuntar Comprobante">
+                                          <i class="fa-solid fa-paperclip"></i>
+                                      </button>`;
+                    }
+                    
+                    return btnVer + btnAdjuntar;
+                    // ======================== FIN DE LA MODIFICACIÓN =========================
                 }
             }
         ],
@@ -94,6 +105,89 @@ $(document).ready(function() {
             }
         });
     });
+
+// ======================= INICIO DE LA LÓGICA CORREGIDA PARA SUBIR ARCHIVOS =======================
+
+// Evento para el nuevo botón "Adjuntar", usando delegación de eventos
+// Esto asegura que el evento funcione incluso para botones añadidos después de cargar la página
+$('#tabla-propuestas-cliente tbody').on('click', '.btn-adjuntar', function() {
+    const idPropuesta = $(this).data('id');
+    console.log('Botón Adjuntar clickeado para propuesta ID:', idPropuesta); // <-- Línea de depuración
+
+    // Preparamos el modal
+    $('#uploadPropuestaId').val(idPropuesta);
+    $('#uploadDocForm')[0].reset();
+    $('.progress').hide();
+    $('.progress-bar').css('width', '0%').text('0%');
+    
+    // Abrimos el modal
+    const uploadModal = new bootstrap.Modal(document.getElementById('uploadDocModal'));
+    uploadModal.show();
+});
+
+// Evento para el botón "Subir" dentro del modal (este debería estar bien, pero lo revisamos)
+$('#btnSubirComprobante').on('click', function() {
+    const form = $('#uploadDocForm')[0];
+    const formData = new FormData(form);
+    const fileInput = $('#comprobanteFile')[0];
+
+    if (fileInput.files.length === 0) {
+        alert('Por favor, seleccione un archivo.');
+        return;
+    }
+
+    const btn = $(this);
+    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Subiendo...');
+    $('.progress').show();
+
+    $.ajax({
+        url: 'api/propuestas_controller.php?action=subir_comprobante',
+        type: 'POST',
+        data: formData,
+        processData: false, 
+        contentType: false, 
+        xhr: function() {
+            const xhr = new window.XMLHttpRequest();
+            xhr.upload.addEventListener('progress', function(evt) {
+                if (evt.lengthComputable) {
+                    const percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                    $('.progress-bar').css('width', percentComplete + '%').text(percentComplete + '%');
+                }
+            }, false);
+            return xhr;
+        },
+        success: function(response) {
+            if (response.success) {
+                alert(response.message);
+                // Aseguramos que el modal se cierre correctamente
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('uploadDocModal'));
+                    // ======================= INICIO DE LA MODIFICACIÓN =======================
+                    // Reutilizamos la misma lógica de recarga
+                    tablaPropuestas.ajax.reload();
+                    cargarKPIsCliente();
+                    
+                    $('#cronograma-calendario').datepicker('destroy').empty();
+                    $('#cronograma-detalles').html(`
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-hand-pointer fa-2x mb-2"></i>
+                            <p class="mb-0">Seleccione un día resaltado para ver los vencimientos.</p>
+                        </div>`);
+                    inicializarCronograma();
+                    // ======================== FIN DE LA MODIFICACIÓN =========================
+            } else {
+                alert('Error: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Error de conexión. No se pudo subir el archivo.');
+        },
+        complete: function() {
+            btn.prop('disabled', false).html('<i class="fa-solid fa-upload me-2"></i>Subir');
+        }
+    });
+});
+// ================================= FIN DE LA LÓGICA CORREGIDA =================================
+
 
 function renderizarDetallePropuesta(data) {
     const { propuesta, items, historial } = data;
@@ -218,19 +312,20 @@ function enviarAccion(idPropuesta, nuevoEstado, comentario) {
             if (response.success) {
                 alert(response.message);
                 $('#detallePropuestaModal').modal('hide');
-                tablaPropuestas.ajax.reload(); // Recargar la tabla principal
-                
-                // ======================= LÍNEAS AÑADIDAS =======================
-                // Si la acción fue aceptar, refrescamos los KPIs y el calendario
-                // para que muestren la información actualizada inmediatamente.
-                if (nuevoEstado === 'ACEPTADA') {
+                    // ======================= INICIO DE LA MODIFICACIÓN =======================
+                    // Unificamos la lógica de recarga aquí
+                    tablaPropuestas.ajax.reload();
                     cargarKPIsCliente();
-                    // Limpiamos el calendario viejo antes de reinicializar
-                    $('#cronograma-calendario').empty();
-                    $('#cronograma-detalles').empty();
+                    
+                    // Limpiamos el calendario viejo antes de reinicializar para evitar duplicados
+                    $('#cronograma-calendario').datepicker('destroy').empty();
+                    $('#cronograma-detalles').html(`
+                        <div class="text-center text-muted py-4">
+                            <i class="fa-solid fa-hand-pointer fa-2x mb-2"></i>
+                            <p class="mb-0">Seleccione un día resaltado para ver los vencimientos.</p>
+                        </div>`);
                     inicializarCronograma();
-                }
-                // =============================================================
+                    // ======================== FIN DE LA MODIFICACIÓN =========================
             } else {
                 alert('Error: ' + response.message);
             }

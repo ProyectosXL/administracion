@@ -10,10 +10,10 @@ include 'templates/layout/header.php';
 
 <main>
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">
-            <i class="fa-solid fa-user-tie text-primary"></i>
-            Mi Portal de Cliente
-        </h1>
+        <h5 class="h3 mb-0">
+            <i class="fa-solid fa-handshake" style="color: #74C0FC;"></i>
+            Portal de Cliente
+        </h5>
     </div>
 
     <!-- Fila para las Tarjetas de Resumen (KPIs) -->
@@ -36,7 +36,7 @@ include 'templates/layout/header.php';
 
                 <!-- Columna para la tabla de propuestas -->
                 <div class="col-lg-8">
-                    <h5 class="mb-3 border-bottom pb-2">Mis Propuestas de Pago</h5>
+                    <h5 class="mb-3 border-bottom pb-2"><i class="fa-solid fa-money-bill-1 fa-1x"></i> Propuestas de Pago </h5>
                     <div class="table-responsive">
                         <table id="tabla-propuestas-cliente" class="table table-striped table-hover" style="width:100%"></table>
                     </div>
@@ -50,8 +50,8 @@ include 'templates/layout/header.php';
                     <div id="cronograma-detalles" class="mt-3">
                         <!-- Mensaje inicial -->
                         <div class="text-center text-muted py-4">
-                            <i class="fa-solid fa-hand-pointer fa-2x mb-2"></i>
-                            <p class="mb-0">Seleccione un día resaltado para ver los vencimientos.</p>
+                            <i class="fa-solid fa-hand-pointer fa-2x mb-3"></i>
+                            <p class="mb-0">Seleccione un día resaltado en azul para ver los vencimientos.</p>
                         </div>
                     </div>
                 </div>
@@ -60,7 +60,36 @@ include 'templates/layout/header.php';
             </div> 
         </div> 
     </div> 
-
+    <!-- ======================= NUEVO MODAL PARA SUBIR DOCUMENTACIÓN ======================= -->
+    <div class="modal fade" id="uploadDocModal" tabindex="-1" aria-labelledby="uploadDocModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadDocModalLabel">Adjuntar Comprobante de Pago</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadDocForm" enctype="multipart/form-data">
+                        <input type="hidden" id="uploadPropuestaId" name="id_propuesta">
+                        <div class="mb-3">
+                            <label for="comprobanteFile" class="form-label">Seleccione el archivo (PDF, JPG, PNG):</label>
+                            <input class="form-control" type="file" id="comprobanteFile" name="comprobanteFile" accept=".pdf,.jpg,.jpeg,.png" required>
+                        </div>
+                        <div class="progress" style="display: none;">
+                            <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnSubirComprobante">
+                        <i class="fa-solid fa-upload me-2"></i>Subir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ==================================================================================== -->
 </main>
 
 <?php include 'templates/layout/footer.php'; ?>

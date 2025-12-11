@@ -625,7 +625,7 @@ const columnsDetalle = [
 
     // *** MODIFICADO ***: Renderiza el modal de gestión con descuentos editables si es necesario
 function renderizarDetallePropuestaAdmin(data) {
-    const { propuesta, items, historial } = data;
+    const { propuesta, items, historial, adjuntos } = data;
     const contentDiv = $('#detalle-propuesta-content');
     
     // ======================= INICIO DE LA MODIFICACIÓN =======================
@@ -655,6 +655,39 @@ function renderizarDetallePropuestaAdmin(data) {
         </div>
     `;
     // ======================== FIN DE LA MODIFICACIÓN =========================
+
+        // ======================= INICIO DE LA NUEVA LÓGICA =======================
+    let adjuntosHtml = '';
+    // Si el array 'adjuntos' no está vacío, creamos la sección
+    if (adjuntos && adjuntos.length > 0) {
+        adjuntosHtml = `
+            <h5 class="mt-4">Comprobantes Adjuntos</h5>
+            <ul class="list-group">
+        `;
+        
+        adjuntos.forEach(adjunto => {
+            // Asumimos que la ruta guardada es relativa a la raíz del proyecto
+            // Ej: 'uploads/comprobantes/propuesta_13_1670868000.pdf'
+            const url = adjunto.ruta_archivo;
+            const fechaSubida = new Date(adjunto.fecha_subida).toLocaleString('es-AR');
+
+            adjuntosHtml += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fa-solid fa-file-arrow-down me-2"></i>
+                        ${adjunto.nombre_archivo}
+                        <small class="d-block text-muted">Subido el: ${fechaSubida}</small>
+                    </div>
+                    <a href="${url}" target="_blank" class="btn btn-outline-primary btn-sm">
+                        Descargar
+                    </a>
+                </li>
+            `;
+        });
+
+        adjuntosHtml += '</ul>';
+    }
+    // ======================== FIN DE LA NUEVA LÓGICA =========================
     
     let esEditable = propuesta.estado === 'CONTRAPROPUESTA_CLIENTE';
 
@@ -749,7 +782,7 @@ function renderizarDetallePropuestaAdmin(data) {
         `;
     }
 
-        contentDiv.html(resumenHtml + itemsHtml + historialHtml + accionAdminHtml);
+        contentDiv.html(resumenHtml + itemsHtml + historialHtml + accionAdminHtml + adjuntosHtml);
     }
     
     // *** NUEVO EVENTO ***: Lógica de recálculo para el modal de GESTIÓN

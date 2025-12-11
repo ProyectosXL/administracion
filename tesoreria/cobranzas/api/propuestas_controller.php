@@ -66,9 +66,29 @@ try {
             while ($row = sqlsrv_fetch_array($stmt_historial, SQLSRV_FETCH_ASSOC)) {
                 $historial[] = $row;
             }
+
+                // ======================= INICIO DE LA NUEVA LÓGICA =======================
+    // Buscamos si existen archivos adjuntos para esta propuesta
+    $adjuntos = [];
+    $sql_adjuntos = "SELECT id, nombre_archivo, ruta_archivo, fecha_subida FROM FP_propuestas_adjuntos WHERE id_propuesta = ? ORDER BY fecha_subida DESC";
+    $stmt_adjuntos = sqlsrv_query($conn_apps, $sql_adjuntos, [$id_propuesta]);
+    
+    if ($stmt_adjuntos !== false) {
+        while ($row_adjunto = sqlsrv_fetch_array($stmt_adjuntos, SQLSRV_FETCH_ASSOC)) {
+            $adjuntos[] = $row_adjunto;
+        }
+    }
+    // ======================== FIN DE LA NUEVA LÓGICA =========================
+
             
-            echo json_encode(['success' => true, 'data' => ['propuesta' => $propuesta, 'items' => $items, 'historial' => $historial]]);
-            break;
+    // Añadimos los adjuntos a la respuesta JSON
+    echo json_encode(['success' => true, 'data' => [
+        'propuesta' => $propuesta, 
+        'items' => $items, 
+        'historial' => $historial,
+        'adjuntos' => $adjuntos // <-- Nuevo dato en la respuesta
+    ]]);
+    break;
 
         
         // ======================= NUEVO ENDPOINT PARA DASHBOARD ADMIN =======================
@@ -101,20 +121,23 @@ try {
                 $grafico_estados[] = $row;
             }
             $response['graficoEstados'] = $grafico_estados;
+    // ======================= INICIO DE LA MODIFICACIÓN =======================
+    // 3. Datos para Gráfico de Actividad Reciente (Barras)
+    // Contará las propuestas ACEPTADAS o con DOCUMENTACIÓN en los últimos 7 días.
+    $sql_actividad = "
+        SELECT 
+            CAST(fecha_ultima_modificacion AS DATE) AS dia,
+            COUNT(*) as cantidad
+        FROM FP_propuestas_pago
+        WHERE 
+            -- Aquí está el cambio: usamos IN para incluir ambos estados
+            estado IN ('ACEPTADA', 'DOCUMENTACION_ADJUNTADA') AND
+            fecha_ultima_modificacion >= DATEADD(day, -7, GETDATE())
+        GROUP BY CAST(fecha_ultima_modificacion AS DATE)
+        ORDER BY dia ASC
+    ";
+    // ======================== FIN DE LA MODIFICACIÓN =========================
 
-                        // 3. Datos para Gráfico de Actividad Reciente (Barras)
-            // Contará las propuestas aceptadas en cada uno de los últimos 7 días.
-            $sql_actividad = "
-                SELECT 
-                    CAST(fecha_ultima_modificacion AS DATE) AS dia,
-                    COUNT(*) as cantidad
-                FROM FP_propuestas_pago
-                WHERE 
-                    estado = 'ACEPTADA' AND
-                    fecha_ultima_modificacion >= DATEADD(day, -7, GETDATE())
-                GROUP BY CAST(fecha_ultima_modificacion AS DATE)
-                ORDER BY dia ASC
-            ";
             $stmt_actividad = sqlsrv_query($conn_apps, $sql_actividad);
             $grafico_actividad = [];
             while ($row = sqlsrv_fetch_array($stmt_actividad, SQLSRV_FETCH_ASSOC)) {
@@ -407,6 +430,85 @@ case 'actualizar_propuesta_admin':
             }
 
             echo json_encode(['success' => true, 'data' => $eventos]);
+            exit;
+            break;
+        // ======================= NUEVO ENDPOINT PARA SUBIR COMPROBANTE =======================
+        case 'subir_comprobante':
+            if ($es_admin) {
+                http_response_code(403);
+                exit;
+            }
+
+            $id_propuesta = $_POST['id_propuesta'] ?? 0;
+            $cod_cliente = $_SESSION['usuario_cod_client'];
+
+            if ($id_propuesta == 0 || !isset($_FILES['comprobanteFile'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Faltan datos o el archivo no fue enviado.']);
+                exit;
+            }
+
+            $file = $_FILES['comprobanteFile'];
+
+            // Validaciones básicas del archivo
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                echo json_encode(['success' => false, 'message' => 'Error al subir el archivo. Código: ' . $file['error']]);
+                exit;
+            }
+            $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+            if (!in_array($file['type'], $allowed_types)) {
+                 echo json_encode(['success' => false, 'message' => 'Tipo de archivo no permitido.']);
+                 exit;
+            }
+
+            // Creamos un nombre de archivo único
+            $path_parts = pathinfo($file['name']);
+            $extension = $path_parts['extension'];
+            $new_filename = "propuesta_" . $id_propuesta . "_" . time() . "." . $extension;
+            
+            // Define tu carpeta de subidas. ¡ASEGÚRATE DE QUE EXISTA Y TENGA PERMISOS DE ESCRITURA!
+            $upload_dir = __DIR__ . '/../../uploads/comprobantes/';
+            $upload_path = $upload_dir . $new_filename;
+
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+
+            if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
+                echo json_encode(['success' => false, 'message' => 'No se pudo mover el archivo subido.']);
+                exit;
+            }
+
+            // Si todo fue bien, guardamos en la BD y actualizamos el estado
+            $conn_apps = Database::getConnection('apps');
+            if (sqlsrv_begin_transaction($conn_apps) === false) {
+                 throw new Exception("Error al iniciar la transacción.");
+            }
+
+            try {
+                // 1. Insertar en la tabla de adjuntos
+                $sql_adjunto = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, nombre_archivo, ruta_archivo) VALUES (?, ?, ?)";
+                $params_adjunto = [$id_propuesta, $file['name'], 'uploads/comprobantes/' . $new_filename];
+                $stmt_adjunto = sqlsrv_query($conn_apps, $sql_adjunto, $params_adjunto);
+                if ($stmt_adjunto === false) throw new Exception("Error al guardar el adjunto en la BD.");
+
+                // 2. Actualizar estado de la propuesta
+                $sql_update = "UPDATE FP_propuestas_pago SET estado = 'DOCUMENTACION_ADJUNTADA' WHERE id = ? AND cod_cliente = ?";
+                $stmt_update = sqlsrv_query($conn_apps, $sql_update, [$id_propuesta, $cod_cliente]);
+                if ($stmt_update === false) throw new Exception("Error al actualizar el estado de la propuesta.");
+
+                sqlsrv_commit($conn_apps);
+                echo json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
+
+            } catch (Exception $e) {
+                sqlsrv_rollback($conn_apps);
+                // Si falla la BD, borramos el archivo que ya subimos
+                if (file_exists($upload_path)) {
+                    unlink($upload_path);
+                }
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Error de base de datos: ' . $e->getMessage()]);
+            }
             exit;
             break;
 
