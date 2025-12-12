@@ -37,18 +37,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
         if (!$id_propuesta) throw new Exception("No se pudo crear la cabecera de la propuesta.");
 
         // MODIFICADO: Añadimos la nueva columna al INSERT
-        $sql_item = "INSERT INTO FP_propuestas_pago_items 
-                        (id_propuesta, n_comp_factura, importe_bruto, importe_neto, porcentaje_descuento)
-                     VALUES (?, ?, ?, ?, ?)";
+$sql_item = "INSERT INTO FP_propuestas_pago_items 
+                (id_propuesta, t_comp_factura, n_comp_factura, importe_bruto, importe_neto, porcentaje_descuento)
+             VALUES (?, ?, ?, ?, ?, ?)";
                      
         foreach ($comprobantes as $comp) {
             // MODIFICADO: Pasamos el nuevo dato 'porcentaje_descuento' desde el JS
             $params_item = [
-                $id_propuesta, 
-                $comp['n_comp'], 
-                $comp['importe_bruto'],
-                $comp['importe_neto'],
-                $comp['porcentaje_descuento'] // <-- NUEVO DATO
+        $id_propuesta,
+        $comp['t_comp'], // <-- NUEVO
+        $comp['n_comp'], 
+        $comp['importe_bruto'],
+        $comp['importe_neto'],
+        $comp['porcentaje_descuento']
             ];
             $stmt_item = sqlsrv_query($conn_apps, $sql_item, $params_item);
             if ($stmt_item === false) throw new Exception("Error al insertar el item: " . $comp['n_comp']);
@@ -129,7 +130,7 @@ try {
     // 2. Obtener TODAS las facturas pendientes del cliente desde la BD 'central'
     $sql_facturas = "
         SELECT COD_CLIENT, RAZON_SOCI, FECHA_EMIS, T_COMP, N_COMP, 
-               IMPORTE, FECHA_PROB_COBRO, PPP, IMPORTE_NETO 
+               IMPORTE, FECHA_PROB_COBRO, PPP, IMPORTE_NETO, ESTADO 
         FROM $vista 
         WHERE COD_CLIENT = ?
         ORDER BY FECHA_EMIS DESC
