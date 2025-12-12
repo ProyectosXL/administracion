@@ -126,67 +126,54 @@ $('#tabla-propuestas-cliente tbody').on('click', '.btn-adjuntar', function() {
 });
 
 // Evento para el botón "Subir" dentro del modal (este debería estar bien, pero lo revisamos)
-$('#btnSubirComprobante').on('click', function() {
-    const form = $('#uploadDocForm')[0];
-    const formData = new FormData(form);
-    const fileInput = $('#comprobanteFile')[0];
+    $('#btnSubirComprobante').on('click', function() {
+        const form = $('#uploadDocForm')[0];
+        const formData = new FormData(form);
+        const fileInput = $('#comprobanteFile')[0];
 
-    if (fileInput.files.length === 0) {
-        alert('Por favor, seleccione un archivo.');
-        return;
-    }
+        if (fileInput.files.length === 0) {
+            Swal.fire('Atención', 'Por favor, seleccione un archivo.', 'warning');
+            return;
+        }
 
-    const btn = $(this);
-    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Subiendo...');
-    $('.progress').show();
+        const btn = $(this);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Subiendo...');
+        $('.progress').show();
 
-    $.ajax({
-        url: 'api/propuestas_controller.php?action=subir_comprobante',
-        type: 'POST',
-        data: formData,
-        processData: false, 
-        contentType: false, 
-        xhr: function() {
-            const xhr = new window.XMLHttpRequest();
-            xhr.upload.addEventListener('progress', function(evt) {
-                if (evt.lengthComputable) {
-                    const percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                    $('.progress-bar').css('width', percentComplete + '%').text(percentComplete + '%');
-                }
-            }, false);
-            return xhr;
-        },
-        success: function(response) {
-            if (response.success) {
-                alert(response.message);
-                // Aseguramos que el modal se cierre correctamente
-                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('uploadDocModal'));
-                    // ======================= INICIO DE LA MODIFICACIÓN =======================
-                    // Reutilizamos la misma lógica de recarga
+        $.ajax({
+            url: 'api/propuestas_controller.php?action=subir_comprobante',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            xhr: function() {
+                const xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener('progress', function(evt) {
+                    if (evt.lengthComputable) {
+                        const percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                        $('.progress-bar').css('width', percentComplete + '%').text(percentComplete + '%');
+                    }
+                }, false);
+                return xhr;
+            },
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire('¡Éxito!', response.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('uploadDocModal')).hide();
                     tablaPropuestas.ajax.reload();
                     cargarKPIsCliente();
-                    
-                    $('#cronograma-calendario').datepicker('destroy').empty();
-                    $('#cronograma-detalles').html(`
-                        <div class="text-center text-muted py-4">
-                            <i class="fa-solid fa-hand-pointer fa-2x mb-2"></i>
-                            <p class="mb-0">Seleccione un día resaltado para ver los vencimientos.</p>
-                        </div>`);
-                    inicializarCronograma();
-                    // ======================== FIN DE LA MODIFICACIÓN =========================
-            } else {
-                alert('Error: ' + response.message);
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            },
+            error: function() {
+                Swal.fire('Error', 'Error de conexión. No se pudo subir el archivo.', 'error');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fa-solid fa-upload me-2"></i>Subir');
             }
-        },
-        error: function() {
-            alert('Error de conexión. No se pudo subir el archivo.');
-        },
-        complete: function() {
-            btn.prop('disabled', false).html('<i class="fa-solid fa-upload me-2"></i>Subir');
-        }
+        });
     });
-});
-// ================================= FIN DE LA LÓGICA CORREGIDA =================================
 
 
 function renderizarDetallePropuesta(data) {
@@ -287,7 +274,7 @@ function renderizarDetallePropuesta(data) {
         contentDiv.html(resumenHtml + itemsHtml + contrapropuestaHtml + historialHtml);
     }
     
-    // 3. LÓGICA PARA LOS BOTONES DE ACCIÓN DEL MODAL
+// 3. LÓGICA PARA LOS BOTONES DE ACCIÓN DEL MODAL
     $('#btn-aceptar-propuesta, #btn-enviar-contrapropuesta').on('click', function() {
         const idPropuesta = $(this).data('id');
         const esAceptar = $(this).attr('id') === 'btn-aceptar-propuesta';
@@ -295,46 +282,59 @@ function renderizarDetallePropuesta(data) {
         const comentario = $('#comentario-contrapropuesta').val();
 
         if (!esAceptar && !comentario) {
-            alert('Debe agregar un comentario para enviar una contrapropuesta.');
-            return;
+            // Reemplazamos el alert nativo por SweetAlert
+            Swal.fire({
+                icon: 'warning',
+                title: 'Comentario Requerido',
+                text: 'Debe agregar un comentario para poder enviar una contrapropuesta.',
+            });
+            return; // Detenemos la ejecución
         }
 
-        enviarAccion(idPropuesta, nuevoEstado, comentario);
+        // Si es Aceptar, mostramos una confirmación
+        if (esAceptar) {
+            Swal.fire({
+                title: '¿Confirmar Aceptación?',
+                text: "Esta acción generará el compromiso de pago. ¿Desea continuar?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Aceptar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    enviarAccion(idPropuesta, nuevoEstado, comentario);
+                }
+            });
+        } else {
+            // Si es Contrapropuesta, la enviamos directamente ya que el comentario es obligatorio
+            enviarAccion(idPropuesta, nuevoEstado, comentario);
+        }
     });
 
 function enviarAccion(idPropuesta, nuevoEstado, comentario) {
-    $.ajax({
-        url: 'api/propuestas_controller.php?action=actualizar_estado',
-        type: 'POST',
-        data: { id_propuesta: idPropuesta, nuevo_estado: nuevoEstado, comentario: comentario },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                alert(response.message);
-                $('#detallePropuestaModal').modal('hide');
-                    // ======================= INICIO DE LA MODIFICACIÓN =======================
-                    // Unificamos la lógica de recarga aquí
+        $.ajax({
+            url: 'api/propuestas_controller.php?action=actualizar_estado',
+            type: 'POST',
+            data: { id_propuesta: idPropuesta, nuevo_estado: nuevoEstado, comentario: comentario },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire('¡Acción Realizada!', response.message, 'success');
+                    $('#detallePropuestaModal').modal('hide');
                     tablaPropuestas.ajax.reload();
                     cargarKPIsCliente();
-                    
-                    // Limpiamos el calendario viejo antes de reinicializar para evitar duplicados
                     $('#cronograma-calendario').datepicker('destroy').empty();
-                    $('#cronograma-detalles').html(`
-                        <div class="text-center text-muted py-4">
-                            <i class="fa-solid fa-hand-pointer fa-2x mb-2"></i>
-                            <p class="mb-0">Seleccione un día resaltado para ver los vencimientos.</p>
-                        </div>`);
+                    $('#cronograma-detalles').html('<div class="text-center text-muted py-4"><i class="fa-solid fa-hand-pointer fa-2x mb-2"></i><p class="mb-0">Seleccione un día resaltado para ver los vencimientos.</p></div>');
                     inicializarCronograma();
-                    // ======================== FIN DE LA MODIFICACIÓN =========================
-            } else {
-                alert('Error: ' + response.message);
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            },
+            error: function() {
+                Swal.fire('Error', 'Error de conexión al realizar la acción.', 'error');
             }
-        },
-        error: function() {
-            alert('Error de conexión al realizar la acción.');
-        }
-    });
-}
+        });
+    }
 
     function inicializarCronograma() {
         $.ajax({

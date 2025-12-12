@@ -149,6 +149,116 @@ try {
             echo json_encode(['success' => true, 'data' => $response]);
             break;
 
+                // ======================= NUEVO ENDPOINT PARA SINCRONIZACIÓN DE PAGOS =======================
+case 'sincronizar_estados_pagados':
+    if (!$es_admin) {
+        http_response_code(403);
+        exit;
+    }
+
+    $conn_apps = Database::getConnection('apps');
+    $conn_central = Database::getConnection('central');
+    $propuestas_actualizadas = 0;
+    
+    try {
+        // ... (La búsqueda de propuestas a verificar se mantiene igual) ...
+        $sql_propuestas_a_verificar = "SELECT id FROM FP_propuestas_pago WHERE estado = 'DOCUMENTACION_ADJUNTADA'";
+        $stmt_propuestas = sqlsrv_query($conn_apps, $sql_propuestas_a_verificar);
+        if ($stmt_propuestas === false) throw new Exception("Error al buscar propuestas.");
+        
+        $propuestas_a_verificar = [];
+        while ($row = sqlsrv_fetch_array($stmt_propuestas, SQLSRV_FETCH_ASSOC)) {
+            $propuestas_a_verificar[] = $row['id'];
+        }
+
+        if (empty($propuestas_a_verificar)) {
+            echo json_encode(['success' => true, 'message' => 'No hay propuestas con documentación para sincronizar.']);
+            exit;
+        }
+
+        // ... (La iteración sobre las propuestas se mantiene igual) ...
+        foreach ($propuestas_a_verificar as $id_propuesta) {
+            
+            // ... (La obtención de items de la propuesta se mantiene igual) ...
+            $sql_items = "SELECT t_comp_factura, n_comp_factura FROM FP_propuestas_pago_items WHERE id_propuesta = ?";
+            $stmt_items = sqlsrv_query($conn_apps, $sql_items, [$id_propuesta]);
+            if ($stmt_items === false) continue;
+
+            $items_de_propuesta = [];
+            $solo_notas_de_credito = true;
+            while ($item = sqlsrv_fetch_array($stmt_items, SQLSRV_FETCH_ASSOC)) {
+                $items_de_propuesta[] = $item;
+                if (trim($item['t_comp_factura']) === 'FAC') {
+                    $solo_notas_de_credito = false;
+                }
+            }
+            
+            if ($solo_notas_de_credito && !empty($items_de_propuesta)) {
+                $sql_update_pagado = "UPDATE FP_propuestas_pago SET estado = 'PAGADO', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
+                sqlsrv_query($conn_apps, $sql_update_pagado, [$id_propuesta]);
+                $propuestas_actualizadas++;
+                continue;
+            }
+
+            $todas_facturas_canceladas = true;
+            foreach ($items_de_propuesta as $item_a_verificar) {
+                if (trim($item_a_verificar['t_comp_factura']) !== 'FAC') {
+                    continue;
+                }
+
+                $t_comp = trim($item_a_verificar['t_comp_factura']);
+                $n_comp = trim($item_a_verificar['n_comp_factura']);
+                
+                // ======================= CONSULTA CORREGIDA Y SIMPLIFICADA =======================
+                // Asumimos que si un cliente es 'FR...' sus facturas estarán en la vista de franquicias.
+                // Si pudiera tener en ambas, necesitaríamos saber el nombre de la columna de estado en la vista de mayoristas.
+                $sql_estado = "SELECT ESTADO FROM RO_V_COBRANZA_PEND_FRANQUICIAS WHERE T_COMP = ? AND N_COMP = ?";
+                // ===============================================================================
+
+                $params_estado = [$t_comp, $n_comp];
+                $stmt_estado = sqlsrv_query($conn_central, $sql_estado, $params_estado);
+                
+                if($stmt_estado === false) {
+                    $todas_facturas_canceladas = false;
+                    break;
+                }
+                
+                $estado_row = sqlsrv_fetch_array($stmt_estado, SQLSRV_FETCH_ASSOC);
+
+                if (!$estado_row || trim($estado_row['ESTADO']) !== 'CAN') {
+                    $todas_facturas_canceladas = false;
+                    break;
+                }
+            }
+
+            if ($todas_facturas_canceladas) {
+            $sql_update_pagado = "UPDATE FP_propuestas_pago SET estado = 'PAGADO', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
+            $stmt_update = sqlsrv_query($conn_apps, $sql_update_pagado, [$id_propuesta]);
+
+            // ======================= INICIO DE LA NUEVA LÓGICA =======================
+            // 5.2. Registrar el evento en el historial (si la actualización fue exitosa)
+            if ($stmt_update !== false && sqlsrv_rows_affected($stmt_update) > 0) {
+                $id_usuario_admin = $_SESSION['usuario_id']; // Obtenemos el ID del admin logueado
+                $descripcion_historial = "El sistema ha verificado el pago y la propuesta se marcó como PAGADA.";
+                $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)";
+                $params_historial = [$id_propuesta, $id_usuario_admin, 'SISTEMA', $descripcion_historial]; // Usamos 'SISTEMA' para indicar que fue automático
+                sqlsrv_query($conn_apps, $sql_historial, $params_historial);
+            }
+            // ======================== FIN DE LA NUEVA LÓGICA =========================
+
+            $propuestas_actualizadas++;
+            }
+        }
+
+        echo json_encode(['success' => true, 'message' => "Sincronización finalizada. Se actualizaron $propuestas_actualizadas propuestas al estado PAGADO."]);
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error en el servidor: ' . $e->getMessage()]);
+    }
+    exit;
+    break;
+
         case 'listar_admin':
             if (!$es_admin) {
                 http_response_code(403);
@@ -465,9 +575,14 @@ case 'actualizar_propuesta_admin':
             $path_parts = pathinfo($file['name']);
             $extension = $path_parts['extension'];
             $new_filename = "propuesta_" . $id_propuesta . "_" . time() . "." . $extension;
-            
-            // Define tu carpeta de subidas. ¡ASEGÚRATE DE QUE EXISTA Y TENGA PERMISOS DE ESCRITURA!
-            $upload_dir = __DIR__ . '/../../uploads/comprobantes/';
+    // ======================= INICIO DE LA CORRECCIÓN DE RUTA =======================
+    // Antes, subía dos niveles (../../), ahora solo sube uno (../).
+    // Desde 'cobranzas/api/' sube a 'cobranzas/' y luego entra a 'uploads/comprobantes/'.
+    $upload_dir = __DIR__ . '/../uploads/comprobantes/';
+    
+    // La ruta guardada en la BD también debe ser relativa a la raíz del proyecto de cobranzas.
+    $relative_path = 'uploads/comprobantes/' . $new_filename;
+    // ======================== FIN DE LA CORRECCIÓN DE RUTA =========================
             $upload_path = $upload_dir . $new_filename;
 
             if (!is_dir($upload_dir)) {
@@ -485,20 +600,30 @@ case 'actualizar_propuesta_admin':
                  throw new Exception("Error al iniciar la transacción.");
             }
 
-            try {
-                // 1. Insertar en la tabla de adjuntos
-                $sql_adjunto = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, nombre_archivo, ruta_archivo) VALUES (?, ?, ?)";
-                $params_adjunto = [$id_propuesta, $file['name'], 'uploads/comprobantes/' . $new_filename];
-                $stmt_adjunto = sqlsrv_query($conn_apps, $sql_adjunto, $params_adjunto);
-                if ($stmt_adjunto === false) throw new Exception("Error al guardar el adjunto en la BD.");
+    try {
+        // 1. Insertar en la tabla de adjuntos
+        $sql_adjunto = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, nombre_archivo, ruta_archivo) VALUES (?, ?, ?)";
+        $params_adjunto = [$id_propuesta, $file['name'], $relative_path]; // Usamos la nueva ruta relativa
+        $stmt_adjunto = sqlsrv_query($conn_apps, $sql_adjunto, $params_adjunto);
+        if ($stmt_adjunto === false) throw new Exception("Error al guardar el adjunto en la BD.");
 
-                // 2. Actualizar estado de la propuesta
-                $sql_update = "UPDATE FP_propuestas_pago SET estado = 'DOCUMENTACION_ADJUNTADA' WHERE id = ? AND cod_cliente = ?";
-                $stmt_update = sqlsrv_query($conn_apps, $sql_update, [$id_propuesta, $cod_cliente]);
-                if ($stmt_update === false) throw new Exception("Error al actualizar el estado de la propuesta.");
+        // 2. Actualizar estado de la propuesta
+        $sql_update = "UPDATE FP_propuestas_pago SET estado = 'DOCUMENTACION_ADJUNTADA', fecha_ultima_modificacion = GETDATE() WHERE id = ? AND cod_cliente = ?"; // Añadimos fecha_ultima_modificacion
+        $stmt_update = sqlsrv_query($conn_apps, $sql_update, [$id_propuesta, $cod_cliente]);
+        if ($stmt_update === false) throw new Exception("Error al actualizar el estado de la propuesta.");
 
-                sqlsrv_commit($conn_apps);
-                echo json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
+        // ======================= INICIO DE LA NUEVA LÓGICA =======================
+        // 3. Registrar el evento en el historial
+        $id_usuario_cliente = $_SESSION['usuario_id']; // Obtenemos el ID del cliente logueado
+        $descripcion_historial = "El cliente ha adjuntado el comprobante de pago.";
+        $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)";
+        $params_historial = [$id_propuesta, $id_usuario_cliente, 'CLIENTE', $descripcion_historial];
+        $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
+        if ($stmt_historial === false) throw new Exception("Error al registrar el historial de la subida.");
+        // ======================== FIN DE LA NUEVA LÓGICA =========================
+
+        sqlsrv_commit($conn_apps);
+        echo json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
 
             } catch (Exception $e) {
                 sqlsrv_rollback($conn_apps);
@@ -508,6 +633,53 @@ case 'actualizar_propuesta_admin':
                 }
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Error de base de datos: ' . $e->getMessage()]);
+            }
+            exit;
+            break;
+
+
+        // ======================= NUEVO ENDPOINT PARA ELIMINAR PROPUESTA =======================
+        case 'eliminar_propuesta':
+            if (!$es_admin) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Acción no permitida.']);
+                exit;
+            }
+
+            $id_propuesta = $_POST['id_propuesta'] ?? 0;
+
+            if ($id_propuesta == 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'ID de propuesta no válido.']);
+                exit;
+            }
+
+            $conn_apps = Database::getConnection('apps');
+
+            try {
+                // Gracias a ON DELETE CASCADE, al borrar la propuesta principal,
+                // se borrarán automáticamente los registros en:
+                // - FP_propuestas_pago_items
+                // - FP_propuestas_pago_historial
+                // - FP_propuestas_adjuntos
+                // - FP_cuotas_propuesta (si la hubiéramos usado)
+                
+                $sql_delete = "DELETE FROM FP_propuestas_pago WHERE id = ?";
+                $stmt_delete = sqlsrv_query($conn_apps, $sql_delete, [$id_propuesta]);
+
+                if ($stmt_delete === false) {
+                    throw new Exception("Error en la consulta de eliminación.");
+                }
+
+                if (sqlsrv_rows_affected($stmt_delete) > 0) {
+                    echo json_encode(['success' => true, 'message' => 'Propuesta #' . $id_propuesta . ' eliminada correctamente.']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'No se encontró la propuesta a eliminar o ya fue borrada.']);
+                }
+
+            } catch (Exception $e) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Error del servidor: ' . $e->getMessage()]);
             }
             exit;
             break;

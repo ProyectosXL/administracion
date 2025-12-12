@@ -13,9 +13,16 @@ include 'templates/layout/header.php';
             <i class="fa-solid fa-file-invoice-dollar text-primary"></i>
             Cobranzas Pendientes
         </h1>
+                <div> <!-- Contenedor para los botones -->
+            <!-- ======================= NUEVO BOTÓN ======================= -->
+            <button class="btn btn-outline-info me-2" id="btn-sincronizar-estados" title="Sincronizar Propuestas Pagadas">
+                <i class="fa-solid fa-sync fa-spin-hover"></i>
+            </button>
+            <!-- ========================================================= -->
         <button class="btn btn-outline-secondary" id="btn-abrir-parametros" data-bs-toggle="modal" data-bs-target="#parametrosModal" title="Gestionar Parámetros">
             <i class="fa-solid fa-gear fa-spin-hover"></i>
         </button>
+    </div>
     </div>
     
     <!-- Tarjetas de Resumen de Deuda (Visible por defecto) -->
@@ -110,6 +117,27 @@ include 'templates/layout/header.php';
         </div>
     </div>
 </main>
+
+<!-- ======================= NUEVO MODAL DE CONFIRMACIÓN DE ELIMINACIÓN ======================= -->
+<div class="modal fade" id="confirmDeletePropuestaModal" tabindex="-1" aria-labelledby="confirmDeletePropuestaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeletePropuestaModalLabel"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirmar Eliminación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás realmente seguro de que deseas eliminar esta propuesta de pago?</p>
+                <p class="text-danger"><strong>Esta acción es irreversible</strong> y borrará todos sus datos asociados (items, historial y adjuntos).</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btn-confirmar-delete-propuesta">Sí, Eliminar Propuesta</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ======================================================================================== -->
 
 <?php 
 include 'templates/layout/footer.php'; 
