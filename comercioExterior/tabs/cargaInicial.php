@@ -245,6 +245,7 @@ try {
                                         <select id="puertoOrigen" style="width: 283.16px;">
                                             <option disabled="disabled" selected="selected">Seleccione...</option>
                                             <option value="Shanghai">Shanghai</option>
+                                            <option value="Shekou">Shekou</option>
                                             <option value="Shenzhen">Shenzhen</option>
                                             <option value="Ningbo">Ningbo</option>
                                             <option value="Guangzhou">Guangzhou</option>

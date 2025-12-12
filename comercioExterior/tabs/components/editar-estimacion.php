@@ -37,7 +37,7 @@
                 <p class="page-subtitle" id="despacheInfo">Cargando información...</p>
             </div>
             <div class="header-actions">
-                <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php'">
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='../proyeccionCostos.php'">
                     <i class="bi bi-arrow-left"></i> Volver
                 </button>
                 <button type="button" class="btn btn-success" id="btnGuardar" onclick="guardarEstimacion()">

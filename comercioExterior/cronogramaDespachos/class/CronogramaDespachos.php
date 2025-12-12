@@ -30,7 +30,7 @@ class CronogramaDespachos {
                         WHERE TCOMP_IN_S = 'RP' AND FECHA_MOV >= GETDATE()-360 
                         GROUP BY FECHA_MOV, N_ORDEN_CO
                     ) D ON A.ORDEN_COMPRA = D.N_ORDEN_CO
-                    WHERE B.ID_MG IS NULL AND C.FECHA_INGRESO >= GETDATE()-360
+                    WHERE B.ID_MG IS NULL AND A.FECHA_MOV >= GETDATE()-360
                     ORDER BY A.FECHA_MOV DESC";
             
             $stmt = sqlsrv_query($this->cid_central, $sql);
