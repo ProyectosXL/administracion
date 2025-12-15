@@ -490,3 +490,81 @@
         justify-content: center;
     }
 }
+
+/* ===========================
+   VALIDACIÓN DE FECHAS HÁBILES
+   =========================== */
+
+/* Alerta informativa de cambio automático de fecha */
+.alerta-fecha-no-habil {
+    background: linear-gradient(135deg, #d1ecf1 0%, #e8f6f8 100%);
+    border: 1px solid #bee5eb;
+    border-left: 4px solid #17a2b8;
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.1);
+    animation: slideIn 0.3s ease-out;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.alerta-fecha-no-habil:hover {
+    background: linear-gradient(135deg, #bee5eb 0%, #d1ecf1 100%);
+    box-shadow: 0 3px 6px rgba(23, 162, 184, 0.15);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alerta-fecha-no-habil i.bi-info-circle {
+    color: #17a2b8;
+    margin-right: 8px;
+    font-size: 1.1em;
+    vertical-align: middle;
+}
+
+.alerta-fecha-no-habil strong {
+    color: #0c5460;
+    font-weight: 600;
+}
+
+.alerta-fecha-no-habil small {
+    color: #0c5460;
+    font-style: italic;
+}
+
+/* Animación de salida */
+.alerta-fecha-no-habil.fade-out {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* Responsivo */
+@media (max-width: 576px) {
+    .alerta-fecha-no-habil {
+        font-size: 0.85em;
+        padding: 10px;
+    }
+}
+

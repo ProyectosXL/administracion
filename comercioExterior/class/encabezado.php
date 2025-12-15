@@ -44,6 +44,11 @@ class Encabezado
             $values .= ", '".$datosDeCabezera['fechaArr']."'";
         }
         
+        if (isset($datosDeCabezera['fechaPago']) && !empty($datosDeCabezera['fechaPago'])) {
+            $sql .= ", FECHA_PAGO";
+            $values .= ", '".$datosDeCabezera['fechaPago']."'";
+        }
+        
         if (isset($datosDeCabezera['fechaDespAdu']) && !empty($datosDeCabezera['fechaDespAdu'])) {
             $sql .= ", FECHA_DESP_ADU";
             $values .= ", '".$datosDeCabezera['fechaDespAdu']."'";
@@ -66,6 +71,8 @@ class Encabezado
             $values .= ", '".$datosDeCabezera['facturaProveedor']."'";
         }
         
+<<<<<<< Updated upstream
+=======
         if (isset($datosDeCabezera['puertoOrigen']) && !empty($datosDeCabezera['puertoOrigen'])) {
             $sql .= ", PUERTO_ORIGEN";
             $values .= ", '".$datosDeCabezera['puertoOrigen']."'";
@@ -76,6 +83,12 @@ class Encabezado
             $values .= ", '".$datosDeCabezera['terminal']."'";
         }
         
+        if (isset($datosDeCabezera['fechaEstPago']) && !empty($datosDeCabezera['fechaEstPago'])) {
+            $sql .= ", FECHA_EST_PAGO";
+            $values .= ", '".$datosDeCabezera['fechaEstPago']."'";
+        }
+        
+>>>>>>> Stashed changes
         if (isset($datosDeCabezera['tipoCambio']) && !empty($datosDeCabezera['tipoCambio'])) {
             $sql .= ", TIPO_CAMBIO";
             $values .= ", '".$datosDeCabezera['tipoCambio']."'";
@@ -86,9 +99,20 @@ class Encabezado
             $values .= ", '".(float)($datosDeCabezera['valorFobPeso'] + 0.15)."'";
         }
         
+        if (isset($datosDeCabezera['formaPago']) && !empty($datosDeCabezera['formaPago'])) {
+            $sql .= ", FORMA_PAGO";
+            $values .= ", '".$datosDeCabezera['formaPago']."'";
+        }
+        
         if (isset($datosDeCabezera['despacho']) && !empty($datosDeCabezera['despacho'])) {
             $sql .= ", DESPACHO";
             $values .= ", '".$datosDeCabezera['despacho']."'";
+        }
+        
+        // ETA Confirmada (bit - 0 o 1)
+        if (isset($datosDeCabezera['etaConfirmada'])) {
+            $sql .= ", ETA_CONFIRMADA";
+            $values .= ", ".$datosDeCabezera['etaConfirmada'];
         }
         
         $sql .= ") " . $values . ");";
@@ -210,7 +234,7 @@ class Encabezado
             if ($row) {
                 // Convertir objetos DateTime a strings en formato DD/MM/YYYY
                 $dateFields = ['FECHA_MOV', 'FECHA_EST_EMB', 'FECHA_EMB', 'FECHA_ARR', 
-                              'FECHA_PAGO', 'FECHA_DESP_ADU'];
+                              'FECHA_PAGO', 'FECHA_DESP_ADU', 'FECHA_EST_PAGO'];
                 
                 foreach ($dateFields as $field) {
                     if (isset($row[$field]) && is_object($row[$field])) {
@@ -252,13 +276,30 @@ class Encabezado
             $updates[] = "DESPACHANTE = '".$datosDeCabezera['despachante']."'";
         }
         
-        // Campos opcionales
-        if (isset($datosDeCabezera['fechaArr']) && !empty($datosDeCabezera['fechaArr'])) {
-            $updates[] = "FECHA_ARR = '".$datosDeCabezera['fechaArr']."'";
+        // Campos opcionales - actualizar siempre si están en el array (incluso si vacíos)
+        if (isset($datosDeCabezera['fechaArr'])) {
+            if (!empty($datosDeCabezera['fechaArr'])) {
+                $updates[] = "FECHA_ARR = '".$datosDeCabezera['fechaArr']."'";
+            } else {
+                $updates[] = "FECHA_ARR = NULL";
+            }
+        }
+        
+<<<<<<< Updated upstream
+        if (isset($datosDeCabezera['fechaPago']) && !empty($datosDeCabezera['fechaPago'])) {
+            $updates[] = "FECHA_PAGO = '".$datosDeCabezera['fechaPago']."'";
         }
         
         if (isset($datosDeCabezera['fechaDespAdu']) && !empty($datosDeCabezera['fechaDespAdu'])) {
             $updates[] = "FECHA_DESP_ADU = '".$datosDeCabezera['fechaDespAdu']."'";
+=======
+        if (isset($datosDeCabezera['fechaDespAdu'])) {
+            if (!empty($datosDeCabezera['fechaDespAdu'])) {
+                $updates[] = "FECHA_DESP_ADU = '".$datosDeCabezera['fechaDespAdu']."'";
+            } else {
+                $updates[] = "FECHA_DESP_ADU = NULL";
+            }
+>>>>>>> Stashed changes
         }
         
         if (isset($datosDeCabezera['fechaEmb']) && !empty($datosDeCabezera['fechaEmb'])) {
@@ -273,6 +314,8 @@ class Encabezado
             $updates[] = "FACTURA = '".$datosDeCabezera['facturaProveedor']."'";
         }
         
+<<<<<<< Updated upstream
+=======
         if (isset($datosDeCabezera['puertoOrigen']) && !empty($datosDeCabezera['puertoOrigen'])) {
             $updates[] = "PUERTO_ORIGEN = '".$datosDeCabezera['puertoOrigen']."'";
         }
@@ -281,6 +324,15 @@ class Encabezado
             $updates[] = "TERMINAL = '".$datosDeCabezera['terminal']."'";
         }
         
+        if (isset($datosDeCabezera['fechaEstPago'])) {
+            if (!empty($datosDeCabezera['fechaEstPago'])) {
+                $updates[] = "FECHA_EST_PAGO = '".$datosDeCabezera['fechaEstPago']."'";
+            } else {
+                $updates[] = "FECHA_EST_PAGO = NULL";
+            }
+        }
+        
+>>>>>>> Stashed changes
         if (isset($datosDeCabezera['tipoCambio']) && !empty($datosDeCabezera['tipoCambio'])) {
             $updates[] = "TIPO_CAMBIO = '".$datosDeCabezera['tipoCambio']."'";
         }
@@ -289,8 +341,17 @@ class Encabezado
             $updates[] = "VALOR_FOB_PESO = '".$datosDeCabezera['valorFobPeso']."'";
         }
         
+        if (isset($datosDeCabezera['formaPago']) && !empty($datosDeCabezera['formaPago'])) {
+            $updates[] = "FORMA_PAGO = '".$datosDeCabezera['formaPago']."'";
+        }
+        
         if (isset($datosDeCabezera['despacho']) && !empty($datosDeCabezera['despacho'])) {
             $updates[] = "DESPACHO = '".$datosDeCabezera['despacho']."'";
+        }
+        
+        // ETA Confirmada (bit - 0 o 1)
+        if (isset($datosDeCabezera['etaConfirmada'])) {
+            $updates[] = "ETA_CONFIRMADA = ".$datosDeCabezera['etaConfirmada'];
         }
         
         $sql .= implode(", ", $updates);

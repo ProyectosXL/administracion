@@ -714,3 +714,131 @@ html body #infoBtn-unica.active {
     z-index: 500 !important;
     box-shadow: 0 3px 10px rgba(13, 110, 253, 0.4) !important;
 }
+
+/* ============================================
+   FECHA DE VIGENCIA INDIVIDUAL - CARGA MÚLTIPLE
+   ============================================ */
+
+/* Contenedor de fecha individual */
+.fecha-individual-container {
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+/* Badge de fecha global */
+.fecha-global-display {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.6rem;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+/* Checkbox de fecha global */
+.checkbox-fecha-global {
+    cursor: pointer;
+    width: 1.1em;
+    height: 1.1em;
+    margin-right: 0.5rem;
+}
+
+.checkbox-fecha-global:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Label del checkbox */
+.form-check-label {
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+}
+
+.form-check-label:hover {
+    color: var(--primary-color);
+}
+
+/* Input de fecha individual */
+.fecha-individual {
+    font-weight: 500;
+}
+
+.fecha-individual:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Estado de validación */
+.fecha-individual.is-invalid {
+    border-color: var(--danger-color);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.fecha-individual.is-valid {
+    border-color: var(--success-color);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fecha-individual-container.show {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Mejora visual del form-check */
+.form-check {
+    padding: 0.75rem;
+    background-color: rgba(13, 110, 253, 0.03);
+    border-radius: 6px;
+    border: 1px solid rgba(13, 110, 253, 0.1);
+    transition: all 0.2s ease;
+}
+
+.form-check:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    border-color: rgba(13, 110, 253, 0.2);
+}
+
+/* Icono dentro del label */
+.form-check-label i {
+    color: var(--primary-color);
+}
+
+/* Form text personalizado */
+.fecha-individual-container .form-text {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.fecha-individual-container .form-text i {
+    color: var(--info-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .fecha-individual-container .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    .fecha-global-display {
+        display: block;
+        margin-top: 0.25rem;
+    }
+}

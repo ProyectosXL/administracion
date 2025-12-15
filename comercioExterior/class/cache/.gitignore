@@ -1,0 +1,3 @@
+# Cache de feriados argentinos
+# Los archivos JSON en este directorio se regeneran automáticamente cada 30 días
+feriados_ar_*.json
