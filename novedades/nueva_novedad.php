@@ -993,6 +993,56 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
                     </div>
                 </div>
 
+                <!-- 55. A prueba -->
+                <div class="form-section campo-dinamico" id="config-a-prueba">
+                    <h5>
+                        <i class="fas fa-user-clock me-2"></i>
+                        Configuración: A prueba
+                    </h5>
+                    <div class="row">
+                        <!-- Puesto Actual -->
+                        <div class="col-md-12 mb-3">
+                            <div class="alert alert-info" id="puesto-actual-info-a-prueba" style="display: none;">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Puesto actual:</strong> <span id="puesto-actual-texto-a-prueba">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="puesto_a_prueba" class="form-label">
+                                Puesto de A prueba <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="puesto_a_prueba" name="puesto">
+                                <option value="">Buscar y seleccionar puesto...</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                El puesto es obligatorio
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="fecha_vigencia_a_prueba" class="form-label">
+                                Fecha de inicio <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_a_prueba" name="fecha_vigencia">
+                            <div class="invalid-feedback">
+                                La fecha de inicio es obligatoria
+                            </div>
+                        </div>
+                        
+                        <!-- Fecha de fin - siempre requerida para a prueba -->
+                        <div class="col-md-3" id="campo_fecha_fin_a_prueba">
+                            <label for="fecha_vigencia_hasta_a_prueba" class="form-label">
+                                Fecha de fin <span class="required">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_vigencia_hasta_a_prueba" name="fecha_vigencia_hasta" required>
+                            <div class="invalid-feedback">
+                                La fecha de fin es obligatoria para a prueba
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 54. Aumento Salarial -->
                 <div class="form-section campo-dinamico" id="config-aumento-salarial">
                     <h5>
@@ -1611,6 +1661,57 @@ $periodoInfo = PeriodoHelper::getPeriodoActual();
 
             // Manejar limpieza de puesto de reemplazo
             $('#puesto_reemplazo').on('select2:clear', function (e) {
+                $(this).removeClass('is-valid is-invalid');
+            });
+
+            // Configurar Select2 para búsqueda de puestos de a prueba
+            $('#puesto_a_prueba').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Buscar puesto para a prueba...',
+                allowClear: true,
+                ajax: {
+                    url: 'controller/novedades_controller.php?action=buscar_puestos_select2',
+                    dataType: 'json',
+                    delay: 300,
+                    data: function (params) {
+                        return {
+                            q: params.term,
+                            limit: 20
+                        };
+                    },
+                    processResults: function (data) {
+                        if (data.success) {
+                            return {
+                                results: data.data
+                            };
+                        } else {
+                            console.error('Error en búsqueda de puestos de a prueba:', data.message);
+                            return {
+                                results: []
+                            };
+                        }
+                    },
+                    cache: true
+                },
+                minimumInputLength: 0,
+                language: {
+                    noResults: function () {
+                        return "No se encontraron puestos";
+                    },
+                    searching: function () {
+                        return "Buscando puestos...";
+                    }
+                }
+            });
+
+            // Manejar selección de puesto de a prueba
+            $('#puesto_a_prueba').on('select2:select', function (e) {
+                console.log('🎯 Puesto de a prueba seleccionado:', e.params.data);
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            });
+
+            // Manejar limpieza de puesto de a prueba
+            $('#puesto_a_prueba').on('select2:clear', function (e) {
                 $(this).removeClass('is-valid is-invalid');
             });
 

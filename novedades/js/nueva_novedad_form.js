@@ -152,6 +152,11 @@ const tiposNovedadConfigActualizada = {
         config: 'config-aumento-salarial',
         campos: ['tipo_aumento', 'porcentaje_aumento', 'monto_aumento', 'fecha_vigencia_aumento'],
         validaciones: ['tipo_aumento', 'fecha_vigencia']
+    },
+    55: { // A prueba
+        config: 'config-a-prueba',
+        campos: ['puesto_a_prueba', 'fecha_vigencia_a_prueba', 'fecha_vigencia_hasta_a_prueba'],
+        validaciones: ['puesto', 'fecha_vigencia', 'fecha_vigencia_hasta']
     }
 };
 
@@ -819,6 +824,27 @@ function validarConfiguracionTipoActualizado(tipoNovedad) {
             }
             break;
 
+        case 55: // A prueba - siempre temporario
+            const puestoAPrueba = document.getElementById('puesto_a_prueba');
+            const fechaVigenciaAPrueba = document.getElementById('fecha_vigencia_a_prueba');
+            const fechaFinAPrueba = document.getElementById('fecha_vigencia_hasta_a_prueba');
+
+            if (!puestoAPrueba || !puestoAPrueba.value) {
+                errores.push('El puesto de a prueba es obligatorio');
+                valido = false;
+            }
+
+            if (!fechaVigenciaAPrueba || !fechaVigenciaAPrueba.value) {
+                errores.push('La fecha de vigencia de a prueba es obligatoria');
+                valido = false;
+            }
+
+            if (!fechaFinAPrueba || !fechaFinAPrueba.value) {
+                errores.push('La fecha de fin de a prueba es obligatoria');
+                valido = false;
+            }
+            break;
+
         case 54: // Aumento Salarial
             const fechaVigenciaAumento = document.getElementById('fecha_vigencia_aumento');
             const tipoAumentoPorcentaje = document.getElementById('tipo_aumento_porcentaje');
@@ -1106,6 +1132,20 @@ async function recopilarDatosFormularioActualizado(tipoNovedad) {
             datos.fecha_vigencia_hasta = document.getElementById('fecha_vigencia_hasta_reemplazo').value;
             
             console.log('🔍 REEMPLAZO - Datos recopilados:', {
+                puesto: datos.puesto,
+                fecha_vigencia: datos.fecha_vigencia,
+                tipo_reemplazo: datos.tipo_reemplazo,
+                fecha_vigencia_hasta: datos.fecha_vigencia_hasta
+            });
+            break;
+
+        case 55: // A prueba - siempre temporario
+            datos.puesto = document.getElementById('puesto_a_prueba').value;
+            datos.fecha_vigencia = document.getElementById('fecha_vigencia_a_prueba').value;
+            datos.tipo_reemplazo = 'temporario';
+            datos.fecha_vigencia_hasta = document.getElementById('fecha_vigencia_hasta_a_prueba').value;
+            
+            console.log('🔍 A PRUEBA - Datos recopilados:', {
                 puesto: datos.puesto,
                 fecha_vigencia: datos.fecha_vigencia,
                 tipo_reemplazo: datos.tipo_reemplazo,
@@ -2826,6 +2866,8 @@ function generarConfiguracionEspecificaMultiple(tipoNovedad, novedadId) {
             return generarConfigPremiosAjusteGeneralMultiple(novedadId);
         case 53: // Reemplazo
             return generarConfigReemplazoMultiple(novedadId);
+        case 55: // A prueba
+            return generarConfigAPruebaMultiple(novedadId);
         case 54: // Aumento Salarial
             return generarConfigAumentoSalarialMultiple(novedadId);
         default:
@@ -3344,6 +3386,35 @@ function generarConfigReemplazoMultiple(novedadId) {
 }
 
 /**
+ * Generar configuración para A prueba en modo múltiple
+ */
+function generarConfigAPruebaMultiple(novedadId) {
+    return `
+        <div class="row">
+            <div class="col-md-6">
+                <label for="puesto_a_prueba_${novedadId}" class="form-label">
+                    Puesto de A prueba <span class="required">*</span>
+                </label>
+                <select class="form-select" id="puesto_a_prueba_${novedadId}" name="puesto_a_prueba_${novedadId}" required>
+                    <option value="">Seleccione puesto de a prueba...</option>
+                </select>
+                <div class="invalid-feedback">El puesto de a prueba es obligatorio</div>
+            </div>
+            
+            <!-- Fecha de fin - siempre requerida -->
+            <div class="col-md-6" id="campo_fecha_fin_a_prueba_${novedadId}">
+                <label for="fecha_vigencia_hasta_a_prueba_${novedadId}" class="form-label">
+                    Fecha de fin <span class="required">*</span>
+                </label>
+                <input type="date" class="form-control" id="fecha_vigencia_hasta_a_prueba_${novedadId}" 
+                       name="fecha_vigencia_hasta_a_prueba_${novedadId}" required>
+                <div class="invalid-feedback">La fecha de fin es obligatoria para a prueba</div>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * Generar configuración para Aumento Salarial en modo múltiple
  */
 function generarConfigAumentoSalarialMultiple(novedadId) {
@@ -3445,6 +3516,9 @@ function aplicarConfiguracionesEspecificasMultiple(tipoNovedad, novedadId) {
             break;
         case 53: // Reemplazo
             cargarPuestosEnSelectMultiple(`puesto_reemplazo_${novedadId}`);
+            break;
+        case 55: // A prueba
+            cargarPuestosEnSelectMultiple(`puesto_a_prueba_${novedadId}`);
             break;
         case 54: // Aumento Salarial
             // No necesita configuración especial inicial
@@ -3942,6 +4016,11 @@ function agregarCamposEspecificosNovedad(novedad, tipoNovedad, novedadId) {
             novedad.puesto = document.getElementById(`puesto_reemplazo_${novedadId}`)?.value;
             novedad.tipo_reemplazo = 'temporario';
             novedad.fecha_vigencia_hasta = document.getElementById(`fecha_vigencia_hasta_reemplazo_${novedadId}`)?.value;
+            break;
+        case 55: // A prueba - siempre temporario
+            novedad.puesto = document.getElementById(`puesto_a_prueba_${novedadId}`)?.value;
+            novedad.tipo_reemplazo = 'temporario';
+            novedad.fecha_vigencia_hasta = document.getElementById(`fecha_vigencia_hasta_a_prueba_${novedadId}`)?.value;
             break;
         case 54: // Aumento Salarial
             novedad.tipo_aumento = document.querySelector(`input[name="tipo_aumento_${novedadId}"]:checked`)?.value;

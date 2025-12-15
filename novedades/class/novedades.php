@@ -2749,6 +2749,13 @@ class Novedades {
                 $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
                 break;
 
+            case 55: // A prueba - siempre temporario
+                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'A prueba';
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
+                break;
+
             case 54: // Aumento Salarial
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['puesto'] = 'Aumento Salarial';
@@ -3007,6 +3014,13 @@ class Novedades {
 
             case 53: // Reemplazo - siempre temporario
                 $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'Reemplazo';
+                $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
+                $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
+                $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');
+                break;
+
+            case 55: // A prueba - siempre temporario
+                $datosAdaptados['puesto'] = isset($datos['puesto']) ? $datos['puesto'] : 'A prueba';
                 $datosAdaptados['fecha_vigencia'] = $this->formatearFechaParaSQL($datos['fecha_vigencia'] ?? '');
                 $datosAdaptados['tipo_nuevo_puesto'] = 'temporario';
                 $datosAdaptados['fecha_vigencia_hasta'] = $this->formatearFechaParaSQL($datos['fecha_vigencia_hasta'] ?? '');

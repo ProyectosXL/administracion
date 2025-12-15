@@ -134,6 +134,11 @@ function mostrarUltimasNovedades(novedades) {
                 tipoDetalle = `<br><small class="text-info"><i class="fas fa-clock text-warning"></i> ${puestoReemplazo}</small>`;
                 break;
 
+            case 55: // A prueba - siempre temporario
+                const puestoAPrueba = novedad.puesto || 'No especificado';
+                tipoDetalle = `<br><small class="text-info"><i class="fas fa-user-clock text-warning"></i> ${puestoAPrueba}</small>`;
+                break;
+
             case 54: // Aumento Salarial
                 // Detectar si es porcentaje o monto
                 const tienePorcentaje = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
@@ -734,6 +739,53 @@ function mostrarModalDetalle(novedad) {
                                     <div class="alert alert-warning">
                                         <i class="fas fa-calendar-times me-2"></i>
                                         <strong>Fecha de Finalización:</strong> ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(fechaFinReemplazo) : fechaFinReemplazo}
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
+        case 55: // A prueba - siempre temporario
+            // IMPORTANTE: usar tipo_nuevo_puesto no tipo_reemplazo
+            
+            // Manejar fecha_vigencia_hasta como objeto DateTime si es necesario
+            let fechaFinAPrueba = '';
+            if (novedad.fecha_vigencia_hasta) {
+                if (typeof novedad.fecha_vigencia_hasta === 'object' && novedad.fecha_vigencia_hasta.date) {
+                    fechaFinAPrueba = novedad.fecha_vigencia_hasta.date.split(' ')[0];
+                } else if (typeof novedad.fecha_vigencia_hasta === 'string') {
+                    fechaFinAPrueba = novedad.fecha_vigencia_hasta.split(' ')[0];
+                }
+            }
+            
+            modalHtml += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header text-white" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                            <h6 class="mb-0"><i class="fas fa-user-clock me-2"></i>Detalles de prueba</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Puesto de prueba:</strong><br>
+                                    <span class="badge" style="background: #fed6e3; color: #333;">${novedad.puesto || 'No especificado'}</span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-6">
+                                    <strong>Fecha de Inicio:</strong><br>
+                                    ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(novedad.fecha_vigencia) : novedad.fecha_vigencia}
+                                </div>
+                                ` : ''}
+                            </div>
+                            ${fechaFinAPrueba ? `
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-calendar-check me-2"></i>
+                                        <strong>Fecha de Finalización:</strong> ${NovedadesApp.formatearFecha ? NovedadesApp.formatearFecha(fechaFinAPrueba) : fechaFinAPrueba}
                                     </div>
                                 </div>
                             </div>

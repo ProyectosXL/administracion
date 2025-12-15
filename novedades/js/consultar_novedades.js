@@ -1258,6 +1258,57 @@ function mostrarModalDetalleCompleto(novedad) {
                 </div>`;
             break;
 
+        case 55: // A prueba - siempre temporario
+            // A prueba: Similar a Reemplazo
+            let puestoAPruebaDetalle = '';
+            
+            // PRIORITARIO: Usar el campo puesto directo si existe
+            if (novedad.puesto && novedad.puesto !== 'Cambio centro de costos' && novedad.puesto !== 'Ajuste Salario' && novedad.puesto !== 'Premio') {
+                puestoAPruebaDetalle = novedad.puesto;
+            } else if (novedad.observaciones) {
+                // Solo como fallback: extraer de observaciones si no hay puesto directo
+                let match = novedad.observaciones.match(/A prueba:\s*([^-]*?)\s*(?:\([^)]*?\))?(?:\s+hasta\s+\d{2}\/\d{2}\/\d{4})?(?:\s*-|$)/);
+                if (match) {
+                    puestoAPruebaDetalle = match[1].trim();
+                } else {
+                    // Buscar con etiquetas HTML
+                    match = novedad.observaciones.match(/A prueba:\s*<[^>]*>([^<]+)<[^>]*>/);
+                    if (match) {
+                        puestoAPruebaDetalle = match[1].trim();
+                    }
+                }
+            }
+            
+            html += `
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-user-clock me-2"></i>Detalles de prueba</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Puesto de prueba:</strong><br>
+                                    <span class="badge bg-info">${puestoAPruebaDetalle || 'No especificado'}</span>
+                                </div>
+                                ${novedad.fecha_vigencia ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Inicio:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia)}
+                                </div>
+                                ` : ''}
+                                ${novedad.fecha_vigencia_hasta ? `
+                                <div class="col-md-4">
+                                    <strong>Fecha de Fin:</strong><br>
+                                    ${NovedadesApp.formatearFecha(novedad.fecha_vigencia_hasta)}
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            break;
+
         case 54: // Aumento Salarial
             // Detectar tipo de aumento basándose en qué campo tiene valor
             const tienePorcentaje = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
@@ -2416,6 +2467,20 @@ async function imprimirNovedad(id) {
                 </div>`;
             break;
 
+        case 55: // A prueba - siempre temporario
+            const fechaFinAPruebaFormateada = novedad.fecha_vigencia_hasta || '';
+            html += `
+                <div class="section">
+                    <h2 class="section-title">Detalles de prueba</h2>
+                    <table>
+                        <tr><th>Puesto de prueba</th><td>${novedad.puesto || 'No especificado'}</td></tr>
+                        ${novedad.fecha_vigencia ? `<tr><th>Fecha de Inicio</th><td>${novedad.fecha_vigencia}</td></tr>` : ''}
+                        ${fechaFinAPruebaFormateada ? `<tr><th>Fecha de Finalización</th><td>${fechaFinAPruebaFormateada}</td></tr>` : ''}
+                    </table>
+                    ${fechaFinAPruebaFormateada ? `<div class="alert-box">El empleado finalizará el período de prueba el ${fechaFinAPruebaFormateada}.</div>` : ''}
+                </div>`;
+            break;
+
         case 54: // Aumento Salarial
             const tienePorcentaje = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
             const tieneMonto = novedad.valor_numerico && parseFloat(novedad.valor_numerico) > 0;
@@ -2929,6 +2994,11 @@ async function cargarDatosFormularioEdicion(novedad) {
             await cargarPuestosReemplazoFormularioEdicion(novedad);
         }
         
+        // Para a prueba, cargar lista de puestos
+        if (tipo === 55) {
+            await cargarPuestosAPruebaFormularioEdicion(novedad);
+        }
+        
     } catch (error) {
         console.error('Error cargando datos del formulario:', error);
     }
@@ -3375,6 +3445,62 @@ function generarCamposDinamicosEdicion(novedad) {
             `;
             break;
 
+        case 55: // A prueba - siempre temporario
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-puesto-a-prueba" class="form-label">Puesto de prueba <span class="text-danger">*</span></label>
+                    <select class="form-select" id="edit-puesto-a-prueba" required>
+                        <option value="">Seleccionar puesto...</option>
+                        <option value="${novedad.puesto || ''}" selected>${novedad.puesto || 'Puesto actual'}</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="edit-fecha-vigencia-a-prueba" class="form-label">Fecha de Inicio <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="edit-fecha-vigencia-a-prueba" 
+                        value="${novedad.fecha_vigencia || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
+                </div>
+
+                <div class="col-md-3" id="edit-campo-fecha-fin-a-prueba">
+                    <label for="edit-fecha-hasta-a-prueba" class="form-label">Fecha de Fin <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="edit-fecha-hasta-a-prueba" 
+                        value="${novedad.fecha_vigencia_hasta || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
+                </div>
+            `;
+            break;
+
+        case 55: // A prueba - siempre temporario
+            campos += `
+                <div class="col-md-6">
+                    <label for="edit-puesto-a-prueba" class="form-label">Puesto de prueba <span class="text-danger">*</span></label>
+                    <select class="form-select" id="edit-puesto-a-prueba" required>
+                        <option value="">Seleccionar puesto...</option>
+                        <option value="${novedad.puesto || ''}" selected>${novedad.puesto || 'Puesto actual'}</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="edit-fecha-vigencia-a-prueba" class="form-label">Fecha de Inicio <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="edit-fecha-vigencia-a-prueba" 
+                        value="${novedad.fecha_vigencia || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
+                </div>
+
+                <div class="col-md-3" id="edit-campo-fecha-fin-a-prueba">
+                    <label for="edit-fecha-hasta-a-prueba" class="form-label">Fecha de Fin <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="edit-fecha-hasta-a-prueba" 
+                        value="${novedad.fecha_vigencia_hasta || ''}" 
+                        placeholder="dd/mm/aaaa" required>
+                    <small class="text-muted">Formato: dd/mm/aaaa</small>
+                </div>
+            `;
+            break;
+
         case 54: // Aumento Salarial
             // Detectar tipo de aumento basándose en qué campo tiene valor
             const tienePorcentajeEdit = novedad.porcentaje_1 && parseFloat(novedad.porcentaje_1) > 0;
@@ -3717,6 +3843,29 @@ async function guardarEdicionNovedad() {
                 if (fechaFinReemplazo && fechaFinReemplazo.value) {
                     datos.fecha_vigencia_hasta = convertirFechaParaBackend(fechaFinReemplazo.value);
                     console.log(`📅 Fecha de fin de reemplazo capturada:`, fechaFinReemplazo.value, '→', datos.fecha_vigencia_hasta);
+                }
+                break;
+
+            case 55: // A prueba
+                const puestoAPrueba = document.getElementById('edit-puesto-a-prueba');
+                if (puestoAPrueba && puestoAPrueba.value) {
+                    datos.puesto = puestoAPrueba.value;
+                    console.log(`👔 Puesto de prueba capturado:`, puestoAPrueba.value);
+                }
+                
+                // IMPORTANTE: Capturar fecha de inicio de vigencia
+                const fechaVigenciaAPrueba = document.getElementById('edit-fecha-vigencia-a-prueba');
+                if (fechaVigenciaAPrueba && fechaVigenciaAPrueba.value) {
+                    datos.fecha_vigencia = convertirFechaParaBackend(fechaVigenciaAPrueba.value);
+                    console.log(`📅 Fecha de inicio de a prueba capturada:`, fechaVigenciaAPrueba.value, '→', datos.fecha_vigencia);
+                }
+                
+                // Siempre temporario
+                datos.tipo_reemplazo = 'temporario';
+                const fechaFinAPrueba = document.getElementById('edit-fecha-hasta-a-prueba');
+                if (fechaFinAPrueba && fechaFinAPrueba.value) {
+                    datos.fecha_vigencia_hasta = convertirFechaParaBackend(fechaFinAPrueba.value);
+                    console.log(`📅 Fecha de fin de a prueba capturada:`, fechaFinAPrueba.value, '→', datos.fecha_vigencia_hasta);
                 }
                 break;
 
@@ -4101,6 +4250,43 @@ async function cargarPuestosReemplazoFormularioEdicion(novedad) {
         
     } catch (error) {
         console.error('Error cargando puestos para reemplazo:', error);
+    }
+}
+
+/**
+ * Cargar puestos en el formulario de edición para A prueba
+ */
+async function cargarPuestosAPruebaFormularioEdicion(novedad) {
+    try {
+        const puestos = await NovedadesApp.request('get_puestos');
+        const select = document.getElementById('edit-puesto-a-prueba');
+        
+        if (!select) {
+            console.error('Select edit-puesto-a-prueba no encontrado');
+            return;
+        }
+        
+        // Limpiar opciones actuales
+        select.innerHTML = '<option value="">Seleccionar puesto...</option>';
+        
+        // Agregar puestos
+        puestos.forEach(puesto => {
+            const option = document.createElement('option');
+            option.value = puesto.nombre_puesto;
+            option.textContent = puesto.nombre_puesto;
+            
+            // Seleccionar si coincide con el puesto actual
+            if (novedad.puesto && puesto.nombre_puesto === novedad.puesto) {
+                option.selected = true;
+            }
+            
+            select.appendChild(option);
+        });
+        
+        console.log('👔 Puestos cargados para a prueba, seleccionado:', novedad.puesto);
+        
+    } catch (error) {
+        console.error('Error cargando puestos para a prueba:', error);
     }
 }
 
