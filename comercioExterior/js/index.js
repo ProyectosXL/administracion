@@ -1,10 +1,56 @@
 /**
  * index.js - Script principal para el sistema de comercio exterior
- * Maneja el toggle de entorno (Argentina/Uruguay) y la navegación de pestañas
+ * Maneja el toggle de entorno (Argentina/Uruguay), navegación de pestañas y sidebar contraíble
  */
 
 $(document).ready(function() {
     console.log('Sistema de Comercio Exterior iniciado');
+    
+    // Debug inicial
+    console.log('=== DEBUG INICIAL ===');
+    console.log('Sidebar encontrado:', $('#sidebar').length);
+    console.log('Main content encontrado:', $('.main-content').length);
+    console.log('Tab content encontrado:', $('#mainTabsContent').length);
+    console.log('Tab panes encontrados:', $('.tab-pane').length);
+    console.log('Tab pane activo:', $('.tab-pane.active').length);
+    console.log('Iframes encontrados:', $('.content-iframe').length);
+    console.log('===================');
+
+    /**
+     * MANEJO DEL SIDEBAR CONTRAÍBLE
+     */
+    $('#sidebarToggle').on('click', function() {
+        const sidebar = $('#sidebar');
+        sidebar.toggleClass('collapsed');
+        
+        // Guardar preferencia en localStorage
+        const isCollapsed = sidebar.hasClass('collapsed');
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+        
+        // Actualizar ícono del botón
+        const icon = $(this).find('i');
+        if (isCollapsed) {
+            icon.removeClass('bi-list').addClass('bi-chevron-right');
+        } else {
+            icon.removeClass('bi-chevron-right').addClass('bi-list');
+        }
+    });
+
+    // Restaurar estado del sidebar desde localStorage
+    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (sidebarCollapsed) {
+        $('#sidebar').addClass('collapsed');
+        $('#sidebarToggle i').removeClass('bi-list').addClass('bi-chevron-right');
+    }
+
+    // En móvil, hacer que el sidebar se expanda/colapse con un toque
+    if (window.innerWidth <= 768) {
+        $('#sidebar').on('mouseenter', function() {
+            $(this).addClass('expanded');
+        }).on('mouseleave', function() {
+            $(this).removeClass('expanded');
+        });
+    }
 
     /**
      * MANEJO DEL TOGGLE DE ENTORNO (Argentina/Uruguay)
@@ -38,7 +84,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     // Actualizar texto del entorno
-                    $('#environment-text').html(`Entorno: <strong>${entornoCorto}</strong>`);
+                    $('#environment-text').html(`<strong>${entornoCorto}</strong>`);
 
                     // Intercambiar las banderas
                     const flagLeft = $('#flag-left');
@@ -88,6 +134,18 @@ $(document).ready(function() {
     /**
      * MANEJO DE PESTAÑAS
      */
+    
+    // Inicializar tabs de Bootstrap
+    const triggerTabList = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    triggerTabList.forEach(triggerEl => {
+        const tabTrigger = new bootstrap.Tab(triggerEl);
+        
+        triggerEl.addEventListener('click', event => {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
+    
     $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
         const target = $(e.target).data('bs-target');
         console.log('Pestaña cambiada a:', target);
@@ -98,6 +156,10 @@ $(document).ready(function() {
             iframe.data('loaded', true);
         }
     });
+    
+    // Debug: Verificar que las tabs estén correctas
+    console.log('Tabs encontradas:', triggerTabList.length);
+    console.log('Tab activa inicial:', document.querySelector('.tab-pane.active')?.id);
 
     /**
      * Recargar todos los iframes
@@ -140,25 +202,49 @@ $(document).ready(function() {
     });
 
     /**
+     * INICIALIZAR TOOLTIPS DE BOOTSTRAP
+     */
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover'
+        });
+    });
+
+    /**
      * ATAJOS DE TECLADO
      */
     $(document).on('keydown', function(e) {
-        // Alt + 1, 2, 3 para cambiar de pestaña
+        // Alt + 1, 2, 3, 4, 5 para cambiar de pestaña
         if (e.altKey) {
             switch(e.key) {
                 case '1':
                     e.preventDefault();
-                    $('#costos-tab').tab('show');
+                    $('#gestion-tab').tab('show');
                     break;
                 case '2':
                     e.preventDefault();
-                    $('#dashboard-tab').tab('show');
+                    $('#pci-tab').tab('show');
                     break;
                 case '3':
                     e.preventDefault();
-                    $('#carga-tab').tab('show');
+                    $('#cronograma-tab').tab('show');
+                    break;
+                case '4':
+                    e.preventDefault();
+                    $('#costos-tab').tab('show');
+                    break;
+                case '5':
+                    e.preventDefault();
+                    $('#dashboard-tab').tab('show');
                     break;
             }
+        }
+        
+        // Ctrl + B para toggle del sidebar
+        if (e.ctrlKey && e.key === 'b') {
+            e.preventDefault();
+            $('#sidebarToggle').click();
         }
     });
 
@@ -171,7 +257,10 @@ $(document).ready(function() {
 
     // Mostrar tooltip con atajos de teclado
     console.log('%cAtajos de teclado disponibles:', 'font-weight: bold; color: #7066e0');
-    console.log('Alt + 1: Costos de Nacionalización');
-    console.log('Alt + 2: Dashboard');
-    console.log('Alt + 3: Nuevo Despacho');
+    console.log('Alt + 1: Gestión de Despachos');
+    console.log('Alt + 2: Proyección de Costos');
+    console.log('Alt + 3: Cronograma de Despachos');
+    console.log('Alt + 4: Costos de Nacionalización');
+    console.log('Alt + 5: Dashboard');
+    console.log('Ctrl + B: Toggle Sidebar');
 });

@@ -15,6 +15,9 @@ if (session_status() == PHP_SESSION_NONE) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
@@ -23,6 +26,7 @@ if (session_status() == PHP_SESSION_NONE) {
     
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/cronograma.css">
+    <link rel="stylesheet" href="css/ayuda-modal.css">
 </head>
 <body>
     <div class="cronograma-container">
@@ -42,9 +46,9 @@ if (session_status() == PHP_SESSION_NONE) {
                     <option value="desp">🚚 Despacho Aduana</option>
                     <option value="rec">📦 Recepción</option>
                 </select>
-                <a href="components/ayuda.php" target="_blank" class="btn-help" title="Guía de ayuda: Estados, flujo y funcionalidades">
+                <button type="button" class="btn-help" data-bs-toggle="modal" data-bs-target="#ayudaModal" title="Guía de ayuda: Estados, flujo y funcionalidades">
                     <i class="bi bi-info-circle"></i> Ayuda
-                </a>
+                </button>
                 <div class="btn-view-toggle">
                     <button class="btn-view active" data-view="calendario">
                         <i class="bi bi-calendar3"></i> Calendario
@@ -61,6 +65,12 @@ if (session_status() == PHP_SESSION_NONE) {
             <!-- Se renderizará dinámicamente con JavaScript -->
         </div>
     </div>
+    
+    <!-- Modal de Ayuda -->
+    <?php include 'components/ayuda-modal.php'; ?>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- JavaScript -->
     <script src="js/cronograma.js"></script>

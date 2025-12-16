@@ -45,104 +45,134 @@ $imageOff = ($checkedValue === 'central') ? 'css/UY.png' : 'css/bandera_con_sol_
 
 <body>
     <div class="main-wrapper">
-        <!-- Header -->
-        <div class="main-header">
-            <div class="header-content">
-                <div class="header-title-section">
-                    <h1 class="main-title">
-                        <i class="bi bi-globe-americas"></i>
-                        Comercio Exterior
-                    </h1>
-                    <p class="main-subtitle">Sistema de Gestión de Importaciones</p>
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button class="sidebar-toggle" id="sidebarToggle" title="Contraer/Expandir">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <div class="sidebar-brand">
+                    <i class="bi bi-globe-americas"></i>
+                    <div class="brand-text">
+                        <h1 class="brand-title">Comercio Exterior</h1>
+                        <p class="brand-subtitle">Sistema de Gestión</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column" id="mainTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="gestion-tab" data-bs-toggle="tab" data-bs-target="#gestion" 
+                                type="button" role="tab" aria-controls="gestion" aria-selected="true"
+                                title="Gestión de Despachos (Alt + 1)" data-bs-toggle="tooltip" data-bs-placement="right">
+                            <i class="bi bi-list-check"></i>
+                            <span class="nav-text">Gestión de Despachos</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pci-tab" data-bs-toggle="tab" data-bs-target="#pci" 
+                                type="button" role="tab" aria-controls="pci" aria-selected="false"
+                                title="Proyección de Costos (Alt + 2)" data-bs-toggle="tooltip" data-bs-placement="right">
+                            <i class="bi bi-calculator-fill"></i>
+                            <span class="nav-text">Proyección de Costos</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="cronograma-tab" data-bs-toggle="tab" data-bs-target="#cronograma" 
+                                type="button" role="tab" aria-controls="cronograma" aria-selected="false"
+                                title="Cronograma Despachos (Alt + 3)" data-bs-toggle="tooltip" data-bs-placement="right">
+                            <i class="bi bi-calendar-event"></i>
+                            <span class="nav-text">Cronograma Despachos</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="costos-tab" data-bs-toggle="tab" data-bs-target="#costos" 
+                                type="button" role="tab" aria-controls="costos" aria-selected="false"
+                                title="Costos de Nacionalización (Alt + 4)" data-bs-toggle="tooltip" data-bs-placement="right">
+                            <i class="bi bi-calculator"></i>
+                            <span class="nav-text">Costos de Nacionalización</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" 
+                                type="button" role="tab" aria-controls="dashboard" aria-selected="false"
+                                title="Dashboard (Alt + 5)" data-bs-toggle="tooltip" data-bs-placement="right">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </button>
+                    </li>
+
+                </ul>
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <div class="environment-info">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    <span id="environment-text" class="nav-text">
+                        <strong><?php echo ($checkedValue === 'central') ? 'ARG' : 'UY'; ?></strong>
+                    </span>
                 </div>
                 
-                <div class="header-right-section">
-                    <div class="environment-info">
-                        <i class="bi bi-geo-alt-fill"></i>
-                        <span id="environment-text">Entorno: <strong><?php echo ($checkedValue === 'central') ? 'ARG' : 'UY'; ?></strong></span>
+                <div class="country-toggle">
+                    <img src="<?php echo $imageOff; ?>" class="flag" id="flag-left" alt="<?php echo $dataOffValue; ?>">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="country-toggle" <?php echo $checked; ?> 
+                               data-on="<?php echo $dataOnValue; ?>" 
+                               data-off="<?php echo $dataOffValue; ?>">
+                        <span class="slider"></span>
+                    </label>
+                    <img src="<?php echo $imageOn; ?>" class="flag" id="flag-right" alt="<?php echo $dataOnValue; ?>">
+                </div>
+                
+                <a href="parametros/index.php" class="btn-parametros" title="Parámetros de Importación">
+                    <i class="bi bi-gear-fill"></i>
+                    <span class="nav-text">Parámetros</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Tab Content -->
+            <div class="tab-content" id="mainTabsContent">
+                <!-- Gestión de Despachos Tab -->
+                <div class="tab-pane fade show active" id="gestion" role="tabpanel" aria-labelledby="gestion-tab">
+                    <div class="tab-content-wrapper">
+                        <iframe src="tabs/gestionDespachos.php" class="content-iframe" id="gestionFrame"></iframe>
                     </div>
-                    
-                    <!-- Botón de Parámetros -->
-                    <a href="parametros/index.php" class="btn-parametros" title="Parámetros de Importación">
-                        <i class="bi bi-gear-fill"></i>
-                    </a>
-                    
-                    <div class="country-toggle">
-                        <img src="<?php echo $imageOff; ?>" class="flag" id="flag-left" alt="<?php echo $dataOffValue; ?>">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="country-toggle" <?php echo $checked; ?> 
-                                   data-on="<?php echo $dataOnValue; ?>" 
-                                   data-off="<?php echo $dataOffValue; ?>">
-                            <span class="slider"></span>
-                        </label>
-                        <img src="<?php echo $imageOn; ?>" class="flag" id="flag-right" alt="<?php echo $dataOnValue; ?>">
+                </div>
+
+                
+                <!-- Estimación de Costos Tab -->
+                <div class="tab-pane fade" id="pci" role="tabpanel" aria-labelledby="pci-tab">
+                    <div class="tab-content-wrapper">
+                        <iframe src="tabs/proyeccionCostos.php" class="content-iframe" id="pciFrame"></iframe>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Navigation Tabs -->
-        <div class="tabs-container">
-            <ul class="nav nav-tabs custom-tabs" id="mainTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="gestion-tab" data-bs-toggle="tab" data-bs-target="#gestion" 
-                            type="button" role="tab" aria-controls="gestion" aria-selected="true">
-                        <i class="bi bi-list-check"></i>
-                        <span>Gestión de Despachos</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="pci-tab" data-bs-toggle="tab" data-bs-target="#pci" 
-                            type="button" role="tab" aria-controls="pci" aria-selected="false">
-                        <i class="bi bi-calculator-fill"></i>
-                        <span>Proyección de Costos</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="costos-tab" data-bs-toggle="tab" data-bs-target="#costos" 
-                            type="button" role="tab" aria-controls="costos" aria-selected="false">
-                        <i class="bi bi-calculator"></i>
-                        <span>Costos de Nacionalización</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" 
-                            type="button" role="tab" aria-controls="dashboard" aria-selected="false">
-                        <i class="bi bi-graph-up-arrow"></i>
-                        <span>Dashboard</span>
-                    </button>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Tab Content -->
-        <div class="tab-content" id="mainTabsContent">
-            <!-- Gestión de Despachos Tab -->
-            <div class="tab-pane fade show active" id="gestion" role="tabpanel" aria-labelledby="gestion-tab">
-                <div class="tab-content-wrapper">
-                    <iframe src="tabs/gestionDespachos.php" class="content-iframe" id="gestionFrame"></iframe>
+                <!-- Costos de Nacionalización Tab -->
+                <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
+                    <div class="tab-content-wrapper">
+                        <iframe src="tabs/costoNacionalizacion.php" class="content-iframe" id="costosFrame"></iframe>
+                    </div>
                 </div>
-            </div>
 
-            
-            <!-- Estimación de Costos Tab -->
-            <div class="tab-pane fade" id="pci" role="tabpanel" aria-labelledby="pci-tab">
-                <div class="tab-content-wrapper">
-                    <iframe src="tabs/proyeccionCostos.php" class="content-iframe" id="pciFrame"></iframe>
+                <!-- Dashboard Tab -->
+                <div class="tab-pane fade" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+                    <div class="tab-content-wrapper">
+                        <iframe src="tabs/dashboard.php" class="content-iframe" id="dashboardFrame"></iframe>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Costos de Nacionalización Tab -->
-            <div class="tab-pane fade" id="costos" role="tabpanel" aria-labelledby="costos-tab">
-                <div class="tab-content-wrapper">
-                    <iframe src="tabs/costoNacionalizacion.php" class="content-iframe" id="costosFrame"></iframe>
-                </div>
-            </div>
-
-            <!-- Dashboard Tab -->
-            <div class="tab-pane fade" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
-                <div class="tab-content-wrapper">
-                    <iframe src="tabs/dashboard.php" class="content-iframe" id="dashboardFrame"></iframe>
+                <!-- Cronograma de Despachos Tab -->
+                <div class="tab-pane fade" id="cronograma" role="tabpanel" aria-labelledby="cronograma-tab">
+                    <div class="tab-content-wrapper">
+                        <iframe src="cronogramaDespachos/index.php" class="content-iframe" id="cronogramaFrame"></iframe>
+                    </div>
                 </div>
             </div>
         </div>
