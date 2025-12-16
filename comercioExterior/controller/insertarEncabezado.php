@@ -22,7 +22,7 @@ function convertirFecha($fecha) {
 }
 
 try {
-    require_once '../class/encabezado.php';
+    require_once '../Class/encabezado.php';
     $cid = new Encabezado();
 
     // Log de datos recibidos para debugging
@@ -71,6 +71,10 @@ try {
         $datosDeCabezera['fechaArr'] = convertirFecha($_POST['fechaArr']);
     }
     
+    if (isset($_POST['fechaPago']) && !empty($_POST['fechaPago'])) {
+        $datosDeCabezera['fechaPago'] = convertirFecha($_POST['fechaPago']);
+    }
+    
     if (isset($_POST['fechaDespAdu']) && !empty($_POST['fechaDespAdu'])) {
         $datosDeCabezera['fechaDespAdu'] = convertirFecha($_POST['fechaDespAdu']);
     }
@@ -89,6 +93,8 @@ try {
         $datosDeCabezera['facturaProveedor'] = $_POST['factura'];
     }
     
+<<<<<<< Updated upstream
+=======
     if (isset($_POST['puertoOrigen']) && !empty($_POST['puertoOrigen'])) {
         $datosDeCabezera['puertoOrigen'] = $_POST['puertoOrigen'];
         error_log("PUERTO_ORIGEN capturado: " . $datosDeCabezera['puertoOrigen']);
@@ -99,6 +105,12 @@ try {
         error_log("TERMINAL capturado: " . $datosDeCabezera['terminal']);
     }
     
+    // Fecha Estimada de Pago
+    if (isset($_POST['fechaEstPago']) && !empty($_POST['fechaEstPago'])) {
+        $datosDeCabezera['fechaEstPago'] = convertirFecha($_POST['fechaEstPago']);
+    }
+    
+>>>>>>> Stashed changes
     if (isset($_POST['tipoCambio']) && !empty($_POST['tipoCambio'])) {
         $datosDeCabezera['tipoCambio'] = $_POST['tipoCambio'];
     }
@@ -107,9 +119,16 @@ try {
         $datosDeCabezera['valorFobPeso'] = $_POST['valorFobPeso'];
     }
     
+    if (isset($_POST['formaPago']) && !empty($_POST['formaPago'])) {
+        $datosDeCabezera['formaPago'] = $_POST['formaPago'];
+    }
+    
     if (isset($_POST['despacho']) && !empty($_POST['despacho'])) {
         $datosDeCabezera['despacho'] = $_POST['despacho'];
     }
+    
+    // ETA Confirmada - checkbox (0 o 1) - SIEMPRE capturar el valor enviado
+    $datosDeCabezera['etaConfirmada'] = isset($_POST['eta_confirmada']) ? intval($_POST['eta_confirmada']) : 0;
 
     $ordenes = json_decode($_POST['ordenCompra'], true);
 
