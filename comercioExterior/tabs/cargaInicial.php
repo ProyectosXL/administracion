@@ -3,9 +3,9 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-include 'Class/proveedor.php';
-include 'Class/ordenDeCompra.php';
-include 'Class/encabezado.php';
+include '../class/proveedor.php';
+include '../class/ordenDeCompra.php';
+include '../class/encabezado.php';
 
 $proveedor = new Proveedor();
 $todosLosProveedores = [];
@@ -55,21 +55,21 @@ try {
                         <!------------------------------------------------------------>
 
     <!-- Icons font CSS-->
-    <link href="assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-    <link href="assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <link href="../assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="../assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
     <!-- Font special for pages-->
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
     <!-- Vendor CSS-->
-    <link href="assets/select2/select2.min.css" rel="stylesheet" media="all">
-    <link href="assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+    <link href="../assets/select2/select2.min.css" rel="stylesheet" media="all">
+    <link href="../assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
 
-    <link rel="icon" type="image/jpg" href="images/LOGO XL 2018.jpg">
+    <link rel="icon" type="image/jpg" href="../images/LOGO XL 2018.jpg">
     <!-- Main CSS-->
-    <link href="css/style.css" rel="stylesheet" media="all">
+    <link href="../css/style.css" rel="stylesheet" media="all">
     <!-- Carga Inicial CSS-->
-    <link href="css/cargaInicial.css" rel="stylesheet" media="all">
+    <link href="../css/cargaInicial.css" rel="stylesheet" media="all">
     
     <!-- Feriados Argentinos para validación JavaScript -->
     <script>
@@ -186,7 +186,8 @@ try {
                                 <div class="input-group">
                                     <div class="rs-select2 js-select-simple select--no-search">
                                         <select id="despachante" style="width: 283.16px;" required>
-                                            <option value="Laffitte" selected>Laffitte</option>
+                                            <option value="">Seleccione...</option>
+                                            <option value="Laffitte">Laffitte</option>
                                             <option value="Farre">Farre</option>
                                         </select>
                                         <div class="select-dropdown"></div>
@@ -260,6 +261,44 @@ try {
                                 </div>    
                             </div>
                         </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-5">
+                                <label class="label-campo">Puerto Origen</label>
+                                <div class="input-group">
+                                    <div class="rs-select2 js-select-simple select--no-search">
+                                        <select id="puertoOrigen" style="width: 283.16px;">
+                                            <option value="">Seleccione...</option>
+                                            <option value="Shanghai">Shanghai</option>
+                                            <option value="Shenzhen">Shenzhen</option>
+                                            <option value="Ningbo">Ningbo</option>
+                                            <option value="Guangzhou">Guangzhou</option>
+                                            <option value="Qingdao">Qingdao</option>
+                                            <option value="Tianjin">Tianjin</option>
+                                            <option value="Hong Kong">Hong Kong</option>
+                                            <option value="Xiamen">Xiamen</option>
+                                            <option value="Dalian">Dalian</option>
+                                            <option value="Yantian">Yantian</option>
+                                        </select>
+                                        <div class="select-dropdown"></div>
+                                    </div>        
+                                </div>    
+                            </div>
+                            <div class="col-md-5">
+                                <label class="label-campo">Terminal</label>
+                                <div class="input-group">
+                                    <div class="rs-select2 js-select-simple select--no-search">
+                                        <select id="terminal" style="width: 283.16px;">
+                                            <option value="">Seleccione...</option>
+                                            <option value="EXOLGAN">EXOLGAN</option>
+                                            <option value="TRP">TRP</option>
+                                            <option value="T4">T4</option>
+                                        </select>
+                                        <div class="select-dropdown"></div>
+                                    </div>        
+                                </div>    
+                            </div>
+                        </div>
                     </div>
 
                     <!-- ========== SECCIÓN 3: DATOS FINANCIEROS Y ADUANA ========== -->
@@ -270,55 +309,62 @@ try {
                             <div class="col-md-5">
                                 <label class="label-campo">Tipo de Cambio</label>
                                 <div class="input-group">
-                                    <input class="input--style-1 decimales currencyInput" type="text" id="tipoCambio">
+                                    <input class="input--style-1 currencyInput" type="text" id="tipoCambio">
                                 </div>    
                             </div>
                             <div class="col-md-5">
                                 <label class="label-campo">Valor F.O.B. $ <span class="badge-auto">Auto</span></label>
                                 <div class="input-group">
-                                    <input class="input--style-1 decimales" type="text" id="valorFobPeso" readonly>
+                                    <input class="input--style-1" type="text" id="valorFobPeso" readonly>
                                 </div>
                             </div>
                         </div>
 
-<<<<<<< Updated upstream:comercioExterior/cargaInicial.php
-=======
-                        <!-- Fecha Estimada de Pago -->
                         <div class="row row-space">
                             <div class="col-md-5">
-                                <label class="label-campo">Fecha Estimada de Pago <span class="badge-auto">Auto</span></label>
+                                <label class="label-campo">Fecha Est. Pago <span class="badge-auto">Auto</span></label>
                                 <div class="input-group">
-                                    <input class="input--style-1 js-datepicker-est-pago" type="text" id="fechaEstPago">
+                                    <input class="input--style-1 js-datepicker-est-pago" type="text" id="fechaEstPago" readonly>
                                     <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-est-pago"></i>
                                 </div>
-                                <small class="form-text text-muted" style="font-size: 11px; margin-top: 3px;">
-                                    (Editable) Se calcula: 5 días después de ETD (si existe, sino después de Fecha Est. Embarque)
-                                </small>
                             </div>
                         </div>
 
-                        <!-- Sección de Pagos -->
->>>>>>> Stashed changes:comercioExterior/tabs/cargaInicial.php
                         <div class="row row-space">
-                            <div class="col-md-5">
-                                <label class="label-campo">Forma de Pago</label>
-                                <div class="input-group">
-                                    <div class="rs-select2 js-select-simple select--no-search">
-                                        <select id="formaPago" style="width: 283.16px;">
-                                            <option disabled="disabled" selected="selected">Seleccione...</option>
-                                            <option>PAGO ANTICIPADO</option>
-                                            <option>PAGO VISTA</option>
-                                            <option>PAGO DIFERIDO</option>
-                                        </select>
-                                        <div class="select-dropdown"></div>
-                                    </div>        
-                                </div>    
+                            <div class="col-md-12">
+                                <h5 class="mb-3">Registro de Pagos</h5>
+                                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                                    <label class="label-campo" style="margin-bottom: 0;"><strong id="saldoPendiente" style="color: #d9534f; font-size: 16px;">$ 0</strong></label>
+                                    <button type="button" id="btnAgregarPago" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-plus-circle"></i> Agregar Pago
+                                    </button>
+                                </div>
                             </div>
-                            <div class="col-md-5">
-                                <label class="label-campo">Fecha de Pago <span class="badge-auto">Auto</span></label>
-                                <div class="input-group">
-                                    <input class="input--style-1 js-datepicker-pago" type="text" id="fechaPago">
-                                    <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-pago"></i>
+                        </div>
+
+                        <div class="row row-space">
+                            <div class="col-md-12">
+                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered" id="tablaPagos" style="background: white; margin: 0;">
+                                        <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">
+                                            <tr>
+                                                <th style="width: 25%;">Fecha de Pago</th>
+                                                <th style="width: 25%;">Forma de Pago</th>
+                                                <th style="width: 25%;">Medio de Pago</th>
+                                                <th style="width: 20%;">Monto ($)</th>
+                                                <th style="width: 5%; text-align: center;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbodyPagos">
+                                            <!-- Los pagos se agregarán aquí dinámicamente -->
+                                            <tr id="sinPagos">
+                                                <td colspan="5" style="text-align: center; color: #999; padding: 30px;">
+                                                    <i class="bi bi-inbox" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                                                    No hay pagos registrados. Haz clic en "Agregar Pago" para comenzar.
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -355,16 +401,87 @@ try {
     
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Jquery JS-->
-    <script src="assets/jquery/jquery.min.js"></script>
+    <script src="../assets/jquery/jquery.min.js"></script>
     <!-- Vendor JS-->
-    <script src="assets/select2/select2.min.js"></script>
-    <script src="assets/datepicker/moment.min.js"></script>
-    <script src="assets/datepicker/daterangepicker.js"></script>
+    <script src="../assets/select2/select2.min.js"></script>
+    <script src="../assets/datepicker/moment.min.js"></script>
+    <script src="../assets/datepicker/daterangepicker.js"></script>
+
+    <!-- Modal para Agregar Pago -->
+    <div class="modal fade" id="modalAgregarPago" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle"></i> Agregar Nuevo Pago
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Pago</label>
+                        <input type="text" class="form-control js-datepicker-nuevo-pago" id="fechaPagoNuevo" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Forma de Pago</label>
+                        <select class="form-select" id="formaPagoNuevo">
+                            <option value="">Seleccione...</option>
+                            <option>PAGO ANTICIPADO</option>
+                            <option>PAGO VISTA</option>
+                            <option>PAGO DIFERIDO</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Medio de Pago</label>
+                        <select class="form-select" id="medioPagoNuevo">
+                            <option value="">Seleccione...</option>
+                            <option>Transferencia</option>
+                            <option>Cheque</option>
+                            <option>Tarjeta</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Monto</label>
+                        <input type="number" class="form-control" id="montoNuevo" placeholder="0.00" step="0.01">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarNuevoPago()">Guardar Pago</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Fecha de Pago -->
+    <div class="modal fade" id="modalEditarFechaPago" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-calendar-event"></i> Editar Fecha de Pago
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Pago</label>
+                        <input type="text" class="form-control js-datepicker-edit-fecha" id="fechaPagoEdit" readonly>
+                        <input type="hidden" id="idPagoEdit">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarFechaPago()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main JS-->
-    <script src="js/global.js"></script>
+    <script src="../js/global.js"></script>
     <!-- Carga Inicial JS - Contiene toda la lógica del formulario -->
-    <script src="js/cargaInicial.js"></script>
+    <script src="../js/cargaInicial.js"></script>
     
     <script>
     // Inicializar select de proveedor para cargar órdenes de compra
@@ -377,7 +494,7 @@ try {
                 
                 if (proveedor && proveedor !== 'Seleccione...') {
                     // Cargar órdenes de compra del proveedor
-                    fetch('Class/ordenDeCompra.php?proveedor=' + proveedor)
+                    fetch('../class/ordenDeCompra.php?proveedor=' + proveedor)
                         .then(response => response.json())
                         .then(ordenes => {
                             localStorage.setItem('ordenes', JSON.stringify(ordenes));

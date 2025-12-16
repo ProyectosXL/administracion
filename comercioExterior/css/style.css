@@ -192,7 +192,6 @@
   .btn {
     line-height: 40px;
     display: inline-block;
-    padding: 0 15px;
     cursor: pointer;
     font-family: "Roboto", "Arial", "Helvetica Neue", sans-serif;
     color: #fff;
@@ -611,7 +610,6 @@
 .btn-primary {
   background-color: #7066e0 !important;
   border-color: #5a50d2 !important;
-  padding: 10px 20px !important;
   font-weight: 500 !important;
   transition: all 0.3s ease !important;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;

@@ -288,6 +288,44 @@ function recalcularFechaPago() {
     }
 }
 
+
+/**
+ * Recalcula la Fecha Estimada de Pago (Fecha base + 5 días)
+ * Usa fecha de embarque real si existe, sino fecha estimada
+ */
+function recalcularFechaEstimadaPago() {
+    if (fechaEstPagoIsManual) {
+        console.log('Fecha Est. Pago en modo manual, no se recalcula');
+        return;
+    }
+    
+    const fechaBase = obtenerFechaBase();
+    console.log('Recalculando Fecha Est. Pago. Fecha base:', fechaBase ? fechaBase.format('DD/MM/YYYY') : 'null');
+    
+    if (fechaBase) {
+        const nuevaFechaEstPago = sumarDias(fechaBase, 5);
+        console.log('Nueva Fecha Est. Pago calculada:', nuevaFechaEstPago);
+        $('#fechaEstPago').val(nuevaFechaEstPago);
+        
+        // Sincronizar datepicker
+        const $picker = $('#fechaEstPago').data('daterangepicker');
+        if ($picker && nuevaFechaEstPago) {
+            $picker.setStartDate(moment(nuevaFechaEstPago, 'DD/MM/YYYY'));
+            $picker.setEndDate(moment(nuevaFechaEstPago, 'DD/MM/YYYY'));
+        }
+        
+        marcarCampoCalculado('#fechaEstPago');
+        
+        // Validar fecha hábil después de recalcular (si no estamos cargando datos)
+        if (!cargandoDatos) {
+            setTimeout(() => validarCampoFechaHabil($('#fechaEstPago')), 100);
+        }
+    } else {
+        $('#fechaEstPago').val('');
+    }
+}
+
+
 /**
  * Carga los datos de un despacho existente en el formulario (modo edición)
  */
@@ -336,21 +374,45 @@ function cargarDatosDespacho(datos) {
     }
     if (datos.NUMERO_BL) $('#numeroBl').val(datos.NUMERO_BL);
     if (datos.FACTURA) $('#factura').val(datos.FACTURA);
+    if (datos.PUERTO_ORIGEN) {
+        $('#puertoOrigen').val(datos.PUERTO_ORIGEN).trigger('change');
+        console.log('Puerto Origen cargado:', datos.PUERTO_ORIGEN);
+    }
+    if (datos.TERMINAL) {
+        $('#terminal').val(datos.TERMINAL).trigger('change');
+        console.log('Terminal cargado:', datos.TERMINAL);
+    }
     
     // Sección 3 - Datos Financieros y Aduana
     if (datos.TIPO_CAMBIO) $('#tipoCambio').val(datos.TIPO_CAMBIO);
-    if (datos.VALOR_FOB_PESO) $('#valorFobPeso').val(datos.VALOR_FOB_PESO);
+    if (datos.VALOR_FOB_PESO) {
+        const valorFormateado = '$ ' + parseFloat(datos.VALOR_FOB_PESO).toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        $('#valorFobPeso').val(valorFormateado);
+    }
     if (datos.FORMA_PAGO) $('#formaPago').val(datos.FORMA_PAGO).trigger('change');
     if (datos.FECHA_PAGO) {
         $('#fechaPago').val(datos.FECHA_PAGO);
     }
     if (datos.FECHA_EST_PAGO) {
         $('#fechaEstPago').val(datos.FECHA_EST_PAGO);
-        // Marcar como manual para evitar recálculo
-        fechaEstPagoIsManual = true;
+        // Sincronizar datepicker
+        if ($('.js-datepicker-est-pago').data('daterangepicker')) {
+            const fecha = moment(datos.FECHA_EST_PAGO, 'DD/MM/YYYY');
+            $('.js-datepicker-est-pago').data('daterangepicker').setStartDate(fecha);
+            $('.js-datepicker-est-pago').data('daterangepicker').setEndDate(fecha);
+        }
+        // NO marcar como manual - es solo carga de datos de BD
+        // El flag manual se activará solo cuando el usuario lo edite después
+        fechaEstPagoIsManual = false;
     }
     if (datos.FECHA_DESP_ADU) {
         $('#fechaDespAdu').val(datos.FECHA_DESP_ADU);
+        // Sincronizar datepicker
+        if ($('.js-datepicker-despacho').data('daterangepicker')) {
+            const fecha = moment(datos.FECHA_DESP_ADU, 'DD/MM/YYYY');
+            $('.js-datepicker-despacho').data('daterangepicker').setStartDate(fecha);
+            $('.js-datepicker-despacho').data('daterangepicker').setEndDate(fecha);
+        }
         // Marcar como manual para evitar recálculo
         fechaDespachoIsManual = true;
     }
@@ -376,6 +438,12 @@ function cargarDatosDespacho(datos) {
     console.log('Datos cargados correctamente');
     console.log('Todos los datos recibidos:', datos);
     
+    // Cargar pagos si hay ID de despacho
+    const idDespacho = $('#idDespacho').val();
+    if (idDespacho) {
+        cargarPagos(idDespacho);
+    }
+    
     // Cargar el número de despacho DESPUÉS de que se desactive cargandoDatos
     // para que los recálculos no lo sobrescriban
     if (numeroDespacho) {
@@ -389,44 +457,147 @@ function cargarDatosDespacho(datos) {
 }
 
 /**
- * Recalcula Fecha Estimada de Pago (Fecha base + 5 días)
- * Prioridad: ETD (Sec 2) > Fecha Est. Embarque (Sec 1)
+ * Carga los pagos del despacho desde BD
  */
-function recalcularFechaEstimadaPago() {
-    if (fechaEstPagoIsManual) {
-        console.log('Fecha Est. Pago en modo manual, no se recalcula');
+function cargarPagos(idDespacho) {
+    console.log('Cargando pagos del despacho:', idDespacho);
+    
+    $.ajax({
+        url: '../controller/traerPagosController.php',
+        method: 'POST',
+        data: { id_despacho: idDespacho },
+        dataType: 'json',
+        success: function(response) {
+            console.log('Pagos cargados:', response);
+            if (response && response.pagos && response.pagos.length > 0) {
+                renderizarTablaPagos(response.pagos);
+                // Actualizar saldo pendiente
+                if (response.saldoPendiente !== undefined) {
+                    actualizarSaldoPendiente(response.saldoPendiente);
+                }
+            } else {
+                console.log('No hay pagos para este despacho');
+                $('#tbodyPagos').html('');
+            }
+        },
+        error: function(err) {
+            console.error('Error al cargar pagos:', err);
+        }
+    });
+}
+
+/**
+ * Renderiza la tabla de pagos
+ */
+function renderizarTablaPagos(pagos) {
+    const tbody = $('#tbodyPagos');
+    tbody.html(''); // Limpiar tabla
+    
+    if (!pagos || pagos.length === 0) {
+        // Mostrar mensaje "No hay pagos"
+        $('#sinPagos').show();
         return;
     }
     
-    const fechaBase = obtenerFechaBase();
-    console.log('Recalculando Fecha Est. Pago. Fecha base:', fechaBase ? fechaBase.format('DD/MM/YYYY') : 'null');
+    // Ocultar mensaje "No hay pagos"
+    $('#sinPagos').hide();
     
-    if (fechaBase) {
-        const nuevaFechaEstPago = sumarDias(fechaBase, 5);
-        console.log('Nueva Fecha Est. Pago calculada:', nuevaFechaEstPago);
-        $('#fechaEstPago').val(nuevaFechaEstPago);
-        
-        // Sincronizar datepicker
-        const $picker = $('#fechaEstPago').data('daterangepicker');
-        if ($picker && nuevaFechaEstPago) {
-            $picker.setStartDate(moment(nuevaFechaEstPago, 'DD/MM/YYYY'));
-            $picker.setEndDate(moment(nuevaFechaEstPago, 'DD/MM/YYYY'));
-        }
-        
-        marcarCampoCalculado('#fechaEstPago');
-        
-        // Validar fecha hábil después de recalcular (si no estamos cargando datos)
-        if (!cargandoDatos) {
-            setTimeout(() => validarCampoFechaHabil($('#fechaEstPago')), 100);
-        }
-    } else {
-        $('#fechaEstPago').val('');
+    pagos.forEach(pago => {
+        const fila = `
+            <tr>
+                <td>
+                    <a href="#" class="link-primary" data-bs-toggle="modal" data-bs-target="#modalEditarFechaPago" onclick="abrirModalEditarFecha(${pago.ID}, '${pago.FECHA_PAGO}')">
+                        ${pago.FECHA_PAGO || '-'}
+                        <i class="bi bi-pencil-square ms-1"></i>
+                    </a>
+                </td>
+                <td>${pago.FORMA_PAGO || '-'}</td>
+                <td>${pago.MEDIO_PAGO || '-'}</td>
+                <td class="text-end">$${parseFloat(pago.MONTO || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                <td style="text-align: center;"><button class="btn btn-sm btn-danger" onclick="eliminarPago(${pago.ID})"><i class="bi bi-trash"></i></button></td>
+            </tr>
+        `;
+        tbody.append(fila);
+    });
+}
+
+/**
+ * Abre modal para editar fecha de pago
+ */
+function abrirModalEditarFecha(idPago, fechaActual) {
+    $('#idPagoEdit').val(idPago);
+    $('#fechaPagoEdit').val(fechaActual);
+    console.log('Editando pago ID:', idPago, 'Fecha:', fechaActual);
+    
+    // Inicializar datepicker del modal si no está inicializado
+    if (!$('.js-datepicker-edit-fecha').data('daterangepicker')) {
+        $('.js-datepicker-edit-fecha').daterangepicker({
+            singleDatePicker: true,
+            showDropdowns: true,
+            autoApply: true,
+            locale: {format: 'DD/MM/YYYY'}
+        });
     }
+    
+    // Establecer la fecha en el datepicker
+    const picker = $('.js-datepicker-edit-fecha').data('daterangepicker');
+    if (picker) {
+        const fecha = moment(fechaActual, 'DD/MM/YYYY');
+        if (fecha.isValid()) {
+            picker.setStartDate(fecha);
+            picker.setEndDate(fecha);
+        }
+    }
+}
+
+/**
+ * Guarda la fecha de pago editada
+ */
+function guardarFechaPago() {
+    const idPago = $('#idPagoEdit').val();
+    const nuevaFecha = $('#fechaPagoEdit').val();
+    
+    if (!idPago || !nuevaFecha) {
+        Swal.fire('Error', 'Fecha requerida', 'error');
+        return;
+    }
+    
+    $.ajax({
+        url: '../controller/actualizarFechaPagoController.php',
+        method: 'POST',
+        data: {
+            id_pago: idPago,
+            fecha_pago: nuevaFecha
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                Swal.fire('Éxito', 'Fecha actualizada correctamente', 'success');
+                $('#modalEditarFechaPago').modal('hide');
+                // Recargar pagos
+                const idDespacho = $('#idDespacho').val();
+                cargarPagos(idDespacho);
+            } else {
+                Swal.fire('Error', response.error || 'Error al actualizar', 'error');
+            }
+        },
+        error: function() {
+            Swal.fire('Error', 'Error en la solicitud', 'error');
+        }
+    });
+}
+
+/**
+ * Actualiza el saldo pendiente
+ */
+function actualizarSaldoPendiente(saldo) {
+    $('#saldoPendiente').text('$ ' + parseFloat(saldo).toLocaleString('es-AR', {minimumFractionDigits: 2}));
 }
 
 /**
  * Recalcula la Fecha de Nacionalización (FECHA_DESP_ADU = FECHA_ARR + 2 días)
  */
+
 function recalcularFechaDespacho() {
     if (fechaDespachoIsManual) {
         console.log('Fecha Despacho en modo manual, no se recalcula');
@@ -549,284 +720,15 @@ function sincronizarDatepickers() {
  */
 function recalcularTodasLasFechas() {
     console.log('=== Iniciando recálculo de todas las fechas ===');
-<<<<<<< Updated upstream
-    console.log('Estados manuales - Arribo:', fechaArriboIsManual, 'Pago:', fechaPagoIsManual, 'Despacho:', fechaDespachoIsManual);
+    console.log('Estados manuales - Arribo:', fechaArriboIsManual, 'Pago:', fechaPagoIsManual, 'Despacho:', fechaDespachoIsManual, 'Est. Pago:', fechaEstPagoIsManual);
     recalcularFechaArribo();
     recalcularFechaPago();
-=======
-    console.log('Estados manuales - Arribo:', fechaArriboIsManual, 'Despacho:', fechaDespachoIsManual, 'Est. Pago:', fechaEstPagoIsManual);
-    recalcularFechaArribo();
     recalcularFechaEstimadaPago();
->>>>>>> Stashed changes
     // No llamar recalcularFechaDespacho aquí porque ya se llama dentro de recalcularFechaArribo
     // recalcularFechaDespacho();
     console.log('=== Fin de recálculo ===');
 }
 
-<<<<<<< Updated upstream
-=======
-// ========== FUNCIONES DE GESTIÓN DE PAGOS ==========
-
-/**
- * Calcula y actualiza el saldo pendiente de pago
- */
-function calcularSaldoPendiente() {
-    // Remover $ y separadores de miles del valor FOB
-    const valorFobPeso = parseFloat($('#valorFobPeso').val().replace(/[$,.]/g, '')) || 0;
-    const totalPagado = pagosArray.reduce((sum, pago) => sum + parseFloat(pago.monto || 0), 0);
-    const saldoPendiente = valorFobPeso - totalPagado;
-    
-    const colorSaldo = saldoPendiente > 0 ? '#dc3545' : '#28a745';
-    $('#saldoPendiente').html(`Saldo Pendiente: <span style="color: ${colorSaldo};">$${Math.round(saldoPendiente).toLocaleString('es-UY')}</span>`);
-    
-    return saldoPendiente;
-}
-
-/**
- * Renderiza la tabla de pagos
- */
-function renderizarTablaPagos() {
-    const tbody = $('#tbodyPagos');
-    tbody.empty();
-    
-    if (pagosArray.length === 0) {
-        tbody.append(`
-            <tr id="sinPagos">
-                <td colspan="5" style="text-align: center; color: #999; padding: 30px;">
-                    <i class="bi bi-inbox" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
-                    No hay pagos registrados. Haz clic en "Agregar Pago" para comenzar.
-                </td>
-            </tr>
-        `);
-    } else {
-        pagosArray.forEach((pago, index) => {
-            const isReadonly = pago.guardado ? 'readonly disabled' : '';
-            const readonlyStyle = pago.guardado ? 'background-color: #e9ecef; cursor: not-allowed;' : '';
-            
-            const row = `
-                <tr>
-                    <td><input type="text" class="form-control form-control-sm js-datepicker-pagos" data-index="${index}" value="${pago.fechaPago}" style="font-size: 13px; ${readonlyStyle}" ${isReadonly}></td>
-                    <td>
-                        <select class="form-select form-select-sm" data-index="${index}" data-field="formaPago" style="font-size: 13px; ${readonlyStyle}" ${isReadonly}>
-                            <option value="">Seleccione...</option>
-                            <option value="PAGO ANTICIPADO" ${pago.formaPago === 'PAGO ANTICIPADO' ? 'selected' : ''}>PAGO ANTICIPADO</option>
-                            <option value="PAGO VISTA" ${pago.formaPago === 'PAGO VISTA' ? 'selected' : ''}>PAGO VISTA</option>
-                            <option value="PAGO DIFERIDO" ${pago.formaPago === 'PAGO DIFERIDO' ? 'selected' : ''}>PAGO DIFERIDO</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select class="form-select form-select-sm" data-index="${index}" data-field="medioPago" style="font-size: 13px; ${readonlyStyle}" ${isReadonly}>
-                            <option value="">Seleccione...</option>
-                            <option value="Transferencia" ${pago.medioPago === 'Transferencia' ? 'selected' : ''}>Transferencia</option>
-                            <option value="Cheque" ${pago.medioPago === 'Cheque' ? 'selected' : ''}>Cheque</option>
-                            <option value="Tarjeta" ${pago.medioPago === 'Tarjeta' ? 'selected' : ''}>Tarjeta</option>
-                        </select>
-                    </td>
-                    <td><input type="text" class="form-control form-control-sm monto-input" data-index="${index}" data-field="monto" value="${pago.monto ? '$' + Math.round(parseFloat(pago.monto)).toLocaleString('es-UY') : ''}" style="font-size: 13px; ${readonlyStyle}" ${isReadonly}></td>
-                    <td style="text-align: center;">
-                        ${pago.guardado ? 
-                            '<span style="color: #28a745; font-size: 18px;" title="Pago guardado"><i class="bi bi-check-circle-fill"></i></span>' :
-                            `<button type="button" class="btn btn-sm btn-danger" onclick="eliminarPago(${index})" title="Eliminar pago">
-                                <i class="bi bi-trash"></i>
-                            </button>`
-                        }
-                    </td>
-                </tr>
-            `;
-            tbody.append(row);
-        });
-        
-        // Reinicializar datepickers solo para los inputs editables
-        $('.js-datepicker-pagos:not([readonly])').daterangepicker({
-            singleDatePicker: true,
-            showDropdowns: true,
-            autoApply: true,
-            locale: {format: 'DD/MM/YYYY'}
-        }).on('apply.daterangepicker', function(ev, picker) {
-            const index = $(this).data('index');
-            pagosArray[index].fechaPago = picker.startDate.format('DD/MM/YYYY');
-            calcularSaldoPendiente();
-            
-            // Validar fecha hábil
-            setTimeout(() => validarCampoFechaHabil($(this)), 100);
-        });
-    }
-    
-    // Actualizar eventos de cambio para inputs
-    // Usar 'input' para guardar el valor sin formato
-    $('#tbodyPagos input[data-field="monto"]').on('input', function() {
-        const index = $(this).data('index');
-        // Remover $ y separadores de miles, mantener solo números
-        let valor = $(this).val().replace(/[$,.]/g, '');
-        
-        // Guardar el valor numérico sin formato
-        if (valor && !isNaN(valor)) {
-            pagosArray[index].monto = valor;
-        } else if (!valor) {
-            pagosArray[index].monto = '';
-        }
-        
-        calcularSaldoPendiente();
-    });
-    
-    // Usar 'blur' para formatear cuando pierde el foco
-    $('#tbodyPagos input[data-field="monto"]').on('blur', function() {
-        const index = $(this).data('index');
-        let valor = $(this).val().replace(/[$,.]/g, '');
-        
-        // Formatear el valor en el input solo al perder foco
-        if (valor && !isNaN(valor)) {
-            $(this).val('$' + Math.round(parseFloat(valor)).toLocaleString('es-UY'));
-        }
-    });
-    
-    // Usar 'focus' para quitar el formato al editar
-    $('#tbodyPagos input[data-field="monto"]').on('focus', function() {
-        const index = $(this).data('index');
-        // Al hacer foco, mostrar solo el número sin formato
-        if (pagosArray[index].monto) {
-            $(this).val(pagosArray[index].monto);
-        }
-    });
-    
-    $('#tbodyPagos select[data-field]').on('change', function() {
-        const index = $(this).data('index');
-        const field = $(this).data('field');
-        pagosArray[index][field] = $(this).val();
-    });
-    
-    calcularSaldoPendiente();
-}
-
-/**
- * Agrega un nuevo pago vacío
- */
-function agregarPago() {
-    const nuevoPago = {
-        id: null, // null para nuevos pagos
-        fechaPago: moment().format('DD/MM/YYYY'),
-        formaPago: '',
-        medioPago: '',
-        monto: '',
-        guardado: false // Marcar como no guardado para que sea editable
-    };
-    
-    pagosArray.push(nuevoPago);
-    renderizarTablaPagos();
-}
-
-/**
- * Elimina un pago del array
- */
-function eliminarPago(index) {
-    Swal.fire({
-        title: '¿Eliminar pago?',
-        text: 'Esta acción no se puede deshacer',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            pagosArray.splice(index, 1);
-            renderizarTablaPagos();
-        }
-    });
-}
-
-/**
- * Carga los pagos desde el servidor
- */
-function cargarPagos(idEncabezado) {
-    $.ajax({
-        url: '../controller/obtenerPagos.php',
-        method: 'GET',
-        data: { idEncabezado: idEncabezado },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success && response.data) {
-                pagosArray = response.data.map(pago => {
-                    // SQL Server devuelve FECHA_PAGO como objeto con propiedad 'date'
-                    let fechaFormateada = '';
-                    if (pago.FECHA_PAGO) {
-                        if (typeof pago.FECHA_PAGO === 'object' && pago.FECHA_PAGO.date) {
-                            fechaFormateada = moment(pago.FECHA_PAGO.date).format('DD/MM/YYYY');
-                        } else if (typeof pago.FECHA_PAGO === 'string') {
-                            fechaFormateada = moment(pago.FECHA_PAGO).format('DD/MM/YYYY');
-                        }
-                    }
-                    
-                    return {
-                        id: pago.ID,
-                        fechaPago: fechaFormateada,
-                        formaPago: pago.FORMA_PAGO,
-                        medioPago: pago.MEDIO_PAGO,
-                        monto: pago.MONTO,
-                        guardado: false // Permitir edición de pagos existentes
-                    };
-                });
-                renderizarTablaPagos();
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error al cargar pagos:', error);
-        }
-    });
-}
-
-/**
- * Valida que todos los pagos tengan datos completos
- */
-function validarPagos() {
-    for (let i = 0; i < pagosArray.length; i++) {
-        const pago = pagosArray[i];
-        if (!pago.fechaPago || !pago.formaPago || !pago.medioPago || !pago.monto || parseFloat(pago.monto) <= 0) {
-            Swal.fire({
-                title: 'Datos incompletos',
-                text: `El pago #${i + 1} tiene campos vacíos o inválidos`,
-                icon: 'warning',
-                confirmButtonColor: '#7066e0'
-            });
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
- * Guarda los pagos en el servidor
- */
-function guardarPagosEnServidor(idEncabezado, callback) {
-    // Convertir fechas al formato que espera SQL Server
-    const pagosParaEnviar = pagosArray.map(pago => ({
-        id: pago.id,
-        fechaPago: moment(pago.fechaPago, 'DD/MM/YYYY').format('YYYY-MM-DD'),
-        formaPago: pago.formaPago,
-        medioPago: pago.medioPago,
-        monto: parseFloat(pago.monto)
-    }));
-    
-    $.ajax({
-        url: '../controller/guardarPagos.php',
-        method: 'POST',
-        dataType: 'json',
-        data: {
-            idEncabezado: idEncabezado,
-            pagos: JSON.stringify(pagosParaEnviar)
-        },
-        success: function(response) {
-            callback(response.success);
-        },
-        error: function(xhr, status, error) {
-            console.error('Error al guardar pagos:', error);
-            callback(false);
-        }
-    });
-}
-
->>>>>>> Stashed changes
 /**
  * Calcula FOB en Pesos = FOB U$S × Tipo de Cambio
  * Se recalcula cada vez que cualquiera de los dos valores cambie
@@ -837,7 +739,8 @@ function recalcularFobPesos() {
     
     if (valorFobDolar > 0 && tipoCambio > 0) {
         const valorFobPeso = valorFobDolar * tipoCambio;
-        $('#valorFobPeso').val(valorFobPeso.toFixed(2));
+        const valorFormateado = '$ ' + valorFobPeso.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        $('#valorFobPeso').val(valorFormateado);
         marcarCampoCalculado('#valorFobPeso');
     } else {
         $('#valorFobPeso').val('');
@@ -1093,7 +996,7 @@ const traerOrden = () => {
         `;
         
         $.ajax({
-            url: 'Controller/traerOrdenManualController.php',
+            url: '../controller/traerOrdenManualController.php',
             method: 'GET',
             success: function(data) {
                 ordenesSeleccionadas.innerHTML = '';
@@ -1163,12 +1066,140 @@ const traerOrden = () => {
     }
 }
 
-// ========== INICIALIZACIÓN Y EVENT LISTENERS ==========
+/**
+ * Inicializa todos los datepickers del formulario
+ */
+function inicializarDatepickers() {
+    console.log('=== Inicializando Datepickers ===');
+    
+    // Fecha Estimada de Embarque
+    $('.js-datepicker-estimada').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    });
+    
+    // Fecha de Embarque Real (ETD)
+    $('.js-datepicker-etd').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        autoUpdateInput: false,
+        locale: {format: 'DD/MM/YYYY'}
+    }).on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('DD/MM/YYYY'));
+        console.log('Fecha ETD seleccionada:', picker.startDate.format('DD/MM/YYYY'));
+        recalcularTodasLasFechas();
+    });
+    
+    // Fecha de Arribo (ETA)
+    $('.js-datepicker-arribo').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    }).on('apply.daterangepicker', function(ev, picker) {
+        setTimeout(() => validarCampoFechaHabil($(this)), 100);
+    });
+    
+    // Fecha de Pago
+    $('.js-datepicker-pago').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    });
+    
+    // Fecha de Nacionalización (Despacho)
+    $('.js-datepicker-despacho').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    }).on('apply.daterangepicker', function(ev, picker) {
+        setTimeout(() => validarCampoFechaHabil($(this)), 100);
+    });
+    
+    // Fecha Estimada de Pago
+    console.log('Inicializando datepicker para .js-datepicker-est-pago');
+    $('.js-datepicker-est-pago').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    }).on('apply.daterangepicker', function(ev, picker) {
+        console.log('Evento apply.daterangepicker en fechaEstPago');
+        if (!cargandoDatos) {
+            fechaEstPagoIsManual = true;
+            console.log('Fecha Est. Pago - Manual Override ACTIVADO');
+        }
+        setTimeout(() => validarCampoFechaHabil($(this)), 100);
+    });
+    
+    // Event listeners para cambios en fechas base que afectan fechaEstPago
+    $(document).on('apply.daterangepicker', '.js-datepicker-estimada', function(ev, picker) {
+        console.log('FECHA_EST_EMB cambió - recalculando fechaEstPago');
+        recalcularFechaEstimadaPago();
+    });
+    
+    $(document).on('apply.daterangepicker', '.js-datepicker-etd', function(ev, picker) {
+        console.log('FECHA_EMB (ETD) cambió - resetear manual flag y recalcular fechaEstPago');
+        fechaEstPagoIsManual = false;
+        recalcularFechaEstimadaPago();
+    });
+    
+    // Event listener para cerrar alerta informativa
+    $(document).on('click', '.alerta-fecha-no-habil', function() {
+        const campoId = $(this).data('campo');
+        const $campo = $('#' + campoId);
+        ocultarAdvertenciaFecha($campo);
+    });
+    
+    // Checkbox ETA Confirmada
+    $(document).on('change', '#etaConfirmada', function() {
+        const $fechaArr = $('#fechaArr');
+        if ($(this).is(':checked')) {
+            $fechaArr.css({
+                'border-left': '3px solid #28a745',
+                'background-color': '#f0f9f0'
+            });
+        } else {
+            $fechaArr.css({
+                'border-left': '',
+                'background-color': ''
+            });
+        }
+    });
+    
+    // Aplicar estilo inicial si está marcado
+    if ($('#etaConfirmada').is(':checked')) {
+        $('#fechaArr').css({
+            'border-left': '3px solid #28a745',
+            'background-color': '#f0f9f0'
+        });
+    }
+    
+    // Datepicker para modal de Agregar Pago
+    $('.js-datepicker-nuevo-pago').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    });
+    
+    console.log('=== Datepickers Inicializados ===');
+}
+
 
 $(document).ready(function() {
     // Verificar si estamos en modo edición
     const modoEdicion = $('#modoEdicion').val() === 'true';
     
+    // PRIMERO: Inicializar todos los datepickers ANTES de cargar datos
+    inicializarDatepickers();
+    
+    // LUEGO: Cargar datos si estamos en modo edición
     if (modoEdicion && typeof datosDespacho !== 'undefined' && datosDespacho) {
         // MODO EDICIÓN - Cargar datos existentes
         cargarDatosDespacho(datosDespacho);
@@ -1220,130 +1251,21 @@ $(document).ready(function() {
         recalcularFobPesos();
     });
     
+    // Event listener para botón Agregar Pago
+    $('#btnAgregarPago').on('click', function() {
+        // Limpiar campos del modal
+        $('#fechaPagoNuevo').val('');
+        $('#formaPagoNuevo').val('');
+        $('#medioPagoNuevo').val('');
+        $('#montoNuevo').val('');
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalAgregarPago'));
+        modal.show();
+    });
+    
     $('#tipoCambio').on('input change', function() {
         recalcularFobPesos();
-    });
-    
-    // Inicializar datepickers
-    $('.js-datepicker-estimada').daterangepicker({
-        singleDatePicker: true,
-        showDropdowns: true,
-        autoApply: true,
-        locale: {format: 'DD/MM/YYYY'}
-    });
-    
-    $('.js-datepicker-etd').daterangepicker({
-        singleDatePicker: true,
-        showDropdowns: true,
-        autoApply: true,
-        autoUpdateInput: false,
-        locale: {format: 'DD/MM/YYYY'}
-    }).on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('DD/MM/YYYY'));
-        console.log('Fecha ETD seleccionada:', picker.startDate.format('DD/MM/YYYY'));
-        // Recalcular todas las fechas dependientes
-        recalcularTodasLasFechas();
-    });
-    
-    $('.js-datepicker-arribo').daterangepicker({
-        singleDatePicker: true,
-        showDropdowns: true,
-        autoApply: true,
-        locale: {format: 'DD/MM/YYYY'}
-    });
-    
-    $('.js-datepicker-pago').daterangepicker({
-        singleDatePicker: true,
-        showDropdowns: true,
-        autoApply: true,
-        locale: {format: 'DD/MM/YYYY'}
-    });
-    
-    $('.js-datepicker-despacho').daterangepicker({
-        singleDatePicker: true,
-        showDropdowns: true,
-        autoApply: true,
-        locale: {format: 'DD/MM/YYYY'}
-    });
-    
-    // Datepicker para Fecha Estimada de Pago
-    $('.js-datepicker-est-pago').daterangepicker({
-        singleDatePicker: true,
-        showDropdowns: true,
-        autoApply: true,
-        locale: {format: 'DD/MM/YYYY'}
-    });
-    
-    // ========== VALIDACIÓN DE FECHAS HÁBILES ==========
-    // Validar Fecha Arribo - ETA al cambiar
-    $('.js-datepicker-arribo').on('apply.daterangepicker', function(ev, picker) {
-        setTimeout(() => validarCampoFechaHabil($(this)), 100);
-    });
-    
-    // Validar Fecha Estimada de Pago al cambiar
-    $('.js-datepicker-est-pago').on('apply.daterangepicker', function(ev, picker) {
-        setTimeout(() => validarCampoFechaHabil($(this)), 100);
-    });
-    
-    // Validar Fecha de Nacionalización al cambiar
-    $('.js-datepicker-despacho').on('apply.daterangepicker', function(ev, picker) {
-        setTimeout(() => validarCampoFechaHabil($(this)), 100);
-    });
-    
-    // Event listener para cerrar alerta informativa al hacer clic
-    $(document).on('click', '.alerta-fecha-no-habil', function() {
-        const campoId = $(this).data('campo');
-        const $campo = $('#' + campoId);
-        ocultarAdvertenciaFecha($campo);
-    });
-    
-    // ========== CHECKBOX ETA CONFIRMADA ==========
-    // Indicador visual para campo de fecha ETA según estado del checkbox
-    $('#etaConfirmada').on('change', function() {
-        const $fechaArr = $('#fechaArr');
-        const $label = $fechaArr.closest('.col-md-5').find('.label-campo');
-        
-        if ($(this).is(':checked')) {
-            // ETA confirmada - borde verde
-            $fechaArr.css({
-                'border-left': '3px solid #28a745',
-                'background-color': '#f0f9f0'
-            });
-        } else {
-            // ETA estimada - restablecer estilos
-            $fechaArr.css({
-                'border-left': '',
-                'background-color': ''
-            });
-        }
-    });
-    
-    // Aplicar estilo inicial si está marcado en carga
-    if ($('#etaConfirmada').is(':checked')) {
-        $('#fechaArr').css({
-            'border-left': '3px solid #28a745',
-            'background-color': '#f0f9f0'
-        });
-    }
-    
-    // ========== FECHA ESTIMADA DE PAGO - CONTROL MANUAL ==========
-    // Marcar como manual cuando usuario cambia directamente el campo
-    $('#fechaEstPago').on('apply.daterangepicker', function(ev, picker) {
-        if (!cargandoDatos) {
-            fechaEstPagoIsManual = true;
-            console.log('Fecha Est. Pago modificada manualmente');
-        }
-    });
-    
-    // Recalcular cuando cambian fechas base (si no es manual)
-    $('#fechaEstEmb').on('apply.daterangepicker', function(ev, picker) {
-        recalcularFechaEstimadaPago();
-    });
-    
-    $('#fechaEmb').on('apply.daterangepicker', function(ev, picker) {
-        // Si antes no había ETD y ahora sí, resetear flag manual y recalcular
-        fechaEstPagoIsManual = false;
-        recalcularFechaEstimadaPago();
     });
 
     // ========== MODAL PARA AGREGAR ORDEN DE COMPRA ==========
@@ -1584,6 +1506,8 @@ function guardarCabecera() {
             fechaEmb: (modoEdicion && fechaEmb) ? fechaEmb : '',
             numeroBl: numeroBl,
             factura: factura,
+            puertoOrigen: $('#puertoOrigen').val(),
+            terminal: $('#terminal').val(),
             
             // ETA Confirmada
             eta_confirmada: $('#etaConfirmada').is(':checked') ? 1 : 0,
@@ -1600,7 +1524,7 @@ function guardarCabecera() {
         
         // Enviar datos al servidor
         $.ajax({
-            url: 'Controller/insertarEncabezado.php',
+            url: '../controller/insertarEncabezado.php',
             method: 'POST',
             dataType: 'json',
             data: dataToSend,
@@ -1653,5 +1577,108 @@ function guardarCabecera() {
                 });
             }
         });
+    });
+}
+
+/**
+ * Elimina un pago del despacho
+ */
+function eliminarPago(idPago) {
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Se eliminará este registro de pago. Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '../controller/eliminarPago.php',
+                method: 'POST',
+                data: { id_pago: idPago },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('Eliminado', 'El pago ha sido eliminado correctamente', 'success');
+                        // Recargar pagos
+                        const idDespacho = $('#idDespacho').val();
+                        cargarPagos(idDespacho);
+                    } else {
+                        Swal.fire('Error', response.message || 'No se pudo eliminar el pago', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error al eliminar:', error);
+                    Swal.fire('Error', 'Error al conectar con el servidor', 'error');
+                }
+            });
+        }
+    });
+}
+
+/**
+ * Guarda un nuevo pago
+ */
+function guardarNuevoPago() {
+    // Obtener valores del modal
+    const fechaPago = $('#fechaPagoNuevo').val();
+    const formaPago = $('#formaPagoNuevo').val();
+    const medioPago = $('#medioPagoNuevo').val();
+    const monto = $('#montoNuevo').val();
+    const idDespacho = $('#idDespacho').val();
+    
+    // Validaciones
+    if (!fechaPago) {
+        Swal.fire('Error', 'La fecha de pago es requerida', 'error');
+        return;
+    }
+    
+    if (!formaPago) {
+        Swal.fire('Error', 'Debe seleccionar una forma de pago', 'error');
+        return;
+    }
+    
+    if (!medioPago) {
+        Swal.fire('Error', 'Debe seleccionar un medio de pago', 'error');
+        return;
+    }
+    
+    if (!monto || parseFloat(monto) <= 0) {
+        Swal.fire('Error', 'El monto debe ser mayor a cero', 'error');
+        return;
+    }
+    
+    // Enviar datos al servidor
+    $.ajax({
+        url: '../controller/insertarPago.php',
+        method: 'POST',
+        data: {
+            id_despacho: idDespacho,
+            fecha_pago: fechaPago,
+            forma_pago: formaPago,
+            medio_pago: medioPago,
+            monto: monto
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                Swal.fire('Éxito', 'Pago agregado correctamente', 'success');
+                
+                // Cerrar modal
+                bootstrap.Modal.getInstance(document.getElementById('modalAgregarPago')).hide();
+                
+                // Recargar pagos
+                cargarPagos(idDespacho);
+            } else {
+                Swal.fire('Error', response.message || 'No se pudo agregar el pago', 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al agregar pago:', error);
+            Swal.fire('Error', 'Error al conectar con el servidor', 'error');
+        }
     });
 }

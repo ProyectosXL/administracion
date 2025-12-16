@@ -71,24 +71,6 @@ class Encabezado
             $values .= ", '".$datosDeCabezera['facturaProveedor']."'";
         }
         
-<<<<<<< Updated upstream
-=======
-        if (isset($datosDeCabezera['puertoOrigen']) && !empty($datosDeCabezera['puertoOrigen'])) {
-            $sql .= ", PUERTO_ORIGEN";
-            $values .= ", '".$datosDeCabezera['puertoOrigen']."'";
-        }
-        
-        if (isset($datosDeCabezera['terminal']) && !empty($datosDeCabezera['terminal'])) {
-            $sql .= ", TERMINAL";
-            $values .= ", '".$datosDeCabezera['terminal']."'";
-        }
-        
-        if (isset($datosDeCabezera['fechaEstPago']) && !empty($datosDeCabezera['fechaEstPago'])) {
-            $sql .= ", FECHA_EST_PAGO";
-            $values .= ", '".$datosDeCabezera['fechaEstPago']."'";
-        }
-        
->>>>>>> Stashed changes
         if (isset($datosDeCabezera['tipoCambio']) && !empty($datosDeCabezera['tipoCambio'])) {
             $sql .= ", TIPO_CAMBIO";
             $values .= ", '".$datosDeCabezera['tipoCambio']."'";
@@ -107,6 +89,21 @@ class Encabezado
         if (isset($datosDeCabezera['despacho']) && !empty($datosDeCabezera['despacho'])) {
             $sql .= ", DESPACHO";
             $values .= ", '".$datosDeCabezera['despacho']."'";
+        }
+        
+        if (isset($datosDeCabezera['fechaEstPago']) && !empty($datosDeCabezera['fechaEstPago'])) {
+            $sql .= ", FECHA_EST_PAGO";
+            $values .= ", '".$datosDeCabezera['fechaEstPago']."'";
+        }
+        
+        if (isset($datosDeCabezera['puertoOrigen']) && !empty($datosDeCabezera['puertoOrigen'])) {
+            $sql .= ", PUERTO_ORIGEN";
+            $values .= ", '".$datosDeCabezera['puertoOrigen']."'";
+        }
+        
+        if (isset($datosDeCabezera['terminal']) && !empty($datosDeCabezera['terminal'])) {
+            $sql .= ", TERMINAL";
+            $values .= ", '".$datosDeCabezera['terminal']."'";
         }
         
         // ETA Confirmada (bit - 0 o 1)
@@ -285,21 +282,12 @@ class Encabezado
             }
         }
         
-<<<<<<< Updated upstream
         if (isset($datosDeCabezera['fechaPago']) && !empty($datosDeCabezera['fechaPago'])) {
             $updates[] = "FECHA_PAGO = '".$datosDeCabezera['fechaPago']."'";
         }
         
         if (isset($datosDeCabezera['fechaDespAdu']) && !empty($datosDeCabezera['fechaDespAdu'])) {
             $updates[] = "FECHA_DESP_ADU = '".$datosDeCabezera['fechaDespAdu']."'";
-=======
-        if (isset($datosDeCabezera['fechaDespAdu'])) {
-            if (!empty($datosDeCabezera['fechaDespAdu'])) {
-                $updates[] = "FECHA_DESP_ADU = '".$datosDeCabezera['fechaDespAdu']."'";
-            } else {
-                $updates[] = "FECHA_DESP_ADU = NULL";
-            }
->>>>>>> Stashed changes
         }
         
         if (isset($datosDeCabezera['fechaEmb']) && !empty($datosDeCabezera['fechaEmb'])) {
@@ -314,25 +302,6 @@ class Encabezado
             $updates[] = "FACTURA = '".$datosDeCabezera['facturaProveedor']."'";
         }
         
-<<<<<<< Updated upstream
-=======
-        if (isset($datosDeCabezera['puertoOrigen']) && !empty($datosDeCabezera['puertoOrigen'])) {
-            $updates[] = "PUERTO_ORIGEN = '".$datosDeCabezera['puertoOrigen']."'";
-        }
-        
-        if (isset($datosDeCabezera['terminal']) && !empty($datosDeCabezera['terminal'])) {
-            $updates[] = "TERMINAL = '".$datosDeCabezera['terminal']."'";
-        }
-        
-        if (isset($datosDeCabezera['fechaEstPago'])) {
-            if (!empty($datosDeCabezera['fechaEstPago'])) {
-                $updates[] = "FECHA_EST_PAGO = '".$datosDeCabezera['fechaEstPago']."'";
-            } else {
-                $updates[] = "FECHA_EST_PAGO = NULL";
-            }
-        }
-        
->>>>>>> Stashed changes
         if (isset($datosDeCabezera['tipoCambio']) && !empty($datosDeCabezera['tipoCambio'])) {
             $updates[] = "TIPO_CAMBIO = '".$datosDeCabezera['tipoCambio']."'";
         }
@@ -347,6 +316,18 @@ class Encabezado
         
         if (isset($datosDeCabezera['despacho']) && !empty($datosDeCabezera['despacho'])) {
             $updates[] = "DESPACHO = '".$datosDeCabezera['despacho']."'";
+        }
+        
+        if (isset($datosDeCabezera['fechaEstPago']) && !empty($datosDeCabezera['fechaEstPago'])) {
+            $updates[] = "FECHA_EST_PAGO = '".$datosDeCabezera['fechaEstPago']."'";
+        }
+        
+        if (isset($datosDeCabezera['puertoOrigen']) && !empty($datosDeCabezera['puertoOrigen'])) {
+            $updates[] = "PUERTO_ORIGEN = '".$datosDeCabezera['puertoOrigen']."'";
+        }
+        
+        if (isset($datosDeCabezera['terminal']) && !empty($datosDeCabezera['terminal'])) {
+            $updates[] = "TERMINAL = '".$datosDeCabezera['terminal']."'";
         }
         
         // ETA Confirmada (bit - 0 o 1)

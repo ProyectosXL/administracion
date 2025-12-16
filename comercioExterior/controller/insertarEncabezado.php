@@ -93,8 +93,6 @@ try {
         $datosDeCabezera['facturaProveedor'] = $_POST['factura'];
     }
     
-<<<<<<< Updated upstream
-=======
     if (isset($_POST['puertoOrigen']) && !empty($_POST['puertoOrigen'])) {
         $datosDeCabezera['puertoOrigen'] = $_POST['puertoOrigen'];
         error_log("PUERTO_ORIGEN capturado: " . $datosDeCabezera['puertoOrigen']);
@@ -110,7 +108,6 @@ try {
         $datosDeCabezera['fechaEstPago'] = convertirFecha($_POST['fechaEstPago']);
     }
     
->>>>>>> Stashed changes
     if (isset($_POST['tipoCambio']) && !empty($_POST['tipoCambio'])) {
         $datosDeCabezera['tipoCambio'] = $_POST['tipoCambio'];
     }
