@@ -109,8 +109,6 @@ form{
 }
 
 
-
-
 .progressbar-wrapper {
     width: 50%;
     padding-top: 10px;
@@ -171,11 +169,11 @@ form{
 }
 
 .progressbar li.active:before {
-    background: #55b776  url(user.svg) no-repeat center center;
+    background: #55b776  no-repeat center center;
     background-size: 60%;
 }
 .progressbar li::before {
-    background: #fff url(user.svg) no-repeat center center;
+    background: #fff no-repeat center center;
     background-size: 60%;
 }
 

@@ -616,4 +616,112 @@ class Gasto
         }
     }
 
+     /**
+     * Verifica si existen registros amortizados para el período
+     * @param string $desde Fecha inicio
+     * @param string $hasta Fecha fin
+     * @return string 'true' o 'false'
+     */
+    public function verificarAmortizado($desde, $hasta) {
+        
+        $periodo = (int)date('n', strtotime($hasta)) . '-' . date('Y', strtotime($hasta));
+        
+        $sql = "SELECT 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 FROM RO_T_INTEGRAL_AMORTIZACIONES 
+                        WHERE FECHA BETWEEN '$desde' AND '$hasta'
+                    ) THEN 'true'
+                    ELSE 'false'
+                END AS resultado";
+        
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+        if ($stmt === false) {
+            return 'false';
+        }
+        
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        return $row['resultado'];
+    }
+
+    /**
+     * Verifica si existen registros prorrateados para el período
+     * @param string $desde Fecha inicio
+     * @param string $hasta Fecha fin
+     * @return string 'true' o 'false'
+     */
+    public function verificarProrrateado($desde, $hasta) {
+        
+        $periodo = (int)date('n', strtotime($hasta)) . '-' . date('Y', strtotime($hasta));
+        
+        $sql = "SELECT 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 FROM RO_T_INTEGRAL_PRORRATEOS 
+                        WHERE PERIODO = '$periodo'
+                    ) THEN 'true'
+                    ELSE 'false'
+                END AS resultado";
+        
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+        if ($stmt === false) {
+            return 'false';
+        }
+        
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        return $row['resultado'];
+    }
+
+    /**
+     * Revierte las amortizaciones del período ejecutando el SP correspondiente
+     * @param string $desde Fecha inicio
+     * @param string $hasta Fecha fin
+     * @return array Resultado de la operación
+     */
+    public function revertirAmortizacion($desde, $hasta) {
+        
+        $sql = "EXEC RO_SP_REVERTIR_AMORTIZACIONES '$desde', '$hasta'";
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            $errors = sqlsrv_errors();
+            $errorMessage = "Error al ejecutar el procedimiento: ";
+            if ($errors) {
+                foreach ($errors as $error) {
+                    $errorMessage .= $error['message'] . " ";
+                }
+            }
+            return array('success' => false, 'message' => $errorMessage);
+        }
+
+        return array('success' => true, 'message' => 'Amortización revertida correctamente');
+    }
+
+    /**
+     * Revierte los prorrateos del período ejecutando el SP correspondiente
+     * @param string $desde Fecha inicio
+     * @param string $hasta Fecha fin
+     * @return array Resultado de la operación
+     */
+    public function revertirProrrateo($desde, $hasta) {
+        
+        $sql = "EXEC RO_SP_REVERTIR_PRORRATEOS '$desde', '$hasta'";
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            $errors = sqlsrv_errors();
+            $errorMessage = "Error al ejecutar el procedimiento: ";
+            if ($errors) {
+                foreach ($errors as $error) {
+                    $errorMessage .= $error['message'] . " ";
+                }
+            }
+            return array('success' => false, 'message' => $errorMessage);
+        }
+
+        return array('success' => true, 'message' => 'Prorrateo revertido correctamente');
+    }
+
 }  

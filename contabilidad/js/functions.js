@@ -7,14 +7,8 @@ const checkExcluir = document.querySelectorAll(".checkExcluir");
 const checkControlado = document.querySelectorAll(".checkControlado");
 const checkAmortizado = document.querySelectorAll(".checkAmortizado");
 const inputAmortiza = document.querySelectorAll(".amortiza");
-const btnAmortizar = document.querySelector(".btn-danger");
-const btnProrratear = document.querySelector("#btnProrrateo");
-const btnProcesar = document.querySelector("#btnProcesar");
-
 const selectCentroCosto = document.querySelector("#selectCentroCosto");
-
 const btnEjecutar = document.querySelector("#btnEjecutar");
-const btnRevertir = document.querySelector("#btnRevertir");
 
 const validarModulos = () => {
     let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
@@ -56,16 +50,24 @@ let payloads =  {
 }
 
 
-btnAmortizar.addEventListener("click", amortizarGastos);
-btnProrratear.addEventListener("click", prorratearGastos);
-btnEjecutar.addEventListener("click", ejecutarPasos);
-btnProcesar.addEventListener("click", procesar);
-
-
 let conexion;
 
 function iniciarEscuchaSelect() {
-  pintarPasos(periodo);
+  // Agregar event listeners para botones (después de que las funciones estén disponibles)
+  if (btnEjecutar) {
+    btnEjecutar.addEventListener("click", ejecutarPasos);
+  }
+  
+  // Llamar a pintarPasos si existe el elemento periodo
+  const periodoElement = document.querySelector("#periodo");
+  if (periodoElement) {
+    const periodo = periodoElement.getAttribute("attr-periodo");
+    // Usar setTimeout para asegurar que pintarPasos esté definido
+    setTimeout(() => {
+      pintarPasos(periodo);
+    }, 0);
+  }
+  
   //3 - se llama a la funcion de paso 1
   selectRubro.forEach(
     (

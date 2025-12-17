@@ -91,6 +91,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
     <?php
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
     ?>
+    <link rel="stylesheet" href="css/control-gastos-actions.css">
     <style>
             .toggle-on {
             background-image: url('<?= $imageOn ?>');
@@ -133,7 +134,6 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         </div>
         <div>
             <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:10">Ejecutar <i class="bi bi-check2-square"></i></button>
-            <button class="btn btn-primary ml-1 mt-3" id="btnRevertir" onclick="revertir()" style="margin-right:10px">Revertir proceso <i class="bi bi-arrow-counterclockwise"></i></button>
             
             <div style="display: inline-block; vertical-align: middle; margin-left: 20px;">
                 <div class="alert alert-info" role="alert" style="margin: 0; padding: 8px 15px; display: inline-block;">
@@ -162,7 +162,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                         
                         <div  class="col-">
                         <label > Mes :</label> 
-                        <select name="mes" id="mes" style="width:55px" class="form-control form-control-sm">
+                        <select name="mes" id="mes" style="width:60px" class="form-control form-control-sm">
                         
                             <option value="01" <?php if($mes == '01'){echo 'selected'; }?> >01</option>
                             <option value="02" <?php if($mes == '02'){echo 'selected'; }?> >02</option>
@@ -181,7 +181,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                         </div>
                         <div  class="col-">
                         <label > Año :</label> 
-                        <select name="anio" id="selectAño" style="width:70px" class="form-control form-control-sm">
+                        <select name="anio" id="selectAño" style="width:75px" class="form-control form-control-sm">
                             
                             <option value="2022">2022</option>
                             <?php 
@@ -252,11 +252,47 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
 
                 </form>
             </div>
-            <div class="btn-group">
-                <button class="btn btn-danger mt-3" id="btnAmort">Amortizar <i class="bi bi-calendar2-week"></i></button>
-                <button class="btn btn-info mt-3 btnProrrateo" style="margin-left: 0;" id="btnProrrateo">Prorratear <i class="bi bi-file-text"></i></button>
-                <button class="btn btn-secondary mt-3" style="margin-left: 0;" id="btnProcesar">Procesar <i class="bi bi-check2-square"></i></button>
-                <button class="btn btn-success mt-3" style="margin-left: 0;" id="btnResumen" onclick="resumen()" >Resumen IE <i class="bi bi-file-earmark-excel"></i></button>
+            <div class="acciones-container mt-3">
+                <!-- Dropdown Amortizar -->
+                <div class="accion-dropdown amortizar dropdown">
+                    <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnAmortizarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="bi bi-calendar2-week"></i> Amortizar
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="btnAmortizarDropdown" id="menuAmortizar">
+                        <a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarAmortizacion(); return false;">
+                            <i class="bi bi-play-fill"></i> Ejecutar Amortización
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Dropdown Prorratear -->
+                <div class="accion-dropdown prorratear dropdown">
+                    <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnProrratearDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="bi bi-file-text"></i> Prorratear
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="btnProrratearDropdown" id="menuProrratear">
+                        <a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarProrrateo(); return false;">
+                            <i class="bi bi-play-fill"></i> Ejecutar Prorrateo
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Dropdown Procesar -->
+                <div class="accion-dropdown procesar dropdown">
+                    <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnProcesarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="bi bi-check2-square"></i> Procesar
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="btnProcesarDropdown" id="menuProcesar">
+                        <a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarProcesamiento(); return false;">
+                            <i class="bi bi-play-fill"></i> Ejecutar Proceso
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Botón Resumen IE (sin cambios) -->
+                <button class="btn btn-resumen-ie" id="btnResumen" onclick="resumen()">
+                    <i class="bi bi-file-earmark-excel"></i> Resumen IE
+                </button>
             </div>
             <div id="contCheck">
                 <label id="titleCheck">Acciones masivas</label>
@@ -415,6 +451,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
 
 
     <script src="js/functions.js"></script>
+    <script src="js/control-gastos-actions.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
     <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>

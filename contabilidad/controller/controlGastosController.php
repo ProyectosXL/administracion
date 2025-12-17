@@ -36,6 +36,22 @@ switch ($accion) {
     case 'validarModulos':
         validarModulos();
         break;
+
+        case 'verificarAmortizado':
+        verificarAmortizado();
+        break;
+    
+    case 'verificarProrrateado':
+        verificarProrrateado();
+        break;
+    
+    case 'revertirAmortizacion':
+        revertirAmortizacion();
+        break;
+    
+    case 'revertirProrrateo':
+        revertirProrrateo();
+        break;
     
     default:
         # code...
@@ -138,6 +154,66 @@ function validarModulos() {
     $gasto = new Gasto();
     $periodo = $_POST['periodo'];
     $result = $gasto->validarModulos($periodo);
+    
+    echo json_encode($result);
+}
+
+/**
+ * Verifica si existen registros amortizados para el período
+ */
+function verificarAmortizado() {
+    require_once '../Class/Gasto.php';
+    $gasto = new Gasto();
+    
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+    
+    $result = $gasto->verificarAmortizado($desde, $hasta);
+    
+    echo $result;
+}
+
+/**
+ * Verifica si existen registros prorrateados para el período
+ */
+function verificarProrrateado() {
+    require_once '../Class/Gasto.php';
+    $gasto = new Gasto();
+    
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+    
+    $result = $gasto->verificarProrrateado($desde, $hasta);
+    
+    echo $result;
+}
+
+/**
+ * Revierte las amortizaciones del período
+ */
+function revertirAmortizacion() {
+    require_once '../Class/Gasto.php';
+    $gasto = new Gasto();
+    
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+    
+    $result = $gasto->revertirAmortizacion($desde, $hasta);
+    
+    echo json_encode($result);
+}
+
+/**
+ * Revierte los prorrateos del período
+ */
+function revertirProrrateo() {
+    require_once '../Class/Gasto.php';
+    $gasto = new Gasto();
+    
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+    
+    $result = $gasto->revertirProrrateo($desde, $hasta);
     
     echo json_encode($result);
 }

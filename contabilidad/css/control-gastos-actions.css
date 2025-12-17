@@ -1,0 +1,181 @@
+/* Estilos para los dropdowns de acciones en Control de Gastos */
+
+.acciones-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 20rem;
+}
+
+.accion-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.accion-dropdown .dropdown-toggle {
+    min-width: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.accion-dropdown .dropdown-toggle::after {
+    margin-left: 5px;
+}
+
+/* Estado: Puede ejecutar */
+.accion-dropdown .btn-ejecutar {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.accion-dropdown .btn-ejecutar:hover,
+.accion-dropdown .btn-ejecutar:focus {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* Estado: Puede revertir (ya ejecutado) */
+.accion-dropdown .btn-revertir {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+.accion-dropdown .btn-revertir:hover,
+.accion-dropdown .btn-revertir:focus {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+/* Colores específicos por acción */
+.accion-dropdown.amortizar .btn-ejecutar {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.accion-dropdown.prorratear .btn-ejecutar {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.accion-dropdown.prorratear .btn-ejecutar:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
+.accion-dropdown.procesar .btn-ejecutar {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.accion-dropdown.procesar .btn-ejecutar:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+/* Dropdown menu */
+.accion-dropdown .dropdown-menu {
+    min-width: 100%;
+    padding: 5px 0;
+}
+
+.accion-dropdown .dropdown-item {
+    padding: 8px 15px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.accion-dropdown .dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.accion-dropdown .dropdown-item.ejecutar-item {
+    color: #28a745;
+}
+
+.accion-dropdown .dropdown-item.ejecutar-item:hover {
+    background-color: #28a745;
+    color: white;
+}
+
+.accion-dropdown .dropdown-item.revertir-item {
+    color: #dc3545;
+}
+
+.accion-dropdown .dropdown-item.revertir-item:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.accion-dropdown .dropdown-item.disabled {
+    color: #adb5bd;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+/* Indicador de estado en el botón */
+.accion-dropdown .estado-indicador {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 5px;
+}
+
+.accion-dropdown .estado-pendiente {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.accion-dropdown .estado-ejecutado {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Botón Resumen IE - mantener estilo original */
+.btn-resumen-ie {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+}
+
+.btn-resumen-ie:hover {
+    background-color: #218838 !important;
+    border-color: #1e7e34 !important;
+    color: black !important;
+}
+
+/* Animación de carga en botones */
+.accion-dropdown .btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.accion-dropdown .btn-loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: button-loading-spinner 0.8s linear infinite;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+    to {
+        transform: rotate(1turn);
+    }
+}
