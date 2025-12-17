@@ -24,9 +24,9 @@ body {
 
 .pci-container,
 .pci-edit-container {
-    max-width: 1500px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 2rem;
 }
 
 /* Page Header */
