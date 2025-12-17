@@ -22,11 +22,21 @@
 <body class="bg-light">
     <div class="container-fluid mt-4">
         <header class="d-flex justify-content-end align-items-center mb-3">
-            <!-- ======================= NUEVO BOTÓN DE AYUDA ======================= -->
-            <a href="capacitacion.php" class="btn btn-sm btn-outline-info me-3" title="Capacitación y Ayuda">
-                <i class="fa-solid fa-question-circle"></i> Ayuda
-            </a>
-            <!-- ==================================================================== -->
+
+            <!-- ======================= INICIO DE LA LÓGICA CORREGIDA ======================= -->
+            <?php 
+            // Determinamos a qué página de ayuda debe ir el enlace
+            if (isset($_SESSION['usuario_rol'])) {
+                $ayuda_url = ($_SESSION['usuario_rol'] === 'admin') ? 'capacitacion.php' : 'ayuda_cliente.php';
+            ?>
+                <a href="<?php echo $ayuda_url; ?>" class="btn btn-sm btn-outline-info me-3" title="Ayuda y Guía de Uso">
+                    <i class="fa-solid fa-question-circle"></i> Ayuda
+                </a>
+            <?php 
+            } 
+            ?>
+            <!-- ======================== FIN DE LA LÓGICA CORREGIDA ========================= -->
+
             <span class="me-3">Hola, <strong><?php echo htmlspecialchars($_SESSION['usuario_nombre']); ?></strong></span>
             <a href="api/auth_controller.php?action=logout" class="btn btn-outline-danger btn-sm">
                 <i class="fa-solid fa-right-from-bracket"></i> Salir

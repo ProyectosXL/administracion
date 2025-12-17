@@ -6,28 +6,56 @@ $(document).ready(function() {
     let chartEstadosInstance = null;
     let chartActividadInstance = null;
     
-    function cargarDashboardGestion() {
-        $.ajax({
-            url: 'api/propuestas_controller.php?action=obtener_dashboard_admin',
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    const data = response.data;
-                    // Actualizar KPIs
-                    $('#kpi-activas').text(data.kpis.totalActivas || 0);
-                    const monto = parseFloat(data.kpis.montoEnNegociacion || 0);
-                    $('#kpi-monto').text(monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
-                    $('#kpi-accion').text(data.kpis.contrapropuestas || 0);
-                    $('#kpi-aceptadas').text(data.kpis.aceptadasMes || 0);
-                    
-                    // Renderizar Gráfico de Estados
+function cargarDashboardGestion() {
+    $.ajax({
+        url: 'api/propuestas_controller.php?action=obtener_dashboard_admin',
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                const data = response.data;
+                
+                // ======================= INICIO DE LA MODIFICACIÓN DE KPIs =======================
+                
+                // Función auxiliar para formatear a moneda
+                const formatoMoneda = (valor) => {
+                    // Si el valor es nulo o indefinido, lo tratamos como 0
+                    const numero = parseFloat(valor || 0); 
+                    return numero.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+                };
+
+                // Asegúrate de que los IDs en tu index.php coincidan con estos
+                $('#kpi-propuestas-activas').text(data.kpis.totalActivas || '0');
+                $('#kpi-monto-negociacion').text(formatoMoneda(data.kpis.montoEnNegociacion));
+                
+                // Nuevo KPI para el Monto Vencido
+                $('#kpi-monto-vencido').text(formatoMoneda(data.kpis.montoVencido));
+
+                $('#kpi-requieren-accion').text(data.kpis.contrapropuestas || '0');
+                $('#kpi-aceptadas-mes').text(data.kpis.aceptadasMes || '0');
+                
+                // ======================== FIN DE LA MODIFICACIÓN DE KPIs =========================
+                
+                // Renderizar Gráfico de Estados (sin cambios)
+                if (data.graficoEstados) {
                     renderizarChartEstados(data.graficoEstados);
+                }
+                
+                // Renderizar Gráfico de Actividad (sin cambios)
+                if (data.graficoActividad) {
                     renderizarChartActividad(data.graficoActividad);
                 }
+            } else {
+                // Añadimos un log de error para facilitar la depuración
+                console.error("El backend devolvió un error al cargar el dashboard:", response.message);
             }
-        });
-    }
+        },
+        error: function() {
+            // Añadimos un log de error para fallos de conexión
+            console.error("Fallo la llamada AJAX para cargar el dashboard del admin.");
+        }
+    });
+}
 
     function renderizarChartEstados(data) {
         const ctx = document.getElementById('chartEstados').getContext('2d');
@@ -246,19 +274,18 @@ const columnsDetalle = [
 
     initializeDataTable('#tabla-franquicias', 'api/cobranzas_controller.php?tipo=franquicias');
 
-    $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+$('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
         const targetId = $(e.target).attr("id");
+        
         if (targetId === 'gestion-tab') {
-            $('#summary-cards').hide();
-            $('#gestion-dashboard').show();
-            $('#btn-abrir-parametros').hide();
-            cargarDashboardGestion();
-            initializeGestionDataTable();
+            initializeGestionDataTable(); // Llamamos a la función principal
         } else {
             $('#gestion-dashboard').hide();
             $('#summary-cards').show();
             $('#btn-abrir-parametros').show();
+            
             const tipo = targetId.includes('franquicias') ? 'franquicias' : 'mayoristas';
+            
             initializeDataTable(`#tabla-${tipo}`, `api/cobranzas_controller.php?tipo=${tipo}`);
         }
     });
@@ -271,13 +298,16 @@ const columnsDetalle = [
         const urlDetalle = `api/cobranzas_controller.php?tipo=${tipo}&cod_client=${codClient}`;
         
         $('#nombreClienteModal').text(razonSoci);
+        
+        // ======================= ESTA LÍNEA ES LA CLAVE =======================
+        // Guardamos el código del cliente en el propio modal para poder leerlo después
+        $('#detalleClienteModal').data('cod-cliente', codClient);
+        // =====================================================================
+
         const container = $('#detalle-content-container');
         
-        const loadingHtml = `<div class="d-flex justify-content-center align-items-center" style="min-height: 250px;"><div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div><strong class="ms-3 h5">Cargando...</strong></div>`;
-
-        container.html(loadingHtml);
+        container.html('<div class="d-flex justify-content-center align-items-center" style="min-height: 250px;"><div class="spinner-border text-primary" role="status"></div></div>');
         $('#btn-enviar-propuesta').prop('disabled', true);
-        $('#nombreClienteModal').data('cod-cliente', codClient);
         const detalleModal = new bootstrap.Modal(document.getElementById('detalleClienteModal'));
         detalleModal.show();
 
@@ -287,59 +317,86 @@ const columnsDetalle = [
             dataType: 'json',
             success: function(response) {
                 container.empty();
-                // *** AÑADIDO ***: Agregamos un lugar para mostrar el total de la propuesta
+                // ** NUEVO **: Añadimos 3 contenedores en el footer del modal
                 container.append('<table id="tabla-detalle-cliente" class="table table-striped table-hover" style="width:100%"></table>');
-                $('#detalleClienteModal .modal-footer').prepend('<div id="total-propuesta-container" class="me-auto fs-5"><strong>Total Propuesto: <span id="total-propuesta-valor">$ 0,00</span></strong></div>');
-
+                $('#detalleClienteModal .modal-footer').prepend(`
+                    <div id="footer-resumen" class="d-flex justify-content-between w-100 align-items-center">
+                        <div id="total-bruto-container"><strong>Total Bruto:</strong> <span class="fw-normal">$ 0,00</span></div>
+                        <div id="total-neto-container"><strong>Total Neto:</strong> <span class="fw-normal">$ 0,00</span></div>
+                        <div id="fecha-promedio-container"><strong>F.P. Cobro Prom.:</strong> <span class="fw-normal">N/A</span></div>
+                    </div>
+                `);
+                
                 $('#tabla-detalle-cliente').DataTable({
                     data: response.data,
                     columns: columnsDetalle,
                     language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
                     order: [[1, 'desc']],
                     dom: 'Bfrtip',
-                    buttons: [{
-                        extend: 'excelHtml5', text: '<i class="fa-solid fa-file-excel"></i> Exportar a Excel',
-                        className: 'btn btn-success btn-sm', title: `Detalle Cobranza - ${razonSoci}`
-                    }],
-                    destroy: true,
-                    paging: false, // Desactivamos paginación para calcular totales fácilmente
-                    info: false
+                    buttons: [{ extend: 'excelHtml5', text: '<i class="fa-solid fa-file-excel"></i> Exportar', className: 'btn btn-success btn-sm' }],
+                    destroy: true, paging: false, info: false
                 });
 
-                // *** AÑADIDO ***: Calculamos el total inicial (será 0)
-                actualizarTotalPropuesta();
+                // ** NUEVO **: Llamamos a la nueva función de totales
+                actualizarTotalesPropuesta(); 
             },
             error: function() {
-                container.html('<div class="alert alert-danger">Error al cargar los datos. Por favor, intente de nuevo.</div>');
+                container.html('<div class="alert alert-danger">Error al cargar los datos.</div>');
             }
         });
     });
 
-    // *** AÑADIDO ***: Limpiar el total del footer cuando se cierra el modal
+// *** AÑADIDO ***: Limpiar el total del footer cuando se cierra el modal
     $('#detalleClienteModal').on('hidden.bs.modal', function () {
-        $('#total-propuesta-container').remove();
+        // Ahora borramos el contenedor principal de los resúmenes
+        $('#footer-resumen').remove();
     });
 
-    // *** NUEVA FUNCIÓN ***: Para recalcular y mostrar el total de la propuesta
-function actualizarTotalPropuesta() {
-    let total = 0;
-    const tablaDetalle = $('#tabla-detalle-cliente').DataTable();
-    
-    // Iteramos sobre las filas SELECCIONADAS con checkbox
-    $('#tabla-detalle-cliente .invoice-checkbox:checked').each(function() {
-        const tr = $(this).closest('tr');
-        const rowData = tablaDetalle.row(tr).data(); // Obtenemos los datos originales de la fila
-        const cellNeto = tr.find('.importe-neto-cell');
+    // *** NUEVA FUNCIÓN MEJORADA ***: Para recalcular Bruto, Neto y Fecha Promedio
+    function actualizarTotalesPropuesta() {
+        let totalBruto = 0;
+        let totalNeto = 0;
+        let fechas = [];
+        const tablaDetalle = $('#tabla-detalle-cliente').DataTable();
         
-        // Convertimos el texto formateado ($ 1.234,56 o -$ 123,45) a un número
-        let valorNeto = parseFloat(cellNeto.text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
-        
-        // La conversión ya tiene el signo correcto, así que solo sumamos
-        total += valorNeto;
-    });
+        $('#tabla-detalle-cliente .invoice-checkbox:checked').each(function() {
+            const tr = $(this).closest('tr');
+            const rowData = tablaDetalle.row(tr).data();
+            const esNC = rowData.T_COMP.trim().startsWith('NC');
+            
+            let bruto = parseFloat(rowData.IMPORTE);
+            // Leemos el neto de la celda, que ya está calculado y tiene el signo correcto
+            let neto = parseFloat(tr.find('.importe-neto-cell').text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
+            
+            totalBruto += esNC ? -bruto : bruto;
+            totalNeto += neto;
+            
+            if (rowData.FECHA_PROB_COBRO) {
+                // Parseamos la fecha correctamente. Asumimos formato AAAA-MM-DD.
+                const parts = rowData.FECHA_PROB_COBRO.split('-');
+                if (parts.length === 3) {
+                    // new Date(año, mes - 1, día)
+                    fechas.push(new Date(parts[0], parts[1] - 1, parts[2]).getTime());
+                }
+            }
+        });
 
-    $('#total-propuesta-valor').text(total.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
-}
+        // Calcular fecha promedio
+        let fechaPromedioStr = 'N/A';
+        if (fechas.length > 0) {
+            const promedioTimestamp = fechas.reduce((a, b) => a + b, 0) / fechas.length;
+            const fechaPromedio = new Date(promedioTimestamp);
+            fechaPromedioStr = fechaPromedio.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+        
+        // Función para formatear a moneda
+        const f = (num) => num.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+
+        // Actualizamos los nuevos contenedores
+        $('#total-bruto-container span').text(f(totalBruto));
+        $('#total-neto-container span').text(f(totalNeto));
+        $('#fecha-promedio-container span').text(fechaPromedioStr);
+    }
 
     // *** NUEVO EVENTO ***: Para recalcular el neto de una fila cuando cambia el descuento
 $('#detalleClienteModal').on('input', '.descuento-input', function() {
@@ -395,17 +452,33 @@ $('#detalleClienteModal').on('input', '.descuento-input', function() {
         actualizarTotalPropuesta();
     });
 
-    $('#detalleClienteModal').on('click', '.invoice-checkbox', function() {
-        if (!this.checked) {
-            $('#select-all-invoices').prop('checked', false);
+    $('#detalleClienteModal').on('change', 'input[type="checkbox"]', function() {
+        
+        // Si se hizo clic en el checkbox "seleccionar todo"
+        if ($(this).is('#select-all-invoices')) {
+            // Sincronizamos todos los checkboxes de las filas con el estado del principal
+            $('.invoice-checkbox').prop('checked', this.checked);
+        } else {
+            // Si se desmarca una fila, nos aseguramos de que "seleccionar todo" también se desmarque.
+            if (!this.checked) {
+                $('#select-all-invoices').prop('checked', false);
+            }
         }
-        actualizarEstadoBotonPropuesta();
-        actualizarTotalPropuesta();
+        
+        // Actualizamos el estado del botón de envío
+        const seleccionados = $('.invoice-checkbox:checked').length;
+        $('#btn-enviar-propuesta').prop('disabled', seleccionados === 0);
+
+        // Finalmente, recalculamos los totales
+        actualizarTotalesPropuesta();
     });
     
-$('#btn-enviar-propuesta').on('click', function() {
-    const codCliente = $('#nombreClienteModal').data('cod-cliente');
-    const btn = $(this);
+    $('#btn-enviar-propuesta').on('click', function() {
+        // ======================= ESTA LÍNEA ES LA CORRECCIÓN =======================
+        // Leemos el código del cliente desde el modal, donde lo guardamos antes
+        const codCliente = $('#detalleClienteModal').data('cod-cliente');
+        // =========================================================================
+        const btn = $(this);
     
     let comprobantesSeleccionados = [];
     let totalNetoSeleccionado = 0;
@@ -417,16 +490,19 @@ $('#btn-enviar-propuesta').on('click', function() {
 
         if (rowData) {
             const descuento = parseFloat(tr.find('.descuento-input').val()) || 0;
-            const importeNetoRecalculado = parseFloat(rowData.IMPORTE) * (1 - (descuento / 100));
+            const importeBrutoOriginal = parseFloat(rowData.IMPORTE);
+            let importeNetoRecalculado = importeBrutoOriginal * (1 - (descuento / 100));
+            const esNC = rowData.T_COMP.trim().startsWith('NC');
             
             comprobantesSeleccionados.push({
                 t_comp: rowData.T_COMP,
                 n_comp: rowData.N_COMP,
-                importe_bruto: rowData.IMPORTE,
+                importe_bruto: importeBrutoOriginal,
                 importe_neto: importeNetoRecalculado,
                 porcentaje_descuento: descuento
             });
-            totalNetoSeleccionado += importeNetoRecalculado;
+            
+            totalNetoSeleccionado += esNC ? -importeNetoRecalculado : importeNetoRecalculado;
         }
     });
     
@@ -435,68 +511,82 @@ $('#btn-enviar-propuesta').on('click', function() {
         return;
     }
 
-    // ======================= INICIO DE LA SOLUCIÓN =======================
     Swal.fire({
-        title: 'Seleccione la Fecha de Pago',
+        title: 'Finalizar Propuesta',
         html: `
             <p class="mb-2">Monto Total de la Propuesta: <strong>${totalNetoSeleccionado.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</strong></p>
-            <div id="datepicker-container" class="mt-3"></div>
-            <input type="hidden" id="fecha-propuesta-swal">
+            <div class="mb-3 text-start">
+                <label for="swal-medio-pago" class="form-label">Medio de Pago</label>
+                <select id="swal-medio-pago" class="form-select">
+                    <option value="ECHECK" selected>ECHECK</option>
+                    <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                </select>
+            </div>
+            <div class="mb-2 text-start">
+                <label class="form-label">Fecha Propuesta de Pago</label>
+                <div id="datepicker-container-swal"></div>
+                <input type="hidden" id="fecha-propuesta-swal-input">
+            </div>
         `,
         confirmButtonText: 'Crear Propuesta',
         showCancelButton: true,
-        cancelButtonText: 'Cancelar',
         didOpen: () => {
-            // Cuando el modal se abre, inicializamos el datepicker dentro de él
-            $("#datepicker-container").datepicker({
-                dateFormat: "yy-mm-dd",
-                minDate: 0, // No permitir fechas pasadas
+            $("#datepicker-container-swal").datepicker({
+                dateFormat: "yy-mm-dd", minDate: 0,
                 onSelect: function(dateText) {
-                    // Guardamos la fecha seleccionada en un input oculto
-                    $('#fecha-propuesta-swal').val(dateText);
+                    $('#fecha-propuesta-swal-input').val(dateText);
                 }
             });
-            // Seleccionamos la fecha de hoy por defecto
-            $("#datepicker-container").datepicker('setDate', new Date());
-            $('#fecha-propuesta-swal').val($.datepicker.formatDate('yy-mm-dd', new Date()));
+            const hoy = new Date();
+            $("#datepicker-container-swal").datepicker('setDate', hoy);
+            $('#fecha-propuesta-swal-input').val($.datepicker.formatDate('yy-mm-dd', hoy));
         },
         preConfirm: () => {
-            // Antes de confirmar, nos aseguramos de que se haya seleccionado una fecha
-            const fecha = $('#fecha-propuesta-swal').val();
+            const fecha = $('#fecha-propuesta-swal-input').val();
             if (!fecha) {
-                Swal.showValidationMessage('Por favor, seleccione una fecha del calendario.');
+                Swal.showValidationMessage('Por favor, seleccione una fecha.');
                 return false;
             }
-            return fecha;
+            return {
+                fecha: fecha,
+                medioPago: $('#swal-medio-pago').val()
+            };
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            const fechaPropuesta = result.value;
-            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Enviando...');
+            const { fecha, medioPago } = result.value;
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
             $.ajax({
                 url: 'api/cobranzas_controller.php?action=crear_propuesta',
                 type: 'POST',
                 data: {
-                    cod_cliente: codCliente,
+                    // La variable 'codCliente' definida al principio del evento es visible aquí
+                    cod_cliente: codCliente, 
                     comprobantes: comprobantesSeleccionados,
                     total_propuesto: totalNetoSeleccionado,
-                    fecha_propuesta_pago: fechaPropuesta
+                    fecha_propuesta_pago: fecha,
+                    medio_de_pago: medioPago
                 },
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        Swal.fire('¡Éxito!', response.message, 'success');
-                        $('#detalleClienteModal').modal('hide');
-                        if ($('#gestion-tab').hasClass('active')) {
-                            tablaGestion.ajax.reload();
-                        }
+                        Swal.fire('¡Éxito!', response.message, 'success').then(() => {
+                            $('#detalleClienteModal').modal('hide');
+                            // Verificamos si la tabla de gestión existe antes de recargarla
+                            if (tablaGestion) {
+                                tablaGestion.ajax.reload();
+                            }
+                        });
                     } else {
+                        // Mostramos el mensaje de error específico que viene del backend
                         Swal.fire('Error', response.message, 'error');
                     }
                 },
-                error: function() {
-                    Swal.fire('Error', 'Error de conexión con el servidor.', 'error');
+                error: function(jqXHR, textStatus, errorThrown) {
+                    // Mostramos un error más detallado en la consola
+                    console.error("Error AJAX:", jqXHR.responseText, textStatus, errorThrown);
+                    Swal.fire('Error de Comunicación', 'No se pudo completar la solicitud. Revisa la consola para más detalles.', 'error');
                 },
                 complete: function() {
                     btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-2"></i> Enviar Propuesta');
@@ -504,7 +594,6 @@ $('#btn-enviar-propuesta').on('click', function() {
             });
         }
     });
-    // ======================== FIN DE LA SOLUCIÓN =========================
 });
 
     // --- LÓGICA PARA EL MODAL DE PARÁMETROS (Sin cambios) ---
@@ -516,7 +605,7 @@ $('#btn-enviar-propuesta').on('click', function() {
                            </div>`;
         $('#alert-container').html(alertHtml);
     }
-    function cargarParametros() {
+function cargarParametros() {
         const url = 'api/parametros_controller.php?action=read';
         if (parametrosTable) {
             parametrosTable.ajax.url(url).load();
@@ -526,21 +615,16 @@ $('#btn-enviar-propuesta').on('click', function() {
                 columns: [
                     { data: 'ID', title: 'ID' },
                     { data: 'COD_CLIENT', title: 'Cód. Cliente' },
+                    { data: 'MEDIO_PAGO_DEFAULT', title: 'Medio Pago Def.' },
+                    { data: 'DIAS_PP_MAX', title: 'Días PP Máx.', className: 'text-center' },
                     { 
-                        data: 'DESC_COMPRA', title: 'Desc. Compra', className: 'text-end',
-                        render: data => (data === null || data === '') ? '' : parseFloat(data).toFixed(4)
-                    },
-                    { 
-                        data: 'DESC_FLETE', title: 'Desc. Flete', className: 'text-end',
-                        render: data => (data === null || data === '') ? '' : parseFloat(data).toFixed(4)
-                    },
-                    { 
-                        data: 'DIAS_PP', title: 'Días PP', className: 'text-center',
-                        render: data => data === null ? '' : data
-                    },
-                    { 
-                        data: 'DESC_PP', title: 'Desc. PP', className: 'text-end',
-                        render: data => (data === null || data === '') ? '' : parseFloat(data).toFixed(4)
+                        data: 'DESC_PP_MAX', 
+                        title: 'Desc. PP Máx.', 
+                        className: 'text-end',
+                        render: function(data) {
+                            // Convertimos de 0.08 a 8.00 %
+                            return (parseFloat(data) * 100).toFixed(2) + ' %';
+                        }
                     },
                     {
                         data: null, title: 'Acciones', orderable: false, className: 'text-center',
@@ -562,12 +646,24 @@ $('#btn-enviar-propuesta').on('click', function() {
         resetFormularioParametros();
         cargarParametros();
     });
-    $('#form-parametros').on('submit', function(e) {
+$('#form-parametros').on('submit', function(e) {
         e.preventDefault();
         const action = $('#param-id').val() ? 'update' : 'create';
-        let formData = $(this).serialize() + '&action=' + action;
+        // Construimos el FormData correctamente con los nuevos nombres
+        let formData = {
+            action: action,
+            id: $('#param-id').val(),
+            cod_client: $('#param-cod-client').val(),
+            medio_pago: $('#param-medio-pago').val(),
+            dias_pp_max: $('#param-dias-pp').val(),
+            desc_pp_max: $('#param-desc-pp').val()
+        };
+
         $.ajax({
-            url: 'api/parametros_controller.php', type: 'POST', data: formData, dataType: 'json',
+            url: 'api/parametros_controller.php',
+            type: 'POST',
+            data: formData, // Enviamos el objeto
+            dataType: 'json',
             success: function(response) {
                 if (response.success) {
                     showAlert(response.message, 'success');
@@ -576,18 +672,21 @@ $('#btn-enviar-propuesta').on('click', function() {
                 } else {
                     showAlert('Error: ' + response.message, 'danger');
                 }
+            },
+            error: function() {
+                showAlert('Error de conexión con el servidor.', 'danger');
             }
         });
     });
-    $('#tabla-parametros').on('click', '.btn-editar', function() {
+$('#tabla-parametros').on('click', '.btn-editar', function() {
         const data = parametrosTable.row($(this).parents('tr')).data();
         $('#form-title').text('Editar Parámetro');
         $('#param-id').val(data.ID);
         $('#param-cod-client').val(data.COD_CLIENT);
-        $('#param-desc-compra').val(data.DESC_COMPRA);
-        $('#param-desc-flete').val(data.DESC_FLETE);
-        $('#param-dias-pp').val(data.DIAS_PP);
-        $('#param-desc-pp').val(data.DESC_PP);
+        $('#param-medio-pago').val(data.MEDIO_PAGO_DEFAULT);
+        $('#param-dias-pp').val(data.DIAS_PP_MAX);
+        // Convertimos de 0.08 a 8.00 para el input
+        $('#param-desc-pp').val((parseFloat(data.DESC_PP_MAX) * 100).toFixed(2));
         $('#btn-cancelar-edicion').show();
         $('.btn-text').text('Actualizar');
     });
@@ -634,8 +733,20 @@ $('#btn-enviar-propuesta').on('click', function() {
     // ========================================================================
     let tablaGestion = null;
 
-    function initializeGestionDataTable() {
-        if ($.fn.DataTable.isDataTable('#tabla-gestion-propuestas')) {
+function initializeGestionDataTable() {
+        // 1. Preparamos la interfaz para la vista de gestión
+        $('#summary-cards').hide();
+        $('#gestion-dashboard').show();
+        $('#btn-abrir-parametros').hide();
+
+        // 2. Cargamos/Recargamos los datos del dashboard (KPIs y gráficos)
+        cargarDashboardGestion();
+
+        // 3. Ejecutamos la sincronización en segundo plano
+        sincronizarEstados();
+        
+        // 4. Inicializamos o recargamos la tabla de DataTables
+        if (tablaGestion) {
             tablaGestion.ajax.reload();
         } else {
             tablaGestion = $('#tabla-gestion-propuestas').DataTable({
@@ -708,27 +819,36 @@ function renderizarDetallePropuestaAdmin(data) {
     const { propuesta, items, historial, adjuntos } = data;
     const contentDiv = $('#detalle-propuesta-content');
     
-    // ======================= INICIO DE LA MODIFICACIÓN =======================
-    // Creamos las tarjetas de resumen, igual que en el portal del cliente.
+    // --- Mantenemos tu código original para el resumen y lo mejoramos ---
     let fechaHtml = propuesta.fecha_propuesta_pago 
         ? new Date(propuesta.fecha_propuesta_pago + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })
         : 'No definida';
 
+    // ======================= INICIO DE LA MODIFICACIÓN =======================
+    // Añadimos una tercera tarjeta para el Medio de Pago y ajustamos las columnas
     let resumenHtml = `
         <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card bg-light shadow-sm">
+            <div class="col-md-4">
+                <div class="card bg-light shadow-sm h-100">
                     <div class="card-body text-center">
                         <h6 class="card-title text-muted text-uppercase small">Total Propuesto</h6>
                         <p class="card-text fs-4 fw-bold text-primary mb-0">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card bg-light shadow-sm">
+            <div class="col-md-4">
+                <div class="card bg-light shadow-sm h-100">
                     <div class="card-body text-center">
                         <h6 class="card-title text-muted text-uppercase small">Fecha Propuesta de Pago</h6>
                         <p class="card-text fs-4 fw-bold mb-0">${fechaHtml}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-muted text-uppercase small">Medio de Pago</h6>
+                        <p class="card-text fs-4 fw-bold mb-0">${propuesta.medio_de_pago || 'N/A'}</p>
                     </div>
                 </div>
             </div>
@@ -736,41 +856,29 @@ function renderizarDetallePropuestaAdmin(data) {
     `;
     // ======================== FIN DE LA MODIFICACIÓN =========================
 
-        // ======================= INICIO DE LA NUEVA LÓGICA =======================
     let adjuntosHtml = '';
-    // Si el array 'adjuntos' no está vacío, creamos la sección
     if (adjuntos && adjuntos.length > 0) {
         adjuntosHtml = `
-            <h5 class="mt-4">Comprobantes Adjuntos</h5>
+            <h5 class="mt-4"><i class="fa-solid fa-folder-open me-2"></i>Comprobantes Adjuntos</h5>
             <ul class="list-group">
         `;
-        
         adjuntos.forEach(adjunto => {
-            // Asumimos que la ruta guardada es relativa a la raíz del proyecto
-            // Ej: 'uploads/comprobantes/propuesta_13_1670868000.pdf'
-            const url = adjunto.ruta_archivo;
+            const url = adjunto.url_completa; // Usamos la URL completa que ya viene del backend
             const fechaSubida = new Date(adjunto.fecha_subida).toLocaleString('es-AR');
-
             adjuntosHtml += `
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
-                        <i class="fa-solid fa-file-arrow-down me-2"></i>
-                        ${adjunto.nombre_archivo}
+                        <i class="fa-solid fa-file-arrow-down me-2"></i> ${adjunto.nombre_archivo}
                         <small class="d-block text-muted">Subido el: ${fechaSubida}</small>
                     </div>
-                    <a href="${url}" target="_blank" class="btn btn-outline-primary btn-sm">
-                        Descargar
-                    </a>
+                    <a href="${url}" target="_blank" class="btn btn-outline-primary btn-sm">Descargar</a>
                 </li>
             `;
         });
-
         adjuntosHtml += '</ul>';
     }
-    // ======================== FIN DE LA NUEVA LÓGICA =========================
     
     let esEditable = propuesta.estado === 'CONTRAPROPUESTA_CLIENTE';
-
     let itemsHtml = `
         <h5 class="mt-4">Facturas Incluidas</h5>
         <table class="table table-sm table-bordered" id="tabla-detalle-propuesta-admin">
@@ -780,42 +888,55 @@ function renderizarDetallePropuestaAdmin(data) {
                     <th class="text-end">Importe Bruto</th>
                     <th class="text-center">% Descuento</th>
                     <th class="text-end">Importe Neto</th>
-                    ${esEditable ? '<th class="text-center">Acciones</th>' : ''} <!-- NUEVA COLUMNA -->
+                    ${esEditable ? '<th class="text-center">Acciones</th>' : ''}
                 </tr>
             </thead>
             <tbody>`;
 
-        let totalNeto = 0;
-        items.forEach(item => {
-            const bruto = parseFloat(item.importe_bruto) || 0;
-            const neto = parseFloat(item.importe_neto) || 0;
-            const descuento = parseFloat(item.porcentaje_descuento) || 0;
-            totalNeto += neto;
-            
+    let totalBrutoTabla = 0;
+    let totalNetoTabla = 0;
+
+    items.forEach(item => {
+        const bruto = parseFloat(item.importe_bruto) || 0;
+        const neto = parseFloat(item.importe_neto) || 0;
+        const descuento = parseFloat(item.porcentaje_descuento) || 0;
+        
+        // ======================= LÓGICA DE NEGATIVOS APLICADA AQUÍ =======================
+        // Verificamos si es Nota de Crédito para los cálculos y la visualización
+        const esNC = item.t_comp_factura && item.t_comp_factura.trim().startsWith('NC');
+        
+        totalBrutoTabla += esNC ? -bruto : bruto;
+        totalNetoTabla += esNC ? -neto : neto;
+        // =================================================================================
+
         const descuentoHtml = esEditable 
             ? `<input type="number" class="form-control form-control-sm descuento-input-admin" value="${descuento.toFixed(2)}" min="0" max="100" step="0.01" style="width: 80px;">`
             : `${descuento.toFixed(2)} %`;
 
-        // Añadimos el botón de eliminar solo si es editable
         const accionesHtml = esEditable 
             ? `<td class="text-center"><button class="btn btn-danger btn-sm btn-eliminar-factura-propuesta" title="Quitar factura de la propuesta"><i class="fa-solid fa-trash"></i></button></td>`
             : '';
 
         itemsHtml += `
-                <tr data-importe-bruto="${bruto}" data-ncomp="${item.n_comp_factura}">
+                <tr data-importe-bruto="${bruto}" data-ncomp="${item.n_comp_factura}" data-tcomp="${item.t_comp_factura || ''}">
                     <td>${item.n_comp_factura}</td>
-                    <td class="text-end">${bruto.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
+                    <!-- Aplicamos la lógica visual para el Importe Bruto -->
+                    <td class="text-end ${esNC ? 'text-danger' : ''}">${(esNC ? -bruto : bruto).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
                     <td class="text-center">${descuentoHtml}</td>
-                    <td class="text-end fw-bold importe-neto-cell-admin">${neto.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
-                    ${accionesHtml} <!-- NUEVO TD -->
+                    <!-- Aplicamos la lógica visual para el Importe Neto -->
+                    <td class="text-end fw-bold importe-neto-cell-admin ${esNC ? 'text-danger' : ''}">${(esNC ? -neto : neto).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
+                    ${accionesHtml}
                 </tr>`;
     });
+    
     itemsHtml += `
             </tbody>
             <tfoot class="table-light">
                 <tr>
-                    <td colspan="${esEditable ? 4 : 3}" class="text-end"><strong>Total Propuesta:</strong></td>
-                    <td class="text-end fw-bolder fs-5" id="total-propuesta-admin">${totalNeto.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
+                    <td class="text-end"><strong>Totales:</strong></td>
+                    <td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
+                    <td></td>
+                    <td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
                     ${esEditable ? '<td></td>' : ''}
                 </tr>
             </tfoot>
@@ -831,39 +952,30 @@ function renderizarDetallePropuestaAdmin(data) {
 
     let accionAdminHtml = '';
     
+    // ======================= INICIO DE LA MODIFICACIÓN =======================
     if (esEditable) {
-
-        // Obtenemos la fecha actual en el formato YYYY-MM-DD para el input
-        const fechaActual = propuesta.fecha_propuesta_pago ? propuesta.fecha_propuesta_pago.split(' ')[0] : new Date().toISOString().split('T')[0];
-        
+        // La sección 'Acción Requerida' ahora tendrá dos botones: Aceptar o Rechazar/Modificar
         accionAdminHtml = `
             <div class="card bg-light border-primary mt-4">
                 <div class="card-body">
-                    <h5 class="card-title">Acción Requerida</h5>
-                    <p>El cliente ha enviado una contrapropuesta. Ajuste los descuentos, quite facturas o cambie la fecha de pago si es necesario y envíe la propuesta final.</p>
+                    <h5 class="card-title">Acción Requerida: Contrapropuesta del Cliente</h5>
+                    <p>El cliente ha propuesto nuevas condiciones. Revise los cambios en el historial y en las tarjetas de resumen. Puede aceptar la contrapropuesta.</p>
                     
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="fecha-propuesta-admin" class="form-label"><strong>Fecha Propuesta de Pago:</strong></label>
-                            <input type="date" class="form-control" id="fecha-propuesta-admin" value="${fechaActual}">
-                        </div>
-                    </div>
-
                     <div class="mb-3">
-                        <label for="comentario-admin" class="form-label"><strong>Comentario para el Cliente (Opcional):</strong></label>
-                        <textarea class="form-control" id="comentario-admin" rows="2" placeholder="Ej: Aceptamos quitar las facturas, se ajusta el monto final."></textarea>
+                        <label for="comentario-admin" class="form-label"><strong>Añadir un comentario para el cliente (Opcional):</strong></label>
+                        <textarea class="form-control" id="comentario-admin" rows="2"></textarea>
                     </div>
-
-                    <button class="btn btn-primary" id="btn-enviar-propuesta-final" data-id="${propuesta.id}">
-                        <i class="fa-solid fa-paper-plane"></i> Enviar Propuesta Final
-                    </button>
+                    
+                    <button class="btn btn-success" id="btn-aceptar-contrapropuesta" data-id="${propuesta.id}">
+                        <i class="fa-solid fa-check-double me-2"></i> Aceptar Contrapropuesta del Cliente
                 </div>
             </div>
         `;
     }
+    // ======================== FIN DE LA MODIFICACIÓN =========================
 
-        contentDiv.html(resumenHtml + itemsHtml + historialHtml + accionAdminHtml + adjuntosHtml);
-    }
+    contentDiv.html(resumenHtml + itemsHtml  + historialHtml + adjuntosHtml + accionAdminHtml);
+}
     
     // *** NUEVO EVENTO ***: Lógica de recálculo para el modal de GESTIÓN
     $('#detallePropuestaModal').on('input', '.descuento-input-admin', function() {
@@ -890,66 +1002,45 @@ function renderizarDetallePropuestaAdmin(data) {
         $('#total-propuesta-admin').text(totalGeneral.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
     });
     
-    // Evento para el botón de enviar propuesta final (la lógica de recolección está lista)
-$('#detallePropuestaModal').on('click', '#btn-enviar-propuesta-final', function() {
+$('#detallePropuestaModal').on('click', '#btn-aceptar-contrapropuesta', function() {
     const idPropuesta = $(this).data('id');
     const comentario = $('#comentario-admin').val();
     const btn = $(this);
-    
-    // ======================= LÍNEA AÑADIDA PARA SOLUCIONAR EL ERROR =======================
-    // Aquí creamos la variable 'fechaPropuesta' que faltaba, tomando el valor del input de fecha.
-    const fechaPropuesta = $('#fecha-propuesta-admin').val(); 
-    // =======================================================================================
-    
-    let comprobantesActualizados = [];
-    let totalPropuestoActualizado = 0;
 
-    $('#tabla-detalle-propuesta-admin tbody tr').each(function() {
-        const tr = $(this);
-        const neto = parseFloat(tr.find('.importe-neto-cell-admin').text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
-        comprobantesActualizados.push({
-            n_comp: tr.data('ncomp'),
-            importe_bruto: tr.data('importe-bruto'),
-            porcentaje_descuento: parseFloat(tr.find('.descuento-input-admin').val()) || 0,
-            importe_neto: neto
-        });
-        totalPropuestoActualizado += neto;
-    });
-
-    // Validamos que la fecha no esté vacía
-    if (!fechaPropuesta) {
-        alert('Por favor, seleccione una fecha propuesta de pago.');
-        return;
-    }
-
-    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Enviando...');
-
-    $.ajax({
-        url: 'api/propuestas_controller.php?action=actualizar_propuesta_admin',
-        type: 'POST',
-        data: { 
-            id_propuesta: idPropuesta, 
-            nuevo_estado: 'PENDIENTE_APROBACION_FINAL',
-            comentario: comentario,
-            total_propuesto: totalPropuestoActualizado,
-            comprobantes: comprobantesActualizados,
-            fecha_propuesta_pago: fechaPropuesta // Ahora la variable 'fechaPropuesta' sí existe
-        },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                alert(response.message);
-                $('#detallePropuestaModal').modal('hide');
-                tablaGestion.ajax.reload();
-            } else {
-                alert('Error: ' + response.message);
-            }
-        },
-        error: function() {
-            alert('Error de conexión al servidor.');
-        },
-        complete: function() {
-            btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane"></i> Enviar Propuesta Final');
+    Swal.fire({
+        title: '¿Aceptar esta contrapropuesta?',
+        text: "La propuesta cambiará a estado 'ACEPTADA' y se notificará al cliente.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, aceptar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            btn.prop('disabled', true);
+            $.ajax({
+                url: 'api/propuestas_controller.php?action=aceptar_contrapropuesta_admin',
+                type: 'POST',
+                data: { 
+                    id_propuesta: idPropuesta, 
+                    comentario: comentario 
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('¡Aceptada!', response.message, 'success');
+                        $('#detallePropuestaModal').modal('hide');
+                        tablaGestion.ajax.reload();
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Error de conexión.', 'error');
+                },
+                complete: function() {
+                    btn.prop('disabled', false);
+                }
+            });
         }
     });
 });
@@ -966,41 +1057,56 @@ $('#detallePropuestaModal').on('click', '#btn-enviar-propuesta-final', function(
     }); // <--- Cierre del evento de eliminar
 
     // ======================= EVENTO DE SINCRONIZACIÓN CORREGIDO Y EN SU LUGAR =======================
-    $('#btn-sincronizar-estados').on('click', function() {
-        const btn = $(this);
-        const icon = btn.find('i');
-        
-        icon.addClass('fa-spin');
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: 'api/propuestas_controller.php?action=sincronizar_estados_pagados',
-            type: 'POST',
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    Swal.fire({
-                        title: 'Sincronización Completa',
-                        text: response.message,
-                        icon: 'info'
-                    });
-                    if ($('#gestion-tab').hasClass('active')) {
-                        tablaGestion.ajax.reload();
-                        cargarDashboardGestion(); // Recargamos también los KPIs
-                    }
-                } else {
-                    Swal.fire('Error', 'Error en la sincronización: ' + response.message, 'error');
-                }
-            },
-            error: function() {
-                Swal.fire('Error', 'Error de conexión con el servidor.', 'error');
-            },
-            complete: function() {
-                icon.removeClass('fa-spin');
-                btn.prop('disabled', false);
-            }
-        });
+function sincronizarEstados() {
+    // 1. Mostramos un modal de "Cargando..." no intrusivo
+    Swal.fire({
+        title: 'Sincronizando Estados',
+        html: 'Buscando propuestas pagadas para actualizar...',
+        timer: 2000, // Se cierra solo después de 2 segundos como máximo
+        timerProgressBar: true,
+        didOpen: () => {
+            Swal.showLoading();
+        }
     });
+
+    $.ajax({
+        url: 'api/propuestas_controller.php?action=sincronizar_estados_pagados',
+        type: 'POST',
+        dataType: 'json',
+        success: function(response) {
+            // Cerramos el modal de "cargando"
+            Swal.close();
+            
+            if (response.success) {
+                // 2. Si hubo cambios, mostramos un modal de éxito
+                if (response.message.includes("Se actualizaron") && !response.message.includes("Se actualizaron 0")) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Sincronización Exitosa!',
+                        text: response.message,
+                        timer: 9000, // Se cierra solo
+                        showConfirmButton: false
+                    });
+                    
+                    // Recargamos los datos para reflejar los cambios
+                    if (tablaGestion) {
+                        tablaGestion.ajax.reload();
+                    }
+                    cargarDashboardGestion();
+                } else {
+                    // 3. Si no hubo cambios, lo informamos en la consola (sin molestar al usuario)
+                    console.log('Sincronización finalizada, sin cambios detectados.');
+                }
+            } else {
+                console.error('Error durante la sincronización automática:', response.message);
+            }
+        },
+        error: function() {
+            Swal.close();
+            console.error('Error de conexión durante la sincronización automática.');
+        }
+    });
+}
 // Lógica para eliminar propuesta con SweetAlert2
     $('#tabla-gestion-propuestas').on('click', '.btn-eliminar-propuesta', function() {
         const idPropuesta = $(this).data('id');

@@ -11,7 +11,7 @@ include 'templates/layout/header.php';
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">
             <i class="fa-solid fa-book-open text-primary me-2"></i>
-            Capacitación y Guía de Uso
+           <strong>Capacitación y Guía de Uso</strong>
         </h1>
         <a href="index.php" class="btn btn-outline-secondary">
             <i class="fa-solid fa-arrow-left me-2"></i>Volver al Dashboard

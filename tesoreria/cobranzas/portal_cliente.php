@@ -16,18 +16,28 @@ include 'templates/layout/header.php';
         </h5>
     </div>
 
-    <!-- Fila para las Tarjetas de Resumen (KPIs) -->
-    <div class="row mb-4">
-        <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow-sm border-left-danger h-100"><div class="card-body"><div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Deuda Pendiente (Fuera de Propuesta)</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="kpi-deuda-total">-</div></div></div>
-        </div>
-        <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow-sm border-left-warning h-100"><div class="card-body"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Monto en Negociación</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="kpi-monto-negociacion">-</div></div></div>
-        </div>
-        <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card shadow-sm border-left-info h-100"><div class="card-body"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Propuestas que Requieren su Acción</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="kpi-requiere-accion">-</div></div></div>
-        </div>
+<!-- Fila para las Tarjetas de Resumen (KPIs) -->
+<div class="row mb-4">
+    <!-- KPI Deuda Pendiente -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card shadow-sm border-left-danger h-100"><div class="card-body"><div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Deuda Pendiente (Fuera de Propuesta)</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="kpi-deuda-total">-</div></div></div>
     </div>
+    <!-- KPI Monto en Negociación -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card shadow-sm border-left-primary h-100"><div class="card-body"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Monto en Negociación</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="kpi-monto-negociacion">-</div></div></div>
+    </div>
+    
+    <!-- ======================= NUEVA TARJETA KPI ======================= -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card shadow-sm border-left-success h-100"><div class="card-body"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Pendiente de Pago</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="kpi-pendiente-pago">-</div></div></div>
+    </div>
+    <!-- ================================================================== -->
+    
+    <!-- KPI Requieren Acción -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card shadow-sm border-left-warning h-100"><div class="card-body"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Requieren su Acción</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="kpi-requiere-accion">-</div></div></div>
+    </div>
+</div>
 
     <!-- Tarjeta principal que contiene todo -->
     <div class="card shadow-sm">

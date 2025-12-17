@@ -15,9 +15,6 @@ include 'templates/layout/header.php';
         </h1>
                 <div> <!-- Contenedor para los botones -->
             <!-- ======================= NUEVO BOTÓN ======================= -->
-            <button class="btn btn-outline-info me-2" id="btn-sincronizar-estados" title="Sincronizar Propuestas Pagadas">
-                <i class="fa-solid fa-sync fa-spin-hover"></i>
-            </button>
             <!-- ========================================================= -->
         <button class="btn btn-outline-secondary" id="btn-abrir-parametros" data-bs-toggle="modal" data-bs-target="#parametrosModal" title="Gestionar Parámetros">
             <i class="fa-solid fa-gear fa-spin-hover"></i>
@@ -68,14 +65,33 @@ include 'templates/layout/header.php';
         </div>
     </div>
 
-    <!-- Dashboard de Gestión de Propuestas (Oculto por defecto) -->
-    <div id="gestion-dashboard" style="display: none;">
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-4"><div class="card shadow-sm border-left-info h-100"><div class="card-body"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Propuestas Activas</div><div class="h4 mb-0 font-weight-bold" id="kpi-activas">-</div></div></div></div>
-            <div class="col-lg-3 col-md-6 mb-4"><div class="card shadow-sm border-left-warning h-100"><div class="card-body"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Monto en Negociación</div><div class="h4 mb-0 font-weight-bold" id="kpi-monto">-</div></div></div></div>
-            <div class="col-lg-3 col-md-6 mb-4"><div class="card shadow-sm border-left-danger h-100"><div class="card-body"><div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Requieren Acción</div><div class="h4 mb-0 font-weight-bold" id="kpi-accion">-</div></div></div></div>
-            <div class="col-lg-3 col-md-6 mb-4"><div class="card shadow-sm border-left-success h-100"><div class="card-body"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Aceptadas (Últ. 30 días)</div><div class="h4 mb-0 font-weight-bold" id="kpi-aceptadas">-</div></div></div></div>
+<!-- Dashboard de Gestión de Propuestas (Oculto por defecto) -->
+<div id="gestion-dashboard" style="display: none;">
+    
+    <!-- ======================= INICIO DEL BLOQUE A REEMPLAZAR ======================= -->
+    <div class="row mb-4">
+        <!-- Propuestas Activas -->
+        <div class="col-xl col-md-6 mb-4">
+            <div class="card shadow-sm border-left-primary h-100 py-2"><div class="card-body"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Propuestas Activas</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-propuestas-activas">-</div></div></div>
         </div>
+        <!-- Monto en Negociación -->
+        <div class="col-xl col-md-6 mb-4">
+            <div class="card shadow-sm border-left-info h-100 py-2"><div class="card-body"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Monto en Negociación</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-monto-negociacion">-</div></div></div>
+        </div>
+        <!-- NUEVA TARJETA: Monto Vencido -->
+        <div class="col-xl col-md-6 mb-4">
+            <div class="card shadow-sm border-left-danger h-100 py-2"><div class="card-body"><div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Monto Vencido</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-monto-vencido">-</div></div></div>
+        </div>
+        <!-- Requieren Acción -->
+        <div class="col-xl col-md-6 mb-4">
+            <div class="card shadow-sm border-left-warning h-100 py-2"><div class="card-body"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Requieren Acción</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-requieren-accion">-</div></div></div>
+        </div>
+        <!-- Aceptadas (Últ. 30 días) -->
+        <div class="col-xl col-md-6 mb-4">
+            <div class="card shadow-sm border-left-success h-100 py-2"><div class="card-body"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Aceptadas (Últ. 30 días)</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-aceptadas-mes">-</div></div></div>
+        </div>
+    </div>
+    <!-- ======================== FIN DEL BLOQUE A REEMPLAZAR ========================= -->
         <div class="row">
             <div class="col-lg-4 mb-4"><div class="card shadow-sm h-100"><div class="card-header">Distribución de Estados</div><div class="card-body d-flex align-items-center justify-content-center"><div style="position: relative; height: 280px; width: 100%;"><canvas id="chartEstados"></canvas></div></div></div></div>
             <div class="col-lg-8 mb-4"><div class="card shadow-sm h-100"><div class="card-header">Propuestas Aceptadas (Últimos 7 Días)</div><div class="card-body"><div style="position: relative; height: 280px; width: 100%;"><canvas id="chartActividadReciente"></canvas></div></div></div></div>

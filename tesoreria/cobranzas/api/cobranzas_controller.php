@@ -5,30 +5,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     header('Content-Type: application/json');
     require_once '../config/database.php';
 
-    $cod_cliente = $_POST['cod_cliente'] ?? null;
     $comprobantes = $_POST['comprobantes'] ?? [];
     $total_propuesto = $_POST['total_propuesto'] ?? 0;
     $fecha_propuesta_pago = $_POST['fecha_propuesta_pago'] ?? null;
+    $medio_de_pago = $_POST['medio_de_pago'] ?? null;
     $id_usuario_admin = $_SESSION['usuario_id'] ?? null;
+    $cod_cliente = $_POST['cod_cliente'] ?? null; // <-- AÑADE ESTA LÍNEA
 
-    if (!$cod_cliente || empty($comprobantes) || !$id_usuario_admin) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Faltan datos para crear la propuesta.']);
-        exit;
-    }
+    // La validación correcta
+if (empty($cod_cliente) || empty($comprobantes) || !isset($total_propuesto) || empty($fecha_propuesta_pago) || empty($medio_de_pago) || empty($id_usuario_admin)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Faltan datos para crear la propuesta.']);
+    exit;
+}
     
     $conn_apps = Database::getConnection('apps');
-
-    if (sqlsrv_begin_transaction($conn_apps) === false) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Error al iniciar la transacción.']);
-        exit;
-    }
+    if (sqlsrv_begin_transaction($conn_apps) === false) { /* ... */ }
 
     try {
-        // CORRECCIÓN: Añadir prefijo FP_
-    $sql_propuesta = "INSERT INTO FP_propuestas_pago (cod_cliente, id_usuario_admin, estado, total_propuesto, fecha_propuesta_pago) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?)";
-    $params_propuesta = [$cod_cliente, $id_usuario_admin, 'PENDIENTE_APROBACION_CLIENTE', $total_propuesto, $fecha_propuesta_pago]; // NUEVO
+        $sql_propuesta = "INSERT INTO FP_propuestas_pago (cod_cliente, id_usuario_admin, estado, total_propuesto, fecha_propuesta_pago, medio_de_pago) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?)";
+        $params_propuesta = [$cod_cliente, $id_usuario_admin, 'PENDIENTE_APROBACION_CLIENTE', $total_propuesto, $fecha_propuesta_pago, $medio_de_pago];
         $stmt_propuesta = sqlsrv_query($conn_apps, $sql_propuesta, $params_propuesta);
         
         $row_id = sqlsrv_fetch_array($stmt_propuesta, SQLSRV_FETCH_ASSOC);
@@ -36,31 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
 
         if (!$id_propuesta) throw new Exception("No se pudo crear la cabecera de la propuesta.");
 
-        // MODIFICADO: Añadimos la nueva columna al INSERT
-$sql_item = "INSERT INTO FP_propuestas_pago_items 
-                (id_propuesta, t_comp_factura, n_comp_factura, importe_bruto, importe_neto, porcentaje_descuento)
-             VALUES (?, ?, ?, ?, ?, ?)";
-                     
+        $sql_item = "INSERT INTO FP_propuestas_pago_items (id_propuesta, t_comp_factura, n_comp_factura, importe_bruto, importe_neto, porcentaje_descuento) VALUES (?, ?, ?, ?, ?, ?)";
         foreach ($comprobantes as $comp) {
-            // MODIFICADO: Pasamos el nuevo dato 'porcentaje_descuento' desde el JS
-            $params_item = [
-        $id_propuesta,
-        $comp['t_comp'], // <-- NUEVO
-        $comp['n_comp'], 
-        $comp['importe_bruto'],
-        $comp['importe_neto'],
-        $comp['porcentaje_descuento']
-            ];
+            $params_item = [$id_propuesta, $comp['t_comp'], $comp['n_comp'], $comp['importe_bruto'], $comp['importe_neto'], $comp['porcentaje_descuento']];
             $stmt_item = sqlsrv_query($conn_apps, $sql_item, $params_item);
-            if ($stmt_item === false) throw new Exception("Error al insertar el item: " . $comp['n_comp']);
+            if ($stmt_item === false) throw new Exception("Error al insertar item: " . $comp['n_comp']);
         }
 
-        // CORRECCIÓN: Añadir prefijo FP_
         $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)";
         $desc_historial = "Propuesta de pago creada por el administrador.";
         $params_historial = [$id_propuesta, $id_usuario_admin, 'ADMIN', $desc_historial];
         $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
-        if ($stmt_historial === false) throw new Exception("Error al registrar el historial.");
+        if ($stmt_historial === false) throw new Exception("Error al registrar historial.");
 
         sqlsrv_commit($conn_apps);
         echo json_encode(['success' => true, 'message' => 'Propuesta de pago enviada correctamente.']);
@@ -68,7 +51,7 @@ $sql_item = "INSERT INTO FP_propuestas_pago_items
     } catch (Exception $e) {
         sqlsrv_rollback($conn_apps);
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Error al crear la propuesta: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
     exit;
 }
@@ -102,9 +85,10 @@ try {
         'totalClientes' => 0
     ];
 
-    if ($cod_cliente) {
-   // 1. Obtener los N_COMP de TODAS las propuestas para este cliente desde la BD 'sistemas'
-    //    Usamos un array asociativo para acceder fácilmente al N_COMP
+if ($cod_cliente) {
+    // --- VISTA DE DETALLE ---
+
+    // 1. Obtener la lista de N_COMP de las propuestas
     $facturas_en_propuesta = [];
     $sql_propuestas = "
         SELECT 
@@ -115,42 +99,43 @@ try {
             FP_propuestas_pago propuestas ON items.id_propuesta = propuestas.id
         WHERE 
             propuestas.cod_cliente = ?
-            -- Eliminamos el filtro de estado para traer TODAS las facturas que alguna vez estuvieron en una propuesta
     ";
     $params_propuestas = [$cod_cliente];
     $stmt_propuestas = sqlsrv_query($conn_apps, $sql_propuestas, $params_propuestas);
     if ($stmt_propuestas === false) {
-        throw new Exception("Error al consultar propuestas: ".print_r(sqlsrv_errors(), true));
+        throw new Exception("Error al consultar propuestas activas: ".print_r(sqlsrv_errors(), true));
     }
     while ($row = sqlsrv_fetch_array($stmt_propuestas, SQLSRV_FETCH_ASSOC)) {
-        // Usamos trim() para eliminar espacios y usamos el N_COMP como clave para búsquedas rápidas
         $facturas_en_propuesta[trim($row['n_comp_factura'])] = true;
     }
 
-    // 2. Obtener TODAS las facturas pendientes del cliente desde la BD 'central'
+    // ======================= INICIO DE LA CORRECCIÓN DE COLLATION EN EL JOIN =======================
+    // 2. Obtener TODAS las facturas del cliente, forzando la intercalación en el JOIN
     $sql_facturas = "
-        SELECT COD_CLIENT, RAZON_SOCI, FECHA_EMIS, T_COMP, N_COMP, 
-               IMPORTE, FECHA_PROB_COBRO, PPP, IMPORTE_NETO, ESTADO 
-        FROM $vista 
-        WHERE COD_CLIENT = ?
-        ORDER BY FECHA_EMIS DESC
+        SELECT 
+            v.COD_CLIENT, v.RAZON_SOCI, v.FECHA_EMIS, v.T_COMP, v.N_COMP, 
+            v.ESTADO, v.IMPORTE, v.FECHA_PROB_COBRO, v.PPP, v.IMPORTE_NETO,
+            p.MEDIO_PAGO_DEFAULT, p.DIAS_PP_MAX, p.DESC_PP_MAX
+        FROM $vista v
+        LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
+        WHERE v.COD_CLIENT = ?
+        ORDER BY v.FECHA_EMIS DESC
     ";
+    // ======================== FIN DE LA CORRECCIÓN DE COLLATION EN EL JOIN =========================
+    
     $params_facturas = [$cod_cliente];
     $stmt_facturas = sqlsrv_query($conn_central, $sql_facturas, $params_facturas);
     if ($stmt_facturas === false) {
         throw new Exception("Error en la consulta de detalle de facturas: ".print_r(sqlsrv_errors(), true));
     }
 
-    // 3. Filtrar los resultados en PHP de forma segura
+    // 3. Filtrar los resultados en PHP
     while ($row_factura = sqlsrv_fetch_array($stmt_facturas, SQLSRV_FETCH_ASSOC)) {
-        // Verificamos si la clave (el N_COMP) NO existe en nuestro array de propuestas
         if (!isset($facturas_en_propuesta[trim($row_factura['N_COMP'])])) {
             $tableData[] = $row_factura;
         }
     }
     
-    // ======================== FIN DE LA CORRECCIÓN =========================
-
     } else {
         // --- VISTA DE RESUMEN ---
         $sql = "SELECT 
