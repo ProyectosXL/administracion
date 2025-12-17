@@ -1635,3 +1635,201 @@ const revertir = () => {
     }
   });
 }
+
+// ==================== GESTIÓN DE MÓDULOS ====================
+
+const abrirGestionModulos = () => {
+    const desde = document.getElementById('desde').value;
+    const hasta = document.getElementById('hasta').value;
+    const periodo = document.getElementById('periodo').getAttribute('attr-periodo');
+    
+    document.getElementById('periodoModulo').textContent = periodo;
+    
+    // Cargar módulos
+    cargarModulos(desde, hasta);
+    
+    $('#modalModulos').modal('show');
+};
+
+const cargarModulos = (desde, hasta) => {
+    const tbody = document.getElementById('bodyModulos');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>';
+    
+    $.ajax({
+        url: 'Controller/moduloController.php?accion=obtenerModulos',
+        method: 'POST',
+        data: { desde: desde, hasta: hasta },
+        dataType: 'json',
+        success: function(modulos) {
+            tbody.innerHTML = '';
+            
+            if (modulos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay módulos cargados para este período</td></tr>';
+                return;
+            }
+            
+            // Módulos posibles (para mostrar también los que no tienen registros)
+            const modulosPosibles = ['COMPRAS', 'VENTAS', 'CONTABILIDAD', 'TESORERIA'];
+            const modulosMap = {};
+            
+            modulos.forEach(m => {
+                modulosMap[m.MODULO] = m.CANTIDAD;
+            });
+            
+            modulosPosibles.forEach(modulo => {
+                const cantidad = modulosMap[modulo] || 0;
+                const estado = cantidad > 0 ? 
+                    '<span class="badge badge-success">Cargado</span>' : 
+                    '<span class="badge badge-secondary">Sin datos</span>';
+                
+                const acciones = cantidad > 0 ? `
+                    <button class="btn btn-sm btn-danger" onclick="eliminarModulo('${modulo}')" title="Eliminar registros">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                    <button class="btn btn-sm btn-primary ml-1" onclick="reprocesarModulo('${modulo}')" title="Reprocesar módulo">
+                        <i class="bi bi-arrow-repeat"></i> Reprocesar
+                    </button>
+                ` : `
+                    <button class="btn btn-sm btn-primary" onclick="reprocesarModulo('${modulo}')" title="Procesar módulo">
+                        <i class="bi bi-play-fill"></i> Procesar
+                    </button>
+                `;
+                
+                tbody.innerHTML += `
+                    <tr id="row-${modulo}">
+                        <td><strong>${modulo}</strong></td>
+                        <td class="text-center">${cantidad.toLocaleString()}</td>
+                        <td class="text-center">${estado}</td>
+                        <td class="text-center">${acciones}</td>
+                    </tr>
+                `;
+            });
+        },
+        error: function() {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar módulos</td></tr>';
+        }
+    });
+};
+
+const eliminarModulo = (modulo) => {
+    const desde = document.getElementById('desde').value;
+    const hasta = document.getElementById('hasta').value;
+    
+    Swal.fire({
+        title: `¿Eliminar módulo ${modulo}?`,
+        html: `Esta acción eliminará <strong>todos los registros</strong> del módulo <strong>${modulo}</strong> 
+               para el período seleccionado.<br><br>
+               <span class="text-danger">Esta acción no se puede deshacer.</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Mostrar loading
+            const row = document.getElementById(`row-${modulo}`);
+            row.classList.add('table-warning');
+            
+            $.ajax({
+                url: 'Controller/moduloController.php?accion=eliminarModulo',
+                method: 'POST',
+                data: { desde: desde, hasta: hasta, modulo: modulo },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        agregarLog(`✓ Módulo ${modulo}: ${response.registros_eliminados} registros eliminados`);
+                        
+                        Swal.fire({
+                            title: '¡Eliminado!',
+                            html: `Se eliminaron <strong>${response.registros_eliminados}</strong> registros del módulo <strong>${modulo}</strong>`,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        // Recargar tabla
+                        cargarModulos(desde, hasta);
+                    } else {
+                        row.classList.remove('table-warning');
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                },
+                error: function() {
+                    row.classList.remove('table-warning');
+                    Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+                }
+            });
+        }
+    });
+};
+
+const reprocesarModulo = (modulo) => {
+    const desde = document.getElementById('desde').value;
+    const hasta = document.getElementById('hasta').value;
+    
+    Swal.fire({
+        title: `¿Reprocesar módulo ${modulo}?`,
+        html: `Se procesarán los registros del módulo <strong>${modulo}</strong> para el período seleccionado.<br><br>
+               <span class="text-info">Nota: Si ya existen registros, se agregarán a los existentes. 
+               Considere eliminar primero si desea reemplazarlos.</span>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#007bff',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, procesar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Procesando...',
+                html: `Reprocesando módulo <strong>${modulo}</strong>`,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            $.ajax({
+                url: 'Controller/moduloController.php?accion=reprocesarModulo',
+                method: 'POST',
+                data: { desde: desde, hasta: hasta, modulo: modulo },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        agregarLog(`✓ Módulo ${modulo}: ${response.registros_insertados} registros insertados`);
+                        
+                        Swal.fire({
+                            title: '¡Procesado!',
+                            html: `Se insertaron <strong>${response.registros_insertados}</strong> registros en el módulo <strong>${modulo}</strong>`,
+                            icon: 'success'
+                        });
+                        
+                        // Recargar tabla
+                        cargarModulos(desde, hasta);
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+                }
+            });
+        }
+    });
+};
+
+const agregarLog = (mensaje) => {
+    const logDiv = document.getElementById('logOperaciones');
+    const lista = document.getElementById('listaLog');
+    
+    logDiv.style.display = 'block';
+    
+    const fecha = new Date().toLocaleTimeString();
+    lista.innerHTML += `<li>[${fecha}] ${mensaje}</li>`;
+    
+    // Scroll al final
+    lista.parentElement.scrollTop = lista.parentElement.scrollHeight;
+};

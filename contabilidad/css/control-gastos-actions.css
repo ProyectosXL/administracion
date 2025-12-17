@@ -179,3 +179,29 @@
         transform: rotate(1turn);
     }
 }
+
+/* Estilos para el modal de módulos */
+#tablaModulos .badge {
+    font-size: 11px;
+    padding: 5px 10px;
+}
+
+#tablaModulos .btn-sm {
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
+#row-COMPRAS { border-left: 4px solid #28a745; }
+#row-VENTAS { border-left: 4px solid #17a2b8; }
+#row-CONTABILIDAD { border-left: 4px solid #ffc107; }
+#row-TESORERIA { border-left: 4px solid #dc3545; }
+
+.table-warning {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}

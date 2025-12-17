@@ -134,8 +134,11 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         </div>
         <div>
             <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:10">Ejecutar <i class="bi bi-check2-square"></i></button>
-            
-            <div style="display: inline-block; vertical-align: middle; margin-left: 20px;">
+            <button class="btn btn-warning mt-3" id="btnGestionModulos" onclick="abrirGestionModulos()">
+                <i class="bi bi-gear-fill"></i> Gestión Módulos
+            </button>
+
+            <div style="display: inline-block; vertical-align: middle; margin-left: 20px;" class="mt-3">
                 <div class="alert alert-info" role="alert" style="margin: 0; padding: 8px 15px; display: inline-block;">
                     <i class="bi bi-info-circle-fill me-2"></i>
                     <span id="environment-info">Entorno actual: <strong><?php echo ($checkedValue === 'central') ? 'Argentina (ARG)' : 'Uruguay (UY)'; ?></strong></span>
@@ -537,11 +540,11 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
 
 <?php
 
-include('articuloSinCn.php');
-include('coeficientesAjuste.php');
-include('articuloSinPrecioCosto.php');
-include('ventasCobranzaTotal.php');
-include('ventasBrutasPorSucursal.php');
-
+include('modals/articuloSinCn.php');
+include('modals/coeficientesAjuste.php');
+include('modals/articuloSinPrecioCosto.php');
+include('modals/ventasCobranzaTotal.php');
+include('modals/ventasBrutasPorSucursal.php');
+include('modals/modulosGastos.php');
 
 ?>
