@@ -351,7 +351,7 @@ class Ingreso {
                         observaciones, recibido, fecha_carga, origen
                     ) VALUES (
                         ?, ?, ?, ?, ?,
-                        ?, 1, GETDATE(), 'TESORERIA'
+                        ?, 0, GETDATE(), 'TESORERIA'
                     )";
             
             $params = [

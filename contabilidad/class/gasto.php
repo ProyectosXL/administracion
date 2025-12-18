@@ -28,7 +28,7 @@ class Gasto
     public function traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta = null){
 
     if($estado == '0'){
-           // Para amortizar // 
+           // Pendiente control // 
             $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE  AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0 AND COD_CUENTA LIKE '$codCuenta'
                         UNION ALL
                     SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0 AND COD_CUENTA LIKE '$codCuenta'" ;

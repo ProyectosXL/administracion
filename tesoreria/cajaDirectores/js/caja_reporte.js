@@ -454,30 +454,40 @@ function mostrarReporte(movimientos, filtros = {}) {
             if (mov.recibido == 1) {
                 estadoBadge = '<span class="badge bg-success">Recibido</span>';
                 saldoAcumulado += parseFloat(mov.importe);
-            } else {
+} else {
                 estadoBadge = '<span class="badge bg-warning">Pendiente</span>';
                 
-                // Botón de acción según el origen - con estilo de checkbox simplificado
-                if (mov.origen === 'TESORERIA') {
+                // *** LÓGICA CORREGIDA PARA EL BOTÓN DE ACCIÓN ***
+                // Primero, decidimos si el botón debe "Importar" (crear) o "Actualizar" un registro.
+                // El truco es mirar el ID: si empieza con "EXT_", es un ingreso de fuera que hay que importar.
+                if (mov.id && String(mov.id).startsWith('EXT_TES_')) {
+                    
+                    // Es un ingreso de Tesorería que todavía no hemos importado.
+                    // Usamos el BOTÓN "IMPORTADOR" (llama a marcarRecibidoTesoreria para CREAR el registro).
                     accionBoton = `
                         <button class="btn btn-outline-success checkbox-style" 
                                 onclick="marcarRecibidoTesoreria(this)"
                                 data-id-sba05="${mov.ID_SBA05}"
-                                data-fecha="${mov.fecha}"
-                                data-cod-comp="${mov.cod_comp || ''}"
-                                data-n-comp="${mov.n_comp || ''}"
-                                data-concepto="${mov.concepto.replace(/"/g, '&quot;')}"
+                                data-fecha="${mov.fecha.split('T')[0]}"
+                                data-cod-comp="${mov.COD_COMP || ''}"
+                                data-n-comp="${mov.N_COMP || ''}"
+                                data-concepto="${(mov.observaciones || mov.concepto || '').replace(/"/g, '&quot;')}"
                                 data-importe="${mov.importe}"
                                 style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
-                                title="Marcar como recibido">
+                                title="Importar de Tesorería">
                             ☐
                         </button>
                     `;
+
                 } else if (mov.origen === '599') {
-                    // 599 siempre aparece como recibido, no necesita botón
+                    // Los 599 no tienen acciones, ya vienen recibidos.
                     accionBoton = '<span class="text-muted">-</span>';
+                
                 } else {
-                    // Ingresos MANUALES - pasar el botón para poder cambiarlo visualmente
+                    
+                    // Si el ID no empieza con "EXT_", significa que ya existe en nuestra base de datos.
+                    // Puede ser un ingreso Manual o uno de Tesorería que ya importamos.
+                    // Usamos el BOTÓN "ACTUALIZADOR" (llama a marcarRecibidoDesdeReporte para ACTUALIZAR el registro).
                     accionBoton = `
                         <button class="btn btn-outline-success checkbox-style" 
                                 onclick="marcarRecibidoDesdeReporte(this)"
