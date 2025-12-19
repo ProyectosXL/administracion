@@ -101,6 +101,11 @@ include 'templates/layout/header.php';
     <div class="card shadow-sm">
         <div class="card-header">
              <ul class="nav nav-tabs card-header-tabs" id="cobranzasTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cronograma-tab" data-bs-toggle="tab" data-bs-target="#cronograma" type="button" role="tab">
+                    <i class="fa-solid fa-calendar-alt"></i> Cronograma de Pagos
+                </button>
+            </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="gestion-tab" data-bs-toggle="tab" data-bs-target="#gestion" type="button" role="tab" aria-controls="gestion" aria-selected="false">
                         <i class="fa-solid fa-tasks"></i> Gestión de Propuestas
@@ -123,6 +128,50 @@ include 'templates/layout/header.php';
                 <div class="tab-pane fade" id="gestion" role="tabpanel" aria-labelledby="gestion-tab">
                     <div class="table-responsive"><table id="tabla-gestion-propuestas" class="table table-striped table-hover" style="width:100%"></table></div>
                 </div>
+<!-- ======================= PANEL PROFESIONALIZADO DE CRONOGRAMA ======================= -->
+<div class="tab-pane fade" id="cronograma" role="tabpanel">
+    
+    <!-- Fila de KPIs específicos del Cronograma (sin cambios) -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-left-info h-100"><div class="card-body"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total a Vencer (Este Mes)</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="cronograma-kpi-mes">-</div></div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-left-success h-100"><div class="card-body"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total a Vencer (Esta Semana)</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="cronograma-kpi-semana">-</div></div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-left-primary h-100"><div class="card-body"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Propuestas a Vencer (Este Mes)</div><div class="h4 mb-0 font-weight-bold text-gray-800" id="cronograma-kpi-cantidad">-</div></div></div>
+        </div>
+    </div>
+
+    <!-- ======================= INICIO DEL NUEVO LAYOUT DE 2 COLUMNAS ======================= -->
+    <div class="row">
+        <!-- Columna para el Calendario (más grande) -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div id="fullcalendar-admin"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Columna para los Próximos Vencimientos (más pequeña) -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fa-solid fa-hourglass-start me-2"></i>Próximos Vencimientos</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush" id="proximos-vencimientos-lista">
+                        <li class="list-group-item text-muted">Cargando...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ======================== FIN DEL NUEVO LAYOUT DE 2 COLUMNAS ========================= -->
+</div>
+<!-- ==================================================================================== -->
                 <div class="tab-pane fade show active" id="franquicias" role="tabpanel" aria-labelledby="franquicias-tab">
                     <div class="table-responsive"><table id="tabla-franquicias" class="table table-striped table-hover" style="width:100%"></table></div>
                 </div>
@@ -149,6 +198,30 @@ include 'templates/layout/header.php';
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-danger" id="btn-confirmar-delete-propuesta">Sí, Eliminar Propuesta</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ======================================================================================== -->
+
+<!-- ======================= NUEVO MODAL PARA DETALLE DEL DÍA DEL CRONOGRAMA ======================= -->
+<div class="modal fade" id="cronogramaDiaModal" tabindex="-1" aria-labelledby="cronogramaDiaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cronogramaDiaModalLabel">Detalles del Día</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="cronogramaDiaModalBody">
+                <!-- El contenido se generará dinámicamente con JavaScript -->
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>

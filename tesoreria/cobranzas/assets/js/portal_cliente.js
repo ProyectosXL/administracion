@@ -267,34 +267,13 @@ function renderizarDetallePropuesta(data) {
     const { propuesta, items, historial } = data;
     const contentDiv = $('#detalle-propuesta-content');
 
-    // 1. --- TARJETAS DE RESUMEN (Igual que el Admin) ---
     let fechaHtml = propuesta.fecha_propuesta_pago 
         ? new Date(propuesta.fecha_propuesta_pago + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })
         : 'No definida';
 
-    let resumenHtml = `
-        <div class="row mb-4">
-            <div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center">
-                <h6 class="card-title text-muted text-uppercase small">Total Propuesto</h6>
-                <p class="card-text fs-4 fw-bold text-primary mb-0" id="totalPropuestoKPI">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</p>
-            </div></div></div>
-            <div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center">
-                <h6 class="card-title text-muted text-uppercase small">Fecha Propuesta de Pago</h6>
-                <p class="card-text fs-4 fw-bold mb-0" id="fechaPropuestaKPI">${fechaHtml}</p>
-            </div></div></div>
-            <div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center">
-                <h6 class="card-title text-muted text-uppercase small">Medio de Pago</h6>
-                <p class="card-text fs-4 fw-bold mb-0" id="medioPagoKPI">${propuesta.medio_de_pago || 'N/A'}</p>
-            </div></div></div>
-        </div>
-    `;
+    let resumenHtml = `<div class="row mb-4"><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Total Propuesto</h6><p class="card-text fs-4 fw-bold text-primary mb-0" id="totalPropuestoKPI">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</p></div></div></div><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Fecha Propuesta de Pago</h6><p class="card-text fs-4 fw-bold mb-0" id="fechaPropuestaKPI">${fechaHtml}</p></div></div></div><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Medio de Pago</h6><p class="card-text fs-4 fw-bold mb-0" id="medioPagoKPI">${propuesta.medio_de_pago || 'N/A'}</p></div></div></div></div>`;
 
-    // 2. --- TABLA DE FACTURAS (Igual que el Admin) ---
-    let itemsHtml = `
-        <h5 class="mt-4">Comprobantes Incluidos</h5>
-        <table class="table table-sm table-bordered" id="tabla-detalle-propuesta-cliente">
-            <thead class="table-light"><tr><th>Comprobante</th><th class="text-end">Importe Bruto</th><th class="text-center">% Descuento</th><th class="text-end">Importe Neto</th></tr></thead>
-            <tbody>`;
+    let itemsHtml = `<h5 class="mt-4">Facturas Incluidas</h5><table class="table table-sm table-bordered" id="tabla-detalle-propuesta-cliente"><thead class="table-light"><tr><th class="text-center">Tipo</th><th>Comprobante</th><th class="text-end">Importe Bruto</th><th class="text-center">% Descuento</th><th class="text-end">Importe Neto</th></tr></thead><tbody>`;
 
     let totalBrutoTabla = 0;
     let totalNetoTabla = 0;
@@ -303,98 +282,64 @@ function renderizarDetallePropuesta(data) {
         const bruto = parseFloat(item.importe_bruto) || 0;
         const neto = parseFloat(item.importe_neto) || 0;
         const descuento = parseFloat(item.porcentaje_descuento) || 0;
-        
         const esNC = item.t_comp_factura && item.t_comp_factura.trim().startsWith('NC');
+        
         totalBrutoTabla += esNC ? -bruto : bruto;
         totalNetoTabla += esNC ? -neto : neto;
 
-        itemsHtml += `
-                <tr data-importe-bruto="${bruto}" data-tcomp="${item.t_comp_factura || ''}" data-descuento-original="${descuento}">
-                    <td>${item.n_comp_factura}</td>
-                    <td class="text-end ${esNC ? 'text-danger' : ''}">${(esNC ? -bruto : bruto).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
-                    <td class="text-center descuento-cell">${descuento.toFixed(2)} %</td>
-                    <td class="text-end fw-bold importe-neto-cell ${esNC ? 'text-danger' : ''}">${(esNC ? -neto : neto).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
-                </tr>`;
+        itemsHtml += `<tr data-importe-bruto="${bruto}" data-tcomp="${item.t_comp_factura || ''}" data-descuento-original="${descuento}"><td class="text-center">${item.t_comp_factura || 'N/A'}</td><td>${item.n_comp_factura}</td><td class="text-end ${esNC ? 'text-danger' : ''}">${(esNC ? -bruto : bruto).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td><td class="text-center descuento-cell">${descuento.toFixed(2)} %</td><td class="text-end fw-bold importe-neto-cell ${esNC ? 'text-danger' : ''}">${(esNC ? -neto : neto).toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td></tr>`;
     });
 
-    itemsHtml += `
-            </tbody>
-            <tfoot class="table-light"><tr>
-                <td class="text-end"><strong>Totales:</strong></td>
-                <td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
-                <td></td>
-                <td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td>
-            </tr></tfoot>
-        </table>`;
+    itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="2" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}</td></tr></tfoot></table>`;
 
-    // 3. --- SECCIÓN DE NEGOCIACIÓN (NUEVA) ---
     let negociacionHtml = '';
     const esNegociable = propuesta.estado === 'PENDIENTE_APROBACION_CLIENTE' || propuesta.estado === 'PENDIENTE_APROBACION_FINAL';
     
     if (esNegociable) {
         const fechaActual = propuesta.fecha_propuesta_pago ? propuesta.fecha_propuesta_pago.split(' ')[0] : new Date().toISOString().split('T')[0];
         
-        negociacionHtml = `
-            <div class="card bg-light border-primary mt-4">
-                <div class="card-body">
-                    <h5 class="card-title">Negociar Propuesta</h5>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="negociacion-medio-pago" class="form-label"><strong>Cambiar Medio de Pago:</strong></label>
-                            <select class="form-select" id="negociacion-medio-pago">
-                                <option value="ECHECK" ${propuesta.medio_de_pago === 'ECHECK' ? 'selected' : ''}>ECHECK</option>
-                                <option value="TRANSFERENCIA" ${propuesta.medio_de_pago === 'TRANSFERENCIA' ? 'selected' : ''}>TRANSFERENCIA</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="negociacion-fecha-pago" class="form-label"><strong>Proponer Nueva Fecha:</strong></label>
-                            <input type="date" class="form-control" id="negociacion-fecha-pago" value="${fechaActual}">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="comentario-contrapropuesta" class="form-label"><strong>Agregar Comentario (Requerido para Contrapropuesta):</strong></label>
-                        <textarea class="form-control" id="comentario-contrapropuesta" rows="2" placeholder="Ej: Deseo eliminar un comprobante"></textarea>
-                    </div>
-                </div>
-            </div>
-        `;
+        negociacionHtml = `<div class="card bg-light border-primary mt-4"><div class="card-body"><h5 class="card-title">Negociar Propuesta</h5><div class="row"><div class="col-md-6 mb-3"><label for="negociacion-medio-pago" class="form-label"><strong>Cambiar Medio de Pago:</strong></label><select class="form-select" id="negociacion-medio-pago"><option value="ECHECK" ${propuesta.medio_de_pago === 'ECHECK' ? 'selected' : ''}>ECHECK</option><option value="TRANSFERENCIA" ${propuesta.medio_de_pago === 'TRANSFERENCIA' ? 'selected' : ''}>TRANSFERENCIA</option></select></div><div class="col-md-6 mb-3"><label for="negociacion-fecha-pago" class="form-label"><strong>Proponer Nueva Fecha:</strong></label><input type="date" class="form-control" id="negociacion-fecha-pago" value="${fechaActual}"></div></div><div class="mb-3"><label for="comentario-contrapropuesta" class="form-label"><strong>Agregar Comentario (Requerido para Contrapropuesta):</strong></label><textarea class="form-control" id="comentario-contrapropuesta" rows="2" placeholder="Ej: Propongo pagar en esta nueva fecha..."></textarea></div></div></div>`;
     }
 
+    // ======================= INICIO DE LA MODIFICACIÓN DEL HISTORIAL =======================
+    let historialHtml = '<h5>Historial de la Negociación</h5><div class="timeline">';
+    historial.forEach(h => {
+        const icon = h.tipo_usuario === 'ADMIN' ? 'fa-user-shield' : 'fa-user-tie';
+        const align = h.tipo_usuario === 'ADMIN' ? 'left' : 'right';
 
-        // Renderizar historial
-        let historialHtml = '<h5>Historial de la Negociación</h5><div class="timeline">';
-        historial.forEach(h => {
-            const icon = h.tipo_usuario === 'ADMIN' ? 'fa-user-shield' : 'fa-user-tie';
-            const align = h.tipo_usuario === 'ADMIN' ? 'left' : 'right';
-            historialHtml += `
-                <div class="timeline-item timeline-item-${align}">
-                    <div class="timeline-icon"><i class="fas ${icon}"></i></div>
-                    <div class="timeline-content">
-                        <span class="timeline-date">${h.fecha_evento}</span>
-                        <p><strong>${h.descripcion}</strong></p>
-                        ${h.comentario ? `<p class="fst-italic bg-light p-2 rounded">Comentario: "${h.comentario}"</p>` : ''}
-                    </div>
+        let adjuntoHtml = '';
+        if (h.ruta_adjunto) {
+            adjuntoHtml = `
+                <div class="mt-2 historial-adjunto">
+                    <a href="${h.ruta_adjunto}" target="_blank" title="Ver imagen adjunta">
+                        <img src="${h.ruta_adjunto}" alt="Adjunto del historial" class="img-thumbnail" style="max-width: 150px; cursor: pointer;">
+                    </a>
                 </div>`;
-        });
-        historialHtml += '</div>';
-        
-        // Área para contrapropuesta
-        let contrapropuestaHtml = '';
-        if (propuesta.estado === 'PENDIENTE_APROBACION_CLIENTE') {
-            contrapropuestaHtml = `
-                <div class="mb-3">
-                    <label for="comentario-contrapropuesta" class="form-label"><strong>Agregar Comentario (Opcional para Aceptar / Requerido para Contrapropuesta):</strong></label>
-                    <textarea class="form-control" id="comentario-contrapropuesta" rows="3" placeholder="Ej: Propongo pagar en 2 cuotas..."></textarea>
-                </div>
-            `;
-            $('#btn-aceptar-propuesta, #btn-enviar-contrapropuesta').show();
-        } else if(propuesta.estado === 'PENDIENTE_APROBACION_FINAL'){
-            $('#btn-aceptar-propuesta').show(); // En la propuesta final, solo se puede aceptar
         }
 
-
-        contentDiv.html(resumenHtml + itemsHtml + negociacionHtml + historialHtml);
+        historialHtml += `
+            <div class="timeline-item timeline-item-${align}">
+                <div class="timeline-icon"><i class="fas ${icon}"></i></div>
+                <div class="timeline-content">
+                    <span class="timeline-date">${h.fecha_evento}</span>
+                    <p><strong>${h.descripcion}</strong></p>
+                    ${h.comentario ? `<p class="fst-italic bg-light p-2 rounded">Comentario: "${h.comentario}"</p>` : ''}
+                    ${adjuntoHtml} <!-- Se añade el HTML de la imagen aquí -->
+                </div>
+            </div>`;
+    });
+    historialHtml += '</div>';
+    // ======================== FIN DE LA MODIFICACIÓN DEL HISTORIAL ========================
+    
+    // Mostramos los botones de acción según el estado
+    if (propuesta.estado === 'PENDIENTE_APROBACION_CLIENTE') {
+        $('#btn-aceptar-propuesta, #btn-enviar-contrapropuesta').show();
+    } else if(propuesta.estado === 'PENDIENTE_APROBACION_FINAL'){
+        $('#btn-aceptar-propuesta').show();
     }
+
+    contentDiv.html(resumenHtml + itemsHtml + negociacionHtml + historialHtml);
+}
     
 // 3. LÓGICA PARA LOS BOTONES DE ACCIÓN DEL MODAL
     $('#btn-aceptar-propuesta, #btn-enviar-contrapropuesta').on('click', function() {
@@ -445,22 +390,25 @@ function renderizarDetallePropuesta(data) {
     });
 
 function enviarAccion(idPropuesta, nuevoEstado, comentario, datosContrapropuesta) {
-    let postData = {
-        id_propuesta: idPropuesta,
-        nuevo_estado: nuevoEstado,
-        comentario: comentario
-    };
+    // ===== USAMOS FormData PARA ENVIAR ARCHIVOS =====
+    const formData = new FormData();
+    formData.append('id_propuesta', idPropuesta);
+    formData.append('nuevo_estado', nuevoEstado);
+    formData.append('comentario', comentario);
+
     if (datosContrapropuesta) {
-        postData.contrapropuesta = datosContrapropuesta;
+        // FormData no maneja objetos anidados bien, así que los aplanamos
+        formData.append('contrapropuesta[nuevo_total]', datosContrapropuesta.nuevo_total);
+        formData.append('contrapropuesta[nueva_fecha]', datosContrapropuesta.nueva_fecha);
+        formData.append('contrapropuesta[nuevo_medio_pago]', datosContrapropuesta.nuevo_medio_pago);
     }
-
-    // Deshabilitamos los botones para evitar doble clic
-    $('#btn-enviar-contrapropuesta, #btn-aceptar-propuesta').prop('disabled', true);
-
+    
     $.ajax({
         url: 'api/propuestas_controller.php?action=actualizar_estado',
         type: 'POST',
-        data: postData,
+        data: formData, // Enviamos el objeto FormData
+        processData: false,  // Importante para no procesar el FormData
+        contentType: false, // Importante para que el navegador establezca el tipo correcto
         dataType: 'json',
         success: function(response) {
             if (response.success) {

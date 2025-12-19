@@ -60,7 +60,7 @@ try {
             while ($row = sqlsrv_fetch_array($stmt_items, SQLSRV_FETCH_ASSOC)) $items[] = $row;
 
             // CORRECCIÓN: Añadir prefijo FP_
-            $sql_historial = "SELECT fecha_evento, tipo_usuario, descripcion, comentario FROM FP_propuestas_pago_historial WHERE id_propuesta = ? ORDER BY fecha_evento ASC";
+            $sql_historial = "SELECT fecha_evento, tipo_usuario, descripcion, comentario, ruta_adjunto FROM FP_propuestas_pago_historial WHERE id_propuesta = ? ORDER BY fecha_evento ASC";
             $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, [$id_propuesta]);
             $historial = [];
             while ($row = sqlsrv_fetch_array($stmt_historial, SQLSRV_FETCH_ASSOC)) {
@@ -271,6 +271,71 @@ case 'sincronizar_estados_pagados':
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error en el servidor durante la sincronización: ' . $e->getMessage()]);
     }
+    break;
+case 'obtener_cronograma_admin':
+    if (!$es_admin) {
+        http_response_code(403);
+        exit;
+    }
+
+    $conn_apps = Database::getConnection('apps');
+    $conn_central = Database::getConnection('central');
+
+    // ======================= INICIO DE LA MODIFICACIÓN =======================
+    // 1. Añadimos 'medio_de_pago' a la consulta SQL
+    $sql_propuestas = "SELECT id, fecha_propuesta_pago, total_propuesto, cod_cliente, medio_de_pago FROM FP_propuestas_pago WHERE estado = 'ACEPTADA' AND fecha_propuesta_pago IS NOT NULL";
+    // ======================== FIN DE LA MODIFICACIÓN =========================
+    
+    $stmt_propuestas = sqlsrv_query($conn_apps, $sql_propuestas);
+    if ($stmt_propuestas === false) {
+        throw new Exception("Error al consultar propuestas aceptadas para el cronograma.");
+    }
+
+    $propuestas = [];
+    $codigos_cliente = [];
+    while ($row = sqlsrv_fetch_array($stmt_propuestas, SQLSRV_FETCH_ASSOC)) {
+        $propuestas[] = $row;
+        if (!in_array($row['cod_cliente'], $codigos_cliente)) {
+            $codigos_cliente[] = $row['cod_cliente'];
+        }
+    }
+
+    $mapa_nombres = [];
+    if (!empty($codigos_cliente)) {
+        $placeholders = implode(',', array_fill(0, count($codigos_cliente), '?'));
+        $sql_nombres = "
+            SELECT COD_CLIENT, RAZON_SOCI FROM RO_V_COBRANZA_PEND_FRANQUICIAS WHERE COD_CLIENT IN ($placeholders)
+            UNION
+            SELECT COD_CLIENT, RAZON_SOCI FROM RO_V_COBRANZA_PEND_MAYORISTAS WHERE COD_CLIENT IN ($placeholders)
+        ";
+        $params_nombres = array_merge($codigos_cliente, $codigos_cliente);
+        $stmt_nombres = sqlsrv_query($conn_central, $sql_nombres, $params_nombres);
+        if ($stmt_nombres !== false) {
+            while ($row_nombre = sqlsrv_fetch_array($stmt_nombres, SQLSRV_FETCH_ASSOC)) {
+                $mapa_nombres[$row_nombre['COD_CLIENT']] = $row_nombre['RAZON_SOCI'];
+            }
+        }
+    }
+
+    $eventos_fc = [];
+    foreach ($propuestas as $propuesta) {
+        $nombre_cliente = $mapa_nombres[$propuesta['cod_cliente']] ?? $propuesta['cod_cliente'];
+        $fecha_pago = new DateTime($propuesta['fecha_propuesta_pago']);
+
+        $eventos_fc[] = [
+            'title' => '$' . number_format($propuesta['total_propuesto'], 2, ',', '.') . ' - ' . $nombre_cliente,
+            'start' => $fecha_pago->format('Y-m-d'),
+            'extendedProps' => [
+                'id' => $propuesta['id'],
+                'monto' => $propuesta['total_propuesto'],
+                'cliente' => $nombre_cliente,
+                // ======================= DATO NUEVO AÑADIDO =======================
+                'medio_de_pago' => $propuesta['medio_de_pago']
+            ]
+        ];
+    }
+
+    echo json_encode(['success' => true, 'data' => array_values($eventos_fc)]);
     break;
 
 case 'listar_admin':
@@ -753,49 +818,127 @@ $response['deudaTotalPendiente'] = $row_deuda['totalDeuda'] ?? 0;
 
         // ======================= NUEVO ENDPOINT: ADMIN ACEPTA CONTRAPROPUESTA =======================
 case 'aceptar_contrapropuesta_admin':
+    // 1. Verificación de seguridad: solo los administradores pueden ejecutar esta acción.
     if (!$es_admin) {
-        http_response_code(403); exit;
-    }
-
-    $id_propuesta = $_POST['id_propuesta'] ?? 0;
-    $comentario = $_POST['comentario'] ?? null;
-    $id_usuario_admin = $_SESSION['usuario_id'];
-
-    if ($id_propuesta == 0) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'ID de propuesta no válido.']);
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Acción no permitida.']);
         exit;
     }
 
-    $conn_apps = Database::getConnection('apps');
-    if (sqlsrv_begin_transaction($conn_apps) === false) throw new Exception("Error al iniciar transacción.");
+    // 2. Recolección de datos del formulario POST
+    $id_propuesta = $_POST['id_propuesta'] ?? 0;
+    $comentario = $_POST['comentario'] ?? null;
+    $id_usuario_admin = $_SESSION['usuario_id'];
+    $ruta_adjunto_db = null;
 
-    try {
-        // 1. Actualizamos el estado de la propuesta a ACEPTADA
-        $sql_update = "UPDATE FP_propuestas_pago SET estado = 'ACEPTADA', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
-        $stmt_update = sqlsrv_query($conn_apps, $sql_update, [$id_propuesta]);
-        if ($stmt_update === false || sqlsrv_rows_affected($stmt_update) === 0) {
-            throw new Exception("No se pudo actualizar la propuesta.");
+    // --- Nuevos datos recibidos desde el modal del admin ---
+    $nuevo_total_propuesto = $_POST['total_propuesto'] ?? 0;
+    $comprobantes_json = $_POST['comprobantes'] ?? '[]';
+    $comprobantes = json_decode($comprobantes_json, true);
+
+    // Verificación de datos mínimos requeridos
+    if ($id_propuesta == 0 || (json_last_error() !== JSON_ERROR_NONE)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Faltan datos o el formato de los comprobantes es incorrecto.']);
+        exit;
+    }
+    
+    // 3. Procesamiento del archivo subido (si existe)
+    if (isset($_FILES['historial_adjunto']) && $_FILES['historial_adjunto']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['historial_adjunto'];
+        
+        // --- Validaciones de seguridad para el archivo ---
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        $max_size = 5 * 1024 * 1024; // Límite de 5 MB
+
+        if (!in_array($file['type'], $allowed_types) || $file['size'] > $max_size) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Archivo no válido o demasiado grande (máx. 5MB, solo JPG, PNG, GIF).']);
+            exit;
         }
 
-        // 2. Registramos el evento en el historial
-        $descripcion_historial = "El administrador aceptó la contrapropuesta del cliente.";
-        $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)";
-        $params_historial = [$id_propuesta, $id_usuario_admin, 'ADMIN', $descripcion_historial, $comentario];
+        // --- Mover archivo a su carpeta de destino ---
+        $upload_dir = __DIR__ . '/../uploads/historial/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $new_filename = "historial_{$id_propuesta}_admin_" . time() . "." . $extension;
+        $upload_path = $upload_dir . $new_filename;
+
+        if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+            $ruta_adjunto_db = 'uploads/historial/' . $new_filename;
+        } else {
+            throw new Exception("Error crítico: No se pudo mover el archivo adjunto al servidor.");
+        }
+    }
+
+    // 4. Operaciones de Base de Datos dentro de una transacción
+    $conn_apps = Database::getConnection('apps');
+    if (sqlsrv_begin_transaction($conn_apps) === false) {
+        throw new Exception("Error al iniciar la transacción de base de datos.");
+    }
+
+    try {
+        // 4.1. Actualizamos la cabecera de la propuesta con el nuevo estado y el nuevo total
+        $sql_update_header = "UPDATE FP_propuestas_pago SET estado = 'ACEPTADA', total_propuesto = ?, fecha_ultima_modificacion = GETDATE() WHERE id = ?";
+        $params_header = [$nuevo_total_propuesto, $id_propuesta];
+        $stmt_update_header = sqlsrv_query($conn_apps, $sql_update_header, $params_header);
+        
+        if ($stmt_update_header === false || sqlsrv_rows_affected($stmt_update_header) === 0) {
+            throw new Exception("No se pudo actualizar la cabecera de la propuesta.");
+        }
+
+        // 4.2. Borramos TODOS los items antiguos de la propuesta para reemplazarlos
+        $sql_delete_items = "DELETE FROM FP_propuestas_pago_items WHERE id_propuesta = ?";
+        $stmt_delete = sqlsrv_query($conn_apps, $sql_delete_items, [$id_propuesta]);
+        
+        if ($stmt_delete === false) {
+            throw new Exception("Error al limpiar los items antiguos de la propuesta.");
+        }
+
+        // 4.3. Re-insertamos los items actualizados que quedaron en el modal
+        // Si no quedan comprobantes, este bucle no se ejecuta y la propuesta queda vacía, lo cual es correcto.
+        if (!empty($comprobantes)) {
+            $sql_insert_item = "INSERT INTO FP_propuestas_pago_items (id_propuesta, t_comp_factura, n_comp_factura, importe_bruto, importe_neto, porcentaje_descuento) VALUES (?, ?, ?, ?, ?, ?)";
+            foreach ($comprobantes as $comp) {
+                $params_item = [
+                    $id_propuesta, 
+                    $comp['t_comp'], 
+                    $comp['n_comp'], 
+                    $comp['importe_bruto'], 
+                    $comp['importe_neto'], 
+                    $comp['porcentaje_descuento']
+                ];
+                $stmt_item = sqlsrv_query($conn_apps, $sql_insert_item, $params_item);
+                if ($stmt_item === false) {
+                    // Si falla la inserción de un item, lanzamos un error con detalles
+                    throw new Exception("Error al re-insertar el item: " . $comp['n_comp']);
+                }
+            }
+        }
+
+        // 4.4. Registramos el evento en el historial
+        $descripcion_historial = "El administrador aceptó la contrapropuesta y guardó los cambios finales.";
+        $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario, ruta_adjunto) VALUES (?, ?, ?, ?, ?, ?)";
+        $params_historial = [$id_propuesta, $id_usuario_admin, 'ADMIN', $descripcion_historial, $comentario, $ruta_adjunto_db];
         $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
-        if ($stmt_historial === false) throw new Exception("Error al registrar el historial.");
 
-        // 3. HEMOS ELIMINADO TODA LA LÓGICA RELACIONADA CON 'FP_cuotas_propuesta'
+        if ($stmt_historial === false) {
+            throw new Exception("Error al registrar el evento en el historial.");
+        }
 
+        // 5. Si todas las operaciones fueron exitosas, confirmamos la transacción
         sqlsrv_commit($conn_apps);
-        echo json_encode(['success' => true, 'message' => 'Contrapropuesta aceptada. La propuesta ahora está en estado ACEPTADA.']);
+        echo json_encode(['success' => true, 'message' => 'Contrapropuesta aceptada y cambios guardados correctamente.']);
 
     } catch (Exception $e) {
+        // 6. Si algo falló en cualquier punto, revertimos todos los cambios
         sqlsrv_rollback($conn_apps);
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error del servidor: ' . $e->getMessage()]);
     }
-    exit;
     break;
 
 case 'actualizar_estado':
@@ -804,6 +947,49 @@ case 'actualizar_estado':
     $comentario = $_POST['comentario'] ?? null;
     $cod_cliente = $_SESSION['usuario_cod_client'];
     $id_usuario = $_SESSION['usuario_id'];
+    $ruta_adjunto_db = null; // Inicializamos la ruta del archivo como null
+
+    // ================== INICIO DEL MANEJO DE ARCHIVO ADJUNTO ==================
+    if (isset($_FILES['historial_adjunto']) && $_FILES['historial_adjunto']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['historial_adjunto'];
+        
+        // --- Validaciones de seguridad ---
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        $max_size = 5 * 1024 * 1024; // 5 MB
+
+        if (!in_array($file['type'], $allowed_types)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Tipo de archivo no permitido. Solo se aceptan JPG, PNG o GIF.']);
+            exit;
+        }
+
+        if ($file['size'] > $max_size) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'El archivo es demasiado grande. El tamaño máximo es de 5 MB.']);
+            exit;
+        }
+        // --- Fin de validaciones ---
+
+        // Creamos un nombre de archivo único para evitar colisiones
+        $upload_dir = __DIR__ . '/../uploads/historial/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $new_filename = "historial_{$id_propuesta}_" . time() . "." . $extension;
+        $upload_path = $upload_dir . $new_filename;
+
+        // Movemos el archivo a su destino final
+        if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+            // Guardamos la ruta relativa para la base de datos
+            $ruta_adjunto_db = 'uploads/historial/' . $new_filename;
+        } else {
+            // Si falla el movimiento del archivo, detenemos el proceso
+            throw new Exception("Error crítico: No se pudo mover el archivo adjunto.");
+        }
+    }
+    // =================== FIN DEL MANEJO DE ARCHIVO ADJUNTO ====================
 
     $conn_apps = Database::getConnection('apps');
     sqlsrv_begin_transaction($conn_apps);
@@ -877,15 +1063,13 @@ case 'actualizar_estado':
              throw new Exception("No se pudo actualizar la propuesta o no tienes permiso.");
         }
 
-        // 2. Insertamos el evento en el historial
-        $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)";
-        $params_historial = [$id_propuesta, $id_usuario, 'CLIENTE', $descripcion_historial, $comentario];
+        // 2. Insertamos el evento en el historial (con la columna de adjunto)
+        $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario, ruta_adjunto) VALUES (?, ?, ?, ?, ?, ?)";
+        $params_historial = [$id_propuesta, $id_usuario, 'CLIENTE', $descripcion_historial, $comentario, $ruta_adjunto_db];
         $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
         if ($stmt_historial === false) {
              throw new Exception("Error al registrar el historial.");
         }
-        
-        // 3. HEMOS ELIMINADO LA LÓGICA DE 'FP_cuotas_propuesta' DE AQUÍ
         
         sqlsrv_commit($conn_apps);
         echo json_encode(['success' => true, 'message' => 'Propuesta actualizada correctamente.']);
@@ -895,7 +1079,6 @@ case 'actualizar_estado':
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error del servidor: ' . $e->getMessage()]);
     }
-    exit;
     break;
     }
 } catch (Exception $e) {
