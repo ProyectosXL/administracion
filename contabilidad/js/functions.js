@@ -451,7 +451,9 @@ function ejecutarQuery() {
       if (revisar() != 1) {
         Swal.fire("Los gastos fueron amortizados!", "", "success").then(
           function () {
-            window.location.reload();
+            // Preservar filtros en la recarga
+            const urlParams = new URLSearchParams(window.location.search);
+            window.location.href = window.location.pathname + '?' + urlParams.toString();
           }
         );
       } else {
@@ -637,7 +639,11 @@ function prorratearGastos() {
                                   "Prorrateado!",
                                   "Los gastos fueron prorrateados",
                                   "success"
-                                );
+                                ).then(() => {
+                                  // Preservar filtros en la recarga
+                                  const urlParams = new URLSearchParams(window.location.search);
+                                  window.location.href = window.location.pathname + '?' + urlParams.toString();
+                                });
                               }
                             });
                           /******************************** */
@@ -1209,6 +1215,10 @@ function procesar() {
               icon: "success",
               title: "",
               text: "El proceso finalizó correctamente",
+            }).then(() => {
+              // Preservar filtros en la recarga
+              const urlParams = new URLSearchParams(window.location.search);
+              window.location.href = window.location.pathname + '?' + urlParams.toString();
             });
           } else {
             
@@ -1574,7 +1584,9 @@ const cambiarEntorno = (t) => {
         method: "POST",
         data: {entorno: entorno},
         success: function (data) {
-            location.reload();
+            // Preservar filtros en la recarga
+            const urlParams = new URLSearchParams(window.location.search);
+            window.location.href = window.location.pathname + '?' + urlParams.toString();
         },
         error: function(xhr, status, error) {
             console.error('Error al cambiar entorno:', error);
@@ -1612,7 +1624,9 @@ const revertir = () => {
               icon: 'success',
               confirmButtonText: 'Aceptar'
             }).then(() => {
-              location.reload();
+              // Preservar filtros en la recarga
+              const urlParams = new URLSearchParams(window.location.search);
+              window.location.href = window.location.pathname + '?' + urlParams.toString();
             });
           } else {
             Swal.fire({

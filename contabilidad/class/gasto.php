@@ -432,17 +432,9 @@ class Gasto
             ELSE 'false'
         END AS hay_registros_pendientes
         FROM RO_T_INTEGRAL_TANGO_2 
-        WHERE FECHA BETWEEN '$desde' AND '$hasta' AND AMORTIZAR IS NOT NULL AND AMORTIZAR <> 0 AND AMORTIZADO IS NULL AND EXCLUIR = 0";
-
-        /* WHERE AMORTIZADO IS NULL 
-        AND FECHA BETWEEN '$desde' AND '$hasta' 
-        AND PRORRATEADO IS NULL 
-        AND CONTROLADO IS NOT NULL 
-        AND EXCLUIR = 0 
-        AND AMORTIZAR > 0 
+        WHERE AMORTIZAR > 0 
         AND AMORTIZADO IS NULL 
-        AND COD_CUENTA LIKE '%'"; */
-
+        AND FECHA BETWEEN '$desde' AND '$hasta'";
         
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
@@ -626,11 +618,45 @@ class Gasto
         
         $periodo = (int)date('n', strtotime($hasta)) . '-' . date('Y', strtotime($hasta));
         
+        // Verificar si hay registros YA AMORTIZADOS en RO_T_INTEGRAL_TANGO_2 para el período
         $sql = "SELECT 
                 CASE 
                     WHEN EXISTS (
-                        SELECT 1 FROM RO_T_INTEGRAL_AMORTIZACIONES 
-                        WHERE FECHA BETWEEN '$desde' AND '$hasta'
+                        SELECT 1 
+                        FROM RO_T_INTEGRAL_TANGO_2 
+                        WHERE AMORTIZADO = 1 
+                        AND FECHA BETWEEN '$desde' AND '$hasta'
+                    ) THEN 'true'
+                    ELSE 'false'
+                END AS resultado";
+        
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+        
+        if ($stmt === false) {
+            return 'false';
+        }
+        
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        return $row['resultado'];
+    }
+
+    /**
+     * Verifica si existen gastos con monto de amortización en el período
+     * (amortizados o pendientes)
+     * @param string $desde Fecha inicio
+     * @param string $hasta Fecha fin
+     * @return string 'true' o 'false'
+     */
+    public function existenGastosParaAmortizar($desde, $hasta) {
+        
+        // Verificar si hay registros con AMORTIZAR > 0 en el período
+        $sql = "SELECT 
+                CASE 
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM RO_T_INTEGRAL_TANGO_2 
+                        WHERE AMORTIZAR > 0 
+                        AND FECHA BETWEEN '$desde' AND '$hasta'
                     ) THEN 'true'
                     ELSE 'false'
                 END AS resultado";

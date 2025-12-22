@@ -41,6 +41,10 @@ switch ($accion) {
         verificarAmortizado();
         break;
     
+    case 'existenGastosParaAmortizar':
+        existenGastosParaAmortizar();
+        break;
+    
     case 'verificarProrrateado':
         verificarProrrateado();
         break;
@@ -169,6 +173,21 @@ function verificarAmortizado() {
     $hasta = $_POST['hasta'];
     
     $result = $gasto->verificarAmortizado($desde, $hasta);
+    
+    echo $result;
+}
+
+/**
+ * Verifica si existen gastos con monto de amortización en el período
+ */
+function existenGastosParaAmortizar() {
+    require_once '../Class/Gasto.php';
+    $gasto = new Gasto();
+    
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+    
+    $result = $gasto->existenGastosParaAmortizar($desde, $hasta);
     
     echo $result;
 }

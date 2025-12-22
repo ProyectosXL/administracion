@@ -9,7 +9,8 @@ const AccionesControl = {
     estados: {
         amortizado: false,
         prorrateado: false,
-        procesado: false
+        procesado: false,
+        sinGastos: false  // Nuevo estado para meses sin gastos para amortizar
     },
 
     // Inicializar el módulo
@@ -35,13 +36,32 @@ const AccionesControl = {
 
     // Verificar si ya se amortizó
     verificarEstadoAmortizacion: function(desde, hasta) {
+        // Primero verificar si existen gastos para amortizar
         $.ajax({
-            url: 'Controller/controlGastosController.php?accion=verificarAmortizado',
+            url: 'Controller/controlGastosController.php?accion=existenGastosParaAmortizar',
             method: 'POST',
             data: { desde: desde, hasta: hasta },
             success: (data) => {
-                this.estados.amortizado = data.trim() === 'true';
-                this.actualizarBotonAmortizar();
+                const existenGastos = data.trim() === 'true';
+                
+                if (!existenGastos) {
+                    // No hay gastos para amortizar en este mes
+                    this.estados.amortizado = false;
+                    this.estados.sinGastos = true;
+                    this.actualizarBotonAmortizar();
+                } else {
+                    // Hay gastos, verificar si ya están amortizados
+                    this.estados.sinGastos = false;
+                    $.ajax({
+                        url: 'Controller/controlGastosController.php?accion=verificarAmortizado',
+                        method: 'POST',
+                        data: { desde: desde, hasta: hasta },
+                        success: (data) => {
+                            this.estados.amortizado = data.trim() === 'true';
+                            this.actualizarBotonAmortizar();
+                        }
+                    });
+                }
             }
         });
     },
@@ -79,9 +99,20 @@ const AccionesControl = {
         
         if (!btn || !dropdownMenu) return;
 
-        if (this.estados.amortizado) {
+        if (this.estados.sinGastos) {
+            // No hay gastos para amortizar en este mes
+            btn.innerHTML = '<i class="bi bi-calendar2-week"></i> Amortizar <span class="estado-indicador estado-vacio">∅</span>';
+            btn.className = 'btn btn-secondary dropdown-toggle';
+            btn.disabled = true;
+            dropdownMenu.innerHTML = `
+                <a class="dropdown-item disabled" href="#">
+                    <i class="bi bi-info-circle"></i> No hay gastos para amortizar este mes
+                </a>
+            `;
+        } else if (this.estados.amortizado) {
             btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Revertir Amort. <span class="estado-indicador estado-ejecutado">✓</span>';
             btn.className = 'btn btn-revertir dropdown-toggle';
+            btn.disabled = false;
             dropdownMenu.innerHTML = `
                 <a class="dropdown-item revertir-item" href="#" onclick="AccionesControl.revertirAmortizacion(); return false;">
                     <i class="bi bi-arrow-counterclockwise"></i> Revertir Amortización
@@ -90,6 +121,7 @@ const AccionesControl = {
         } else {
             btn.innerHTML = '<i class="bi bi-calendar2-week"></i> Amortizar';
             btn.className = 'btn btn-ejecutar dropdown-toggle';
+            btn.disabled = false;
             dropdownMenu.innerHTML = `
                 <a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarAmortizacion(); return false;">
                     <i class="bi bi-play-fill"></i> Ejecutar Amortización
@@ -201,7 +233,9 @@ const AccionesControl = {
                                 text: 'La amortización fue revertida correctamente.',
                                 icon: 'success'
                             }).then(() => {
-                                location.reload();
+                                // Preservar filtros en la recarga
+                                const urlParams = new URLSearchParams(window.location.search);
+                                window.location.href = window.location.pathname + '?' + urlParams.toString();
                             });
                         } else {
                             Swal.fire({
@@ -256,7 +290,9 @@ const AccionesControl = {
                                 text: 'El prorrateo fue revertido correctamente.',
                                 icon: 'success'
                             }).then(() => {
-                                location.reload();
+                                // Preservar filtros en la recarga
+                                const urlParams = new URLSearchParams(window.location.search);
+                                window.location.href = window.location.pathname + '?' + urlParams.toString();
                             });
                         } else {
                             Swal.fire({
