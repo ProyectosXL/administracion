@@ -60,8 +60,16 @@
                         <div class="estado-card estado-arribado">
                             <div class="estado-icon">🛃</div>
                             <div class="estado-info">
-                                <h5>Arribado</h5>
-                                <p>El contenedor ha llegado al puerto de destino y está en proceso de documentación aduanera.</p>
+                                <h5>Arribo Estimado</h5>
+                                <p>Fecha estimada de llegada al puerto de destino basada en los plazos de tránsito marítimo. Aún no confirmado por la naviera.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="estado-card estado-arribado arribo-confirmado">
+                            <div class="estado-icon">🛃</div>
+                            <div class="estado-info">
+                                <h5>Arribo Real</h5>
+                                <p>El contenedor ha llegado al puerto de destino. Fecha confirmada por la naviera (ETA_CONFIRMADA = 1) y está en proceso de documentación aduanera.</p>
                             </div>
                         </div>
                         
@@ -109,7 +117,11 @@
                             </div>
                             <div class="timeline-demo-step">
                                 <div class="timeline-demo-icon">🛃</div>
-                                <div class="timeline-demo-label">Arribado</div>
+                                <div class="timeline-demo-label">Arribo Estimado</div>
+                            </div>
+                            <div class="timeline-demo-step">
+                                <div class="timeline-demo-icon">🛃</div>
+                                <div class="timeline-demo-label">Arribo Real</div>
                             </div>
                             <div class="timeline-demo-step">
                                 <div class="timeline-demo-icon">🚚</div>
@@ -223,7 +235,8 @@
                         <div class="mb-4">
                             <span class="color-legend color-est-emb">📅 Embarque Estimado</span>
                             <span class="color-legend color-emb">🚢 Embarque Real</span>
-                            <span class="color-legend color-arr">🛃 Arribo</span>
+                            <span class="color-legend color-arr-estimado">🛃 Arribo Estimado</span>
+                            <span class="color-legend color-arr-real">🛃 Arribo Real</span>
                             <span class="color-legend color-desp">🚚 Despacho Aduana</span>
                             <span class="color-legend color-rec">📦 Recepción</span>
                         </div>
@@ -241,8 +254,8 @@
                             <div class="col-md-6">
                                 <div class="card">
                                     <div class="card-body py-2">
-                                        <h6 class="small mb-1"><i class="bi bi-circle-fill text-success"></i> Verde</h6>
-                                        <p class="small text-muted mb-0">Arribo exitoso al puerto de destino</p>
+                                        <h6 class="small mb-1"><i class="bi bi-circle-fill text-success"></i> Verdes</h6>
+                                        <p class="small text-muted mb-0">Arribo al puerto: Verde claro (estimado) y verde oscuro (confirmado)</p>
                                     </div>
                                 </div>
                             </div>

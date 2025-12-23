@@ -289,6 +289,7 @@ try {
                                             <option value="Xiamen">Xiamen</option>
                                             <option value="Dalian">Dalian</option>
                                             <option value="Yantian">Yantian</option>
+                                            <option value="Shekou">Shekou</option>
                                         </select>
                                         <div class="select-dropdown"></div>
                                     </div>        

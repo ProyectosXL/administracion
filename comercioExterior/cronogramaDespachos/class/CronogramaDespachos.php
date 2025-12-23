@@ -19,7 +19,7 @@ class CronogramaDespachos {
         try {
             $sql = "SELECT A.ORDEN_COMPRA, A.COD_PROVEE, A.PROVEEDOR, A.CONTENEDOR, 
                     CAST(C.FECHA_INGRESO AS DATE) FECHA_ING_OC, A.FECHA_EST_EMB,
-                    A.FECHA_EMB, A.FECHA_ARR, A.FECHA_DESP_ADU, D.FECHA_REC
+                    A.FECHA_EMB, A.FECHA_ARR, A.FECHA_DESP_ADU, D.FECHA_REC, A.ETA_CONFIRMADA
                     FROM RO_T_IMPORTACIONES_ENCABEZADO A
                     LEFT JOIN RO_T_IMPORTACIONES_DETALLE B ON A.ID = B.ID_MG
                     LEFT JOIN CPA35 C ON A.ORDEN_COMPRA = C.N_ORDEN_CO
@@ -60,6 +60,13 @@ class CronogramaDespachos {
                 }
                 if ($row['FECHA_REC'] && is_object($row['FECHA_REC'])) {
                     $row['FECHA_REC'] = $row['FECHA_REC']->format('Y-m-d');
+                }
+                
+                // Convertir ETA_CONFIRMADA a entero (manejar NULL como 0)
+                if (isset($row['ETA_CONFIRMADA']) && $row['ETA_CONFIRMADA'] !== null) {
+                    $row['ETA_CONFIRMADA'] = (int)$row['ETA_CONFIRMADA'];
+                } else {
+                    $row['ETA_CONFIRMADA'] = 0;
                 }
                 
                 $despachos[] = $row;

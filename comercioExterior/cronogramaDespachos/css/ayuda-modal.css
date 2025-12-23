@@ -3,6 +3,8 @@
     --color-est-emb: #5BC0DE;
     --color-emb: #4A89DC;
     --color-arr: #8CC152;
+    --color-arr-estimado: #A8D68D;
+    --color-arr-real: #6FA844;
     --color-desp: #F5A623;
     --color-rec: #AC92EC;
     --color-origen: #95A5A6;
@@ -204,6 +206,8 @@
 .color-est-emb { background: var(--color-est-emb); }
 .color-emb { background: var(--color-emb); }
 .color-arr { background: var(--color-arr); }
+.color-arr-estimado { background: var(--color-arr-estimado); }
+.color-arr-real { background: var(--color-arr-real); }
 .color-desp { background: var(--color-desp); }
 .color-rec { background: var(--color-rec); }
 

@@ -7,7 +7,7 @@ let despachos = [];
 let vistaActual = 'calendario'; // 'calendario' o 'grilla'
 let mesActual = new Date();
 let despachoSeleccionado = null;
-let filtroEstado = 'todos'; // 'todos', 'est-emb', 'emb', 'arr', 'desp', 'rec'
+let filtrosActivos = ['est-emb', 'emb', 'arr-estimado', 'arr-real', 'desp', 'rec']; // Filtros múltiples
 
 // Configuración de iconos por estado
 const ICONOS_ESTADOS = {
@@ -51,10 +51,25 @@ function configurarEventListeners() {
         renderizarVista();
     });
     
-    // Filtro de estado
-    $('#filtroEstado').on('change', function() {
-        filtroEstado = $(this).val();
-        renderizarVista();
+    // Filtros múltiples
+    $(document).on('click', '#btnFiltros', function(e) {
+        e.stopPropagation();
+        $('#filtrosDropdown').toggleClass('show');
+    });
+    
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.filtros-container').length) {
+            $('#filtrosDropdown').removeClass('show');
+        }
+    });
+    
+    $(document).on('change', '.filtro-checkbox', function() {
+        actualizarFiltros();
+    });
+    
+    $(document).on('click', '#btnLimpiarFiltros', function() {
+        $('.filtro-checkbox').prop('checked', false);
+        actualizarFiltros();
     });
     
     // Cerrar modal
@@ -65,6 +80,27 @@ function configurarEventListeners() {
     });
     
     $(document).on('click', '.btn-close-modal', cerrarModal);
+}
+
+function actualizarFiltros() {
+    filtrosActivos = [];
+    $('.filtro-checkbox:checked').each(function() {
+        filtrosActivos.push($(this).val());
+    });
+    
+    // Actualizar badge
+    const totalFiltros = $('.filtro-checkbox').length;
+    const filtrosSeleccionados = filtrosActivos.length;
+    
+    if (filtrosSeleccionados === totalFiltros) {
+        $('#badgeFiltros').text('').hide();
+    } else if (filtrosSeleccionados === 0) {
+        $('#badgeFiltros').text('0').show();
+    } else {
+        $('#badgeFiltros').text(filtrosSeleccionados).show();
+    }
+    
+    renderizarVista();
 }
 
 // ========== CARGAR DATOS ==========
@@ -126,9 +162,13 @@ function renderizarCalendario() {
                         <span class="leyenda-icono">🚢</span>
                         <span class="leyenda-texto">Embarque Real</span>
                     </div>
-                    <div class="leyenda-pill arr">
+                    <div class="leyenda-pill arr-estimado">
                         <span class="leyenda-icono">🛃</span>
-                        <span class="leyenda-texto">Arribo</span>
+                        <span class="leyenda-texto">Arribo Estimado</span>
+                    </div>
+                    <div class="leyenda-pill arr-real">
+                        <span class="leyenda-icono">🛃</span>
+                        <span class="leyenda-texto">Arribo Real</span>
                     </div>
                     <div class="leyenda-pill desp">
                         <span class="leyenda-icono">🚚</span>
@@ -230,7 +270,7 @@ function obtenerEventosPorFecha(fecha) {
         const textoCompleto = `${proveedor} - ${contenedor}`;
         
         // Fecha estimada de embarque
-        if (despacho.FECHA_EST_EMB === fecha && (filtroEstado === 'todos' || filtroEstado === 'est-emb')) {
+        if (despacho.FECHA_EST_EMB === fecha && filtrosActivos.includes('est-emb')) {
             eventos.push({
                 tipo: 'est-emb',
                 texto: textoCompleto,
@@ -242,7 +282,7 @@ function obtenerEventosPorFecha(fecha) {
         }
         
         // Fecha real de embarque
-        if (despacho.FECHA_EMB === fecha && (filtroEstado === 'todos' || filtroEstado === 'emb')) {
+        if (despacho.FECHA_EMB === fecha && filtrosActivos.includes('emb')) {
             eventos.push({
                 tipo: 'emb',
                 texto: textoCompleto,
@@ -254,19 +294,25 @@ function obtenerEventosPorFecha(fecha) {
         }
         
         // Fecha de arribo
-        if (despacho.FECHA_ARR === fecha && (filtroEstado === 'todos' || filtroEstado === 'arr')) {
-            eventos.push({
-                tipo: 'arr',
-                texto: textoCompleto,
-                proveedor: proveedor,
-                contenedor: contenedor,
-                icono: '🛃',
-                despacho: despacho
-            });
+        if (despacho.FECHA_ARR === fecha) {
+            // Determinar si es arribo real o estimado
+            const etaConfirmada = parseInt(despacho.ETA_CONFIRMADA) === 1;
+            const tipoArribo = etaConfirmada ? 'arr-real' : 'arr-estimado';
+            
+            if (filtrosActivos.includes(tipoArribo)) {
+                eventos.push({
+                    tipo: tipoArribo,
+                    texto: textoCompleto,
+                    proveedor: proveedor,
+                    contenedor: contenedor,
+                    icono: '🛃',
+                    despacho: despacho
+                });
+            }
         }
         
         // Fecha despacho aduana
-        if (despacho.FECHA_DESP_ADU === fecha && (filtroEstado === 'todos' || filtroEstado === 'desp')) {
+        if (despacho.FECHA_DESP_ADU === fecha && filtrosActivos.includes('desp')) {
             eventos.push({
                 tipo: 'desp',
                 texto: textoCompleto,
@@ -278,7 +324,7 @@ function obtenerEventosPorFecha(fecha) {
         }
         
         // Fecha recibido
-        if (despacho.FECHA_REC === fecha && (filtroEstado === 'todos' || filtroEstado === 'rec')) {
+        if (despacho.FECHA_REC === fecha && filtrosActivos.includes('rec')) {
             eventos.push({
                 tipo: 'rec',
                 texto: textoCompleto,
@@ -295,9 +341,11 @@ function obtenerEventosPorFecha(fecha) {
 
 // ========== PANEL PRÓXIMOS ARRIBOS ==========
 function renderizarPanelProximosArribos() {
-    // Filtrar despachos que no han arribado y tienen fecha de arribo
+    // Filtrar despachos que no han sido recibidos aún (independientemente de si ya arribaron)
     const despachosConArribo = despachos.filter(d => {
-        return !d.FECHA_REC && !d.FECHA_DESP_ADU && !d.FECHA_ARR;
+        // Mostrar si no ha sido recibido y tiene fecha de arribo (real o estimada)
+        const tieneArribo = d.FECHA_ARR || calcularFechaArriboEstimada(d);
+        return !d.FECHA_REC && tieneArribo;
     });
     
     // Ordenar por fecha de arribo (usar real si existe, sino estimada)
@@ -378,16 +426,26 @@ function crearCardProximoArribo(despacho) {
     const claseUrgencia = obtenerClaseUrgencia(diasRestantes);
     const contenedor = despacho.CONTENEDOR || 'Sin contenedor';
     
+    // Determinar si es arribo real o estimado
+    const etaConfirmada = parseInt(despacho.ETA_CONFIRMADA) === 1;
+    const tipoArribo = etaConfirmada ? 'real' : 'estimado';
+    const colorArribo = etaConfirmada ? 'var(--color-arr-real)' : 'var(--color-arr-estimado)';
+    const iconoArribo = etaConfirmada ? '✓' : '~';
+    const textoArribo = etaConfirmada ? 'Arribo Real' : 'Arribo Estimado';
+    
     // Calcular progreso
     const progreso = calcularProgreso(despacho);
     
     return `
-        <div class="card-proximo-arribo" onclick='abrirDetalleDespacho(${JSON.stringify(despacho)})'>
+        <div class="card-proximo-arribo arribo-${tipoArribo}" onclick='abrirDetalleDespacho(${JSON.stringify(despacho)})'>
             <div class="arribo-header">
                 <div class="arribo-contenedor">${contenedor}</div>
                 <div class="arribo-countdown ${claseUrgencia}">
                     ${diasRestantes >= 0 ? `En ${diasRestantes} días` : `Atrasado ${Math.abs(diasRestantes)} días`}
                 </div>
+            </div>
+            <div class="arribo-tipo-badge" style="background: ${colorArribo};">
+                ${iconoArribo} ${textoArribo}
             </div>
             <div class="arribo-proveedor">${despacho.PROVEEDOR}</div>
             <div class="arribo-fecha">
@@ -464,8 +522,12 @@ function crearCardDespacho(despacho, proximoHito) {
     const label = LABELS_ESTADOS[estado];
     const esEstimado = !despacho.FECHA_EMB;
     
+    // Determinar si es arribo real cuando el estado es arribado
+    const etaConfirmada = parseInt(despacho.ETA_CONFIRMADA) === 1;
+    const claseArriboReal = (estado === 'arribado' && etaConfirmada) ? 'arribo-confirmado' : '';
+    
     return `
-        <div class="despacho-card estado-${estado}" onclick='abrirDetalleDespacho(${JSON.stringify(despacho)})'>
+        <div class="despacho-card estado-${estado} ${claseArriboReal}" onclick='abrirDetalleDespacho(${JSON.stringify(despacho)})'>
             <div class="card-header">
                 <div>
                     <div class="card-proveedor">${despacho.PROVEEDOR}</div>
@@ -563,6 +625,9 @@ function crearTimeline(despacho) {
     // Calcular fechas estimadas si hay embarque real
     const fechasEstimadas = calcularFechasEstimadas(despacho);
     
+    // Determinar si ETA está confirmada
+    const etaConfirmada = parseInt(despacho.ETA_CONFIRMADA) === 1;
+    
     const pasos = [
         { 
             key: 'origen', 
@@ -586,12 +651,13 @@ function crearTimeline(despacho) {
         },
         { 
             key: 'arribado', 
-            label: tieneEmbarqueReal ? 'Arribado' : 'Arribo (estimado)', 
+            label: etaConfirmada ? 'Arribo Real' : 'Arribo Estimado', 
             icono: '🛃', 
             fecha: despacho.FECHA_ARR || fechasEstimadas.arribo,
             fechaEstimada: fechasEstimadas.arribo,
             completado: !!despacho.FECHA_ARR && tieneEmbarqueReal, 
-            estimado: !tieneEmbarqueReal || !despacho.FECHA_ARR,
+            estimado: !etaConfirmada,
+            esArriboReal: etaConfirmada,
             demorado: verificarDemora(despacho.FECHA_ARR, fechasEstimadas.arribo)
         },
         { 
@@ -633,6 +699,7 @@ function crearTimeline(despacho) {
         const claseCompletado = paso.completado ? 'completed' : '';
         const claseRecibido = paso.key === 'recibido' ? 'recibido' : '';
         const claseEstimado = paso.estimado ? 'estimado' : '';
+        const claseArriboReal = paso.esArriboReal ? 'arribo-real' : '';
         const claseDemorado = paso.demorado ? 'demorado' : '';
         
         // Determinar color de la barra para este segmento
@@ -647,7 +714,7 @@ function crearTimeline(despacho) {
         }
         
         pasosHtml += `
-            <div class="timeline-step ${claseCompletado} ${claseRecibido} ${claseEstimado} ${claseDemorado}" data-color="${colorBarra}">
+            <div class="timeline-step ${claseCompletado} ${claseRecibido} ${claseEstimado} ${claseArriboReal} ${claseDemorado}" data-color="${colorBarra}">
                 <div class="timeline-icon">${paso.icono}</div>
                 <div class="timeline-label">
                     <div class="timeline-label-title">${paso.label}${paso.demorado ? ' <i class="bi bi-exclamation-circle text-danger"></i>' : ''}</div>

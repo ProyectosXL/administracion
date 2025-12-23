@@ -48,14 +48,49 @@ header("Pragma: no-cache");
             </div>
             
             <div class="header-actions">
-                <select id="filtroEstado" class="filtro-estado" title="Filtrar por tipo de fecha">
-                    <option value="todos">📦 Todas las Fechas</option>
-                    <option value="est-emb">📅 Embarque Estimado</option>
-                    <option value="emb">🚢 Embarque Real</option>
-                    <option value="arr">🛃 Arribo</option>
-                    <option value="desp">🚚 Despacho Aduana</option>
-                    <option value="rec">📦 Recepción</option>
-                </select>
+                <div class="filtros-container">
+                    <button class="btn-filtros" id="btnFiltros" title="Filtrar por tipo de fecha">
+                        <i class="bi bi-funnel"></i> Filtros <span class="badge-filtros" id="badgeFiltros"></span>
+                    </button>
+                    <div class="filtros-dropdown" id="filtrosDropdown">
+                        <div class="filtros-header">
+                            <span>Seleccionar Estados</span>
+                            <button class="btn-limpiar-filtros" id="btnLimpiarFiltros">Limpiar</button>
+                        </div>
+                        <div class="filtros-lista">
+                            <label class="filtro-item">
+                                <input type="checkbox" value="est-emb" class="filtro-checkbox" checked>
+                                <span class="filtro-icono">📅</span>
+                                <span>Embarque Estimado</span>
+                            </label>
+                            <label class="filtro-item">
+                                <input type="checkbox" value="emb" class="filtro-checkbox" checked>
+                                <span class="filtro-icono">🚢</span>
+                                <span>Embarque Real</span>
+                            </label>
+                            <label class="filtro-item">
+                                <input type="checkbox" value="arr-estimado" class="filtro-checkbox" checked>
+                                <span class="filtro-icono">🛃</span>
+                                <span>Arribo Estimado</span>
+                            </label>
+                            <label class="filtro-item">
+                                <input type="checkbox" value="arr-real" class="filtro-checkbox" checked>
+                                <span class="filtro-icono">🛃</span>
+                                <span>Arribo Real</span>
+                            </label>
+                            <label class="filtro-item">
+                                <input type="checkbox" value="desp" class="filtro-checkbox" checked>
+                                <span class="filtro-icono">🚚</span>
+                                <span>Despacho Aduana</span>
+                            </label>
+                            <label class="filtro-item">
+                                <input type="checkbox" value="rec" class="filtro-checkbox" checked>
+                                <span class="filtro-icono">📦</span>
+                                <span>Recepción</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
                 <button type="button" class="btn-help" data-bs-toggle="modal" data-bs-target="#ayudaModal" title="Guía de ayuda: Estados, flujo y funcionalidades">
                     <i class="bi bi-info-circle"></i> Ayuda
                 </button>

@@ -2,6 +2,8 @@
 
 session_start();
 
+$esUsuarioMantenimiento = (isset($_SESSION['tipo']) && $_SESSION['tipo'] == 'MANTENIMIENTO');
+
 $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLocal'])) : 'Usuario';
 
 ?>
@@ -45,6 +47,74 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                         </button>
                     </div>
                 </div>
+
+                                <?php if ($esUsuarioMantenimiento) : ?>
+                
+                    <!-- ################################################## -->
+                    <!-- VISTA EXCLUSIVA PARA ALBERTO (MANTENIMIENTO)       -->
+                    <!-- ################################################## -->
+
+                    <div id="reporte-alberto-view">
+                        <div class="pt-2 pb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="mb-0">Reporte Alberto (Proveedor OGROLL)</h3>
+                                <button type="button" class="btn btn-success" onclick="exportarReporteAlbertoExcel()">
+                                    <i class="bi bi-file-earmark-excel"></i> Exportar Reporte
+                                </button>
+                            </div>
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title"><i class="bi bi-funnel"></i> Filtro de Período</h5>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label for="fechaReporteAlbertoDesde" class="form-label">Desde</label>
+                                            <input type="date" class="form-control" id="fechaReporteAlbertoDesde">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="fechaReporteAlbertoHasta" class="form-label">Hasta</label>
+                                            <input type="date" class="form-control" id="fechaReporteAlbertoHasta">
+                                        </div>
+                                        <div class="col-md-4 d-flex align-items-end gap-2">
+                                            <button type="button" class="btn btn-primary" onclick="aplicarFiltrosReporteAlberto()"><i class="bi bi-search"></i> Filtrar</button>
+                                            <button type="button" class="btn btn-secondary" onclick="limpiarFiltrosReporteAlberto()"><i class="bi bi-arrow-clockwise"></i> Limpiar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-danger mb-3">
+                                        <div class="card-header"><i class="bi bi-arrow-up-circle"></i> Total Egresos (Rango Seleccionado)</div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="totalEgresosAlberto">$0</h3>
+                                            <p class="card-text">Pagos a Alberto</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-warning mb-3">
+                                        <div class="card-header"><i class="bi bi-wallet2"></i> Total Gastos (Rango Seleccionado)</div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="totalGastosAlberto">$0</h3>
+                                            <p class="card-text">Gastos registrados</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-white bg-primary mb-3">
+                                        <div class="card-header"><i class="bi bi-cash-stack"></i> Saldo (Egresos - Gastos)</div>
+                                        <div class="card-body">
+                                            <h3 class="card-title" id="saldoAlberto">$0</h3>
+                                            <p class="card-text">Disponible</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="contenidoReporteAlberto"></div>
+                        </div>
+                    </div>
+
+                <?php else : ?>
                 
                 <!-- Pestañas de navegación -->
                 <ul class="nav nav-tabs" id="cajaTabs" role="tablist">
@@ -581,6 +651,7 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
             </main>
         </div>
     </div>
