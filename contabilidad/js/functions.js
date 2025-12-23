@@ -1397,6 +1397,112 @@ const exportModal = (table) =>{
     });
 
 }
+
+const exportarGastosExcluidos = () => {
+    // Obtener el entorno actual (Argentina o Uruguay)
+    let entorno = $('#checkEntorno').is(':checked') ? 'UY' : 'ARG';
+    
+    // Obtener el período actual
+    let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
+    let mes = $('#mes').val();
+    let anio = $('#selectAño').val();
+    
+    // Crear una tabla temporal solo con los gastos excluidos
+    let tablaOriginal = $('#myTable').DataTable();
+    let datosExcluidos = [];
+    
+    // Obtener todas las filas de la tabla
+    $('#myTable tbody tr').each(function() {
+        let checkbox = $(this).find('.checkExcluir');
+        if (checkbox.is(':checked')) {
+            let fila = [];
+            $(this).find('td').each(function(index) {
+                // Excluir las columnas de checkbox (columnas 15, 16, 17)
+                if (index < 15 || index > 17) {
+                    let texto = $(this).text().trim();
+                    // Para el select, obtener el texto seleccionado
+                    let select = $(this).find('select');
+                    if (select.length > 0) {
+                        texto = select.find('option:selected').text();
+                    }
+                    // Para el input, obtener el valor
+                    let input = $(this).find('input[type="text"], input[type="number"]');
+                    if (input.length > 0 && !input.hasClass('checkExcluir') && !input.hasClass('checkControlado') && !input.hasClass('checkAmortizado')) {
+                        texto = input.val();
+                    }
+                    fila.push(texto);
+                }
+            });
+            datosExcluidos.push(fila);
+        }
+    });
+    
+    if (datosExcluidos.length === 0) {
+        Swal.fire({
+            title: 'Sin datos',
+            text: 'No hay gastos excluidos para exportar',
+            icon: 'info',
+            confirmButtonText: 'Aceptar'
+        });
+        return;
+    }
+    
+    // Crear tabla temporal
+    let tablaTemp = $('<table id="tablaExcluidos" style="display:none;">');
+    let thead = $('<thead><tr>' +
+        '<th>FECHA / PERIODO</th>' +
+        '<th>AUXILIAR</th>' +
+        '<th>SECTOR</th>' +
+        '<th>COD. CUENTA</th>' +
+        '<th>DESC. CUENTA</th>' +
+        '<th>SALDO</th>' +
+        '<th>LEYENDA</th>' +
+        '<th>TIPO COMP.</th>' +
+        '<th>RAZON SOCIAL</th>' +
+        '<th>NRO. COMP.</th>' +
+        '<th>COD. RUBRO</th>' +
+        '<th>RUBRO CONTABLE</th>' +
+        '<th>COD. PRORRATEO</th>' +
+        '<th>DESC. PRORRATEO</th>' +
+        '<th>AMORT.</th>' +
+        '<th>MODULO</th>' +
+        '<th>NRO. SUC.</th>' +
+        '<th>ID</th>' +
+        '</tr></thead>');
+    
+    let tbody = $('<tbody>');
+    datosExcluidos.forEach(function(fila) {
+        let tr = $('<tr>');
+        fila.forEach(function(celda) {
+            tr.append($('<td>').text(celda));
+        });
+        tbody.append(tr);
+    });
+    
+    tablaTemp.append(thead).append(tbody);
+    $('body').append(tablaTemp);
+    
+    // Exportar a Excel
+    let nombreArchivo = `Gastos_Excluidos_${entorno}_${mes}-${anio}`;
+    
+    $('#tablaExcluidos').table2excel({
+        exclude: ".noExcel",
+        name: "Gastos Excluidos",
+        filename: nombreArchivo,
+        fileext: ".xlsx"
+    });
+    
+    // Eliminar tabla temporal
+    $('#tablaExcluidos').remove();
+    
+    Swal.fire({
+        title: 'Exportación exitosa',
+        text: `Se exportaron ${datosExcluidos.length} gastos excluidos de ${entorno}`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
 const aceptarDiferenciasModal2 = () =>{
   
   let allCheck = document.querySelectorAll("#checkModal2");

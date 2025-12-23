@@ -296,6 +296,11 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                 <button class="btn btn-resumen-ie" id="btnResumen" onclick="resumen()">
                     <i class="bi bi-file-earmark-excel"></i> Resumen IE
                 </button>
+
+                <!-- Botón Exportar Excluidos -->
+                <button class="btn btn-success" id="btnExportarExcluidos" onclick="exportarGastosExcluidos()">
+                    <i class="bi bi-file-earmark-excel"></i> Exportar Excluidos
+                </button>
             </div>
             <div id="contCheck">
                 <label id="titleCheck">Acciones masivas</label>
