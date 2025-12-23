@@ -117,6 +117,13 @@ class Dashboard {
         const url = new URL('api/dashboard.php', this.baseUrl);
         url.searchParams.append('action', action);
         
+        // Obtener entorno de la URL actual si existe
+        const urlParams = new URLSearchParams(window.location.search);
+        const entorno = urlParams.get('entorno');
+        if (entorno) {
+            url.searchParams.append('entorno', entorno);
+        }
+        
         // Mapeo de parámetros
         const paramMap = {
             fechaDesde: 'fecha_desde',
@@ -168,6 +175,11 @@ class Dashboard {
             }
             
             this.log('Parsed data:', data);
+            
+            // Log del entorno para debugging
+            if (data.debug && data.debug.entorno) {
+                this.log(`🌍 Entorno API: ${data.debug.entorno}`, data.debug);
+            }
             
             if (!data.success) {
                 throw new Error(data.error || 'Error en la API');

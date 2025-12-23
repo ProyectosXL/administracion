@@ -1,12 +1,24 @@
 
-
 <?php
+// Iniciar sesión ANTES de cualquier cosa
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Si viene entorno por URL, actualizar la sesión
+if (isset($_GET['entorno']) && in_array($_GET['entorno'], ['central', 'uy'])) {
+    $_SESSION['entorno'] = $_GET['entorno'];
+}
+
 // Configurar manejo de errores para evitar HTML en respuesta JSON
 error_reporting(0); // Deshabilitar mostrar errores en producción
 ini_set('display_errors', 0);
 
-// Headers obligatorios al inicio
+// Headers obligatorios al inicio - Anti-caché y JSON
 header('Content-Type: application/json; charset=utf-8');
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -45,6 +57,10 @@ try {
     if (!class_exists('DashboardController')) {
         sendErrorResponse('DashboardController class not found');
     }
+
+    // Log del entorno actual para debugging
+    $entornoActual = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'no definido';
+    error_log('[Dashboard API] Entorno actual: ' . $entornoActual);
 
     $dashboard = new DashboardController();
     $action = $_GET['action'] ?? '';
@@ -99,8 +115,20 @@ try {
         sendErrorResponse($data['error']);
     }
     
-    // Respuesta exitosa
-    sendSuccessResponse($data);
+    // Agregar información del entorno a la respuesta para debugging
+    $entornoDebug = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+    
+    // Respuesta exitosa con info de entorno
+    echo json_encode([
+        'success' => true,
+        'data' => $data,
+        'error' => null,
+        'debug' => [
+            'entorno' => $entornoDebug,
+            'timestamp' => time()
+        ]
+    ]);
+    exit;
     
 } catch (Exception $e) {
     // Log del error para debugging (opcional)

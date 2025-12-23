@@ -1,5 +1,18 @@
 
 <?php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Si viene entorno por URL, actualizar la sesión
+if (isset($_GET['entorno']) && in_array($_GET['entorno'], ['central', 'uy'])) {
+    $_SESSION['entorno'] = $_GET['entorno'];
+}
+
+// Headers para evitar caché y forzar recarga
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
 
 require_once __DIR__ ."/../Controller/listarOrden.php";
 

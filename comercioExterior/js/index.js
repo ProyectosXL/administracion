@@ -83,6 +83,8 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
+                    console.log('Entorno cambiado exitosamente a:', response.entorno);
+                    
                     // Actualizar texto del entorno
                     $('#environment-text').html(`<strong>${entornoCorto}</strong>`);
 
@@ -98,19 +100,22 @@ $(document).ready(function() {
                     flagRight.attr('src', tempSrc);
                     flagRight.attr('alt', tempAlt);
 
-                    // Recargar iframes para actualizar el contenido
-                    reloadAllIframes();
-
-                    // Cerrar loading y mostrar éxito
-                    Swal.fire({
-                        title: '¡Entorno cambiado!',
-                        text: `Ahora estás trabajando en ${entornoNombre}`,
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false,
-                        toast: true,
-                        position: 'top-end'
-                    });
+                    // Agregar pequeño delay para asegurar que la sesión se ha escrito
+                    setTimeout(function() {
+                        // Recargar iframes con el parámetro de entorno
+                        reloadAllIframes(entorno);
+                        
+                        // Cerrar loading y mostrar éxito
+                        Swal.fire({
+                            title: '¡Entorno cambiado!',
+                            text: `Ahora estás trabajando en ${entornoNombre}`,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end'
+                        });
+                    }, 300); // 300ms de delay para asegurar escritura de sesión
                 } else {
                     throw new Error(response.message || 'Error al cambiar entorno');
                 }
@@ -164,10 +169,16 @@ $(document).ready(function() {
     /**
      * Recargar todos los iframes
      */
-    function reloadAllIframes() {
+    function reloadAllIframes(entorno) {
+        console.log('Recargando iframes con entorno:', entorno);
         $('.content-iframe').each(function() {
             const src = $(this).attr('src');
-            $(this).attr('src', src);
+            // Limpiar cualquier parámetro previo
+            const baseSrc = src.split('?')[0].split('&')[0];
+            // Agregar entorno y timestamp para forzar recarga
+            const newSrc = baseSrc + '?entorno=' + (entorno || 'central') + '&_t=' + new Date().getTime();
+            console.log('Recargando iframe:', baseSrc, '→', newSrc);
+            $(this).attr('src', newSrc);
         });
     }
 
