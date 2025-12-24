@@ -189,9 +189,157 @@ const AccionesControl = {
         amortizarGastos();
     },
 
-    // Ejecutar Prorrateo (llama a la función existente)
+    // Ejecutar Prorrateo (llama a la función existente o usa el sistema asíncrono)
     ejecutarProrrateo: function() {
-        prorratearGastos();
+        // Verificar si existe la función de prorrateo asíncrono
+        if (typeof prorratearGastosAsync !== 'undefined') {
+            prorratearGastosAsync();
+        } else {
+            prorratearGastos();
+        }
+    },
+    
+    // Sistema de polling para verificar estado del proceso de prorrateo
+    verificarEstadoProceso: function(idProceso, intervalo = 2000) {
+        const spinner = document.getElementById('boxLoading');
+        
+        const checkStatus = () => {
+            $.ajax({
+                url: 'controller/ProrrateoController.php',
+                method: 'POST',
+                data: {
+                    accion: 'consultar_estado',
+                    id_proceso: idProceso
+                },
+                dataType: 'json',
+                success: (response) => {
+                    if (!response.success) {
+                        clearInterval(pollingInterval);
+                        spinner.classList.remove('loading');
+                        this.limpiarMensajeProgreso();
+                        Swal.fire({
+                            title: 'Error',
+                            text: response.message || 'Error al consultar el estado',
+                            icon: 'error'
+                        });
+                        return;
+                    }
+                    
+                    const { estado, progreso, mensaje, total_registros, registros_procesados } = response;
+                    
+                    // Actualizar mensaje de progreso si existe un elemento para ello
+                    this.actualizarMensajeProgreso(mensaje, progreso, registros_procesados, total_registros);
+                    
+                    if (estado === 'COMPLETADO') {
+                        clearInterval(pollingInterval);
+                        spinner.classList.remove('loading');
+                        this.limpiarMensajeProgreso();
+                        
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: mensaje || 'Prorrateo completado exitosamente',
+                            icon: 'success',
+                            timer: 3000
+                        }).then(() => {
+                            // Preservar filtros en la recarga
+                            const urlParams = new URLSearchParams(window.location.search);
+                            window.location.href = window.location.pathname + '?' + urlParams.toString();
+                        });
+                    } else if (estado === 'ERROR') {
+                        clearInterval(pollingInterval);
+                        spinner.classList.remove('loading');
+                        this.limpiarMensajeProgreso();
+                        
+                        Swal.fire({
+                            title: 'Error en el proceso',
+                            text: response.detalles_error || mensaje || 'Ocurrió un error durante el prorrateo',
+                            icon: 'error'
+                        });
+                    }
+                },
+                error: () => {
+                    clearInterval(pollingInterval);
+                    spinner.classList.remove('loading');
+                    this.limpiarMensajeProgreso();
+                    Swal.fire({
+                        title: 'Error de conexión',
+                        text: 'No se pudo verificar el estado del proceso',
+                        icon: 'error'
+                    });
+                }
+            });
+        };
+        
+        // Iniciar polling
+        const pollingInterval = setInterval(checkStatus, intervalo);
+        
+        // Primera verificación inmediata
+        checkStatus();
+    },
+    
+    // Limpiar mensaje de progreso
+    limpiarMensajeProgreso: function() {
+        const progressDiv = document.getElementById('prorrateo-progress');
+        if (progressDiv) {
+            progressDiv.remove();
+        }
+    },
+    
+    // Actualizar mensaje de progreso en la UI
+    actualizarMensajeProgreso: function(mensaje, progreso, procesados, total) {
+        // Buscar o crear elemento de progreso
+        let progressDiv = document.getElementById('prorrateo-progress');
+        
+        if (!progressDiv) {
+            const spinner = document.getElementById('boxLoading');
+            if (spinner) {
+                progressDiv = document.createElement('div');
+                progressDiv.id = 'prorrateo-progress';
+                progressDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    z-index: 10000;
+                    min-width: 400px;
+                    text-align: center;
+                `;
+                document.body.appendChild(progressDiv);
+            }
+        }
+        
+        if (progressDiv) {
+            let registrosInfo = '';
+            if (total > 0) {
+                registrosInfo = `<div style="margin-top: 10px; color: #666;">${procesados} / ${total} registros</div>`;
+            }
+            
+            progressDiv.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <i class="bi bi-hourglass-split" style="font-size: 48px; color: #007bff;"></i>
+                </div>
+                <h4 style="margin-bottom: 15px;">Procesando Prorrateo</h4>
+                <div style="margin-bottom: 10px; color: #555;">${mensaje}</div>
+                <div class="progress" style="height: 25px; margin-top: 15px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: ${progreso}%"
+                         aria-valuenow="${progreso}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        ${progreso}%
+                    </div>
+                </div>
+                ${registrosInfo}
+                <div style="margin-top: 15px; font-size: 12px; color: #999;">
+                    Este proceso puede tardar varios minutos...
+                </div>
+            `;
+        }
     },
 
     // Ejecutar Procesamiento (llama a la función existente)

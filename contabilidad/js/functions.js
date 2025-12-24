@@ -1953,3 +1953,150 @@ const agregarLog = (mensaje) => {
     // Scroll al final
     lista.parentElement.scrollTop = lista.parentElement.scrollHeight;
 };
+/**
+ * Versión asíncrona de prorratearGastos
+ * Ejecuta el proceso en background y monitorea el progreso
+ */
+function prorratearGastosAsync() {
+    let spinner = document.getElementById("boxLoading");
+    spinner.className += " loading";
+
+    let desde = document.getElementsByName("desde")[0].value;
+    let hasta = document.getElementsByName("hasta")[0].value;
+    let periodo = document.getElementById('periodo').getAttribute('attr-periodo');
+
+    $('#myTable').DataTable().destroy();
+
+    // Verificar que se haya completado el paso 8
+    if(!(paso8.className == "active")){
+        spinner.classList.remove('loading');
+        Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Complete todos los pasos de control antes de continuar!",
+        });
+        return;
+    }
+
+    // Validaciones previas
+    $.ajax({
+        url: 'Controller/controlGastosController.php?accion=validarPendienteDeAsignar',
+        method: 'POST',
+        data: { desde: desde, hasta: hasta },
+        success: function (data) {
+            data = data.trim();
+            
+            if(data == 'false'){
+                // Validar pendiente de control
+                $.ajax({
+                    url: 'Controller/controlGastosController.php?accion=validarPendienteControl',
+                    method: 'POST',
+                    data: { desde: desde, hasta: hasta },
+                    success: function (data) {
+                        data = data.trim();
+                        
+                        if(data == 'false'){
+                            // Validar pendiente de amortizar
+                            $.ajax({
+                                url: 'Controller/controlGastosController.php?accion=validarPendienteAmortizar',
+                                method: 'POST',
+                                data: { desde: desde, hasta: hasta },
+                                success: function (data) {
+                                    data = data.trim();
+                                    spinner.classList.remove('loading');
+
+                                    if(data == 'false'){
+                                        $('#myTable').DataTable({ responsive: true });
+
+                                        // Confirmar acción
+                                        const swalWithBootstrapButtons = Swal.mixin({
+                                            customClass: {
+                                                confirmButton: "btn btn-success me-2",
+                                                cancelButton: "btn btn-danger",
+                                            },
+                                            buttonsStyling: false,
+                                        });
+
+                                        swalWithBootstrapButtons.fire({
+                                            title: "¿Desea realizar el prorrateo?",
+                                            text: "Este proceso puede tardar varios minutos.",
+                                            icon: "warning",
+                                            showCancelButton: true,
+                                            confirmButtonText: "Sí, prorratear",
+                                            cancelButtonText: "Cancelar",
+                                            reverseButtons: true,
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                // Iniciar proceso asíncrono (el spinner lo maneja el modal de progreso)
+                                                
+                                                $.ajax({
+                                                    url: 'controller/ProrrateoController.php',
+                                                    method: 'POST',
+                                                    data: {
+                                                        accion: 'iniciar',
+                                                        desde: desde,
+                                                        hasta: hasta,
+                                                        periodo: periodo
+                                                    },
+                                                    dataType: 'json',
+                                                    success: function(response) {
+                                                        if (response.success) {
+                                                            // Iniciar polling para verificar estado
+                                                            AccionesControl.verificarEstadoProceso(response.id_proceso);
+                                                        } else {
+                                                            spinner.classList.remove('loading');
+                                                            Swal.fire({
+                                                                icon: "error",
+                                                                title: "Error",
+                                                                text: response.message || "No se pudo iniciar el proceso",
+                                                            });
+                                                        }
+                                                    },
+                                                    error: function() {
+                                                        spinner.classList.remove('loading');
+                                                        Swal.fire({
+                                                            icon: "error",
+                                                            title: "Error de conexión",
+                                                            text: "No se pudo conectar con el servidor",
+                                                        });
+                                                    }
+                                                });
+                                            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                                                swalWithBootstrapButtons.fire(
+                                                    "Cancelado",
+                                                    "El prorrateo fue cancelado",
+                                                    "error"
+                                                );
+                                            }
+                                        });
+
+                                    } else {
+                                        Swal.fire({
+                                            icon: "error",
+                                            title: "Error",
+                                            text: "Aún hay registros pendientes de amortizar",
+                                        });
+                                    }
+                                }
+                            });
+                        } else {
+                            spinner.classList.remove('loading');
+                            Swal.fire({
+                                icon: "error",
+                                title: "Error",
+                                text: "Aún hay registros pendientes de controlar",
+                            });
+                        }
+                    }
+                });
+            } else {
+                spinner.classList.remove('loading');
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Aún hay registros pendientes de asignar",
+                });
+            }
+        }
+    });
+}

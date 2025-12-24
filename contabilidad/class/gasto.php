@@ -432,7 +432,7 @@ class Gasto
             ELSE 'false'
         END AS hay_registros_pendientes
         FROM RO_T_INTEGRAL_TANGO_2 
-        WHERE AMORTIZAR > 0 
+        WHERE AMORTIZAR > 0 AND EXCLUIR != 1
         AND AMORTIZADO IS NULL 
         AND FECHA BETWEEN '$desde' AND '$hasta'";
         
@@ -624,7 +624,7 @@ class Gasto
                     WHEN EXISTS (
                         SELECT 1 
                         FROM RO_T_INTEGRAL_TANGO_2 
-                        WHERE AMORTIZADO = 1 
+                        WHERE AMORTIZADO = 1 AND EXCLUIR != 1
                         AND FECHA BETWEEN '$desde' AND '$hasta'
                     ) THEN 'true'
                     ELSE 'false'
@@ -655,7 +655,7 @@ class Gasto
                     WHEN EXISTS (
                         SELECT 1 
                         FROM RO_T_INTEGRAL_TANGO_2 
-                        WHERE AMORTIZAR > 0 
+                        WHERE AMORTIZAR > 0 AND EXCLUIR != 1
                         AND FECHA BETWEEN '$desde' AND '$hasta'
                     ) THEN 'true'
                     ELSE 'false'
