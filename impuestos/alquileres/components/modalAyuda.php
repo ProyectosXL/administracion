@@ -545,11 +545,25 @@
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td>6, 15, 16</td>
+                                                    <td><strong>6</strong> - Porc. S/ventas brutas</td>
+                                                    <td>
+                                                        <code>[(Venta Bruta × Porcentaje) / 100] - Valor Mínimo Mensual</code>
+                                                        <br><small class="text-muted">Si el resultado es menor a 0, se muestra 0</small>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>7</strong> - Porc. S/ventas netas</td>
+                                                    <td>
+                                                        <code>[(Venta Neta × Porcentaje) / 100] - Valor Mínimo Mensual</code>
+                                                        <br><small class="text-muted">Si el resultado es menor a 0, se muestra 0</small>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>15, 16</td>
                                                     <td><code>(Rentabilidad Bruta × Porcentaje) / 100</code></td>
                                                 </tr>
                                                 <tr>
-                                                    <td>7, 14, 17</td>
+                                                    <td>14, 17</td>
                                                     <td><code>(Venta Neta × Porcentaje) / 100</code></td>
                                                 </tr>
                                                 <tr>
@@ -560,7 +574,7 @@
                                         </table>
                                         
                                         <div class="alert alert-info mt-3" role="alert">
-                                            <i class="fas fa-info-circle"></i> Los cálculos se ejecutan del lado del servidor al cargar o reabrir un período.
+                                            <i class="fas fa-info-circle"></i> <strong>Importante:</strong> Los conceptos 6 y 7 se recalculan automáticamente cuando el período está <strong>abierto</strong>. El valor bruto se almacena en la BD y la resta del valor mínimo se aplica dinámicamente al visualizar.
                                         </div>
                                     </div>
                                 </div>

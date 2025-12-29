@@ -208,6 +208,8 @@ function cargarAlquieres ($fecha, $periodo) {
                                 if($rentabilidad['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']) {
                                     foreach ($traerPorcentajes as  $porcentaje) {
                                         if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
+                                            // Guardar el valor BRUTO sin restar el mínimo
+                                            // JavaScript lo restará dinámicamente cuando el período esté abierto
                                             $total = ( ( $rentabilidad['IMPORTE'] * $porcentaje['PORCENTAJE'] ) / 100 ) ;
                                         }
                                     }   
@@ -226,6 +228,8 @@ function cargarAlquieres ($fecha, $periodo) {
                                     foreach ($traerPorcentajes as  $porcentaje) {
                                         if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
 
+                                            // Guardar el valor BRUTO sin restar el mínimo
+                                            // JavaScript lo restará dinámicamente cuando el período esté abierto
                                             $total = $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] / 100;
 
                                             if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
@@ -355,7 +359,38 @@ function traerDetalleAlquiler ($fecha,$periodo) {
             // Inicializar en 0
             $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = 0;
             
-            // Buscar el valor en los detalles guardados
+            // Para conceptos 6 y 7, si el período está ABIERTO, recalcular siempre
+            // No usar el valor de BD porque puede tener la resta ya aplicada
+            if($estado == 0 && in_array($value['ID_CA'], ["6", "7"])) {
+                
+                if($value['ID_CA'] == "6") {
+                    // Recalcular: venta bruta * porcentaje / 100 (SIN restar el mínimo)
+                    foreach ($rentabilidadBruta as $rentabilidad) {
+                        if($rentabilidad['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']) {
+                            foreach ($traerPorcentajes as $porcentaje) {
+                                if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
+                                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ( ( $rentabilidad['IMPORTE'] * $porcentaje['PORCENTAJE'] ) / 100 );
+                                }
+                            }
+                        }
+                    }
+                } else if($value['ID_CA'] == "7") {
+                    // Recalcular: venta neta * porcentaje / 100 (SIN restar el mínimo)
+                    foreach ($rentabilidadNeta as $rentabilidad) {
+                        if($rentabilidad['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                            foreach ($traerPorcentajes as $porcentaje) {
+                                if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
+                                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ( ( $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] ) / 100 );
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                continue; // Saltar la búsqueda en BD para estos conceptos
+            }
+            
+            // Para todos los demás conceptos, o si está cerrado, usar el valor de BD
             $encontrado = false;
             foreach ($detalle as $det) {
                 if($det['NRO_SUCURS'] == $v['NRO_SUCURSAL'] && $det['ID_CA'] == $value['ID_CA']) {
