@@ -45,14 +45,6 @@ const totalizar = (div = null) => {
         let result = 0;
         idConceptos.forEach(e => {
             let concepto = e.textContent;
-            if(e.textContent == 14 && ["2","16","60","79","81"].includes(s.textContent)) {
-                
-                let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-realvalue");
-                let valorId7 = document.querySelector(`#input-7-${s.textContent}`).value.replace(/[$.]/g, "");
-
-                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId7) * parseFloat(porcentaje)) / 100);
-                
-            }
             
             if(e.textContent == 9 || e.textContent == 13 ) {
 
@@ -62,7 +54,8 @@ const totalizar = (div = null) => {
 
             }
 
-            if(e.textContent == 16 || e.textContent == 17 ) {
+            // Concepto 16: Restar concepto 9
+            if(e.textContent == 16) {
 
                 let valorId9 = document.querySelector(`#input-9-${s.textContent}`).value.replace(/[$.]/g, "");
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
@@ -70,10 +63,16 @@ const totalizar = (div = null) => {
                 if ( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9)  < 0) {
                     inputActual.value = "$0";
                 }else{
-
                     inputActual.value ="$"+ parseNumber( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9) );
                 }
 
+            }
+            
+            // Concepto 17: Solo mostrar el valor calculado (NO restar nada)
+            if(e.textContent == 17) {
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
+                let valorReal = parseInt(inputActual.getAttribute('attr-realvalue'));
+                inputActual.value = "$" + parseNumber(valorReal);
             }
 
             if(e.textContent == 6 || e.textContent == 7 ) {
@@ -87,6 +86,22 @@ const totalizar = (div = null) => {
                 }
                 inputActual.value ="$"+ parseNumber( calculo); 
 
+            }
+            
+            // Concepto 14: Calcular sobre el concepto 7 (valor mostrado, ya con el mínimo restado)
+            if(e.textContent == 14) {
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                let porcentaje = inputActual.getAttribute("attr-porcentaje");
+                
+                // Obtener el valor MOSTRADO del concepto 7 (ya tiene el mínimo restado)
+                let valorId7Mostrado = document.querySelector(`#input-7-${s.textContent}`).value.replace(/[$.]/g, "").replace(/ /g,'');
+                
+                // Calcular: valor concepto 7 (neto) * porcentaje / 100
+                let calculo = (parseInt(valorId7Mostrado) * parseFloat(porcentaje)) / 100;
+                
+                inputActual.value = "$" + parseNumber(calculo);
+                // Actualizar attr-realvalue para que se guarde correctamente en BD
+                inputActual.setAttribute("attr-realvalue", calculo);
             }
 
             if(e.textContent == 4 || e.textContent == 5  || e.textContent == 18 ) {
@@ -139,6 +154,12 @@ const totalizar = (div = null) => {
             actualizarDetalle(document.querySelector(`#input-17-${sucursalActual}`));
             actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`));
             
+        }
+        
+        // Si cambia el concepto 7, recalcular el concepto 14 (que depende del 7)
+        if(div.id.split("-")[1] == 7) {
+            console.log("🔄 Concepto 7 detectado - Actualizando concepto 14");
+            actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`));
         }
 
         value = div.value.replace(/[$.]/g, "");

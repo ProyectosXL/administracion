@@ -492,29 +492,32 @@
                                 <div class="card-header" id="headingTec1">
                                     <h5 class="mb-0">
                                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseTec1" aria-expanded="false" aria-controls="collapseTec1">
-                                            <i class="fas fa-database"></i> Almacenamiento y Estado de Datos
+                                            <i class="fas fa-save"></i> ¿Cómo se Guardan los Datos?
                                         </button>
                                     </h5>
                                 </div>
                                 <div id="collapseTec1" class="collapse" aria-labelledby="headingTec1" data-parent="#accordionTecnicas">
                                     <div class="card-body">
-                                        <p><strong>¿Cómo se guardan los datos?</strong></p>
+                                        <p><strong>Guardado automático:</strong></p>
                                         <ul>
-                                            <li>Cada valor ingresado se guarda <strong>inmediatamente</strong> en la tabla <code>RO_T_DETALLE_ALQUILERES</code></li>
-                                            <li>El estado del período (abierto/cerrado) se registra en campo <code>ESTADO</code></li>
-                                            <li>El ajuste aplicado se marca con <code>AJUSTADO = 1</code></li>
+                                            <li>Cada valor que ingresás se guarda <strong>automáticamente</strong> en cuanto terminás de escribirlo</li>
+                                            <li>No necesitás hacer clic en ningún botón "Guardar" para los importes individuales</li>
+                                            <li>Si aplicaste el ajuste por inflación, el sistema marca automáticamente esos conceptos como ajustados</li>
                                         </ul>
                                         <p class="mt-3"><strong>Estados del período:</strong></p>
                                         <table class="table table-sm table-bordered">
                                             <tr>
-                                                <td><code>ESTADO = 0</code> o NULL</td>
-                                                <td>Período abierto (editable)</td>
+                                                <td><strong>Período Abierto</strong></td>
+                                                <td>Podés editar todos los valores. Los cálculos automáticos se actualizan en tiempo real.</td>
                                             </tr>
                                             <tr>
-                                                <td><code>ESTADO = 1</code></td>
-                                                <td>Período cerrado (solo lectura)</td>
+                                                <td><strong>Período Cerrado</strong></td>
+                                                <td>Todos los campos están bloqueados (solo lectura). Los valores quedan congelados.</td>
                                             </tr>
                                         </table>
+                                        <div class="alert alert-info mt-3">
+                                            <i class="fas fa-lightbulb"></i> <strong>Tip:</strong> Si ves que un campo está en gris y no te deja editarlo, verificá si el período está cerrado o si ese concepto se calcula automáticamente.
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -530,51 +533,203 @@
                                 </div>
                                 <div id="collapseTec2" class="collapse" aria-labelledby="headingTec2" data-parent="#accordionTecnicas">
                                     <div class="card-body">
-                                        <p><strong>Conceptos de carga manual:</strong></p>
-                                        <ul>
-                                            <li><strong>Concepto 4, 5, 18:</strong> Valores ingresados manualmente o ajustados por coeficiente</li>
-                                        </ul>
-                                        
-                                        <p class="mt-3"><strong>Conceptos automáticos:</strong></p>
+                                        <div class="alert alert-primary" role="alert">
+                                            <i class="fas fa-calculator"></i> <strong>Sistema de Cálculo:</strong> Algunos conceptos los ingresás manualmente y otros los calcula el sistema automáticamente según las ventas y porcentajes configurados.
+                                        </div>
+
+                                        <h6 class="mt-4 mb-3"><i class="fas fa-pencil-alt text-primary"></i> Conceptos que Ingresás Manualmente</h6>
                                         <table class="table table-sm table-bordered">
                                             <thead class="thead-light">
                                                 <tr>
+                                                    <th width="15%">ID</th>
                                                     <th>Concepto</th>
-                                                    <th>Fórmula</th>
+                                                    <th>Observaciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td><strong>6</strong> - Porc. S/ventas brutas</td>
-                                                    <td>
-                                                        <code>[(Venta Bruta × Porcentaje) / 100] - Valor Mínimo Mensual</code>
-                                                        <br><small class="text-muted">Si el resultado es menor a 0, se muestra 0</small>
-                                                    </td>
+                                                    <td><strong>1, 2, 3</strong></td>
+                                                    <td>Varios conceptos contractuales</td>
+                                                    <td>Valores fijos que ingresás según el contrato de cada sucursal</td>
                                                 </tr>
                                                 <tr>
-                                                    <td><strong>7</strong> - Porc. S/ventas netas</td>
-                                                    <td>
-                                                        <code>[(Venta Neta × Porcentaje) / 100] - Valor Mínimo Mensual</code>
-                                                        <br><small class="text-muted">Si el resultado es menor a 0, se muestra 0</small>
-                                                    </td>
+                                                    <td><strong>4, 5, 18</strong></td>
+                                                    <td>Alquileres base por contrato</td>
+                                                    <td>Valores que podés ajustar automáticamente con el coeficiente de inflación</td>
                                                 </tr>
                                                 <tr>
-                                                    <td>15, 16</td>
-                                                    <td><code>(Rentabilidad Bruta × Porcentaje) / 100</code></td>
+                                                    <td><strong>8</strong></td>
+                                                    <td>Valor mínimo mensual</td>
+                                                    <td>Piso contractual que se usa en los cálculos de conceptos 6 y 7</td>
                                                 </tr>
                                                 <tr>
-                                                    <td>14, 17</td>
-                                                    <td><code>(Venta Neta × Porcentaje) / 100</code></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>9, 13</td>
-                                                    <td><code>Porcentaje fijo configurado</code></td>
+                                                    <td><strong>10, 11, 12</strong></td>
+                                                    <td>Expensas y otros gastos</td>
+                                                    <td>Valores variables que ingresás cada mes</td>
                                                 </tr>
                                             </tbody>
                                         </table>
                                         
-                                        <div class="alert alert-info mt-3" role="alert">
-                                            <i class="fas fa-info-circle"></i> <strong>Importante:</strong> Los conceptos 6 y 7 se recalculan automáticamente cuando el período está <strong>abierto</strong>. El valor bruto se almacena en la BD y la resta del valor mínimo se aplica dinámicamente al visualizar.
+                                        <h6 class="mt-4 mb-3"><i class="fas fa-robot text-success"></i> Conceptos que Calcula el Sistema Automáticamente</h6>
+                                        <p>Estos conceptos se calculan automáticamente cuando el período está <strong>abierto</strong>. Al cerrar el período, los valores quedan fijos.</p>
+                                        
+                                        <div class="card mt-3 mb-3 border-primary">
+                                            <div class="card-header bg-light">
+                                                <strong>Concepto 6</strong> - Porcentaje sobre Ventas Brutas
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>¿Cómo se calcula?</strong></p>
+                                                <div class="formula-box">
+                                                    <code>Paso 1: Multiplicá Venta Bruta × Porcentaje ÷ 100</code>
+                                                    <br><code>Paso 2: Al resultado restale el Valor Mínimo Mensual</code>
+                                                    <br><code>Si el resultado es negativo, se muestra $0</code>
+                                                </div>
+                                                <p class="mt-2"><strong>Ejemplo con números reales:</strong></p>
+                                                <ul>
+                                                    <li>Venta Bruta de Sucursal 11: $61,337,053</li>
+                                                    <li>Porcentaje configurado: 6.47%</li>
+                                                    <li>Valor Mínimo Mensual (concepto 8): $1,898,260</li>
+                                                </ul>
+                                                <div class="bg-light p-2 rounded">
+                                                    <code>Paso 1: 61,337,053 × 6.47 ÷ 100 = $3,968,913.69</code><br>
+                                                    <code>Paso 2: $3,968,913.69 - $1,898,260 = $2,070,653.69</code><br>
+                                                    <code>✅ Resultado final: $2,070,653.69</code>
+                                                </div>
+                                                <div class="alert alert-info mt-2 mb-0">
+                                                    <i class="fas fa-info-circle"></i> <strong>Nota importante:</strong> El sistema guarda el resultado del paso 1. La resta del valor mínimo se aplica automáticamente al mostrar los datos cuando el período está abierto.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-3 mb-3 border-primary">
+                                            <div class="card-header bg-light">
+                                                <strong>Concepto 7</strong> - Porcentaje sobre Ventas Netas
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>¿Cómo se calcula?</strong></p>
+                                                <div class="formula-box">
+                                                    <code>Paso 1: Multiplicá Venta Neta × Porcentaje ÷ 100</code>
+                                                    <br><code>Paso 2: Al resultado restale el Valor Mínimo Mensual</code>
+                                                    <br><code>Si el resultado es negativo, se muestra $0</code>
+                                                </div>
+                                                <p class="mt-2"><strong>Ejemplo con números reales:</strong></p>
+                                                <ul>
+                                                    <li>Venta Neta de Sucursal 2: $63,941,966</li>
+                                                    <li>Porcentaje configurado: 0.8%</li>
+                                                    <li>Valor Mínimo Mensual (concepto 8): $400,000</li>
+                                                </ul>
+                                                <div class="bg-light p-2 rounded">
+                                                    <code>Paso 1: 63,941,966 × 0.8 ÷ 100 = $511,535.73</code><br>
+                                                    <code>Paso 2: $511,535.73 - $400,000 = $111,535.73</code><br>
+                                                    <code>✅ Resultado final: $111,535.73</code>
+                                                </div>
+                                                <div class="alert alert-warning mt-2 mb-0">
+                                                    <i class="fas fa-exclamation-triangle"></i> <strong>Caso especial:</strong> Si el resultado del paso 1 es menor al valor mínimo, se muestra $0. Por ejemplo, si la venta es baja y da $350,000 - $400,000 = -$50,000, se muestra $0.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-3 mb-3 border-success">
+                                            <div class="card-header bg-light">
+                                                <strong>Concepto 14</strong> - Gastos Administrativos sobre Ventas Netas
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>¿Cómo se calcula?</strong></p>
+                                                <div class="formula-box">
+                                                    <code>Concepto 14 = Concepto 7 (valor mostrado) × Porcentaje ÷ 100</code>
+                                                </div>
+                                                <p class="mt-2"><strong>⚠️ MUY IMPORTANTE:</strong> Este concepto se calcula sobre el valor <strong>final</strong> del concepto 7 (después de restar el valor mínimo), NO sobre la venta neta directamente.</p>
+                                                <p class="mt-2"><strong>Ejemplo con números reales:</strong></p>
+                                                <ul>
+                                                    <li>Concepto 7 mostrado (ya con el mínimo restado): $111,535.73</li>
+                                                    <li>Porcentaje configurado: 10%</li>
+                                                </ul>
+                                                <div class="bg-light p-2 rounded">
+                                                    <code>Cálculo: $111,535.73 × 10 ÷ 100 = $11,153.57</code><br>
+                                                    <code>✅ Resultado final: $11,153.57</code>
+                                                </div>
+                                                <div class="alert alert-danger mt-2 mb-0">
+                                                    <i class="fas fa-times-circle"></i> <strong>Error común:</strong> NO se calcula como (Venta Neta × 10%). Siempre se usa el valor final del concepto 7.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-3 mb-3 border-secondary">
+                                            <div class="card-header bg-light">
+                                                <strong>Concepto 15 y 16</strong> - Porcentajes sobre Venta Bruta
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>¿Cómo se calculan?</strong></p>
+                                                <div class="formula-box">
+                                                    <code>Resultado = Venta Bruta × Porcentaje ÷ 100</code>
+                                                </div>
+                                                <p class="mt-2"><strong>Diferencia con concepto 6:</strong> Estos conceptos <u>NO</u> restan el valor mínimo mensual. Es un cálculo directo de porcentaje sobre la venta bruta.</p>
+                                                <div class="alert alert-secondary mt-2 mb-0">
+                                                    <i class="fas fa-info-circle"></i> El concepto 16 se muestra como: Concepto 16 menos Concepto 9 en la pantalla.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-3 mb-3 border-secondary">
+                                            <div class="card-header bg-light">
+                                                <strong>Concepto 17</strong> - Porcentaje sobre Venta Neta
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>¿Cómo se calcula?</strong></p>
+                                                <div class="formula-box">
+                                                    <code>Resultado = Venta Neta × Porcentaje ÷ 100</code>
+                                                </div>
+                                                <p class="mt-2"><strong>Diferencia con concepto 7:</strong> Este concepto <u>NO</u> resta el valor mínimo mensual. Es un cálculo directo de porcentaje sobre venta neta.</p>
+                                                <p class="mt-2"><strong>Ejemplo con números reales:</strong></p>
+                                                <ul>
+                                                    <li>Venta Neta de Sucursal 2: $63,941,966</li>
+                                                    <li>Porcentaje configurado: 0.8%</li>
+                                                </ul>
+                                                <div class="bg-light p-2 rounded">
+                                                    <code>Cálculo: 63,941,966 × 0.8 ÷ 100 = $511,535.73</code><br>
+                                                    <code>✅ Resultado final: $511,535.73</code>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-3 mb-3 border-info">
+                                            <div class="card-header bg-light">
+                                                <strong>Concepto 9 y 13</strong> - Valores Fijos por Sucursal
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>Tipo:</strong> Son importes fijos configurados previamente para cada sucursal</p>
+                                                <p>No dependen de ventas ni porcentajes. Son montos fijos establecidos por contrato que varían según cada local.</p>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="mt-4 mb-3"><i class="fas fa-cogs text-warning"></i> ¿Cómo Funciona Internamente?</h6>
+                                        
+                                        <div class="alert alert-info">
+                                            <p class="mb-2"><strong>💾 Período Abierto vs Cerrado:</strong></p>
+                                            <ul class="mb-0">
+                                                <li><strong>Período Abierto:</strong> Los conceptos 6, 7, 14, 15, 16 y 17 se recalculan automáticamente cada vez que se modifica algo (ventas, porcentajes, valor mínimo).</li>
+                                                <li><strong>Período Cerrado:</strong> Los valores quedan congelados tal como están. No se recalculan aunque cambien las ventas o porcentajes.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="alert alert-success">
+                                            <p class="mb-2"><strong>✅ ¿Cuándo se Actualizan los Cálculos?</strong></p>
+                                            <ol class="mb-0">
+                                                <li><strong>Al abrir un período:</strong> Todos los conceptos automáticos se recalculan desde cero</li>
+                                                <li><strong>Al modificar el valor mínimo (concepto 8):</strong> Se recalculan automáticamente los conceptos 6, 7 y 14</li>
+                                                <li><strong>Al modificar el concepto 7:</strong> Se recalcula automáticamente el concepto 14</li>
+                                                <li><strong>Al cerrar un período:</strong> Los valores actuales se guardan y quedan fijos</li>
+                                            </ol>
+                                        </div>
+
+                                        <div class="alert alert-warning">
+                                            <p class="mb-2"><strong>🔄 Si Cambiaron los Porcentajes:</strong></p>
+                                            <p class="mb-0">Si alguien modificó los porcentajes configurados en el sistema y necesitás actualizar un período ya cerrado:</p>
+                                            <ol class="mb-0 mt-2">
+                                                <li>Abrí el período con el botón "Abrir Período"</li>
+                                                <li>Esperá unos segundos a que el sistema recalcule automáticamente</li>
+                                                <li>Volvé a cerrar el período para guardar los nuevos valores</li>
+                                            </ol>
                                         </div>
                                     </div>
                                 </div>
@@ -585,29 +740,34 @@
                                 <div class="card-header" id="headingTec3">
                                     <h5 class="mb-0">
                                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseTec3" aria-expanded="false" aria-controls="collapseTec3">
-                                            <i class="fas fa-code-branch"></i> Detección de Diferencias al Cierre
+                                            <i class="fas fa-search"></i> ¿Cómo Detecta el Sistema las Diferencias?
                                         </button>
                                     </h5>
                                 </div>
                                 <div id="collapseTec3" class="collapse" aria-labelledby="headingTec3" data-parent="#accordionTecnicas">
                                     <div class="card-body">
-                                        <p><strong>¿Cómo funciona?</strong></p>
+                                        <p><strong>¿Cuándo se comparan los valores?</strong></p>
+                                        <p>Cuando intentás cerrar un período que previamente reabriste y modificaste, el sistema compara automáticamente los valores actuales con los que estaban guardados anteriormente.</p>
+                                        
+                                        <p class="mt-3"><strong>¿Qué pasa si hay diferencias?</strong></p>
                                         <ol>
-                                            <li>Al intentar cerrar un período reabierto, el sistema recolecta todos los valores actuales de la tabla HTML</li>
-                                            <li>Los compara con los valores guardados en <code>RO_T_DETALLE_ALQUILERES</code></li>
-                                            <li>Detecta diferencias usando una tolerancia de <code>±0.01</code> (para evitar falsos positivos por redondeo)</li>
-                                            <li>Resalta visualmente las celdas con diferencias (fondo amarillo, borde naranja)</li>
+                                            <li>El sistema te muestra un resumen de todas las diferencias encontradas</li>
+                                            <li>Las celdas con cambios se resaltan con <strong>fondo amarillo</strong> y <strong>borde naranja</strong></li>
+                                            <li>Podés elegir qué hacer:
+                                                <ul>
+                                                    <li><strong>Actualizar y Cerrar:</strong> Guarda los nuevos valores</li>
+                                                    <li><strong>Cerrar sin Actualizar:</strong> Mantiene los valores originales</li>
+                                                    <li><strong>Cancelar:</strong> Vuelve a la edición</li>
+                                                </ul>
+                                            </li>
                                         </ol>
                                         
-                                        <p class="mt-3"><strong>Manejo de valores negativos:</strong></p>
-                                        <p>El sistema reconoce correctamente valores negativos en dos formatos:</p>
-                                        <ul>
-                                            <li>Con guión: <code>-1234.56</code></li>
-                                            <li>Con paréntesis: <code>($1,234.56)</code></li>
-                                        </ul>
+                                        <div class="alert alert-info mt-3">
+                                            <i class="fas fa-info-circle"></i> <strong>Nota:</strong> El sistema ignora diferencias menores a $0.01 para evitar problemas por redondeos automáticos.
+                                        </div>
                                         
-                                        <div class="alert alert-success mt-3" role="alert">
-                                            <i class="fas fa-check"></i> Las diferencias se recalculan en tiempo real cada vez que intentás cerrar, garantizando precisión.
+                                        <div class="alert alert-success mt-3">
+                                            <i class="fas fa-check"></i> Las diferencias se recalculan cada vez que intentás cerrar, garantizando que siempre veas la información más actualizada.
                                         </div>
                                     </div>
                                 </div>
@@ -618,23 +778,28 @@
                                 <div class="card-header" id="headingTec4">
                                     <h5 class="mb-0">
                                         <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseTec4" aria-expanded="false" aria-controls="collapseTec4">
-                                            <i class="fas fa-exchange-alt"></i> Integración con Informe Económico
+                                            <i class="fas fa-paper-plane"></i> Envío al Informe Económico
                                         </button>
                                     </h5>
                                 </div>
                                 <div id="collapseTec4" class="collapse" aria-labelledby="headingTec4" data-parent="#accordionTecnicas">
                                     <div class="card-body">
-                                        <p><strong>¿Qué hace el procesamiento?</strong></p>
-                                        <p>Al hacer clic en <span class="btn-example btn-success">Procesar</span>, los datos se envían a la tabla de integración para el Informe Económico <code>RO_T_INTEGRAL_TANGO_2</code> con:</p>
+                                        <p><strong>¿Qué hace el botón "Procesar"?</strong></p>
+                                        <p>Cuando hacés clic en <span class="btn-example btn-success">Procesar</span>, el sistema envía todos los datos del período al módulo de Informe Económico para su integración contable.</p>
+                                        
+                                        <p class="mt-3"><strong>Información que se envía:</strong></p>
                                         <ul>
-                                            <li><code>MODULO = 'ALQUILERES'</code></li>
-                                            <li><code>FECHA</code> = Último día del mes del período</li>
-                                            <li><code>PERIODO</code> = Formato "M-YYYY" (ej: "5-2025")</li>
+                                            <li>Todos los conceptos de todas las sucursales del período</li>
+                                            <li>La fecha corresponde al último día del mes procesado</li>
+                                            <li>Se marca como módulo "ALQUILERES" para identificarlo</li>
                                         </ul>
                                         
-                                        <p class="mt-3"><strong>Revertir procesamiento:</strong></p>
-                                        <p>Ejecuta un <code>DELETE FROM RO_T_INTEGRAL_TANGO_2 WHERE MODULO='ALQUILERES' AND PERIODO='...'</code></p>
-                                        <p>Esto permite reprocesar sin duplicar registros.</p>
+                                        <p class="mt-3"><strong>¿Qué hace "Revertir Procesamiento"?</strong></p>
+                                        <p>El botón <span class="btn-example btn-danger">Revertir Proc.</span> elimina el envío al Informe Económico, permitiéndote corregir errores y volver a procesar.</p>
+                                        
+                                        <div class="alert alert-warning mt-3">
+                                            <i class="fas fa-exclamation-triangle"></i> <strong>Importante:</strong> Revertir solo elimina el envío al Informe Económico. Los datos locales de alquileres NO se borran, permanecen guardados y podés volver a procesarlos cuando quieras.
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -210,7 +210,8 @@ function cargarAlquieres ($fecha, $periodo) {
                                         if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
                                             // Guardar el valor BRUTO sin restar el mínimo
                                             // JavaScript lo restará dinámicamente cuando el período esté abierto
-                                            $total = ( ( $rentabilidad['IMPORTE'] * $porcentaje['PORCENTAJE'] ) / 100 ) ;
+                                            $porcentajeFloat = floatval(str_replace(',', '.', $porcentaje['PORCENTAJE']));
+                                            $total = ( ( $rentabilidad['IMPORTE'] * $porcentajeFloat ) / 100 ) ;
                                         }
                                     }   
                                 }
@@ -219,31 +220,33 @@ function cargarAlquieres ($fecha, $periodo) {
 
                         }
 
-                        if( in_array($value['ID_CA'], ["7", "14", "17"]) ) {
+                        if( in_array($value['ID_CA'], ["7", "17"]) ) {
 
+                            $encontroRentabilidad = false;
                             foreach ($rentabilidadNeta  as $rentabilidad) {
 
                                 if($rentabilidad['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
-
+                                    $encontroRentabilidad = true;
+                                    $encontroPorcentaje = false;
+                                    
                                     foreach ($traerPorcentajes as  $porcentaje) {
                                         if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
-
-                                            // Guardar el valor BRUTO sin restar el mínimo
+                                            $encontroPorcentaje = true;
+                                            // Para ID_CA 7 y 17: calcular sobre venta neta
+                                            // Guardar el valor BRUTO sin restar el mínimo (para concepto 7)
                                             // JavaScript lo restará dinámicamente cuando el período esté abierto
-                                            $total = $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] / 100;
-
-                                            if(in_array($v['NRO_SUCURSAL'],["02","16","60","79","81"]) && $value['ID_CA'] == "14"){
-
-                                                $total = ($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] - $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) * $porcentaje['PORCENTAJE'] / 100;
-        
-                                            }
+                                            $porcentajeFloat = floatval(str_replace(',', '.', $porcentaje['PORCENTAJE']));
+                                            $total = $rentabilidad['VENTA'] * $porcentajeFloat / 100;
+                                            break;
                                         }
-                                    }   
-
+                                    }
                                 }
 
                             }
                         }
+                        
+                        // ID_CA 14 se calcula DESPUÉS porque depende del concepto 7
+                        // Se procesará en un segundo bucle después de que todos los conceptos básicos estén calculados
     
 
                 }
@@ -289,6 +292,43 @@ function cargarAlquieres ($fecha, $periodo) {
             
             }
         }
+
+    // SEGUNDO BUCLE: Calcular conceptos que dependen de otros (ID_CA 14)
+    // Debe ejecutarse DESPUÉS de que todos los conceptos básicos estén calculados
+    foreach ($todosLosLocales as $k => $v) {
+        foreach ($conceptos as $key => $value) {
+            if($value['ID_CA'] == "14") {
+                // ID_CA 14 = ((Concepto 7 - Valor mínimo mensual) * porcentaje / 100)
+                // El concepto 7 tiene el valor BRUTO, debemos restarle el mínimo primero
+                $concepto7Bruto = isset($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"]) ? $newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] : 0;
+                $valorMinimo = isset($newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) ? $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"] : 0;
+                
+                // Calcular el concepto 7 neto (restando el mínimo)
+                $concepto7Neto = $concepto7Bruto - $valorMinimo;
+                if($concepto7Neto < 0) {
+                    $concepto7Neto = 0;
+                }
+                
+                // Buscar el porcentaje para esta sucursal
+                $porcentajeEncontrado = false;
+                foreach ($traerPorcentajes as $porcentaje) {
+                    if($porcentaje['ID_CA'] == "14" && $porcentaje['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                        $porcentajeFloat = floatval(str_replace(',', '.', $porcentaje['PORCENTAJE']));
+                        $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($concepto7Neto * $porcentajeFloat) / 100;
+                        $porcentajeEncontrado = true;
+                        break; // Ya encontramos el porcentaje para esta sucursal
+                    }
+                }
+                
+                // Si no se encontró porcentaje, dejar en 0
+                if(!$porcentajeEncontrado) {
+                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = 0;
+                }
+                
+                break; // Ya procesamos el concepto 14, salir del bucle de conceptos
+            }
+        }
+    }
 
     return $newArray;
 
@@ -369,7 +409,8 @@ function traerDetalleAlquiler ($fecha,$periodo) {
                         if($rentabilidad['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']) {
                             foreach ($traerPorcentajes as $porcentaje) {
                                 if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
-                                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ( ( $rentabilidad['IMPORTE'] * $porcentaje['PORCENTAJE'] ) / 100 );
+                                    $porcentajeFloat = floatval(str_replace(',', '.', $porcentaje['PORCENTAJE']));
+                                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ( ( $rentabilidad['IMPORTE'] * $porcentajeFloat ) / 100 );
                                 }
                             }
                         }
@@ -380,7 +421,8 @@ function traerDetalleAlquiler ($fecha,$periodo) {
                         if($rentabilidad['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
                             foreach ($traerPorcentajes as $porcentaje) {
                                 if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
-                                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ( ( $rentabilidad['VENTA'] * $porcentaje['PORCENTAJE'] ) / 100 );
+                                    $porcentajeFloat = floatval(str_replace(',', '.', $porcentaje['PORCENTAJE']));
+                                    $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ( ( $rentabilidad['VENTA'] * $porcentajeFloat ) / 100 );
                                 }
                             }
                         }
@@ -388,6 +430,42 @@ function traerDetalleAlquiler ($fecha,$periodo) {
                 }
                 
                 continue; // Saltar la búsqueda en BD para estos conceptos
+            }
+            
+            // Para conceptos 15 y 16, si el período está ABIERTO, recalcular
+            if($estado == 0 && in_array($value['ID_CA'], ["15", "16"])) {
+                foreach ($rentabilidadBruta as $rentabilidad) {
+                    if($rentabilidad['NRO_SUCURSAL'] == $v['NRO_SUCURSAL']) {
+                        foreach ($traerPorcentajes as $porcentaje) {
+                            if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURSAL']) {
+                                $porcentajeFloat = floatval(str_replace(',', '.', $porcentaje['PORCENTAJE']));
+                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ( ( $rentabilidad['IMPORTE'] * $porcentajeFloat ) / 100 );
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            
+            // Para concepto 17, si el período está ABIERTO, recalcular
+            if($estado == 0 && $value['ID_CA'] == "17") {
+                foreach ($rentabilidadNeta as $rentabilidad) {
+                    if($rentabilidad['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                        foreach ($traerPorcentajes as $porcentaje) {
+                            if($porcentaje['ID_CA'] == $value['ID_CA'] && $porcentaje['NRO_SUCURS'] == $rentabilidad['NRO_SUCURS']) {
+                                $porcentajeFloat = floatval(str_replace(',', '.', $porcentaje['PORCENTAJE']));
+                                $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ( ( $rentabilidad['VENTA'] * $porcentajeFloat ) / 100 );
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            
+            // Para concepto 14, si el período está ABIERTO, NO procesar aquí
+            // Se calculará en un segundo bucle después de que concepto 7 esté listo
+            if($estado == 0 && $value['ID_CA'] == "14") {
+                continue; // Saltar por ahora, se procesará después
             }
             
             // Para todos los demás conceptos, o si está cerrado, usar el valor de BD
@@ -408,6 +486,44 @@ function traerDetalleAlquiler ($fecha,$periodo) {
             // DEBUG: Log para valores no encontrados
             if(!$encontrado && $k < 2 && $key < 3) { // Solo primeras iteraciones para no saturar
                 error_log("⚠️  No se encontró detalle para Sucursal: {$v['NRO_SUCURSAL']}, Concepto: {$value['ID_CA']} ({$value['CONCEPTO']})");
+            }
+        }
+    }
+    
+    // SEGUNDO BUCLE: Si el período está ABIERTO, calcular concepto 14 que depende del concepto 7
+    if($estado == 0) {
+        foreach ($todosLosLocales as $k => $v) {
+            foreach ($conceptos as $key => $value) {
+                if($value['ID_CA'] == "14") {
+                    // ID_CA 14 = ((Concepto 7 - Valor mínimo mensual) * porcentaje / 100)
+                    // El concepto 7 tiene el valor BRUTO, debemos restarle el mínimo primero
+                    $concepto7Bruto = isset($newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"]) ? $newArray[$v['NRO_SUCURSAL']]["Porc. S/ventas netas"] : 0;
+                    $valorMinimo = isset($newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"]) ? $newArray[$v['NRO_SUCURSAL']]["Valor minimo mensual"] : 0;
+                    
+                    // Calcular el concepto 7 neto (restando el mínimo)
+                    $concepto7Neto = $concepto7Bruto - $valorMinimo;
+                    if($concepto7Neto < 0) {
+                        $concepto7Neto = 0;
+                    }
+                    
+                    // Buscar el porcentaje para esta sucursal
+                    $porcentajeEncontrado = false;
+                    foreach ($traerPorcentajes as $porcentaje) {
+                        if($porcentaje['ID_CA'] == "14" && $porcentaje['NRO_SUCURS'] == $v['NRO_SUCURSAL']) {
+                            $porcentajeFloat = floatval(str_replace(',', '.', $porcentaje['PORCENTAJE']));
+                            $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = ($concepto7Neto * $porcentajeFloat) / 100;
+                            $porcentajeEncontrado = true;
+                            break; // Ya encontramos el porcentaje para esta sucursal
+                        }
+                    }
+                    
+                    // Si no se encontró porcentaje, dejar en 0
+                    if(!$porcentajeEncontrado) {
+                        $newArray[$v['NRO_SUCURSAL']][$value['CONCEPTO']] = 0;
+                    }
+                    
+                    break; // Ya procesamos el concepto 14, salir del bucle de conceptos
+                }
             }
         }
     }

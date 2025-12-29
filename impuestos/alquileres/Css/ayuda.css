@@ -541,3 +541,147 @@ code {
 .modal-body::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
+
+/* ===== ESTILOS PARA FÓRMULAS Y CÁLCULOS ===== */
+.formula-box {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-left: 4px solid #667eea;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.formula-box code {
+    background: transparent;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0;
+}
+
+/* Cards de conceptos con colores distintivos */
+.card.border-primary .card-header {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-bottom: 2px solid #2196F3;
+    font-weight: 600;
+    color: #1565C0;
+}
+
+.card.border-success .card-header {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border-bottom: 2px solid #4CAF50;
+    font-weight: 600;
+    color: #2E7D32;
+}
+
+.card.border-secondary .card-header {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+    border-bottom: 2px solid #9E9E9E;
+    font-weight: 600;
+    color: #424242;
+}
+
+.card.border-info .card-header {
+    background: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%);
+    border-bottom: 2px solid #00BCD4;
+    font-weight: 600;
+    color: #006064;
+}
+
+/* Tablas de ejemplos mejoradas */
+#modalAyuda table.table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#modalAyuda table.table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 12px;
+}
+
+#modalAyuda table.table tbody td {
+    padding: 10px 12px;
+    vertical-align: middle;
+}
+
+#modalAyuda table.table tbody tr:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+/* Cajas de alertas mejoradas para ejemplos técnicos */
+#modalAyuda .alert {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+#modalAyuda .alert-primary {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    color: #1565C0;
+    border-left: 4px solid #2196F3;
+}
+
+#modalAyuda .alert-info {
+    background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+    color: #00695C;
+    border-left: 4px solid #00897B;
+}
+
+#modalAyuda .alert-warning {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    color: #E65100;
+    border-left: 4px solid #FF6F00;
+}
+
+#modalAyuda .alert-danger {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    color: #C62828;
+    border-left: 4px solid #D32F2F;
+}
+
+#modalAyuda .alert-success {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    color: #2E7D32;
+    border-left: 4px solid #43A047;
+}
+
+#modalAyuda .alert-secondary {
+    background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
+    color: #424242;
+    border-left: 4px solid #757575;
+}
+
+/* Resaltado de código en fondo claro */
+#modalAyuda .bg-light code {
+    background: rgba(255, 255, 255, 0.7);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 2px 0;
+}
+
+/* Iconos de títulos */
+#modalAyuda h6 i {
+    margin-right: 8px;
+}
+
+/* Mejora de legibilidad en listas */
+#modalAyuda ul, #modalAyuda ol {
+    line-height: 1.8;
+}
+
+#modalAyuda li {
+    margin-bottom: 8px;
+}
+
+/* Espaciado de secciones */
+#modalAyuda .card-body > *:last-child {
+    margin-bottom: 0 !important;
+}
