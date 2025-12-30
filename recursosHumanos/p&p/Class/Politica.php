@@ -176,6 +176,24 @@ class Politica
             
             if ($id_resultado && count($id_resultado) > 0) {
                 $resultado['id'] = $id_resultado[0]['id'];
+                
+                // ========== INTEGRACIÓN RAG: Notificar nuevo documento ==========
+                // Esta integración no afecta el funcionamiento normal del sistema
+                try {
+                    require_once dirname(__FILE__) . '/RagWebhook.php';
+                    $ragWebhook = new RagWebhook();
+                    
+                    // Preparar datos completos del documento para el webhook
+                    $documento_completo = $this->obtenerPorId($resultado['id']);
+                    if ($documento_completo) {
+                        $ragWebhook->notificarDocumentoNuevo($documento_completo);
+                    }
+                } catch (Exception $e) {
+                    // Si hay error en el webhook, no afecta la operación principal
+                    // El documento ya fue guardado correctamente
+                    error_log("Error en webhook RAG: " . $e->getMessage());
+                }
+                // ================================================================
             }
         }
         
@@ -256,6 +274,23 @@ class Politica
         if ($resultado['status'] === 'success') {
             // Opcional: Registrar la actualización en un historial
             $this->registrarHistorialVersion($id, $datos['version'] ?? '1.0', $datos['descripcion'] ?? '');
+            
+            // ========== INTEGRACIÓN RAG: Notificar documento actualizado ==========
+            // Esta integración no afecta el funcionamiento normal del sistema
+            try {
+                require_once dirname(__FILE__) . '/RagWebhook.php';
+                $ragWebhook = new RagWebhook();
+                
+                // Obtener datos completos actualizados del documento
+                $documento_actualizado = $this->obtenerPorId($id);
+                if ($documento_actualizado) {
+                    $ragWebhook->notificarDocumentoActualizado($id, $documento_actualizado);
+                }
+            } catch (Exception $e) {
+                // Si hay error en el webhook, no afecta la operación principal
+                error_log("Error en webhook RAG (actualización): " . $e->getMessage());
+            }
+            // ======================================================================
         }
         
         return $resultado;
@@ -270,7 +305,21 @@ class Politica
                 fecha_actualizacion = GETDATE() 
                 WHERE id = $id";
         
-        return $this->ejecutarSQL($sql);
+        $resultado = $this->ejecutarSQL($sql);
+        
+        // ========== INTEGRACIÓN RAG: Notificar documento eliminado ==========
+        if ($resultado['status'] === 'success') {
+            try {
+                require_once dirname(__FILE__) . '/RagWebhook.php';
+                $ragWebhook = new RagWebhook();
+                $ragWebhook->notificarDocumentoEliminado($id);
+            } catch (Exception $e) {
+                error_log("Error en webhook RAG (eliminación): " . $e->getMessage());
+            }
+        }
+        // ====================================================================
+        
+        return $resultado;
     }
     
     /**
@@ -294,7 +343,21 @@ class Politica
         // Eliminar registro de la base de datos
         $sql = "DELETE FROM Politicas_Procedimientos WHERE id = $id";
         
-        return $this->ejecutarSQL($sql);
+        $resultado = $this->ejecutarSQL($sql);
+        
+        // ========== INTEGRACIÓN RAG: Notificar documento eliminado ==========
+        if ($resultado['status'] === 'success') {
+            try {
+                require_once dirname(__FILE__) . '/RagWebhook.php';
+                $ragWebhook = new RagWebhook();
+                $ragWebhook->notificarDocumentoEliminado($id);
+            } catch (Exception $e) {
+                error_log("Error en webhook RAG (eliminación definitiva): " . $e->getMessage());
+            }
+        }
+        // ====================================================================
+        
+        return $resultado;
     }
     
     /**
