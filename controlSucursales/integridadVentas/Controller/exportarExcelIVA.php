@@ -3,7 +3,6 @@ session_start();
 require_once '../../class/conexion.php';
 
 try {
-    // Obtener parámetros
     $desde = $_POST['desde'] ?? '';
     $hasta = $_POST['hasta'] ?? '';
 
@@ -35,77 +34,76 @@ try {
     }
     sqlsrv_close($conexion_maestra);
 
-    // Obtener resultados de ventas
-    $db_alias_procesamiento = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'suc_uy' : 'locales';
-    $conexion_procesamiento = $conn->conectar($db_alias_procesamiento);
+    // Obtener resultados de IVA
+    $db_alias = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'suc_uy' : 'locales';
+    $conexion_procesamiento = $conn->conectar($db_alias);
     if (!$conexion_procesamiento) {
         throw new Exception('No se pudo conectar a la base de datos de procesamiento.');
     }
 
     $sql_resultados = "
         SELECT 
-            NRO_SUCURS, 
-            IMPORTE_CENTRAL, 
-            IMPORTE_LOCAL, 
-            ISNULL(DIFERENCIA, ISNULL(IMPORTE_CENTRAL, 0) - ISNULL(IMPORTE_LOCAL, 0)) AS DIFERENCIA,
-            ESTADO, 
-            REFRESHED_AT 
-        FROM dbo.RO_T_COMPARA_VENTAS 
-        WHERE DESDE = ? AND HASTA = ?
+            nro_sucursal,
+            comprobantes_con_dif,
+            importe_local_total,
+            importe_central_total,
+            diferencia_neta,
+            estado_conexion,
+            ejecucion_at
+        FROM dbo.RO_T_DIF_IVA_VENTAS_RESUMEN
+        WHERE 1=1
     ";
 
-    $params_resultados = [$desde, $hasta];
-    $stmt_resultados = sqlsrv_query($conexion_procesamiento, $sql_resultados, $params_resultados);
+    $stmt_resultados = sqlsrv_query($conexion_procesamiento, $sql_resultados);
     if ($stmt_resultados === false) {
-        throw new Exception('Error al obtener resultados de ventas.');
+        throw new Exception('Error al obtener resultados de IVA.');
     }
     
-    $resultados_ventas = [];
+    $resultados_iva = [];
     while ($row = sqlsrv_fetch_array($stmt_resultados, SQLSRV_FETCH_ASSOC)) {
-        $resultados_ventas[] = $row;
+        $resultados_iva[] = $row;
     }
     sqlsrv_close($conexion_procesamiento);
 
     // Preparar datos finales
     $data_final = [];
-    foreach ($resultados_ventas as $venta) {
-        $nro_suc = $venta['NRO_SUCURS'];
+    foreach ($resultados_iva as $iva) {
+        $nro_suc = $iva['nro_sucursal'];
         if (isset($sucursales_maestra[$nro_suc])) {
             $data_final[] = [
                 'NUM_SUC' => $nro_suc,
                 'COD_SUCURSAL' => $sucursales_maestra[$nro_suc],
-                'IMPORTE_CENTRAL' => $venta['IMPORTE_CENTRAL'],
-                'IMPORTE_LOCAL' => $venta['IMPORTE_LOCAL'],
-                'DIFERENCIA' => $venta['DIFERENCIA'],
-                'ESTADO' => $venta['ESTADO'],
-                'REFRESHED_AT' => $venta['REFRESHED_AT']
+                'COMPROBANTES_CON_DIF' => $iva['comprobantes_con_dif'],
+                'IMPORTE_LOCAL_TOTAL' => $iva['importe_local_total'],
+                'IMPORTE_CENTRAL_TOTAL' => $iva['importe_central_total'],
+                'DIFERENCIA_NETA' => $iva['diferencia_neta'],
+                'ESTADO_CONEXION' => $iva['estado_conexion'],
+                'EJECUCION_AT' => $iva['ejecucion_at']
             ];
         }
     }
 
-    // Crear el archivo Excel usando formato XML (no requiere librerías externas)
     $pais = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'Uruguay' : 'Argentina';
     
     // Calcular totales
-    $totalImporteCentral = 0;
+    $totalComprobantesDif = 0;
     $totalImporteLocal = 0;
-    $totalDiferencia = 0;
+    $totalImporteCentral = 0;
+    $totalDiferenciaNeta = 0;
     
     foreach ($data_final as $fila) {
-        $totalImporteCentral += floatval($fila['IMPORTE_CENTRAL']);
-        $totalImporteLocal += floatval($fila['IMPORTE_LOCAL']);
-        $totalDiferencia += floatval($fila['DIFERENCIA']);
+        $totalComprobantesDif += intval($fila['COMPROBANTES_CON_DIF']);
+        $totalImporteLocal += floatval($fila['IMPORTE_LOCAL_TOTAL']);
+        $totalImporteCentral += floatval($fila['IMPORTE_CENTRAL_TOTAL']);
+        $totalDiferenciaNeta += floatval($fila['DIFERENCIA_NETA']);
     }
 
-    // Preparar el nombre del archivo
-    $filename = 'Control_Ventas_' . date('Ymd', strtotime($desde)) . '_' . date('Ymd', strtotime($hasta)) . '.xls';
+    $filename = 'Diferencia_IVA_Ventas_' . date('Ymd', strtotime($desde)) . '_' . date('Ymd', strtotime($hasta)) . '.xls';
     
-    // Configurar headers para la descarga
     header('Content-Type: application/vnd.ms-excel');
     header('Content-Disposition: attachment;filename="' . $filename . '"');
     header('Cache-Control: max-age=0');
     
-    // Generar el contenido del archivo Excel en formato XML
     echo '<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -183,17 +181,18 @@ try {
    <NumberFormat ss:Format="&quot;$&quot;#,##0.00"/>
   </Style>
  </Styles>
- <Worksheet ss:Name="Control Ventas">
+ <Worksheet ss:Name="Diferencia IVA Ventas">
   <Table>
    <Column ss:Width="80"/>
    <Column ss:Width="80"/>
    <Column ss:Width="100"/>
    <Column ss:Width="100"/>
    <Column ss:Width="100"/>
+   <Column ss:Width="100"/>
    <Column ss:Width="80"/>
    <Column ss:Width="120"/>
    <Row>
-    <Cell ss:MergeAcross="6" ss:StyleID="s62"><Data ss:Type="String">CONTROL DE VENTAS POR SUCURSAL</Data></Cell>
+    <Cell ss:MergeAcross="7" ss:StyleID="s62"><Data ss:Type="String">DIFERENCIA IVA VENTAS</Data></Cell>
    </Row>
    <Row>
     <Cell ss:StyleID="s63"><Data ss:Type="String">País: ' . htmlspecialchars($pais) . '</Data></Cell>
@@ -204,39 +203,42 @@ try {
    <Row>
     <Cell ss:StyleID="s64"><Data ss:Type="String">Nro. Sucursal</Data></Cell>
     <Cell ss:StyleID="s64"><Data ss:Type="String">Cod. Sucursal</Data></Cell>
-    <Cell ss:StyleID="s64"><Data ss:Type="String">Importe Central</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Comp. con Dif.</Data></Cell>
     <Cell ss:StyleID="s64"><Data ss:Type="String">Importe Local</Data></Cell>
-    <Cell ss:StyleID="s64"><Data ss:Type="String">Diferencia</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Importe Central</Data></Cell>
+    <Cell ss:StyleID="s64"><Data ss:Type="String">Diferencia Neta</Data></Cell>
     <Cell ss:StyleID="s64"><Data ss:Type="String">Estado</Data></Cell>
     <Cell ss:StyleID="s64"><Data ss:Type="String">Últ. Actualización</Data></Cell>
    </Row>';
 
-    // Agregar filas de datos
     foreach ($data_final as $fila) {
         $refreshedDate = 'N/A';
-        if ($fila['REFRESHED_AT']) {
-            $refreshedDate = $fila['REFRESHED_AT']->format('d/m/Y H:i');
+        if ($fila['EJECUCION_AT']) {
+            $refreshedDate = $fila['EJECUCION_AT']->format('d/m/Y H:i');
         }
+        
+        $estado = ($fila['ESTADO_CONEXION'] == 1) ? 'OK' : 'ERROR';
         
         echo '
    <Row>
     <Cell ss:StyleID="s65"><Data ss:Type="Number">' . htmlspecialchars($fila['NUM_SUC']) . '</Data></Cell>
     <Cell ss:StyleID="s65"><Data ss:Type="String">' . htmlspecialchars($fila['COD_SUCURSAL']) . '</Data></Cell>
-    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['IMPORTE_CENTRAL']), 2, '.', '') . '</Data></Cell>
-    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['IMPORTE_LOCAL']), 2, '.', '') . '</Data></Cell>
-    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['DIFERENCIA']), 2, '.', '') . '</Data></Cell>
-    <Cell ss:StyleID="s65"><Data ss:Type="String">' . htmlspecialchars($fila['ESTADO']) . '</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="Number">' . htmlspecialchars($fila['COMPROBANTES_CON_DIF']) . '</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['IMPORTE_LOCAL_TOTAL']), 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['IMPORTE_CENTRAL_TOTAL']), 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s66"><Data ss:Type="Number">' . number_format(floatval($fila['DIFERENCIA_NETA']), 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s65"><Data ss:Type="String">' . htmlspecialchars($estado) . '</Data></Cell>
     <Cell ss:StyleID="s65"><Data ss:Type="String">' . htmlspecialchars($refreshedDate) . '</Data></Cell>
    </Row>';
     }
 
-    // Agregar fila de totales
     echo '
    <Row>
     <Cell ss:MergeAcross="1" ss:StyleID="s67"><Data ss:Type="String">TOTALES</Data></Cell>
-    <Cell ss:StyleID="s68"><Data ss:Type="Number">' . number_format($totalImporteCentral, 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s67"><Data ss:Type="Number">' . $totalComprobantesDif . '</Data></Cell>
     <Cell ss:StyleID="s68"><Data ss:Type="Number">' . number_format($totalImporteLocal, 2, '.', '') . '</Data></Cell>
-    <Cell ss:StyleID="s68"><Data ss:Type="Number">' . number_format($totalDiferencia, 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="Number">' . number_format($totalImporteCentral, 2, '.', '') . '</Data></Cell>
+    <Cell ss:StyleID="s68"><Data ss:Type="Number">' . number_format($totalDiferenciaNeta, 2, '.', '') . '</Data></Cell>
     <Cell ss:StyleID="s67"><Data ss:Type="String"></Data></Cell>
     <Cell ss:StyleID="s67"><Data ss:Type="String"></Data></Cell>
    </Row>
@@ -247,7 +249,6 @@ try {
     exit;
 
 } catch (Exception $e) {
-    // En caso de error, mostrar mensaje
     header('Content-Type: text/html; charset=utf-8');
     echo '<!DOCTYPE html>
     <html>

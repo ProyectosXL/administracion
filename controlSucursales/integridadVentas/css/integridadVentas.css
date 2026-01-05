@@ -1,0 +1,539 @@
+/* ===== ESTILOS PARA INTEGRIDAD DE VENTAS ===== */
+
+/* Variables CSS para consistencia */
+:root {
+    --primary-color: #0d6efd;
+    --primary-dark: #0b5ed7;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-bg: #f8f9fa;
+    --border-color: #dee2e6;
+    --text-dark: #495057;
+    --text-muted: #6c757d;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.1);
+    --border-radius: 8px;
+    --border-radius-lg: 15px;
+}
+
+/* Contenedor principal */
+.integridadVentas_wrapper {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+/* Card principal */
+.integridadVentas_main-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+/* Header del card */
+.integridadVentas_header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+}
+
+.integridadVentas_header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.integridadVentas_title-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.integridadVentas_title-section h3 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.integridadVentas_title-section i {
+    font-size: 1.8rem;
+}
+
+/* Botón de home */
+.integridadVentas_home-btn {
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.integridadVentas_home-btn img {
+    width: 50px;
+    height: 45px;
+    filter: brightness(0) invert(1);
+}
+
+.integridadVentas_home-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Selector de país */
+.integridadVentas_country-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.integridadVentas_country-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.integridadVentas_country-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.integridadVentas_country-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.integridadVentas_flag {
+    width: 24px;
+    height: 18px;
+    border-radius: 3px;
+    object-fit: cover;
+}
+
+.integridadVentas_country-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.integridadVentas_country-select {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--text-dark);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.integridadVentas_country-select:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.integridadVentas_country-select:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.5);
+}
+
+/* Tabs personalizadas */
+.integridadVentas_tabs {
+    background: var(--light-bg);
+    border-bottom: 3px solid var(--primary-color);
+    padding: 0 1.5rem;
+}
+
+.integridadVentas_tabs .nav-link {
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -3px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.integridadVentas_tabs .nav-link:hover {
+    color: var(--primary-color);
+    background: rgba(13, 110, 253, 0.05);
+}
+
+.integridadVentas_tabs .nav-link.active {
+    color: var(--primary-color);
+    background: white;
+    border-bottom-color: var(--primary-color);
+}
+
+/* Contenido de las tabs */
+.integridadVentas_tab-content {
+    background: white;
+}
+
+.integridadVentas_tab-panel {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Sección de filtros */
+.integridadVentas_filters {
+    background: var(--light-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+/* Info box */
+.integridadVentas_info-box {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-color);
+    color: var(--text-dark);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Contenedor de tabla */
+.integridadVentas_table-wrapper {
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+/* Tabla personalizada */
+.integridadVentas_table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    font-size: 0.85rem;
+}
+
+.integridadVentas_table thead {
+    background: linear-gradient(135deg, var(--text-dark) 0%, var(--secondary-color) 100%);
+    color: white;
+}
+
+.integridadVentas_table th {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+    border: none;
+}
+
+.integridadVentas_table td {
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+
+.integridadVentas_table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    transition: background-color 0.2s ease;
+}
+
+.integridadVentas_table tfoot {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: white;
+    font-weight: 700;
+}
+
+.integridadVentas_table tfoot th {
+    padding: 1rem 0.75rem;
+    border: none;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+/* Estilo especial para las celdas de totales con valores monetarios */
+.integridadVentas_table tfoot th[id^="total-"] {
+    background: linear-gradient(135deg, var(--success-color) 0%, #146c43 100%);
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    border-left: 2px solid rgba(255,255,255,0.2);
+}
+
+/* Estados y badges */
+.integridadVentas_badge-ok {
+    background-color: var(--success-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.integridadVentas_badge-error {
+    background-color: var(--danger-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.integridadVentas_badge-warning {
+    background-color: var(--warning-color);
+    color: var(--text-dark);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* Botones */
+.integridadVentas_btn-actualizar {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.integridadVentas_btn-actualizar:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Loading overlay */
+.integridadVentas_loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.integridadVentas_loading-text {
+    color: white;
+    margin-top: 15px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .integridadVentas_wrapper {
+        padding: 1rem 0;
+    }
+
+    .integridadVentas_header {
+        padding: 1rem;
+    }
+
+    .integridadVentas_header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .integridadVentas_title-section h3 {
+        font-size: 1.2rem;
+    }
+
+    .integridadVentas_country-selector {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .integridadVentas_tabs {
+        padding: 0 0.5rem;
+    }
+
+    .integridadVentas_tabs .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .integridadVentas_tab-panel {
+        padding: 1rem !important;
+    }
+
+    .integridadVentas_filters {
+        padding: 1rem;
+    }
+
+    .integridadVentas_table {
+        font-size: 0.75rem;
+    }
+
+    .integridadVentas_table th,
+    .integridadVentas_table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .integridadVentas_title-section h3 {
+        font-size: 1rem;
+    }
+
+    .integridadVentas_tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .integridadVentas_tabs .nav-link i {
+        display: none;
+    }
+}
+
+/* Estilos para textareas en la tabla */
+.integridadVentas_table textarea.form-control-sm {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    resize: vertical;
+}
+
+/* Estilos para checkboxes en la tabla */
+.integridadVentas_table .form-check-input {
+    cursor: pointer;
+    width: 1.2em;
+    height: 1.2em;
+}
+
+/* Estilos para DataTables */
+.integridadVentas_table-wrapper .dataTables_wrapper {
+    padding: 0;
+}
+
+.integridadVentas_table-wrapper .dataTables_filter {
+    float: right;
+    margin-bottom: 1rem;
+}
+
+.integridadVentas_table-wrapper .dataTables_filter input {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+    margin-left: 0.5rem;
+}
+
+.integridadVentas_table-wrapper .dataTables_info {
+    padding-top: 1rem;
+    color: var(--text-muted);
+}
+
+.integridadVentas_table-wrapper .dataTables_paginate {
+    padding-top: 1rem;
+}
+
+.integridadVentas_table-wrapper .dataTables_paginate .paginate_button {
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background: white;
+    cursor: pointer;
+}
+
+.integridadVentas_table-wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--light-bg);
+    border-color: var(--primary-color);
+}
+
+.integridadVentas_table-wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* ===== ESTILOS PARA FILAS CLICKEABLES EN TABLA IVA ===== */
+#tabla-diferencia-iva tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+#tabla-diferencia-iva tbody tr:hover {
+    background-color: #e7f3ff !important;
+    transform: translateX(2px);
+}
+
+#tabla-diferencia-iva tbody tr:active {
+    background-color: #cce5ff !important;
+}
+
+/* ===== ESTILOS PARA EL MODAL DE DETALLE IVA ===== */
+#modalDetalleIVA .modal-dialog {
+    max-width: 1200px;
+}
+
+#modalDetalleIVA .table th {
+    background-color: #343a40;
+    color: white;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+#modalDetalleIVA .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+}
+
+#modalDetalleIVA .table tfoot th {
+    background-color: #e9ecef;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #495057;
+}
+
+#modalDetalleIVA .alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+#modal-loading {
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
