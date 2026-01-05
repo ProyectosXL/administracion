@@ -1,7 +1,8 @@
 <?php
 header('Content-Type: application/json');
 
-require_once '../../class/conexion.php';
+// Ajustar ruta para apuntar a la clase conexion desde integridadVentas/Controller/
+require_once '../../../class/conexion.php';
 session_start();
 
 $response = ['success' => false, 'message' => 'Acción no válida.'];
@@ -137,6 +138,7 @@ try {
                     REFRESHED_AT 
                 FROM dbo.RO_T_COMPARA_VENTAS 
                 WHERE DESDE = ? AND HASTA = ?
+                ORDER BY NRO_SUCURS
             ";
 
             $params_resultados = [$desde, $hasta];
