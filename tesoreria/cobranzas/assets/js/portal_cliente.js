@@ -28,7 +28,8 @@ function recalcularPropuestaCliente() {
     const medioPago = $('#negociacion-medio-pago').val();
     const fechaPago = $('#negociacion-fecha-pago').val();
     
-    const nuevoPorcentaje = calcularPorcentajeDescuento(medioPago, fechaPago);
+    // Obtenemos el nuevo porcentaje de descuento aplicable para todas las líneas elegibles
+    const nuevoPorcentajeGeneral = calcularPorcentajeDescuento(medioPago, fechaPago);
 
     let totalBruto = 0;
     let totalNeto = 0;
@@ -38,38 +39,41 @@ function recalcularPropuestaCliente() {
         const bruto = parseFloat(tr.data('importe-bruto'));
         const tipoComp = tr.data('tcomp');
         const esNC = tipoComp && tipoComp.startsWith('NC');
-        
-        // ======================= INICIO DE LA MODIFICACIÓN =======================
-        // Leemos el descuento original que guardamos en el 'tr'
         const descuentoOriginal = parseFloat(tr.data('descuento-original'));
-        // ======================== FIN DE LA MODIFICACIÓN =========================
-
-        let neto = bruto;
-        let descuentoActual = descuentoOriginal; // Por defecto, mantenemos el original
-
-        // Solo aplicamos el nuevo descuento si el original NO era 0 y no es una NC
-        if (descuentoOriginal > 0 && !esNC) {
-            descuentoActual = nuevoPorcentaje;
-            neto = bruto * (1 - (descuentoActual / 100));
+        
+        // ======================= INICIO DE LA LÓGICA CORRECTA Y SIMPLIFICADA =======================
+        let porcentajeAplicar = 0; // Por defecto, CERO descuento
+        
+        // La regla es muy simple: si la línea originalmente tenía un descuento,
+        // se le aplica el nuevo porcentaje. No importa si es FAC, NCP o NCR.
+        if (descuentoOriginal > 0) {
+            porcentajeAplicar = nuevoPorcentajeGeneral;
         }
 
+        // Calculamos el nuevo importe neto
+        let netoRecalculado = bruto * (1 - (porcentajeAplicar / 100));
+        // ======================== FIN DE LA LÓGICA CORRECTA Y SIMPLIFICADA =========================
+
         // Actualizamos la tabla visualmente
-        tr.find('.descuento-cell').text(descuentoActual.toFixed(2) + ' %');
-        const netoFinal = esNC ? -neto : neto;
+        tr.find('.descuento-cell').text(porcentajeAplicar.toFixed(2) + ' %');
+        
+        // Aplicamos el signo negativo para visualización si es NC
+        const netoFinal = esNC ? -netoRecalculado : netoRecalculado;
         tr.find('.importe-neto-cell').text(netoFinal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
 
+        // Sumamos a los totales
         totalBruto += esNC ? -bruto : bruto;
         totalNeto += netoFinal;
     });
 
-        // Actualizamos los totales de la tabla y los KPIs
-        const f = (num) => num.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
-        $('#total-bruto-tabla').text(f(totalBruto));
-        $('#total-neto-tabla').text(f(totalNeto));
-        $('#totalPropuestoKPI').text(f(totalNeto)); // El KPI principal
-        $('#medioPagoKPI').text(medioPago);
-        $('#fechaPropuestaKPI').text(new Date(fechaPago + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }));
-    }
+    // Actualizamos los totales de la tabla y los KPIs
+    const f = (num) => num.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+    $('#total-bruto-tabla').text(f(totalBruto));
+    $('#total-neto-tabla').text(f(totalNeto));
+    $('#totalPropuestoKPI').text(f(totalNeto));
+    $('#medioPagoKPI').text(medioPago);
+    $('#fechaPropuestaKPI').text(new Date(fechaPago + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }));
+}
 
     // Eventos que disparan el recálculo
     $('#detallePropuestaModal').on('change', '#negociacion-medio-pago, #negociacion-fecha-pago', function() {
