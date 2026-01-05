@@ -8,6 +8,7 @@ ARQUITECTURA HÍBRIDA:
 import logging
 import time
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 from tqdm import tqdm
 
 # Importar configuración
@@ -34,9 +35,18 @@ logger = logging.getLogger(__name__)
 if USE_LOCAL_EMBEDDINGS:
     # Usar sentence-transformers (LOCAL, ilimitado)
     try:
+        import os
         from sentence_transformers import SentenceTransformer
+        
+        # Configurar cache en una ruta válida de Windows
+        cache_folder = Path(__file__).parent.parent / "cache" / "transformers"
+        cache_folder.mkdir(parents=True, exist_ok=True)
+        os.environ['SENTENCE_TRANSFORMERS_HOME'] = str(cache_folder)
+        
         logger.info(f"Cargando modelo local de embeddings: {LOCAL_EMBEDDING_MODEL}")
-        _local_model = SentenceTransformer(LOCAL_EMBEDDING_MODEL)
+        logger.info(f"Cache folder: {cache_folder}")
+        
+        _local_model = SentenceTransformer(LOCAL_EMBEDDING_MODEL, cache_folder=str(cache_folder))
         logger.info(f"✓ Modelo local cargado exitosamente (dimensión: {EMBEDDING_DIMENSION})")
     except Exception as e:
         logger.error(f"Error al cargar modelo local: {e}")
@@ -93,7 +103,15 @@ def generate_embedding(text: str, task_type: str = EMBEDDING_TASK_DOCUMENT) -> L
         
         if USE_LOCAL_EMBEDDINGS:
             # Usar modelo LOCAL (sentence-transformers)
-            embedding = _local_model.encode(text, convert_to_numpy=True).tolist()
+            try:
+                embedding = _local_model.encode(
+                    text, 
+                    convert_to_numpy=True,
+                    show_progress_bar=False
+                ).tolist()
+            except Exception as e:
+                logger.error(f"Error en modelo local: {e}")
+                raise EmbeddingError(f"Error en modelo local de embeddings: {e}")
         else:
             # Usar Gemini API (con retry automático)
             @retry(

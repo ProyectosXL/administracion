@@ -378,19 +378,26 @@ class ChromaDBClient:
             total_chunks = self.count_total_chunks()
             unique_docs = self.get_unique_document_ids()
             
-            # Contar por tipo
+            # Contar por tipo y obtener títulos
             results = self.collection.get()
             tipos = {}
+            documents_by_title = {}
+            
             if results['metadatas']:
                 for meta in results['metadatas']:
                     tipo = meta.get('tipo', 'unknown')
                     tipos[tipo] = tipos.get(tipo, 0) + 1
+                    
+                    # Agrupar chunks por título
+                    titulo = meta.get('titulo', 'Sin título')
+                    documents_by_title[titulo] = documents_by_title.get(titulo, 0) + 1
             
             return {
                 'total_chunks': total_chunks,
                 'total_documentos_indexados': len(unique_docs),
                 'documentos_por_tipo': tipos,
-                'document_ids': unique_docs
+                'document_ids': unique_docs,
+                'documents_by_title': documents_by_title
             }
             
         except Exception as e:

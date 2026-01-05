@@ -52,7 +52,7 @@ class RagConfig {
             
             $this->config = [
                 'environment' => 'local',
-                'rag_service_url' => 'http://localhost:8000',
+                'rag_service_url' => 'http://localhost:8001',
                 'rag_enabled' => true,
                 'auto_start' => true, // Auto-iniciar en local
                 'auto_index' => true, // Auto-indexar si hay pocos chunks

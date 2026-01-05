@@ -8,21 +8,49 @@
  * Uso: Ejecutar directamente desde navegador o CLI
  */
 
-// Configuración
+// Configuración para ejecución en background
 set_time_limit(300); // 5 minutos máximo
 ini_set('memory_limit', '256M');
+ignore_user_abort(true); // Continuar aunque el cliente se desconecte
 
-// Incluir la clase Politica
+// Si se llama desde HTTP, terminar la conexión inmediatamente
+if (php_sapi_name() !== 'cli' && function_exists('fastcgi_finish_request')) {
+    // Enviar respuesta rápida al cliente
+    http_response_code(202); // 202 Accepted
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'accepted', 'mensaje' => 'Indexación iniciada en segundo plano']);
+    
+    // Cerrar la conexión con el cliente
+    fastcgi_finish_request();
+    
+    // El resto del script continúa ejecutándose en background
+}
+
+// Incluir configuración y clase
+require_once '../config_rag.php';
 require_once '../Class/Politica.php';
 
-// URL del servicio RAG
-$RAG_SERVICE_URL = 'http://localhost:8000';
+$config = RagConfig::getInstance();
+$RAG_SERVICE_URL = $config->getRagServiceUrl('');
 
 // Crear instancia de la clase
 $politicaObj = new Politica();
 
-// Obtener todos los documentos activos
-$documentos = $politicaObj->obtenerTodos();
+// Verificar si se recibieron document_ids específicos
+$document_ids = isset($_POST['document_ids']) ? $_POST['document_ids'] : [];
+
+// Obtener documentos (filtrados por IDs si se especificaron)
+if (!empty($document_ids)) {
+    $documentos = [];
+    $todos = $politicaObj->obtenerTodos();
+    foreach ($todos as $doc) {
+        if (in_array($doc['id'], $document_ids)) {
+            $documentos[] = $doc;
+        }
+    }
+} else {
+    $documentos = $politicaObj->obtenerTodos();
+}
 
 // Estadísticas
 $total = count($documentos);
@@ -187,13 +215,10 @@ function indexarDocumentoRAG($documento, $rag_url) {
     // Preparar datos para el webhook
     $payload = [
         'document_id' => $documento['id'],
+        'ruta_archivo' => $documento['ruta_archivo'],
         'titulo' => $documento['titulo'],
-        'tipo' => $documento['tipo'],
-        'sector' => $documento['sector_nombre'],
-        'ruta_pdf' => $documento['ruta_archivo'],
-        'descripcion' => isset($documento['descripcion']) ? $documento['descripcion'] : '',
-        'tags' => isset($documento['tags']) ? $documento['tags'] : '',
-        'fecha_creacion' => isset($documento['fecha_creacion']) ? $documento['fecha_creacion']->format('Y-m-d') : date('Y-m-d')
+        'sector_nombre' => $documento['sector_nombre'] ?? 'General',
+        'tipo' => $documento['tipo']
     ];
     
     // Configurar cURL
@@ -301,4 +326,10 @@ echo "  <a href='../index.php' class='btn'>← Volver al inicio</a>
     </div>
 </body>
 </html>";
+
+// Crear flag de que se completó la indexación correctamente
+if ($exitosos > 0) {
+    $flag_file = __DIR__ . '/../rag-service/.indexed_correctly';
+    file_put_contents($flag_file, date("Y-m-d H:i:s") . " - Indexados: $exitosos documentos");
+}
 ?>

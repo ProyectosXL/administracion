@@ -582,7 +582,9 @@ async def get_statistics():
         return StatsResponse(
             total_documentos_indexados=stats['total_documentos_indexados'],
             total_chunks=stats['total_chunks'],
-            documentos_por_tipo=stats['documentos_por_tipo']
+            documentos_por_tipo=stats['documentos_por_tipo'],
+            document_ids=stats['document_ids'],
+            documents_by_title=stats.get('documents_by_title', {})
         )
         
     except Exception as e:
@@ -674,6 +676,51 @@ async def root():
         "status": "running",
         "documentation": "/docs"
     }
+
+
+@app.post(
+    "/admin/reset-database",
+    status_code=status.HTTP_200_OK,
+    tags=["Admin"]
+)
+async def reset_database():
+    """
+    ELIMINA todos los chunks de ChromaDB para forzar re-indexación.
+    USO: Solo cuando se necesita re-indexar todos los documentos desde cero.
+    """
+    try:
+        logger.warning("RESET DATABASE solicitado - Eliminando todos los chunks")
+        
+        chroma_client = get_chroma_client()
+        collection = chroma_client.collection
+        
+        # Obtener todos los IDs
+        all_data = collection.get(include=[])
+        all_ids = all_data['ids']
+        
+        if all_ids:
+            # Eliminar todos
+            collection.delete(ids=all_ids)
+            logger.info(f"✓ Eliminados {len(all_ids)} chunks de ChromaDB")
+            
+            return {
+                "status": "success",
+                "mensaje": "Base de datos reseteada correctamente",
+                "chunks_eliminados": len(all_ids)
+            }
+        else:
+            return {
+                "status": "success",
+                "mensaje": "Base de datos ya estaba vacía",
+                "chunks_eliminados": 0
+            }
+            
+    except Exception as e:
+        logger.error(f"Error al resetear base de datos: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al resetear: {str(e)}"
+        )
 
 
 # ============================================================================

@@ -52,6 +52,10 @@ $glosario = $politicaObj->obtenerGlosario();
     
     <!-- Auto-inicio del servicio RAG y auto-indexación -->
     <script>
+        // Variable global para controlar el estado de inicialización
+        window.ragInitializing = true;
+        window.ragInitDetails = [];
+        
         // Ejecutar auto-inicio en segundo plano cuando cargue la página
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Iniciando sistema RAG automáticamente...');
@@ -59,16 +63,66 @@ $glosario = $politicaObj->obtenerGlosario();
             fetch('Controller/autostart_rag.php')
                 .then(response => response.json())
                 .then(data => {
+                    window.ragInitDetails = data.detalles || [];
+                    
                     if (data.success) {
                         console.log('✅ Sistema RAG iniciado:', data.mensaje);
                         console.log('📊 Detalles:', data.detalles);
+                        
+                        // Si se están indexando documentos, mantener el estado de inicialización
+                        if (data.documentos_indexados) {
+                            window.ragInitializing = true;
+                            console.log('📚 Indexando documentos en segundo plano...');
+                            
+                            // Monitorear progreso de indexación
+                            const intervalo = setInterval(() => {
+                                fetch('Controller/estado_indexacion.php')
+                                    .then(r => r.json())
+                                    .then(estado => {
+                                        if (!estado.indexando) {
+                                            clearInterval(intervalo);
+                                            window.ragInitializing = false;
+                                            console.log('✓ Indexación completada');
+                                            // Actualizar el estado del chatbot
+                                            if (typeof verificarServicioRAG === 'function') {
+                                                verificarServicioRAG();
+                                            }
+                                        } else {
+                                            console.log('📖 Indexando:', estado.progreso || estado.ultimo_mensaje);
+                                        }
+                                    })
+                                    .catch(() => {
+                                        clearInterval(intervalo);
+                                        window.ragInitializing = false;
+                                    });
+                            }, 5000); // Verificar cada 5 segundos
+                            
+                            // Timeout máximo de 2 minutos
+                            setTimeout(() => {
+                                clearInterval(intervalo);
+                                window.ragInitializing = false;
+                            }, 120000);
+                            
+                        } else if (data.servicio_iniciado && data.detalles.some(d => d.toLowerCase().includes('iniciando servicio'))) {
+                            // Si solo se inició el servicio, esperar 15 segundos
+                            setTimeout(() => {
+                                window.ragInitializing = false;
+                                if (typeof verificarServicioRAG === 'function') {
+                                    verificarServicioRAG();
+                                }
+                            }, 15000);
+                        } else {
+                            window.ragInitializing = false;
+                        }
                     } else {
                         console.warn('⚠️ Sistema RAG:', data.mensaje);
                         console.log('📊 Detalles:', data.detalles);
+                        window.ragInitializing = false;
                     }
                 })
                 .catch(error => {
                     console.error('❌ Error al iniciar sistema RAG:', error);
+                    window.ragInitializing = false;
                 });
         });
     </script>

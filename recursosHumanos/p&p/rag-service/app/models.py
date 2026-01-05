@@ -201,6 +201,8 @@ class StatsResponse(BaseModel):
     total_documentos_indexados: int
     total_chunks: int
     documentos_por_tipo: Dict[str, int]
+    document_ids: List[int] = Field(default=[], description="Lista de IDs de documentos indexados")
+    documents_by_title: Dict[str, int] = Field(default={}, description="Documentos agrupados por título con conteo de chunks")
     
     class Config:
         schema_extra = {
@@ -210,7 +212,8 @@ class StatsResponse(BaseModel):
                 "documentos_por_tipo": {
                     "politica": 45,
                     "procedimiento": 42
-                }
+                },
+                "document_ids": [1, 2, 3, 45, 67, 89]
             }
         }
 

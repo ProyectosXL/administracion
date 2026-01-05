@@ -59,17 +59,16 @@ try {
             $python_exe = $config->get('python_path');
             
             if (file_exists($python_exe) && is_dir($rag_service_dir)) {
-                // Crear un archivo .bat temporal
-                $temp_bat = tempnam(sys_get_temp_dir(), 'rag_') . '.bat';
-                $bat_content = "@echo off\n";
-                $bat_content .= "cd /d \"$rag_service_dir\"\n";
-                $bat_content .= "\"$python_exe\" -m uvicorn app.main:app --reload --port 8000\n";
+                // Crear VBScript para ejecutar sin ventana
+                $temp_vbs = tempnam(sys_get_temp_dir(), 'rag_') . '.vbs';
+                $vbs_content = "Set WshShell = CreateObject(\"WScript.Shell\")\n";
+                $vbs_content .= "WshShell.CurrentDirectory = \"" . $rag_service_dir . "\"\n";
+                $vbs_content .= "WshShell.Run \"\"\"" . $python_exe . "\"\" -m uvicorn app.main:app --reload --port 8001\", 0, False\n";
                 
-                file_put_contents($temp_bat, $bat_content);
+                file_put_contents($temp_vbs, $vbs_content);
                 
-                // Ejecutar el bat en segundo plano
-                $command = "start /B \"\" \"$temp_bat\"";
-                pclose(popen($command, 'r'));
+                // Ejecutar sin ventana
+                exec("wscript //nologo \"$temp_vbs\" > nul 2>&1");
                 
                 $response['servicio_iniciado'] = true;
                 $response['detalles'][] = "Servicio RAG iniciándose en Windows (10-15 segundos)";
@@ -89,7 +88,7 @@ try {
                 if (!file_exists($start_script)) {
                     $script_content = "#!/bin/bash\n";
                     $script_content .= "cd \"$rag_service_dir\"\n";
-                    $script_content .= "$python_exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /dev/null 2>&1 &\n";
+                    $script_content .= "$python_exe -m uvicorn app.main:app --host 0.0.0.0 --port 8001 > /dev/null 2>&1 &\n";
                     $script_content .= "echo \$! > /tmp/rag_service.pid\n";
                     
                     file_put_contents($start_script, $script_content);
@@ -110,71 +109,61 @@ try {
         $response['detalles'][] = "Servicio RAG ya estaba corriendo";
         
         // ============================================================================
-        // 3. AUTO-INDEXACIÓN INTELIGENTE (SI HAY POCOS CHUNKS)
+        // 3. AUTO-INDEXACIÓN INTELIGENTE - Verificar PDFs de carpeta /documentos por título
         // ============================================================================
         
         if ($config->shouldAutoIndex()) {
-            $health_data = json_decode($health_response, true);
-            $chunks_actuales = $health_data['total_chunks'] ?? 0;
+            // Esperar un momento para asegurar que el servicio esté listo
+            sleep(2);
             
-            $response['detalles'][] = "Chunks actuales en ChromaDB: $chunks_actuales";
+            $response['detalles'][] = "Verificando documentos en carpeta /documentos...";
             
-            // Si no hay chunks, indexar en SEGUNDO PLANO
-            if ($chunks_actuales < 10) {
-                $response['detalles'][] = "Pocos chunks detectados, indexación en segundo plano...";
-                
-                // Crear script de indexación en background
-                $indexer_script = __DIR__ . '/indexar_background_' . time() . '.php';
-                $webhook_url = $config->getRagServiceUrl('/webhook/document-uploaded');
-                $documentos_path = $config->getDocumentosPath();
-                
-                $indexer_content = '<?php
-ignore_user_abort(true);
-set_time_limit(0);
-
-$documentos_path = "' . addslashes($documentos_path) . '";
-$webhook_url = "' . addslashes($webhook_url) . '";
-
-if (is_dir($documentos_path)) {
-    $archivos = glob($documentos_path . "/*.pdf");
-    foreach ($archivos as $archivo_path) {
-        $document_id = abs(crc32($archivo_path));
-        $data = [
-            "document_id" => $document_id,
-            "file_path" => $archivo_path,
-            "titulo" => pathinfo(basename($archivo_path), PATHINFO_FILENAME),
-            "sector" => "Políticas y Procedimientos",
-            "tipo" => "PDF"
-        ];
-        
-        $ch = curl_init($webhook_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-        curl_exec($ch);
-        curl_close($ch);
-    }
-}
-
-@unlink(__FILE__);
-?>';
-                
-                file_put_contents($indexer_script, $indexer_content);
-                
-                // Ejecutar en background (funciona en Windows y Linux)
-                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                    pclose(popen('start /B php "' . $indexer_script . '" > NUL 2>&1', 'r'));
-                } else {
-                    exec('php "' . $indexer_script . '" > /dev/null 2>&1 &');
-                }
-                
-                $response['documentos_indexados'] = true;
-                $response['detalles'][] = "Indexación iniciada en segundo plano";
+            // Verificar documentos faltantes por título de archivo
+            $verificar_url = 'http://localhost/administracion/recursosHumanos/p&p/Controller/verificar_documentos_faltantes.php';
+            $ch = curl_init($verificar_url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            $verificar_response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            
+            if ($http_code !== 200) {
+                $response['detalles'][] = "Error al verificar documentos faltantes (HTTP $http_code)";
             } else {
-                $response['documentos_indexados'] = true;
-                $response['detalles'][] = "Ya hay suficientes chunks indexados";
+                $verificar_data = json_decode($verificar_response, true);
+                
+                if ($verificar_data['success']) {
+                    $total_pdfs = $verificar_data['total_pdfs'];
+                    $indexados = $verificar_data['indexados'];
+                    $faltantes = $verificar_data['faltantes'];
+                    
+                    $response['detalles'][] = "PDFs en carpeta: $total_pdfs | Indexados: $indexados | Faltantes: $faltantes";
+                    
+                    if ($faltantes > 0) {
+                        // Mostrar qué documentos faltan
+                        $nombres_faltantes = array_column($verificar_data['documentos_faltantes'], 'titulo_esperado');
+                        $response['detalles'][] = "Documentos sin indexar: " . implode(', ', array_slice($nombres_faltantes, 0, 3)) . ($faltantes > 3 ? "... (+" . ($faltantes - 3) . " más)" : "");
+                        
+                        // Lanzar indexación en segundo plano
+                        $indexer_url = 'http://localhost/administracion/recursosHumanos/p&p/Controller/indexar_pdfs_faltantes.php';
+                        
+                        $ch = curl_init($indexer_url);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_TIMEOUT_MS, 500);
+                        curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
+                        
+                        curl_exec($ch);
+                        curl_close($ch);
+                        
+                        $response['documentos_indexados'] = true;
+                        $response['detalles'][] = "Indexación de $faltantes documentos iniciada en segundo plano";
+                    } else {
+                        $response['documentos_indexados'] = false;
+                        $response['detalles'][] = "Todos los documentos ya están indexados ✓";
+                    }
+                } else {
+                    $response['detalles'][] = "Error al verificar documentos: " . $verificar_data['mensaje'];
+                }
             }
         }
     }

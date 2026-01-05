@@ -4,7 +4,7 @@
  */
 
 // Configuración
-const RAG_API_URL = 'http://localhost:8002';
+const RAG_API_URL = 'http://localhost:8001';
 let chatbotOpen = false;
 let chatHistory = [];
 
@@ -15,11 +15,99 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
+ * Muestra un overlay de carga sobre el chatbot
+ */
+function mostrarOverlayCarga() {
+    let overlay = document.getElementById('chatbot-loading-overlay');
+    
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'chatbot-loading-overlay';
+        overlay.className = 'chatbot-loading-overlay';
+        
+        const details = window.ragInitDetails || [];
+        let mensaje = 'Inicializando el asistente virtual DocuGest...';
+        let submensaje = '';
+        let detallesHTML = '';
+        
+        // Buscar detalles específicos de indexación
+        const detalle_iniciando = details.find(d => d.toLowerCase().includes('iniciando servicio'));
+        const detalle_indexacion = details.find(d => d.toLowerCase().includes('indexación') || d.toLowerCase().includes('indexando'));
+        const detalle_pdfs = details.find(d => d.toLowerCase().includes('pdfs en carpeta'));
+        const detalle_faltantes = details.find(d => d.toLowerCase().includes('documentos sin indexar:'));
+        
+        if (detalle_iniciando) {
+            mensaje = '🚀 Iniciando bot...';
+            submensaje = 'Iniciando servicio RAG (10-15 segundos)';
+        } else if (detalle_indexacion || detalle_faltantes) {
+            mensaje = '📚 Indexando documentos...';
+            if (detalle_pdfs) {
+                submensaje = detalle_pdfs;
+            } else {
+                submensaje = 'Cargando documentos faltantes en el sistema...';
+            }
+            
+            // Mostrar qué documentos se están indexando
+            if (detalle_faltantes) {
+                detallesHTML = `<div class="loading-details">${detalle_faltantes}</div>`;
+            }
+        } else {
+            submensaje = 'Configurando el sistema...';
+        }
+        
+        overlay.innerHTML = `
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <div class="loading-message">${mensaje}</div>
+                <div class="loading-submessage">${submensaje}</div>
+                ${detallesHTML}
+            </div>
+        `;
+        
+        const chatContainer = document.getElementById('chatbot-container');
+        if (chatContainer) {
+            chatContainer.appendChild(overlay);
+        }
+    }
+}
+
+/**
+ * Oculta el overlay de carga
+ */
+function ocultarOverlayCarga() {
+    const overlay = document.getElementById('chatbot-loading-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
+/**
  * Verifica el estado del servicio RAG
  */
 async function verificarServicioRAG() {
     const statusIcon = document.getElementById('chatbot-status-icon');
     const statusText = document.getElementById('chatbot-status-text');
+    
+    // Verificar si el sistema está inicializándose
+    if (window.ragInitializing) {
+        // Determinar mensaje basado en detalles
+        const details = window.ragInitDetails || [];
+        const indexando = details.some(d => d.toLowerCase().includes('indexación') || d.toLowerCase().includes('indexando'));
+        
+        statusIcon.className = 'status-dot loading';
+        if (indexando) {
+            statusText.textContent = '📚 Indexando documentos...';
+        } else {
+            statusText.textContent = '⏳ Iniciando bot...';
+        }
+        
+        // Mostrar overlay de carga
+        mostrarOverlayCarga();
+        
+        // Reintentar después de 5 segundos
+        setTimeout(() => verificarServicioRAG(), 5000);
+        return;
+    }
     
     try {
         const response = await fetch(`${RAG_API_URL}/health`, {
@@ -31,14 +119,22 @@ async function verificarServicioRAG() {
         
         if (response.ok) {
             const data = await response.json();
-            statusIcon.className = 'status-dot online';
-            statusText.textContent = `En línea - ${data.total_chunks} chunks indexados`;
             
-            // Si no hay chunks, mostrar advertencia
+            // Verificar documentos faltantes
+            await verificarDocumentosFaltantes(data.total_chunks);
+            
+            statusIcon.className = 'status-dot online';
+            
+            // Mostrar información detallada
             if (data.total_chunks === 0) {
                 statusText.textContent = 'En línea - Sin documentos indexados';
-                agregarMensajeBot('⚠️ Aún no hay documentos indexados. Por favor, ejecuta el script de indexación masiva primero.');
+            } else {
+                const docCount = data.total_documents || Math.floor(data.total_chunks / 10);
+                statusText.textContent = `En línea - ${docCount} documentos (${data.total_chunks} chunks)`;
             }
+            
+            // Ocultar overlay de carga
+            ocultarOverlayCarga();
         } else {
             throw new Error('Servicio no disponible');
         }
@@ -46,7 +142,29 @@ async function verificarServicioRAG() {
         statusIcon.className = 'status-dot offline';
         statusText.textContent = 'Sin conexión';
         console.error('Error al verificar servicio RAG:', error);
-        agregarMensajeBot('❌ No puedo conectarme al servicio de IA. Verifica que el servicio RAG esté ejecutándose en http://localhost:8002');
+        
+        // Solo mostrar error si no está inicializando
+        if (!window.ragInitializing) {
+            agregarMensajeBot('❌ No puedo conectarme al servicio de IA. Verifica que el servicio RAG esté ejecutándose en http://localhost:8001');
+        }
+    }
+}
+
+/**
+ * Verifica si hay documentos faltantes por indexar
+ */
+async function verificarDocumentosFaltantes(chunksActuales) {
+    try {
+        const response = await fetch('Controller/verificar_documentos_faltantes.php');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.faltantes > 0) {
+                console.warn(`⚠️ Documentos sin indexar: ${data.faltantes} de ${data.total_pdfs}`);
+                // No mostrar mensaje al usuario automáticamente, solo en consola
+            }
+        }
+    } catch (error) {
+        console.error('Error al verificar documentos faltantes:', error);
     }
 }
 
@@ -238,10 +356,14 @@ function agregarMensajeBot(texto, documentosFuente = []) {
         documentosFuente.forEach(doc => {
             html += `
                 <li class="source-item">
-                    <span class="source-title">${escapeHtml(doc.titulo)}</span>
+                    <a href="Controller/descargar_documento.php?id=${doc.document_id}" 
+                       class="source-download-link" 
+                       title="Descargar ${escapeHtml(doc.titulo)}">
+                        <i class="fas fa-file-pdf"></i> ${escapeHtml(doc.titulo)}
+                    </a>
                     <span class="source-sector">${escapeHtml(doc.sector)}</span>
                     <button class="source-view-btn" onclick="viewDocument(${doc.document_id})">
-                        <i class="fas fa-eye"></i> Ver
+                        <i class="fas fa-eye"></i>
                     </button>
                 </li>
             `;

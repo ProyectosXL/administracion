@@ -157,7 +157,9 @@ INSTRUCCIONES:
 
 2. Si la pregunta requiere información específica de documentos:
    - Usá ÚNICAMENTE la información de los documentos proporcionados arriba
-   - Citá el nombre del documento cuando uses información de él
+   - Cuando cites un documento, usa EXACTAMENTE el título que aparece en "Documento:" (por ejemplo, si dice "Documento: Instructivo creación de repositorio en GitHub", citá ese título exacto)
+   - NO uses nombres de archivo, rutas o identificadores técnicos
+   - Cita los documentos entre comillas dobles, por ejemplo: según el instructivo "Instructivo creación de repositorio en GitHub"
    - Si la información no está en los documentos, decí: "No encontré esa información en los documentos disponibles"
    - Sé preciso, claro y detallado
 
