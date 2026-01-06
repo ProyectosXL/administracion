@@ -42,11 +42,80 @@ $glosario = $politicaObj->obtenerGlosario();
     <link rel="icon" type="image/jpg" href="../../image/icono.jpg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/chatbot.css">
     <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
         // Configurar el worker de PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    </script>
+    
+    <!-- Auto-inicio del servicio RAG y auto-indexación -->
+    <script>
+        // Variable global para controlar el estado de inicialización
+        window.ragInitializing = true;
+        window.ragInitDetails = [];
+        
+        // Función para finalizar inicialización
+        function finalizarInicializacionRAG() {
+            console.log('🏁 Finalizando inicialización RAG');
+            window.ragInitializing = false;
+            window.ragInitDetails = [];
+            
+            // Forzar actualización del estado del chatbot
+            setTimeout(() => {
+                if (typeof verificarServicioRAG === 'function') {
+                    verificarServicioRAG();
+                }
+            }, 100);
+        }
+        
+        // TIMEOUT ABSOLUTO DE SEGURIDAD: 10 segundos máximo
+        setTimeout(() => {
+            if (window.ragInitializing) {
+                console.warn('⏱️ TIMEOUT FORZADO: Finalizando inicialización después de 10 segundos');
+                finalizarInicializacionRAG();
+            }
+        }, 10000);
+        
+        // Ejecutar auto-inicio en segundo plano cuando cargue la página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Iniciando sistema RAG automáticamente...');
+            
+            // Usar un timeout muy corto para no bloquear la UI
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 3000)
+            );
+            
+            const fetchPromise = fetch('Controller/autostart_rag.php', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            });
+            
+            Promise.race([fetchPromise, timeoutPromise])
+                .then(data => {
+                    window.ragInitDetails = data.detalles || [];
+                    console.log('✅ Sistema RAG:', data.mensaje);
+                    
+                    if (data.success) {
+                        // Si hay indexación, solo mostrar en consola pero no bloquear
+                        if (data.documentos_indexados) {
+                            console.log('📚 Indexando documentos en segundo plano (no bloqueante)...');
+                        }
+                    }
+                    
+                    // Finalizar inmediatamente para no bloquear la UI
+                    setTimeout(() => finalizarInicializacionRAG(), 2000);
+                })
+                .catch(error => {
+                    console.warn('⚠️ No se pudo conectar con autostart:', error.message);
+                    // Finalizar inmediatamente en caso de error
+                    finalizarInicializacionRAG();
+                });
+        });
     </script>
     
 </head>
@@ -95,6 +164,12 @@ $glosario = $politicaObj->obtenerGlosario();
                     <a href="#" onclick="showTab('statistics')">
                         <i class="fas fa-chart-pie"></i>
                         <span>Estadísticas</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="toggleChatbot()" id="chatbotMenuBtn">
+                        <i class="fas fa-robot"></i>
+                        <span>Asistente IA</span>
                     </a>
                 </li>
                 <li>
@@ -936,6 +1011,61 @@ $glosario = $politicaObj->obtenerGlosario();
     
     <!-- Contenedor de notificaciones -->
     <div class="notification-container"></div>
+    
+    <!-- ==================== CHATBOT RAG - ASISTENTE IA ==================== -->
+    <div id="chatbot-container" class="chatbot-container">
+        <div class="chatbot-header">
+            <div class="chatbot-header-content">
+                <i class="fas fa-robot"></i>
+                <div>
+                    <h3>Asistente DocuGest</h3>
+                    <p class="chatbot-status">
+                        <span id="chatbot-status-icon" class="status-dot"></span>
+                        <span id="chatbot-status-text">Verificando...</span>
+                    </p>
+                </div>
+            </div>
+            <button class="chatbot-close-btn" onclick="toggleChatbot()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="chatbot-messages" id="chatbot-messages">
+            <div class="chatbot-message bot">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <p>👋 ¡Hola! Soy tu asistente virtual de DocuGest.</p>
+                    <p>Puedo ayudarte a encontrar información en las políticas y procedimientos usando lenguaje natural.</p>
+                    <p><strong>Ejemplos de preguntas:</strong></p>
+                    <ul>
+                        <li>¿Cuál es el proceso de solicitud de vacaciones?</li>
+                        <li>¿Qué dice la política sobre trabajo remoto?</li>
+                        <li>¿Cómo se realiza el reporte de gastos?</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chatbot-input-container">
+            <textarea 
+                id="chatbot-input" 
+                class="chatbot-input" 
+                placeholder="Escribe tu pregunta aquí..."
+                rows="1"
+            ></textarea>
+            <button id="chatbot-send-btn" class="chatbot-send-btn" onclick="sendChatbotMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+    
+    <button id="chatbot-toggle-btn" class="chatbot-toggle-btn" onclick="toggleChatbot()">
+        <i class="fas fa-robot"></i>
+        <span class="chatbot-badge" id="chatbot-badge" style="display: none;">1</span>
+    </button>
+    <!-- ==================================================================== -->
  
     <!-- Inclusión de archivos JavaScript al final del body -->
     <script src="js/search.js"></script>
@@ -944,6 +1074,7 @@ $glosario = $politicaObj->obtenerGlosario();
     <script src="js/upload-form.js"></script>
     <script src="js/sectors.js"></script>
     <script src="js/update-document.js"></script>
+    <script src="js/chatbot.js"></script>
     <script src="js/main.js"></script>
  
 </body>
