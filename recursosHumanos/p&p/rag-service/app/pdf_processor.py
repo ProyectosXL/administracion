@@ -1,10 +1,12 @@
 """
 Procesamiento de archivos PDF.
 Extrae texto completo de documentos PDF usando PyMuPDF (fitz).
+Soporta PDFs desde filesystem local o desde bytes (descargados vía HTTP).
 """
 
 import logging
 import os
+import io
 from pathlib import Path
 from typing import Tuple
 import fitz  # PyMuPDF
@@ -15,6 +17,78 @@ logger = logging.getLogger(__name__)
 class PDFProcessingError(Exception):
     """Error durante el procesamiento de PDF."""
     pass
+
+
+def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> Tuple[str, int]:
+    """
+    Extrae texto de PDF en memoria (bytes descargados vía HTTP).
+    
+    Args:
+        pdf_bytes: Contenido binario del PDF
+        
+    Returns:
+        Tupla (texto_completo, numero_paginas)
+        
+    Raises:
+        PDFProcessingError: Si hay error al procesar el PDF
+        
+    Example:
+        >>> pdf_bytes = requests.get(url).content
+        >>> text, pages = extract_text_from_pdf_bytes(pdf_bytes)
+    """
+    try:
+        logger.info(f"Procesando PDF desde bytes ({len(pdf_bytes)} bytes)")
+        
+        # Crear stream en memoria
+        pdf_stream = io.BytesIO(pdf_bytes)
+        
+        # Abrir PDF desde stream
+        doc = fitz.open(stream=pdf_stream, filetype="pdf")
+        
+        # Verificar que el PDF tiene páginas
+        if doc.page_count == 0:
+            raise PDFProcessingError("El PDF no tiene páginas")
+        
+        # Extraer texto de todas las páginas
+        text_parts = []
+        for page_num in range(doc.page_count):
+            try:
+                page = doc[page_num]
+                page_text = page.get_text()
+                
+                if page_text.strip():  # Solo agregar si hay contenido
+                    text_parts.append(page_text)
+                    logger.debug(f"Página {page_num + 1}/{doc.page_count}: {len(page_text)} caracteres")
+                else:
+                    logger.warning(f"Página {page_num + 1} está vacía")
+                    
+            except Exception as e:
+                logger.error(f"Error al procesar página {page_num + 1}: {str(e)}")
+                continue
+        
+        num_pages = doc.page_count
+        doc.close()
+        
+        # Verificar que se extrajo texto
+        if not text_parts:
+            raise PDFProcessingError(
+                "No se pudo extraer texto del PDF. Puede ser un PDF escaneado sin OCR"
+            )
+        
+        full_text = "\n\n".join(text_parts)
+        
+        logger.info(
+            f"Texto extraído exitosamente: {len(full_text)} caracteres, "
+            f"{num_pages} páginas"
+        )
+        
+        return full_text, num_pages
+        
+    except Exception as e:
+        if "fitz" in str(type(e).__module__) or isinstance(e, RuntimeError):
+            raise PDFProcessingError(f"Error de PyMuPDF: {str(e)}")
+        else:
+            raise PDFProcessingError(f"Error al procesar PDF desde bytes: {str(e)}")
 
 
 def extract_text_from_pdf(pdf_path: str) -> Tuple[str, int]:

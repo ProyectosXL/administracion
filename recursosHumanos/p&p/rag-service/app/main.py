@@ -5,6 +5,7 @@ Endpoints para webhooks desde PHP y consultas RAG.
 
 import logging
 import time
+import requests
 from typing import Optional
 from pathlib import Path
 
@@ -27,27 +28,38 @@ from app.models import (
     ReindexRequest,
     TestIndexRequest
 )
-from app.pdf_processor import extract_text_from_pdf, PDFProcessingError
+from app.pdf_processor import extract_text_from_pdf, extract_text_from_pdf_bytes, PDFProcessingError
 from app.chunking import create_chunks, generate_chunk_id, ChunkingError
 from app.embeddings import generate_embeddings_batch, test_gemini_connection, EmbeddingError, EMBEDDING_DIMENSION
 from app.database import get_chroma_client, ChromaDBError
 from app.rag import generate_rag_response, RAGError
-from app.config import DOCUMENTOS_PATH
+from app.config import DOCUMENTOS_PATH, IS_RAILWAY, PHP_SERVER_URL
 
 # ============================================================================
 # CONFIGURACIÓN DE LOGGING
 # ============================================================================
 
-from app.config import LOG_FILE, LOG_LEVEL
+from app.config import LOG_FILE, LOG_LEVEL, IS_RAILWAY
 
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
-    ]
-)
+# En Railway, solo logs a STDOUT (no archivos)
+if IS_RAILWAY:
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler()  # Solo STDOUT en Railway
+        ]
+    )
+else:
+    # Local/Producción: logs a archivo y STDOUT
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(LOG_FILE),
+            logging.StreamHandler()
+        ]
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +93,12 @@ async def startup_event():
     """
     Ejecutar al iniciar el servicio.
     Valida configuración, conexiones y re-indexa automáticamente si es necesario.
+    En Railway, inicia el scheduler de auto-refresh.
     """
     logger.info("=" * 80)
     logger.info(f"Iniciando DocuGest RAG Service v{__version__}")
+    if IS_RAILWAY:
+        logger.info("Entorno: RAILWAY")
     logger.info("=" * 80)
     
     try:
@@ -97,105 +112,114 @@ async def startup_event():
         chroma_client = get_chroma_client()
         stats = chroma_client.get_stats()
         logger.info(
-            f"ChromaDB OK - {stats['total_chunks']} chunks, "
+            f"✓ ChromaDB OK - {stats['total_chunks']} chunks, "
             f"{stats['total_documentos_indexados']} documentos indexados"
         )
         
-        # DETECCIÓN AUTOMÁTICA Y RE-INDEXACIÓN
-        needs_reindex = False
+        # Iniciar scheduler solo en Railway
+        if IS_RAILWAY:
+            from app.scheduler import start_scheduler
+            start_scheduler()
         
-        # 1. Verificar si hay PDFs pero no hay chunks indexados
-        pdf_files = list(Path(DOCUMENTOS_PATH).glob("*.pdf")) if Path(DOCUMENTOS_PATH).exists() else []
-        if pdf_files and stats['total_chunks'] == 0:
-            logger.warning(f"⚠️  Encontrados {len(pdf_files)} PDFs pero ChromaDB está vacío")
-            needs_reindex = True
+        # DETECCIÓN AUTOMÁTICA Y RE-INDEXACIÓN (solo para entorno local/producción con filesystem)
+        if not IS_RAILWAY:
+            needs_reindex = False
         
-        # 2. Verificar dimensión de embeddings (si cambió el modelo)
-        if stats['total_chunks'] > 0:
-            # Intentar obtener un chunk para verificar dimensión
-            try:
-                collection = chroma_client.collection
-                sample = collection.get(limit=1, include=["embeddings"])
-                if sample['embeddings'] and len(sample['embeddings'][0]) != EMBEDDING_DIMENSION:
-                    logger.warning(
-                        f"⚠️  Dimensión de embeddings incorrecta: "
-                        f"{len(sample['embeddings'][0])} vs esperado {EMBEDDING_DIMENSION}"
-                    )
-                    needs_reindex = True
-            except Exception as e:
-                logger.warning(f"No se pudo verificar dimensión de embeddings: {e}")
-        
-        # 3. Re-indexar automáticamente si es necesario
-        if needs_reindex:
-            logger.info("Re-indexacion automatica iniciada...")
-            try:
-                # Recrear colección (elimina y recrea con nueva dimensión)
-                chroma_client.reset_collection()
-                logger.info("Colección ChromaDB recreada")
-                
-                # Indexar todos los PDFs
-                indexed_count = 0
-                failed_count = 0
-                
-                for pdf_path in pdf_files:
-                    try:
-                        logger.info(f"Indexando: {pdf_path.name}")
-                        
-                        # Extraer texto (retorna tupla)
-                        text, num_pages = extract_text_from_pdf(str(pdf_path))
-                        
-                        # Preparar metadatos base
-                        base_metadata = {
-                            'document_id': 0,  # Se asigna al guardar
-                            'documento_nombre': pdf_path.name,
-                            'titulo': pdf_path.stem,
-                            'sector': 'General',
-                            'tipo': 'politica'
-                        }
-                        
-                        # Crear chunks
-                        chunks = create_chunks(text, base_metadata)
-                        
-                        # Generar embeddings
-                        chunk_texts = [chunk['text'] for chunk in chunks]
-                        embeddings = generate_embeddings_batch(chunk_texts, show_progress=False)
-                        
-                        # Preparar datos para ChromaDB
-                        chunk_ids = []
-                        chunk_metadatas = []
-                        for i, chunk in enumerate(chunks):
-                            chunk_id = f"doc_{indexed_count}_{pdf_path.stem}_chunk_{i}"
-                            chunk_ids.append(chunk_id)
-                            chunk_metadatas.append(chunk['metadata'])
-                        
-                        # Agregar a ChromaDB
-                        chroma_client.add_chunks(
-                            chunk_ids=chunk_ids,
-                            embeddings=embeddings,
-                            documents=chunk_texts,
-                            metadatas=chunk_metadatas
+            # 1. Verificar si hay PDFs pero no hay chunks indexados
+            pdf_files = list(Path(DOCUMENTOS_PATH).glob("*.pdf")) if Path(DOCUMENTOS_PATH).exists() else []
+            if pdf_files and stats['total_chunks'] == 0:
+                logger.warning(f"⚠️  Encontrados {len(pdf_files)} PDFs pero ChromaDB está vacío")
+                needs_reindex = True
+            
+            # 2. Verificar dimensión de embeddings (si cambió el modelo)
+            if stats['total_chunks'] > 0:
+                # Intentar obtener un chunk para verificar dimensión
+                try:
+                    collection = chroma_client.collection
+                    sample = collection.get(limit=1, include=["embeddings"])
+                    if sample['embeddings'] and len(sample['embeddings'][0]) != EMBEDDING_DIMENSION:
+                        logger.warning(
+                            f"⚠️  Dimensión de embeddings incorrecta: "
+                            f"{len(sample['embeddings'][0])} vs esperado {EMBEDDING_DIMENSION}"
                         )
-                        indexed_count += 1
-                        logger.info(f"  OK {pdf_path.name}: {len(chunks)} chunks indexados")
-                        
-                    except Exception as e:
-                        failed_count += 1
-                        logger.error(f"  X Error indexando {pdf_path.name}: {e}")
-                
-                logger.info(
-                    f"Re-indexacion completada: {indexed_count} documentos OK, "
-                    f"{failed_count} errores"
-                )
-                
-                # Actualizar stats
-                stats = chroma_client.get_stats()
-                
-            except Exception as e:
-                logger.error(f"Error durante re-indexación automática: {e}")
+                        needs_reindex = True
+                except Exception as e:
+                    logger.warning(f"No se pudo verificar dimensión de embeddings: {e}")
+            
+            # 3. Re-indexar automáticamente si es necesario
+            if needs_reindex:
+                logger.info("Re-indexacion automatica iniciada...")
+                try:
+                    # Recrear colección (elimina y recrea con nueva dimensión)
+                    chroma_client.reset_collection()
+                    logger.info("Colección ChromaDB recreada")
+                    
+                    # Indexar todos los PDFs
+                    indexed_count = 0
+                    failed_count = 0
+                    
+                    for pdf_path in pdf_files:
+                        try:
+                            logger.info(f"Indexando: {pdf_path.name}")
+                            
+                            # Extraer texto (retorna tupla)
+                            text, num_pages = extract_text_from_pdf(str(pdf_path))
+                            
+                            # Preparar metadatos base
+                            base_metadata = {
+                                'document_id': 0,  # Se asigna al guardar
+                                'documento_nombre': pdf_path.name,
+                                'titulo': pdf_path.stem,
+                                'sector': 'General',
+                                'tipo': 'politica'
+                            }
+                            
+                            # Crear chunks
+                            chunks = create_chunks(text, base_metadata)
+                            
+                            # Generar embeddings
+                            chunk_texts = [chunk['text'] for chunk in chunks]
+                            embeddings = generate_embeddings_batch(chunk_texts, show_progress=False)
+                            
+                            # Preparar datos para ChromaDB
+                            chunk_ids = []
+                            chunk_metadatas = []
+                            for i, chunk in enumerate(chunks):
+                                chunk_id = f"doc_{indexed_count}_{pdf_path.stem}_chunk_{i}"
+                                chunk_ids.append(chunk_id)
+                                chunk_metadatas.append(chunk['metadata'])
+                            
+                            # Agregar a ChromaDB
+                            chroma_client.add_chunks(
+                                chunk_ids=chunk_ids,
+                                embeddings=embeddings,
+                                documents=chunk_texts,
+                                metadatas=chunk_metadatas
+                            )
+                            indexed_count += 1
+                            logger.info(f"  OK {pdf_path.name}: {len(chunks)} chunks indexados")
+                            
+                        except Exception as e:
+                            failed_count += 1
+                            logger.error(f"  X Error indexando {pdf_path.name}: {e}")
+                    
+                    logger.info(
+                        f"Re-indexacion completada: {indexed_count} documentos OK, "
+                        f"{failed_count} errores"
+                    )
+                    
+                    # Actualizar stats
+                    stats = chroma_client.get_stats()
+                    
+                except Exception as e:
+                    logger.error(f"Error durante re-indexación automática: {e}")
         
         logger.info("=" * 80)
         logger.info("Servicio RAG iniciado exitosamente")
-        logger.info("  Escuchando en: http://localhost:8000")
+        if IS_RAILWAY:
+            logger.info("  Escuchando en: Railway (puerto asignado)")
+        else:
+            logger.info("  Escuchando en: http://localhost:8000")
         logger.info("  Documentacion: http://localhost:8000/docs")
         logger.info(f"  Documentos indexados: {stats['total_documentos_indexados']}")
         logger.info(f"  Chunks totales: {stats['total_chunks']}")
@@ -674,8 +698,194 @@ async def root():
         "service": "DocuGest RAG Service",
         "version": __version__,
         "status": "running",
-        "documentation": "/docs"
+        "documentation": "/docs",
+        "railway": IS_RAILWAY
     }
+
+
+@app.post(
+    "/admin/refresh",
+    status_code=status.HTTP_200_OK,
+    tags=["Admin"]
+)
+async def refresh_from_php():
+    """
+    Sincroniza documentos desde PHP server (solo Railway).
+    Descarga e indexa documentos faltantes.
+    
+    Este endpoint:
+    1. Obtiene lista de documentos desde {PHP_SERVER_URL}/api/listar_documentos.php
+    2. Compara con documentos ya indexados en ChromaDB
+    3. Para documentos faltantes:
+       - Descarga PDF desde {PHP_SERVER_URL}/api/descargar_pdf.php?id=X
+       - Extrae texto e indexa en ChromaDB
+    4. Retorna resumen de la sincronización
+    
+    Returns:
+        {"status": "success", "nuevos_indexados": 3, "total_chunks": 150, ...}
+    """
+    if not IS_RAILWAY:
+        raise HTTPException(
+            status_code=400,
+            detail="Endpoint solo disponible en Railway"
+        )
+    
+    try:
+        logger.info("=" * 80)
+        logger.info("🔄 Iniciando sincronización desde PHP server...")
+        logger.info(f"PHP Server: {PHP_SERVER_URL}")
+        
+        # 1. Obtener lista de documentos desde PHP
+        logger.info("Obteniendo lista de documentos desde PHP...")
+        response = requests.get(
+            f"{PHP_SERVER_URL}/api/listar_documentos.php",
+            timeout=30
+        )
+        response.raise_for_status()
+        php_data = response.json()
+        
+        if not php_data.get('success'):
+            raise HTTPException(400, "Error al obtener documentos de PHP: " + php_data.get('mensaje', 'Error desconocido'))
+        
+        php_docs = php_data['documentos']
+        logger.info(f"✓ Obtenidos {len(php_docs)} documentos desde PHP")
+        
+        # 2. Obtener documentos ya indexados en ChromaDB
+        chroma_client = get_chroma_client()
+        stats = chroma_client.get_stats()
+        
+        # Obtener títulos de documentos indexados
+        collection = chroma_client.collection
+        all_metadata = collection.get(include=["metadatas"])
+        indexed_titles = set()
+        for metadata in all_metadata['metadatas']:
+            if 'titulo' in metadata:
+                indexed_titles.add(metadata['titulo'])
+        
+        logger.info(f"✓ ChromaDB tiene {len(indexed_titles)} documentos indexados")
+        
+        # 3. Identificar documentos faltantes
+        nuevos_docs = []
+        for doc in php_docs:
+            if doc['titulo'] not in indexed_titles:
+                nuevos_docs.append(doc)
+        
+        logger.info(f"📋 Documentos faltantes: {len(nuevos_docs)}")
+        
+        if len(nuevos_docs) == 0:
+            logger.info("✅ Todos los documentos ya están indexados")
+            return {
+                "status": "success",
+                "mensaje": "Todos los documentos ya están indexados",
+                "nuevos_indexados": 0,
+                "ya_indexados": len(indexed_titles),
+                "total_chunks": stats['total_chunks'],
+                "total_documentos": stats['total_documentos_indexados']
+            }
+        
+        # 4. Descargar e indexar documentos faltantes
+        indexados = 0
+        errores = 0
+        chunks_agregados = 0
+        
+        for doc in nuevos_docs:
+            try:
+                doc_id = doc['id']
+                titulo = doc['titulo']
+                logger.info(f"📥 Descargando: {titulo} (ID: {doc_id})")
+                
+                # Descargar PDF
+                pdf_response = requests.get(
+                    f"{PHP_SERVER_URL}/api/descargar_pdf.php?id={doc_id}",
+                    timeout=60
+                )
+                pdf_response.raise_for_status()
+                pdf_bytes = pdf_response.content
+                
+                logger.info(f"  ✓ Descargado: {len(pdf_bytes)} bytes")
+                
+                # Extraer texto del PDF
+                text, num_pages = extract_text_from_pdf_bytes(pdf_bytes)
+                logger.info(f"  ✓ Texto extraído: {len(text)} caracteres, {num_pages} páginas")
+                
+                # Preparar metadata
+                metadata = {
+                    'document_id': doc_id,
+                    'titulo': titulo,
+                    'documento_nombre': doc.get('archivo_nombre', f"{titulo}.pdf"),
+                    'sector': doc.get('sector', 'General'),
+                    'tipo': doc.get('tipo', 'politica'),
+                    'ruta_archivo': doc.get('ruta_archivo', '')
+                }
+                
+                # Crear chunks
+                chunks = create_chunks(text, metadata)
+                logger.info(f"  ✓ Chunks creados: {len(chunks)}")
+                
+                # Generar embeddings
+                chunk_texts = [chunk['text'] for chunk in chunks]
+                embeddings = generate_embeddings_batch(chunk_texts, show_progress=False)
+                logger.info(f"  ✓ Embeddings generados: {len(embeddings)}")
+                
+                # Preparar datos para ChromaDB
+                chunk_ids = []
+                chunk_metadatas = []
+                for i, chunk in enumerate(chunks):
+                    chunk_id = f"doc_{doc_id}_{i}"
+                    chunk_ids.append(chunk_id)
+                    chunk_metadatas.append(chunk['metadata'])
+                
+                # Agregar a ChromaDB
+                chroma_client.add_chunks(
+                    chunk_ids=chunk_ids,
+                    embeddings=embeddings,
+                    documents=chunk_texts,
+                    metadatas=chunk_metadatas
+                )
+                
+                indexados += 1
+                chunks_agregados += len(chunks)
+                logger.info(f"  ✅ Indexado exitosamente: {titulo}")
+                
+            except Exception as e:
+                errores += 1
+                logger.error(f"  ❌ Error indexando {doc.get('titulo', 'desconocido')}: {str(e)}")
+                continue
+        
+        # 5. Obtener stats actualizados
+        stats_final = chroma_client.get_stats()
+        
+        logger.info("=" * 80)
+        logger.info(f"✅ Sincronización completada")
+        logger.info(f"  Nuevos indexados: {indexados}")
+        logger.info(f"  Errores: {errores}")
+        logger.info(f"  Chunks agregados: {chunks_agregados}")
+        logger.info(f"  Total documentos: {stats_final['total_documentos_indexados']}")
+        logger.info(f"  Total chunks: {stats_final['total_chunks']}")
+        logger.info("=" * 80)
+        
+        return {
+            "status": "success",
+            "mensaje": f"Sincronización completada: {indexados} nuevos documentos indexados",
+            "nuevos_indexados": indexados,
+            "errores": errores,
+            "chunks_agregados": chunks_agregados,
+            "total_chunks": stats_final['total_chunks'],
+            "total_documentos": stats_final['total_documentos_indexados']
+        }
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"❌ Error de conexión con PHP server: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Error de conexión con PHP server: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"❌ Error inesperado en refresh: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error interno: {str(e)}"
+        )
 
 
 @app.post(

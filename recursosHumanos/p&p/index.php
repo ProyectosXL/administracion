@@ -56,73 +56,64 @@ $glosario = $politicaObj->obtenerGlosario();
         window.ragInitializing = true;
         window.ragInitDetails = [];
         
+        // Función para finalizar inicialización
+        function finalizarInicializacionRAG() {
+            console.log('🏁 Finalizando inicialización RAG');
+            window.ragInitializing = false;
+            window.ragInitDetails = [];
+            
+            // Forzar actualización del estado del chatbot
+            setTimeout(() => {
+                if (typeof verificarServicioRAG === 'function') {
+                    verificarServicioRAG();
+                }
+            }, 100);
+        }
+        
+        // TIMEOUT ABSOLUTO DE SEGURIDAD: 10 segundos máximo
+        setTimeout(() => {
+            if (window.ragInitializing) {
+                console.warn('⏱️ TIMEOUT FORZADO: Finalizando inicialización después de 10 segundos');
+                finalizarInicializacionRAG();
+            }
+        }, 10000);
+        
         // Ejecutar auto-inicio en segundo plano cuando cargue la página
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Iniciando sistema RAG automáticamente...');
             
-            fetch('Controller/autostart_rag.php')
-                .then(response => response.json())
+            // Usar un timeout muy corto para no bloquear la UI
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 3000)
+            );
+            
+            const fetchPromise = fetch('Controller/autostart_rag.php', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            });
+            
+            Promise.race([fetchPromise, timeoutPromise])
                 .then(data => {
                     window.ragInitDetails = data.detalles || [];
+                    console.log('✅ Sistema RAG:', data.mensaje);
                     
                     if (data.success) {
-                        console.log('✅ Sistema RAG iniciado:', data.mensaje);
-                        console.log('📊 Detalles:', data.detalles);
-                        
-                        // Si se están indexando documentos, mantener el estado de inicialización
+                        // Si hay indexación, solo mostrar en consola pero no bloquear
                         if (data.documentos_indexados) {
-                            window.ragInitializing = true;
-                            console.log('📚 Indexando documentos en segundo plano...');
-                            
-                            // Monitorear progreso de indexación
-                            const intervalo = setInterval(() => {
-                                fetch('Controller/estado_indexacion.php')
-                                    .then(r => r.json())
-                                    .then(estado => {
-                                        if (!estado.indexando) {
-                                            clearInterval(intervalo);
-                                            window.ragInitializing = false;
-                                            console.log('✓ Indexación completada');
-                                            // Actualizar el estado del chatbot
-                                            if (typeof verificarServicioRAG === 'function') {
-                                                verificarServicioRAG();
-                                            }
-                                        } else {
-                                            console.log('📖 Indexando:', estado.progreso || estado.ultimo_mensaje);
-                                        }
-                                    })
-                                    .catch(() => {
-                                        clearInterval(intervalo);
-                                        window.ragInitializing = false;
-                                    });
-                            }, 5000); // Verificar cada 5 segundos
-                            
-                            // Timeout máximo de 2 minutos
-                            setTimeout(() => {
-                                clearInterval(intervalo);
-                                window.ragInitializing = false;
-                            }, 120000);
-                            
-                        } else if (data.servicio_iniciado && data.detalles.some(d => d.toLowerCase().includes('iniciando servicio'))) {
-                            // Si solo se inició el servicio, esperar 15 segundos
-                            setTimeout(() => {
-                                window.ragInitializing = false;
-                                if (typeof verificarServicioRAG === 'function') {
-                                    verificarServicioRAG();
-                                }
-                            }, 15000);
-                        } else {
-                            window.ragInitializing = false;
+                            console.log('📚 Indexando documentos en segundo plano (no bloqueante)...');
                         }
-                    } else {
-                        console.warn('⚠️ Sistema RAG:', data.mensaje);
-                        console.log('📊 Detalles:', data.detalles);
-                        window.ragInitializing = false;
                     }
+                    
+                    // Finalizar inmediatamente para no bloquear la UI
+                    setTimeout(() => finalizarInicializacionRAG(), 2000);
                 })
                 .catch(error => {
-                    console.error('❌ Error al iniciar sistema RAG:', error);
-                    window.ragInitializing = false;
+                    console.warn('⚠️ No se pudo conectar con autostart:', error.message);
+                    // Finalizar inmediatamente en caso de error
+                    finalizarInicializacionRAG();
                 });
         });
     </script>

@@ -15,6 +15,7 @@ chroma_db/
 # Logs
 logs/
 *.log
+*.md
 
 # IDEs
 .vscode/

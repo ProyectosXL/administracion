@@ -1,0 +1,11 @@
+[project]
+name = "rag-docugest"
+id = "a22dc6fd-0eb0-479c-8239-509816318e3f"
+
+[environment]
+name = "production"
+id = "a8e01ef3-85a8-4ccd-af34-addbbac688a4"
+
+[service]
+name = "gentle-perception"
+id = "df46d0e4-8be7-43d3-9e98-7c49805a2351"

@@ -1,7 +1,9 @@
 """
 Configuración del módulo RAG.
-En producción (app.xl.com.ar): Usa API key hardcodeada.
-En local (localhost): Carga GOOGLE_API_KEY del .env compartido.
+Soporta 3 entornos:
+- Railway: Lee variables de entorno (GOOGLE_API_KEY, PHP_SERVER_URL, PORT)
+- Producción (app.xl.com.ar): Usa API key hardcodeada
+- Local: Carga GOOGLE_API_KEY del .env compartido
 NO incluye configuración de SQL Server - eso lo maneja PHP.
 """
 
@@ -13,6 +15,10 @@ from dotenv import load_dotenv
 # ============================================================================
 # DETECCIÓN DE ENTORNO
 # ============================================================================
+
+def is_railway():
+    """Detecta si estamos en Railway.app"""
+    return os.getenv("RAILWAY_ENVIRONMENT") is not None or os.getenv("RAILWAY_PROJECT_ID") is not None
 
 def is_production():
     """
@@ -26,15 +32,33 @@ def is_production():
     except:
         return False
 
-IS_PRODUCTION = is_production()
+IS_RAILWAY = is_railway()
+IS_PRODUCTION = is_production() and not IS_RAILWAY
+IS_LOCAL = not IS_RAILWAY and not IS_PRODUCTION
 
 # ============================================================================
 # CONFIGURACIÓN DE GOOGLE GEMINI API
 # ============================================================================
 
-if IS_PRODUCTION:
+if IS_RAILWAY:
+    # Railway: Leer de variables de entorno
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+    if not GOOGLE_API_KEY:
+        raise ValueError("GOOGLE_API_KEY no configurada en Railway. Configurar en Variables de entorno.")
+    
+    # Nueva configuración para Railway
+    PHP_SERVER_URL = os.getenv("PHP_SERVER_URL")
+    if not PHP_SERVER_URL:
+        raise ValueError("PHP_SERVER_URL no configurada en Railway. Configurar en Variables de entorno.")
+    
+    PORT = int(os.getenv("PORT", 8000))
+    
+elif IS_PRODUCTION:
     # Producción: API key hardcodeada (no necesita .env)
     GOOGLE_API_KEY = "AIzaSyDUAWRkNRV4s11G2w4M3AG1Bu5H1h482DE"
+    PHP_SERVER_URL = None  # No usado en producción local
+    PORT = 8000
+    
 else:
     # Local: Cargar desde .env
     env_path = Path(__file__).resolve().parent.parent.parent.parent.parent / ".env"
@@ -45,6 +69,8 @@ else:
             "GOOGLE_API_KEY no encontrada en el archivo .env. "
             "Agregá la API key al archivo .env en la raíz del proyecto."
         )
+    PHP_SERVER_URL = None  # No usado en local
+    PORT = 8000
 
 # ============================================================================
 # CONFIGURACIÓN DE CHROMADB
@@ -67,23 +93,25 @@ CHUNK_SEPARATORS = ["\n\n", "\n", ". ", " ", ""]  # Prioriza párrafos completos
 # CONFIGURACIÓN DE EMBEDDINGS (ARQUITECTURA HÍBRIDA)
 # ============================================================================
 
-# Usar embeddings LOCALES con sentence-transformers (ilimitado, sin API)
-USE_LOCAL_EMBEDDINGS = True
+# Usar embeddings de Google Gemini (consistente en todos los entornos)
+# Railway, Local y Producción usan el mismo modelo para compatibilidad
+USE_LOCAL_EMBEDDINGS = False
 
-# Modelo de embeddings LOCAL (descarga automática)
+# Modelo de embeddings LOCAL (descarga automática) - OPCIONAL
 # paraphrase-multilingual-MiniLM-L12-v2: Multilingüe, 384 dimensiones, rápido
+# Solo se usa si USE_LOCAL_EMBEDDINGS = True (requiere sentence-transformers)
 LOCAL_EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
-EMBEDDING_DIMENSION = 384  # Dimensión del modelo local
 
-# Fallback: Modelo de embeddings de Gemini (solo si USE_LOCAL_EMBEDDINGS = False)
+# Modelo de embeddings de Gemini (RECOMENDADO - consistente en todos los entornos)
 GEMINI_EMBEDDING_MODEL = "models/text-embedding-004"
+EMBEDDING_DIMENSION = 768  # Dimensión de text-embedding-004
 
-# Task types para embeddings (solo para Gemini)
+# Task types para embeddings (Gemini API)
 EMBEDDING_TASK_DOCUMENT = "retrieval_document"  # Para indexar chunks
 EMBEDDING_TASK_QUERY = "retrieval_query"  # Para preguntas
 
 # Batch size para procesar embeddings
-EMBEDDING_BATCH_SIZE = 10  # Mayor batch size para embeddings locales (más rápido)
+EMBEDDING_BATCH_SIZE = 10  # Procesamiento por lotes para eficiencia
 
 # ============================================================================
 # CONFIGURACIÓN DE GENERACIÓN DE RESPUESTAS

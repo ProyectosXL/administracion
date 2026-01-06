@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 # INICIALIZACIÓN DE MODELOS
 # ============================================================================
 
+_local_model = None
+
 if USE_LOCAL_EMBEDDINGS:
     # Usar sentence-transformers (LOCAL, ilimitado)
     try:
@@ -48,16 +50,22 @@ if USE_LOCAL_EMBEDDINGS:
         
         _local_model = SentenceTransformer(LOCAL_EMBEDDING_MODEL, cache_folder=str(cache_folder))
         logger.info(f"✓ Modelo local cargado exitosamente (dimensión: {EMBEDDING_DIMENSION})")
+    except ImportError as e:
+        logger.warning(f"sentence-transformers no disponible: {e}")
+        logger.warning("Fallback automático a Google Gemini API")
+        USE_LOCAL_EMBEDDINGS = False
     except Exception as e:
         logger.error(f"Error al cargar modelo local: {e}")
-        raise RuntimeError(f"No se pudo cargar el modelo de embeddings local: {e}")
-else:
+        logger.warning("Fallback automático a Google Gemini API")
+        USE_LOCAL_EMBEDDINGS = False
+
+if not USE_LOCAL_EMBEDDINGS:
     # Usar Google Gemini API (requiere API key)
     try:
         import google.generativeai as genai
         from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
         genai.configure(api_key=GOOGLE_API_KEY)
-        logger.info("Configurado para usar Gemini API para embeddings")
+        logger.info(f"✓ Sistema de embeddings OK (GEMINI {GEMINI_EMBEDDING_MODEL}, dimensión: {EMBEDDING_DIMENSION})")
     except Exception as e:
         logger.error(f"Error al configurar Gemini API: {e}")
         raise RuntimeError(f"No se pudo configurar Gemini API: {e}")

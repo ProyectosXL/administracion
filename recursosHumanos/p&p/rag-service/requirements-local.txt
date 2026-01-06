@@ -1,0 +1,12 @@
+# Dependencias OPCIONALES para desarrollo LOCAL
+# 
+# POR DEFECTO: Todos los entornos (Railway, Local, Producción) usan Google Gemini 
+# text-embedding-004 (768 dimensiones) para consistencia total.
+#
+# OPCIONAL: Si prefieres usar sentence-transformers localmente (384 dim, offline),
+# instala con: pip install -r requirements-local.txt
+# Y cambia en config.py: USE_LOCAL_EMBEDDINGS = True
+#
+# NOTA: Si cambias a embeddings locales, ChromaDB será incompatible con Railway/Producción
+
+sentence-transformers==2.2.2

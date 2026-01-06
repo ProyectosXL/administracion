@@ -4,7 +4,7 @@
  */
 
 // Configuración
-const RAG_API_URL = 'http://localhost:8001';
+const RAG_API_URL = 'http://localhost:8002';
 let chatbotOpen = false;
 let chatHistory = [];
 
@@ -90,38 +90,58 @@ async function verificarServicioRAG() {
     
     // Verificar si el sistema está inicializándose
     if (window.ragInitializing) {
-        // Determinar mensaje basado en detalles
-        const details = window.ragInitDetails || [];
-        const indexando = details.some(d => d.toLowerCase().includes('indexación') || d.toLowerCase().includes('indexando'));
+        console.log('🔄 Sistema aún inicializándose...');
         
         statusIcon.className = 'status-dot loading';
-        if (indexando) {
-            statusText.textContent = '📚 Indexando documentos...';
-        } else {
-            statusText.textContent = '⏳ Iniciando bot...';
-        }
+        statusText.textContent = '⏳ Iniciando bot...';
         
         // Mostrar overlay de carga
         mostrarOverlayCarga();
         
-        // Reintentar después de 5 segundos
-        setTimeout(() => verificarServicioRAG(), 5000);
+        // Reintentar después de 2 segundos (máximo 5 veces = 10 segundos total)
+        if (!window.ragVerifyAttempts) window.ragVerifyAttempts = 0;
+        window.ragVerifyAttempts++;
+        
+        if (window.ragVerifyAttempts < 5) {
+            setTimeout(() => verificarServicioRAG(), 2000);
+        } else {
+            // Forzar finalización después de 5 intentos
+            console.warn('⚠️ Timeout: Forzando finalización de inicialización');
+            window.ragInitializing = false;
+            window.ragVerifyAttempts = 0;
+            ocultarOverlayCarga();
+            // Llamar de nuevo para verificar el estado real
+            setTimeout(() => verificarServicioRAG(), 100);
+        }
         return;
     }
     
+    // Resetear contador de intentos y ocultar overlay
+    window.ragVerifyAttempts = 0;
+    ocultarOverlayCarga();
+    
     try {
+        // Crear un timeout de 3 segundos para el health check
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
         const response = await fetch(`${RAG_API_URL}/health`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
             const data = await response.json();
             
-            // Verificar documentos faltantes
-            await verificarDocumentosFaltantes(data.total_chunks);
+            // Verificar documentos faltantes (sin esperar)
+            verificarDocumentosFaltantes(data.total_chunks).catch(err => 
+                console.warn('Error verificando documentos faltantes:', err)
+            );
             
             statusIcon.className = 'status-dot online';
             
@@ -133,20 +153,21 @@ async function verificarServicioRAG() {
                 statusText.textContent = `En línea - ${docCount} documentos (${data.total_chunks} chunks)`;
             }
             
-            // Ocultar overlay de carga
-            ocultarOverlayCarga();
+            console.log('✅ Servicio RAG conectado correctamente');
         } else {
             throw new Error('Servicio no disponible');
         }
     } catch (error) {
         statusIcon.className = 'status-dot offline';
         statusText.textContent = 'Sin conexión';
-        console.error('Error al verificar servicio RAG:', error);
         
-        // Solo mostrar error si no está inicializando
-        if (!window.ragInitializing) {
-            agregarMensajeBot('❌ No puedo conectarme al servicio de IA. Verifica que el servicio RAG esté ejecutándose en http://localhost:8001');
+        if (error.name === 'AbortError') {
+            console.warn('⏱️ Timeout al conectar con servicio RAG (3s)');
+        } else {
+            console.error('❌ Error al verificar servicio RAG:', error.message);
         }
+        
+        // No mostrar mensaje al usuario, solo indicar estado offline
     }
 }
 
