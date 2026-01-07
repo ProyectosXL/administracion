@@ -205,4 +205,63 @@
     .glossary-content {
         max-height: calc(85vh - 120px);
     }
+    
+    .glossary-alphabet a {
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 576px) {
+    .glossary-modal {
+        width: 98%;
+        max-height: 90vh;
+    }
+    
+    .glossary-content {
+        max-height: calc(90vh - 100px);
+        padding: 0 10px 10px 10px;
+    }
+    
+    .glossary-search-container {
+        padding: 12px 10px 5px 10px;
+    }
+    
+    .glossary-search {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .glossary-letter {
+        font-size: 20px;
+        margin: 15px 0 8px;
+    }
+    
+    .glossary-item h4 {
+        font-size: 15px;
+    }
+    
+    .glossary-item p {
+        font-size: 13px;
+        margin-left: 20px;
+    }
+    
+    .glossary-alphabet {
+        gap: 3px;
+    }
+    
+    .glossary-alphabet a {
+        width: 26px;
+        height: 26px;
+        line-height: 26px;
+        font-size: 13px;
+    }
+    
+    .glossary-modal .close-modal {
+        font-size: 24px;
+        right: 10px;
+        top: 10px;
+    }
 }

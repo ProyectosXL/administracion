@@ -150,3 +150,63 @@
 .btn-link:hover {
     color: #2980b9;
 }
+
+/* Responsive para update document */
+@media (max-width: 768px) {
+    .document-details {
+        padding: 15px;
+    }
+    
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 0;
+    }
+    
+    .info-row .label {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    .info-row .value {
+        width: 100%;
+    }
+    
+    .history-modal {
+        width: 95%;
+        max-height: 90vh;
+    }
+}
+
+@media (max-width: 576px) {
+    .document-info-card h4 {
+        font-size: 15px;
+    }
+    
+    .info-row .label {
+        font-size: 14px;
+    }
+    
+    .info-row .value {
+        font-size: 14px;
+    }
+    
+    .version-timeline {
+        padding-left: 15px;
+    }
+    
+    .version-content {
+        padding: 12px;
+        margin-left: 5px;
+    }
+    
+    .version-content h4 {
+        font-size: 15px;
+    }
+    
+    .version-date,
+    .version-user,
+    .version-desc {
+        font-size: 13px;
+    }
+}

@@ -191,6 +191,7 @@ class HealthResponse(BaseModel):
     version: str
     chroma_collections: int
     total_chunks: int
+    total_documents: int = 0
     timestamp: datetime = Field(default_factory=datetime.now)
 
 

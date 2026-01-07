@@ -41,18 +41,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ===== Funciones de inicialización de la interfaz =====
 
 function initSidebar() {
-    // Alternar la visibilidad de la barra lateral
-    const toggleBtn = document.getElementById('toggleSidebar');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('collapsed');
-            adjustMainContent();
-        });
-    }
-    
-    // Ajustar el contenido principal cuando la ventana cambia de tamaño
-    window.addEventListener('resize', adjustMainContent);
-    
     // Manejar la navegación del menú lateral
     document.querySelectorAll('.sidebar-menu a').forEach(link => {
         link.addEventListener('click', function(e) {
@@ -61,27 +49,73 @@ function initSidebar() {
             
             // Añadir la clase active al enlace clickeado
             this.classList.add('active');
+            
+            // Cerrar el menú móvil si está abierto
+            if (window.innerWidth <= 576) {
+                closeMobileMenu();
+            }
         });
+    });
+    
+    // Configurar menú móvil
+    initMobileMenu();
+}
+
+function initMobileMenu() {
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (!mobileToggle) return;
+    
+    // Crear overlay si no existe
+    let overlay = document.querySelector('.sidebar-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        document.body.appendChild(overlay);
+        
+        overlay.addEventListener('click', closeMobileMenu);
+    }
+    
+    // Agregar botón de cerrar en el sidebar para móviles
+    if (window.innerWidth <= 576) {
+        const logo = sidebar.querySelector('.logo');
+        let closeBtn = logo.querySelector('.mobile-close-btn');
+        
+        if (!closeBtn) {
+            closeBtn = document.createElement('button');
+            closeBtn.className = 'mobile-close-btn';
+            closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            closeBtn.setAttribute('aria-label', 'Cerrar menú');
+            logo.appendChild(closeBtn);
+            
+            closeBtn.addEventListener('click', closeMobileMenu);
+        }
+    }
+    
+    // Toggle del menú
+    mobileToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+        document.body.classList.toggle('no-scroll');
     });
 }
 
-function adjustMainContent() {
-    // Ajustar el margen del contenido principal basado en el estado de la barra lateral
+function closeMobileMenu() {
     const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
+    const overlay = document.querySelector('.sidebar-overlay');
     
-    if (!sidebar || !mainContent) return;
-    
-    if (window.innerWidth > 768) {
-        if (sidebar.classList.contains('collapsed')) {
-            mainContent.style.marginLeft = '80px';
-        } else {
-            mainContent.style.marginLeft = '280px';
-        }
-    } else {
-        mainContent.style.marginLeft = '0';
-    }
+    if (sidebar) sidebar.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+    document.body.classList.remove('no-scroll');
 }
+
+// Reinicializar el menú móvil cuando cambie el tamaño de ventana
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 576) {
+        closeMobileMenu();
+    }
+});
 
 // ===== Funciones de gestión de la navegación por pestañas =====
 

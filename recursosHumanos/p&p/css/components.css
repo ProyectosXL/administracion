@@ -380,3 +380,172 @@
 .notification.fade-out {
     animation: fadeOut 0.3s ease forwards;
 }
+
+/* Botón de menú móvil */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--dark-color);
+    cursor: pointer;
+    padding: 5px;
+    margin-right: 8px;
+}
+
+.mobile-menu-toggle:hover {
+    color: var(--primary-color);
+}
+
+/* Responsive Components */
+@media (max-width: 576px) {
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #f5f7fa;
+        z-index: 997;
+        padding: 8px 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 0;
+        border-bottom: 1px solid #ddd;
+        min-height: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Header responsive */
+    .user-info {
+        display: none;
+    }
+    
+    .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+        margin-right: 0;
+    }
+    
+    .user-menu .notifications {
+        margin-right: 12px;
+    }
+    
+    .user-menu .notifications i {
+        font-size: 18px;
+    }
+    
+    .user-menu .notifications .badge {
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+        top: -3px;
+        right: -3px;
+    }
+    
+    /* Cards responsive */
+    .card {
+        padding: 15px;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    /* Filtros responsive */
+    .filter-options {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+    
+    .filter-select {
+        width: 100%;
+        margin-left: 0;
+        margin-top: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Search responsive */
+    .search-input {
+        font-size: 13px;
+        padding: 6px 12px;
+        padding-left: 32px;
+        border-radius: 20px;
+    }
+    
+    .search-icon {
+        left: 10px;
+        font-size: 13px;
+    }
+    
+    .search-container {
+        flex: 1;
+        margin: 0 8px;
+    }
+    
+    /* Stat cards mobile */
+    .stat-card {
+        flex-direction: row;
+        text-align: left;
+    }
+    
+    .stat-card .icon {
+        margin-right: 15px;
+        margin-bottom: 0;
+    }
+    
+    .stat-info h3 {
+        font-size: 24px;
+    }
+    
+    .stat-info p {
+        font-size: 13px;
+    }
+    
+    /* Sector cards mobile */
+    .sector-card {
+        padding: 15px;
+    }
+    
+    .sector-card .icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .sector-card h3 {
+        font-size: 16px;
+    }
+    
+    .sector-card p {
+        font-size: 13px;
+    }
+    
+    /* Botones responsive */
+    .btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        width: 100%;
+    }
+    
+    .upload-btn {
+        padding: 10px 15px;
+        font-size: 13px;
+        justify-content: center;
+    }
+    
+    /* Notificaciones mobile */
+    .notification-container {
+        width: calc(100% - 40px);
+        left: 20px;
+        right: 20px;
+    }
+}

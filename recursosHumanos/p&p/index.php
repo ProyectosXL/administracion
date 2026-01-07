@@ -124,9 +124,6 @@ $glosario = $politicaObj->obtenerGlosario();
         <aside class="sidebar">
             <div class="logo">
                 <h1>DocuGest</h1>
-                <button class="toggle-btn" id="toggleSidebar">
-                    <i class="fas fa-bars"></i>
-                </button>
             </div>
             
             <ul class="sidebar-menu">
@@ -195,6 +192,10 @@ $glosario = $politicaObj->obtenerGlosario();
         
         <main class="main-content">
             <header class="header">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Abrir menú">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
                 <div class="search-container">
                     <i class="fas fa-search search-icon"></i>
                     <input type="text" class="search-input" id="searchInput" placeholder="Buscar políticas, procedimientos o términos...">

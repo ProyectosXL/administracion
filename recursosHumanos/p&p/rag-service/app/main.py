@@ -578,7 +578,8 @@ async def health_check():
             status="ok",
             version=__version__,
             chroma_collections=1,
-            total_chunks=stats['total_chunks']
+            total_chunks=stats['total_chunks'],
+            total_documents=stats['total_documentos_indexados']
         )
         
     except Exception as e:
