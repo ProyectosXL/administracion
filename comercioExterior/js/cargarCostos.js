@@ -105,9 +105,13 @@ const iniciarCalculo = (div)=>{
   let valorPesosFob = document.querySelector("#valorPesosFob").getAttribute("attr-value");
   let valorPesosFobNumerico = parseFloat(valorPesosFob.replaceAll(".","").replaceAll(",","."));
 
-  let result = ((importeEnPesos / valorPesosFobNumerico) * 100);
+  let result = 0;
+  if (valorPesosFobNumerico && valorPesosFobNumerico > 0 && importeEnPesos > 0) {
+    result = ((importeEnPesos / valorPesosFobNumerico) * 100);
+  }
+  
   if(sobreFobField){
-    sobreFobField.value = result.toFixed(2) + "%";
+    sobreFobField.value = isNaN(result) ? '0.00%' : (result.toFixed(2) + "%");
     console.log('% sobre FOB asignado:', sobreFobField.value);
   }
 
@@ -136,10 +140,16 @@ const totalGastos = ()=> {
   valor = valorPesosFob.replaceAll(".","");
   valor = valor.replaceAll(",",".");
 
-  let result = ((sum / parseFloat(valor)) * 100);
-  let numberResult = (parseFloat(result).toFixed(2));
-  porcentajeSpan.textContent = numberResult + "%";
-  porcentajeSpan.setAttribute("attr-value", result.toFixed(2));
+  let valorFobNumerico = parseFloat(valor);
+  let result = 0;
+  
+  if (valorFobNumerico && valorFobNumerico > 0 && sum > 0) {
+    result = ((sum / valorFobNumerico) * 100);
+  }
+  
+  let numberResult = isNaN(result) ? '0.00' : (parseFloat(result).toFixed(2));
+  porcentajeSpan.textContent = numberResult;
+  porcentajeSpan.setAttribute("attr-value", isNaN(result) ? '0.00' : result.toFixed(2));
 }
 
 if(document.querySelector("#btnSaveDetalle") != null){

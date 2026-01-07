@@ -39,184 +39,184 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
-    
-    <!-- Icons font CSS-->
-    <link href="../../assets/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-    <link href="../../assets/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
-    
-    <!-- Font special for pages-->
-    <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i" rel="stylesheet">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
-    <!-- Vendor CSS-->
-    <link href="../../assets/select2/select2.min.css" rel="stylesheet" media="all">
-    <link href="../../assets/datepicker/daterangepicker.css" rel="stylesheet" media="all">
-
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <link rel="icon" type="image/jpg" href="../../images/LOGO XL 2018.jpg">
     
-    <!-- Main CSS-->
-    <link href="../../css/style.css" rel="stylesheet" media="all">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../../css/gestionarCostos.css">
     
-    <title>Carga de Costos - <?= $proveedor ?></title>
+    <title>Gestionar Costos - <?= $proveedor ?></title>
 </head>
 <body>
-    <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-        <div class="wrapper wrapper--w680" style="margin-left: 12rem;">
-            <div class="card card-1" style="width: 1200px; justify-content:center; text-align:center">
-                <div class="card-heading"></div>
-                <div class="card-body">
-                    <!-- Header Info -->
-                    <div class="alert alert-primary">
-                        <div class="row justify-content-md-center mb-2">
-                            <div class="col-md-auto">
-                                <h3 class="mb-1" style="font-weight: bold;">
-                                    <i class="bi bi-box-seam-fill"></i> 
-                                    <?= $proveedor ?> - (<?= $ordenCompra ?>)
-                                </h3>
-                            </div>
-                            <div id="nroOrdenCompra" hidden><?= $ordenCompra ?></div>
-                        </div>
-                        <div class="row justify-content-md-center">
-                            <div class="col-md-auto">
-                                <i class="bi bi-airplane-fill icon"></i>
-                                <h5 class="mb-1">
-                                    <label style="font-weight: bold;">Nº Orden Proveedor:</label>
-                                    <?= ' ' . $contenedor ?>
-                                </h5>
-                            </div>
-                            <div class="col-md-auto">
-                                <i class="bi bi-cash icon"></i>
-                                <h5 class="mb-1" id="valorPesosFob" attr-value="<?= $valorFobPeso ?>">
-                                    <label style="font-weight: bold;">Valor F.O.B. $:</label>
-                                    <?= ' ' . $valorFobPeso ?>
-                                </h5>
-                            </div>
-                            <div id="idEncabezado" attr-value="( <?= $idDespacho ?> )" hidden></div>
-                            <div class="col-md-auto">
-                                <i class="bi bi-cash-coin icon"></i>
-                                <h5 class="mb-1">
-                                    <label id="totalGastosDetalle" style="font-weight: bold;">Gastos $:</label>
-                                </h5>
-                            </div>
-                            <div class="col-md-auto">
-                                <i class="bi bi-percent icon"></i>
-                                <h5 class="mb-1">
-                                    <label style="font-weight: bold;">Costos nac.:</label> 
-                                    <span id="porcentaje"></span>
-                                </h5>
-                            </div>
-                        </div>
+    <div class="container-wrapper">
+        <!-- Header Card -->
+        <div class="header-card">
+            <div class="header-title">
+                <i class="bi bi-box-seam-fill"></i>
+                <h1>Gestionar Costos de Nacionalización</h1>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">
+                        <i class="bi bi-box-seam"></i>
+                        Orden de Compra
                     </div>
+                    <div class="info-value"><?= htmlspecialchars($ordenCompra) ?></div>
+                    <div id="nroOrdenCompra" hidden><?= htmlspecialchars($ordenCompra) ?></div>
+                </div>
 
-                    <!-- Título -->
-                    <h2 class="title">
-                        <i class="bi bi-folder-check"></i> Detalle Costos de Nacionalización
-                    </h2>
-
-                    <!-- Tabla de Gastos -->
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th class="col-">ID</th>
-                                <th class="col-3">GASTOS</th>
-                                <th class="col-">IMPORTE U$S</th>
-                                <th class="col-">TIPO CAMBIO</th>
-                                <th class="col-">IMPORTE $</th>
-                                <th class="col-">% SOBRE F.O.B. $</th>
-                                <th class="col-">OBSERVACIONES</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table">
-                            <?php
-                            foreach ($todosLosGastos as $valor => $key) {
-                            ?>
-                            <tr id="trBody">
-                                <td id="id"><?= $key['ID_MG'] ?></td>
-                                <td><?= $key['GASTOS'] ?></td>
-                                <td>
-                                    <input class="decimales currencyInput" 
-                                           style="text-align:center" 
-                                           type="text" 
-                                           id="valorFobDolar" 
-                                           onkeyup="iniciarCalculo(this)" 
-                                           onchange='convertirNumeros(this)' 
-                                           onclick='limpiarInput(this)'>
-                                </td>
-                                <?php if (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') { ?>
-                                    <td>
-                                        <input class="decimales currencyInput tipoCambio" 
-                                               style="text-align:center" 
-                                               type="text" 
-                                               onkeyup="iniciarCalculo(this)" 
-                                               id="tipoCambio" 
-                                               value="0" 
-                                               onchange='convertirNumeros(this)' 
-                                               onclick='limpiarInput(this)'>
-                                    </td>
-                                <?php } else { ?>
-                                    <td>
-                                        <input class="decimales currencyInput tipoCambio" 
-                                               style="text-align:center" 
-                                               type="text" 
-                                               onkeyup="iniciarCalculo(this)" 
-                                               id="tipoCambio" 
-                                               onchange='convertirNumeros(this)' 
-                                               value="<?= ($valor <= 6) ? $tipoCambio : "0" ?>" 
-                                               onclick='limpiarInput(this)'>
-                                    </td>
-                                <?php } ?>
-                                <td>
-                                    <input class="decimales currencyInput importe skip" 
-                                           style="text-align:center" 
-                                           id="valorFobPeso" 
-                                           name="inputNum[]" 
-                                           readonly>
-                                </td>
-                                <td>
-                                    <input style="text-align:center" class="skip">
-                                </td>
-                                <td>
-                                    <input class="skip">
-                                </td>
-                            </tr>
-                            <?php } ?>
-                            
-                            <!-- Fila de Totales -->
-                            <tr class="alert alert-primary" style="font-weight: bold;">
-                                <td>TOTALES</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td id="totalGastosDetalleR" value="0"></td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <!-- Botones de Acción -->
-                    <div class="d-flex gap-2 justify-content-center">
-                        <a href="../gestionDespachos.php" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> Volver
-                        </a>
-                        <button class="btn btn-primary" id="btnSaveDetalle">
-                            Guardar <i class="bi bi-cloud-download"></i>
-                        </button>
+                <div class="info-item provider">
+                    <div class="info-label">
+                        <i class="bi bi-building"></i>
+                        Proveedor
+                    </div>
+                    <div class="provider-name" title="<?= htmlspecialchars($proveedor) ?>">
+                        <?= htmlspecialchars($proveedor) ?>
+                    </div>
+                    <div class="provider-code">
+                        <i class="bi bi-archive" style="font-size: 0.7rem;"></i>
+                        <?= htmlspecialchars($contenedor) ?>
                     </div>
                 </div>
+
+                <div class="info-item">
+                    <div class="info-label">
+                        <i class="bi bi-cash-dollar"></i>
+                        Valor F.O.B.
+                    </div>
+                    <div class="info-value" id="valorPesosFob" attr-value="<?= $valorFobPeso ?>">
+                        $ <?= $valorFobPeso ?>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">
+                        <i class="bi bi-cash-coin"></i>
+                        Total Gastos
+                    </div>
+                    <div class="info-value" id="totalGastosDetalle">$ 0,00</div>
+                </div>
+
+                <div class="info-item highlighted">
+                    <div class="info-label">
+                        <i class="bi bi-percent"></i>
+                        Costo de Nac.
+                    </div>
+                    <div class="info-value"><span id="porcentaje">0,00</span></div>
+                </div>
+            </div>
+
+            <div id="idEncabezado" attr-value="<?= $idDespacho ?>" hidden></div>
+        </div>
+
+        <!-- Table Card -->
+        <div class="table-card">
+            <div class="table-title">
+                <i class="bi bi-table"></i>
+                Detalle de Costos de Nacionalización
+            </div>
+
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th style="width: 220px;">Gastos</th>
+                        <th style="width: 130px;">Importe U$S</th>
+                        <th style="width: 130px;">Tipo Cambio</th>
+                        <th style="width: 150px;">Importe $</th>
+                        <th style="width: 110px;">% F.O.B. $</th>
+                        <th style="width: 180px;">Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody id="table">
+                    <?php
+                    foreach ($todosLosGastos as $valor => $key) {
+                    ?>
+                    <tr id="trBody">
+                        <td class="cell-id" id="id">
+                            <span class="badge-info"><?= $key['ID_MG'] ?></span>
+                        </td>
+                        <td><?= htmlspecialchars($key['GASTOS']) ?></td>
+                        <td>
+                            <input class="input-field decimales currencyInput" 
+                                   type="text" 
+                                   id="valorFobDolar" 
+                                   onkeyup="iniciarCalculo(this)" 
+                                   onchange='convertirNumeros(this)' 
+                                   onclick='limpiarInput(this)'>
+                        </td>
+                        <?php if (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') { ?>
+                            <td>
+                                <input class="input-field decimales currencyInput tipoCambio" 
+                                       type="text" 
+                                       onkeyup="iniciarCalculo(this)" 
+                                       id="tipoCambio" 
+                                       value="0" 
+                                       onchange='convertirNumeros(this)' 
+                                       onclick='limpiarInput(this)'>
+                            </td>
+                        <?php } else { ?>
+                            <td>
+                                <input class="input-field decimales currencyInput tipoCambio" 
+                                       type="text" 
+                                       onkeyup="iniciarCalculo(this)" 
+                                       id="tipoCambio" 
+                                       onchange='convertirNumeros(this)' 
+                                       value="<?= ($valor <= 6) ? $tipoCambio : "0" ?>" 
+                                       onclick='limpiarInput(this)'>
+                            </td>
+                        <?php } ?>
+                        <td>
+                            <input class="input-field decimales currencyInput importe skip" 
+                                   id="valorFobPeso" 
+                                   name="inputNum[]" 
+                                   readonly>
+                        </td>
+                        <td>
+                            <input class="input-field skip" readonly>
+                        </td>
+                        <td>
+                            <input class="input-field skip">
+                        </td>
+                    </tr>
+                    <?php } ?>
+                    
+                    <!-- Fila de Totales -->
+                    <tr class="total-row">
+                        <td colspan="3"></td>
+                        <td style="text-align: right; font-weight: 600;">TOTAL</td>
+                        <td id="totalGastosDetalleR" value="0">$ 0,00</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="btn-group-actions">
+                <a href="../gestionDespachos.php" class="btn-modern btn-secondary-modern">
+                    <i class="bi bi-arrow-left"></i>
+                    Volver
+                </a>
+                <button type="button" class="btn-modern btn-primary-modern" id="btnSaveDetalle">
+                    <i class="bi bi-check-circle"></i>
+                    Guardar Cambios
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../../assets/jquery/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js" integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk" crossorigin="anonymous"></script>
     <script src="../../js/cargarCostos.js"></script>
 
     <!-- Script para navegación con flechas -->
