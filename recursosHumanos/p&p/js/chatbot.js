@@ -4,7 +4,7 @@
  */
 
 // Configuración
-const RAG_API_URL = 'http://localhost:8002';
+const RAG_API_URL = 'https://gentle-perception-production-25da.up.railway.app';
 let chatbotOpen = false;
 let chatHistory = [];
 
