@@ -1,6 +1,5 @@
 <?php
 session_start();
-// Solo usuarios con rol 'cliente' pueden acceder
 if (!isset($_SESSION['usuario_id']) || $_SESSION['usuario_rol'] !== 'cliente') {
     header('Location: login.php');
     exit();
@@ -21,24 +20,24 @@ include 'templates/layout/header.php';
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <p class="lead">Bienvenido a su guía del Portal de Cliente. Aquí encontrará explicaciones sobre cómo gestionar sus propuestas de pago.</p>
+            <p class="lead">Bienvenido a su guía del Portal de Cliente. Aquí encontrará explicaciones sobre cómo gestionar sus propuestas de pago de forma centralizada.</p>
 
             <div class="accordion" id="ayudaClienteAccordion">
 
-                <!-- Tema 1: Entendiendo su Portal -->
+                <!-- Tema 1: Vista Unificada -->
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="headingOne">
                         <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                            <strong>1. ¿Qué información encuentro en Mi Portal?</strong>
+                            <strong>1. ¿Qué información veo en Mi Portal? (Vista Unificada)</strong>
                         </button>
                     </h2>
                     <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#ayudaClienteAccordion">
                         <div class="accordion-body">
-                            Su portal está diseñado para darle una visión clara y completa de su estado de cuenta:
+                            Su portal ahora le ofrece una <strong>vista consolidada de todos sus locales</strong> asociados a su razón social. Aunque inicie sesión con el usuario de una sucursal, verá la información de todas.
                             <ul>
-                                <li><strong>Tarjetas de Resumen:</strong> En la parte superior, verá rápidamente la deuda total pendiente, el monto que está actualmente en negociación y si tiene propuestas que requieren su atención.</li>
-                                <li><strong>Tabla "Mis Propuestas de Pago":</strong> Aquí se listan todas las propuestas que le hemos enviado, tanto las activas como las ya finalizadas.</li>
-                                <li><strong>Cronograma de Pagos:</strong> A la derecha, un calendario resalta en azul los días en que tiene un vencimiento de pago correspondiente a una propuesta que usted ha aceptado.</li>
+                                <li><strong>KPIs Consolidados:</strong> Las tarjetas superiores muestran la suma total de su deuda, los montos en negociación y los pagos pendientes de todos sus locales.</li>
+                                <li><strong>Tabla de Propuestas:</strong> Verá una lista unificada de las propuestas de todas sus sucursales. Hemos añadido una columna <strong>"Local"</strong> para que pueda identificar a qué sucursal corresponde cada propuesta.</li>
+                                <li><strong>Cronograma Centralizado:</strong> El calendario resalta los vencimientos de pago de todas sus propuestas aceptadas, sin importar el local.</li>
                             </ul>
                         </div>
                     </div>
@@ -48,21 +47,22 @@ include 'templates/layout/header.php';
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="headingTwo">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                            <strong>2. ¿Cómo respondo a una propuesta?</strong>
+                            <strong>2. ¿Cómo respondo a una propuesta? (¡Importante!)</strong>
                         </button>
                     </h2>
                     <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#ayudaClienteAccordion">
                         <div class="accordion-body">
+                            Al recibir una nueva propuesta (recibirá una notificación por email), tiene <strong>96 horas hábiles para responder</strong>. De lo contrario, la propuesta vencerá.
                             <ol>
-                                <li>En la tabla "Mis Propuestas de Pago", busque la propuesta que desea revisar y haga clic en el botón de "Ver" (<i class="fa-solid fa-eye"></i>).</li>
-                                <li>Se abrirá un modal con todo el detalle: el monto, la fecha de pago, las facturas incluidas y el historial de la negociación.</li>
-                                <li>En la parte inferior del modal, tendrá las siguientes opciones:
+                                <li>En la tabla, haga clic en el botón "Ver" (<i class="fa-solid fa-eye"></i>). El título del detalle le indicará el local de la propuesta.</li>
+                                <li>Dentro del detalle, tiene dos opciones principales:
                                     <ul>
-                                        <li><strong>Aceptar Propuesta:</strong> Si está de acuerdo con los términos, haga clic aquí. Se le pedirá una confirmación final.</li>
-                                        <li><strong>Enviar Contrapropuesta:</strong> Si desea proponer cambios (quitar facturas, otra fecha, etc.), escriba su petición en el campo de comentarios y haga clic en este botón. Nuestro equipo de cobranzas recibirá su mensaje.</li>
+                                        <li><span class="badge bg-success">Aceptar Propuesta</span>: Si está de acuerdo con todo, haga clic en este botón.</li>
+                                        <li><span class="badge bg-danger">Enviar Contrapropuesta</span>: Si desea un cambio, use la sección "Negociar Propuesta". Al cambiar el <strong>Medio de Pago</strong> o la <strong>Fecha</strong>, los descuentos y totales se recalcularán al instante para que vea el impacto. Luego, escriba un comentario (obligatorio) y envíe.</li>
                                     </ul>
                                 </li>
                             </ol>
+                            <strong>Aviso de Vencimiento:</strong> Recibirá un email de recordatorio 24 horas antes de que su propuesta expire.
                         </div>
                     </div>
                 </div>
@@ -76,12 +76,13 @@ include 'templates/layout/header.php';
                     </h2>
                     <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#ayudaClienteAccordion">
                         <div class="accordion-body">
-                           Una vez que una propuesta tiene el estado <span class="badge bg-success">ACEPTADA</span>, aparecerá un nuevo botón en la columna de "Acciones".
+                           Una vez que una propuesta tiene el estado <span class="badge bg-success">ACEPTADA</span>, aparecerá un nuevo botón con un clip (<i class="fa-solid fa-paperclip"></i>) en la columna "Acciones".
                            <ol>
-                               <li>Haga clic en el botón de "Adjuntar" (<i class="fa-solid fa-paperclip"></i>) correspondiente a la propuesta pagada.</li>
-                               <li>En el modal que aparece, seleccione su archivo de comprobante (puede ser PDF, JPG o PNG).</li>
-                               <li>Haga clic en "Subir". El sistema procesará el archivo y el estado de su propuesta cambiará a <span class="badge bg-dark">DOCUMENTACION ADJUNTADA</span>, notificando a nuestro equipo.</li>
+                               <li>Haga clic en el botón "Adjuntar" de la propuesta correspondiente.</li>
+                               <li>Seleccione su archivo de comprobante (PDF, JPG o PNG) y haga clic en "Subir".</li>
+                               <li>El estado cambiará a <span class="badge bg-dark">DOCUMENTACION ADJUNTADA</span> y nuestro equipo recibirá una <strong>notificación por email</strong> para verificar el pago.</li>
                            </ol>
+                           Una vez verificado, el estado final será <span class="badge bg-success">PAGADO</span> y usted también recibirá una notificación.
                         </div>
                     </div>
                 </div>
@@ -94,6 +95,5 @@ include 'templates/layout/header.php';
 <?php 
 include 'templates/layout/footer.php'; 
 ?>
-<!-- No se necesitan scripts específicos para esta página -->
 </body>
 </html>

@@ -109,93 +109,98 @@ const tablaPropuestas = $('#tabla-propuestas-cliente').DataTable({
         url: 'api/propuestas_controller.php?action=listar_cliente',
         dataSrc: 'data'
     },
-    columns: [
-        { data: 'id', title: 'ID Propuesta' },
-        { data: 'fecha_creacion', title: 'Fecha Creación' },
-        { data: 'total_propuesto', title: 'Monto Total', render: $.fn.dataTable.render.number('.', ',', 2, '$ ') },
-        { 
-            data: 'estado', 
-            title: 'Estado',
-            render: function(data) {
-                let badgeClass = 'secondary';
-                if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning';
-                if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
-                if (data === 'ACEPTADA') badgeClass = 'success';
-                if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
-                if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
-                
-                // ======================= NUEVO ESTADO "VENCIDA" =======================
-                if (data === 'VENCIDA') badgeClass = 'danger';
-                
-                return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
-            }
-        },
-        {
-            data: null,
-            title: 'Acciones',
-            orderable: false,
-            className: 'text-center',
-            render: function(data, type, row) {
-                let btnVer = `<button class="btn btn-primary btn-sm btn-detalle" data-id="${row.id}" title="Ver Detalle"><i class="fa-solid fa-eye"></i></button>`;
-                let btnAdjuntar = '';
-                
-                // ======================= LÓGICA DE BOTONES MODIFICADA =======================
-                // Si la propuesta está VENCIDA, solo se puede ver, no se puede hacer nada más.
-                if (row.estado === 'VENCIDA') {
-                    return btnVer;
-                }
-
-                // Si está ACEPTADA (y no vencida), mostramos el botón de adjuntar comprobante.
-                if (row.estado === 'ACEPTADA') {
-                    btnAdjuntar = `<button class="btn btn-info btn-sm ms-1 btn-adjuntar" data-id="${row.id}" title="Adjuntar Comprobante">
-                                      <i class="fa-solid fa-paperclip"></i>
-                                  </button>`;
-                }
-
-                // La función inicializarCronograma() no debería estar aquí, se llama una vez al cargar la página
-                // inicializarCronograma(); 
-                
-                return btnVer + btnAdjuntar;
-            }
+columns: [
+    // Columna 0: ID Propuesta
+    { data: 'id', title: 'ID Propuesta' },
+    
+    // Columna 1: Local (la que añadimos)
+    { data: 'cod_cliente', title: 'Local' },
+    
+    // Columna 2: Fecha Creación
+    { data: 'fecha_creacion', title: 'Fecha Creación' },
+    
+    // Columna 3: Monto Total
+    { data: 'total_propuesto', title: 'Monto Total', render: $.fn.dataTable.render.number('.', ',', 2, '$ ') },
+    
+    // Columna 4: Estado
+    { 
+        data: 'estado', 
+        title: 'Estado',
+        render: function(data) {
+            let badgeClass = 'secondary';
+            if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning';
+            if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
+            if (data === 'ACEPTADA') badgeClass = 'success';
+            if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
+            if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
+            if (data === 'VENCIDA') badgeClass = 'danger';
+            return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
         }
-    ],
+    },
+    
+    // Columna 5: Acciones
+    {
+        data: null,
+        title: 'Acciones',
+        orderable: false,
+        className: 'text-center',
+        render: function(data, type, row) {
+            // Pasamos el cod_cliente al botón para usarlo después
+            let btnVer = `<button class="btn btn-primary btn-sm btn-detalle" data-id="${row.id}" data-cod-cliente="${row.cod_cliente}" title="Ver Detalle"><i class="fa-solid fa-eye"></i></button>`;
+            let btnAdjuntar = '';
+            
+            if (row.estado === 'VENCIDA') {
+                return btnVer;
+            }
+            if (row.estado === 'ACEPTADA') {
+                btnAdjuntar = `<button class="btn btn-info btn-sm ms-1 btn-adjuntar" data-id="${row.id}" title="Adjuntar Comprobante"><i class="fa-solid fa-paperclip"></i></button>`;
+            }
+            
+            return btnVer + btnAdjuntar;
+        }
+    }
+],
     language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
     order: [[1, 'desc']]
 });
 
 
     // 2. LÓGICA PARA ABRIR EL MODAL Y CARGAR EL DETALLE
-    $('#tabla-propuestas-cliente').on('click', '.btn-detalle', function() {
-        const idPropuesta = $(this).data('id');
-        const modal = new bootstrap.Modal(document.getElementById('detallePropuestaModal'));
-        const contentDiv = $('#detalle-propuesta-content');
-        
-        // Asignar el ID a los botones del footer para usarlos después
-        $('#btn-aceptar-propuesta').data('id', idPropuesta);
-        $('#btn-enviar-contrapropuesta').data('id', idPropuesta);
+$('#tabla-propuestas-cliente').on('click', '.btn-detalle', function() {
+    const idPropuesta = $(this).data('id');
+    // Leemos el código del cliente desde el atributo data del botón
+    const codCliente = $(this).data('cod-cliente');
+    
+    const modal = new bootstrap.Modal(document.getElementById('detallePropuestaModal'));
+    const contentDiv = $('#detalle-propuesta-content');
+    
+    $('#btn-aceptar-propuesta').data('id', idPropuesta);
+    $('#btn-enviar-contrapropuesta').data('id', idPropuesta);
 
-        // Mostrar loader y resetear
-        contentDiv.html('<div class="text-center p-5"><div class="spinner-border" role="status"></div></div>');
-        $('#detallePropuestaModalLabel').text(`Detalle de Propuesta #${idPropuesta}`);
-        $('#btn-aceptar-propuesta, #btn-enviar-contrapropuesta').hide();
-        modal.show();
+    contentDiv.html('<div class="text-center p-5"><div class="spinner-border" role="status"></div></div>');
+    
+    // ======================= TÍTULO DEL MODAL MODIFICADO =======================
+    $('#detallePropuestaModalLabel').text(`Detalle de Propuesta #${idPropuesta} (Local: ${codCliente})`);
+    
+    $('#btn-aceptar-propuesta, #btn-enviar-contrapropuesta').hide();
+    modal.show();
 
-        $.ajax({
-            url: `api/propuestas_controller.php?action=ver_detalle&id=${idPropuesta}`,
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    renderizarDetallePropuesta(response.data);
-                } else {
-                    contentDiv.html(`<div class="alert alert-danger">${response.message}</div>`);
-                }
-            },
-            error: function() {
-                contentDiv.html('<div class="alert alert-danger">Error al cargar los detalles.</div>');
+    $.ajax({
+        url: `api/propuestas_controller.php?action=ver_detalle&id=${idPropuesta}`,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                renderizarDetallePropuesta(response.data);
+            } else {
+                contentDiv.html(`<div class="alert alert-danger">${response.message}</div>`);
             }
-        });
+        },
+        error: function() {
+            contentDiv.html('<div class="alert alert-danger">Error al cargar los detalles.</div>');
+        }
     });
+});
 
 // ======================= INICIO DE LA LÓGICA CORREGIDA PARA SUBIR ARCHIVOS =======================
 

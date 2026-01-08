@@ -16,47 +16,67 @@ if ($action === 'login') {
 
     try {
         $conn = Database::getConnection('central');
-        // CONSULTA SEGURA para prevenir inyección SQL
-        $sql = "SELECT ID, NOMBRE, COD_CLIENT, TIPO FROM SOF_USUARIOS WHERE NOMBRE = ? AND PASS = ?";
-        $params = [$nombre, $pass];
-        $stmt = sqlsrv_query($conn, $sql, $params);
+        
+        // 1. Buscamos el usuario en SOF_USUARIOS
+        $sql_usuario = "SELECT ID, NOMBRE, COD_CLIENT, TIPO FROM SOF_USUARIOS WHERE NOMBRE = ? AND PASS = ?";
+        $params_usuario = [$nombre, $pass];
+        $stmt_usuario = sqlsrv_query($conn, $sql_usuario, $params_usuario);
 
-        if ($stmt === false) {
-            throw new Exception("Error en la consulta de autenticación.");
+        if ($stmt_usuario === false) {
+            throw new Exception("Error al consultar el usuario.");
         }
+        $usuario = sqlsrv_fetch_array($stmt_usuario, SQLSRV_FETCH_ASSOC);
 
-        $usuario = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        if ($usuario) {
+            $rol = (strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) ? 'admin' : 'cliente';
 
-if ($usuario) {
-    // Definimos el rol del usuario. ASUMIMOS que "SUPERVISION" es un admin.
-    // Si el TIPO es FRANQUICIA o LOCAL_PROPIO, es un cliente.
-    $rol = 'cliente'; // Rol por defecto
-    if (strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) {
-         $rol = 'admin';
-    }
+            $_SESSION['usuario_id'] = $usuario['ID'];
+            $_SESSION['usuario_nombre'] = $usuario['NOMBRE'];
+            $_SESSION['usuario_rol'] = $rol;
+            $_SESSION['usuario_cod_client_individual'] = $usuario['COD_CLIENT'];
 
-    // Guardamos los datos en la sesión
-    $_SESSION['usuario_id'] = $usuario['ID'];
-    $_SESSION['usuario_nombre'] = $usuario['NOMBRE'];
-    $_SESSION['usuario_cod_client'] = $usuario['COD_CLIENT'];
-    $_SESSION['usuario_rol'] = $rol;
+            // ================== INICIO DE LA LÓGICA DE AGRUPACIÓN POR COD_GVA62 ==================
+            if ($rol === 'cliente' && !empty($usuario['COD_CLIENT'])) {
+                
+                // 2. Con el COD_CLIENT del usuario, buscamos su código de grupo (COD_GVA62) en GVA14
+                $sql_grupo = "SELECT COD_GVA62, RAZON_SOCI FROM GVA14 WHERE COD_CLIENT = ?";
+                $stmt_grupo = sqlsrv_query($conn, $sql_grupo, [$usuario['COD_CLIENT']]);
+                
+                $codigo_grupo = null;
+                if ($stmt_grupo && $row_grupo = sqlsrv_fetch_array($stmt_grupo, SQLSRV_FETCH_ASSOC)) {
+                    $codigo_grupo = $row_grupo['COD_GVA62'];
+                    // Guardamos la razón social del local específico con el que se logueó
+                    $_SESSION['razon_social'] = $row_grupo['RAZON_SOCI']; 
+                }
 
-    // ================== INICIO DEL BLOQUE DE ACTUALIZACIÓN DE VENCIMIENTOS ==================
-    // Si el usuario logueado es un cliente, ejecutamos la verificación
-    if ($rol === 'cliente' && !empty($_SESSION['usuario_cod_client'])) {
-        // Incluimos el archivo que contiene nuestra función de verificación
-        require_once __DIR__ . '/vencimientos_controller.php';
-        
-        // La conexión a la BBDD de 'apps' es necesaria para actualizar las propuestas
-        $conn_apps = Database::getConnection('apps');
-        
-        // Ejecutamos la función de verificación para este cliente específico
-        // No necesitamos hacer nada con el resultado, solo ejecutarla.
-        verificarYActualizarVencimientosCliente($conn_apps, $_SESSION['usuario_cod_client']);
-    }
-    // =================== FIN DEL BLOQUE DE ACTUALIZACIÓN DE VENCIMIENTOS ====================
+                // 3. Si encontramos el código de grupo, buscamos TODOS los locales asociados a él.
+                if ($codigo_grupo) {
+                    $sql_locales = "SELECT COD_CLIENT FROM GVA14 WHERE COD_GVA62 = ?";
+                    $stmt_locales = sqlsrv_query($conn, $sql_locales, [$codigo_grupo]);
+                    
+                    $codigos_locales = [];
+                    if ($stmt_locales) {
+                        while ($row = sqlsrv_fetch_array($stmt_locales, SQLSRV_FETCH_ASSOC)) {
+                            $codigos_locales[] = $row['COD_CLIENT'];
+                        }
+                    }
+                    $_SESSION['codigos_cliente_agrupados'] = !empty($codigos_locales) ? $codigos_locales : [$usuario['COD_CLIENT']];
+                } else {
+                    // Si no se encuentra un código de grupo, el "grupo" es solo el local individual.
+                    $_SESSION['codigos_cliente_agrupados'] = [$usuario['COD_CLIENT']];
+                }
+            }
+            // =================== FIN DE LA LÓGICA DE AGRUPACIÓN POR COD_GVA62 ====================
 
-    echo json_encode(['success' => true, 'rol' => $rol]);
+            // Lógica de vencimientos (recibe el array correcto)
+            if ($rol === 'cliente' && !empty($_SESSION['codigos_cliente_agrupados'])) {
+                require_once __DIR__ . '/vencimientos_controller.php';
+                $conn_apps = Database::getConnection('apps');
+                
+                verificarYActualizarVencimientosCliente($conn_apps, $_SESSION['codigos_cliente_agrupados']);
+            }
+
+            echo json_encode(['success' => true, 'rol' => $rol]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Credenciales incorrectas.']);
         }
@@ -70,4 +90,4 @@ if ($usuario) {
     header('Location: ../login.php');
     exit;
 }
-?>  
+?>

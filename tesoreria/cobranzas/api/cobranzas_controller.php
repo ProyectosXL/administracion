@@ -46,6 +46,15 @@ if (empty($cod_cliente) || empty($comprobantes) || !isset($total_propuesto) || e
         if ($stmt_historial === false) throw new Exception("Error al registrar historial.");
 
         sqlsrv_commit($conn_apps);
+                // --- INICIO DE LA NOTIFICACIÓN (CASO A) ---
+        require_once __DIR__ . '/notificaciones_controller.php';
+        $email_destinatario = obtenerEmailFranquiciado($cod_cliente);
+        if ($email_destinatario) {
+            $asunto = "Nueva Propuesta de Pago Recibida (ID: #{$id_propuesta})";
+            $cuerpo = "<h1>Nueva Propuesta de Pago</h1><p>Ha recibido una nueva propuesta de pago de XL Extra Large. Por favor, ingrese al portal de clientes para revisarla.</p>";
+            enviarNotificacion($email_destinatario, $asunto, $cuerpo);
+        }
+        // --- FIN DE LA NOTIFICACIÓN ---
         echo json_encode(['success' => true, 'message' => 'Propuesta de pago enviada correctamente.']);
 
     } catch (Exception $e) {

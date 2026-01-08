@@ -754,8 +754,12 @@ function initializeGestionDataTable() {
 
         // 3. Ejecutamos la sincronización en segundo plano
         sincronizarEstados();
+
+            // ======================= NUEVA LLAMADA AÑADIDA =======================
+        // 4. Ejecutamos el envío de AVISOS DE VENCIMIENTO en segundo plano
+        enviarAvisosVencimiento();
         
-        // 4. Inicializamos o recargamos la tabla de DataTables
+        // 5. Inicializamos o recargamos la tabla de DataTables
         if (tablaGestion) {
             tablaGestion.ajax.reload();
         } else {
@@ -833,6 +837,54 @@ $('body').on('click', '.btn-ver-propuesta-admin', function() {
         }
     });
 });
+
+function enviarAvisosVencimiento() {
+    // Para evitar ejecutar esto en cada clic, guardamos una marca de tiempo en la sesión del navegador
+    const ultimaVerificacion = sessionStorage.getItem('ultimaVerificacionVencimiento');
+    const ahora = new Date().getTime();
+
+    // Si no ha pasado al menos 1 hora (3600000 milisegundos), no hacemos nada.
+    if (ultimaVerificacion && (ahora - ultimaVerificacion < 3600000)) {
+        console.log('Avisos de vencimiento ya verificados recientemente. Omitiendo.');
+        return;
+    }
+
+    console.log('Ejecutando verificación de avisos de vencimiento...');
+    
+    // Hacemos la llamada AJAX en segundo plano, sin molestar al usuario
+    $.ajax({
+        url: 'api/propuestas_controller.php?action=enviar_avisos_vencimiento',
+        type: 'POST',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                // Guardamos la marca de tiempo de la verificación exitosa
+                sessionStorage.setItem('ultimaVerificacionVencimiento', ahora);
+                console.log(response.message);
+                // Si se enviaron avisos, mostramos una notificación no intrusiva
+                if (response.message && !response.message.includes("enviaron 0")) {
+                    // Usamos una notificación pequeña tipo "toast"
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 4000,
+                        timerProgressBar: true
+                    });
+                    Toast.fire({
+                        icon: 'info',
+                        title: response.message
+                    });
+                }
+            } else {
+                console.error('Error al enviar avisos de vencimiento:', response.message);
+            }
+        },
+        error: function() {
+            console.error('Error de conexión al intentar enviar avisos de vencimiento.');
+        }
+    });
+}
 // ======================== FIN DE LA CORRECCIÓN DEL EVENTO =========================
     // *** MODIFICADO ***: Renderiza el modal de gestión con descuentos editables si es necesario
 function renderizarDetallePropuestaAdmin(data) {
