@@ -72,7 +72,7 @@ class Anticipo
 
     public function traerEmpleadosIndividual($search = ''){
         $sql = "SELECT TOP 10 NRO_LEGAJO, NRO_DOCUMENTO, APELLIDO_Y_NOMBRE 
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO
+                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO
                 WHERE APELLIDO_Y_NOMBRE LIKE ?
                 ORDER BY APELLIDO_Y_NOMBRE";
         
@@ -115,7 +115,7 @@ class Anticipo
     public function validarDNI($dni, $legajo) {
 
         $sql = "SELECT COUNT(*) as total 
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO 
+                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO 
                 WHERE NRO_DOCUMENTO = ? AND NRO_LEGAJO = ?";
         
         $params = array($dni, $legajo);
@@ -132,7 +132,7 @@ class Anticipo
     public function traerDNI($legajo) {
 
         $sql = "SELECT NRO_DOCUMENTO
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO 
+                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO 
                 WHERE NRO_LEGAJO = ?";
         
         $params = array($legajo);
@@ -244,7 +244,7 @@ class Anticipo
                     FORMAT(a.FECHA_CARGA, 'dd/MM/yyyy HH:mm') as FECHA_CARGA,
                     b.DESC_DEPARTAMENTO
             FROM RO_T_DETALLE_ANTICIPOS a
-            LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO b ON a.NRO_LEGAJO = b.NRO_LEGAJO
+            LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO b ON a.NRO_LEGAJO = b.NRO_LEGAJO
             WHERE 1=1";
         
         $params = array();

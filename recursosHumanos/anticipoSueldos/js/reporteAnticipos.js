@@ -1,10 +1,10 @@
 
-// reporteAnticipos.js - Versión que muestra último período con datos
+// reporteAnticipos.js - Versión mejorada con filtros año/mes separados
 $(document).ready(function() {
     let table = null;
     
-    // Cargar períodos y configurar último período con datos
-    function cargarPeriodos() {
+    // Cargar años disponibles
+    function cargarYearsDisponibles() {
         $.ajax({
             url: 'Controller/getPeriodos.php',
             method: 'GET',
@@ -12,38 +12,107 @@ $(document).ready(function() {
             success: function(response) {
                 console.log('Períodos cargados:', response);
                 
-                if (Array.isArray(response) && response.length > 0) {
-                    const select = $('#periodFilter');
-                    select.empty();
-                    select.append('<option value="">Todos los períodos</option>');
-                    
-                    response.forEach(item => {
-                        const option = new Option(item.PERIODO, item.PERIODO);
-                        select.append(option);
-                    });
-                    
-                    // Seleccionar el primer período (más reciente) que tiene datos
-                    // Los períodos vienen ordenados descendente desde getPeriodos.php
-                    if (response.length > 0) {
-                        const ultimoPeriodoConDatos = response[0].PERIODO;
-                        select.val(ultimoPeriodoConDatos);
-                        console.log('Seleccionado último período con datos:', ultimoPeriodoConDatos);
-                    }
-                    
-                    // Inicializar tabla después de cargar períodos
-                    inicializarTabla();
-                } else {
-                    console.error('No se recibieron períodos válidos:', response);
-                    // Aún así inicializar la tabla
-                    inicializarTabla();
+                const yearSelect = $('#yearFilter');
+                yearSelect.empty();
+                yearSelect.append('<option value="">Todos los años</option>');
+                
+                // Generar rango de años (desde 3 años atrás hasta 2 años adelante del año actual)
+                const currentYear = new Date().getFullYear();
+                const yearsRange = [];
+                for (let year = currentYear - 3; year <= currentYear + 2; year++) {
+                    yearsRange.push(year.toString());
                 }
+                
+                // Si hay períodos con datos, agregar esos años también
+                let yearsWithData = [];
+                if (Array.isArray(response) && response.length > 0) {
+                    yearsWithData = [...new Set(response.map(item => {
+                        const periodo = item.PERIODO;
+                        return periodo.split('-')[1]; // Obtener el año (formato MM-YYYY)
+                    }))];
+                }
+                
+                // Combinar años del rango con años que tienen datos y eliminar duplicados
+                const allYears = [...new Set([...yearsRange, ...yearsWithData])].sort((a, b) => b - a);
+                
+                // Agregar años al select
+                allYears.forEach(year => {
+                    yearSelect.append(new Option(year, year));
+                });
+                
+                // Seleccionar el año actual por defecto
+                yearSelect.val(currentYear.toString());
+                
+                // Si hay datos, buscar el mes más reciente del año actual
+                if (Array.isArray(response) && response.length > 0) {
+                    const mesesDelAnioActual = response
+                        .filter(item => item.PERIODO.endsWith(currentYear.toString()))
+                        .map(item => item.PERIODO.split('-')[0])
+                        .sort((a, b) => b - a);
+                    
+                    if (mesesDelAnioActual.length > 0) {
+                        $('#monthFilter').val(mesesDelAnioActual[0]);
+                    }
+                }
+                
+                // Inicializar tabla después de cargar filtros
+                inicializarTabla();
             },
             error: function(xhr, status, error) {
                 console.error('Error al cargar períodos:', error, xhr.responseText);
-                // Inicializar tabla incluso si hay error
+                
+                // Fallback: cargar rango de años por defecto
+                const yearSelect = $('#yearFilter');
+                yearSelect.empty();
+                yearSelect.append('<option value="">Todos los años</option>');
+                
+                const currentYear = new Date().getFullYear();
+                for (let year = currentYear - 3; year <= currentYear + 2; year++) {
+                    yearSelect.append(new Option(year.toString(), year.toString()));
+                }
+                yearSelect.val(currentYear.toString());
+                
                 inicializarTabla();
             }
         });
+    }
+
+    // Función para obtener el período seleccionado
+    function getPeriodoSeleccionado() {
+        const year = $('#yearFilter').val();
+        const month = $('#monthFilter').val();
+        
+        if (year && month) {
+            return `${month}-${year}`;
+        } else if (year) {
+            return year; // Solo año, se filtrará en el servidor
+        } else if (month) {
+            return month; // Solo mes (poco común pero soportado)
+        }
+        return ''; // Todos los períodos
+    }
+
+    // Actualizar título con período seleccionado
+    function actualizarTituloPagina() {
+        const year = $('#yearFilter').val();
+        const month = $('#monthFilter').val();
+        const titulo = $('.card-header h5');
+        
+        if (year && month) {
+            const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const mesNombre = meses[parseInt(month)];
+            titulo.html(`<i class="fas fa-chart-bar me-2"></i>Reporte de Anticipos - ${mesNombre} ${year}`);
+        } else if (year) {
+            titulo.html(`<i class="fas fa-chart-bar me-2"></i>Reporte de Anticipos - ${year}`);
+        } else if (month) {
+            const meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const mesNombre = meses[parseInt(month)];
+            titulo.html(`<i class="fas fa-chart-bar me-2"></i>Reporte de Anticipos - ${mesNombre}`);
+        } else {
+            titulo.html(`<i class="fas fa-chart-bar me-2"></i>Reporte de Anticipos`);
+        }
     }
 
     // Inicializar DataTable
@@ -59,15 +128,19 @@ $(document).ready(function() {
                 url: 'Controller/getAnticipos.php',
                 type: 'POST',
                 data: function(d) {
-                    const periodoSeleccionado = $('#periodFilter').val();
-                    console.log('Enviando período:', periodoSeleccionado);
+                    const periodo = getPeriodoSeleccionado();
+                    console.log('Enviando período:', periodo);
                     return {
                         ...d,
-                        periodo: periodoSeleccionado || ''
+                        periodo: periodo
                     };
                 },
                 error: function(xhr, error, thrown) {
                     console.error('Error en DataTable AJAX:', error, thrown, xhr.responseText);
+                },
+                dataSrc: function(json) {
+                    $('#loadingSpinner').hide();
+                    return json.data;
                 }
             },
             columns: [
@@ -106,11 +179,17 @@ $(document).ready(function() {
             buttons: [
                 {
                     extend: 'excelHtml5',
-                    text: '<i class="fas fa-file-excel me-2"></i>Excel',
+                    text: '<i class="fas fa-file-excel me-2"></i>Exportar a Excel',
                     className: 'btn btn-success',
                     title: function() {
-                        const periodo = $('#periodFilter').val();
-                        return periodo ? `Reporte de Anticipos - ${periodo}` : 'Reporte de Anticipos';
+                        const year = $('#yearFilter').val();
+                        const month = $('#monthFilter').val();
+                        if (year && month) {
+                            return `Reporte de Anticipos - ${month}-${year}`;
+                        } else if (year) {
+                            return `Reporte de Anticipos - ${year}`;
+                        }
+                        return 'Reporte de Anticipos';
                     },
                     exportOptions: {
                         columns: ':visible',
@@ -129,11 +208,17 @@ $(document).ready(function() {
                 },
                 {
                     extend: 'pdfHtml5',
-                    text: '<i class="fas fa-file-pdf me-2"></i>PDF',
+                    text: '<i class="fas fa-file-pdf me-2"></i>Exportar a PDF',
                     className: 'btn btn-danger',
                     title: function() {
-                        const periodo = $('#periodFilter').val();
-                        return periodo ? `Reporte de Anticipos - ${periodo}` : 'Reporte de Anticipos';
+                        const year = $('#yearFilter').val();
+                        const month = $('#monthFilter').val();
+                        if (year && month) {
+                            return `Reporte de Anticipos - ${month}-${year}`;
+                        } else if (year) {
+                            return `Reporte de Anticipos - ${year}`;
+                        }
+                        return 'Reporte de Anticipos';
                     },
                     exportOptions: {
                         columns: ':visible'
@@ -141,25 +226,45 @@ $(document).ready(function() {
                 }
             ],
             language: {
-                url: 'https://cdn.datatables.net/plug-ins/1.13.5/i18n/es-ES.json'
+                url: 'https://cdn.datatables.net/plug-ins/1.13.5/i18n/es-ES.json',
+                processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>'
             },        
             pageLength: 200,
             ordering: true,
             order: [[5, 'desc']],
-            responsive: true
+            responsive: true,
+            drawCallback: function() {
+                $('#loadingSpinner').hide();
+            },
+            preDrawCallback: function() {
+                $('#loadingSpinner').show();
+            }
         });
     }
     
-    // Event listeners
-    $(document).on('change', '#periodFilter', function() {
-        const periodoSeleccionado = $(this).val();
-        console.log('Cambio de período a:', periodoSeleccionado);
+    // Event listeners para filtros
+    $(document).on('change', '#yearFilter, #monthFilter', function() {
+        const year = $('#yearFilter').val();
+        const month = $('#monthFilter').val();
+        console.log('Cambio de filtros - Año:', year, 'Mes:', month);
         
-        // Actualizar el título de la página/card
-        actualizarTituloPagina(periodoSeleccionado);
+        actualizarTituloPagina();
         
         if (table) {
             table.ajax.reload();
+        }
+    });
+    
+    // Botón limpiar filtros
+    $(document).on('click', '#clearFilters', function() {
+        $('#yearFilter').val('');
+        $('#monthFilter').val('');
+        $('#searchBox').val('');
+        
+        actualizarTituloPagina();
+        
+        if (table) {
+            table.search('').ajax.reload();
         }
     });
         
@@ -169,15 +274,8 @@ $(document).ready(function() {
         }
     });
 
-    // Función para actualizar el título de la página
-    function actualizarTituloPagina(periodo) {
-        const titulo = $('.card-header h5');
-        if (periodo) {
-            titulo.html(`<i class="fas fa-chart-bar me-2"></i>Reporte de Anticipos - ${periodo}`);
-        } else {
-            titulo.html(`<i class="fas fa-chart-bar me-2"></i>Reporte de Anticipos`);
-        }
-    }
+    // Inicializar la aplicación
+    cargarYearsDisponibles();
 
     // Administración de períodos
     $('#periodosModal').on('show.bs.modal', function() {

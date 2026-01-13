@@ -176,7 +176,7 @@ class Novedades {
                         e.APELLIDO as apellido,
                         e.COD_DEPARTAMENTO as codigo_centro_costos,
                         e.DESC_DEPARTAMENTO as descripcion_centro_costos
-                    FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL e
+                    FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL e
                     WHERE e.NRO_LEGAJO = ?";
             
             $result = $this->db->query($sql, [$legajo]);
@@ -232,7 +232,7 @@ class Novedades {
      */
     public function getCentrosCostos() {
         $sql = "SELECT DISTINCT COD_DEPARTAMENTO as codigo, DESC_DEPARTAMENTO as descripcion 
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
+                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
                 WHERE HABILITADO = 'S' 
                   AND COD_DEPARTAMENTO IS NOT NULL 
                   AND DESC_DEPARTAMENTO IS NOT NULL
@@ -255,7 +255,7 @@ class Novedades {
                     COD_DEPARTAMENTO as cod_centro_costos,
                     DESC_DEPARTAMENTO as desc_centro_costos,
                     CONCAT(NOMBRE, ' ', APELLIDO, ' (', NRO_LEGAJO, ')') as texto_completo
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
+                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
                 WHERE 1=1 AND HABILITADO = 'S'";
         
         $params = [];
@@ -295,7 +295,7 @@ class Novedades {
     public function buscarEmpleado($legajo) {
         $sql = "SELECT NRO_LEGAJO as legajo, NOMBRE as nombre, APELLIDO as apellido, TAREA_HABITUAL as puesto_actual,
                        COD_DEPARTAMENTO as cod_centro_costos, DESC_DEPARTAMENTO as desc_centro_costos
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
+                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
                 WHERE NRO_LEGAJO = ? AND HABILITADO = 'S'";
         $stmt = $this->db->query($sql, [$legajo]);
         return $stmt->fetch();
@@ -431,7 +431,7 @@ class Novedades {
     public function buscarPuestosSelect2($termino = '', $limit = 20) {
         $sql = "SELECT DISTINCT TOP {$limit} 
                     TAREA_HABITUAL as puesto
-                FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
+                FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL 
                 WHERE HABILITADO = 'S' 
                 AND TAREA_HABITUAL IS NOT NULL 
                 AND LTRIM(RTRIM(TAREA_HABITUAL)) != ''";
@@ -698,7 +698,7 @@ class Novedades {
                 $sql = "UPDATE n 
                         SET n.centro_costos = ISNULL(e.COD_DEPARTAMENTO, '0')
                         FROM novedades n
-                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL e 
+                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL e 
                             ON n.legajo = e.NRO_LEGAJO
                         WHERE n.centro_costos IS NULL";
                 $this->db->query($sql);
@@ -1196,7 +1196,7 @@ class Novedades {
                                rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
                         WHERE n.periodo_mes = ? AND n.periodo_anio = ?";
             } else {
                 // Para otros tipos de usuario, aplicar filtro específico dinámicamente
@@ -1211,7 +1211,7 @@ class Novedades {
                                rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
                         WHERE n.periodo_mes = ? AND n.periodo_anio = ? AND tn.$campoPermiso = 1";
             }
             
@@ -1413,7 +1413,7 @@ class Novedades {
                                rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
                         WHERE 1=1";
             } else {
                 // Para otros tipos de usuario, aplicar filtro específico dinámicamente
@@ -1428,7 +1428,7 @@ class Novedades {
                                rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
                         WHERE tn.$campoPermiso = 1";
             }
             
@@ -1664,7 +1664,7 @@ class Novedades {
                            emp.DESC_DEPARTAMENTO as descripcion_centro_costos
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                    LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
+                    LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
                     WHERE n.id = ?";
         } else {
             // Para otros tipos de usuario, validar permisos específicos dinámicamente
@@ -1682,7 +1682,7 @@ class Novedades {
                            emp.DESC_DEPARTAMENTO as descripcion_centro_costos
                     FROM novedades n 
                     INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                    LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
+                    LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL emp ON n.legajo = emp.NRO_LEGAJO
                     WHERE n.id = ? AND tn.$campoPermiso = 1";
         }
 
@@ -2468,7 +2468,7 @@ class Novedades {
      */
     private function obtenerCentroCostosEmpleado($legajo) {
         try {
-            $sql = "SELECT COD_DEPARTAMENTO FROM [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL WHERE NRO_LEGAJO = ?";
+            $sql = "SELECT COD_DEPARTAMENTO FROM [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL WHERE NRO_LEGAJO = ?";
             $result = $this->db->query($sql, [$legajo]);
             $resultado = $result->fetch();
             
@@ -3177,7 +3177,7 @@ class Novedades {
                             rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
                         WHERE n.periodo_mes = ? AND n.periodo_anio = ?";
             } else {
                 $campoPermiso = $this->getCampoPermisoUsuario($tipoUsuario);
@@ -3193,7 +3193,7 @@ class Novedades {
                             rle.COD_DEPARTAMENTO as codigo_centro_costos, rle.DESC_DEPARTAMENTO as descripcion_centro_costos
                         FROM novedades n 
                         INNER JOIN tipos_novedad tn ON n.tipo_novedad = tn.id
-                        LEFT JOIN [TANGO-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
+                        LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_LEGAJOS_PERSONAL_ALL rle ON n.legajo = rle.NRO_LEGAJO
                         WHERE n.periodo_mes = ? AND n.periodo_anio = ? AND tn.$campoPermiso = 1";
             }
             
