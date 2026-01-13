@@ -642,25 +642,17 @@ function cambiarCantidadMovimientos(cantidad) {
 
 // Marcar ingreso como recibido desde el reporte
 async function marcarRecibidoDesdeReporte(botonElemento) {
-    console.log('='.repeat(80));
-    console.log('[MANUAL] 🚀 FUNCIÓN LLAMADA - marcarRecibidoDesdeReporte');
-    console.log('[MANUAL] Timestamp:', new Date().toISOString());
-    console.log('[MANUAL] Elemento recibido:', botonElemento);
-    console.log('='.repeat(80));
+    console.log('[MANUAL] 🚀 Procesando marcado manual...');
     
     try {
-        // Extraer el ID del ingreso desde el data-attribute
         const ingresoId = botonElemento.dataset.ingresoId;
         
         if (!ingresoId) {
-            console.error('[ERROR] No se encontró el ID del ingreso');
             mostrarAlerta('Error', 'No se pudo obtener el ID del ingreso');
             return;
         }
         
-        console.log('[MANUAL] ID del ingreso:', ingresoId);
-        
-        // Deshabilitar botón y mostrar loading
+        // Deshabilitar botón visualmente
         botonElemento.disabled = true;
         botonElemento.innerHTML = '<i class="bi bi-hourglass-split"></i>';
         
@@ -668,85 +660,68 @@ async function marcarRecibidoDesdeReporte(botonElemento) {
         formData.append('accion', 'marcar_recibido');
         formData.append('id', ingresoId);
         
-        console.log('[MANUAL] Enviando petición...');
-        
         const response = await fetch('controller/caja_ingresos_controller.php', {
             method: 'POST',
             body: formData
         });
         
-        console.log('[MANUAL] Respuesta recibida, status:', response.status);
         const result = await response.json();
-        console.log('[MANUAL] Resultado:', result);
         
         if (result.success) {
-            console.log('✅ Ingreso manual marcado como recibido');
+            console.log('✅ Ingreso marcado correctamente');
             
-            // Cambiar el checkbox a "marcado" visualmente INMEDIATAMENTE
+            // 1. ACTUALIZACIÓN VISUAL INMEDIATA (OPTIMISTA)
             botonElemento.disabled = true;
             botonElemento.classList.add('checked');
             botonElemento.innerHTML = '<i class="bi bi-check-square-fill text-success"></i>';
+            botonElemento.title = "Recibido";
+
+            // 2. ACTUALIZAR LA CELDA DE "ESTADO" (Columna 7, índice 7 si empezamos en 0)
+            const fila = botonElemento.closest('tr');
+            if (fila) {
+                // Buscamos la celda que contiene el badge (usualmente la anteúltima)
+                // En tu tabla HTML la estructura es: Fecha, Tipo, Comp, Concepto, Importe, Origen, Foto, ESTADO, Acciones
+                // Estado es la columna index 7
+                if(fila.cells[7]) {
+                    fila.cells[7].innerHTML = '<span class="badge bg-success">Recibido</span>';
+                }
+            }
+
+            // 3. ACTUALIZAR SOLO LOS TOTALES (TARJETAS)
+            // No recargamos la tabla (cargarReporte) para evitar que el botón "parpadee" 
+            // si la DB es lenta.
+            const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
+            const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
             
-            // Pequeño delay antes de recargar para dar tiempo al backend
+            // Damos un poco más de tiempo (800ms) para que los totales calculen bien
             setTimeout(() => {
-                // Recargar usando las fechas de los filtros si están disponibles
-                const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
-                const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
-                
                 if (fechaDesde && fechaHasta) {
-                    cargarReporte({
-                        fecha_desde: fechaDesde,
-                        fecha_hasta: fechaHasta,
-                        aplicadoManualmente: true
-                    });
-                    // Actualizar todas las tarjetas con los filtros activos
-                    actualizarResumen(false, {
-                        fecha_desde: fechaDesde,
-                        fecha_hasta: fechaHasta
-                    });
+                    actualizarResumen(false, { fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
                 } else {
-                    cargarReporte();
-                    // Actualizar todas las tarjetas sin filtros
                     actualizarResumen();
                 }
-            }, 300); // 300ms de delay
+            }, 800);
+
         } else {
             // Restaurar botón en caso de error
             botonElemento.disabled = false;
-            botonElemento.innerHTML = '<i class="bi bi-check"></i>';
+            botonElemento.innerHTML = '<i class="bi bi-check"></i>'; // O el ícono cuadrado
             mostrarAlerta('Error', result.message);
         }
     } catch (error) {
-        console.error('[ERROR] Error en marcarRecibidoDesdeReporte:', error);
-        // Restaurar botón en caso de error
+        console.error('[ERROR]', error);
         botonElemento.disabled = false;
-        botonElemento.innerHTML = '<i class="bi bi-check"></i>';
-        mostrarAlerta('Error', 'No se pudo procesar la solicitud: ' + error.message);
+        botonElemento.innerHTML = '☐';
+        mostrarAlerta('Error', 'Error de conexión');
     }
 }
 
 // Marcar ingreso TESORERÍA como recibido
 async function marcarRecibidoTesoreria(botonElemento) {
-    console.log('='.repeat(80));
-    console.log('[TESORERÍA] 🚀 FUNCIÓN LLAMADA - marcarRecibidoTesoreria');
-    console.log('[TESORERÍA] Timestamp:', new Date().toISOString());
-    console.log('[TESORERÍA] Elemento recibido:', botonElemento);
-    console.log('[TESORERÍA] Tipo de elemento:', typeof botonElemento);
-    console.log('[TESORERÍA] Es HTMLElement?', botonElemento instanceof HTMLElement);
-    console.log('='.repeat(80));
+    console.log('[TESORERÍA] 🚀 Procesando importación...');
     
     try {
-        // Verificar que el elemento tiene dataset
-        if (!botonElemento || !botonElemento.dataset) {
-            console.error('[ERROR] Elemento sin dataset');
-            mostrarAlerta('Error', 'Datos del botón no encontrados');
-            return;
-        }
-        
-        console.log('[DEBUG] Dataset completo:', botonElemento.dataset);
-        console.log('[DEBUG] Todas las claves del dataset:', Object.keys(botonElemento.dataset));
-        
-        // Obtener datos desde los data-attributes del botón
+        // Obtener datos
         const idSba05 = botonElemento.dataset.idSba05;
         const fecha = botonElemento.dataset.fecha;
         const codComp = botonElemento.dataset.codComp;
@@ -754,137 +729,63 @@ async function marcarRecibidoTesoreria(botonElemento) {
         const concepto = botonElemento.dataset.concepto;
         const importe = botonElemento.dataset.importe;
         
-        console.log('[DEBUG] Datos extraídos:');
-        console.log('  idSba05:', idSba05, '(tipo:', typeof idSba05, ')');
-        console.log('  fecha:', fecha, '(tipo:', typeof fecha, ')');
-        console.log('  codComp:', codComp, '(tipo:', typeof codComp, ')');
-        console.log('  nComp:', nComp, '(tipo:', typeof nComp, ')');
-        console.log('  concepto:', concepto, '(tipo:', typeof concepto, ')');
-        console.log('  importe:', importe, '(tipo:', typeof importe, ')');
-        
-        // Validaciones CRÍTICAS
-        if (!idSba05 || idSba05 === 'undefined' || idSba05 === 'null') {
-            console.error('[CRITICAL ERROR] id_sba05 inválido:', idSba05);
-            mostrarAlerta('Error', 'ERROR CRÍTICO: ID SBA05 no encontrado o inválido: ' + idSba05);
-            return;
-        }
-        
-        if (!fecha || fecha === 'undefined' || fecha === 'null') {
-            console.error('[CRITICAL ERROR] fecha inválida:', fecha);
-            mostrarAlerta('Error', 'ERROR CRÍTICO: fecha no encontrada o inválida: ' + fecha);
-            return;
-        }
-        
-        console.log('[DEBUG] Validaciones CRÍTICAS pasadas, continuando...');
-        
-        console.log('Datos para marcar TESORERÍA:', {
-            idSba05, fecha, codComp, nComp, concepto, importe
-        });
-        
-        // Log adicional de los data attributes
-        console.log('Data attributes del botón:', {
-            'data-id-sba05': botonElemento.dataset.idSba05,
-            'data-fecha': botonElemento.dataset.fecha,
-            'data-cod-comp': botonElemento.dataset.codComp,
-            'data-n-comp': botonElemento.dataset.nComp,
-            'data-concepto': botonElemento.dataset.concepto,
-            'data-importe': botonElemento.dataset.importe
-        });
-        
-        // Deshabilitar botón durante el proceso
+        // Deshabilitar botón
         botonElemento.disabled = true;
         botonElemento.innerHTML = '<i class="bi bi-hourglass-split"></i>';
         
         const formData = new FormData();
         formData.append('accion', 'marcar_recibido_tesoreria');
-        formData.append('id_sba05', String(idSba05)); // Forzar a string
-        formData.append('fecha', String(fecha)); // Forzar a string
+        formData.append('id_sba05', String(idSba05)); 
+        formData.append('fecha', String(fecha));
         formData.append('cod_comp', String(codComp || ''));
         formData.append('n_comp', String(nComp || ''));
         formData.append('observaciones', String(concepto || ''));
         formData.append('importe', String(importe || 0));
         
-        // Log del FormData que se enviará
-        console.log('[DEBUG] FormData que se enviará:');
-        for (let [key, value] of formData.entries()) {
-            console.log(`  ${key}: "${value}" (tipo: ${typeof value})`);
-        }
-        
-        // Validación final antes del envío
-        const finalIdSba05 = formData.get('id_sba05');
-        const finalFecha = formData.get('fecha');
-        
-        if (!finalIdSba05 || finalIdSba05 === 'undefined' || finalIdSba05 === 'null') {
-            console.error('[FINAL ERROR] FormData id_sba05 inválido:', finalIdSba05);
-            mostrarAlerta('Error', 'ERROR FINAL: ID SBA05 inválido en FormData: ' + finalIdSba05);
-            botonElemento.disabled = false;
-            botonElemento.innerHTML = '<i class="bi bi-check"></i>';
-            return;
-        }
-        
-        console.log('[DEBUG] Validación final OK. Enviando petición...');
-        
-        const response = await fetch('controller/caja_ingresos_controller.php?' + new Date().getTime(), { // Cache busting
+        const response = await fetch('controller/caja_ingresos_controller.php?' + new Date().getTime(), {
             method: 'POST',
             body: formData
         });
         
-        console.log('[DEBUG] Respuesta recibida, status:', response.status);
-        const responseText = await response.text();
-        console.log('[DEBUG] Texto de respuesta:', responseText);
-        
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            console.error('[ERROR] Error parseando JSON:', e);
-            throw new Error('Respuesta del servidor no es JSON válido: ' + responseText);
-        }
+        const result = await response.json();
         
         if (result.success) {
-            console.log('✅ Ingreso de tesorería marcado como recibido');
+            console.log('✅ Tesorería importada correctamente');
             
-            // Cambiar el checkbox a "marcado" visualmente INMEDIATAMENTE
+            // 1. ACTUALIZACIÓN VISUAL INMEDIATA
             botonElemento.disabled = true;
             botonElemento.classList.add('checked');
             botonElemento.innerHTML = '<i class="bi bi-check-square-fill text-success"></i>';
+            botonElemento.title = "Importado";
             
-            // Pequeño delay antes de recargar para dar tiempo al backend
+            // 2. ACTUALIZAR CELDA DE ESTADO
+            const fila = botonElemento.closest('tr');
+            if (fila && fila.cells[7]) {
+                fila.cells[7].innerHTML = '<span class="badge bg-success">Recibido</span>';
+            }
+
+            // 3. ACTUALIZAR TOTALES (sin recargar tabla)
+            const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
+            const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
+            
             setTimeout(() => {
-                // Recargar usando las fechas de los filtros si están disponibles
-                const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
-                const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
-                
                 if (fechaDesde && fechaHasta) {
-                    cargarReporte({
-                        fecha_desde: fechaDesde,
-                        fecha_hasta: fechaHasta,
-                        aplicadoManualmente: true
-                    });
-                    // Actualizar todas las tarjetas con los filtros activos
-                    actualizarResumen(false, {
-                        fecha_desde: fechaDesde,
-                        fecha_hasta: fechaHasta
-                    });
+                    actualizarResumen(false, { fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
                 } else {
-                    cargarReporte();
-                    // Actualizar todas las tarjetas sin filtros
                     actualizarResumen();
                 }
-            }, 300); // 300ms de delay
+            }, 800);
+            
         } else {
-            // Restaurar botón en caso de error
             botonElemento.disabled = false;
-            botonElemento.innerHTML = '<i class="bi bi-check"></i>';
+            botonElemento.innerHTML = '☐';
             mostrarAlerta('Error', result.message);
         }
     } catch (error) {
-        console.error('[ERROR] Error en marcarRecibidoTesoreria:', error);
-        // Restaurar botón en caso de error
+        console.error('[ERROR]', error);
         botonElemento.disabled = false;
-        botonElemento.classList.remove('checked');
-        botonElemento.textContent = '☐';
-        mostrarAlerta('Error', 'No se pudo procesar la solicitud: ' + error.message);
+        botonElemento.innerHTML = '☐';
+        mostrarAlerta('Error', 'Error de conexión: ' + error.message);
     }
 }
 
