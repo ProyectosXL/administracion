@@ -30,7 +30,7 @@
                     <i class="bi bi-gear-fill"></i>
                     Parámetros de Importación
                 </h1>
-                <p class="page-subtitle">Configuración de valores por defecto para estimaciones de costos</p>
+                <p class="page-subtitle">Configuración de parámetros del sistema</p>
             </div>
         </div>
 
@@ -42,60 +42,279 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <!-- Content Card -->
-        <div class="content-card">
-            <div class="card-header-custom">
-                <h3 class="card-title-custom">
-                    <i class="bi bi-list-ul"></i>
-                    Conceptos Configurables
-                </h3>
-                <p class="card-subtitle-custom">Gestione los parámetros utilizados en los cálculos de importación</p>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table table-hover" id="tablaParametros">
-                    <thead>
-                        <tr>
-                            <th style="width: 60px;">ID</th>
-                            <th style="width: 200px;">Concepto</th>
-                            <th style="width: 120px;">Tipo</th>
-                            <th style="width: 150px;">Parámetro 1</th>
-                            <th style="width: 150px;">Parámetro 2</th>
-                            <th style="width: 180px;">Última Actualización</th>
-                            <th style="width: 100px;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Los datos se cargarán dinámicamente -->
-                        <tr>
-                            <td colspan="7" class="text-center">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Cargando...</span>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs mb-4" id="parametrosTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="conceptos-tab" data-bs-toggle="tab" data-bs-target="#conceptos" type="button" role="tab">
+                    <i class="bi bi-calculator"></i> Conceptos de Costo
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="terminales-tab" data-bs-toggle="tab" data-bs-target="#terminales" type="button" role="tab">
+                    <i class="bi bi-building"></i> Terminales
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="puertos-tab" data-bs-toggle="tab" data-bs-target="#puertos" type="button" role="tab">
+                    <i class="bi bi-geo-alt"></i> Puertos
+                </button>
+            </li>
+        </ul>
 
-        <!-- Leyenda de Tipos -->
-        <div class="legend-card">
-            <h6 class="mb-3"><i class="bi bi-info-circle"></i> Tipos de Parámetros</h6>
-            <div class="row">
-                <div class="col-md-6">
-                    <span class="badge bg-info me-2">P</span>
-                    <strong>Porcentaje:</strong> Se multiplica por el valor base (ej: 0.21 = 21%)
+        <!-- Tab Content -->
+        <div class="tab-content" id="parametrosTabContent">
+            
+            <!-- TAB: Conceptos de Costo -->
+            <div class="tab-pane fade show active" id="conceptos" role="tabpanel">
+                <div class="content-card">
+                    <div class="card-header-custom">
+                        <h3 class="card-title-custom">
+                            <i class="bi bi-list-ul"></i>
+                            Conceptos Configurables
+                        </h3>
+                        <p class="card-subtitle-custom">Gestione los parámetros utilizados en los cálculos de importación</p>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tablaParametros">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">ID</th>
+                                    <th style="width: 200px;">Concepto</th>
+                                    <th style="width: 120px;">Tipo</th>
+                                    <th style="width: 150px;">Parámetro 1</th>
+                                    <th style="width: 150px;">Parámetro 2</th>
+                                    <th style="width: 180px;">Última Actualización</th>
+                                    <th style="width: 100px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <span class="badge bg-secondary me-2">I</span>
-                    <strong>Importe:</strong> Valor fijo en moneda (ej: 5000.00 = USD 5,000)
+
+                <!-- Leyenda de Tipos -->
+                <div class="legend-card">
+                    <h6 class="mb-3"><i class="bi bi-info-circle"></i> Tipos de Parámetros</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <span class="badge bg-info me-2">P</span>
+                            <strong>Porcentaje:</strong> Se multiplica por el valor base (ej: 0.21 = 21%)
+                        </div>
+                        <div class="col-md-6">
+                            <span class="badge bg-secondary me-2">I</span>
+                            <strong>Importe:</strong> Valor fijo en moneda (ej: 5000.00 = USD 5,000)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Terminales -->
+            <div class="tab-pane fade" id="terminales" role="tabpanel">
+                <div class="content-card">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title-custom mb-1">
+                                <i class="bi bi-building"></i>
+                                Terminales Portuarias
+                            </h3>
+                            <p class="card-subtitle-custom mb-0">Administra las terminales disponibles por país</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="abrirModalNuevaTerminal()">
+                            <i class="bi bi-plus-circle"></i> Nueva Terminal
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tablaTerminales">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">ID</th>
+                                    <th style="width: 200px;">Nombre</th>
+                                    <th style="width: 120px;">País/Región</th>
+                                    <th style="width: 100px;">Estado</th>
+                                    <th style="width: 180px;">Última Modificación</th>
+                                    <th style="width: 150px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Puertos -->
+            <div class="tab-pane fade" id="puertos" role="tabpanel">
+                <div class="content-card">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title-custom mb-1">
+                                <i class="bi bi-geo-alt"></i>
+                                Puertos de Origen
+                            </h3>
+                            <p class="card-subtitle-custom mb-0">Administra los puertos disponibles</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="abrirModalNuevoPuerto()">
+                            <i class="bi bi-plus-circle"></i> Nuevo Puerto
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tablaPuertos">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">ID</th>
+                                    <th style="width: 250px;">Nombre</th>
+                                    <th style="width: 150px;">País</th>
+                                    <th style="width: 100px;">Estado</th>
+                                    <th style="width: 180px;">Última Modificación</th>
+                                    <th style="width: 150px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Terminal -->
+    <div class="modal fade" id="modalTerminal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTerminalTitulo">
+                        <i class="bi bi-building"></i> Nueva Terminal
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formTerminal">
+                        <input type="hidden" id="terminalId" name="id">
+                        
+                        <div class="mb-3">
+                            <label for="terminalNombre" class="form-label">
+                                Nombre de la Terminal <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="terminalNombre" name="nombre" required
+                                   placeholder="Ej: EXOLGAN, TRP, JAUSER">
+                            <div class="form-text">Nombre que aparecerá en el selector</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="terminalEntorno" class="form-label">
+                                País/Región <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="terminalEntorno" name="entorno" required>
+                                <option value="">Seleccione...</option>
+                                <option value="ARG">Argentina</option>
+                                <option value="UY">Uruguay</option>
+                                <option value="AMBOS">Ambos países</option>
+                            </select>
+                            <div class="form-text">Define en qué país estará disponible la terminal</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="terminalActivo" class="form-label">Estado</label>
+                            <select class="form-select" id="terminalActivo" name="activo">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="guardarTerminal()">
+                        <i class="bi bi-check-circle"></i> Guardar
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Edición -->
+    <!-- Modal Puerto -->
+    <div class="modal fade" id="modalPuerto" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPuertoTitulo">
+                        <i class="bi bi-geo-alt"></i> Nuevo Puerto
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formPuerto">
+                        <input type="hidden" id="puertoId" name="id">
+                        
+                        <div class="mb-3">
+                            <label for="puertoNombre" class="form-label">
+                                Nombre del Puerto <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="puertoNombre" name="nombre" required
+                                   placeholder="Ej: Shanghai, Hong Kong, Ningbo">
+                            <div class="form-text">Nombre que aparecerá en el selector</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="puertoPais" class="form-label">
+                                País <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="puertoPais" name="pais" required
+                                   placeholder="Ej: China, Taiwán, Corea del Sur">
+                            <div class="form-text">País donde se ubica el puerto</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="puertoActivo" class="form-label">Estado</label>
+                            <select class="form-select" id="puertoActivo" name="activo">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="guardarPuerto()">
+                        <i class="bi bi-check-circle"></i> Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edición de Parámetros -->
     <div class="modal fade" id="modalEditarParametro" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -188,5 +407,7 @@
     
     <!-- Custom JS -->
     <script src="js/parametros.js"></script>
+    <script src="js/gestionTerminales.js"></script>
+    <script src="js/gestionPuertos.js"></script>
 </body>
 </html>

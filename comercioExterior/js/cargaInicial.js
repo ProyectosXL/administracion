@@ -732,18 +732,34 @@ function recalcularTodasLasFechas() {
 /**
  * Calcula FOB en Pesos = FOB U$S × Tipo de Cambio
  * Se recalcula cada vez que cualquiera de los dos valores cambie
+ * En Uruguay: FOB Peso = FOB Dólar (mismo valor, ya que se ingresa en pesos uruguayos)
  */
 function recalcularFobPesos() {
+    const entorno = $('#entorno').text().trim();
     const valorFobDolar = parseFloat($('#valorFobDolar').val().replace(/,/g, '')) || 0;
-    const tipoCambio = parseFloat($('#tipoCambio').val().replace(/,/g, '')) || 0;
     
-    if (valorFobDolar > 0 && tipoCambio > 0) {
-        const valorFobPeso = valorFobDolar * tipoCambio;
-        const valorFormateado = '$ ' + valorFobPeso.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        $('#valorFobPeso').val(valorFormateado);
-        marcarCampoCalculado('#valorFobPeso');
+    if (entorno === 'uy') {
+        // En Uruguay, el FOB se ingresa directamente en pesos uruguayos
+        // Por lo tanto, FOB Peso = FOB Dólar (mismo valor)
+        if (valorFobDolar > 0) {
+            const valorFormateado = '$ ' + valorFobDolar.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            $('#valorFobPeso').val(valorFormateado);
+            marcarCampoCalculado('#valorFobPeso');
+        } else {
+            $('#valorFobPeso').val('');
+        }
     } else {
-        $('#valorFobPeso').val('');
+        // En Argentina, FOB Peso = FOB Dólar × Tipo de Cambio
+        const tipoCambio = parseFloat($('#tipoCambio').val().replace(/,/g, '')) || 0;
+        
+        if (valorFobDolar > 0 && tipoCambio > 0) {
+            const valorFobPeso = valorFobDolar * tipoCambio;
+            const valorFormateado = '$ ' + valorFobPeso.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            $('#valorFobPeso').val(valorFormateado);
+            marcarCampoCalculado('#valorFobPeso');
+        } else {
+            $('#valorFobPeso').val('');
+        }
     }
 }
 

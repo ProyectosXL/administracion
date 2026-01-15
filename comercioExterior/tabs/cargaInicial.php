@@ -16,8 +16,12 @@ header("Pragma: no-cache");
 include '../class/proveedor.php';
 include '../class/ordenDeCompra.php';
 include '../class/encabezado.php';
+include '../class/terminal.php';
+include '../class/puerto.php';
 
 $proveedor = new Proveedor();
+$terminalClass = new Terminal();
+$puertoClass = new Puerto();
 $todosLosProveedores = [];
 
 // Detectar modo edición
@@ -125,23 +129,25 @@ try {
                             <div class="col-md-5">
                                 <label class="label-campo">Proveedor</label>
                                 <div class="input-group">
-                                    <select id="proveedor" style="width: 283.16px;" required>
-                                        <option selected disabled>Seleccione...</option>
-                                        <?php
-                                        if (is_array($todosLosProveedores) && count($todosLosProveedores) > 0) {
-                                            foreach($todosLosProveedores as $valor => $value){
-                                        ?>
-                                        <option id="proveedor-" value="<?= $value->COD_PROVEE; ?>"><?= $value->NOM_PROVEE; ?></option>
-                                        <?php   
+                                    <div class="js-select-simple">
+                                        <select id="proveedor" style="width: 283.16px;" required>
+                                            <option selected disabled>Seleccione...</option>
+                                            <?php
+                                            if (is_array($todosLosProveedores) && count($todosLosProveedores) > 0) {
+                                                foreach($todosLosProveedores as $valor => $value){
+                                            ?>
+                                            <option id="proveedor-" value="<?= $value->COD_PROVEE; ?>"><?= $value->NOM_PROVEE; ?></option>
+                                            <?php   
+                                                }
+                                            } else {
+                                            ?>
+                                            <option disabled>No hay proveedores disponibles</option>
+                                            <?php
                                             }
-                                        } else {
-                                        ?>
-                                        <option disabled>No hay proveedores disponibles</option>
-                                        <?php
-                                        }
-                                        ?>
-                                    </select>
-                                    <div class="select-dropdown"></div>
+                                            ?>
+                                        </select>
+                                        <div class="select-dropdown"></div>
+                                    </div>
                                 </div>    
                             </div>
                             <div class="col-md-5">
@@ -194,7 +200,7 @@ try {
                             <div class="col-md-5">
                                 <label class="label-campo">Despachante</label>
                                 <div class="input-group">
-                                    <div class="rs-select2 js-select-simple select--no-search">
+                                    <div class="js-select-simple">
                                         <select id="despachante" style="width: 283.16px;" required>
                                             <option value="">Seleccione...</option>
                                             <option value="Laffitte">Laffitte</option>
@@ -276,37 +282,37 @@ try {
                             <div class="col-md-5">
                                 <label class="label-campo">Puerto Origen</label>
                                 <div class="input-group">
-                                    <div class="rs-select2 js-select-simple select--no-search">
+                                    <div class="js-select-simple">
                                         <select id="puertoOrigen" style="width: 283.16px;">
                                             <option value="">Seleccione...</option>
-                                            <option value="Shanghai">Shanghai</option>
-                                            <option value="Shenzhen">Shenzhen</option>
-                                            <option value="Ningbo">Ningbo</option>
-                                            <option value="Guangzhou">Guangzhou</option>
-                                            <option value="Qingdao">Qingdao</option>
-                                            <option value="Tianjin">Tianjin</option>
-                                            <option value="Hong Kong">Hong Kong</option>
-                                            <option value="Xiamen">Xiamen</option>
-                                            <option value="Dalian">Dalian</option>
-                                            <option value="Yantian">Yantian</option>
-                                            <option value="Shekou">Shekou</option>
+                                            <?php
+                                            // Cargar puertos desde la base de datos
+                                            $puertos = $puertoClass->traerPuertos();
+                                            foreach ($puertos as $puerto) {
+                                                echo '<option value="' . htmlspecialchars($puerto['NOMBRE']) . '">' . htmlspecialchars($puerto['NOMBRE']) . '</option>';
+                                            }
+                                            ?>
                                         </select>
                                         <div class="select-dropdown"></div>
-                                    </div>        
+                                    </div>
                                 </div>    
                             </div>
                             <div class="col-md-5">
                                 <label class="label-campo">Terminal</label>
                                 <div class="input-group">
-                                    <div class="rs-select2 js-select-simple select--no-search">
+                                    <div class="js-select-simple">
                                         <select id="terminal" style="width: 283.16px;">
                                             <option value="">Seleccione...</option>
-                                            <option value="EXOLGAN">EXOLGAN</option>
-                                            <option value="TRP">TRP</option>
-                                            <option value="T4">T4</option>
+                                            <?php
+                                            // Cargar terminales desde la base de datos según entorno
+                                            $terminales = $terminalClass->traerTerminales();
+                                            foreach ($terminales as $terminal) {
+                                                echo '<option value="' . htmlspecialchars($terminal['NOMBRE']) . '">' . htmlspecialchars($terminal['NOMBRE']) . '</option>';
+                                            }
+                                            ?>
                                         </select>
                                         <div class="select-dropdown"></div>
-                                    </div>        
+                                    </div>
                                 </div>    
                             </div>
                         </div>

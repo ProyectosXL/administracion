@@ -86,8 +86,8 @@ function renderizarTabla(datos) {
                     <small class="text-muted">${fechaActua}</small>
                 </td>
                 <td class="text-center">
-                    <button class="btn btn-edit btn-sm" onclick='abrirModalEditar(${JSON.stringify(param)})'>
-                        <i class="bi bi-pencil-fill"></i> Editar
+                    <button class="btn btn-sm btn-primary" onclick='abrirModalEditar(${JSON.stringify(param)})' title="Editar">
+                        <i class="bi bi-pencil"></i>
                     </button>
                 </td>
             </tr>
