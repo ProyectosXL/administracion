@@ -194,6 +194,95 @@ class Politica
                     error_log("Error en webhook RAG: " . $e->getMessage());
                 }
                 // ================================================================
+                
+                // ========== AUTO-GENERACIÓN DE TAGS Y GLOSARIO (HUGGING FACE API) ==========
+                // Sistema automático usando Hugging Face Space API
+                // No afecta el guardado del documento si falla
+                try {
+                    require_once dirname(__FILE__) . '/TagsGlosarioAPI.php';
+                    
+                    // Inicializar API client
+                    $api = new TagsGlosarioAPI();
+                    
+                    $documento_id = $resultado['id'];
+                    
+                    // 1. GENERAR TAGS AUTOMÁTICAMENTE
+                    // Solo si no se proporcionaron tags manualmente
+                    if (empty($tags)) {
+                        error_log("TagsGlosario: Generando tags para documento $documento_id...");
+                        
+                        $tags_array = $api->generarTags($ruta_completa, 10);
+                        
+                        if (count($tags_array) > 0) {
+                            $tags_string = implode(', ', $tags_array);
+                            
+                            // Actualizar tags en la BD
+                            $sql_update = "UPDATE Politicas_Procedimientos 
+                                           SET tags = '".$this->escaparTexto($tags_string)."'
+                                           WHERE id = $documento_id";
+                            $this->ejecutarSQL($sql_update);
+                            
+                            error_log("TagsGlosario: " . count($tags_array) . " tags generados para documento $documento_id: $tags_string");
+                        } else {
+                            error_log("TagsGlosario: No se generaron tags para documento $documento_id");
+                        }
+                    }
+                    
+                    // 2. DETECTAR TÉRMINOS PARA GLOSARIO
+                    error_log("TagsGlosario: Detectando términos para glosario (documento $documento_id)...");
+                    
+                    // Obtener glosario existente para evitar duplicados
+                    $sql_glosario_existente = "SELECT termino FROM Glosario";
+                    $glosario_result = $this->retornarArray($sql_glosario_existente);
+                    $glosario_existente = [];
+                    if ($glosario_result) {
+                        foreach ($glosario_result as $row) {
+                            $glosario_existente[] = $row['termino'];
+                        }
+                    }
+                    
+                    // Detectar nuevos términos
+                    $terminos_detectados = $api->detectarTerminosGlosario($ruta_completa, $glosario_existente);
+                    
+                    if (count($terminos_detectados) > 0) {
+                        $terminos_insertados = 0;
+                        
+                        foreach ($terminos_detectados as $termino_obj) {
+                            // Verificación adicional de duplicados (case-insensitive)
+                            $sql_check = "SELECT COUNT(*) as count FROM Glosario 
+                                         WHERE LOWER(termino) = LOWER('".$this->escaparTexto($termino_obj['termino'])."')";
+                            $check_result = $this->retornarArray($sql_check);
+                            
+                            if ($check_result && $check_result[0]['count'] == 0) {
+                                // Insertar en tabla Glosario
+                                $definicion = isset($termino_obj['definicion']) ? $termino_obj['definicion'] : '';
+                                
+                                $sql_glosario = "INSERT INTO Glosario (termino, definicion, sector_id, fecha_creacion)
+                                                 VALUES (
+                                                     '".$this->escaparTexto($termino_obj['termino'])."',
+                                                     '".$this->escaparTexto($definicion)."',
+                                                     {$datos['sector_id']},
+                                                     GETDATE()
+                                                 )";
+                                $this->ejecutarSQL($sql_glosario);
+                                $terminos_insertados++;
+                            }
+                        }
+                        
+                        if ($terminos_insertados > 0) {
+                            error_log("TagsGlosario: $terminos_insertados nuevos términos agregados al glosario desde documento $documento_id");
+                        } else {
+                            error_log("TagsGlosario: No se insertaron nuevos términos (ya existían en el glosario)");
+                        }
+                    } else {
+                        error_log("TagsGlosario: No se detectaron términos para glosario en documento $documento_id");
+                    }
+                    
+                } catch (Exception $e) {
+                    // Si falla la API, no afecta el guardado del documento
+                    error_log("TagsGlosario: Error en auto-generación: " . $e->getMessage());
+                }
+                // ========================================================
             }
         }
         
