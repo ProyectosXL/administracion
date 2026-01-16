@@ -35,53 +35,88 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
     <?php
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
     ?>
-<style>
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap Toggle -->
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="css/resumenVentas.css">
+    
+    <style>
+        /* Estilos dinámicos para toggle (dependen de variables PHP) */
         .toggle-on {
-        background-image: url('<?= $imageOn ?>');
-        background-size: contain;
-        background-repeat: no-repeat;
-        height: 60px;
-        width: 60px;
+            background-image: url('<?= $imageOn ?>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 40px;
+            width: 40px;
+            border-radius: 8px;
         }
 
         .toggle-off {
             background-image: url('<?= $imageOff ?>');
             background-size: contain;
             background-repeat: no-repeat;
-            height: 60px;
-            width: 60px;
+            height: 40px;
+            width: 40px;
+            border-radius: 8px;
         }
-</style>
+    </style>
 
 </head>
 
 <body>
+    <div class="container-fluid">
+        <div class="modern-card">
+            <div class="page-title">
+                <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
+                    <img src="../image/home-button.png" alt="Home">
+                </a>
+                <i class="bi bi-credit-card"></i>
+                <span>Ventas por medio de pago</span>
+                <?php if (isset($_GET['desde'])): ?>
+                    <span class="date-range"> (<?= $desde ?> a <?= $hasta ?>)</span>
+                <?php endif; ?>
+            </div>
+            
+            <form class="filters-form" method="GET">
+                <div>
+                    <label>Desde:</label>
+                    <input type="date" class="form-control" name="desde" value="<?= $desde ?>">
+                </div>
+                
+                <div>
+                    <label>Hasta:</label>
+                    <input type="date" class="form-control" name="hasta" value="<?= $hasta ?>">
+                </div>
+                
+                <button type="submit" name="submit" class="btn-modern btn-search" id="search">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+                
+                <button type="button" class="btn-modern btn-export" id="btnExport">
+                    <i class="bi bi-file-earmark-excel"></i> Exportar
+                </button>
+                
+                <div class="toggle-wrapper ml-auto">
+                    <input type="checkbox" checked data-toggle="toggle" 
+                           data-on="<?= $dataOnValue ?>" 
+                           data-off="<?= $dataOffValue ?>" 
+                           class="custom-toggle" 
+                           onchange="cambiarEntorno(this)" 
+                           id="checkEntorno">
+                </div>
+            </form>
+        </div>
 
-    <div class="alert alert-secondary">
-       
-    <form class="form-inline mt-3 mb-3">
-            <a href="http://192.168.0.13:8000/" style="display:inline-block;">
-                <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-            </a>
-            <h4 class="ml-3"><i class="bi bi-credit-card"></i>  Ventas por medio de pago <a style="color: #6c757d;"><?php if (isset($_GET['desde'])){ echo $desde ?> a <?php echo $hasta ;}?></a></h4>
-                <label class="ml-4">Desde:</label>
-                <input type="date" class="form-control form-control-sm ml-1" name="desde" value="<?= $desde ?>">
-                <label class="ml-2">Hasta:</label>
-                <input type="date" class="form-control form-control-sm ml-1" name="hasta" value="<?= $hasta ?>">
-                        
-                <button type="submit" name="submit" class="btn btn-primary ml-2" id="search">Buscar <i class="bi bi-search"></i></button>
-                <button type="submit" name="submit" class="btn btn-success ml-3" id="btnExport">Exportar <i class="bi bi-file-earmark-excel"></i></button>
-                
-                <label id="textBusqueda" class="ml-4">Busqueda rapida:</label>
-                <input type="text" id="textBox" placeholder="Sobre cualquier campo..." onkeyup="myFunction()" class="form-control form-control-sm ml-1 mr-4"></input>
-                <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;" onchange="cambiarEntorno(this)" id="checkEntorno" >
-
-                
-                
-                <!-- spinner -->
-                <div id="boxLoading"></div>     
-    </form>
-    </div>
+        <!-- spinner -->
+        <div id="boxLoading"></div>
            
     <?php
 
@@ -90,117 +125,99 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
 
     ?>
 
-        <table class="table table-striped table-bordered display mt-2" data-page-length="100" id="tableVentas">
-            <thead class="thead-dark">
-                    <th class="col-">NRO. SUC</th>
-                    <th style="width: 230px;">SUCURSAL</th>
-                    <th class="col-">TARJETA</th>
-                    <th class="col-">CUENTA DNI</th>
-                    <th class="col-" style="color: #28a745;">TOTAL TARJETAS</th>
-                    <th class="col-">MERCADO PAGO QR</th>
-                    <th class="col-">MERCADO PAGO</th>
-                    <th class="col-">MODO QR</th>
-                    <th class="col-">PROMO BANCO</th>
-                    <th class="col-">EFECTIVO</th>
-                    <th class="col-">BONUS SHOPPING</th>
-                    <th class="col-">DOLARES</th>
-                    <th class="col-">EUROS</th>
-                    <th class="col-" style="color: #28a745;">TOTAL VENTAS</th>
-                    <!-- <th class="col-">TOTAL CONTADO</th> -->
-            </thead>
-
-            <tbody id="table">
-                <?php
-                foreach ($todasLasVentas as $valor => $key) {
-                ?>
-                    <tr>                        
-                        <td><?= $key->NRO_SUCURSAL ?></td>
-                        <td><?= $key->DESC_SUCURSAL ?></td>
-                        <td id = "tdTarjeta">$<?= number_format($key->TARJETA, 2, '.', ',') ?></td>
-                        <td id = "tdCuentaDni">$<?= number_format($key->CUENTA_DNI, 2, '.', ',') ?></td>
-                        <td id = "tdTotalTarjetas">$<?= number_format($key->TOTAL_TARJETAS, 2, '.', ',') ?></td>
-                        <td id = "tdMercadoPagoQr">$<?= number_format($key->MERCADO_PAGO_QR, 2, '.', ',') ?></td>
-                        <td id = "tdMercadoPago">$<?= number_format($key->MERCADO_PAGO, 2, '.', ',') ?></td>
-                        <td id = "tdModoQr">$<?= number_format($key->MODO_QR, 2, '.', ',') ?></td>
-                        <td id = "tdPromoBanco">$<?= number_format($key->PROMO_BANCO, 2, '.', ',') ?></td>
-                        <td id = "tdEfectivo">$<?= number_format($key->EFECTIVO, 2, '.', ',') ?></td>
-                        <td id = "tdBonusShopping">$<?= number_format($key->BONUS_SHOPPING, 2, '.', ',') ?></td>
-                        <td id = "tdDolares">$<?= number_format($key->DOLARES, 2, '.', ',') ?></td>
-                        <td id = "tdEuros">$<?= number_format($key->EUROS, 2, '.', ',') ?></td>
-                        <td id = "tdTotalVentas">$<?= number_format($key->VENTAS, 2, '.', ',') ?></td>
-                        <!-- <td><?= number_format($key->TOTAL_CONTADO, 2, '.', ',') ?></td> -->
+        <div class="table-wrapper">
+            <table class="display" id="tableVentas">
+                <thead>
+                    <tr>
+                        <th>NRO. SUC</th>
+                        <th>SUCURSAL</th>
+                        <th>TARJETA</th>
+                        <th>CUENTA DNI</th>
+                        <th>TOTAL TARJETAS</th>
+                        <th>MERCADO PAGO QR</th>
+                        <th>MERCADO PAGO</th>
+                        <th>MODO QR</th>
+                        <th>PROMO BANCO</th>
+                        <th>EFECTIVO</th>
+                        <th>BONUS SHOPPING</th>
+                        <th>DOLARES</th>
+                        <th>EUROS</th>
+                        <th>TOTAL VENTAS</th>
                     </tr>
-                <?php
-                }
-                ?>
-                <tr>
-                    <td>TOTAL FILAS</td>
-                    <td></td>
-                    <td id = "totalTarjeta"></td>
-                    <td id = "totalCuentaDni"></td>
-                    <td id = "totalTarjetas"></td>
-                    <td id = "totalMercadoPagoQr"></td>
-                    <td id = "totalMercadoPago"></td>
-                    <td id = "totalModoQr"></td>
-                    <td id = "totalPromoBanco"></td>
-                    <td id = "totalEfectivo"></td>
-                    <td id = "totalBonusShopping"></td>
-                    <td id = "totalDolares"></td>
-                    <td id = "totalEuros"></td>
-                    <td id = "totalVentas"></td>
-                </tr>
+                </thead>
+
+                <tbody id="table">
+                    <?php
+                    foreach ($todasLasVentas as $valor => $key) {
+                    ?>
+                        <tr>
+                            <td><?= $key->NRO_SUCURSAL ?></td>
+                            <td><?= $key->DESC_SUCURSAL ?></td>
+                            <td class="tdTarjeta" data-value="<?= $key->TARJETA ?>">$<?= number_format($key->TARJETA, 2, '.', ',') ?></td>
+                            <td class="tdCuentaDni" data-value="<?= $key->CUENTA_DNI ?>">$<?= number_format($key->CUENTA_DNI, 2, '.', ',') ?></td>
+                            <td class="tdTotalTarjetas col-total-tarjetas" data-value="<?= $key->TOTAL_TARJETAS ?>">$<?= number_format($key->TOTAL_TARJETAS, 2, '.', ',') ?></td>
+                            <td class="tdMercadoPagoQr" data-value="<?= $key->MERCADO_PAGO_QR ?>">$<?= number_format($key->MERCADO_PAGO_QR, 2, '.', ',') ?></td>
+                            <td class="tdMercadoPago" data-value="<?= $key->MERCADO_PAGO ?>">$<?= number_format($key->MERCADO_PAGO, 2, '.', ',') ?></td>
+                            <td class="tdModoQr" data-value="<?= $key->MODO_QR ?>">$<?= number_format($key->MODO_QR, 2, '.', ',') ?></td>
+                            <td class="tdPromoBanco valor-negativo" data-value="<?= $key->PROMO_BANCO ?>">
+                                <?php if ($key->PROMO_BANCO < 0): ?>
+                                    <span style="color: #ef4444;">($<?= number_format(abs($key->PROMO_BANCO), 2, '.', ',') ?>)</span>
+                                <?php else: ?>
+                                    $<?= number_format($key->PROMO_BANCO, 2, '.', ',') ?>
+                                <?php endif; ?>
+                            </td>
+                            <td class="tdEfectivo" data-value="<?= $key->EFECTIVO ?>">$<?= number_format($key->EFECTIVO, 2, '.', ',') ?></td>
+                            <td class="tdBonusShopping" data-value="<?= $key->BONUS_SHOPPING ?>">$<?= number_format($key->BONUS_SHOPPING, 2, '.', ',') ?></td>
+                            <td class="tdDolares" data-value="<?= $key->DOLARES ?>">$<?= number_format($key->DOLARES, 2, '.', ',') ?></td>
+                            <td class="tdEuros" data-value="<?= $key->EUROS ?>">$<?= number_format($key->EUROS, 2, '.', ',') ?></td>
+                            <td class="tdTotalVentas col-total-ventas" data-value="<?= $key->VENTAS ?>">$<?= number_format($key->VENTAS, 2, '.', ',') ?></td>
+                        </tr>
+                    <?php
+                    }
+                    ?>
+                </tbody>
                 
-            </tbody>
-        </table>
+                <tfoot>
+                    <tr>
+                        <td colspan="2">TOTALES</td>
+                        <td id="totalTarjeta"></td>
+                        <td id="totalCuentaDni"></td>
+                        <td id="totalTarjetas" class="col-total-tarjetas"></td>
+                        <td id="totalMercadoPagoQr"></td>
+                        <td id="totalMercadoPago"></td>
+                        <td id="totalModoQr"></td>
+                        <td id="totalPromoBanco"></td>
+                        <td id="totalEfectivo"></td>
+                        <td id="totalBonusShopping"></td>
+                        <td id="totalDolares"></td>
+                        <td id="totalEuros"></td>
+                        <td id="totalVentas" class="col-total-ventas"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
     <?php
     }
     ?>
+    </div>
     
-    <script src="js/main.js" charset="utf-8"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <!-- jQuery (usar versión completa, no slim) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    
     <!-- Plugin to export Excel -->
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
     <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Toggle -->
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    
+    <!-- Script específico de resumen de ventas (debe cargarse ANTES de main.js para sobrescribir funciones) -->
+    <script src="js/resumenVentas.js" charset="utf-8"></script>
 
 </body>
-
-<script>
-
-    //Spinner listOrdenesActivas.php//
-    var btn = document.querySelectorAll('.btn-primary');
-    btn.forEach(el => {
-        el.addEventListener("click", ()=>{$("#boxLoading").addClass("loading")});
-    })
-
-    $(document).ready(() => {
-        calcularTotales();
-        $("#btnExport").click(function() {
-            $("#tableVentas").table2excel({
-                // exclude CSS class
-                exclude: ".noE  xl",
-                name: "Ventas por medio de pago",
-                filename: "Ventas por medio de pago", //do not include extension
-                fileext: ".xlsx" // file extension
-            });
-        });
-        
-            
-    document.querySelector(".toggle").style.width="40px"
-    document.querySelector(".toggle-on").style.fontSize="0"
-    document.querySelector(".toggle-off").style.fontSize="0"
-    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
-
-
-
-    });
-
-
-  
-</script>
 
 </html>

@@ -54,12 +54,10 @@ function myFunction() {
   
 
   const calcularTotales = () => {
-
-
     let totalTarjeta = 0;
-    let totalCuentaDni = 0
+    let totalCuentaDni = 0;
     let totalTarjetas = 0;
-    let totalMercadoPagoQr = 0
+    let totalMercadoPagoQr = 0;
     let totalMercadoPago = 0;
     let totalModoQr = 0;
     let totalPromoBanco = 0;
@@ -69,78 +67,64 @@ function myFunction() {
     let totalEuros = 0;
     let totalVentas = 0;
 
-    /* TARJETAS */
-    document.querySelectorAll("#tdTarjeta").forEach(total => {
-      totalTarjeta += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
+    // Obtener solo las filas visibles si existe DataTable
+    let filas;
+    if (typeof dataTable !== 'undefined' && dataTable) {
+      // Usar la API de DataTables para obtener solo filas visibles
+      filas = $('#tableVentas tbody tr:visible');
+    } else {
+      // Si no hay DataTable, usar todas las filas
+      filas = document.querySelectorAll('#tableVentas tbody tr');
+    }
+
+    // Calcular totales solo de filas visibles
+    filas.each ? filas.each(function() {
+      // jQuery each
+      const cells = $(this).find('td');
+      totalTarjeta += parseFloat(cells.eq(2).text().replaceAll(",","").replace("$", "") || 0);
+      totalCuentaDni += parseFloat(cells.eq(3).text().replaceAll(",","").replace("$", "") || 0);
+      totalTarjetas += parseFloat(cells.eq(4).text().replaceAll(",","").replace("$", "") || 0);
+      totalMercadoPagoQr += parseFloat(cells.eq(5).text().replaceAll(",","").replace("$", "") || 0);
+      totalMercadoPago += parseFloat(cells.eq(6).text().replaceAll(",","").replace("$", "") || 0);
+      totalModoQr += parseFloat(cells.eq(7).text().replaceAll(",","").replace("$", "") || 0);
+      totalPromoBanco += parseFloat(cells.eq(8).text().replaceAll(",","").replace("$", "") || 0);
+      totalEfectivo += parseFloat(cells.eq(9).text().replaceAll(",","").replace("$", "") || 0);
+      totalBonusShopping += parseFloat(cells.eq(10).text().replaceAll(",","").replace("$", "") || 0);
+      totalDolares += parseFloat(cells.eq(11).text().replaceAll(",","").replace("$", "") || 0);
+      totalEuros += parseFloat(cells.eq(12).text().replaceAll(",","").replace("$", "") || 0);
+      totalVentas += parseFloat(cells.eq(13).text().replaceAll(",","").replace("$", "") || 0);
+    }) : filas.forEach(fila => {
+      // Vanilla JS forEach
+      const cells = fila.querySelectorAll('td');
+      if (cells.length > 0) {
+        totalTarjeta += parseFloat(cells[2]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalCuentaDni += parseFloat(cells[3]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalTarjetas += parseFloat(cells[4]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalMercadoPagoQr += parseFloat(cells[5]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalMercadoPago += parseFloat(cells[6]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalModoQr += parseFloat(cells[7]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalPromoBanco += parseFloat(cells[8]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalEfectivo += parseFloat(cells[9]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalBonusShopping += parseFloat(cells[10]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalDolares += parseFloat(cells[11]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalEuros += parseFloat(cells[12]?.textContent.replaceAll(",","").replace("$", "") || 0);
+        totalVentas += parseFloat(cells[13]?.textContent.replaceAll(",","").replace("$", "") || 0);
+      }
     });
+
+    // Actualizar los totales en el footer
     document.querySelector("#totalTarjeta").textContent = "$" + parseNumber(totalTarjeta);
-
-    /* CUENTA DNI */
-    document.querySelectorAll("#tdCuentaDni").forEach(total => {
-      totalCuentaDni += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalCuentaDni").textContent = "$" + parseNumber(totalCuentaDni);
-
-    /* TOTAL TARJETAS */
-    document.querySelectorAll("#tdTotalTarjetas").forEach(total => {
-      totalTarjetas += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalTarjetas").textContent = "$" + parseNumber(totalTarjetas);
-
-    /* MERCADO PAGO QR */
-    document.querySelectorAll("#tdMercadoPagoQr").forEach(total => {
-      totalMercadoPagoQr += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalMercadoPagoQr").textContent = "$" + parseNumber(totalMercadoPagoQr);
-
-    /* MERCADO PAGO */
-    document.querySelectorAll("#tdMercadoPago").forEach(total => {
-      totalMercadoPago += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalMercadoPago").textContent = "$" + parseNumber(totalMercadoPago);
-
-    /* MODO QR */
-    document.querySelectorAll("#tdModoQr").forEach(total => {
-      totalModoQr += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalModoQr").textContent = "$" + parseNumber(totalModoQr);
-
-    /* PROMO BANCO */
-    document.querySelectorAll("#tdPromoBanco").forEach(total => {
-      totalPromoBanco += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalPromoBanco").textContent = "$" + parseNumber(totalPromoBanco);
-
-    /* EFECTIVO */
-    document.querySelectorAll("#tdEfectivo").forEach(total => {
-      totalEfectivo += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalEfectivo").textContent = "$" + parseNumber(totalEfectivo);
-
-    /* BONUS SHOPPING */
-    document.querySelectorAll("#tdBonusShopping").forEach(total => {
-      totalBonusShopping += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalBonusShopping").textContent = "$" + parseNumber(totalBonusShopping);
-
-    /* DOLARES */
-    document.querySelectorAll("#tdDolares").forEach(total => {
-      totalDolares += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalDolares").textContent = "$" + parseNumber(totalDolares);
-
-    /* EUROS */
-    document.querySelectorAll("#tdEuros").forEach(total => {
-      totalEuros += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalEuros").textContent = "$" + parseNumber(totalEuros);
-
-    /* TOTAL VENTAS */
-    document.querySelectorAll("#tdTotalVentas").forEach(total => {
-      totalVentas += parseFloat(total.textContent.replaceAll(",","").replace("$", ""));
-    });
     document.querySelector("#totalVentas").textContent = "$" + parseNumber(totalVentas);
-
   }
 
 
