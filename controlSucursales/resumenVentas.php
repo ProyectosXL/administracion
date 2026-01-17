@@ -17,8 +17,9 @@ if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
 $dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
 $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
-$imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
-$imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
+// Usar banderas de mejor calidad
+$imageOn = ($checkedValue === 'central') ? 'https://flagcdn.com/w80/ar.png' : 'https://flagcdn.com/w80/uy.png';
+$imageOff = ($checkedValue === 'central') ? 'https://flagcdn.com/w80/uy.png' : 'https://flagcdn.com/w80/ar.png';
 
 
 ?>
@@ -47,76 +48,79 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
     
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="css/resumenVentas.css">
-    
-    <style>
-        /* Estilos dinámicos para toggle (dependen de variables PHP) */
-        .toggle-on {
-            background-image: url('<?= $imageOn ?>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            height: 40px;
-            width: 40px;
-            border-radius: 8px;
-        }
-
-        .toggle-off {
-            background-image: url('<?= $imageOff ?>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            height: 40px;
-            width: 40px;
-            border-radius: 8px;
-        }
-    </style>
 
 </head>
 
 <body>
     <div class="container-fluid">
-        <div class="modern-card">
-            <div class="page-title">
-                <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
-                    <img src="../image/home-button.png" alt="Home">
-                </a>
-                <i class="bi bi-credit-card"></i>
-                <span>Ventas por medio de pago</span>
-                <?php if (isset($_GET['desde'])): ?>
-                    <span class="date-range"> (<?= $desde ?> a <?= $hasta ?>)</span>
-                <?php endif; ?>
-            </div>
-            
-            <form class="filters-form" method="GET">
-                <div>
-                    <label>Desde:</label>
-                    <input type="date" class="form-control" name="desde" value="<?= $desde ?>">
+        <!-- Card único con header, título y filtros -->
+        <div class="modern-card unified-header-card">
+            <!-- Primera fila: Home, Título y Toggle -->
+            <div class="header-row">
+                <div class="left-section">
+                    <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
+                        <img src="../image/home-button.png" alt="Home">
+                    </a>
+                    <div class="page-title">
+                        <i class="bi bi-credit-card"></i>
+                        <span>Ventas por medio de pago</span>
+                        <?php if (isset($_GET['desde'])): ?>
+                            <span class="date-range">(<?= $desde ?> a <?= $hasta ?>)</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 
-                <div>
-                    <label>Hasta:</label>
-                    <input type="date" class="form-control" name="hasta" value="<?= $hasta ?>">
-                </div>
-                
-                <button type="submit" name="submit" class="btn-modern btn-search" id="search">
-                    <i class="bi bi-search"></i> Buscar
-                </button>
-                
-                <button type="button" class="btn-modern btn-export" id="btnExport">
-                    <i class="bi bi-file-earmark-excel"></i> Exportar
-                </button>
-                
-                <div class="toggle-wrapper ml-auto">
-                    <input type="checkbox" checked data-toggle="toggle" 
+                <div class="country-toggle-container">
+                    <div class="entorno-label">
+                        <span>Entorno:</span>
+                        <img src="<?= $imageOn ?>" alt="<?= $dataOnValue ?>" class="bandera-icon" id="banderaEntorno">
+                        <span class="entorno-text" id="textoEntorno"><?= $dataOnValue ?></span>
+                    </div>
+                    <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
                            data-on="<?= $dataOnValue ?>" 
                            data-off="<?= $dataOffValue ?>" 
+                           data-onstyle="info"
+                           data-offstyle="info"
+                           data-width="70"
+                           data-height="38"
                            class="custom-toggle" 
                            onchange="cambiarEntorno(this)" 
                            id="checkEntorno">
+                </div>
+            </div>
+            
+            <!-- Segunda fila: Filtros -->
+            <div class="filters-row-separator"></div>
+            <form class="filters-form-improved" method="GET">
+                <div class="filters-row">
+                    <div class="filter-field">
+                        <label>Desde:</label>
+                        <input type="date" class="form-control" name="desde" value="<?= $desde ?>">
+                    </div>
+                    
+                    <div class="filter-field">
+                        <label>Hasta:</label>
+                        <input type="date" class="form-control" name="hasta" value="<?= $hasta ?>">
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button type="submit" name="submit" class="btn-modern btn-search" id="search">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        
+                        <button type="button" class="btn-modern btn-export" id="btnExport">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
 
         <!-- spinner -->
-        <div id="boxLoading"></div>
+        <div id="boxLoading">
+            <div class="spinner-circle"></div>
+            <div class="spinner-text">Cargando...</div>
+        </div>
            
     <?php
 
@@ -180,18 +184,18 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                 <tfoot>
                     <tr>
                         <td colspan="2">TOTALES</td>
-                        <td id="totalTarjeta"></td>
-                        <td id="totalCuentaDni"></td>
-                        <td id="totalTarjetas" class="col-total-tarjetas"></td>
-                        <td id="totalMercadoPagoQr"></td>
-                        <td id="totalMercadoPago"></td>
-                        <td id="totalModoQr"></td>
-                        <td id="totalPromoBanco"></td>
-                        <td id="totalEfectivo"></td>
-                        <td id="totalBonusShopping"></td>
-                        <td id="totalDolares"></td>
-                        <td id="totalEuros"></td>
-                        <td id="totalVentas" class="col-total-ventas"></td>
+                        <td id="totalTarjeta">$0.00</td>
+                        <td id="totalCuentaDni">$0.00</td>
+                        <td id="totalTarjetas" class="col-total-tarjetas">$0.00</td>
+                        <td id="totalMercadoPagoQr">$0.00</td>
+                        <td id="totalMercadoPago">$0.00</td>
+                        <td id="totalModoQr">$0.00</td>
+                        <td id="totalPromoBanco">$0.00</td>
+                        <td id="totalEfectivo">$0.00</td>
+                        <td id="totalBonusShopping">$0.00</td>
+                        <td id="totalDolares">$0.00</td>
+                        <td id="totalEuros">$0.00</td>
+                        <td id="totalVentas" class="col-total-ventas">$0.00</td>
                     </tr>
                 </tfoot>
             </table>
