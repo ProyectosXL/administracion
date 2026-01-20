@@ -209,6 +209,7 @@ function checkUrlMessages() {
     const urlParams = new URLSearchParams(window.location.search);
     const mensaje = urlParams.get('mensaje');
     const texto = urlParams.get('texto');
+    const autoTags = urlParams.get('auto_tags');
     
     if (mensaje && texto) {
         let tipo = 'info';
@@ -224,7 +225,15 @@ function checkUrlMessages() {
                 break;
         }
         
+        // Mostrar notificación
         showNotification(decodeURIComponent(texto), tipo);
+        
+        // Si es un documento subido con tags automáticos, mostrar modal
+        if (autoTags === '1' && tipo === 'success') {
+            setTimeout(() => {
+                showAutoTagsModal();
+            }, 500); // Delay para que aparezca después de la notificación
+        }
     }
 }
 
@@ -299,5 +308,28 @@ function checkUrlTab() {
     
     if (tab) {
         showTab(tab);
+    }
+}
+
+// ===== Funciones para el modal de tags automáticos =====
+
+function showAutoTagsModal() {
+    const modal = document.getElementById('autoTagsModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        
+        // Limpiar la URL de parámetros después de mostrar el modal
+        const url = new URL(window.location);
+        url.searchParams.delete('mensaje');
+        url.searchParams.delete('texto');
+        url.searchParams.delete('auto_tags');
+        window.history.replaceState({}, '', url);
+    }
+}
+
+function closeAutoTagsModal() {
+    const modal = document.getElementById('autoTagsModal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 }

@@ -3,15 +3,17 @@
 /**
  * API Client for DocuGest Tags & Glossary Generation (Hugging Face Space)
  * 
- * Handles communication with the Hugging Face Space API for:
+ * Handles communication with the Hugging Face Space API v3.0:
+ * - ML Engineering architecture with 7 features
+ * - 0 False Positives (100% corporativos rechazados)
  * - Automatic tag generation from PDF documents
- * - Glossary term detection with Wikipedia validation
+ * - Glossary term detection with context
  * 
  * IMPORTANT: Hugging Face Spaces go to "sleep" after inactivity.
  * First request may timeout - automatic retry mechanism included.
  * 
- * @version 1.0.0
- * @date 2026-01-15
+ * @version 3.0.0
+ * @date 2026-01-20
  */
 class TagsGlosarioAPI
 {
@@ -90,30 +92,44 @@ class TagsGlosarioAPI
             
             $pdf_base64 = base64_encode($pdf_content);
             
-            // Preparar payload
+            // Preparar payload para API v3.0
             $payload = [
-                'pdf_base64' => $pdf_base64,
-                'top_n' => $top_n
+                'contenido_base64' => $pdf_base64,
+                'nombre_archivo' => basename($ruta_pdf),
+                'sector' => null  // Opcional: puede enviarse si se conoce
             ];
             
-            // Hacer request a la API con retry automático
+            // Hacer request a la API v3.0 con retry automático
             $response = $this->makeRequestWithRetry(
-                '/generate-tags',
+                '/procesar',
                 $payload,
                 'POST'
             );
             
-            // Validar respuesta
+            // Validar respuesta del API v3.0
             if (!$response || !isset($response['tags'])) {
-                error_log("TagsGlosarioAPI: Respuesta inválida de la API");
+                error_log("TagsGlosarioAPI: Respuesta inválida de la API v3.0");
                 return [];
             }
             
-            // Log de éxito
-            $tags_count = count($response['tags']);
-            error_log("TagsGlosarioAPI: $tags_count tags generados para: " . basename($ruta_pdf));
+            // Extraer términos del array de tags (nuevo formato v3.0)
+            $tags_array = [];
+            foreach ($response['tags'] as $tag_obj) {
+                if (isset($tag_obj['termino'])) {
+                    $tags_array[] = $tag_obj['termino'];
+                }
+            }
             
-            return $response['tags'];
+            // Limitar a top_n
+            $tags_array = array_slice($tags_array, 0, $top_n);
+            
+            // Log de éxito
+            $tags_count = count($tags_array);
+            $metadata = isset($response['metadata']) ? $response['metadata'] : [];
+            $modelo_version = isset($metadata['modelo_version']) ? $metadata['modelo_version'] : 'unknown';
+            error_log("TagsGlosarioAPI v$modelo_version: $tags_count tags generados para: " . basename($ruta_pdf));
+            
+            return $tags_array;
             
         } catch (Exception $e) {
             error_log("TagsGlosarioAPI::generarTags() Exception: " . $e->getMessage());
@@ -161,30 +177,45 @@ class TagsGlosarioAPI
             
             $pdf_base64 = base64_encode($pdf_content);
             
-            // Preparar payload
+            // Preparar payload para API v3.0
             $payload = [
-                'pdf_base64' => $pdf_base64,
-                'existing_terms' => $glosario_existente
+                'contenido_base64' => $pdf_base64,
+                'nombre_archivo' => basename($ruta_pdf),
+                'sector' => null  // Opcional
             ];
             
-            // Hacer request a la API con retry automático
+            // Hacer request a la API v3.0 con retry automático
             $response = $this->makeRequestWithRetry(
-                '/generate-glossary-terms',
+                '/procesar',
                 $payload,
                 'POST'
             );
             
-            // Validar respuesta
-            if (!$response || !isset($response['terminos'])) {
-                error_log("TagsGlosarioAPI: Respuesta inválida de la API");
+            // Validar respuesta del API v3.0
+            if (!$response || !isset($response['glosario'])) {
+                error_log("TagsGlosarioAPI: Respuesta inválida de la API v3.0");
                 return [];
             }
             
-            // Log de éxito
-            $terminos_count = count($response['terminos']);
-            error_log("TagsGlosarioAPI: $terminos_count términos detectados para: " . basename($ruta_pdf));
+            // Extraer términos del glosario (nuevo formato v3.0)
+            $terminos_array = [];
+            foreach ($response['glosario'] as $termino_obj) {
+                // Filtrar términos que ya existen en el glosario
+                $termino = $termino_obj['termino'];
+                if (!in_array($termino, $glosario_existente)) {
+                    $terminos_array[] = [
+                        'termino' => $termino,
+                        'definicion' => isset($termino_obj['contexto']) ? $termino_obj['contexto'] : '',
+                        'url' => null  // v3.0 no incluye URLs de Wikipedia por defecto
+                    ];
+                }
+            }
             
-            return $response['terminos'];
+            // Log de éxito
+            $terminos_count = count($terminos_array);
+            error_log("TagsGlosarioAPI v3.0: $terminos_count términos nuevos detectados para: " . basename($ruta_pdf));
+            
+            return $terminos_array;
             
         } catch (Exception $e) {
             error_log("TagsGlosarioAPI::detectarTerminosGlosario() Exception: " . $e->getMessage());
@@ -203,7 +234,15 @@ class TagsGlosarioAPI
         try {
             $response = $this->makeRequest('/', null, 'GET', $this->timeout_normal);
             
+            // v3.0 retorna version y status
+            if ($response && isset($response['version']) && $response['version'] === '3.0.0') {
+                error_log("TagsGlosarioAPI: Health check OK - v" . $response['version']);
+                return true;
+            }
+            
+            // Compatibilidad con versiones anteriores
             if ($response && isset($response['status']) && $response['status'] === 'ok') {
+                error_log("TagsGlosarioAPI: Health check OK (legacy)");
                 return true;
             }
             

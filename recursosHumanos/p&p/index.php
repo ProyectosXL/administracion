@@ -43,6 +43,76 @@ $glosario = $politicaObj->obtenerGlosario();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/chatbot.css">
+    <style>
+        /* Estilos para el modal de tags automáticos */
+        #autoTagsModal .modal-content {
+            animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .modal {
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-modal:hover {
+            color: #000;
+        }
+        .btn-primary, .btn-secondary {
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+    </style>
     <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
@@ -1007,6 +1077,48 @@ $glosario = $politicaObj->obtenerGlosario();
                     <p>No se encontraron términos que coincidan con la búsqueda.</p>
                 </div>
             </div>
+        </div>
+    </div>
+    
+    <!-- Modal para confirmación de documento subido con tags automáticos -->
+    <div id="autoTagsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px; text-align: center; padding: 30px;">
+            <span class="close-modal" onclick="closeAutoTagsModal()">&times;</span>
+            
+            <div style="margin-bottom: 20px;">
+                <i class="fas fa-check-circle" style="font-size: 60px; color: #2ecc71;"></i>
+            </div>
+            
+            <h3 style="color: #2c3e50; margin-bottom: 15px;">¡Documento Subido Exitosamente!</h3>
+            
+            <p style="color: #7f8c8d; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                Tu documento ha sido guardado correctamente.
+            </p>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #3498db; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+                    <i class="fas fa-magic" style="color: #3498db; font-size: 24px;"></i>
+                    <h4 style="color: #2c3e50; margin: 0;">Procesamiento Automático en Curso</h4>
+                </div>
+                <p style="color: #5a6c7d; font-size: 14px; margin: 0;">
+                    En los próximos <strong>30-60 segundos</strong>, nuestro sistema de IA:<br>
+                    • Generará etiquetas (tags) relevantes automáticamente<br>
+                    • Extraerá términos importantes para el glosario
+                </p>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="closeAutoTagsModal()" class="btn-primary" style="padding: 10px 30px;">
+                    <i class="fas fa-check"></i> Entendido
+                </button>
+                <button onclick="closeAutoTagsModal(); location.reload();" class="btn-secondary" style="padding: 10px 30px;">
+                    <i class="fas fa-sync"></i> Actualizar Ahora
+                </button>
+            </div>
+            
+            <p style="color: #95a5a6; font-size: 12px; margin-top: 20px; margin-bottom: 0;">
+                <i class="fas fa-info-circle"></i> Los tags aparecerán automáticamente al refrescar la página
+            </p>
         </div>
     </div>
     

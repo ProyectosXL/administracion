@@ -31,7 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Redireccionar con mensaje de resultado
         if ($resultado['status'] === 'success') {
             // Usar ruta relativa en lugar de absoluta para la redirección
-            header('Location: ../index.php?mensaje=success&texto=Documento guardado correctamente');
+            // Agregar parámetro para mostrar modal de tags automáticos
+            header('Location: ../index.php?mensaje=success&texto=Documento guardado correctamente&auto_tags=1');
         } else {
             header('Location: ../index.php?mensaje=error&texto=' . urlencode($resultado['message']));
         }

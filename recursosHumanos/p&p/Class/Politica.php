@@ -197,7 +197,20 @@ class Politica
                 
                 // ========== AUTO-GENERACIÓN DE TAGS Y GLOSARIO (HUGGING FACE API) ==========
                 // Sistema automático usando Hugging Face Space API
-                // No afecta el guardado del documento si falla
+                // PROCESO ASÍNCRONO: Se ejecuta después de retornar respuesta al usuario
+                // para evitar timeouts (Space puede tardar 60s en despertar)
+                
+                // Cerrar la conexión y liberar el buffer para enviar respuesta inmediata
+                if (function_exists('fastcgi_finish_request')) {
+                    // PHP-FPM: envía respuesta y continúa procesando
+                    fastcgi_finish_request();
+                } else {
+                    // Apache/CGI: simular comportamiento similar
+                    @ob_end_clean();
+                    ignore_user_abort(true);
+                    set_time_limit(0);
+                }
+                
                 try {
                     require_once dirname(__FILE__) . '/TagsGlosarioAPI.php';
                     
@@ -207,26 +220,65 @@ class Politica
                     $documento_id = $resultado['id'];
                     
                     // 1. GENERAR TAGS AUTOMÁTICAMENTE
-                    // Solo si no se proporcionaron tags manualmente
-                    if (empty($tags)) {
-                        error_log("TagsGlosario: Generando tags para documento $documento_id...");
+                    // Combinar tags del usuario (si existen) con tags generadas por IA
+                    error_log("TagsGlosario: Generando tags para documento $documento_id...");
+                    
+                    // Separar tags del usuario (si las hay)
+                    $tags_usuario = [];
+                    if (!empty($tags)) {
+                        // Limpiar y normalizar tags del usuario
+                        $tags_usuario = array_map('trim', explode(',', $tags));
+                        $tags_usuario = array_filter($tags_usuario); // Eliminar vacíos
+                        $tags_usuario = array_map('strtolower', $tags_usuario); // Normalizar a minúsculas para comparación
+                        error_log("TagsGlosario: Usuario proporcionó " . count($tags_usuario) . " tags manuales");
+                    }
+                    
+                    // Generar tags con IA
+                    $tags_ia = $api->generarTags($ruta_completa, 10);
+                    
+                    if (count($tags_ia) > 0) {
+                        // Normalizar tags de IA para comparación (minúsculas)
+                        $tags_ia_lower = array_map('strtolower', $tags_ia);
                         
-                        $tags_array = $api->generarTags($ruta_completa, 10);
+                        // Filtrar tags de IA que ya están en las tags del usuario
+                        $tags_ia_filtradas = [];
+                        foreach ($tags_ia as $index => $tag) {
+                            $tag_lower = $tags_ia_lower[$index];
+                            // Solo agregar si no está en las tags del usuario
+                            if (!in_array($tag_lower, $tags_usuario)) {
+                                $tags_ia_filtradas[] = $tag;
+                            }
+                        }
                         
-                        if (count($tags_array) > 0) {
-                            $tags_string = implode(', ', $tags_array);
-                            
-                            // Actualizar tags en la BD
-                            $sql_update = "UPDATE Politicas_Procedimientos 
-                                           SET tags = '".$this->escaparTexto($tags_string)."'
-                                           WHERE id = $documento_id";
-                            $this->ejecutarSQL($sql_update);
-                            
-                            error_log("TagsGlosario: " . count($tags_array) . " tags generados para documento $documento_id: $tags_string");
+                        // Combinar: primero las del usuario (originales, sin normalizar), luego las de IA
+                        $tags_originales_usuario = [];
+                        if (!empty($tags)) {
+                            $tags_originales_usuario = array_map('trim', explode(',', $tags));
+                            $tags_originales_usuario = array_filter($tags_originales_usuario);
+                        }
+                        
+                        $tags_finales = array_merge($tags_originales_usuario, $tags_ia_filtradas);
+                        $tags_string = implode(', ', $tags_finales);
+                        
+                        // Actualizar tags en la BD
+                        $sql_update = "UPDATE Politicas_Procedimientos 
+                                       SET tags = '".$this->escaparTexto($tags_string)."'
+                                       WHERE id = $documento_id";
+                        $this->ejecutarSQL($sql_update);
+                        
+                        $count_usuario = count($tags_originales_usuario);
+                        $count_ia = count($tags_ia_filtradas);
+                        error_log("TagsGlosario: Tags finales para documento $documento_id - Usuario: $count_usuario, IA (nuevos): $count_ia, Total: " . count($tags_finales));
+                    } else {
+                        // Si no se generaron tags de IA pero hay tags del usuario, ya están guardadas
+                        if (!empty($tags)) {
+                            error_log("TagsGlosario: No se generaron tags de IA, se mantienen solo las del usuario");
                         } else {
                             error_log("TagsGlosario: No se generaron tags para documento $documento_id");
                         }
                     }
+                    
+                    // 2. DETECTAR TÉRMINOS PARA GLOSARIO
                     
                     // 2. DETECTAR TÉRMINOS PARA GLOSARIO
                     error_log("TagsGlosario: Detectando términos para glosario (documento $documento_id)...");
