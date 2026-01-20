@@ -734,13 +734,35 @@ function recalcularTodasLasFechas() {
  * Se recalcula cada vez que cualquiera de los dos valores cambie
  * En Uruguay: FOB Peso = FOB Dólar (mismo valor, ya que se ingresa en pesos uruguayos)
  */
+/**
+ * Calcula FOB en Pesos = FOB U$S × Tipo de Cambio
+ */
+/**
+ * Calcula FOB en Pesos = FOB U$S × Tipo de Cambio
+ * Soporta inputs con punto (1452.50) o coma (1452,50)
+ */
 function recalcularFobPesos() {
     const entorno = $('#entorno').text().trim();
-    const valorFobDolar = parseFloat($('#valorFobDolar').val().replace(/,/g, '')) || 0;
+    
+    // Función robusta para parsear números
+    const parsearNumeroHibrido = (valor) => {
+        if (!valor) return 0;
+        let str = valor.toString().replace('$', '').replace(/\s/g, '');
+        
+        // Si tiene coma, es formato AR: borrar puntos, cambiar coma a punto
+        if (str.includes(',')) {
+            str = str.replace(/\./g, ''); // Borrar miles
+            str = str.replace(',', '.');  // Decimal
+        }
+        // Si NO tiene coma, asumimos que el punto (si existe) ya es decimal
+        // (No hacemos replace del punto)
+        
+        return parseFloat(str) || 0;
+    };
+
+    const valorFobDolar = parsearNumeroHibrido($('#valorFobDolar').val());
     
     if (entorno === 'uy') {
-        // En Uruguay, el FOB se ingresa directamente en pesos uruguayos
-        // Por lo tanto, FOB Peso = FOB Dólar (mismo valor)
         if (valorFobDolar > 0) {
             const valorFormateado = '$ ' + valorFobDolar.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             $('#valorFobPeso').val(valorFormateado);
@@ -749,12 +771,13 @@ function recalcularFobPesos() {
             $('#valorFobPeso').val('');
         }
     } else {
-        // En Argentina, FOB Peso = FOB Dólar × Tipo de Cambio
-        const tipoCambio = parseFloat($('#tipoCambio').val().replace(/,/g, '')) || 0;
+        const tipoCambio = parsearNumeroHibrido($('#tipoCambio').val());
         
         if (valorFobDolar > 0 && tipoCambio > 0) {
             const valorFobPeso = valorFobDolar * tipoCambio;
+            // Formatear para mostrar en pantalla (siempre muestra con coma decimal)
             const valorFormateado = '$ ' + valorFobPeso.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
             $('#valorFobPeso').val(valorFormateado);
             marcarCampoCalculado('#valorFobPeso');
         } else {
@@ -1451,6 +1474,24 @@ function guardarCabecera() {
         }
     }
 
+    // --- FUNCIÓN DE LIMPIEZA CLAVE PARA EVITAR ERRORES DE MONEDA ---
+    const limpiarParaEnviar = (valor) => {
+        if (!valor) return '0';
+        let str = valor.toString();
+        
+        // 1. Quitar $ y espacios
+        str = str.replace('$', '').replace(/\s/g, '');
+        
+        // 2. Detección de formato para limpiar correctamente
+        if (str.includes(',')) {
+            // Caso Argentina: 29.972.337,50
+            str = str.replace(/\./g, ''); // Borrar puntos de mil (esto arregla el error 29.97)
+            str = str.replace(',', '.');  // Cambiar coma por punto
+        } 
+        
+        return str;
+    };
+
     // Mostrar confirmación antes de procesar
     Swal.fire({
         title: '¿Desea guardar los cambios?',
@@ -1471,7 +1512,6 @@ function guardarCabecera() {
         const contenedor = $('#contenedor').val();
         const material = $('#material').val();
         const origen = $('#origen').val();
-        const valorFobDolar = $('#valorFobDolar').val();
         const fechaEstEmb = $('#fechaEstEmb').val();
         
         // Órdenes de compra
@@ -1488,8 +1528,6 @@ function guardarCabecera() {
         const fechaArr = $('#fechaArr').val();
         
         // Sección 3 - Datos Financieros y Aduana
-        const tipoCambio = $('#tipoCambio').val();
-        const valorFobPeso = $('#valorFobPeso').val();
         const formaPago = $('#formaPago').val();
         const fechaPago = $('#fechaPago').val();
         const fechaDespAdu = $('#fechaDespAdu').val();
@@ -1507,11 +1545,14 @@ function guardarCabecera() {
             contenedor: contenedor,
             material: material,
             origen: origen,
-            valorFobDolar: valorFobDolar.replace(/,/g, ""),
+            
+            // LIMPIEZA DE NÚMEROS
+            valorFobDolar: limpiarParaEnviar($('#valorFobDolar').val()),
+            
             fechaEstEmb: fechaEstEmb,
             ordenCompra: JSON.stringify(ordenCompra),
             ocm: ocm,
-            despachante: $('#despachante').val() || 'Laffitte', // DESPACHANTE
+            despachante: $('#despachante').val() || 'Laffitte', 
             
             // Campos calculados automáticamente
             fechaArr: fechaArr,
@@ -1530,8 +1571,11 @@ function guardarCabecera() {
             
             // Sección 3 - Datos Financieros y Aduana
             fechaEstPago: $('#fechaEstPago').val(),
-            tipoCambio: tipoCambio.replace(/,/g, ""),
-            valorFobPeso: valorFobPeso.replace(/,/g, ""),
+            
+            // LIMPIEZA DE NÚMEROS (Aquí solucionamos el problema del valor gigante o cortado)
+            tipoCambio: limpiarParaEnviar($('#tipoCambio').val()),
+            valorFobPeso: limpiarParaEnviar($('#valorFobPeso').val()),
+            
             formaPago: formaPago,
             despacho: despacho
         };
@@ -1574,7 +1618,6 @@ function guardarCabecera() {
             },
             error: function(xhr, status, error) {
                 console.error('Error al guardar:', error);
-                console.error('Respuesta del servidor:', xhr.responseText);
                 
                 let errorMessage = 'Error al conectar con el servidor';
                 try {
