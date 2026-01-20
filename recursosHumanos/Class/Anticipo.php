@@ -14,7 +14,7 @@ class Anticipo
     function __construct()
     {
         date_default_timezone_set('America/Argentina/Buenos_Aires'); 
-        require_once 'C:\xampp\htdocs\administracion\Class\conexion.php';
+        require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
         $this->cid = new Conexion();
         $this->cid_central = $this->cid->conectar('central');
       
@@ -234,8 +234,24 @@ class Anticipo
      }
  
      // Método para obtener los anticipos
-     public function obtenerAnticipos($start, $length, $search = '', $periodo = '')
+     public function obtenerAnticipos($start, $length, $search = '', $periodo = '', $orderColumn = 'FECHA_CARGA', $orderDir = 'DESC')
     {
+        // Validar dirección de ordenamiento
+        $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
+        
+        // Mapear nombres de columnas para prefijos correctos
+        $columnMap = [
+            'NRO_LEGAJO' => 'a.NRO_LEGAJO',
+            'APELLIDO_Y_NOMBRE' => 'a.APELLIDO_Y_NOMBRE',
+            'DNI' => 'a.DNI',
+            'PERIODO' => 'a.PERIODO',
+            'IMPORTE' => 'a.IMPORTE',
+            'FECHA_CARGA' => 'a.FECHA_CARGA',
+            'DESC_DEPARTAMENTO' => 'b.DESC_DEPARTAMENTO'
+        ];
+        
+        $orderBy = isset($columnMap[$orderColumn]) ? $columnMap[$orderColumn] : 'a.FECHA_CARGA';
+        
         $sql = "SELECT a.NRO_LEGAJO,
                     a.APELLIDO_Y_NOMBRE,
                     a.DNI,
@@ -250,8 +266,15 @@ class Anticipo
         $params = array();
         
         if (!empty($periodo)) {
-            $sql .= " AND a.PERIODO = ?";
-            $params[] = $periodo;
+            // Si el período contiene guión, es mes-año específico (ej: "1-2026")
+            if (strpos($periodo, '-') !== false) {
+                $sql .= " AND a.PERIODO = ?";
+                $params[] = $periodo;
+            } else {
+                // Si es solo año (ej: "2026"), buscar todos los meses de ese año
+                $sql .= " AND a.PERIODO LIKE ?";
+                $params[] = '%-' . $periodo;
+            }
         }
         
         if (!empty($search)) {
@@ -262,7 +285,7 @@ class Anticipo
             $params[] = $searchParam;
         }
         
-        $sql .= " ORDER BY a.FECHA_CARGA DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+        $sql .= " ORDER BY $orderBy $orderDir OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
         $params[] = (int)$start;
         $params[] = (int)$length;
         
@@ -286,8 +309,15 @@ class Anticipo
          $params = array();
          
          if (!empty($periodo)) {
-             $sql .= " AND PERIODO = ?";
-             $params[] = $periodo;
+             // Si el período contiene guión, es mes-año específico (ej: "1-2026")
+             if (strpos($periodo, '-') !== false) {
+                 $sql .= " AND PERIODO = ?";
+                 $params[] = $periodo;
+             } else {
+                 // Si es solo año (ej: "2026"), buscar todos los meses de ese año
+                 $sql .= " AND PERIODO LIKE ?";
+                 $params[] = '%-' . $periodo;
+             }
          }
          
          if (!empty($search)) {

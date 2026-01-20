@@ -123,55 +123,59 @@ async function cargarDatosParaEditar(numeroRegistro) {
     }
 
     // Función para crear una fila de remito
-    function crearFilaRemito(datos) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="text-nowrap">${datos.remito}</td>
-            <td title="${datos.destino}">${datos.destino}</td>
-            <td>
-                <input type="number" 
-                       class="form-control form-control-sm input-bultos" 
-                       value="1" 
-                       min="1">
-            </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm btn-quitar">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-            <td hidden>${datos.fecha}</td>
-            <td hidden>${datos.t_comp}</td>
-        `;
+// Función para crear una fila de remito (CORREGIDA)
+function crearFilaRemito(datos) {
+    const tr = document.createElement('tr');
     
+    // CORRECCIÓN CLAVE: Asignar los dataset al tr para que obtenerDatosFormulario los pueda leer
+    tr.dataset.fecha = datos.fecha;
+    tr.dataset.tcomp = datos.t_comp || 'REM'; // Valor por defecto si no viene
 
-        // Evento para el input de bultos
-        const inputBultos = tr.querySelector('.input-bultos');
-        inputBultos.addEventListener('input', function() {
-            if (this.value < 1) this.value = 1;
+    tr.innerHTML = `
+        <td class="text-nowrap">${datos.remito}</td>
+        <td title="${datos.destino}">${datos.destino}</td>
+        <td>
+            <input type="number" 
+                   class="form-control form-control-sm input-bultos" 
+                   value="${datos.bultos || 1}" 
+                   min="1">
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm btn-quitar">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+        <td hidden>${datos.fecha}</td>
+        <td hidden>${datos.t_comp || 'REM'}</td>
+    `;
+
+    // Evento para el input de bultos
+    const inputBultos = tr.querySelector('.input-bultos');
+    inputBultos.addEventListener('input', function() {
+        if (this.value < 1) this.value = 1;
+        actualizarTotalBultos();
+    });
+
+    // Evento para el botón de quitar
+    const btnQuitar = tr.querySelector('.btn-quitar');
+    btnQuitar.addEventListener('click', async function() {
+        const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este remito', 'warning');
+        if (confirmar) {
+            tr.remove();
             actualizarTotalBultos();
-        });
+        }
+    });
 
+    // Agregar tooltip para destinos largos
+    const tdDestino = tr.querySelector('td:nth-child(2)');
+    tdDestino.addEventListener('click', function() {
+        if (window.innerWidth <= 576) {
+            mostrarAlerta('Destino', this.textContent, 'info');
+        }
+    });
 
-        // Evento para el botón de quitar
-        const btnQuitar = tr.querySelector('.btn-quitar');
-        btnQuitar.addEventListener('click', async function() {
-            const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este remito', 'warning');
-            if (confirmar) {
-                tr.remove();
-                actualizarTotalBultos();
-            }
-        });
-
-        // Agregar tooltip para destinos largos en móviles
-        const tdDestino = tr.querySelector('td:nth-child(2)');
-        tdDestino.addEventListener('click', function() {
-            if (window.innerWidth <= 576) {
-                mostrarAlerta('Destino', this.textContent, 'info');
-            }
-        });
-
-        return tr;
-    }
+    return tr;
+}
 
     // Función para eliminar un remito específico por su número
     function eliminarRemito(remito) {
@@ -390,30 +394,37 @@ async function cargarDatosParaEditar(numeroRegistro) {
     }, { passive: false });
 
     // Función para crear una fila de egreso
-    function crearFilaEgreso(datos) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="text-nowrap">${datos.tipo}</td>
-            <td class="text-nowrap">${datos.comprobante}</td>
-            <td>${datos.fecha}</td>
-            <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm btn-quitar">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
+// Función para crear una fila de egreso (CORREGIDA)
+function crearFilaEgreso(datos) {
+    const tr = document.createElement('tr');
+    
+    // CORRECCIÓN CLAVE: Asignar los dataset para que luego se puedan leer
+    tr.dataset.tipo = datos.tipo;
+    tr.dataset.comprobante = datos.comprobante;
+    tr.dataset.fecha = datos.fecha;
 
-        // Evento para el botón de quitar
-        const btnQuitar = tr.querySelector('.btn-quitar');
-        btnQuitar.addEventListener('click', async function() {
-            const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este egreso', 'warning');
-            if (confirmar) {
-                tr.remove();
-            }
-        });
+    tr.innerHTML = `
+        <td class="text-nowrap">${datos.tipo}</td>
+        <td class="text-nowrap">${datos.comprobante}</td>
+        <td>${datos.fecha}</td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm btn-quitar">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
 
-        return tr;
-    }
+    // Evento para el botón de quitar
+    const btnQuitar = tr.querySelector('.btn-quitar');
+    btnQuitar.addEventListener('click', async function() {
+        const confirmar = await confirmarAccion('¿Está seguro?', 'Se eliminará este egreso', 'warning');
+        if (confirmar) {
+            tr.remove();
+        }
+    });
+
+    return tr;
+}
 
     // Evento para agregar egreso
     document.getElementById('btnAgregarEgreso').addEventListener('click', async function() {
@@ -580,31 +591,43 @@ const registrar = async () => {
 
 
 
+// Función para obtener datos (MEJORADA)
 function obtenerDatosFormulario() {
+    // Protección para la firma
+    let firmaData = '';
+    try {
+        firmaData = signaturePad.toDataURL();
+    } catch(e) {
+        console.warn("Error leyendo firma o firma vacía");
+    }
+
     const datos = {
         numeroRegistro: document.getElementById('numeroRegistro').value,
         entrego: (document.getElementById('entrego').value).split('++')[0],
         recibio: document.getElementById('recibio').value,
         enviaValores: document.getElementById('enviaValores').value,
         observaciones: document.getElementById('observaciones').value,
-        firma: signaturePad.toDataURL()
+        firma: firmaData
     };
+
     if (datos.enviaValores === 'SI') {
         datos.numeroPrecinto = document.getElementById('numeroPrecinto').value.trim();
-datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
-    tipo: tr.dataset.tipo,           // <-- Lee desde el data attribute
-    comprobante: tr.dataset.comprobante, // <-- Lee desde el data attribute
-    fecha: tr.dataset.fecha          // <-- Lee desde el data attribute
-}));
+        
+        datos.egresos = Array.from(document.querySelectorAll('#bodyEgresos tr')).map(tr => ({
+            tipo: tr.dataset.tipo || tr.cells[0].textContent, // Fallback por si falla el dataset
+            comprobante: tr.dataset.comprobante || tr.cells[1].textContent,
+            fecha: tr.dataset.fecha || tr.cells[2].textContent
+        }));
     }
 
-const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
-    remito: tr.cells[0].textContent,
-    destino: tr.cells[1].textContent,
-    bultos: tr.querySelector('.input-bultos').value,
-    fecha: tr.dataset.fecha,   // <-- Lee desde el data attribute
-    t_comp: tr.dataset.tcomp   // <-- Lee desde el data attribute
-}));
+    const remitos = Array.from(document.querySelectorAll('#bodyRemitos tr')).map(tr => ({
+        remito: tr.cells[0].textContent,
+        destino: tr.cells[1].textContent,
+        bultos: tr.querySelector('.input-bultos').value,
+        // IMPORTANTE: Si el dataset falla, intenta buscar en la celda oculta (indice 4)
+        fecha: tr.dataset.fecha || (tr.cells[4] ? tr.cells[4].textContent : ''),
+        t_comp: tr.dataset.tcomp || (tr.cells[5] ? tr.cells[5].textContent : 'REM')
+    }));
 
     return {
         datos: datos,

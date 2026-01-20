@@ -57,6 +57,19 @@ class Ventas
             $rows = array();
     
             while ($v = sqlsrv_fetch_array($stmt)) {
+                // Calcular VENTAS si viene en 0 o null
+                if (empty($v['VENTAS']) || $v['VENTAS'] == 0) {
+                    $v['VENTAS'] = ($v['TARJETA'] ?? 0) + 
+                                   ($v['CUENTA_DNI'] ?? 0) + 
+                                   ($v['MERCADO_PAGO_QR'] ?? 0) + 
+                                   ($v['MERCADO_PAGO'] ?? 0) + 
+                                   ($v['MODO_QR'] ?? 0) + 
+                                   ($v['PROMO_BANCO'] ?? 0) + 
+                                   ($v['EFECTIVO'] ?? 0) + 
+                                   ($v['BONUS_SHOPPING'] ?? 0) + 
+                                   ($v['DOLARES'] ?? 0) + 
+                                   ($v['EUROS'] ?? 0);
+                }
                 $rows[] = $v;
             }
     

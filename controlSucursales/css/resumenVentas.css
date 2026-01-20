@@ -195,15 +195,43 @@ body {
 
 /* Header de tabla */
 #tableVentas thead th {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #1e293b;
     color: white;
     font-weight: 600;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 1rem 0.75rem;
+    padding: 1rem 30px 1rem 0.75rem;
     border: none;
     white-space: nowrap;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+#tableVentas thead th::before {
+    content: '⇅';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: bold;
+}
+
+#tableVentas thead th.sorting_asc::before,
+#tableVentas thead th.sorting_desc::before {
+    color: #ffffff;
+    font-size: 18px;
+}
+
+#tableVentas thead th.sorting_asc::before {
+    content: '↑';
+}
+
+#tableVentas thead th.sorting_desc::before {
+    content: '↓';
 }
 
 #tableVentas thead th:first-child {
@@ -341,6 +369,88 @@ body {
 @keyframes spin {
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ===================================
+   TOGGLE PERSONALIZADO
+   =================================== */
+
+.custom-toggle-container {
+    display: flex;
+    background: #fff;
+    border: 2px solid var(--border-color);
+    border-radius: 50px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.custom-toggle-container:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+}
+
+.toggle-flag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+    opacity: 0.5;
+    background: transparent;
+}
+
+.toggle-flag img {
+    width: 30px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-flag span {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.toggle-flag.active {
+    opacity: 1;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.toggle-flag.active span {
+    color: white;
+}
+
+/* ===================================
+   BÚSQUEDA Y ORDENAMIENTO
+   =================================== */
+
+.dataTables_filter {
+    text-align: right;
+    padding: 15px 0;
+}
+
+.dataTables_filter label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.dataTables_filter input {
+    margin-left: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    width: 300px;
+    font-size: 14px;
+}
+
+.dataTables_filter input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 /* ===================================

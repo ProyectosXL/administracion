@@ -13,10 +13,22 @@ try {
     $search = isset($_POST['search']['value']) ? $_POST['search']['value'] : '';
     $periodo = isset($_POST['periodo']) ? $_POST['periodo'] : '';
     
+    // Parámetros de ordenamiento
+    $orderColumnIndex = isset($_POST['order'][0]['column']) ? intval($_POST['order'][0]['column']) : 5;
+    $orderDir = isset($_POST['order'][0]['dir']) ? $_POST['order'][0]['dir'] : 'desc';
+    
+    // Mapeo de índices de columnas a nombres de campos
+    $columns = ['NRO_LEGAJO', 'APELLIDO_Y_NOMBRE', 'DNI', 'PERIODO', 'IMPORTE', 'FECHA_CARGA', 'DESC_DEPARTAMENTO'];
+    $orderColumn = isset($columns[$orderColumnIndex]) ? $columns[$orderColumnIndex] : 'FECHA_CARGA';
+    
+    error_log("getAnticipos - Start: $start, Length: $length, Search: '$search', Periodo: '$periodo', Order: $orderColumn $orderDir");
+    
     // Obtener datos usando los métodos de la clase
-    $data = $anticipo->obtenerAnticipos($start, $length, $search, $periodo);
+    $data = $anticipo->obtenerAnticipos($start, $length, $search, $periodo, $orderColumn, $orderDir);
     $total = $anticipo->contarAnticipos('', $periodo);
     $filtered = $anticipo->contarAnticipos($search, $periodo);
+    
+    error_log("getAnticipos - Total: $total, Filtered: $filtered, Data count: " . count($data));
     
     // Respuesta para DataTables
     $response = array(

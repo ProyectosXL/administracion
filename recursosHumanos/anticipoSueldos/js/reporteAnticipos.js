@@ -80,16 +80,26 @@ $(document).ready(function() {
     // Función para obtener el período seleccionado
     function getPeriodoSeleccionado() {
         const year = $('#yearFilter').val();
-        const month = $('#monthFilter').val();
+        let month = $('#monthFilter').val();
+        
+        console.log('getPeriodoSeleccionado - Year:', year, 'Month:', month);
+        
+        // Si no hay año seleccionado, usar el año actual
+        if (!year) {
+            const currentYear = new Date().getFullYear();
+            return currentYear.toString();
+        }
         
         if (year && month) {
+            // Quitar ceros adelante del mes (01 -> 1, 02 -> 2, etc.)
+            month = parseInt(month, 10).toString();
             return `${month}-${year}`;
         } else if (year) {
             return year; // Solo año, se filtrará en el servidor
         } else if (month) {
             return month; // Solo mes (poco común pero soportado)
         }
-        return ''; // Todos los períodos
+        return new Date().getFullYear().toString(); // Por defecto, año actual
     }
 
     // Actualizar título con período seleccionado
@@ -136,11 +146,31 @@ $(document).ready(function() {
                     };
                 },
                 error: function(xhr, error, thrown) {
-                    console.error('Error en DataTable AJAX:', error, thrown, xhr.responseText);
+                    console.error('Error en DataTable AJAX:', error, thrown);
+                    console.error('Response Text:', xhr.responseText);
+                    console.error('Status:', xhr.status);
+                    let errorMsg = 'Error al cargar los datos';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.error) {
+                            errorMsg = response.error;
+                        }
+                    } catch (e) {
+                        errorMsg = xhr.responseText || error;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al cargar datos',
+                        text: errorMsg
+                    });
                 },
                 dataSrc: function(json) {
                     $('#loadingSpinner').hide();
-                    return json.data;
+                    if (json.data && Array.isArray(json.data)) {
+                        return json.data;
+                    }
+                    console.warn('Response no tiene formato esperado:', json);
+                    return [];
                 }
             },
             columns: [
@@ -732,5 +762,5 @@ $(document).ready(function() {
     }
 
     // Iniciar la aplicación
-    cargarPeriodos();
+    cargarYears();
 });

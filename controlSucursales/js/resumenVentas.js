@@ -1,8 +1,9 @@
 /* ===================================
-   RESUMEN DE VENTAS - JAVASCRIPT
+   RESUMEN DE VENTAS - JAVASCRIPT (SIN DATATABLES)
    =================================== */
 
-let dataTable;
+let sortColumn = 0;
+let sortDirection = 'asc';
 
 /**
  * Inicialización al cargar el documento
@@ -16,14 +17,16 @@ $(document).ready(function() {
         return;
     }
     
-    // Inicializar DataTables
-    initializeDataTable();
+    // Configurar búsqueda PRIMERO
+    setupSearch();
     
-    // Esperar un momento para que DataTables termine de renderizar
+    // Configurar ordenamiento
+    setupSorting();
+    
+    // Calcular totales después de todo
     setTimeout(function() {
-        // Calcular totales iniciales
         calcularTotales();
-    }, 100);
+    }, 500);
     
     // Configurar exportación a Excel
     setupExcelExport();
@@ -36,35 +39,141 @@ $(document).ready(function() {
 });
 
 /**
- * Inicializa DataTables con configuración en español
+ * Configura la funcionalidad de búsqueda
  */
-function initializeDataTable() {
-    dataTable = $('#tableVentas').DataTable({
-        paging: false,
-        ordering: true,
-        searching: true,
-        info: true,
-        autoWidth: false,
-        language: {
-            search: "Buscar:",
-            info: "Mostrando _TOTAL_ sucursales",
-            infoEmpty: "No hay registros disponibles",
-            infoFiltered: "(filtrado de _MAX_ registros totales)",
-            zeroRecords: "No se encontraron resultados",
-            emptyTable: "No hay datos disponibles en la tabla",
-            loadingRecords: "Cargando...",
-            processing: "Procesando..."
-        },
-        order: [[0, 'asc']], // Ordenar por número de sucursal por defecto
-        columnDefs: [
-            { targets: [0, 1], orderable: true, searchable: true },
-            { targets: '_all', orderable: true, searchable: true }
-        ],
-        drawCallback: function() {
-            // Recalcular totales después de filtrar
-            calcularTotales();
+function setupSearch() {
+    console.log('Configurando búsqueda...');
+    
+    // Agregar campo de búsqueda si no existe
+    if ($('.dataTables_filter').length === 0 && $('#searchInput').length === 0) {
+        const searchHtml = `
+            <div class="dataTables_filter" style="margin: 20px 0; text-align: right;">
+                <label style="font-weight: 500;">
+                    Buscar: 
+                    <input type="search" id="searchInput" class="form-control" style="display: inline-block; width: 300px; margin-left: 10px;" placeholder="Buscar en la tabla...">
+                </label>
+            </div>
+        `;
+        $('.table-wrapper').before(searchHtml);
+        console.log('Campo de búsqueda agregado');
+    }
+    
+    // Evento de búsqueda
+    $(document).on('keyup', '#searchInput', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        console.log('Buscando:', searchTerm);
+        
+        let visibleCount = 0;
+        $('#tableVentas tbody tr').each(function() {
+            const rowText = $(this).text().toLowerCase();
+            if (rowText.indexOf(searchTerm) === -1) {
+                $(this).hide();
+            } else {
+                $(this).show();
+                visibleCount++;
+            }
+        });
+        
+        console.log('Filas visibles después de búsqueda:', visibleCount);
+        
+        // Recalcular totales con filas filtradas
+        calcularTotales();
+    });
+}
+
+/**
+ * Configura el ordenamiento por columnas
+ */
+function setupSorting() {
+    console.log('Configurando ordenamiento...');
+    
+    $('#tableVentas thead th').each(function(index) {
+        $(this).css({
+            'cursor': 'pointer',
+            'position': 'relative',
+            'user-select': 'none'
+        });
+        
+        $(this).on('click', function() {
+            sortTable(index);
+        });
+    });
+    
+    console.log('Ordenamiento configurado para', $('#tableVentas thead th').length, 'columnas');
+}
+
+/**
+ * Ordena la tabla por la columna especificada
+ */
+function sortTable(columnIndex) {
+    console.log('Ordenando por columna', columnIndex);
+    
+    const table = $('#tableVentas tbody');
+    const rows = table.find('tr').toArray();
+    
+    // Cambiar dirección si es la misma columna
+    if (sortColumn === columnIndex) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = columnIndex;
+        sortDirection = 'asc';
+    }
+    
+    console.log('Dirección:', sortDirection);
+    
+    // Ordenar filas
+    rows.sort(function(a, b) {
+        let aVal, bVal;
+        
+        // Obtener valores
+        const aCells = $(a).find('td');
+        const bCells = $(b).find('td');
+        
+        if (columnIndex >= aCells.length || columnIndex >= bCells.length) {
+            return 0;
+        }
+        
+        // Si la celda tiene data-value, usarlo, sino usar el texto
+        const aCell = $(aCells[columnIndex]);
+        const bCell = $(bCells[columnIndex]);
+        
+        aVal = aCell.attr('data-value') || aCell.text();
+        bVal = bCell.attr('data-value') || bCell.text();
+        
+        // Convertir a número si es posible
+        const aNum = parseFloat(aVal);
+        const bNum = parseFloat(bVal);
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+        
+        // Comparación de texto
+        if (sortDirection === 'asc') {
+            return aVal > bVal ? 1 : -1;
+        } else {
+            return aVal < bVal ? 1 : -1;
         }
     });
+    
+    // Actualizar indicadores visuales
+    $('#tableVentas thead th').removeClass('sorting_asc sorting_desc');
+    const $th = $('#tableVentas thead th').eq(columnIndex);
+    $th.addClass(sortDirection === 'asc' ? 'sorting_asc' : 'sorting_desc');
+    
+    console.log('Clase agregada a columna', columnIndex, ':', sortDirection === 'asc' ? 'sorting_asc' : 'sorting_desc');
+    console.log('TH tiene clases:', $th.attr('class'));
+    
+    // Reordenar DOM
+    table.empty();
+    $.each(rows, function(index, row) {
+        table.append(row);
+    });
+    
+    console.log('Tabla reordenada');
+    
+    // Recalcular totales
+    calcularTotales();
 }
 
 /**
@@ -72,7 +181,7 @@ function initializeDataTable() {
  * Solo suma las filas visibles después de aplicar filtros
  */
 function calcularTotales() {
-    console.log('Calculando totales...');
+    console.log('=== CALCULANDO TOTALES ===');
     
     let totales = {
         tarjeta: 0,
@@ -92,11 +201,24 @@ function calcularTotales() {
     // Obtener filas visibles del tbody
     let filas = $('#tableVentas tbody tr:visible');
     
-    console.log('Filas visibles:', filas.length);
+    console.log('Filas visibles para sumar:', filas.length);
     
     // Iterar sobre cada fila visible
-    filas.each(function() {
+    filas.each(function(index) {
         const $row = $(this);
+        
+        // Obtener el elemento de total ventas para debug
+        const totalVentasEl = $row.find('.tdTotalVentas');
+        const totalVentasValue = totalVentasEl.attr('data-value');
+        
+        // Log de las primeras 3 filas para debug
+        if (index < 3) {
+            console.log(`Fila ${index}:`);
+            console.log('  - Elemento encontrado:', totalVentasEl.length);
+            console.log('  - data-value:', totalVentasValue);
+            console.log('  - Texto visible:', totalVentasEl.text());
+            console.log('  - Clases:', totalVentasEl.attr('class'));
+        }
         
         // Usar data-value para obtener los valores numéricos
         totales.tarjeta += parseFloat($row.find('.tdTarjeta').attr('data-value') || 0);
@@ -110,10 +232,11 @@ function calcularTotales() {
         totales.bonusShopping += parseFloat($row.find('.tdBonusShopping').attr('data-value') || 0);
         totales.dolares += parseFloat($row.find('.tdDolares').attr('data-value') || 0);
         totales.euros += parseFloat($row.find('.tdEuros').attr('data-value') || 0);
-        totales.totalVentas += parseFloat($row.find('.tdTotalVentas').attr('data-value') || 0);
+        totales.totalVentas += parseFloat(totalVentasValue || 0);
     });
 
     console.log('Totales calculados:', totales);
+    console.log('Total Ventas final:', totales.totalVentas);
 
     // Actualizar los totales en el footer
     $('#totalTarjeta').html(formatearMoneda(totales.tarjeta));
@@ -129,7 +252,7 @@ function calcularTotales() {
     $('#totalEuros').html(formatearMoneda(totales.euros));
     $('#totalVentas').html(formatearMoneda(totales.totalVentas));
     
-    console.log('Totales actualizados en DOM');
+    console.log('=== TOTALES ACTUALIZADOS EN DOM ===');
 }
 
 /**
@@ -215,7 +338,44 @@ function setupSearchSpinner() {
 }
 
 /**
- * Función heredada de main.js para cambiar el entorno
+ * Función para cambiar el entorno (Argentina/Uruguay)
+ */
+function cambiarEntornoCustom(container) {
+    const flags = $(container).find('.toggle-flag');
+    const activeFlag = $(container).find('.toggle-flag.active');
+    
+    // Obtener el entorno opuesto
+    let nuevoEntorno = 0;
+    
+    if (activeFlag.data('entorno') === 'central') {
+        nuevoEntorno = 1; // Cambiar a Uruguay
+    } else {
+        nuevoEntorno = 0; // Cambiar a Argentina
+    }
+    
+    console.log('Cambiando entorno a:', nuevoEntorno === 0 ? 'Argentina' : 'Uruguay');
+    
+    // Mostrar spinner
+    $("#boxLoading").addClass("loading");
+    
+    $.ajax({
+        url: "Controller/cambiarEntorno.php",
+        method: "POST",
+        data: { entorno: nuevoEntorno },
+        success: function (data) {
+            console.log('Entorno cambiado exitosamente');
+            location.reload();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cambiar entorno:', error);
+            $("#boxLoading").removeClass("loading");
+            alert('Error al cambiar el entorno. Por favor intente nuevamente.');
+        }
+    });
+}
+
+/**
+ * Función heredada de main.js para cambiar el entorno (compatibilidad)
  * @param {HTMLElement} t - Elemento toggle
  */
 const cambiarEntorno = (t) => {

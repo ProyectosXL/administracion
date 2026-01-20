@@ -42,32 +42,8 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Bootstrap Toggle -->
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-    
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="css/resumenVentas.css">
-    
-    <style>
-        /* Estilos dinámicos para toggle (dependen de variables PHP) */
-        .toggle-on {
-            background-image: url('<?= $imageOn ?>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            height: 40px;
-            width: 40px;
-            border-radius: 8px;
-        }
-
-        .toggle-off {
-            background-image: url('<?= $imageOff ?>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            height: 40px;
-            width: 40px;
-            border-radius: 8px;
-        }
-    </style>
 
 </head>
 
@@ -105,12 +81,17 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                 </button>
                 
                 <div class="toggle-wrapper ml-auto">
-                    <input type="checkbox" checked data-toggle="toggle" 
-                           data-on="<?= $dataOnValue ?>" 
-                           data-off="<?= $dataOffValue ?>" 
-                           class="custom-toggle" 
-                           onchange="cambiarEntorno(this)" 
-                           id="checkEntorno">
+                    <label style="margin-right: 10px; font-weight: 500; align-self: center;">Cambiar entorno:</label>
+                    <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)">
+                        <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
+                            <img src="../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
+                            <span>ARG</span>
+                        </div>
+                        <div class="toggle-flag <?= ($checkedValue === 'suc_uy') ? 'active' : '' ?>" data-entorno="suc_uy">
+                            <img src="../assets/images/UY.png" alt="Uruguay">
+                            <span>UY</span>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -153,24 +134,24 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                         <tr>
                             <td><?= $key->NRO_SUCURSAL ?></td>
                             <td><?= $key->DESC_SUCURSAL ?></td>
-                            <td class="tdTarjeta" data-value="<?= $key->TARJETA ?>">$<?= number_format($key->TARJETA, 2, '.', ',') ?></td>
-                            <td class="tdCuentaDni" data-value="<?= $key->CUENTA_DNI ?>">$<?= number_format($key->CUENTA_DNI, 2, '.', ',') ?></td>
-                            <td class="tdTotalTarjetas col-total-tarjetas" data-value="<?= $key->TOTAL_TARJETAS ?>">$<?= number_format($key->TOTAL_TARJETAS, 2, '.', ',') ?></td>
-                            <td class="tdMercadoPagoQr" data-value="<?= $key->MERCADO_PAGO_QR ?>">$<?= number_format($key->MERCADO_PAGO_QR, 2, '.', ',') ?></td>
-                            <td class="tdMercadoPago" data-value="<?= $key->MERCADO_PAGO ?>">$<?= number_format($key->MERCADO_PAGO, 2, '.', ',') ?></td>
-                            <td class="tdModoQr" data-value="<?= $key->MODO_QR ?>">$<?= number_format($key->MODO_QR, 2, '.', ',') ?></td>
-                            <td class="tdPromoBanco valor-negativo" data-value="<?= $key->PROMO_BANCO ?>">
-                                <?php if ($key->PROMO_BANCO < 0): ?>
-                                    <span style="color: #ef4444;">($<?= number_format(abs($key->PROMO_BANCO), 2, '.', ',') ?>)</span>
+                            <td class="tdTarjeta" data-value="<?= $key->TARJETA ?? 0 ?>">$<?= number_format($key->TARJETA ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdCuentaDni" data-value="<?= $key->CUENTA_DNI ?? 0 ?>">$<?= number_format($key->CUENTA_DNI ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdTotalTarjetas col-total-tarjetas" data-value="<?= ($key->TARJETA ?? 0) + ($key->CUENTA_DNI ?? 0) ?>">$<?= number_format(($key->TARJETA ?? 0) + ($key->CUENTA_DNI ?? 0), 2, '.', ',') ?></td>
+                            <td class="tdMercadoPagoQr" data-value="<?= $key->MERCADO_PAGO_QR ?? 0 ?>">$<?= number_format($key->MERCADO_PAGO_QR ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdMercadoPago" data-value="<?= $key->MERCADO_PAGO ?? 0 ?>">$<?= number_format($key->MERCADO_PAGO ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdModoQr" data-value="<?= $key->MODO_QR ?? 0 ?>">$<?= number_format($key->MODO_QR ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdPromoBanco valor-negativo" data-value="<?= $key->PROMO_BANCO ?? 0 ?>">
+                                <?php if (($key->PROMO_BANCO ?? 0) < 0): ?>
+                                    <span style="color: #ef4444;">($<?= number_format(abs($key->PROMO_BANCO ?? 0), 2, '.', ',') ?>)</span>
                                 <?php else: ?>
-                                    $<?= number_format($key->PROMO_BANCO, 2, '.', ',') ?>
+                                    $<?= number_format($key->PROMO_BANCO ?? 0, 2, '.', ',') ?>
                                 <?php endif; ?>
                             </td>
-                            <td class="tdEfectivo" data-value="<?= $key->EFECTIVO ?>">$<?= number_format($key->EFECTIVO, 2, '.', ',') ?></td>
-                            <td class="tdBonusShopping" data-value="<?= $key->BONUS_SHOPPING ?>">$<?= number_format($key->BONUS_SHOPPING, 2, '.', ',') ?></td>
-                            <td class="tdDolares" data-value="<?= $key->DOLARES ?>">$<?= number_format($key->DOLARES, 2, '.', ',') ?></td>
-                            <td class="tdEuros" data-value="<?= $key->EUROS ?>">$<?= number_format($key->EUROS, 2, '.', ',') ?></td>
-                            <td class="tdTotalVentas col-total-ventas" data-value="<?= $key->VENTAS ?>">$<?= number_format($key->VENTAS, 2, '.', ',') ?></td>
+                            <td class="tdEfectivo" data-value="<?= $key->EFECTIVO ?? 0 ?>">$<?= number_format($key->EFECTIVO ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdBonusShopping" data-value="<?= $key->BONUS_SHOPPING ?? 0 ?>">$<?= number_format($key->BONUS_SHOPPING ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdDolares" data-value="<?= $key->DOLARES ?? 0 ?>">$<?= number_format($key->DOLARES ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdEuros" data-value="<?= $key->EUROS ?? 0 ?>">$<?= number_format($key->EUROS ?? 0, 2, '.', ',') ?></td>
+                            <td class="tdTotalVentas col-total-ventas" data-value="<?= $key->VENTAS ?? 0 ?>">$<?= number_format($key->VENTAS ?? 0, 2, '.', ',') ?></td>
                         </tr>
                     <?php
                     }
@@ -212,14 +193,8 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
     <!-- Plugin to export Excel -->
     <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
     
-    <!-- Bootstrap Toggle -->
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-    
-    <!-- Script específico de resumen de ventas (debe cargarse ANTES de main.js para sobrescribir funciones) -->
+    <!-- Script específico de resumen de ventas -->
     <script src="js/resumenVentas.js" charset="utf-8"></script>
-    
-    <!-- Script principal (main.js mantiene otras funcionalidades) -->
-    <script src="js/main.js" charset="utf-8"></script>
 
 </body>
 
