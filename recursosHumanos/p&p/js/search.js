@@ -8,23 +8,45 @@ function initSearch() {
     
     if (!searchInput) return;
     
+    // Variable para debounce
+    let searchTimeout;
+    
     searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
+        const searchTerm = this.value.trim();
         
-        if (searchTerm.length < 2) return; // Mínimo 2 caracteres para buscar
+        // Limpiar timeout anterior
+        clearTimeout(searchTimeout);
         
-        // Implementar búsqueda global
-        searchDocuments(searchTerm);
-        searchGlossary(searchTerm);
+        if (searchTerm.length === 0) {
+            // Si está vacío, cerrar popup de búsqueda y limpiar glosario
+            closeSearchResults();
+            searchGlossary('');
+            return;
+        }
+        
+        if (searchTerm.length < 2) {
+            // No buscar con menos de 2 caracteres
+            return;
+        }
+        
+        // Debounce: esperar 500ms después de dejar de escribir
+        searchTimeout = setTimeout(() => {
+            // Solo búsqueda en glosario (no en documentos recientes)
+            searchGlossary(searchTerm.toLowerCase());
+            
+            // Búsqueda avanzada en contenido y tags (AJAX) - popup separado
+            searchAdvanced(searchTerm);
+        }, 500);
     });
     
     // Implementar búsqueda avanzada con teclas de acceso rápido
     searchInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
-            // Realizar búsqueda completa al presionar Enter
-            const searchTerm = this.value.toLowerCase();
+            clearTimeout(searchTimeout);
+            const searchTerm = this.value.trim();
             if (searchTerm.length >= 2) {
-                searchDocuments(searchTerm, true); // true para búsqueda avanzada
+                // Solo búsqueda avanzada (popup), no en documentos recientes
+                searchAdvanced(searchTerm);
             }
         }
     });
@@ -32,45 +54,43 @@ function initSearch() {
 
 // Buscar en documentos
 function searchDocuments(searchTerm, advancedSearch = false) {
-    // En una implementación real, esta función buscaría en los documentos
-    // usando una API o indexación de contenido
-    console.log(`Buscando documentos con el término: "${searchTerm}" (Búsqueda avanzada: ${advancedSearch})`);
-    
-    // Simulación de búsqueda
+    // Filtrado dinámico de documentos
     const allDocumentItems = document.querySelectorAll('.policy-item');
     let matchCount = 0;
     
     allDocumentItems.forEach(item => {
-        const title = item.querySelector('h4').textContent.toLowerCase();
-        const details = item.querySelector('p').textContent.toLowerCase();
+        const title = item.querySelector('h4')?.textContent.toLowerCase() || '';
+        const details = item.querySelector('p')?.textContent.toLowerCase() || '';
         
-        // En búsqueda avanzada, también buscaríamos dentro del contenido del PDF
-        if (title.includes(searchTerm) || details.includes(searchTerm) || 
-            (advancedSearch && Math.random() > 0.7)) { // Simulación de búsqueda en contenido
-            
+        // Si no hay término de búsqueda, mostrar todos los documentos
+        if (searchTerm.length === 0) {
             item.style.display = 'flex';
-            item.style.backgroundColor = '#f0f9ff'; // Destacar resultados
-            setTimeout(() => {
-                item.style.backgroundColor = '';
-            }, 2000); // Quitar el destacado después de 2 segundos
+            item.style.backgroundColor = '';
+            return;
+        }
+        
+        // Buscar coincidencias en título y detalles
+        if (title.includes(searchTerm) || details.includes(searchTerm)) {
+            item.style.display = 'flex';
+            
+            // Destacar resultados solo si hay búsqueda activa
+            if (searchTerm.length >= 2) {
+                item.style.backgroundColor = '#f0f9ff';
+                setTimeout(() => {
+                    item.style.backgroundColor = '';
+                }, 2000);
+            }
             
             matchCount++;
         } else {
-            // Ocultar elementos que no coinciden si estamos en modo de búsqueda
-            if (searchTerm.length > 0) {
-                item.style.display = 'none';
-            } else {
-                item.style.display = 'flex';
-            }
+            // Ocultar elementos que no coinciden
+            item.style.display = 'none';
         }
     });
     
-    // Mostrar resultados de búsqueda
-    if (matchCount > 0 && searchTerm.length > 0) {
-        console.log(`Se encontraron ${matchCount} documentos que coinciden con "${searchTerm}"`);
-        
-        // En una implementación real, podríamos mostrar un mensaje de resultados
-        showNotification(`Se encontraron ${matchCount} documentos que coinciden con "${searchTerm}"`);
+    // Log para debugging (sin notificaciones molestas)
+    if (searchTerm.length >= 2) {
+        console.log(`Búsqueda: "${searchTerm}" - ${matchCount} resultados encontrados`);
     }
 }
 
@@ -151,3 +171,158 @@ function searchInPdf() {
         showNotification(`Buscando "${searchTerm}" en el documento actual.`, 'info');
     }
 }
+
+// Búsqueda avanzada en contenido y tags (AJAX)
+function searchAdvanced(searchTerm) {
+    // Mostrar indicador de carga
+    const searchResultsContainer = document.getElementById('searchResults');
+    if (!searchResultsContainer) {
+        createSearchResultsContainer();
+    }
+    
+    const container = document.getElementById('searchResults');
+    container.innerHTML = '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Buscando en tags...</div>';
+    container.style.display = 'block';
+    
+    // Realizar búsqueda AJAX
+    fetch(`Controller/buscar_documentos.php?q=${encodeURIComponent(searchTerm)}`)
+        .then(response => {
+            // Verificar si la respuesta es OK
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text(); // Primero obtener como texto
+        })
+        .then(text => {
+            // Intentar parsear como JSON
+            try {
+                const data = JSON.parse(text);
+                if (data.status === 'success') {
+                    displaySearchResults(data.resultados, data.termino);
+                } else {
+                    container.innerHTML = `<div class="search-error"><i class="fas fa-exclamation-circle"></i> ${data.message || 'Error en la búsqueda'}</div>`;
+                    setTimeout(() => {
+                        container.style.display = 'none';
+                    }, 3000);
+                }
+            } catch (e) {
+                // Si no es JSON válido, mostrar el texto crudo para debug
+                console.error('Respuesta no es JSON válido:', text.substring(0, 500));
+                container.innerHTML = '<div class="search-error"><i class="fas fa-exclamation-circle"></i> Error del servidor</div>';
+                setTimeout(() => {
+                    container.style.display = 'none';
+                }, 3000);
+            }
+        })
+        .catch(error => {
+            console.error('Error en búsqueda avanzada:', error);
+            container.innerHTML = '<div class="search-error"><i class="fas fa-exclamation-circle"></i> Error al buscar en documentos</div>';
+            setTimeout(() => {
+                container.style.display = 'none';
+            }, 3000);
+        });
+}
+
+// Crear contenedor de resultados si no existe
+function createSearchResultsContainer() {
+    const container = document.createElement('div');
+    container.id = 'searchResults';
+    container.className = 'search-results-container';
+    
+    // Insertar después del input de búsqueda
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput && searchInput.parentElement) {
+        searchInput.parentElement.appendChild(container);
+    }
+}
+
+// Mostrar resultados de búsqueda avanzada
+function displaySearchResults(resultados, termino) {
+    const container = document.getElementById('searchResults');
+    
+    if (!resultados || resultados.length === 0) {
+        container.innerHTML = `
+            <div class="search-no-results">
+                <i class="fas fa-search"></i>
+                <p>No se encontraron coincidencias para "<strong>${termino}</strong>"</p>
+            </div>
+        `;
+        setTimeout(() => {
+            container.style.display = 'none';
+        }, 3000);
+        return;
+    }
+    
+    let html = `
+        <div class="search-results-header">
+            <h4><i class="fas fa-search"></i> Resultados para "${termino}"</h4>
+            <span class="results-count">${resultados.length} documento${resultados.length !== 1 ? 's' : ''}</span>
+            <button class="close-search-results" onclick="closeSearchResults()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="search-results-list">
+    `;
+    
+    resultados.forEach(resultado => {
+        html += `
+            <div class="search-result-item">
+                <div class="result-header">
+                    <h5 onclick="viewDocument(${resultado.id})" style="cursor: pointer;">
+                        <i class="fas fa-file-pdf"></i> ${resultado.titulo}
+                    </h5>
+                    <span class="result-type badge-${resultado.tipo}">${resultado.tipo}</span>
+                </div>
+                <div class="result-matches">
+        `;
+        
+        resultado.coincidencias.forEach(coincidencia => {
+            if (coincidencia.tipo === 'tag') {
+                html += `
+                    <div class="match-item match-tag">
+                        <i class="fas fa-tag"></i>
+                        <span>${coincidencia.texto}</span>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="match-item match-content">
+                        <i class="fas fa-quote-left"></i>
+                        <span>${coincidencia.texto}</span>
+                    </div>
+                `;
+            }
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    
+    container.innerHTML = html;
+    container.style.display = 'block';
+}
+
+// Cerrar resultados de búsqueda
+function closeSearchResults() {
+    const container = document.getElementById('searchResults');
+    if (container) {
+        container.style.display = 'none';
+    }
+}
+
+// Cerrar resultados al hacer clic fuera
+document.addEventListener('click', function(e) {
+    const searchContainer = document.querySelector('.search-container');
+    const searchResults = document.getElementById('searchResults');
+    
+    if (searchResults && searchResults.style.display === 'block') {
+        // Si el clic no fue dentro del contenedor de búsqueda, cerrar resultados
+        if (!searchContainer.contains(e.target)) {
+            closeSearchResults();
+        }
+    }
+});

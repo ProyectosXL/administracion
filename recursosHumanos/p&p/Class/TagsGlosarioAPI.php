@@ -29,7 +29,7 @@ class TagsGlosarioAPI
      * Timeout for API requests (in seconds)
      * Longer timeout for first request (Space may be sleeping)
      */
-    private $timeout_first_request = 120;  // 2 minutes
+    private $timeout_first_request = 180;  // 3 minutes (HF Space wake-up)
     private $timeout_normal = 60;          // 1 minute
     
     /**
@@ -197,15 +197,20 @@ class TagsGlosarioAPI
                 return [];
             }
             
-            // Extraer términos del glosario (nuevo formato v3.0)
+            // Extraer términos del glosario (nuevo formato v3.1.3)
             $terminos_array = [];
             foreach ($response['glosario'] as $termino_obj) {
                 // Filtrar términos que ya existen en el glosario
                 $termino = $termino_obj['termino'];
                 if (!in_array($termino, $glosario_existente)) {
+                    // v3.1.3: Usar 'definicion' (Wikipedia), NO 'contexto' (documento)
+                    $definicion = isset($termino_obj['definicion']) && !empty($termino_obj['definicion']) 
+                        ? $termino_obj['definicion']  // Wikipedia (autoritativo)
+                        : (isset($termino_obj['contexto']) ? $termino_obj['contexto'] : '');  // Fallback al contexto solo si no hay Wikipedia
+                    
                     $terminos_array[] = [
                         'termino' => $termino,
-                        'definicion' => isset($termino_obj['contexto']) ? $termino_obj['contexto'] : '',
+                        'definicion' => $definicion,
                         'url' => null  // v3.0 no incluye URLs de Wikipedia por defecto
                     ];
                 }

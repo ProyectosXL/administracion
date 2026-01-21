@@ -117,6 +117,51 @@ window.addEventListener('resize', function() {
     }
 });
 
+// ===== Manejo del formulario de subida de documentos =====
+function handleUploadSubmit(event) {
+    // Prevenir el envío normal del formulario
+    event.preventDefault();
+    
+    // Validar que haya un archivo seleccionado
+    const fileInput = document.getElementById('docFile');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        showNotification('Por favor seleccione un archivo PDF', 'error');
+        return false;
+    }
+    
+    // Mostrar el modal INMEDIATAMENTE
+    showAutoTagsModal();
+    
+    // Preparar datos del formulario
+    const formData = new FormData(event.target);
+    
+    // Enviar el formulario mediante AJAX en segundo plano
+    fetch('Controller/procesar_documento.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(data => {
+        // El documento se procesó correctamente
+        // No hacer nada aquí, el modal ya está mostrándose
+        console.log('Documento enviado correctamente para procesamiento');
+        
+        // Opcional: limpiar el formulario después de enviar
+        setTimeout(() => {
+            event.target.reset();
+            removeFile();
+        }, 1000);
+    })
+    .catch(error => {
+        console.error('Error al subir documento:', error);
+        // Si hay error, cerrar el modal y mostrar notificación
+        closeAutoTagsModal();
+        showNotification('Error al subir el documento. Por favor intente nuevamente.', 'error');
+    });
+    
+    return false;
+}
+
 // ===== Funciones de gestión de la navegación por pestañas =====
 
 function showTab(tabId) {

@@ -671,7 +671,7 @@ $glosario = $politicaObj->obtenerGlosario();
                     
                     <!-- Formulario de carga -->
                     <div class="upload-form">
-                        <form id="uploadForm" action="Controller/procesar_documento.php" method="post" enctype="multipart/form-data">
+                        <form id="uploadForm" action="Controller/procesar_documento.php" method="post" enctype="multipart/form-data" onsubmit="handleUploadSubmit(event)">
                             <div class="form-group">
                                 <label for="docTitle">Título del documento <span class="required">*</span></label>
                                 <input type="text" id="docTitle" name="titulo" required placeholder="Ingrese un título descriptivo">
@@ -1012,7 +1012,7 @@ $glosario = $politicaObj->obtenerGlosario();
     </div>
     
     <!-- Modal para visor de PDF -->
-    <div id="pdfViewerModal" class="modal">
+    <div id="pdfViewerModal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-modal" onclick="closePdfViewer()">&times;</span>
             <h3 id="pdfTitle">Título del Documento</h3>
@@ -1026,7 +1026,7 @@ $glosario = $politicaObj->obtenerGlosario();
     </div>
     
     <!-- Modal para el glosario -->
-    <div id="glossaryModal" class="modal">
+    <div id="glossaryModal" class="modal" style="display: none;">
         <div class="modal-content glossary-modal">
             <span class="close-modal" onclick="closeGlossary()">&times;</span>
             
