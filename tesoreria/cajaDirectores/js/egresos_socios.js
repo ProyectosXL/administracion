@@ -236,7 +236,7 @@ async function cargarResumenEgresosSocios() {
     });
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 segundos timeout (2 minutos)
     
     try {
         const response = await fetch(`controller/egresos_socios_controller.php?${params}`, {
@@ -276,7 +276,7 @@ async function cargarDetalleEgresosSocios() {
     });
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 segundos timeout (2 minutos)
     
     try {
         const response = await fetch(`controller/egresos_socios_controller.php?${params}`, {
@@ -316,7 +316,7 @@ async function cargarTotalEgresosSocios() {
     });
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 segundos timeout (2 minutos)
     
     try {
         const response = await fetch(`controller/egresos_socios_controller.php?${params}`, {

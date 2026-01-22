@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 
 /**
  * Clase Director
@@ -7,9 +7,15 @@ require_once __DIR__ . '/Database.php';
  */
 class Director {
     private $db;
+    private $conexion;
     
     public function __construct() {
-        $this->db = Database::getInstance()->getAppsConnection();
+        $this->conexion = new Conexion();
+        $this->db = $this->conexion->conectar('apps');
+        
+        if ($this->db === false) {
+            throw new Exception("Error al conectar con la base de datos APPS en Director");
+        }
     }
     
     /**
@@ -19,7 +25,7 @@ class Director {
      */
     public function obtenerDirectores() {
         try {
-            $sql = "SELECT NOMBRE FROM [SERVIDOR].LAKER_SA.DBO.RO_V_DIRECTORES ORDER BY NOMBRE";
+            $sql = "SELECT NOMBRE FROM RO_T_DIRECTORES ORDER BY NOMBRE";
             $stmt = sqlsrv_query($this->db, $sql);
             
             if ($stmt === false) {
@@ -48,7 +54,7 @@ class Director {
      */
     public function existeDirector($nombreDirector) {
         try {
-            $sql = "SELECT COUNT(*) as total FROM [SERVIDOR].LAKER_SA.DBO.RO_V_DIRECTORES WHERE NOMBRE = ?";
+            $sql = "SELECT COUNT(*) as total FROM RO_T_DIRECTORES WHERE NOMBRE = ?";
             $params = [$nombreDirector];
             $stmt = sqlsrv_query($this->db, $sql, $params);
             

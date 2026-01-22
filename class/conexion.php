@@ -2,11 +2,30 @@
 
 class Conexion{
     
-    function __construct(){
+    // --- CORRECCIÓN: Declaración de variables para PHP 8.2 ---
+    public $envVars;
+    public $host_central;
+    public $database_central;
+    public $host_locales;
+    public $host_apps;
+    public $database_locales;
+    public $database_tangobis;
+    public $database_apps;
+    public $user;
+    public $pass;
+    public $pass_locales;
+    public $character;
+    public $env;
+    public $prefix;
+    public $database_uy;
+    public $database_sucUy;
+    // --------------------------------------------------------
+    
+    public function __construct(){
 
         require_once(__DIR__.'/classEnv.php');
 
-        $vars = new DotEnv(__DIR__ . '/../.env');
+        $vars = new DotEnv(__DIR__ . '/../../.env');
         $this->envVars = $vars->listVars();
         
         $this->host_central = $this->envVars['HOST_CENTRAL'];
@@ -47,46 +66,46 @@ class Conexion{
 
     }
 
-public function setearDnsBaseName($nroSucursal) {
+    public function setearDnsBaseName($nroSucursal) {
 
-    // La consulta ahora incluye USUARIO_DNS y CLAVE_DNS
-    $sql = "SELECT CONEXION_DNS, BASE_NOMBRE, USUARIO_DNS, CLAVE_DNS
-            FROM [LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS 
-            WHERE NRO_SUC_MADRE IS NULL 
-            AND NRO_SUCURSAL = ?";
+        // La consulta ahora incluye USUARIO_DNS y CLAVE_DNS
+        $sql = "SELECT CONEXION_DNS, BASE_NOMBRE, USUARIO_DNS, CLAVE_DNS
+                FROM [XL-LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS 
+                WHERE NRO_SUC_MADRE IS NULL 
+                AND NRO_SUCURSAL = ?";
 
-    $conn = $this->conectar('central');
+        $conn = $this->conectar('central');
 
-    if (!$conn) {
-        // En un entorno de producción, es mejor registrar el error que detener la ejecución.
-        error_log("Error de conexión a la base de datos central en setearDnsBaseName.");
-        return false;
+        if (!$conn) {
+            // En un entorno de producción, es mejor registrar el error que detener la ejecución.
+            error_log("Error de conexión a la base de datos central en setearDnsBaseName.");
+            return false;
+        }
+
+        $params = array($nroSucursal);
+        $stmt = sqlsrv_query($conn, $sql, $params);
+
+        if ($stmt === false) {
+            error_log("Error en la consulta de setearDnsBaseName: " . print_r(sqlsrv_errors(), true));
+            return false;
+        }
+
+        if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            // Guardamos los 4 valores en la sesión para ser usados por el método conectar()
+            $_SESSION['conexion_dns'] = $row['CONEXION_DNS'];
+            $_SESSION['base_nombre'] = $row['BASE_NOMBRE'];
+            $_SESSION['usuario_dns'] = $row['USUARIO_DNS']; // Puede ser NULL
+            $_SESSION['clave_dns'] = $row['CLAVE_DNS'];     // Puede ser NULL
+            return true;
+        } else {
+            // No se encontró configuración para esta sucursal
+            return false;
+        }
     }
 
-    $params = array($nroSucursal);
-    $stmt = sqlsrv_query($conn, $sql, $params);
-
-    if ($stmt === false) {
-        error_log("Error en la consulta de setearDnsBaseName: " . print_r(sqlsrv_errors(), true));
-        return false;
-    }
-
-    if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        // Guardamos los 4 valores en la sesión para ser usados por el método conectar()
-        $_SESSION['conexion_dns'] = $row['CONEXION_DNS'];
-        $_SESSION['base_nombre'] = $row['BASE_NOMBRE'];
-        $_SESSION['usuario_dns'] = $row['USUARIO_DNS']; // Puede ser NULL
-        $_SESSION['clave_dns'] = $row['CLAVE_DNS'];     // Puede ser NULL
-        return true;
-    } else {
-        // No se encontró configuración para esta sucursal
-        return false;
-    }
-}
-
-// REEMPLAZA este método en Class/conexion.php
-public function conectar($nameServer = null) {
-    try {
+    // REEMPLAZA este método en Class/conexion.php
+    public function conectar($nameServer = null) {
+        try {
         $serverDB = $this->servidor($nameServer);
 
         // --- LÓGICA DE CREDENCIALES DINÁMICAS ---
@@ -121,17 +140,16 @@ public function conectar($nameServer = null) {
         $cid = sqlsrv_connect($serverDB[0], $params);
 
         return $cid;
-        
-    } catch (PDOException $e) {
-        // Es mejor registrar el error que mostrarlo en pantalla.
-        error_log("PDOException en conectar(): " . $e->getMessage());
-        return false;
+        } catch (PDOException $e) {
+            // Es mejor registrar el error que mostrarlo en pantalla.
+            error_log("PDOException en conectar(): " . $e->getMessage());
+            return false;
+        }
     }
-}
 
     private function buscarLocal($nameLocal){
 
-        $prefix = ($this->env == 'DEV') ? '[LAKERBIS].locales_lakers.dbo.' : '';
+        $prefix = ($this->env == 'DEV') ? '[XL-LAKERBIS].locales_lakers.dbo.' : '';
 
         if($this->env == 'DEV'){
             $database = $this->database_central;

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 
 /**
  * Clase ArchivoSolicitud
@@ -7,6 +7,7 @@ require_once __DIR__ . '/Database.php';
  */
 class ArchivoSolicitud {
     private $db;
+    private $conexion;
     
     // Constantes de tipos de archivo
     public const TIPO_FACTURA = 'FACTURA';
@@ -19,7 +20,12 @@ class ArchivoSolicitud {
     private const MAX_FILE_SIZE_DESKTOP = 10 * 1024 * 1024;
     
     public function __construct() {
-        $this->db = Database::getInstance()->getAppsConnection();
+        $this->conexion = new Conexion();
+        $this->db = $this->conexion->conectar('apps');
+        
+        if ($this->db === false) {
+            throw new Exception("Error al conectar con la base de datos APPS en ArchivoSolicitud");
+        }
     }
     
     /**

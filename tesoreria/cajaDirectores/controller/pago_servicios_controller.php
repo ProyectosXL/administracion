@@ -7,7 +7,6 @@ try {
     require_once __DIR__ . '/../Class/Director.php';
     require_once __DIR__ . '/../Class/Proveedor.php';
     require_once __DIR__ . '/../Class/MotivoPagoServicio.php';
-    require_once __DIR__ . '/../Class/Database.php';
 
     $accion = $_GET['accion'] ?? $_POST['accion'] ?? '';
     
@@ -77,7 +76,9 @@ try {
                 throw new Exception('El CBU debe tener exactamente 22 dígitos');
             }
             
-            $db = Database::getInstance()->getAppsConnection();
+            require_once __DIR__ . '/../../../class/conexion.php';
+            $conexion = new Conexion();
+            $db = $conexion->conectar('apps');
             $sqlMaxComp = "SELECT ISNULL(MAX(CAST(N_COMP AS BIGINT)), 0) + 1 as siguiente FROM egresos WHERE COD_COMP = 'EGR'";
             $stmtMaxComp = sqlsrv_query($db, $sqlMaxComp);
             if ($stmtMaxComp === false) throw new Exception("Error al obtener N° de comprobante.");

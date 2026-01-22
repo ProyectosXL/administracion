@@ -3,7 +3,14 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../class/Egreso.php';
 
 try {
-    $egreso = new Egreso();
+    // Intentar crear instancia de Egreso con manejo de errores mejorado
+    try {
+        $egreso = new Egreso();
+    } catch (Exception $e) {
+        error_log("Error crítico al crear instancia de Egreso: " . $e->getMessage());
+        throw new Exception("Error al inicializar el módulo de egresos: " . $e->getMessage());
+    }
+    
     $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';
     
     switch ($accion) {

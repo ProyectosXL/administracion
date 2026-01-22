@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 require_once __DIR__ . '/Director.php';
 require_once __DIR__ . '/Config.php';
 
@@ -9,7 +9,9 @@ require_once __DIR__ . '/Config.php';
  */
 class Egreso {
     private $db;
+    private $conexion;
     private $director;
+    private static $sharedConexion = null;
     
     // Constantes para motivos de egreso
     public const MOTIVO_SUELDOS = 'SUELDOS';
@@ -19,8 +21,25 @@ class Egreso {
     public const MOTIVO_AJUSTE = 'AJUSTE';
     
     public function __construct() {
-        $this->db = Database::getInstance()->getAppsConnection();
+        // Reutilizar instancia de conexión si existe
+        if (self::$sharedConexion === null) {
+            self::$sharedConexion = new Conexion();
+        }
+        $this->conexion = self::$sharedConexion;
+        
+        $this->db = $this->conexion->conectar('apps');
         $this->director = new Director();
+        
+        if ($this->db === false) {
+            throw new Exception("Error al conectar con la base de datos APPS en Egreso");
+        }
+    }
+    
+    /**
+     * Obtiene la instancia de conexión compartida
+     */
+    public function getConexion() {
+        return $this->conexion;
     }
     
     /**
@@ -223,7 +242,7 @@ public function obtenerTodos($filtros = []) {
         }
         
         $resultados = [];
-        $dbCentral = Database::getInstance()->getCentralConnection();
+        $dbCentral = $this->conexion->conectar('central');
         
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
             // Agregar nombres de centro de costo y proveedor
@@ -507,7 +526,7 @@ public function obtenerTodos($filtros = []) {
      */
     public function obtenerCentrosCosto() {
         try {
-            $dbCentral = Database::getInstance()->getCentralConnection();
+            $dbCentral = $this->conexion->conectar('central');
             $sql = "SELECT COD_AUXILIAR, CENTRO_COSTO 
                     FROM RO_T_CENTRO_DE_COSTOS 
                     ORDER BY CENTRO_COSTO";
@@ -539,7 +558,7 @@ public function obtenerTodos($filtros = []) {
      */
     public function obtenerProveedores() {
         try {
-            $dbCentral = Database::getInstance()->getCentralConnection();
+            $dbCentral = $this->conexion->conectar('central');
             $sql = "SELECT COD_PROVEE, NOM_PROVEE 
                     FROM RO_V_PROVEEDORES_EGRE_DIRECTORES 
                     ORDER BY NOM_PROVEE";
@@ -827,7 +846,7 @@ public function obtenerTodos($filtros = []) {
             $importeTotal = 0;
             
             // Obtener conexión CENTRAL para buscar nombres
-            $dbCentral = Database::getInstance()->getCentralConnection();
+            $dbCentral = $this->conexion->conectar('central');
             
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $importe = floatval($row['importe']);

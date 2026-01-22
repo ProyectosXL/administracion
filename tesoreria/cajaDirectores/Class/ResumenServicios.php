@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 
 /**
  * Clase ResumenServicios
@@ -8,9 +8,15 @@ require_once __DIR__ . '/Database.php';
  */
 class ResumenServicios {
     private $db;
+    private $conexion;
     
     public function __construct() {
-        $this->db = Database::getInstance()->getAppsConnection();
+        $this->conexion = new Conexion();
+        $this->db = $this->conexion->conectar('apps');
+        
+        if ($this->db === false) {
+            throw new Exception("Error al conectar con la base de datos APPS en ResumenServicios");
+        }
     }
     
     /**
@@ -70,10 +76,10 @@ class ResumenServicios {
                         e.motivo,
                         e.nombre_director,
                         SUM(e.importe) as total
-                    FROM egresos e
+                    FROM egresos e WITH (NOLOCK)
                     WHERE e.tipo_gasto = 'Servicios'
                         AND e.nombre_director IS NOT NULL
-                        AND e.fecha_carga BETWEEN ? AND ?
+                        AND CAST(e.fecha_carga AS DATE) BETWEEN ? AND ?
                     GROUP BY e.motivo, e.nombre_director";
             
             $params = [$fechaDesde, $fechaHasta];
@@ -146,10 +152,10 @@ class ResumenServicios {
     public function obtenerTotalServicios($fechaDesde, $fechaHasta): float {
         try {
             $sql = "SELECT COALESCE(SUM(importe), 0) as total
-                    FROM egresos
+                    FROM egresos WITH (NOLOCK)
                     WHERE tipo_gasto = 'Servicios'
                         AND nombre_director IS NOT NULL
-                        AND fecha_carga BETWEEN ? AND ?";
+                        AND CAST(fecha_carga AS DATE) BETWEEN ? AND ?";
             
             $params = [$fechaDesde, $fechaHasta];
             $stmt = sqlsrv_query($this->db, $sql, $params);

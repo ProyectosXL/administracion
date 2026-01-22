@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 require_once __DIR__ . '/Director.php';
 
 /**
@@ -8,6 +8,7 @@ require_once __DIR__ . '/Director.php';
  */
 class SolicitudEgreso {
     private $db;
+    private $conexion;
     private $director;
     
     // Constantes de motivos
@@ -20,7 +21,13 @@ class SolicitudEgreso {
     public const ESTADO_PAGADO = 'PAGADO';
     
     public function __construct() {
-        $this->db = Database::getInstance()->getAppsConnection();
+        $this->conexion = new Conexion();
+        $this->db = $this->conexion->conectar('apps');
+        
+        if ($this->db === false) {
+            throw new Exception("Error al conectar con la base de datos APPS en SolicitudEgreso");
+        }
+        
         $this->director = new Director();
     }
     

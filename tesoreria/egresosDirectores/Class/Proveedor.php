@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 
 /**
  * Clase Proveedor
@@ -7,9 +7,15 @@ require_once __DIR__ . '/Database.php';
  */
 class Proveedor {
     private $dbCentral;
+    private $conexion;
     
     public function __construct() {
-        $this->dbCentral = Database::getInstance()->getCentralConnection();
+        $this->conexion = new Conexion();
+        $this->dbCentral = $this->conexion->conectar('central');
+        
+        if ($this->dbCentral === false) {
+            throw new Exception("Error al conectar con la base de datos CENTRAL en Proveedor");
+        }
     }
     
     /**

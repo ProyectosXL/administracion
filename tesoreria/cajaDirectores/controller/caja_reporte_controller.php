@@ -1,8 +1,13 @@
 <?php
+// Aumentar tiempo de ejecución para consultas pesadas
+set_time_limit(180); // 3 minutos
+ini_set('max_execution_time', '180');
+
 header('Content-Type: application/json');
 require_once __DIR__ . '/../class/Ingreso.php';
 require_once __DIR__ . '/../class/Egreso.php';
 require_once __DIR__ . '/../class/Config.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 
 try {
     $accion = $_GET['accion'] ?? '';
@@ -35,8 +40,19 @@ try {
             break;
             
         case 'movimientos':
-            $ingreso = new Ingreso();
-            $egreso = new Egreso();
+            try {
+                $ingreso = new Ingreso();
+            } catch (Exception $e) {
+                error_log("Error creando instancia de Ingreso: " . $e->getMessage());
+                throw new Exception("Error al inicializar módulo de ingresos: " . $e->getMessage());
+            }
+            
+            try {
+                $egreso = new Egreso();
+            } catch (Exception $e) {
+                error_log("Error creando instancia de Egreso: " . $e->getMessage());
+                throw new Exception("Error al inicializar módulo de egresos: " . $e->getMessage());
+            }
             
             $filtros = [];
             
@@ -59,8 +75,27 @@ try {
             }
             
             // Obtener ingresos combinados de todas las fuentes
-            $ingresos = $ingreso->obtenerIngresosCombinados($filtros['fecha_desde'], $filtros['fecha_hasta']);
-            $egresos = $egreso->obtenerTodos($filtros);
+            try {
+                $ingresos = $ingreso->obtenerIngresosCombinados($filtros['fecha_desde'], $filtros['fecha_hasta']);
+            } catch (Exception $e) {
+                error_log("Error obteniendo ingresos combinados: " . $e->getMessage());
+                throw new Exception("Error al obtener ingresos: " . $e->getMessage());
+            }
+            
+            try {
+                $egresos = $egreso->obtenerTodos($filtros);
+            } catch (Exception $e) {
+                error_log("Error obteniendo egresos: " . $e->getMessage());
+                throw new Exception("Error al obtener egresos: " . $e->getMessage());
+            }
+            
+            // Reutilizar la conexión existente de Ingreso para evitar crear más conexiones
+            $conexion = $ingreso->getConexion();
+            $dbCentral = $conexion->conectar('central');
+            
+            if ($dbCentral === false) {
+                throw new Exception("Error al conectar con la base de datos central");
+            }
             
             // Combinar y ordenar movimientos
             $movimientos = [];
@@ -133,23 +168,23 @@ try {
                 // SUELDOS: motivo - centro_costo (observaciones)
                 if ($egr['motivo'] === 'SUELDOS' && !empty($egr['centro_costo'])) {
                     // Buscar el nombre del centro de costo en la base de datos CENTRAL
-                    $dbCentral = Database::getInstance()->getCentralConnection();
                     $sqlCentro = "SELECT CENTRO_COSTO FROM RO_T_CENTRO_DE_COSTOS WHERE COD_AUXILIAR = ?";
                     $stmtCentro = sqlsrv_query($dbCentral, $sqlCentro, [$egr['centro_costo']]);
                     if ($stmtCentro && $rowCentro = sqlsrv_fetch_array($stmtCentro, SQLSRV_FETCH_ASSOC)) {
                         $concepto .= ' - ' . $rowCentro['CENTRO_COSTO'];
                     }
+                    if ($stmtCentro) sqlsrv_free_stmt($stmtCentro);
                 }
                 
                 // PROVEEDORES: motivo - proveedor - tipo_gasto (si hay) (observaciones)
                 if ($egr['motivo'] === 'PROVEEDORES' && !empty($egr['proveedor'])) {
                     // Buscar el nombre del proveedor en la base de datos CENTRAL
-                    $dbCentral = Database::getInstance()->getCentralConnection();
                     $sqlProv = "SELECT NOM_PROVEE FROM RO_V_PROVEEDORES_EGRE_DIRECTORES WHERE COD_PROVEE = ?";
                     $stmtProv = sqlsrv_query($dbCentral, $sqlProv, [$egr['proveedor']]);
                     if ($stmtProv && $rowProv = sqlsrv_fetch_array($stmtProv, SQLSRV_FETCH_ASSOC)) {
                         $concepto .= ' - ' . $rowProv['NOM_PROVEE'];
                     }
+                    if ($stmtProv) sqlsrv_free_stmt($stmtProv);
                     
                     // Agregar tipo de gasto si existe
                     if (!empty($egr['tipo_gasto'])) {
@@ -201,8 +236,23 @@ try {
     
 } catch (Exception $e) {
     http_response_code(400);
+    
+    // Log detallado con información de contexto
+    $errorDetails = [
+        'timestamp' => date('Y-m-d H:i:s'),
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'action' => $_GET['accion'] ?? 'N/A',
+        'get_params' => $_GET,
+        'trace' => $e->getTraceAsString()
+    ];
+    
+    error_log("Error en caja_reporte_controller.php: " . json_encode($errorDetails));
+    
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => $e->getMessage(),
+        'error_detail' => $e->getFile() . ':' . $e->getLine()
     ]);
 }

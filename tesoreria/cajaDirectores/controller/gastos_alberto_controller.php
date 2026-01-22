@@ -128,8 +128,12 @@ try {
             $gastos = $egreso->obtenerGastos();
             
             // Enriquecer con nombres de centros de costo
-            require_once __DIR__ . '/../Class/Database.php';
-            $dbCentral = Database::getInstance()->getCentralConnection();
+            $conexion = $egreso->getConexion();
+            $dbCentral = $conexion->conectar('central');
+            
+            if ($dbCentral === false) {
+                throw new Exception('Error al conectar con la base de datos central');
+            }
             
             foreach ($gastos as &$gasto) {
                 if (!empty($gasto['centro_costo'])) {

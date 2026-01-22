@@ -8,6 +8,56 @@
 let FECHA_INICIO_APP = null;
 
 // ===========================================
+// CONTROL DE PETICIONES CONCURRENTES
+// ===========================================
+let peticionesActivas = 0;
+const MAX_PETICIONES_CONCURRENTES = 2;
+const colaPeticiones = [];
+
+async function ejecutarConLimite(fn) {
+    // Si hay demasiadas peticiones activas, esperar en cola
+    if (peticionesActivas >= MAX_PETICIONES_CONCURRENTES) {
+        await new Promise(resolve => colaPeticiones.push(resolve));
+    }
+    
+    peticionesActivas++;
+    try {
+        return await fn();
+    } finally {
+        peticionesActivas--;
+        // Procesar siguiente petición en cola
+        if (colaPeticiones.length > 0) {
+            const siguiente = colaPeticiones.shift();
+            siguiente();
+        }
+    }
+}
+
+/**
+ * Maneja errores de fetch y extrae mensaje del servidor
+ */
+async function manejarErrorResponse(response) {
+    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    try {
+        const errorText = await response.text();
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.message) {
+            errorMessage += ` - ${errorJson.message}`;
+        }
+        if (errorJson.error_detail) {
+            console.error('Detalle técnico:', errorJson.error_detail);
+        }
+        console.error('Respuesta de error completa:', errorJson);
+    } catch (e) {
+        // Si no es JSON válido, mostrar el texto tal cual
+        if (errorText && errorText.length < 500) {
+            console.error('Respuesta de error (texto):', errorText);
+        }
+    }
+    throw new Error(errorMessage);
+}
+
+// ===========================================
 // DIAGNÓSTICO DE VERSIÓN Y DEBUGGING
 // ===========================================
 console.log('[SYSTEM] ✅ caja_reporte.js cargado correctamente');
@@ -112,31 +162,36 @@ async function actualizarResumen(soloSaldo = false, filtrosActivos = null) {
         
         console.log('[DEBUG] Calculando saldo desde:', fechaDesdeSaldo, 'hasta:', fechaHastaSaldo);
         
-        let urlSaldo = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
-        urlSaldo += `&fecha_desde=${fechaDesdeSaldo}`;
-        urlSaldo += `&fecha_hasta=${fechaHastaSaldo}`;
-        
-        const responseSaldo = await fetch(urlSaldo, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Cache-Control': 'no-cache'
+        // Usar limitador de peticiones concurrentes
+        const resultSaldo = await ejecutarConLimite(async () => {
+            let urlSaldo = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
+            urlSaldo += `&fecha_desde=${fechaDesdeSaldo}`;
+            urlSaldo += `&fecha_hasta=${fechaHastaSaldo}`;
+            
+            const responseSaldo = await fetch(urlSaldo, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            
+            if (!responseSaldo.ok) {
+                await manejarErrorResponse(responseSaldo);
             }
+            
+            const textSaldo = await responseSaldo.text();
+            let result;
+            
+            try {
+                result = JSON.parse(textSaldo);
+            } catch (jsonError) {
+                console.error('Respuesta no es JSON válido:', textSaldo);
+                throw new Error('Respuesta del servidor no es JSON válido');
+            }
+            
+            return result;
         });
-        
-        if (!responseSaldo.ok) {
-            throw new Error(`HTTP ${responseSaldo.status}: ${responseSaldo.statusText}`);
-        }
-        
-        const textSaldo = await responseSaldo.text();
-        let resultSaldo;
-        
-        try {
-            resultSaldo = JSON.parse(textSaldo);
-        } catch (jsonError) {
-            console.error('Respuesta no es JSON válido:', textSaldo);
-            throw new Error('Respuesta del servidor no es JSON válido');
-        }
         
         console.log('Datos para saldo (todos los períodos):', resultSaldo.data);
         
@@ -318,7 +373,7 @@ async function cargarReporte(filtros = {}) {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            await manejarErrorResponse(response);
         }
         
         const text = await response.text();

@@ -1,4 +1,8 @@
 <?php
+// Aumentar tiempo de ejecución para consultas pesadas
+set_time_limit(180); // 3 minutos
+ini_set('max_execution_time', '180');
+
 header('Content-Type: application/json; charset=utf-8');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);

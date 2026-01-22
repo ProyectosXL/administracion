@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 require_once __DIR__ . '/../../../class/classEnv.php';
 
 // Cargar PHPMailer desde carpeta local
@@ -31,10 +31,16 @@ class EmailNotificacion {
     private const EMAIL_DEVELOP = 'federico.trejo@xl.com.ar';
     
     private $db;
+    private $conexion;
     private $envVars;
     
     public function __construct() {
-        $this->db = Database::getInstance()->getAppsConnection();
+        $this->conexion = new Conexion();
+        $this->db = $this->conexion->conectar('apps');
+        
+        if ($this->db === false) {
+            throw new Exception("Error al conectar con la base de datos APPS en EmailNotificacion");
+        }
         
         // Cargar variables de entorno
         $vars = new DotEnv(__DIR__ . '/../../../.env');

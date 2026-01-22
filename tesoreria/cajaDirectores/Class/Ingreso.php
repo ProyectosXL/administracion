@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 require_once __DIR__ . '/Config.php';
 
 /**
@@ -9,10 +9,33 @@ require_once __DIR__ . '/Config.php';
 class Ingreso {
     private $db;
     private $dbCentral;
+    private $conexion;
+    private static $sharedConexion = null;
     
     public function __construct() {
-        $this->db = Database::getInstance()->getAppsConnection();
-        $this->dbCentral = Database::getInstance()->getCentralConnection();
+        // Reutilizar instancia de conexión si existe
+        if (self::$sharedConexion === null) {
+            self::$sharedConexion = new Conexion();
+        }
+        $this->conexion = self::$sharedConexion;
+        
+        $this->db = $this->conexion->conectar('apps');
+        $this->dbCentral = $this->conexion->conectar('central');
+        
+        if ($this->db === false) {
+            throw new Exception("Error al conectar con la base de datos APPS");
+        }
+        
+        if ($this->dbCentral === false) {
+            throw new Exception("Error al conectar con la base de datos CENTRAL");
+        }
+    }
+    
+    /**
+     * Obtiene la instancia de conexión compartida
+     */
+    public function getConexion() {
+        return $this->conexion;
     }
     
     /**

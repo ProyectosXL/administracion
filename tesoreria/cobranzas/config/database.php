@@ -18,7 +18,7 @@ class Database {
 
         try {
             // Subimos tres niveles para encontrar el .env en la raíz de 'administracion/'
-            $path = __DIR__ . '/../../../.env';
+            $path = __DIR__ . '/../../../../.env';
 
             if (!file_exists($path) || !is_readable($path)) {
                 throw new \RuntimeException(sprintf('%s file is not found or not readable', $path));

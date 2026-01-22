@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 
 /**
  * Clase MotivoPagoServicio
@@ -7,9 +7,15 @@ require_once __DIR__ . '/Database.php';
  */
 class MotivoPagoServicio {
     private $db;
+    private $conexion;
     
     public function __construct() {
-        $this->db = Database::getInstance()->getAppsConnection();
+        $this->conexion = new Conexion();
+        $this->db = $this->conexion->conectar('apps');
+        
+        if ($this->db === false) {
+            throw new Exception("Error al conectar con la base de datos APPS en MotivoPagoServicio");
+        }
     }
     
     /**
