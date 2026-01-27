@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../../../class/conexion.php';
-require_once __DIR__ . '/../../../class/classEnv.php';
 
 // Cargar PHPMailer desde carpeta local
 require_once __DIR__ . '/../PHPMailer/PHPMailer.php';
@@ -32,7 +31,6 @@ class EmailNotificacion {
     
     private $db;
     private $conexion;
-    private $envVars;
     
     public function __construct() {
         $this->conexion = new Conexion();
@@ -41,10 +39,6 @@ class EmailNotificacion {
         if ($this->db === false) {
             throw new Exception("Error al conectar con la base de datos APPS en EmailNotificacion");
         }
-        
-        // Cargar variables de entorno
-        $vars = new DotEnv(__DIR__ . '/../../../.env');
-        $this->envVars = $vars->listVars();
     }
     
     /**
@@ -718,7 +712,7 @@ class EmailNotificacion {
         $mail = new PHPMailer(true);
         
         try {
-            // Configuración del servidor SMTP (credenciales que funcionan)
+            // Configuración del servidor SMTP (credenciales hardcodeadas que funcionan)
             $mail->isSMTP();
             $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
