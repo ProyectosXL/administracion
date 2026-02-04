@@ -966,23 +966,30 @@ function validarSeccion1() {
 function agregarOrdenAlContenedor(orden) {
     const modoEdicion = $('#modoEdicion').val() === 'true';
     const div = document.createElement('div');
+    div.className = 'orden-de-compra-item';
     div.id = 'ordenDeCompra';
+    
+    // Asegurarse de que el texto de la orden sea limpio
+    const ordenLimpia = orden.trim();
     
     // En modo edición, no mostrar botón de eliminar
     if (modoEdicion) {
         div.innerHTML = `
-            <span style="overflow: hidden; text-overflow: ellipsis;" id="nroOrdenSpan">${orden}</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                  id="nroOrdenSpan">${ordenLimpia}</span>
         `;
     } else {
         div.innerHTML = `
-            <span style="overflow: hidden; text-overflow: ellipsis;" id="nroOrdenSpan">${orden}</span> 
-            <button class="btn-delete" data-orden="${orden}">
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                  id="nroOrdenSpan">${ordenLimpia}</span> 
+            <button class="btn-delete" data-orden="${ordenLimpia}">
                 <i class="bi bi-x-circle" style="color:white;"></i>
             </button>
         `;
     }
     
-    document.querySelector("#ordenesSeleccionadas").appendChild(div);
+    const contenedor = document.querySelector("#ordenesSeleccionadas");
+    contenedor.appendChild(div);
     
     // Solo configurar botón de eliminación si NO estamos en modo edición
     if (!modoEdicion) {
@@ -1003,11 +1010,11 @@ function agregarOrdenAlContenedor(orden) {
                 const Toast = Swal.mixin({
                     toast: true,
                     position: 'bottom-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true
-            });
-            
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                
                 Toast.fire({
                     icon: 'success',
                     title: `Orden ${orden} eliminada`
@@ -1016,7 +1023,6 @@ function agregarOrdenAlContenedor(orden) {
         });
     }
 }
-
 /**
  * Función para traer orden manual
  */
@@ -1307,137 +1313,34 @@ $(document).ready(function() {
         recalcularFobPesos();
     });
 
-    // ========== MODAL PARA AGREGAR ORDEN DE COMPRA ==========
-    $('#btnAddOrdenCompra').on('click', function() {
-        // Validaciones iniciales
-        if(document.querySelector("#proveedor").value == 'PROVEEDOR') {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Debes seleccionar un proveedor primero',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
+    // Evento para cargar órdenes cuando se selecciona un proveedor
+$('#proveedor').on('change', function() {
+    const proveedorSeleccionado = $(this).val();
+    
+    if (proveedorSeleccionado && proveedorSeleccionado !== 'PROVEEDOR') {
+        cargarOrdenesPorProveedor(proveedorSeleccionado);
+    } else {
+        // Limpiar órdenes si no hay proveedor seleccionado
+        localStorage.removeItem('ordenes');
+    }
+});
 
-        if(document.querySelector("#ordenManual").checked == true) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No puedes agregar órdenes de compra si seleccionaste orden manual',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
-
-        // Obtener órdenes del localStorage
-        let ordenes = localStorage.getItem('ordenes');
-        ordenes = JSON.parse(ordenes);
-        
-        // Obtener órdenes ya seleccionadas
-        let ordenesSeleccionadas = document.querySelectorAll("#ordenDeCompra");
-        let ordenesSeleccionadasArray = Array.from(ordenesSeleccionadas).map(el => el.textContent.trim().replace('×', '').trim());
-        
-        // Preparar opciones del select
-        let selectOptions = '';
-        
-        if (ordenes && Array.isArray(ordenes)) {
-            // Filtrar órdenes para excluir las ya seleccionadas
-            let ordenesFiltradas = ordenes.filter(orden => 
-                !ordenesSeleccionadasArray.includes(orden.N_ORDEN_CO.trim())
-            );
+// Función para cargar órdenes por proveedor
+function cargarOrdenesPorProveedor(codProveedor) {
+    console.log('Cargando órdenes para proveedor:', codProveedor);
+    
+    $.ajax({
+        url: '../controller/traerOrdenesController.php',
+        method: 'GET',
+        data: { proveedor: codProveedor },
+        dataType: 'json',
+        success: function(response) {
+            console.log('Órdenes cargadas:', response);
             
-            if (ordenesFiltradas.length === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Información',
-                    text: 'No hay más órdenes disponibles para seleccionar',
-                    confirmButtonColor: '#3085d6',
-                    confirmButtonText: 'Aceptar'
-                });
-                return;
-            }
-            
-            ordenesFiltradas.forEach(function(orden) {
-                selectOptions += `<option value="${orden.N_ORDEN_CO}">${orden.N_ORDEN_CO}</option>`;
-            });
-        } else {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Sin datos',
-                text: 'No se encontraron órdenes de compra disponibles',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'Aceptar'
-            });
-            return;
-        }
-
-        // Crear HTML personalizado para el modal
-        const modalHTML = `
-            <div class="modal-orden-compra">
-                <p class="modal-subtitle">Selecciona una o varias órdenes de compra</p>
-                <div class="select-container">
-                    <select id="ordenCompra" class="swal2-select custom-select" multiple>
-                        ${selectOptions}
-                    </select>
-                </div>
-                <div id="seleccionPrevia" class="seleccion-previa"></div>
-                <div class="form-hint">
-                    <small><i class="bi bi-info-circle"></i> Mantén presionada la tecla Ctrl para seleccionar múltiples órdenes</small>
-                </div>
-            </div>
-        `;
-
-        // Mostrar modal mejorado
-        Swal.fire({
-            title: 'Añadir Orden de Compra',
-            html: modalHTML,
-            showCancelButton: true,
-            confirmButtonText: '<i class="bi bi-check-circle"></i> Guardar',
-            cancelButtonText: '<i class="bi bi-x-circle"></i> Cancelar',
-            confirmButtonColor: '#7066e0',
-            cancelButtonColor: '#6c757d',
-            focusConfirm: false,
-            didOpen: () => {
-                // Actualizar vista previa cuando se seleccionan opciones
-                const selectElement = document.getElementById('ordenCompra');
-                selectElement.addEventListener('change', () => {
-                    const seleccionPrevia = document.getElementById('seleccionPrevia');
-                    seleccionPrevia.innerHTML = '';
-                    
-                    const selectedOptions = Array.from(selectElement.selectedOptions);
-                    selectedOptions.forEach(option => {
-                        const ordenItem = document.createElement('div');
-                        ordenItem.className = 'orden-item';
-                        ordenItem.innerHTML = `
-                            <span class="orden-item-text">${option.value}</span>
-                        `;
-                        seleccionPrevia.appendChild(ordenItem);
-                    });
-                });
-            },
-            preConfirm: () => {
-                const selectedOptions = Array.from(
-                    Swal.getPopup().querySelectorAll('.swal2-select option:checked'), 
-                    option => option.value
-                );
+            if (response && Array.isArray(response)) {
+                // Guardar en localStorage para usar en el modal
+                localStorage.setItem('ordenes', JSON.stringify(response));
                 
-                if (selectedOptions.length === 0) {
-                    Swal.showValidationMessage('Por favor selecciona al menos una orden de compra');
-                    return false;
-                }
-                
-                // Añadir órdenes seleccionadas al contenedor
-                selectedOptions.forEach(function(orden) {
-                    agregarOrdenAlContenedor(orden);
-                });
-                
-                return true;
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
                 // Mostrar notificación de éxito
                 const Toast = Swal.mixin({
                     toast: true,
@@ -1449,11 +1352,236 @@ $(document).ready(function() {
                 
                 Toast.fire({
                     icon: 'success',
-                    title: 'Órdenes de compra agregadas correctamente'
+                    title: `${response.length} órdenes cargadas`
+                });
+            } else {
+                console.error('Respuesta no válida:', response);
+                localStorage.removeItem('ordenes');
+            }
+        },
+        error: function(error) {
+            console.error('Error al cargar órdenes:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron cargar las órdenes del proveedor',
+                confirmButtonColor: '#3085d6'
+            });
+            localStorage.removeItem('ordenes');
+        }
+    });
+}
+    // ========== MODAL PARA AGREGAR ORDEN DE COMPRA ==========
+$('#btnAddOrdenCompra').on('click', function() {
+    // Validaciones iniciales
+    const proveedorValor = $('#proveedor').val();
+    const modoEdicion = $('#modoEdicion').val() === 'true';
+    
+    if(!proveedorValor || proveedorValor === 'PROVEEDOR') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Debes seleccionar un proveedor primero',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: 'Entendido'
+        });
+        return;
+    }
+
+    if(document.querySelector("#ordenManual").checked) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No puedes agregar órdenes de compra si seleccionaste orden manual',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: 'Entendido'
+        });
+        return;
+    }
+
+    // Obtener órdenes del localStorage
+    let ordenesStorage = localStorage.getItem('ordenes');
+    let ordenes = [];
+    
+    try {
+        if (ordenesStorage) {
+            ordenes = JSON.parse(ordenesStorage);
+        }
+    } catch (e) {
+        console.error('Error al parsear órdenes:', e);
+        localStorage.removeItem('ordenes');
+    }
+    
+    // Obtener órdenes ya seleccionadas
+    let ordenesSeleccionadas = document.querySelectorAll("#ordenDeCompra");
+    let ordenesSeleccionadasArray = Array.from(ordenesSeleccionadas).map(el => {
+        const span = el.querySelector('#nroOrdenSpan');
+        return span ? span.textContent.trim() : el.textContent.trim().replace('×', '').trim();
+    });
+    
+    // Preparar opciones del select
+    let selectOptions = '';
+    
+    if (ordenes && Array.isArray(ordenes) && ordenes.length > 0) {
+        // Filtrar órdenes para excluir las ya seleccionadas
+        let ordenesFiltradas = ordenes.filter(orden => {
+            const nroOrden = orden.N_ORDEN_CO ? orden.N_ORDEN_CO.trim() : '';
+            return nroOrden && !ordenesSeleccionadasArray.includes(nroOrden);
+        });
+        
+        if (ordenesFiltradas.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Información',
+                text: 'No hay más órdenes disponibles para seleccionar',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
+        
+        ordenesFiltradas.forEach(function(orden) {
+            const nroOrden = orden.N_ORDEN_CO ? orden.N_ORDEN_CO.trim() : '';
+            if (nroOrden) {
+                selectOptions += `<option value="${nroOrden}">${nroOrden}</option>`;
+            }
+        });
+    } else {
+        // Si no hay órdenes en localStorage, intentar cargarlas nuevamente
+        Swal.fire({
+            title: 'Cargando órdenes...',
+            text: 'Por favor espera',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+                
+                $.ajax({
+                    url: '../controller/traerOrdenesController.php',
+                    method: 'GET',
+                    data: { proveedor: proveedorValor },
+                    dataType: 'json',
+                    success: function(response) {
+                        Swal.close();
+                        
+                        if (response && Array.isArray(response) && response.length > 0) {
+                            localStorage.setItem('ordenes', JSON.stringify(response));
+                            // Volver a abrir el modal con las órdenes cargadas
+                            setTimeout(() => $('#btnAddOrdenCompra').click(), 100);
+                        } else {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Sin datos',
+                                text: 'No se encontraron órdenes de compra disponibles para este proveedor',
+                                confirmButtonColor: '#3085d6',
+                                confirmButtonText: 'Aceptar'
+                            });
+                        }
+                    },
+                    error: function() {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudieron cargar las órdenes. Intenta nuevamente.',
+                            confirmButtonColor: '#3085d6',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    }
                 });
             }
         });
+        return;
+    }
+
+    // Crear HTML personalizado para el modal
+    const modalHTML = `
+        <div class="modal-orden-compra">
+            <p class="modal-subtitle">Selecciona una o varias órdenes de compra</p>
+            <div class="select-container">
+                <select id="ordenCompra" class="swal2-select custom-select" multiple style="min-height: 200px; width: 100%;">
+                    ${selectOptions}
+                </select>
+            </div>
+            <div id="seleccionPrevia" class="seleccion-previa mt-3"></div>
+            <div class="form-hint mt-2">
+                <small><i class="bi bi-info-circle"></i> Mantén presionada la tecla Ctrl (Cmd en Mac) para seleccionar múltiples órdenes</small>
+            </div>
+        </div>
+    `;
+
+    // Mostrar modal mejorado
+    Swal.fire({
+        title: 'Añadir Orden de Compra',
+        html: modalHTML,
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-check-circle"></i> Guardar',
+        cancelButtonText: '<i class="bi bi-x-circle"></i> Cancelar',
+        confirmButtonColor: '#7066e0',
+        cancelButtonColor: '#6c757d',
+        focusConfirm: false,
+        width: '600px',
+        didOpen: () => {
+            // Establecer tamaño del select
+            const selectElement = document.getElementById('ordenCompra');
+            selectElement.style.height = '200px';
+            
+            // Actualizar vista previa cuando se seleccionan opciones
+            selectElement.addEventListener('change', () => {
+                const seleccionPrevia = document.getElementById('seleccionPrevia');
+                seleccionPrevia.innerHTML = '';
+                
+                const selectedOptions = Array.from(selectElement.selectedOptions);
+                
+                if (selectedOptions.length === 0) {
+                    seleccionPrevia.innerHTML = '<div class="text-muted">No hay órdenes seleccionadas</div>';
+                    return;
+                }
+                
+                selectedOptions.forEach(option => {
+                    const ordenItem = document.createElement('div');
+                    ordenItem.className = 'orden-item mb-2 p-2 bg-light rounded';
+                    ordenItem.innerHTML = `
+                        <span class="orden-item-text">${option.value}</span>
+                    `;
+                    seleccionPrevia.appendChild(ordenItem);
+                });
+            });
+        },
+        preConfirm: () => {
+            const selectedOptions = Array.from(
+                Swal.getPopup().querySelectorAll('.swal2-select option:checked'), 
+                option => option.value
+            );
+            
+            if (selectedOptions.length === 0) {
+                Swal.showValidationMessage('Por favor selecciona al menos una orden de compra');
+                return false;
+            }
+            
+            // Añadir órdenes seleccionadas al contenedor
+            selectedOptions.forEach(function(orden) {
+                agregarOrdenAlContenedor(orden);
+            });
+            
+            return true;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Mostrar notificación de éxito
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+            
+            Toast.fire({
+                icon: 'success',
+                title: `${selectedOptions.length} orden(es) agregada(s) correctamente`
+            });
+        }
     });
+});
 
     console.log('cargaInicial.js cargado correctamente');
 });

@@ -11,21 +11,32 @@ btnUpdateDetalle.addEventListener("click",()=> {
     let table = document.querySelector("#table")
     let rows = table.querySelectorAll("tr:not(:last-child)")
   
-    rows.forEach((x,e)=>{
-      let gastos = x.querySelectorAll("td")[1].firstChild.value;
-      let idDetalle = x.querySelectorAll("td")[0].getAttribute('attr-value')
-      let importeEnDolares = window.convertirANumero(x.querySelectorAll("td")[2].firstChild.value);
-      let tipoCambio = window.convertirANumero(x.querySelectorAll("td")[3].firstChild.value);
-      let importeEnPesos = window.convertirANumero(x.querySelectorAll("td")[4].firstChild.value);
-      let sobreFob = x.querySelectorAll("td")[5].firstChild.value.replace("%","");
-      sobreFob = window.convertirANumero(sobreFob);
-      let observaciones = x.querySelectorAll("td")[6].firstChild.value;
+rows.forEach((x,e)=>{
+  // Usar querySelector para obtener el input dentro del td
+  let gastos = x.querySelectorAll("td")[1].querySelector("input").value;
+  let idDetalle = x.querySelectorAll("td")[0].getAttribute('attr-value')
+  
+  let importeDolaresInput = x.querySelectorAll("td")[2].querySelector("input");
+  let importeEnDolares = importeDolaresInput ? window.convertirANumero(importeDolaresInput.value) : 0;
+  
+  let tipoCambioInput = x.querySelectorAll("td")[3].querySelector("input");
+  let tipoCambio = tipoCambioInput ? window.convertirANumero(tipoCambioInput.value) : 0;
+  
+  let importePesosInput = x.querySelectorAll("td")[4].querySelector("input");
+  let importeEnPesos = importePesosInput ? window.convertirANumero(importePesosInput.value) : 0;
+  
+  let sobreFobInput = x.querySelectorAll("td")[5].querySelector("input");
+  let sobreFob = sobreFobInput && sobreFobInput.value ? 
+                 window.convertirANumero(sobreFobInput.value.replace("%","")) : 0;
+  
+  let observacionesInput = x.querySelectorAll("td")[6].querySelector("input");
+  let observaciones = observacionesInput ? observacionesInput.value : "";
 
       arrayDatos [e] = [gastos, importeEnDolares, tipoCambio, importeEnPesos, sobreFob, observaciones, idDetalle]
     })
 
     $.ajax({
-      url: 'Controller/OrdenDeCompraController.php',
+      url: '/administracion/comercioExterior/Controller/OrdenDeCompraController.php',
       method: 'POST',
       data:{
         "array": arrayDatos, 
@@ -34,7 +45,7 @@ btnUpdateDetalle.addEventListener("click",()=> {
     })
     .done(function(e) {
       $.ajax({
-        url: 'Controller/updateCostoNacionalizacion.php',
+        url: '/administracion/comercioExterior/class/Orden.php',
         method: 'POST',
         data:{
           "nroOrdenDeCompra": nroOrden
@@ -50,7 +61,7 @@ btnUpdateDetalle.addEventListener("click",()=> {
         denyButtonText: `Volver`,
         })
         .then((e) => {
-          window.location = "../comercioExterior/mostrarOrden.php"
+          window.location = "/administracion/comercioExterior/tabs/costoNacionalizacion.php"
         })
     })
 })

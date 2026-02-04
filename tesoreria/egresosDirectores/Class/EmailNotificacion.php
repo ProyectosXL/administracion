@@ -16,7 +16,7 @@ use PHPMailer\PHPMailer\Exception;
 class EmailNotificacion {
     
     // Direcciones de correo
-    private const EMAIL_TESORERIA = 'ramiro.orozco@xl.com.ar';
+    private const EMAIL_TESORERIA = 'tesoreria@xl.com.ar';
     private const EMAIL_PROVEEDORES = [
         'rodrigo.alganaraz@xl.com.ar',
         'julieta.bianculli@xl.com.ar'  // Agrega aquí el segundo email

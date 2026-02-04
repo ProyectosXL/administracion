@@ -184,7 +184,7 @@ if(document.querySelector("#btnSaveDetalle") != null){
     });
 
     $.ajax({
-      url: 'Controller/OrdenDeCompraController.php',
+      url: '/administracion/comercioExterior/Controller/OrdenDeCompraController.php',
       method: 'POST',
       data:{
         "array": arrayDatos, 

@@ -210,6 +210,7 @@ async function cargarCentrosCosto() {
 }
 
 // Cargar lista de proveedores
+// Cargar lista de proveedores
 async function cargarProveedores() {
     try {
         const response = await fetch(`controller/caja_egresos_controller.php?accion=proveedores&_=${Date.now()}`, {
@@ -246,10 +247,11 @@ async function cargarProveedores() {
                 option.textContent = proveedor.nom_provee;
                 select.appendChild(option);
             });
+            
+            console.log('✅ Proveedores cargados:', result.data.length, 'registros');
         }
     } catch (error) {
         console.error('Error al cargar proveedores:', error);
-        // No mostrar alerta para no molestar al usuario constantemente
     }
 }
 
@@ -570,4 +572,59 @@ document.getElementById('egresos-tab')?.addEventListener('shown.bs.tab', functio
     cargarDirectores();
     cargarCentrosCosto();
     cargarProveedores();
+});
+// ============================================
+// SOLUCIÓN ESPECÍFICA PARA DISPOSITIVOS MÓVILES
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Función para manejar la visibilidad del campo proveedor en móvil
+    function manejarVisibilidadProveedorMovil() {
+        if (!esMobile()) return; // Solo en móvil
+        
+        const divProveedor = document.getElementById('divProveedor');
+        const motivoEgreso = document.getElementById('motivoEgreso');
+        
+        if (!divProveedor || !motivoEgreso) return;
+        
+        // En móvil: mostrar el campo de proveedor SIEMPRE
+        divProveedor.classList.remove('d-none');
+        
+        // Pero solo hacerlo requerido si el motivo es PROVEEDORES
+        const selectProveedor = document.getElementById('proveedor');
+        if (motivoEgreso.value === 'PROVEEDORES') {
+            selectProveedor.required = true;
+        } else {
+            selectProveedor.required = false;
+        }
+        
+        console.log('📱 Móvil detectado: campo proveedor visible');
+    }
+    
+    // Ejecutar cuando se cargue la pestaña de egresos
+    document.getElementById('egresos-tab')?.addEventListener('shown.bs.tab', function() {
+        setTimeout(function() {
+            manejarVisibilidadProveedorMovil();
+            
+            // Cargar proveedores si el select está vacío
+            const selectProveedor = document.getElementById('proveedor');
+            if (selectProveedor && selectProveedor.options.length <= 1) {
+                cargarProveedores();
+            }
+        }, 100);
+    });
+    
+    // También ejecutar si la pestaña ya está activa al cargar la página
+    if (document.getElementById('egresos-tab')?.classList.contains('active')) {
+        setTimeout(function() {
+            manejarVisibilidadProveedorMovil();
+        }, 300);
+    }
+    
+    // Modificar el evento de cambio de motivo para móvil
+    document.getElementById('motivoEgreso')?.addEventListener('change', function() {
+        setTimeout(function() {
+            manejarVisibilidadProveedorMovil();
+        }, 50);
+    });
 });
