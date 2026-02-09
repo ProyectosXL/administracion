@@ -1,7 +1,7 @@
 <?php
 // PRIMERO: Verificamos si la acción es crear una propuesta.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['action'] === 'crear_propuesta') {
-    session_start(); 
+    session_start();
     header('Content-Type: application/json');
     require_once '../config/database.php';
 
@@ -13,40 +13,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     $cod_cliente = $_POST['cod_cliente'] ?? null; // <-- AÑADE ESTA LÍNEA
 
     // La validación correcta
-if (empty($cod_cliente) || empty($comprobantes) || !isset($total_propuesto) || empty($fecha_propuesta_pago) || empty($medio_de_pago) || empty($id_usuario_admin)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Faltan datos para crear la propuesta.']);
-    exit;
-}
-    
+    if (empty($cod_cliente) || empty($comprobantes) || !isset($total_propuesto) || empty($fecha_propuesta_pago) || empty($medio_de_pago) || empty($id_usuario_admin)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Faltan datos para crear la propuesta.']);
+        exit;
+    }
+
     $conn_apps = Database::getConnection('apps');
-    if (sqlsrv_begin_transaction($conn_apps) === false) { /* ... */ }
+    if (sqlsrv_begin_transaction($conn_apps) === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
 
     try {
         $sql_propuesta = "INSERT INTO FP_propuestas_pago (cod_cliente, id_usuario_admin, estado, total_propuesto, fecha_propuesta_pago, medio_de_pago) OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?)";
         $params_propuesta = [$cod_cliente, $id_usuario_admin, 'PENDIENTE_APROBACION_CLIENTE', $total_propuesto, $fecha_propuesta_pago, $medio_de_pago];
         $stmt_propuesta = sqlsrv_query($conn_apps, $sql_propuesta, $params_propuesta);
-        
+
         $row_id = sqlsrv_fetch_array($stmt_propuesta, SQLSRV_FETCH_ASSOC);
         $id_propuesta = $row_id['id'];
 
-        if (!$id_propuesta) throw new Exception("No se pudo crear la cabecera de la propuesta.");
+        if (!$id_propuesta)
+            throw new Exception("No se pudo crear la cabecera de la propuesta.");
 
         $sql_item = "INSERT INTO FP_propuestas_pago_items (id_propuesta, t_comp_factura, n_comp_factura, importe_bruto, importe_neto, porcentaje_descuento) VALUES (?, ?, ?, ?, ?, ?)";
         foreach ($comprobantes as $comp) {
             $params_item = [$id_propuesta, $comp['t_comp'], $comp['n_comp'], $comp['importe_bruto'], $comp['importe_neto'], $comp['porcentaje_descuento']];
             $stmt_item = sqlsrv_query($conn_apps, $sql_item, $params_item);
-            if ($stmt_item === false) throw new Exception("Error al insertar item: " . $comp['n_comp']);
+            if ($stmt_item === false)
+                throw new Exception("Error al insertar item: " . $comp['n_comp']);
         }
 
         $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)";
         $desc_historial = "Propuesta de pago creada por el administrador.";
         $params_historial = [$id_propuesta, $id_usuario_admin, 'ADMIN', $desc_historial];
         $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
-        if ($stmt_historial === false) throw new Exception("Error al registrar historial.");
+        if ($stmt_historial === false)
+            throw new Exception("Error al registrar historial.");
 
         sqlsrv_commit($conn_apps);
-                // --- INICIO DE LA NOTIFICACIÓN (CASO A) ---
+        // --- INICIO DE LA NOTIFICACIÓN (CASO A) ---
         require_once __DIR__ . '/notificaciones_controller.php';
         $email_destinatario = obtenerEmailFranquiciado($cod_cliente);
         if ($email_destinatario) {
@@ -65,13 +70,12 @@ if (empty($cod_cliente) || empty($comprobantes) || !isset($total_propuesto) || e
     exit;
 }
 
-// LÓGICA PARA LISTAR COBRANZAS (Esta parte no necesita cambios)
-// LÓGICA PARA LISTAR COBRANZAS (CORREGIDA)
+// LÓGICA PARA LISTAR COBRANZAS
 header('Content-Type: application/json');
 require_once '../config/database.php';
 
 $tipo = isset($_GET['tipo']) ? $_GET['tipo'] : '';
-$cod_cliente = isset($_GET['cod_client']) ? trim($_GET['cod_client']) : null; // Añadimos trim() por seguridad
+$cod_cliente = isset($_GET['cod_client']) ? trim($_GET['cod_client']) : null;
 $vista = '';
 
 if ($tipo === 'franquicias') {
@@ -94,93 +98,124 @@ try {
         'totalClientes' => 0
     ];
 
-if ($cod_cliente) {
-    // --- VISTA DE DETALLE ---
+    // 1. Obtener todos los comprobantes que ya están en propuestas activas (para filtrar)
+    $facturas_en_propuestas = [];
+    $sql_prop = "SELECT items.n_comp_factura, propuestas.cod_cliente 
+                 FROM FP_propuestas_pago_items items 
+                 JOIN FP_propuestas_pago propuestas ON items.id_propuesta = propuestas.id 
+                 WHERE propuestas.estado NOT IN ('RECHAZADA', 'CANCELADA', 'PAGADO', 'VENCIDA')";
 
-    // 1. Obtener la lista de N_COMP de las propuestas
-    $facturas_en_propuesta = [];
-    $sql_propuestas = "
-        SELECT 
-            items.n_comp_factura
-        FROM 
-            FP_propuestas_pago_items items
-        JOIN 
-            FP_propuestas_pago propuestas ON items.id_propuesta = propuestas.id
-        WHERE 
-            propuestas.cod_cliente = ?
-    ";
-    $params_propuestas = [$cod_cliente];
-    $stmt_propuestas = sqlsrv_query($conn_apps, $sql_propuestas, $params_propuestas);
-    if ($stmt_propuestas === false) {
-        throw new Exception("Error al consultar propuestas activas: ".print_r(sqlsrv_errors(), true));
-    }
-    while ($row = sqlsrv_fetch_array($stmt_propuestas, SQLSRV_FETCH_ASSOC)) {
-        $facturas_en_propuesta[trim($row['n_comp_factura'])] = true;
+    // Si estamos en detalle, filtramos solo para ese cliente para mayor eficiencia
+    if ($cod_cliente) {
+        $sql_prop .= " AND propuestas.cod_cliente = ?";
+        $stmt_prop = sqlsrv_query($conn_apps, $sql_prop, [$cod_cliente]);
+    } else {
+        $stmt_prop = sqlsrv_query($conn_apps, $sql_prop);
     }
 
-    // ======================= INICIO DE LA CORRECCIÓN DE COLLATION EN EL JOIN =======================
-    // 2. Obtener TODAS las facturas del cliente, forzando la intercalación en el JOIN
-    $sql_facturas = "
-        SELECT 
-            v.COD_CLIENT, v.RAZON_SOCI, v.FECHA_EMIS, v.T_COMP, v.N_COMP, 
-            v.ESTADO, v.IMPORTE, v.FECHA_PROB_COBRO, v.PPP, v.IMPORTE_NETO,
-            p.MEDIO_PAGO_DEFAULT, p.DIAS_PP_MAX, p.DESC_PP_MAX
-        FROM $vista v
-        LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-        WHERE v.COD_CLIENT = ?
-        ORDER BY v.FECHA_EMIS DESC
-    ";
-    // ======================== FIN DE LA CORRECCIÓN DE COLLATION EN EL JOIN =========================
-    
-    $params_facturas = [$cod_cliente];
-    $stmt_facturas = sqlsrv_query($conn_central, $sql_facturas, $params_facturas);
-    if ($stmt_facturas === false) {
-        throw new Exception("Error en la consulta de detalle de facturas: ".print_r(sqlsrv_errors(), true));
-    }
-
-    // 3. Filtrar los resultados en PHP
-    while ($row_factura = sqlsrv_fetch_array($stmt_facturas, SQLSRV_FETCH_ASSOC)) {
-        if (!isset($facturas_en_propuesta[trim($row_factura['N_COMP'])])) {
-            $tableData[] = $row_factura;
+    if ($stmt_prop !== false) {
+        while ($r = sqlsrv_fetch_array($stmt_prop, SQLSRV_FETCH_ASSOC)) {
+            $facturas_en_propuestas[trim($r['n_comp_factura'])] = true;
         }
     }
-    
+
+    if ($cod_cliente) {
+        // --- VISTA DE DETALLE (INDIVIDUAL) ---
+        $sql_facturas = "
+            SELECT 
+                v.COD_CLIENT, v.RAZON_SOCI, v.FECHA_EMIS, v.T_COMP, v.N_COMP, 
+                v.ESTADO, v.IMPORTE, v.FECHA_PROB_COBRO, v.PPP, v.IMPORTE_NETO,
+                p.MEDIO_PAGO_DEFAULT, p.DIAS_PP_MAX, p.DESC_PP_MAX
+            FROM $vista v
+            LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
+            WHERE v.COD_CLIENT = ? 
+              AND (v.ESTADO <> 'IMP' OR v.T_COMP IN ('ZC1', 'ZD1'))
+            ORDER BY v.FECHA_EMIS DESC
+        ";
+
+        $stmt_facturas = sqlsrv_query($conn_central, $sql_facturas, [$cod_cliente]);
+        if ($stmt_facturas === false) {
+            throw new Exception("Error en la consulta de detalle de facturas: " . print_r(sqlsrv_errors(), true));
+        }
+
+        while ($row = sqlsrv_fetch_array($stmt_facturas, SQLSRV_FETCH_ASSOC)) {
+            if (!isset($facturas_en_propuestas[trim($row['N_COMP'])])) {
+                $tableData[] = $row;
+            }
+        }
+
     } else {
         // --- VISTA DE RESUMEN ---
-        $sql = "SELECT 
-                    COD_CLIENT, RAZON_SOCI, COUNT(*) AS CANT_FACTURAS,
-                    SUM(IMPORTE) AS TOTAL_BRUTO, SUM(IMPORTE_NETO) AS TOTAL_NETO
-                FROM $vista 
-                GROUP BY COD_CLIENT, RAZON_SOCI 
-                ORDER BY TOTAL_NETO DESC";
-        $stmt = sqlsrv_query($conn_central, $sql);
+        // Obtenemos todos los registros pendientes y agrupamos en PHP para evitar errores de conexión cruzada
+        $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.IMPORTE, v.IMPORTE_NETO,
+                       ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX
+                FROM $vista v
+                LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
+                WHERE (v.ESTADO <> 'IMP' OR v.T_COMP IN ('ZC1', 'ZD1'))";
 
+        $stmt = sqlsrv_query($conn_central, $sql);
         if ($stmt === false) {
             throw new Exception("Error en la consulta de resumen: " . print_r(sqlsrv_errors(), true));
         }
 
-        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            $tableData[] = $row;
+        $resumenClientes = [];
+        while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $nComp = trim($v['N_COMP']);
+            if (isset($facturas_en_propuestas[$nComp]))
+                continue;
+
+            $cod = $v['COD_CLIENT'];
+            if (!isset($resumenClientes[$cod])) {
+                $resumenClientes[$cod] = [
+                    'COD_CLIENT' => $cod,
+                    'RAZON_SOCI' => $v['RAZON_SOCI'],
+                    'CANT_FACTURAS' => 0,
+                    'TOTAL_BRUTO' => 0,
+                    'TOTAL_NETO' => 0
+                ];
+            }
+
+            $esNC = (strpos($v['T_COMP'], 'NC') === 0);
+            $importe = (float) $v['IMPORTE'];
+            $descPP = (float) $v['DESC_PP_MAX'];
+            $porcDesc = 0;
+
+            if (strpos($nComp, 'A00115') === 0) {
+                if ($v['T_COMP'] === 'FAC')
+                    $porcDesc = 0;
+                else if ($v['T_COMP'] === 'NCP')
+                    $porcDesc = $descPP;
+            } else {
+                $diff = $v['IMPORTE'] - $v['IMPORTE_NETO'];
+                if ($v['IMPORTE'] > 0 && $diff > ($v['IMPORTE'] * $descPP))
+                    $porcDesc = $diff / $v['IMPORTE'];
+                else
+                    $porcDesc = $descPP;
+            }
+
+            $netoItem = $importe * (1 - $porcDesc);
+            $resumenClientes[$cod]['CANT_FACTURAS']++;
+            $resumenClientes[$cod]['TOTAL_BRUTO'] += ($esNC ? -$importe : $importe);
+            $resumenClientes[$cod]['TOTAL_NETO'] += ($esNC ? -$netoItem : $netoItem);
         }
 
-        // Calculamos los totales solo para la vista de resumen
-        $summary['totalClientes'] = count($tableData);
-        foreach ($tableData as $cliente) {
-            $summary['totalNeto'] += $cliente['TOTAL_NETO'];
-            $summary['totalComprobantes'] += $cliente['CANT_FACTURAS'];
+        foreach ($resumenClientes as $cliente) {
+            if (round($cliente['TOTAL_BRUTO'], 2) != 0) {
+                $tableData[] = $cliente;
+                $summary['totalNeto'] += $cliente['TOTAL_NETO'];
+                $summary['totalComprobantes'] += $cliente['CANT_FACTURAS'];
+            }
         }
+        $summary['totalClientes'] = count($tableData);
+        usort($tableData, function ($a, $b) {
+            return $b['TOTAL_NETO'] <=> $a['TOTAL_NETO']; });
     }
 
     // Unificamos la respuesta final
-    $response = [
-        'summary' => $summary,
-        'data' => $tableData
-    ];
-
+    $response = ['summary' => $summary, 'data' => $tableData];
     echo json_encode($response);
 
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Error en el servidor: ' . $e->getMessage()]);
 }
-?>

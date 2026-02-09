@@ -256,6 +256,7 @@ async function cargarProveedores() {
 }
 
 // Mostrar/ocultar selector de director según motivo
+// Mostrar/ocultar selector de director según motivo
 document.getElementById('motivoEgreso')?.addEventListener('change', function() {
     const divDirector = document.getElementById('divDirector');
     const selectDirector = document.getElementById('nombreDirector');
@@ -266,7 +267,7 @@ document.getElementById('motivoEgreso')?.addEventListener('change', function() {
     const divTipoGasto = document.getElementById('divTipoGasto');
     const selectTipoGasto = document.getElementById('tipoGasto');
     
-    // Resetear todos los campos
+    // Resetear todos los campos - OCULTAR TODO PRIMERO
     divDirector.classList.add('d-none');
     selectDirector.required = false;
     selectDirector.value = '';
@@ -275,7 +276,7 @@ document.getElementById('motivoEgreso')?.addEventListener('change', function() {
     selectCentroCosto.required = false;
     selectCentroCosto.value = '';
     
-    divProveedor.classList.add('d-none');
+    divProveedor.classList.add('d-none');  // ← Esto oculta el proveedor
     selectProveedor.required = false;
     selectProveedor.value = '';
     
@@ -292,14 +293,12 @@ document.getElementById('motivoEgreso')?.addEventListener('change', function() {
         selectDirector.required = true;
     } else if (this.value === 'SUELDOS') {
         divCentroCosto.classList.remove('d-none');
-        selectCentroCosto.required = false; // Opcional según requerimientos
+        selectCentroCosto.required = false;
     } else if (this.value === 'PROVEEDORES') {
-        divProveedor.classList.remove('d-none');
+        divProveedor.classList.remove('d-none');  // ← Solo se muestra para PROVEEDORES
         selectProveedor.required = true;
-    } else if (this.value === 'AJUSTE') {
-        // AJUSTE: no se muestra ningún campo adicional, solo importe y observaciones
-        // Todos los campos ya están ocultos por el reset inicial
     }
+    // AJUSTE no muestra nada adicional
 });
 
 // Mostrar/ocultar selector de tipo de gasto según proveedor seleccionado
@@ -568,63 +567,42 @@ document.getElementById('formEgreso')?.addEventListener('submit', async function
 
 // Cargar egresos al cambiar a la pestaña
 document.getElementById('egresos-tab')?.addEventListener('shown.bs.tab', function() {
+    console.log('📱 Pestaña Egresos mostrada - cargando datos...');
     cargarEgresos();
     cargarDirectores();
     cargarCentrosCosto();
     cargarProveedores();
 });
+
+// También cargar cuando el documento esté listo (por si la pestaña ya está activa)
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si estamos en la pestaña de egresos al cargar la página
+    const egresosTab = document.getElementById('egresos-tab');
+    const egresosPane = document.getElementById('egresos');
+    
+    if (egresosTab?.classList.contains('active') || egresosPane?.classList.contains('show')) {
+        console.log('📱 Pestaña Egresos activa al cargar - cargando datos...');
+        setTimeout(function() {
+            cargarEgresos();
+            cargarDirectores();
+            cargarCentrosCosto();
+            cargarProveedores();
+        }, 100);
+    }
+    
+    // Cargar proveedores también cuando cambie el motivo a PROVEEDORES (respaldo)
+    document.getElementById('motivoEgreso')?.addEventListener('change', function() {
+        if (this.value === 'PROVEEDORES') {
+            const selectProveedor = document.getElementById('proveedor');
+            // Si no hay opciones cargadas, cargarlas ahora
+            if (selectProveedor && selectProveedor.options.length <= 1) {
+                console.log('📱 Motivo PROVEEDORES seleccionado - cargando proveedores...');
+                cargarProveedores();
+            }
+        }
+    });
+});
 // ============================================
 // SOLUCIÓN ESPECÍFICA PARA DISPOSITIVOS MÓVILES
 // ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Función para manejar la visibilidad del campo proveedor en móvil
-    function manejarVisibilidadProveedorMovil() {
-        if (!esMobile()) return; // Solo en móvil
-        
-        const divProveedor = document.getElementById('divProveedor');
-        const motivoEgreso = document.getElementById('motivoEgreso');
-        
-        if (!divProveedor || !motivoEgreso) return;
-        
-        // En móvil: mostrar el campo de proveedor SIEMPRE
-        divProveedor.classList.remove('d-none');
-        
-        // Pero solo hacerlo requerido si el motivo es PROVEEDORES
-        const selectProveedor = document.getElementById('proveedor');
-        if (motivoEgreso.value === 'PROVEEDORES') {
-            selectProveedor.required = true;
-        } else {
-            selectProveedor.required = false;
-        }
-        
-        console.log('📱 Móvil detectado: campo proveedor visible');
-    }
-    
-    // Ejecutar cuando se cargue la pestaña de egresos
-    document.getElementById('egresos-tab')?.addEventListener('shown.bs.tab', function() {
-        setTimeout(function() {
-            manejarVisibilidadProveedorMovil();
-            
-            // Cargar proveedores si el select está vacío
-            const selectProveedor = document.getElementById('proveedor');
-            if (selectProveedor && selectProveedor.options.length <= 1) {
-                cargarProveedores();
-            }
-        }, 100);
-    });
-    
-    // También ejecutar si la pestaña ya está activa al cargar la página
-    if (document.getElementById('egresos-tab')?.classList.contains('active')) {
-        setTimeout(function() {
-            manejarVisibilidadProveedorMovil();
-        }, 300);
-    }
-    
-    // Modificar el evento de cambio de motivo para móvil
-    document.getElementById('motivoEgreso')?.addEventListener('change', function() {
-        setTimeout(function() {
-            manejarVisibilidadProveedorMovil();
-        }, 50);
-    });
-});

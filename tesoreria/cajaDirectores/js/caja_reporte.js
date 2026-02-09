@@ -520,19 +520,19 @@ function mostrarReporte(movimientos, filtros = {}) {
                     // Es un ingreso de Tesorería que todavía no hemos importado.
                     // Usamos el BOTÓN "IMPORTADOR" (llama a marcarRecibidoTesoreria para CREAR el registro).
                     accionBoton = `
-                        <button class="btn btn-outline-success checkbox-style" 
-                                onclick="marcarRecibidoTesoreria(this)"
-                                data-id-sba05="${mov.ID_SBA05}"
-                                data-fecha="${mov.fecha.split('T')[0]}"
-                                data-cod-comp="${mov.COD_COMP || ''}"
-                                data-n-comp="${mov.N_COMP || ''}"
-                                data-concepto="${(mov.observaciones || mov.concepto || '').replace(/"/g, '&quot;')}"
-                                data-importe="${mov.importe}"
-                                style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
-                                title="Importar de Tesorería">
-                            ☐
-                        </button>
-                    `;
+    <button type="button" class="btn btn-outline-success checkbox-style" 
+            onclick="return marcarRecibidoTesoreria(this, event)"
+            data-id-sba05="${mov.ID_SBA05}"
+            data-fecha="${mov.fecha.split('T')[0]}"
+            data-cod-comp="${mov.COD_COMP || ''}"
+            data-n-comp="${mov.N_COMP || ''}"
+            data-concepto="${(mov.observaciones || mov.concepto || '').replace(/"/g, '&quot;')}"
+            data-importe="${mov.importe}"
+            style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
+            title="Importar de Tesorería">
+        ☐
+    </button>
+`;
 
                 } else if (mov.origen === '599') {
                     // Los 599 no tienen acciones, ya vienen recibidos.
@@ -544,14 +544,14 @@ function mostrarReporte(movimientos, filtros = {}) {
                     // Puede ser un ingreso Manual o uno de Tesorería que ya importamos.
                     // Usamos el BOTÓN "ACTUALIZADOR" (llama a marcarRecibidoDesdeReporte para ACTUALIZAR el registro).
                     accionBoton = `
-                        <button class="btn btn-outline-success checkbox-style" 
-                                onclick="marcarRecibidoDesdeReporte(this)"
-                                data-ingreso-id="${mov.id}"
-                                style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
-                                title="Marcar como recibido">
-                            ☐
-                        </button>
-                    `;
+    <button type="button" class="btn btn-outline-success checkbox-style" 
+            onclick="return marcarRecibidoDesdeReporte(this, event)"
+            data-ingreso-id="${mov.id}"
+            style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
+            title="Marcar como recibido">
+        ☐
+    </button>
+`;
                 }
             }
         } else {
@@ -696,7 +696,14 @@ function cambiarCantidadMovimientos(cantidad) {
 }
 
 // Marcar ingreso como recibido desde el reporte
-async function marcarRecibidoDesdeReporte(botonElemento) {
+// Marcar ingreso como recibido desde el reporte
+async function marcarRecibidoDesdeReporte(botonElemento, event) {
+    // Prevenir comportamiento por defecto que causa scroll
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
     console.log('[MANUAL] 🚀 Procesando marcado manual...');
     
     try {
@@ -704,7 +711,7 @@ async function marcarRecibidoDesdeReporte(botonElemento) {
         
         if (!ingresoId) {
             mostrarAlerta('Error', 'No se pudo obtener el ID del ingreso');
-            return;
+            return false;
         }
         
         // Deshabilitar botón visualmente
@@ -731,24 +738,18 @@ async function marcarRecibidoDesdeReporte(botonElemento) {
             botonElemento.innerHTML = '<i class="bi bi-check-square-fill text-success"></i>';
             botonElemento.title = "Recibido";
 
-            // 2. ACTUALIZAR LA CELDA DE "ESTADO" (Columna 7, índice 7 si empezamos en 0)
+            // 2. ACTUALIZAR LA CELDA DE "ESTADO"
             const fila = botonElemento.closest('tr');
             if (fila) {
-                // Buscamos la celda que contiene el badge (usualmente la anteúltima)
-                // En tu tabla HTML la estructura es: Fecha, Tipo, Comp, Concepto, Importe, Origen, Foto, ESTADO, Acciones
-                // Estado es la columna index 7
                 if(fila.cells[7]) {
                     fila.cells[7].innerHTML = '<span class="badge bg-success">Recibido</span>';
                 }
             }
 
             // 3. ACTUALIZAR SOLO LOS TOTALES (TARJETAS)
-            // No recargamos la tabla (cargarReporte) para evitar que el botón "parpadee" 
-            // si la DB es lenta.
             const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
             const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
             
-            // Damos un poco más de tiempo (800ms) para que los totales calculen bien
             setTimeout(() => {
                 if (fechaDesde && fechaHasta) {
                     actualizarResumen(false, { fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
@@ -760,7 +761,7 @@ async function marcarRecibidoDesdeReporte(botonElemento) {
         } else {
             // Restaurar botón en caso de error
             botonElemento.disabled = false;
-            botonElemento.innerHTML = '<i class="bi bi-check"></i>'; // O el ícono cuadrado
+            botonElemento.innerHTML = '<i class="bi bi-check"></i>';
             mostrarAlerta('Error', result.message);
         }
     } catch (error) {
@@ -769,6 +770,89 @@ async function marcarRecibidoDesdeReporte(botonElemento) {
         botonElemento.innerHTML = '☐';
         mostrarAlerta('Error', 'Error de conexión');
     }
+    
+    return false; // Prevenir cualquier comportamiento adicional
+}
+
+// Marcar ingreso TESORERÍA como recibido
+async function marcarRecibidoTesoreria(botonElemento, event) {
+    // Prevenir comportamiento por defecto que causa scroll
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    console.log('[TESORERÍA] 🚀 Procesando importación...');
+    
+    try {
+        // Obtener datos
+        const idSba05 = botonElemento.dataset.idSba05;
+        const fecha = botonElemento.dataset.fecha;
+        const codComp = botonElemento.dataset.codComp;
+        const nComp = botonElemento.dataset.nComp;
+        const concepto = botonElemento.dataset.concepto;
+        const importe = botonElemento.dataset.importe;
+        
+        // Deshabilitar botón
+        botonElemento.disabled = true;
+        botonElemento.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+        
+        const formData = new FormData();
+        formData.append('accion', 'marcar_recibido_tesoreria');
+        formData.append('id_sba05', String(idSba05)); 
+        formData.append('fecha', String(fecha));
+        formData.append('cod_comp', String(codComp || ''));
+        formData.append('n_comp', String(nComp || ''));
+        formData.append('observaciones', String(concepto || ''));
+        formData.append('importe', String(importe || 0));
+        
+        const response = await fetch('controller/caja_ingresos_controller.php?' + new Date().getTime(), {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Tesorería importada correctamente');
+            
+            // 1. ACTUALIZACIÓN VISUAL INMEDIATA
+            botonElemento.disabled = true;
+            botonElemento.classList.add('checked');
+            botonElemento.innerHTML = '<i class="bi bi-check-square-fill text-success"></i>';
+            botonElemento.title = "Importado";
+            
+            // 2. ACTUALIZAR CELDA DE ESTADO
+            const fila = botonElemento.closest('tr');
+            if (fila && fila.cells[7]) {
+                fila.cells[7].innerHTML = '<span class="badge bg-success">Recibido</span>';
+            }
+
+            // 3. ACTUALIZAR TOTALES (sin recargar tabla)
+            const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
+            const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
+            
+            setTimeout(() => {
+                if (fechaDesde && fechaHasta) {
+                    actualizarResumen(false, { fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
+                } else {
+                    actualizarResumen();
+                }
+            }, 800);
+            
+        } else {
+            botonElemento.disabled = false;
+            botonElemento.innerHTML = '☐';
+            mostrarAlerta('Error', result.message);
+        }
+    } catch (error) {
+        console.error('[ERROR]', error);
+        botonElemento.disabled = false;
+        botonElemento.innerHTML = '☐';
+        mostrarAlerta('Error', 'Error de conexión: ' + error.message);
+    }
+    
+    return false; // Prevenir cualquier comportamiento adicional
 }
 
 // Marcar ingreso TESORERÍA como recibido
