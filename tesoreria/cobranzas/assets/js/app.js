@@ -335,13 +335,14 @@ $(document).ready(function () {
             // --- VISTA CRONOGRAMA ---
             // No mostramos ningún dashboard de KPIs aquí, solo el calendario
             initializeCronogramaAdmin();
+        } else if (targetId === 'indicadores-tab') {
+            // --- VISTA INDICADORES ---
+            cargarIndicadoresPro();
         } else {
-            // --- VISTAS PENDIENTES (FRANQUICIAS Y MAYORISTAS) ---
+            // --- VISTA PENDIENTES (FRANQUICIAS) ---
             $('#summary-cards').show(); // Mostramos los KPIs de deuda total
             $('#btn-abrir-parametros').show(); // Mostramos el botón de parámetros
-
-            const tipo = targetId.includes('franquicias') ? 'franquicias' : 'mayoristas';
-            initializeDataTable(`#tabla-${tipo}`, `api/cobranzas_controller.php?tipo=${tipo}`);
+            initializeDataTable('#tabla-franquicias', 'api/cobranzas_controller.php?tipo=franquicias');
         }
     });
 
@@ -956,10 +957,17 @@ $(document).ready(function () {
             tablaGestion = $('#tabla-gestion-propuestas').DataTable({
                 ajax: { url: 'api/propuestas_controller.php?action=listar_admin', dataSrc: 'data' },
                 columns: [
-                    { data: 'id', title: 'ID' },
-                    { data: 'razon_social', title: 'Cliente' },
-                    { data: 'fecha_ultima_modificacion', title: 'Últ. Act.' },
-                    { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ ') },
+                    { data: 'id', title: 'ID', className: 'text-center fw-bold' },
+                    { data: 'cod_cliente', title: 'Código', className: 'text-center' },
+                    { data: 'razon_social', title: 'Razón Social' },
+                    { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
+                    {
+                        data: 'fecha_ultima_modificacion',
+                        title: 'Últ. Act.',
+                        render: function (data) {
+                            return data ? new Date(data).toLocaleString('es-AR') : '-';
+                        }
+                    },
                     {
                         data: 'estado', title: 'Estado',
                         render: function (data) {
@@ -967,7 +975,7 @@ $(document).ready(function () {
                             if (data === 'PAGADO') badgeClass = 'success';
                             if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
                             if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
-                            if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning';
+                            if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning text-dark';
                             if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
                             if (data === 'ACEPTADA') badgeClass = 'success';
                             return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
@@ -977,18 +985,21 @@ $(document).ready(function () {
                         data: null, title: 'Acciones', orderable: false, className: 'text-center',
                         render: function (data, type, row) {
                             return `
-                                <button class="btn btn-info btn-sm btn-ver-propuesta-admin" data-id="${row.id}" title="Ver Detalle y Historial">
-                                    <i class="fa-solid fa-magnifying-glass"></i>
-                                </button>
-                                <button class="btn btn-danger btn-sm ms-1 btn-eliminar-propuesta" data-id="${row.id}" title="Eliminar Propuesta">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-info btn-sm btn-ver-propuesta-admin" data-id="${row.id}" title="Revisar / Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm btn-eliminar-propuesta" data-id="${row.id}" title="Eliminar definitivamente">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
                             `;
                         }
                     }
                 ],
                 language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-                order: [[2, 'desc']]
+                order: [[0, 'desc']], // Ordenar por ID descendente por defecto
+                responsive: true
             });
         }
     }
@@ -1725,5 +1736,650 @@ $(document).ready(function () {
         });
     });
     // =========================================================================================================
+    // 1. LÓGICA DE ALTERNANCIA DE GRÁFICOS
+    // =========================================================================================================
+    $('#btn-toggle-charts').on('click', function () {
+        const chartsRow = $('#charts-row');
+        const icon = $(this).find('i');
+
+        chartsRow.slideToggle(400, function () {
+            if (chartsRow.is(':visible')) {
+                icon.removeClass('fa-eye-slash').addClass('fa-chart-line');
+                $(this).addClass('btn-outline-primary').removeClass('btn-primary');
+            } else {
+                icon.removeClass('fa-chart-line').addClass('fa-eye-slash');
+                $(this).addClass('btn-primary').removeClass('btn-outline-primary');
+            }
+        });
+    });
+
+    // =========================================================================================================
+    // 2. LÓGICA DE INDICADORES PRO (NUEVA SOLAPA)
+    // =========================================================================================================
+    $('#indicadores-tab').on('click', function () {
+        cargarIndicadoresPro();
+    });
+
+    // Variables globales para instancias de gráficos en la solapa de indicadores
+    var chartTendenciaPro = null;
+    var chartEstadosPro = null;
+
+    function cargarIndicadoresPro() {
+        const container = $('#container-indicadores');
+        container.html('<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div><p class="mt-3 text-muted">Cargando analíticas avanzadas...</p></div>');
+
+        $.ajax({
+            url: 'api/propuestas_controller.php?action=obtener_indicadores_pro',
+            type: 'GET',
+            dataType: 'json',
+            success: function (response) {
+                if (response.success) {
+                    const data = response.data;
+                    const f = (v) => parseFloat(v || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+
+                    // Cálculos para rankings
+                    const maxDeudaProp = data.ranking_deuda.length > 0 ? Math.max.apply(null, data.ranking_deuda.map(function (d) { return d.monto; })) : 1;
+                    const maxHoras = data.ranking_demora.length > 0 ? Math.max.apply(null, data.ranking_demora.map(function (d) { return d.horas; })) : 1;
+                    const maxDeudaTotal = (data.ranking_deuda_total && data.ranking_deuda_total.length > 0) ? Math.max.apply(null, data.ranking_deuda_total.map(function (d) { return d.deuda; })) : 1;
+
+                    let html = `
+                        <!-- SECCIÓN 1: KPIs PRINCIPALES -->
+                        <div class="col-12 mb-4">
+                            <div class="row g-3">
+                                <!-- KPI 1: Beneficio Otorgado -->
+                                <div class="col-xl col-md-4">
+                                    <div class="card kpi-card border-0 h-100 shadow-hover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <div class="card-body text-white p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <p class="text-uppercase small mb-1 opacity-75 fw-semibold" style="font-size: 0.7rem;">Beneficio Total</p>
+                                                    <h3 class="mb-0 fw-bold counter" data-target="${data.total_beneficio_otorgado}">0</h3>
+                                                </div>
+                                                <div class="kpi-icon"><i class="fa-solid fa-hand-holding-dollar fa-lg opacity-25"></i></div>
+                                            </div>
+                                            <div class="d-flex flex-column small opacity-90">
+                                                <span><i class="fa-solid fa-file-invoice-dollar me-1"></i>${data.conteo_comprobantes_beneficio} comprobantes</span>
+                                                <span><i class="fa-solid fa-calculator me-1"></i>Avg: ${f(data.promedio_beneficio_pesos)}/u</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- KPI 2: Tasa de Conversión -->
+                                <div class="col-xl col-md-4">
+                                    <div class="card kpi-card border-0 h-100 shadow-hover" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                        <div class="card-body text-white p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <p class="text-uppercase small mb-1 opacity-75 fw-semibold" style="font-size: 0.7rem;">Conversión</p>
+                                                    <h3 class="mb-0 fw-bold">${data.tasa_conversion}%</h3>
+                                                </div>
+                                                <div class="kpi-icon"><i class="fa-solid fa-bullseye fa-lg opacity-25"></i></div>
+                                            </div>
+                                            <div class="mb-1 small opacity-90">
+                                                <i class="fa-solid fa-check-double me-1"></i>${data.cantidad_concretadas} de ${data.total_propuestas} exitosas
+                                            </div>
+                                            <div class="progress" style="height: 4px; background: rgba(255,255,255,0.2);">
+                                                <div class="progress-bar bg-white progress-animated" style="width: 0%" data-width="${data.tasa_conversion}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- KPI 3: Eficiencia de Cobranza -->
+                                <div class="col-xl col-md-4">
+                                    <div class="card kpi-card border-0 h-100 shadow-hover" style="background: linear-gradient(135deg, #2af598 0%, #009efd 100%);">
+                                        <div class="card-body text-white p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <p class="text-uppercase small mb-1 opacity-75 fw-semibold" style="font-size: 0.7rem;">Eficiencia Cobro</p>
+                                                    <h3 class="mb-0 fw-bold">${data.eficiencia_cobranza}%</h3>
+                                                </div>
+                                                <div class="kpi-icon"><i class="fa-solid fa-chart-pie fa-lg opacity-25"></i></div>
+                                            </div>
+                                            <div class="mb-1 small opacity-90 d-flex flex-column" style="font-size: 0.65rem;">
+                                                <span><i class="fa-solid fa-money-bill-1-wave me-1"></i>Cobrado: ${f(data.total_cobrado_historico)}</span>
+                                                <span class="text-warning"><i class="fa-solid fa-clock-rotate-left me-1"></i>Falta: ${f(data.deuda_total_sistema)}</span>
+                                            </div>
+                                            <div class="progress" style="height: 4px; background: rgba(255,255,255,0.2);">
+                                                <div class="progress-bar bg-warning progress-animated" style="width: 0%" data-width="${data.eficiencia_cobranza}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- KPI 4: Tiempo Promedio -->
+                                <div class="col-xl col-md-6">
+                                    <div class="card kpi-card border-0 h-100 shadow-hover" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                        <div class="card-body text-white p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <p class="text-uppercase small mb-1 opacity-75 fw-semibold" style="font-size: 0.7rem;">Tiempo Rta.</p>
+                                                    <h3 class="mb-0 fw-bold">${data.tiempo_promedio_horas} hs</h3>
+                                                </div>
+                                                <div class="kpi-icon"><i class="fa-solid fa-clock fa-lg opacity-25"></i></div>
+                                            </div>
+                                            <small class="opacity-75">Desde creación a respuesta</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- KPI 5: Método Preferido -->
+                                <div class="col-xl col-md-6">
+                                    <div class="card kpi-card border-0 h-100 shadow-hover" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                        <div class="card-body text-white p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <p class="text-uppercase small mb-1 opacity-75 fw-semibold" style="font-size: 0.7rem;">Método TOP</p>
+                                                    <h3 class="mb-0 fw-bold" style="font-size: 1.1rem;">${data.metodo_preferido.medio || 'N/A'}</h3>
+                                                </div>
+                                                <div class="kpi-icon"><i class="fa-solid fa-credit-card fa-lg opacity-25"></i></div>
+                                            </div>
+                                            <small class="opacity-75">${data.metodo_preferido.cantidad || 0} operaciones reales</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECCIÓN 2: GRÁFICOS INTERACTIVOS -->
+                        <div class="col-xl-8 mb-4">
+                            <div class="card border-0 shadow-sm h-100 ranking-card">
+                                <div class="card-header bg-white py-3 border-0 d-flex align-items-center">
+                                    <div class="chart-icon me-3 text-primary"><i class="fa-solid fa-chart-line"></i></div>
+                                    <h6 class="mb-0 fw-bold">Tendencia de Propuestas (30 días)</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartTendenciaPro" style="min-height: 280px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 mb-4">
+                            <div class="card border-0 shadow-sm h-100 ranking-card">
+                                <div class="card-header bg-white py-3 border-0 d-flex align-items-center">
+                                    <div class="chart-icon me-3 text-info"><i class="fa-solid fa-chart-pie"></i></div>
+                                    <h6 class="mb-0 fw-bold">Distribución por Estados</h6>
+                                </div>
+                                <div class="card-body d-flex flex-column justify-content-center">
+                                    <canvas id="chartEstadosPro" style="max-height: 220px;"></canvas>
+                                    <div id="estadosLegend" class="mt-3 small row g-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECCIÓN 3: RANKINGS DE GESTIÓN -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card border-0 shadow-sm ranking-card">
+                                <div class="card-header bg-gradient-warning text-white border-0 py-3">
+                                    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-trophy me-2"></i>Top 5: Mayor Deuda Activa</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        ${data.ranking_deuda.map(function (d, idx) {
+                        const percentage = (d.monto / maxDeudaProp) * 100;
+                        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+                        return `
+                                                <div class="list-group-item border-0 ranking-item">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <div>
+                                                            <span class="ranking-number me-2">${medals[idx]}</span>
+                                                            <span class="fw-bold">${d.cliente}</span>
+                                                            <div class="small text-muted ms-5">${d.codigo}</div>
+                                                        </div>
+                                                        <span class="badge bg-soft-primary text-primary">${f(d.monto)}</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 5px;">
+                                                        <div class="progress-bar bg-warning progress-animated" style="width: 0%" data-width="${percentage}%"></div>
+                                                    </div>
+                                                </div>
+                                            `;
+                    }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6 mb-4">
+                            <div class="card border-0 shadow-sm ranking-card">
+                                <div class="card-header bg-gradient-danger text-white border-0 py-3">
+                                    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-hourglass-half me-2"></i>Top 5: Mayor Demora</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        ${data.ranking_demora.map(function (d, idx) {
+                        const percentage = (d.horas / maxHoras) * 100;
+                        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+                        return `
+                                                <div class="list-group-item border-0 ranking-item">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <div>
+                                                            <span class="ranking-number me-2">${medals[idx]}</span>
+                                                            <span class="fw-bold">${d.cliente}</span>
+                                                            <div class="small text-muted ms-5">${d.codigo}</div>
+                                                        </div>
+                                                        <span class="badge bg-danger rounded-pill"><i class="fa-regular fa-clock me-1"></i>${d.horas} hs</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 5px;">
+                                                        <div class="progress-bar bg-danger progress-animated" style="width: 0%" data-width="${percentage}%"></div>
+                                                    </div>
+                                                </div>
+                                            `;
+                    }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECCIÓN 4: RANKING DE DEUDA TOTAL (SISTEMA CENTRAL) -->
+                        <div class="col-12 mt-4">
+                            <div class="card border-0 shadow-sm ranking-card">
+                                <div class="card-header bg-gradient-info text-white border-0 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="ranking-icon me-3"><i class="fa-solid fa-sack-dollar"></i></div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">Top 10: Mayor Deuda Total en el Sistema</h6>
+                                            <small class="opacity-75">Clientes con mayor saldo pendiente según el sistema central</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        ${(data.ranking_deuda_total && data.ranking_deuda_total.length > 0) ? data.ranking_deuda_total.map(function (d, idx) {
+                        const percentage = (d.deuda / maxDeudaTotal) * 100;
+                        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+                        return `
+                                                <div class="list-group-item border-0 ranking-item">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <div>
+                                                            <span class="ranking-number me-3">${medals[idx]}</span>
+                                                            <span class="fw-bold">${d.cliente}</span>
+                                                            <small class="text-muted ms-2">${d.codigo}</small>
+                                                        </div>
+                                                        <span class="badge bg-info text-white px-3 py-2 fs-6">${f(d.deuda)}</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 8px;">
+                                                        <div class="progress-bar bg-info progress-animated" style="width: 0%" data-width="${percentage}%"></div>
+                                                    </div>
+                                                </div>
+                                            `;
+                    }).join('') : `
+                                            <div class="list-group-item border-0 text-center py-5">
+                                                <i class="fa-solid fa-check-circle fa-3x text-success mb-3"></i>
+                                                <p class="text-muted mb-0">No se encontraron datos de deuda en el sistema central.</p>
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    container.html(html);
+
+                    // --- INICIALIZACIÓN DE ANIMACIONES ---
+                    $('.kpi-card').each(function (i) {
+                        var $card = $(this);
+                        $card.css({ opacity: 0, transform: 'translateY(20px)' });
+                        setTimeout(function () {
+                            $card.css({
+                                opacity: 1,
+                                transform: 'translateY(0)',
+                                transition: 'all 0.5s ease'
+                            });
+                        }, i * 100);
+                    });
+
+                    $('.counter').each(function () {
+                        const $this = $(this);
+                        const target = parseFloat($this.data('target'));
+                        $({ Counter: 0 }).animate({ Counter: target }, {
+                            duration: 2000,
+                            easing: 'swing',
+                            step: function () {
+                                if (target > 1000) {
+                                    $this.text(f(this.Counter));
+                                } else {
+                                    $this.text(Math.ceil(this.Counter).toLocaleString('es-AR'));
+                                }
+                            }
+                        });
+                    });
+
+                    setTimeout(function () {
+                        $('.progress-animated').each(function () {
+                            $(this).css('width', $(this).data('width'));
+                        });
+                    }, 500);
+
+                    // --- INICIALIZACIÓN DE GRÁFICOS (con destrucción de instancias previas) ---
+
+                    // 1. Tendencia (Gráfico Mixto: Columnas para Cantidad, Línea para Monto)
+                    const ctxTendencia = document.getElementById('chartTendenciaPro');
+                    if (ctxTendencia && data.tendencia_30dias && data.tendencia_30dias.length > 0) {
+                        if (chartTendenciaPro) chartTendenciaPro.destroy();
+
+                        chartTendenciaPro = new Chart(ctxTendencia, {
+                            data: {
+                                labels: data.tendencia_30dias.map(function (t) { return new Date(t.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }); }),
+                                datasets: [{
+                                    type: 'bar',
+                                    label: 'Cantidad Propuestas',
+                                    data: data.tendencia_30dias.map(function (t) { return t.cantidad; }),
+                                    backgroundColor: 'rgba(78, 115, 223, 0.5)',
+                                    borderColor: '#4e73df',
+                                    borderWidth: 1,
+                                    yAxisID: 'y'
+                                }, {
+                                    type: 'line',
+                                    label: 'Monto Total',
+                                    data: data.tendencia_30dias.map(function (t) { return t.monto; }),
+                                    borderColor: '#1cc88a',
+                                    backgroundColor: 'transparent',
+                                    tension: 0.4,
+                                    pointBackgroundColor: '#1cc88a',
+                                    fill: false,
+                                    yAxisID: 'y1'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: { position: 'top' },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function (context) {
+                                                let label = context.dataset.label || '';
+                                                if (label) label += ': ';
+                                                if (context.parsed.y !== null) {
+                                                    label += context.datasetIndex === 1 ? f(context.parsed.y) : context.parsed.y;
+                                                }
+                                                return label;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Cantidad' }, grid: { drawOnChartArea: true } },
+                                    y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Monto ($)' }, grid: { drawOnChartArea: false } }
+                                }
+                            }
+                        });
+                    }
+
+                    // 2. Estados (Doughnut con Leyenda Detallada)
+                    const ctxEstados = document.getElementById('chartEstadosPro');
+                    if (ctxEstados && data.distribucion_estados && data.distribucion_estados.length > 0) {
+                        if (chartEstadosPro) chartEstadosPro.destroy();
+
+                        const estadosMap = {
+                            'PENDIENTE_APROBACION_CLIENTE': { label: 'Pendiente Cliente', color: '#f6c23e' },
+                            'ACEPTADA': { label: 'Aceptada', color: '#1cc88a' },
+                            'RECHAZADA': { label: 'Rechazada', color: '#e74a3b' },
+                            'PAGADO': { label: 'Pagado', color: '#36b9cc' },
+                            'CONTRAPROPUESTA_CLIENTE': { label: 'Contrapropuesta', color: '#f093fb' },
+                            'DOCUMENTACION_ADJUNTADA': { label: 'Con Documentos', color: '#4e73df' },
+                            'VENCIDA': { label: 'Vencida', color: '#858796' },
+                            'PENDIENTE_APROBACION_FINAL': { label: 'Pendiente Final', color: '#fd7e14' }
+                        };
+
+                        const totalEstados = data.distribucion_estados.reduce(function (acc, curr) { return acc + parseInt(curr.cantidad); }, 0);
+
+                        chartEstadosPro = new Chart(ctxEstados, {
+                            type: 'doughnut',
+                            data: {
+                                labels: data.distribucion_estados.map(function (e) { return (estadosMap[e.estado] && estadosMap[e.estado].label) ? estadosMap[e.estado].label : e.estado; }),
+                                datasets: [{
+                                    data: data.distribucion_estados.map(function (e) { return e.cantidad; }),
+                                    backgroundColor: data.distribucion_estados.map(function (e) { return (estadosMap[e.estado] && estadosMap[e.estado].color) ? estadosMap[e.estado].color : '#858796'; }),
+                                    hoverOffset: 10,
+                                    borderWidth: 2,
+                                    borderColor: '#ffffff'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false }
+                                },
+                                cutout: '70%'
+                            }
+                        });
+
+                        // Generar leyenda personalizada
+                        let legendHtml = '';
+                        data.distribucion_estados.forEach(function (e) {
+                            const info = estadosMap[e.estado] || { label: e.estado, color: '#858796' };
+                            const pct = ((parseInt(e.cantidad) / totalEstados) * 100).toFixed(1);
+                            legendHtml += `
+                                <div class="col-6 mb-1">
+                                    <div class="d-flex align-items-center">
+                                        <div style="width: 10px; height: 10px; background: ${info.color}; border-radius: 50%;" class="me-2"></div>
+                                        <div class="flex-grow-1 text-truncate" title="${info.label}" style="font-size: 0.75rem;">${info.label}</div>
+                                        <div class="ms-1 fw-bold" style="font-size: 0.75rem;">${pct}% <small class="text-muted fw-normal">(${e.cantidad})</small></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        $('#estadosLegend').html(legendHtml);
+                    }
+                }
+            },
+            error: function () {
+                container.html('<div class="col-12 text-center text-danger p-5"><i class="fa-solid fa-triangle-exclamation fa-3x mb-3"></i><p class="h5">Error al cargar los indicadores avanzados</p></div>');
+            }
+        });
+    }
+
+    // Estilo complementario PRO - Sistema de diseño premium
+    const stylePro = `
+        <style>
+            /* === NAVEGACIÓN DE TABS === */
+            .card-header.bg-white { border-bottom: none !important; }
+            .nav-tabs.card-header-tabs { 
+                border-bottom: none !important; 
+                gap: 8px; 
+                padding: 0 15px; 
+                background: linear-gradient(to bottom, #f8f9fc 0%, #ffffff 100%);
+            }
+            .nav-tabs .nav-link { 
+                border: none !important; 
+                border-radius: 30px !important; 
+                color: #858796; 
+                font-weight: 600; 
+                padding: 10px 20px; 
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+                background: #f8f9fc !important;
+                font-size: 0.85rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                position: relative;
+                overflow: hidden;
+            }
+            .nav-tabs .nav-link::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                transition: left 0.5s;
+            }
+            .nav-tabs .nav-link:hover::before {
+                left: 100%;
+            }
+            .nav-tabs .nav-link:hover { 
+                background: #eaecf4 !important; 
+                color: #4e73df; 
+                transform: translateY(-2px);
+            }
+            .nav-tabs .nav-link.active { 
+                background: linear-gradient(135deg, #4e73df 0%, #224abe 100%) !important; 
+                color: #fff !important; 
+                box-shadow: 0 8px 16px rgba(78, 115, 223, 0.3); 
+                transform: translateY(-2px);
+            }
+            
+            /* === KPI CARDS === */
+            .kpi-card { 
+                position: relative; 
+                overflow: hidden; 
+                border-radius: 16px !important;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .kpi-card::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                right: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                opacity: 0;
+                transition: opacity 0.4s;
+            }
+            .kpi-card:hover::before {
+                opacity: 1;
+            }
+            .shadow-hover {
+                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            }
+            .shadow-hover:hover {
+                box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+                transform: translateY(-4px);
+            }
+            .kpi-icon {
+                animation: float 3s ease-in-out infinite;
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+            }
+            
+            /* === GRADIENTES === */
+            .bg-gradient-warning { 
+                background: linear-gradient(135deg, #f6c23e 0%, #f4b619 100%); 
+            }
+            .bg-gradient-danger { 
+                background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%); 
+            }
+            .bg-gradient-info { 
+                background: linear-gradient(135deg, #36b9cc 0%, #258391 100%); 
+            }
+            
+            /* === RANKINGS === */
+            .ranking-card { 
+                border-radius: 16px !important; 
+                overflow: hidden; 
+                transition: all 0.3s ease;
+            }
+            .ranking-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            }
+            .ranking-item {
+                padding: 1.25rem 1.5rem;
+                transition: all 0.3s ease;
+                background: #fff;
+            }
+            .ranking-item:hover {
+                background: linear-gradient(to right, #f8f9fc 0%, #ffffff 100%);
+                transform: translateX(5px);
+            }
+            .ranking-number {
+                font-size: 1.5rem;
+                font-weight: bold;
+                display: inline-block;
+                min-width: 40px;
+                text-align: center;
+            }
+            .ranking-icon {
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.2rem;
+            }
+            
+            /* === PROGRESS BARS === */
+            .progress {
+                background-color: rgba(0,0,0,0.05);
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            .progress-bar {
+                transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+                border-radius: 10px;
+            }
+            .progress-animated {
+                position: relative;
+                overflow: hidden;
+            }
+            .progress-animated::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                right: 0;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                animation: shimmer 2s infinite;
+            }
+            @keyframes shimmer {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(100%); }
+            }
+            
+            /* === CHARTS === */
+            .chart-icon {
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #f8f9fc 0%, #e9ecef 100%);
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.2rem;
+            }
+            
+            /* === BADGES === */
+            .badge {
+                font-weight: 600;
+                border-radius: 8px;
+                padding: 0.5rem 0.75rem;
+            }
+            
+            /* === UTILITIES === */
+            .bg-soft-primary { 
+                background-color: rgba(78, 115, 223, 0.1); 
+            }
+            body { 
+                background-color: #f8f9fc; 
+            }
+            
+            /* === LOADING SPINNER === */
+            .spinner-border {
+                width: 3rem;
+                height: 3rem;
+                border-width: 0.3rem;
+            }
+            
+            /* === RESPONSIVE === */
+            @media (max-width: 768px) {
+                .kpi-card {
+                    margin-bottom: 1rem;
+                }
+                .ranking-number {
+                    font-size: 1.2rem;
+                    min-width: 30px;
+                }
+            }
+        </style>
+    `;
+    $('head').append(stylePro);
 
 }); // <--- ESTE ES EL ÚNICO Y CORRECTO CIERRE PARA $(document).ready()
