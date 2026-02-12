@@ -139,7 +139,15 @@ class Paso
 
     public function ejecutarPaso3($desde, $hasta)
     {  
+        // 1. SISTEMA DE LOGS DEPURACIÓN (Se guardará en la carpeta Class)
+        $archivoLog = __DIR__ . '/log_paso3.txt';
+        file_put_contents($archivoLog, date('H:i:s') . " - INICIO PASO 3 ($desde al $hasta)\n", FILE_APPEND);
+
         try {
+            // 2. AUMENTAR TIEMPO DE EJECUCIÓN (Faltaba esto)
+            ini_set('max_execution_time', 600); // 10 Minutos
+            ini_set('memory_limit', '512M');
+
             require_once __DIR__.'/../../class/conexion.php';
             $cid = new Conexion();
             if (session_status() == PHP_SESSION_NONE) {
@@ -152,20 +160,49 @@ class Paso
                 $cid_central = $cid->conectar('central');
             }
 
-            $sql = "EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta' ;";
-      
-            $stmt = sqlsrv_query($cid_central, $sql);
+            $sql = "SET NOCOUNT ON; EXEC RO_SP_ARTICULOS_SIN_COSTO_NAC '$desde', '$hasta';";
+            
+            file_put_contents($archivoLog, date('H:i:s') . " - Ejecutando Consulta SQL...\n", FILE_APPEND);
+
+            // 3. AUMENTAR TIMEOUT DEL DRIVER SQL
+            $options = array("QueryTimeout" => 600); 
+            $stmt = sqlsrv_query($cid_central, $sql, array(), $options);
    
+            if ($stmt === false) {
+                $errores = print_r(sqlsrv_errors(), true);
+                file_put_contents($archivoLog, date('H:i:s') . " - ERROR SQL: $errores\n", FILE_APPEND);
+                die(json_encode(["error" => $errores]));
+            }
+
+            file_put_contents($archivoLog, date('H:i:s') . " - Consulta enviada. Procesando resultados...\n", FILE_APPEND);
+
             $v = [];
+            $contadorResultSets = 0;
+            
+            // Bucle optimizado con logs
             do {
+                $contadorResultSets++;
+                $filasEnEsteSet = 0;
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $v[] = $row;
+                    $filasEnEsteSet++;
                 }
+                
+                // Solo logueamos si encontramos datos para no llenar el disco con basura
+                if($filasEnEsteSet > 0) {
+                    file_put_contents($archivoLog, date('H:i:s') . " - Set #$contadorResultSets: $filasEnEsteSet filas encontradas.\n", FILE_APPEND);
+                }
+
             } while (sqlsrv_next_result($stmt));
+            
+            file_put_contents($archivoLog, date('H:i:s') . " - FIN EXITOSO. Total filas retornadas: " . count($v) . "\n", FILE_APPEND);
+            
             return $v;
         
         } catch (Exception $e) {
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
+            $msg = $e->getMessage();
+            file_put_contents($archivoLog, date('H:i:s') . " - EXCEPCIÓN: $msg\n", FILE_APPEND);
+            echo 'Excepción capturada: ',  $msg, "\n";
         }
     }
 

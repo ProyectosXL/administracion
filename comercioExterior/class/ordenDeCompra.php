@@ -6,8 +6,9 @@ class OrdenDeCompra
 {
     private $cid_central;
 
-    function __construct(){
-        require_once __DIR__.'/../../class/conexion.php'; 
+    function __construct()
+    {
+        require_once __DIR__ . '/../../class/conexion.php';
 
         $cid = new Conexion();
         if (session_status() == PHP_SESSION_NONE) {
@@ -28,7 +29,7 @@ class OrdenDeCompra
             $stmt = sqlsrv_query($this->cid_central, $sql);
 
             if ($stmt === false) {
-                 throw new Exception(print_r(sqlsrv_errors(), true));
+                throw new Exception(print_r(sqlsrv_errors(), true));
             }
 
             $rows = array();
@@ -42,7 +43,7 @@ class OrdenDeCompra
             }
         } catch (Exception $e) {
             error_log("Error SQL en retornarArray: " . $e->getMessage());
-            return []; 
+            return [];
         }
         return $rows;
     }
@@ -53,14 +54,11 @@ class OrdenDeCompra
     {
         $cod_proveedor_limpio = trim($proveedor);
 
-        try{
+        try {
             // Consulta SQL optimizada y limpia
             $sql = "SELECT DISTINCT T1.COD_PROVEE, T1.N_ORDEN_CO 
                     FROM CPA35 T1
-                    LEFT JOIN RO_T_IMPORTACIONES_ENCABEZADO T2 
-                        ON LTRIM(RTRIM(T1.N_ORDEN_CO)) = LTRIM(RTRIM(T2.ORDEN_COMPRA))
-                    WHERE LTRIM(RTRIM(T1.COD_PROVEE)) = LTRIM(RTRIM('$cod_proveedor_limpio')) 
-                    AND T2.ORDEN_COMPRA IS NULL";
+                    WHERE LTRIM(RTRIM(T1.COD_PROVEE)) = LTRIM(RTRIM('$cod_proveedor_limpio'))";
 
             return $this->retornarArray($sql);
 
@@ -73,23 +71,22 @@ class OrdenDeCompra
     public function verificarOrdenCompra($ordenDeCompra)
     {
         $orden_limpia = trim($ordenDeCompra);
-        $sql="SELECT N_ORDEN_CO FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ORDEN_COMPRA = '$orden_limpia'";
+        $sql = "SELECT N_ORDEN_CO FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ORDEN_COMPRA = '$orden_limpia'";
 
         $rows = $this->retornarArray($sql);
-        if(empty($rows))
-        {
+        if (empty($rows)) {
             return 'ok';
-        }else{
+        } else {
             return 'El comprobante existe';
         }
     }
 
     public function verificarOrdenCompraUy($ordenesDeCompra)
     {
-        $cadenaSinComillas = trim($ordenesDeCompra, '"'); 
+        $cadenaSinComillas = trim($ordenesDeCompra, '"');
         $sql = "SELECT ORDEN_COMPRA, COUNT(*) AS existencia FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ORDEN_COMPRA in  ($cadenaSinComillas)  GROUP BY ORDEN_COMPRA";
         $rows = $this->retornarArray($sql);
-        
+
         $resultados = array();
         foreach ($rows as $row) {
             if (isset($row['existencia']) && $row['existencia'] > 0) {
@@ -98,9 +95,10 @@ class OrdenDeCompra
         }
         return $resultados;
     }
-    
-    public function deleteDetalle($idEncabezado){
-        $sql = "DELETE RO_T_IMPORTACIONES_DETALLE WHERE ID_MG ='".$idEncabezado."'";
+
+    public function deleteDetalle($idEncabezado)
+    {
+        $sql = "DELETE RO_T_IMPORTACIONES_DETALLE WHERE ID_MG ='" . $idEncabezado . "'";
         try {
             sqlsrv_query($this->cid_central, $sql);
         } catch (Exception $e) {
@@ -108,11 +106,12 @@ class OrdenDeCompra
         }
     }
 
-    public function insertDetalle($datosDetalle, $idCabezera){   
+    public function insertDetalle($datosDetalle, $idCabezera)
+    {
         foreach ($datosDetalle as $dato) {
             $sql = "
             INSERT INTO RO_T_IMPORTACIONES_DETALLE(ID_MG, IMPORTE_U\$S, TIPO_CAMBIO, IMPORTE_$, PORCENTAJE, OBSERVACIONES, FECHA_MOD,GASTOS)
-            VALUES (".$idCabezera.", ".$dato['importeEnDolares'].", ".$dato['tipoCambio'].", ".$dato['importeEnPesos'].", ".$dato['sobreFob'].", '".$dato['observaciones']."',GETDATE(),'".$dato['gastos']."')
+            VALUES (" . $idCabezera . ", " . $dato['importeEnDolares'] . ", " . $dato['tipoCambio'] . ", " . $dato['importeEnPesos'] . ", " . $dato['sobreFob'] . ", '" . $dato['observaciones'] . "',GETDATE(),'" . $dato['gastos'] . "')
             ;";
 
             try {
@@ -121,7 +120,7 @@ class OrdenDeCompra
                 error_log('Excepción capturada en insertDetalle: ' . $e->getMessage());
             }
         }
-    }  
+    }
 }
 // *** IMPORTANTE: ELIMINAMOS TODA LA LÓGICA DE EJECUCIÓN DEL FINAL. ***
 ?>

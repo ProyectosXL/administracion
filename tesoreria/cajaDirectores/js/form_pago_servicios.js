@@ -3,13 +3,17 @@
  * Gestiona el registro de pagos de seguros, patentes y expensas
  */
 
+
 let directoresCache = [];
-let archivoSeleccionado = null;
+let archivosSeleccionados = []; // Cambiado de archivoSeleccionado a array para múltiples archivos
+// Asegurarse de que el formato de moneda esté definido
+const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+
 
 /**
  * Inicialización al cargar la página
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     inicializarFormularioPrincipal();
     inicializarHistorialPagos();
 });
@@ -38,7 +42,7 @@ async function cargarMotivos() {
     try {
         const response = await fetch('controller/pago_servicios_controller.php?accion=obtener_motivos');
         const result = await response.json();
-        
+
         if (result.success) {
             llenarSelectMotivos(result.data);
             llenarFiltroMotivos(result.data);
@@ -70,10 +74,10 @@ async function cargarMotivos() {
 function llenarSelectMotivos(motivos) {
     const select = document.getElementById('motivoSelect');
     if (!select) return;
-    
+
     // Limpiar opciones existentes excepto la primera
     select.innerHTML = '<option value="">Seleccione un motivo</option>';
-    
+
     // Agregar motivos
     motivos.forEach(motivo => {
         const option = document.createElement('option');
@@ -92,7 +96,7 @@ function llenarSelectMotivos(motivos) {
 function llenarFiltroMotivos(motivos = null) {
     const select = document.getElementById('filtroMotivo');
     if (!select) return;
-    
+
     // Si no se pasan motivos, intentar cargarlos
     if (!motivos) {
         fetch('controller/pago_servicios_controller.php?accion=obtener_motivos')
@@ -105,11 +109,11 @@ function llenarFiltroMotivos(motivos = null) {
             .catch(error => console.error('Error al cargar motivos para filtro:', error));
         return;
     }
-    
+
     // Mantener opción "Todos"
     const valorActual = select.value;
     select.innerHTML = '<option value="">Todos</option>';
-    
+
     // Agregar motivos
     motivos.forEach(motivo => {
         const option = document.createElement('option');
@@ -117,7 +121,7 @@ function llenarFiltroMotivos(motivos = null) {
         option.textContent = motivo.nombre;
         select.appendChild(option);
     });
-    
+
     // Restaurar selección si existía
     if (valorActual) {
         select.value = valorActual;
@@ -131,7 +135,7 @@ async function cargarDirectores() {
     try {
         const response = await fetch('controller/pago_servicios_controller.php?accion=obtener_directores');
         const result = await response.json();
-        
+
         if (result.success) {
             directoresCache = result.data;
             llenarSelectDirectores();
@@ -164,10 +168,10 @@ async function cargarDirectores() {
 function llenarSelectDirectores() {
     const select = document.getElementById('directorSelect');
     if (!select) return;
-    
+
     // Limpiar opciones existentes excepto la primera
     select.innerHTML = '<option value="">Seleccione un director</option>';
-    
+
     // Agregar directores
     directoresCache.forEach(director => {
         const option = document.createElement('option');
@@ -183,12 +187,12 @@ function llenarSelectDirectores() {
 function configurarMotivo() {
     const motivoSelect = document.getElementById('motivoSelect');
     const seccionProveedor = document.getElementById('seccionProveedor');
-    
+
     if (!motivoSelect || !seccionProveedor) return;
-    
-    motivoSelect.addEventListener('change', function() {
+
+    motivoSelect.addEventListener('change', function () {
         const motivo = this.value;
-        
+
         // Mostrar sección de proveedor solo para "Pago de seguros"
         if (motivo === 'Pago de seguros') {
             seccionProveedor.classList.remove('d-none');
@@ -215,16 +219,16 @@ function configurarMotivo() {
 function configurarFormulario() {
     const form = document.getElementById('formPagoServicios');
     if (!form) return;
-    
-    form.addEventListener('submit', async function(e) {
+
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
         await registrarPago();
     });
-    
+
     // Configurar formateo de importe
     const importeInput = document.getElementById('importePago');
     if (importeInput) {
-        importeInput.addEventListener('keyup', function(e) {
+        importeInput.addEventListener('keyup', function (e) {
             if (e.key !== 'Backspace' && e.key !== 'Delete') {
                 formatearImporte(e);
             }
@@ -251,7 +255,7 @@ function formatearImporte(e) {
 
     // 3. Ensamblar el valor final
     let valorFinal = enteroFormateado;
-    
+
     // 4. Si hay parte decimal, limpiarla y añadirla
     if (parteDecimal !== null) {
         let decimalLimpio = parteDecimal.replace(/\D/g, '');
@@ -268,25 +272,25 @@ function formatearImporte(e) {
  */
 function inicializarSelect2Proveedores() {
     const proveedorSelect = $('#proveedorSelect');
-    
+
     if (proveedorSelect.length === 0) {
         console.warn('No se encontró el select de proveedores');
         return;
     }
-    
+
     proveedorSelect.select2({
         theme: 'bootstrap-5',
         placeholder: 'Escriba para buscar proveedor...',
         allowClear: true,
         width: '100%',
         language: {
-            noResults: function() {
+            noResults: function () {
                 return "No se encontraron proveedores";
             },
-            searching: function() {
+            searching: function () {
                 return "Buscando proveedores...";
             },
-            inputTooShort: function() {
+            inputTooShort: function () {
                 return "Escriba al menos 2 caracteres para buscar";
             }
         },
@@ -295,18 +299,18 @@ function inicializarSelect2Proveedores() {
             url: 'controller/pago_servicios_controller.php',
             dataType: 'json',
             delay: 300,
-            data: function(params) {
+            data: function (params) {
                 return {
                     accion: 'buscar_proveedores',
                     q: params.term || '',
                     page: params.page || 1
                 };
             },
-            processResults: function(data, params) {
+            processResults: function (data, params) {
                 params.page = params.page || 1;
-                
+
                 console.log('Datos recibidos del servidor:', data);
-                
+
                 if (!data.results || data.results.length === 0) {
                     return {
                         results: [{
@@ -321,7 +325,7 @@ function inicializarSelect2Proveedores() {
                         }]
                     };
                 }
-                
+
                 return data;
             },
             cache: true
@@ -329,16 +333,16 @@ function inicializarSelect2Proveedores() {
         templateResult: formatProveedor,
         templateSelection: formatProveedorSeleccion
     });
-    
+
     // Evento cuando se selecciona un proveedor
-    proveedorSelect.on('select2:select', function(e) {
+    proveedorSelect.on('select2:select', function (e) {
         const data = e.params.data;
         console.log('Proveedor seleccionado:', data);
-        
+
         const cbuInput = document.getElementById('cbuProveedor');
         const descripcionCbuInput = document.getElementById('descripcionCbuProveedor');
         const alertaCBU = document.getElementById('alertaCBU');
-        
+
         // Caso 1: Opción manual
         if (data.es_manual) {
             if (cbuInput) cbuInput.value = '';
@@ -346,13 +350,13 @@ function inicializarSelect2Proveedores() {
             if (alertaCBU) alertaCBU.classList.add('d-none');
             return;
         }
-        
+
         // Caso 2: Proveedor con CBU
         if (data.tiene_cbu && data.cbu) {
             if (cbuInput) cbuInput.value = data.cbu;
             if (descripcionCbuInput) descripcionCbuInput.value = data.descripcion_cbu || '';
             if (alertaCBU) alertaCBU.classList.add('d-none');
-        } 
+        }
         // Caso 3: Proveedor sin CBU
         else {
             if (cbuInput) cbuInput.value = '';
@@ -360,9 +364,9 @@ function inicializarSelect2Proveedores() {
             if (alertaCBU) alertaCBU.classList.remove('d-none');
         }
     });
-    
+
     // Evento cuando se limpia la selección
-    proveedorSelect.on('select2:clear', function() {
+    proveedorSelect.on('select2:clear', function () {
         document.getElementById('cbuProveedor').value = '';
         document.getElementById('descripcionCbuProveedor').value = '';
         document.getElementById('alertaCBU').classList.add('d-none');
@@ -376,24 +380,24 @@ function formatProveedor(proveedor) {
     if (proveedor.loading) {
         return proveedor.text;
     }
-    
+
     if (proveedor.es_manual) {
         return $('<span><i class="bi bi-tools"></i> ' + proveedor.text + '</span>');
     }
-    
+
     var $proveedor = $(
         '<div class="d-flex flex-column">' +
-            '<div class="fw-bold">' + (proveedor.nombre || proveedor.text) + '</div>' +
-            '<div class="small text-muted">' +
-                '<i class="bi bi-card-text"></i> CUIT: ' + (proveedor.cuit || 'N/A') +
-                (proveedor.tiene_cbu ? 
-                    ' <span class="badge bg-success badge-sm ms-1"><i class="bi bi-check-circle"></i> Tiene CBU</span>' : 
-                    ' <span class="badge bg-warning text-dark badge-sm ms-1"><i class="bi bi-exclamation-triangle"></i> Sin CBU</span>'
-                ) +
-            '</div>' +
+        '<div class="fw-bold">' + (proveedor.nombre || proveedor.text) + '</div>' +
+        '<div class="small text-muted">' +
+        '<i class="bi bi-card-text"></i> CUIT: ' + (proveedor.cuit || 'N/A') +
+        (proveedor.tiene_cbu ?
+            ' <span class="badge bg-success badge-sm ms-1"><i class="bi bi-check-circle"></i> Tiene CBU</span>' :
+            ' <span class="badge bg-warning text-dark badge-sm ms-1"><i class="bi bi-exclamation-triangle"></i> Sin CBU</span>'
+        ) +
+        '</div>' +
         '</div>'
     );
-    
+
     return $proveedor;
 }
 
@@ -404,15 +408,15 @@ function formatProveedorSeleccion(proveedor) {
     if (!proveedor.id) {
         return proveedor.text;
     }
-    
+
     if (proveedor.es_manual) {
         return '🔧 ' + proveedor.text;
     }
-    
+
     if (proveedor.nombre && proveedor.cuit) {
         return proveedor.nombre + ' (' + proveedor.cuit + ')';
     }
-    
+
     return proveedor.text;
 }
 
@@ -423,77 +427,126 @@ function configurarArchivos() {
     const facturaCamera = document.getElementById('facturaCamera');
     const facturaGallery = document.getElementById('facturaGallery');
     const facturaInput = document.getElementById('facturaInput');
-    
+
     if (facturaCamera) {
-        facturaCamera.addEventListener('change', function(e) {
-            procesarArchivo(e.target.files[0]);
+        facturaCamera.addEventListener('change', function (e) {
+            procesarArchivos(e.target.files);
+            // Limpiar input para permitir seleccionar el mismo archivo de nuevo si se desea
+            this.value = '';
         });
     }
-    
+
     if (facturaGallery) {
-        facturaGallery.addEventListener('change', function(e) {
-            procesarArchivo(e.target.files[0]);
+        facturaGallery.addEventListener('change', function (e) {
+            procesarArchivos(e.target.files);
+            this.value = '';
         });
     }
-    
+
     if (facturaInput) {
-        facturaInput.addEventListener('change', function(e) {
-            procesarArchivo(e.target.files[0]);
+        facturaInput.addEventListener('change', function (e) {
+            procesarArchivos(e.target.files);
+            this.value = '';
         });
     }
 }
 
 /**
- * Procesa el archivo seleccionado
+ * Procesa los archivos seleccionados (múltiples)
  */
-function procesarArchivo(archivo) {
-    if (!archivo) return;
-    
-    archivoSeleccionado = archivo;
-    
+function procesarArchivos(files) {
+    if (!files || files.length === 0) return;
+
+    // Agregar todos los archivos al array
+    Array.from(files).forEach(file => {
+        archivosSeleccionados.push(file);
+    });
+
+    // Actualizar el preview
+    actualizarPreview();
+}
+
+/**
+ * Actualiza el preview mostrando información de los archivos
+ */
+function actualizarPreview() {
     const previewFactura = document.getElementById('previewFactura');
     const imgPreview = document.getElementById('imgPreviewFactura');
     const pdfPreview = document.getElementById('pdfPreviewFactura');
     const infoArchivo = document.getElementById('infoArchivo');
-    
-    // Mostrar preview
+
+    if (archivosSeleccionados.length === 0) {
+        previewFactura.classList.add('d-none');
+        return;
+    }
+
     previewFactura.classList.remove('d-none');
-    
-    // Mostrar información del archivo
-    const tamañoKB = (archivo.size / 1024).toFixed(2);
-    infoArchivo.innerHTML = `
-        <strong>${archivo.name}</strong><br>
-        <small class="text-muted">Tamaño: ${tamañoKB} KB</small>
-    `;
-    
-    // Preview según tipo
-    if (archivo.type.startsWith('image/')) {
-        imgPreview.classList.remove('d-none');
-        pdfPreview.classList.add('d-none');
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            imgPreview.src = e.target.result;
-        };
-        reader.readAsDataURL(archivo);
-    } else if (archivo.type === 'application/pdf') {
+
+    // Calcular tamaño total
+    const totalSize = archivosSeleccionados.reduce((sum, file) => sum + file.size, 0);
+    const tamañoKB = (totalSize / 1024).toFixed(2);
+
+    if (archivosSeleccionados.length === 1) {
+        // Un solo archivo - mostrar preview normal
+        const archivo = archivosSeleccionados[0];
+        infoArchivo.innerHTML = `
+            <strong>${archivo.name}</strong><br>
+            <small class="text-muted">Tamaño: ${(archivo.size / 1024).toFixed(2)} KB</small>
+        `;
+
+        // Preview según tipo
+        if (archivo.type.startsWith('image/')) {
+            imgPreview.classList.remove('d-none');
+            pdfPreview.classList.add('d-none');
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                imgPreview.src = e.target.result;
+            };
+            reader.readAsDataURL(archivo);
+        } else if (archivo.type === 'application/pdf') {
+            imgPreview.classList.add('d-none');
+            pdfPreview.classList.remove('d-none');
+        }
+    } else {
+        // Múltiples archivos - mostrar contador
         imgPreview.classList.add('d-none');
-        pdfPreview.classList.remove('d-none');
+        pdfPreview.classList.add('d-none');
+        infoArchivo.innerHTML = `
+            <strong><i class="bi bi-files"></i> ${archivosSeleccionados.length} archivos seleccionados</strong><br>
+            <small class="text-muted">Tamaño total: ${tamañoKB} KB</small>
+        `;
     }
 }
 
 /**
- * Elimina el archivo seleccionado
+ * Limpia todos los archivos
+ */
+function limpiarArchivos() {
+    archivosSeleccionados = [];
+
+    const previewFactura = document.getElementById('previewFactura');
+    const imgPreview = document.getElementById('imgPreviewFactura');
+
+    if (previewFactura) previewFactura.classList.add('d-none');
+    if (imgPreview) imgPreview.src = '';
+
+    // Limpiar inputs
+    const inputs = ['facturaCamera', 'facturaGallery', 'facturaInput'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+/**
+ * Función Legacy para compatibilidad si algo la llama
+ * Ahora simplemente llama a limpiarArchivos
  */
 function eliminarFactura() {
-    archivoSeleccionado = null;
-    
-    document.getElementById('facturaCamera').value = '';
-    document.getElementById('facturaGallery').value = '';
-    document.getElementById('facturaInput').value = '';
-    document.getElementById('previewFactura').classList.add('d-none');
-    document.getElementById('imgPreviewFactura').src = '';
+    limpiarArchivos();
 }
+
 
 /**
  * Registra el pago en el sistema
@@ -508,7 +561,7 @@ async function registrarPago() {
         const motivoSelect = document.getElementById('motivoSelect');
         const fechaVencimiento = document.getElementById('fechaVencimiento');
         const importePago = document.getElementById('importePago');
-        
+
         if (!directorSelect.value) {
             mostrarAlerta('Campo Requerido', `<div class="text-center"><i class="bi bi-person-fill-x text-warning" style="font-size: 3rem;"></i><h5 class="mt-3 mb-2">Director no seleccionado</h5><p class="mb-0">Debe seleccionar un director.</p></div>`);
             return;
@@ -525,8 +578,8 @@ async function registrarPago() {
             mostrarAlerta('Campo Requerido', `<div class="text-center"><i class="bi bi-currency-dollar text-warning" style="font-size: 3rem;"></i><h5 class="mt-3 mb-2">Importe inválido</h5><p class="mb-0">Debe ingresar un importe mayor a cero.</p></div>`);
             return;
         }
-        // La factura solo es obligatoria al crear, no al editar (a menos que se quiera reemplazar)
-        if (!esEdicion && !archivoSeleccionado) {
+        // La factura solo es obligatoria al crear, no al editar
+        if (!esEdicion && archivosSeleccionados.length === 0) {
             mostrarAlerta('Archivo Requerido', `<div class="text-center"><i class="bi bi-file-earmark-image text-warning" style="font-size: 3rem;"></i><h5 class="mt-3 mb-2">Factura no adjuntada</h5><p class="mb-0">Debe adjuntar la foto o PDF de la factura.</p></div>`);
             return;
         }
@@ -559,7 +612,7 @@ async function registrarPago() {
         // Recopilar datos del formulario
         const selectedOption = directorSelect.options[directorSelect.selectedIndex];
         formData.append('id_director', selectedOption.value); // <-- CORRECTO: Enviamos el ID real del director
-        formData.append('nombre_director', selectedOption.textContent); 
+        formData.append('nombre_director', selectedOption.textContent);
         formData.append('motivo', motivoSelect.value);
         formData.append('fecha_vencimiento', fechaVencimiento.value);
         formData.append('importe', importePago.value.replace(/\./g, ''));
@@ -573,14 +626,17 @@ async function registrarPago() {
             if (descripcionCbu) formData.append('descripcion_cbu', descripcionCbu);
         }
 
-        // Convertir archivo a base64 SÓLO si se seleccionó uno nuevo
-        if (archivoSeleccionado) {
-            const base64 = await convertirArchivoABase64(archivoSeleccionado);
-            formData.append('foto', base64);
-        } else {
-            // No enviar el campo 'foto' si no se subió nada, para que el backend no lo actualice
-            // El backend ya está preparado para manejar esto.
+        // Procesar archivos múltiples
+        if (archivosSeleccionados.length > 0) {
+            // Convertir todos a base64
+            const promesas = archivosSeleccionados.map(archivo => convertirArchivoABase64(archivo));
+            const bases64 = await Promise.all(promesas);
+
+            bases64.forEach(b64 => {
+                formData.append('fotos[]', b64);
+            });
         }
+
 
         // Enviar al servidor
         const response = await fetch('controller/pago_servicios_controller.php', {
@@ -598,8 +654,9 @@ async function registrarPago() {
                     <p class="mb-1">La operación se completó correctamente.</p>
                 </div>
             `);
-            
+
             resetearFormulario();
+            limpiarArchivos(); // Limpiar array y vista
             cargarPagosFiltrados(); // Recargar el historial para ver los cambios
         } else {
             throw new Error(result.message || 'Error desconocido al procesar la solicitud.');
@@ -626,10 +683,10 @@ async function registrarPago() {
 function convertirArchivoABase64(archivo) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             resolve(e.target.result);
         };
-        reader.onerror = function(error) {
+        reader.onerror = function (error) {
             reject(error);
         };
         reader.readAsDataURL(archivo);
@@ -672,10 +729,10 @@ async function verFotoEgreso(idEgreso) {
         // ===== LA CORRECCIÓN ESTÁ EN ESTA LÍNEA =====
         const response = await fetch(`controller/pago_servicios_controller.php?accion=obtener_foto&id=${idEgreso}`);
         const result = await response.json();
-        
+
         if (result.success && result.foto) {
             const esPdf = result.tipo === 'application/pdf';
-            
+
             if (esPdf) {
                 // Para PDFs, crear un enlace de descarga
                 const pdfBlob = base64ToBlob(result.foto, 'application/pdf');
@@ -708,10 +765,10 @@ async function verFotoEgreso(idEgreso) {
                     document.body.insertAdjacentHTML('beforeend', modalHTML);
                     modal = document.getElementById('modalFotoEgresoServicio');
                 }
-                
+
                 document.getElementById('modalFotoEgresoServicioLabel').textContent = `Foto de Factura - Egreso ID: ${idEgreso}`;
                 document.getElementById('imagenFotoEgresoServicio').src = `data:${result.tipo};base64,${result.foto}`;
-                
+
                 const bsModal = new bootstrap.Modal(modal);
                 bsModal.show();
             }
@@ -761,10 +818,10 @@ function configurarFiltros() {
 function llenarFiltroDirectores() {
     const select = document.getElementById('filtroDirector');
     if (!select || directoresCache.length === 0) return;
-    
+
     // Limpiamos por si se llama más de una vez
     select.innerHTML = '<option value="">Todos</option>';
-    
+
     directoresCache.forEach(d => {
         // Usamos el NOMBRE como valor, ya que el backend lo espera así
         const option = new Option(d.nombre, d.nombre);
@@ -799,7 +856,7 @@ async function cargarPagosFiltrados() {
     try {
         const response = await fetch(`controller/pago_servicios_controller.php?${params.toString()}`);
         const result = await response.json();
-        
+
         if (result.success) {
             renderTablaPagos(result.data);
         } else {
@@ -824,8 +881,8 @@ function renderTablaPagos(pagos) {
     pagos.forEach(pago => {
         const fechaCarga = new Date(pago.fecha_carga.split(' ')[0] + 'T00:00:00').toLocaleDateString('es-AR', { timeZone: 'UTC' });
         const importe = formatoMoneda.format(pago.importe);
-        
-        const adjuntoHtml = pago.tiene_foto 
+
+        const adjuntoHtml = pago.tiene_foto
             ? `<button class="btn btn-sm btn-outline-secondary" onclick="verFotoEgreso(${pago.id})" title="${pago.tipo_archivo === 'application/pdf' ? 'Descargar PDF' : 'Ver Imagen'}">
                  <i class="bi ${pago.tipo_archivo === 'application/pdf' ? 'bi-file-earmark-pdf' : 'bi-image'}"></i>
                </button>`
@@ -884,7 +941,7 @@ function poblarFormularioParaEdicion(pago) {
     document.getElementById('motivoSelect').value = pago.motivo;
     document.getElementById('fechaVencimiento').value = pago.fecha;
     document.getElementById('observaciones').value = pago.observaciones || '';
-    
+
     // Formatear el importe para mostrarlo correctamente
     const importeInput = document.getElementById('importePago');
     importeInput.value = new Intl.NumberFormat('es-AR').format(pago.importe);
@@ -893,12 +950,12 @@ function poblarFormularioParaEdicion(pago) {
     const motivoSelect = document.getElementById('motivoSelect');
     if (pago.motivo === 'Pago de seguros' && pago.proveedor_nom) {
         motivoSelect.dispatchEvent(new Event('change')); // Simula el cambio para mostrar la sección
-        
+
         const proveedorSelect = $('#proveedorSelect');
         // Crear una nueva opción con los datos del proveedor
         const option = new Option(pago.proveedor_nom, pago.proveedor_nom, true, true);
         proveedorSelect.append(option).trigger('change');
-        
+
         // Poblar CBU y descripción
         document.getElementById('cbuProveedor').value = pago.proveedor_cbu || '';
         document.getElementById('descripcionCbuProveedor').value = pago.proveedor_descripcion_cbu || '';
@@ -909,7 +966,7 @@ function poblarFormularioParaEdicion(pago) {
     submitButton.innerHTML = '<i class="bi bi-save"></i> Actualizar Pago';
     submitButton.classList.remove('btn-primary');
     submitButton.classList.add('btn-success');
-    
+
     // 5. Limpiar el campo de archivo y mostrar un mensaje
     eliminarFactura();
     document.getElementById('infoArchivo').innerHTML = '<div class="alert alert-info py-1 small"><i class="bi bi-info-circle"></i> La factura original se conservará. Adjunte un nuevo archivo solo si desea reemplazarla.</div>';
@@ -930,7 +987,7 @@ function resetearFormulario() {
     // Resetear Select2 y sección de proveedor
     $('#proveedorSelect').val(null).trigger('change');
     document.getElementById('seccionProveedor').classList.add('d-none');
-    
+
     // Limpiar preview de factura
     eliminarFactura();
 }
@@ -961,7 +1018,7 @@ function eliminarPago(id) {
 
                 if (result.success) {
                     // Opcional: mostrar un "toast" de éxito
-                    
+
                     // Eliminar la fila de la tabla visualmente
                     const fila = document.getElementById(`fila-pago-${id}`);
                     if (fila) {
@@ -987,5 +1044,5 @@ function eliminarPago(id) {
     );
 }
 
-// Asegurarse de que el formato de moneda esté definido
-const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+// Borrar definición duplicada al final si existe
+
