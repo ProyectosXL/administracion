@@ -129,7 +129,7 @@ try {
             FROM $vista v
             LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
             WHERE v.COD_CLIENT = ? 
-              AND (v.ESTADO <> 'IMP' OR v.T_COMP IN ('ZC1', 'ZD1'))
+              AND v.ESTADO <> 'IMP'
             ORDER BY v.FECHA_EMIS DESC
         ";
 
@@ -151,7 +151,7 @@ try {
                        ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX
                 FROM $vista v
                 LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                WHERE (v.ESTADO <> 'IMP' OR v.T_COMP IN ('ZC1', 'ZD1'))";
+                WHERE v.ESTADO <> 'IMP'";
 
         $stmt = sqlsrv_query($conn_central, $sql);
         if ($stmt === false) {
@@ -208,7 +208,8 @@ try {
         }
         $summary['totalClientes'] = count($tableData);
         usort($tableData, function ($a, $b) {
-            return $b['TOTAL_NETO'] <=> $a['TOTAL_NETO']; });
+            return $b['TOTAL_NETO'] <=> $a['TOTAL_NETO'];
+        });
     }
 
     // Unificamos la respuesta final

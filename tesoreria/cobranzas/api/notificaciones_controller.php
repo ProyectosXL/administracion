@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
 
 // Cargamos las variables de entorno desde el .env de la raíz del proyecto
 try {
-    $dotenv = Dotenv::createImmutable(__DIR__ . '/../../../');
+    $dotenv = Dotenv::createImmutable(__DIR__ . '/../../../../');
     $dotenv->load();
 } catch (Exception $e) {
     error_log('Error crítico: No se pudo cargar el archivo .env. ' . $e->getMessage());
@@ -18,21 +18,23 @@ try {
 }
 
 if (!function_exists('enviarNotificacion')) {
-    function enviarNotificacion($destinatarios, $asunto, $cuerpo_html) {
-        if (empty($destinatarios)) return false;
-        
+    function enviarNotificacion($destinatarios, $asunto, $cuerpo_html)
+    {
+        if (empty($destinatarios))
+            return false;
+
         $mail = new PHPMailer(true);
         try {
             $mail->isSMTP();
-            $mail->Host       = $_ENV['MAIL_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $_ENV['MAIL_USERNAME'];
-            $mail->Password   = $_ENV['MAIL_PASSWORD'];
+            $mail->Host = $_ENV['MAIL_HOST'];
+            $mail->SMTPAuth = true;
+            $mail->Username = $_ENV['MAIL_USERNAME'];
+            $mail->Password = $_ENV['MAIL_PASSWORD'];
             $mail->SMTPSecure = $_ENV['MAIL_ENCRYPTION'];
-            $mail->Port       = $_ENV['MAIL_PORT'];
+            $mail->Port = $_ENV['MAIL_PORT'];
 
             $mail->setFrom($_ENV['MAIL_FROM_ADDRESS'], $_ENV['MAIL_FROM_NAME']);
-            
+
             $destinatarios_array = is_array($destinatarios) ? $destinatarios : [$destinatarios];
             foreach ($destinatarios_array as $email) {
                 if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -40,12 +42,13 @@ if (!function_exists('enviarNotificacion')) {
                 }
             }
 
-            if (empty($mail->getAllRecipientAddresses())) return false;
+            if (empty($mail->getAllRecipientAddresses()))
+                return false;
 
             $mail->isHTML(true);
             $mail->CharSet = 'UTF-8';
             $mail->Subject = $asunto;
-            $mail->Body    = $cuerpo_html;
+            $mail->Body = $cuerpo_html;
             $mail->send();
             return true;
         } catch (Exception $e) {
@@ -56,7 +59,8 @@ if (!function_exists('enviarNotificacion')) {
 }
 
 if (!function_exists('obtenerEmailFranquiciado')) {
-    function obtenerEmailFranquiciado($cod_cliente) {
+    function obtenerEmailFranquiciado($cod_cliente)
+    {
         $conn = Database::getConnection('central');
         $sql = "SELECT MAIL_NEXO FROM GVA14 WHERE COD_CLIENT = ?";
         $stmt = sqlsrv_query($conn, $sql, [$cod_cliente]);
@@ -68,9 +72,12 @@ if (!function_exists('obtenerEmailFranquiciado')) {
 }
 
 if (!function_exists('obtenerEmailAdmin')) {
-    function obtenerEmailAdmin($rol) {
-        if ($rol === 'SILVIA') return 'silvia.freire@xl.com.ar';
-        if ($rol === 'MARIELA') return 'mariela.gueler@xl.com.ar';
+    function obtenerEmailAdmin($rol)
+    {
+        if ($rol === 'SILVIA')
+            return 'silvia.freire@xl.com.ar';
+        if ($rol === 'MARIELA')
+            return 'mariela.gueler@xl.com.ar';
         return null;
     }
 }

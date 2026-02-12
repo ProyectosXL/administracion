@@ -2,7 +2,7 @@
 // api/vencimientos_controller.php
 
 if (!function_exists('verificarYActualizarVencimientosCliente')) {
-    
+
     /**
      * Revisa y actualiza las propuestas PENDIENTES a VENCIDAS si el cliente no responde a tiempo.
      *
@@ -10,15 +10,23 @@ if (!function_exists('verificarYActualizarVencimientosCliente')) {
      * @param string $cod_cliente El código del cliente a verificar.
      * @return int El número de propuestas actualizadas.
      */
-    function verificarYActualizarVencimientosCliente($conn, $cod_cliente) {
+    function verificarYActualizarVencimientosCliente($conn, $cod_cliente)
+    {
         if (!$conn || empty($cod_cliente)) {
             return 0;
         }
-        
-        // ======================= INICIO DE LA LÓGICA CORREGIDA =======================
+
         // 1. Seleccionamos las propuestas que están esperando la respuesta del cliente
-        $sql_candidatas = "SELECT id, fecha_creacion FROM FP_propuestas_pago WHERE estado = 'PENDIENTE_APROBACION_CLIENTE' AND cod_cliente = ?";
-        $params = [$cod_cliente];
+        // Soportamos que cod_cliente sea un array (agrupación) o un string individual
+        if (is_array($cod_cliente)) {
+            $placeholders = implode(',', array_fill(0, count($cod_cliente), '?'));
+            $sql_candidatas = "SELECT id, fecha_creacion FROM FP_propuestas_pago WHERE estado = 'PENDIENTE_APROBACION_CLIENTE' AND cod_cliente IN ($placeholders)";
+            $params = $cod_cliente;
+        } else {
+            $sql_candidatas = "SELECT id, fecha_creacion FROM FP_propuestas_pago WHERE estado = 'PENDIENTE_APROBACION_CLIENTE' AND cod_cliente = ?";
+            $params = [$cod_cliente];
+        }
+
         $stmt_candidatas = sqlsrv_query($conn, $sql_candidatas, $params);
 
         if ($stmt_candidatas === false) {
@@ -32,12 +40,24 @@ if (!function_exists('verificarYActualizarVencimientosCliente')) {
             // El punto de partida es la fecha de creación de la propuesta
             $fecha_inicio_conteo = $propuesta['fecha_creacion'];
 
+            if (!$fecha_inicio_conteo)
+                continue;
+
+            // ASEGURAMOS que sea un objeto DateTime antes de clonar
+            if (!($fecha_inicio_conteo instanceof DateTime)) {
+                try {
+                    $fecha_inicio_conteo = new DateTime($fecha_inicio_conteo);
+                } catch (Exception $e) {
+                    continue; // Si el formato es inválido, saltamos esta propuesta
+                }
+            }
+
             $horas_habiles_pasadas = 0;
             $fecha_actual = clone $fecha_inicio_conteo;
 
             // Calculamos las horas hábiles desde la CREACIÓN hasta hoy
             while ($fecha_actual < $hoy) {
-                $dia_semana = (int)$fecha_actual->format('N');
+                $dia_semana = (int) $fecha_actual->format('N');
                 if ($dia_semana >= 1 && $dia_semana <= 5) {
                     $horas_habiles_pasadas++;
                 }
@@ -46,7 +66,7 @@ if (!function_exists('verificarYActualizarVencimientosCliente')) {
 
             // Si han pasado 96 horas hábiles y el cliente no ha respondido
             if ($horas_habiles_pasadas >= 96) {
-            // ======================== FIN DE LA LÓGICA CORREGIDA =========================
+                // ======================== FIN DE LA LÓGICA CORREGIDA =========================
                 if (sqlsrv_begin_transaction($conn) === false) {
                     continue;
                 }
@@ -55,7 +75,7 @@ if (!function_exists('verificarYActualizarVencimientosCliente')) {
                     // Actualizamos el estado a VENCIDA
                     $sql_update = "UPDATE FP_propuestas_pago SET estado = 'VENCIDA' WHERE id = ?";
                     $stmt_update = sqlsrv_query($conn, $sql_update, [$propuesta['id']]);
-                    
+
                     if ($stmt_update === false || sqlsrv_rows_affected($stmt_update) <= 0) {
                         throw new Exception("Error al actualizar estado a VENCIDA.");
                     }
@@ -68,7 +88,7 @@ if (!function_exists('verificarYActualizarVencimientosCliente')) {
                     $stmt_historial = sqlsrv_query($conn, $sql_historial, $params_historial);
 
                     if ($stmt_historial === false) {
-                         throw new Exception("Error al insertar en historial de vencimiento.");
+                        throw new Exception("Error al insertar en historial de vencimiento.");
                     }
 
                     sqlsrv_commit($conn);

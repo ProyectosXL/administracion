@@ -230,8 +230,11 @@ try {
 
                     // Si la propuesta no contiene ninguna factura (solo NCs, por ejemplo), no necesita verificación de pago.
                     // La marcamos como pagada directamente.
-                    if ($solo_facturas === false && empty(array_filter($items_de_propuesta, function ($i) {
-                        return strpos(trim($i['t_comp_factura']), 'FAC') !== false; }))) {
+                    if (
+                        $solo_facturas === false && empty(array_filter($items_de_propuesta, function ($i) {
+                            return strpos(trim($i['t_comp_factura']), 'FAC') !== false;
+                        }))
+                    ) {
                         $sql_update_pagado = "UPDATE FP_propuestas_pago SET estado = 'PAGADO', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
                         sqlsrv_query($conn_apps, $sql_update_pagado, [$id_propuesta]);
                         $propuestas_actualizadas++;
@@ -786,38 +789,55 @@ try {
             // Guardamos el cod_cliente específico de esta propuesta para el UPDATE final
             $cod_cliente_propuesta = $propuesta_a_actualizar['cod_cliente'];
 
-            // 4. Verificación y Procesamiento del Archivo Subido
-            if (!isset($_FILES['comprobanteFile']) || $_FILES['comprobanteFile']['error'] !== UPLOAD_ERR_OK) {
+            // 4. Verificación y Procesamiento de los Archivos Subidos
+            if (!isset($_FILES['comprobanteFile']) || empty($_FILES['comprobanteFile']['name'][0])) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'No se recibió ningún archivo o hubo un error en la subida.']);
                 exit;
             }
 
-            $file = $_FILES['comprobanteFile'];
-
-            // --- Validaciones de seguridad para el archivo ---
-            $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
-            $max_size = 10 * 1024 * 1024; // Límite de 10 MB
-
-            if (!in_array($file['type'], $allowed_types) || $file['size'] > $max_size) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Archivo no válido o demasiado grande (máx. 10MB, solo PDF, JPG, PNG).']);
-                exit;
-            }
-
-            // --- Mover archivo a su carpeta de destino ---
+            $files = $_FILES['comprobanteFile'];
+            $uploaded_files = [];
+            $allowed_types = ['image/jpeg', 'image/png', 'application/pdf', 'image/jpg'];
+            $max_size = 10 * 1024 * 1024; // Límite de 10 MB por archivo
             $upload_dir = __DIR__ . '/../uploads/comprobantes/';
+
             if (!is_dir($upload_dir)) {
                 mkdir($upload_dir, 0777, true);
             }
 
-            $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-            $new_filename = "propuesta_" . $id_propuesta . "_" . time() . "." . $extension;
-            $upload_path = $upload_dir . $new_filename;
-            $relative_path = 'uploads/comprobantes/' . $new_filename;
+            // Primero validamos todos los archivos
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] !== UPLOAD_ERR_OK)
+                    continue;
 
-            if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
-                throw new Exception("Error crítico: No se pudo mover el archivo del comprobante.");
+                if (!in_array($files['type'][$i], $allowed_types) || $files['size'][$i] > $max_size) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "El archivo '{$files['name'][$i]}' no es válido o es demasiado grande."]);
+                    exit;
+                }
+            }
+
+            // Luego los movemos
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] !== UPLOAD_ERR_OK)
+                    continue;
+
+                $extension = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
+                $new_filename = "propuesta_" . $id_propuesta . "_" . time() . "_" . $i . "." . $extension;
+                $upload_path = $upload_dir . $new_filename;
+                $relative_path = 'uploads/comprobantes/' . $new_filename;
+
+                if (move_uploaded_file($files['tmp_name'][$i], $upload_path)) {
+                    $uploaded_files[] = [
+                        'name' => $files['name'][$i],
+                        'path' => $relative_path
+                    ];
+                }
+            }
+
+            if (empty($uploaded_files)) {
+                throw new Exception("No se pudo procesar ningún archivo.");
             }
 
             // 5. Operaciones de Base de Datos (dentro de una transacción)
@@ -827,12 +847,14 @@ try {
             }
 
             try {
-                // 5.1. Insertar el registro del archivo en la tabla de adjuntos
-                $sql_adjunto = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, nombre_archivo, ruta_archivo) VALUES (?, ?, ?)";
-                $params_adjunto = [$id_propuesta, $file['name'], $relative_path];
-                $stmt_adjunto = sqlsrv_query($conn_apps, $sql_adjunto, $params_adjunto);
-                if ($stmt_adjunto === false)
-                    throw new Exception("Error al guardar el adjunto en la base de datos.");
+                // 5.1. Insertar cada archivo en la tabla de adjuntos
+                foreach ($uploaded_files as $f) {
+                    $sql_adjunto = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, nombre_archivo, ruta_archivo) VALUES (?, ?, ?)";
+                    $params_adjunto = [$id_propuesta, $f['name'], $f['path']];
+                    $stmt_adjunto = sqlsrv_query($conn_apps, $sql_adjunto, $params_adjunto);
+                    if ($stmt_adjunto === false)
+                        throw new Exception("Error al guardar el adjunto '{$f['name']}' en la base de datos.");
+                }
 
                 // 5.2. Actualizar el estado de la propuesta a 'DOCUMENTACION_ADJUNTADA'
                 $sql_update = "UPDATE FP_propuestas_pago SET estado = 'DOCUMENTACION_ADJUNTADA', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
@@ -842,7 +864,8 @@ try {
 
                 // 5.3. Registrar el evento en el historial
                 $id_usuario_cliente = $_SESSION['usuario_id'];
-                $descripcion_historial = "El cliente ha adjuntado el comprobante de pago.";
+                $cant = count($uploaded_files);
+                $descripcion_historial = "El cliente ha adjuntado {$cant} comprobante(s) de pago.";
                 $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)";
                 $params_historial = [$id_propuesta, $id_usuario_cliente, 'CLIENTE', $descripcion_historial];
                 $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
@@ -851,26 +874,34 @@ try {
 
                 sqlsrv_commit($conn_apps);
 
-                // --- INICIO DE LA NOTIFICACIÓN (CASO E) ---
-                require_once __DIR__ . '/notificaciones_controller.php';
-                $destinatarios_admin = array_filter([obtenerEmailAdmin('SILVIA'), obtenerEmailAdmin('MARIELA')]);
-                if (!empty($destinatarios_admin)) {
-                    $asunto = "Comprobante Adjuntado - Cliente {$cod_cliente_propuesta} (Propuesta #${id_propuesta})";
-                    $cuerpo = "<h1>Comprobante Recibido</h1><p>El cliente {$cod_cliente_propuesta} ha adjuntado un comprobante para la propuesta #${id_propuesta}. Se requiere verificación en el portal.</p>";
-                    enviarNotificacion($destinatarios_admin, $asunto, $cuerpo);
+                // --- INICIO DE LA NOTIFICACIÓN (Aislado para no afectar la subida) ---
+                try {
+                    require_once __DIR__ . '/notificaciones_controller.php';
+                    $destinatarios_admin = array_filter([obtenerEmailAdmin('SILVIA'), obtenerEmailAdmin('MARIELA')]);
+                    if (!empty($destinatarios_admin)) {
+                        $asunto = "Comprobantes Adjuntados - Cliente {$cod_cliente_propuesta} (Propuesta #${id_propuesta})";
+                        $cuerpo = "<h1>Comprobantes Recibidos</h1><p>El cliente {$cod_cliente_propuesta} ha adjuntado {$cant} archivo(s) para la propuesta #${id_propuesta}. Se requiere verificación en el portal.</p>";
+                        enviarNotificacion($destinatarios_admin, $asunto, $cuerpo);
+                    }
+                } catch (Exception $e_notif) {
+                    error_log("Error al enviar notificación de subida: " . $e_notif->getMessage());
                 }
                 // --- FIN DE LA NOTIFICACIÓN ---
 
-                echo json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada correctamente.']);
+                echo json_encode(['success' => true, 'message' => "Se han subido {$cant} archivos y la propuesta ha sido actualizada correctamente."]);
 
             } catch (Exception $e) {
-                sqlsrv_rollback($conn_apps);
-                // Si falla la BD, es buena práctica borrar el archivo que ya subimos para no dejar basura
-                if (file_exists($upload_path)) {
-                    unlink($upload_path);
+                if (isset($conn_apps))
+                    sqlsrv_rollback($conn_apps);
+
+                // Solo borramos los archivos si la transacción de BD NO se completó
+                foreach ($uploaded_files as $f) {
+                    $full_path = realpath(__DIR__ . '/../') . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $f['path']);
+                    if (file_exists($full_path))
+                        unlink($full_path);
                 }
                 http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Error de base de datos: ' . $e->getMessage()]);
+                echo json_encode(['success' => false, 'message' => 'Error al procesar la subida: ' . $e->getMessage()]);
             }
             break;
 

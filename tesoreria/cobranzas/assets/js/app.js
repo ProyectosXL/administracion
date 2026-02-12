@@ -395,8 +395,9 @@ $(document).ready(function () {
                 // ** NUEVO **: Llamamos a la nueva función de totales
                 actualizarTotalesPropuesta();
             },
-            error: function () {
-                container.html('<div class="alert alert-danger">Error al cargar los datos.</div>');
+            error: function (xhr, status, error) {
+                console.error("Error al cargar detalle:", { xhr, status, error });
+                container.html(`<div class="alert alert-danger">Error al cargar los datos. Detalles: ${error || 'Error desconocido'}. Verifique la consola.</div>`);
             }
         });
     });
@@ -503,7 +504,7 @@ $(document).ready(function () {
         const numeroFormateado = $.fn.dataTable.render.number('.', ',', 2, '$ ').display(importeNeto);
         tr.find('.importe-neto-cell').html(`<span class="${importeNeto < 0 ? 'text-danger fw-bold' : ''}">${numeroFormateado}</span>`);
 
-        actualizarTotalPropuesta();
+        actualizarTotalesPropuesta();
     });
 
     function actualizarEstadoBotonPropuesta() {
@@ -515,7 +516,7 @@ $(document).ready(function () {
     $('#detalleClienteModal').on('click', '#select-all-invoices', function () {
         $('.invoice-checkbox').prop('checked', this.checked);
         actualizarEstadoBotonPropuesta();
-        actualizarTotalPropuesta();
+        actualizarTotalesPropuesta();
     });
 
     $('#detalleClienteModal').on('change', 'input[type="checkbox"]', function () {
