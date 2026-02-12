@@ -95,7 +95,8 @@ include 'templates/layout/header.php';
         </div>
     </div>
     <!-- ======================= NUEVO MODAL PARA SUBIR DOCUMENTACIÓN ======================= -->
-    <div class="modal fade" id="uploadDocModal" tabindex="-1" aria-labelledby="uploadDocModalLabel" aria-hidden="true">
+    <div class="modal fade" id="uploadDocModal" tabindex="-1" aria-labelledby="uploadDocModalLabel" aria-hidden="true"
+        style="z-index: 2000;">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -105,6 +106,7 @@ include 'templates/layout/header.php';
                 <div class="modal-body">
                     <form id="uploadDocForm" enctype="multipart/form-data">
                         <input type="hidden" id="uploadPropuestaId" name="id_propuesta">
+                        <input type="hidden" id="uploadCuotaId" name="id_cuota">
                         <div class="mb-3">
                             <label for="comprobanteFile" class="form-label">Seleccione el archivo (PDF, JPG,
                                 PNG):</label>

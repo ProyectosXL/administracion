@@ -50,6 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
         if ($stmt_historial === false)
             throw new Exception("Error al registrar historial.");
 
+        // --- NUEVO: Guardar Cuotas (Facilidades de Pago) ---
+        $cuotas = $_POST['cuotas'] ?? [];
+        if (!empty($cuotas)) {
+            $sql_cuota = "INSERT INTO FP_propuestas_pago_cuotas (id_propuesta, num_cuota, monto, fecha_vencimiento) VALUES (?, ?, ?, ?)";
+            foreach ($cuotas as $cuota) {
+                $params_cuota = [$id_propuesta, $cuota['num_cuota'], $cuota['monto'], $cuota['fecha_vencimiento']];
+                $stmt_cuota = sqlsrv_query($conn_apps, $sql_cuota, $params_cuota);
+                if ($stmt_cuota === false)
+                    throw new Exception("Error al insertar la cuota " . $cuota['num_cuota']);
+            }
+        }
+
         sqlsrv_commit($conn_apps);
         // --- INICIO DE LA NOTIFICACIÓN (CASO A) ---
         require_once __DIR__ . '/notificaciones_controller.php';

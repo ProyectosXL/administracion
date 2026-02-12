@@ -90,12 +90,22 @@ try {
             }
 
             $adjuntos = [];
-            $sql_adjuntos = "SELECT id, nombre_archivo, ruta_archivo, fecha_subida FROM FP_propuestas_adjuntos WHERE id_propuesta = ? ORDER BY fecha_subida DESC";
+            $sql_adjuntos = "SELECT id, nombre_archivo, ruta_archivo, fecha_subida, id_cuota FROM FP_propuestas_adjuntos WHERE id_propuesta = ? ORDER BY fecha_subida DESC";
             $stmt_adjuntos = sqlsrv_query($conn_apps, $sql_adjuntos, [$id_propuesta]);
 
             if ($stmt_adjuntos !== false) {
                 while ($row_adjunto = sqlsrv_fetch_array($stmt_adjuntos, SQLSRV_FETCH_ASSOC)) {
                     $adjuntos[] = $row_adjunto;
+                }
+            }
+
+            // --- NUEVO: Obtener Cuotas ---
+            $cuotas = [];
+            $sql_cuotas = "SELECT id, num_cuota, monto, fecha_vencimiento, estado FROM FP_propuestas_pago_cuotas WHERE id_propuesta = ? ORDER BY num_cuota ASC";
+            $stmt_cuotas = sqlsrv_query($conn_apps, $sql_cuotas, [$id_propuesta]);
+            if ($stmt_cuotas !== false) {
+                while ($row_cuota = sqlsrv_fetch_array($stmt_cuotas, SQLSRV_FETCH_ASSOC)) {
+                    $cuotas[] = $row_cuota;
                 }
             }
 
@@ -105,7 +115,8 @@ try {
                     'propuesta' => $propuesta,
                     'items' => $items,
                     'historial' => $historial,
-                    'adjuntos' => $adjuntos
+                    'adjuntos' => $adjuntos,
+                    'cuotas' => $cuotas
                 ]
             ]);
             break;
@@ -719,31 +730,60 @@ try {
             $conn_apps = Database::getConnection('apps');
 
             $sql = "
-        SELECT 
-            id,
-            fecha_propuesta_pago,
-            total_propuesto
-        FROM 
-            FP_propuestas_pago
-        WHERE 
-            cod_cliente IN ($placeholders) 
-            AND estado = 'ACEPTADA'
-            AND fecha_propuesta_pago IS NOT NULL
-        ORDER BY
-            fecha_propuesta_pago ASC
-    ";
+                -- 1. Obtenemos las cuotas de propuestas aceptadas
+                SELECT 
+                    p.id,
+                    p.cod_cliente,
+                    c.fecha_vencimiento AS fecha,
+                    c.monto,
+                    c.num_cuota,
+                    (SELECT COUNT(*) FROM FP_propuestas_pago_cuotas WHERE id_propuesta = p.id) as total_cuotas
+                FROM 
+                    FP_propuestas_pago p
+                JOIN 
+                    FP_propuestas_pago_cuotas c ON p.id = c.id_propuesta
+                WHERE 
+                    p.cod_cliente IN ($placeholders) 
+                    AND p.estado = 'ACEPTADA'
 
-            $stmt = sqlsrv_query($conn_apps, $sql, $codigos_cliente);
+                UNION ALL
+
+                -- 2. Obtenemos propuestas aceptadas que NO tienen cuotas (pago único)
+                SELECT 
+                    p.id,
+                    p.cod_cliente,
+                    p.fecha_propuesta_pago AS fecha,
+                    p.total_propuesto AS monto,
+                    1 AS num_cuota,
+                    1 as total_cuotas
+                FROM 
+                    FP_propuestas_pago p
+                WHERE 
+                    p.cod_cliente IN ($placeholders) 
+                    AND p.estado = 'ACEPTADA'
+                    AND p.fecha_propuesta_pago IS NOT NULL
+                    AND NOT EXISTS (SELECT 1 FROM FP_propuestas_pago_cuotas WHERE id_propuesta = p.id)
+                
+                ORDER BY fecha ASC
+            ";
+
+            // Duplicamos los parámetros ya que usamos $placeholders dos veces
+            $params = array_merge($codigos_cliente, $codigos_cliente);
+            $stmt = sqlsrv_query($conn_apps, $sql, $params);
+
             if ($stmt === false) {
-                throw new Exception("Error al consultar el cronograma del cliente.");
+                throw new Exception("Error al consultar el cronograma del cliente: " . print_r(sqlsrv_errors(), true));
             }
 
             $eventos = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $eventos[] = [
-                    'date' => $row['fecha_propuesta_pago']->format('Y-m-d'),
+                    'date' => $row['fecha'] instanceof DateTime ? $row['fecha']->format('Y-m-d') : substr($row['fecha'], 0, 10),
                     'id' => $row['id'],
-                    'monto' => $row['total_propuesto']
+                    'cod_cliente' => $row['cod_cliente'],
+                    'monto' => $row['monto'],
+                    'num_cuota' => $row['num_cuota'],
+                    'total_cuotas' => $row['total_cuotas']
                 ];
             }
 
@@ -847,20 +887,33 @@ try {
             }
 
             try {
+                $id_cuota = $_POST['id_cuota'] ?? null;
+
                 // 5.1. Insertar cada archivo en la tabla de adjuntos
                 foreach ($uploaded_files as $f) {
-                    $sql_adjunto = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, nombre_archivo, ruta_archivo) VALUES (?, ?, ?)";
-                    $params_adjunto = [$id_propuesta, $f['name'], $f['path']];
+                    $sql_adjunto = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, nombre_archivo, ruta_archivo, id_cuota) VALUES (?, ?, ?, ?)";
+                    $params_adjunto = [$id_propuesta, $f['name'], $f['path'], $id_cuota];
                     $stmt_adjunto = sqlsrv_query($conn_apps, $sql_adjunto, $params_adjunto);
                     if ($stmt_adjunto === false)
                         throw new Exception("Error al guardar el adjunto '{$f['name']}' en la base de datos.");
                 }
 
-                // 5.2. Actualizar el estado de la propuesta a 'DOCUMENTACION_ADJUNTADA'
-                $sql_update = "UPDATE FP_propuestas_pago SET estado = 'DOCUMENTACION_ADJUNTADA', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
-                $stmt_update = sqlsrv_query($conn_apps, $sql_update, [$id_propuesta]);
-                if ($stmt_update === false)
-                    throw new Exception("Error al actualizar el estado de la propuesta.");
+                // 5.2. Verificar si todas las cuotas tienen al menos un documento
+                $sql_stats = "SELECT 
+                                (SELECT COUNT(*) FROM FP_propuestas_pago_cuotas WHERE id_propuesta = ?) AS total_cuotas,
+                                (SELECT COUNT(DISTINCT id_cuota) FROM FP_propuestas_adjuntos WHERE id_propuesta = ? AND id_cuota IS NOT NULL) AS cuotas_con_doc";
+                $stmt_stats = sqlsrv_query($conn_apps, $sql_stats, [$id_propuesta, $id_propuesta]);
+                $stats = sqlsrv_fetch_array($stmt_stats, SQLSRV_FETCH_ASSOC);
+
+                $completado = ($stats && $stats['total_cuotas'] > 0 && $stats['total_cuotas'] == $stats['cuotas_con_doc']);
+
+                // Si hay cuotas y todas tienen documento, o si no hay cuotas (flujo antiguo) pero se subió algo
+                if ($completado || ($stats['total_cuotas'] == 0)) {
+                    $sql_update = "UPDATE FP_propuestas_pago SET estado = 'DOCUMENTACION_ADJUNTADA', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
+                    $stmt_update = sqlsrv_query($conn_apps, $sql_update, [$id_propuesta]);
+                    if ($stmt_update === false)
+                        throw new Exception("Error al actualizar el estado de la propuesta.");
+                }
 
                 // 5.3. Registrar el evento en el historial
                 $id_usuario_cliente = $_SESSION['usuario_id'];
@@ -902,6 +955,81 @@ try {
                 }
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Error al procesar la subida: ' . $e->getMessage()]);
+            }
+            break;
+
+
+        case 'eliminar_adjunto':
+            $id_adjunto = $_POST['id_adjunto'] ?? 0;
+            $id_usuario = $_SESSION['usuario_id'];
+
+            if ($id_adjunto == 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'ID de adjunto no válido.']);
+                exit;
+            }
+
+            $conn_apps = Database::getConnection('apps');
+
+            try {
+                // 1. Obtener información del adjunto antes de borrarlo
+                $sql_get = "SELECT ruta_archivo, id_propuesta, id_cuota FROM FP_propuestas_adjuntos WHERE id = ?";
+                $stmt_get = sqlsrv_query($conn_apps, $sql_get, [$id_adjunto]);
+                $adjunto = sqlsrv_fetch_array($stmt_get, SQLSRV_FETCH_ASSOC);
+
+                if (!$adjunto) {
+                    throw new Exception("Adjunto no encontrado.");
+                }
+
+                $id_propuesta = $adjunto['id_propuesta'];
+                $id_cuota = $adjunto['id_cuota'];
+
+                // 2. Borrar el registro de la base de datos
+                $sql_delete = "DELETE FROM FP_propuestas_adjuntos WHERE id = ?";
+                $stmt_delete = sqlsrv_query($conn_apps, $sql_delete, [$id_adjunto]);
+
+                if ($stmt_delete === false) {
+                    throw new Exception("Error al borrar el registro del adjunto.");
+                }
+
+                // 3. Borrar el archivo físico
+                $full_path = realpath(__DIR__ . '/../') . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $adjunto['ruta_archivo']);
+                if (file_exists($full_path)) {
+                    unlink($full_path);
+                }
+
+                // 4. Recalcular si el estado de la propuesta debe cambiar (de DOCUMENTACION_ADJUNTADA a ACEPTADA)
+                // Si borramos un documento que era el único de una cuota, ya no está "COMPLETADA"
+                $sql_stats = "SELECT 
+                                (SELECT COUNT(*) FROM FP_propuestas_pago_cuotas WHERE id_propuesta = ?) AS total_cuotas,
+                                (SELECT COUNT(DISTINCT id_cuota) FROM FP_propuestas_adjuntos WHERE id_propuesta = ? AND id_cuota IS NOT NULL) AS cuotas_con_doc";
+                $stmt_stats = sqlsrv_query($conn_apps, $sql_stats, [$id_propuesta, $id_propuesta]);
+                $stats = sqlsrv_fetch_array($stmt_stats, SQLSRV_FETCH_ASSOC);
+
+                $completado = ($stats && $stats['total_cuotas'] > 0 && $stats['total_cuotas'] == $stats['cuotas_con_doc']);
+
+                // Si antes estaba en DOCUMENTACION_ADJUNTADA y ahora ya no está completado, volvemos a ACEPTADA
+                if (!$completado && $stats['total_cuotas'] > 0) {
+                    $sql_check_estado = "SELECT estado FROM FP_propuestas_pago WHERE id = ?";
+                    $stmt_check_estado = sqlsrv_query($conn_apps, $sql_check_estado, [$id_propuesta]);
+                    $row_est = sqlsrv_fetch_array($stmt_check_estado, SQLSRV_FETCH_ASSOC);
+
+                    if ($row_est['estado'] === 'DOCUMENTACION_ADJUNTADA') {
+                        $sql_back = "UPDATE FP_propuestas_pago SET estado = 'ACEPTADA', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
+                        sqlsrv_query($conn_apps, $sql_back, [$id_propuesta]);
+                    }
+                }
+
+                // 5. Registrar en el historial
+                $descripcion_historial = "El cliente ha eliminado un comprobante adjunto.";
+                $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)";
+                sqlsrv_query($conn_apps, $sql_historial, [$id_propuesta, $id_usuario, 'CLIENTE', $descripcion_historial]);
+
+                echo json_encode(['success' => true, 'message' => 'Adjunto eliminado correctamente.']);
+
+            } catch (Exception $e) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Error al eliminar el adjunto: ' . $e->getMessage()]);
             }
             break;
 
@@ -1208,7 +1336,24 @@ try {
                     }
 
                     $descripcion_historial = "El cliente ha generado una contrapropuesta.";
-                    // ... (lógica para construir descripción de cambios)
+
+                    // --- NUEVO: Actualizar Cuotas en Contrapropuesta ---
+                    if (isset($contra['cuotas']) && is_array($contra['cuotas'])) {
+                        // Limpiamos cuotas anteriores
+                        $sql_del_cuotas = "DELETE FROM FP_propuestas_pago_cuotas WHERE id_propuesta = ?";
+                        sqlsrv_query($conn_apps, $sql_del_cuotas, [$id_propuesta]);
+
+                        // Insertamos las nuevas
+                        $sql_ins_cuota = "INSERT INTO FP_propuestas_pago_cuotas (id_propuesta, num_cuota, monto, fecha_vencimiento) VALUES (?, ?, ?, ?)";
+                        foreach ($contra['cuotas'] as $c) {
+                            $params_c = [$id_propuesta, $c['num_cuota'], $c['monto'], $c['fecha_vencimiento']];
+                            sqlsrv_query($conn_apps, $sql_ins_cuota, $params_c);
+                        }
+                    } else {
+                        // Si no envió cuotas (volvió a 1 pago), limpiamos las que había
+                        $sql_del_cuotas = "DELETE FROM FP_propuestas_pago_cuotas WHERE id_propuesta = ?";
+                        sqlsrv_query($conn_apps, $sql_del_cuotas, [$id_propuesta]);
+                    }
 
                     $update_sql = "UPDATE FP_propuestas_pago SET estado = ?, total_propuesto = ?, fecha_propuesta_pago = ?, medio_de_pago = ?, fecha_ultima_modificacion = GETDATE() WHERE id = ?";
                     $update_params = [$nuevo_estado, $nuevo_total, $nueva_fecha, $nuevo_medio_pago, $id_propuesta];

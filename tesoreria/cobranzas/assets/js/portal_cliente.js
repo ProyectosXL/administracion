@@ -24,6 +24,53 @@ $(document).ready(function () {
         return 0; // Más de 29 días, 0% de descuento
     }
 
+    // --- FUNCIONES PARA MANEJO DE CUOTAS EN CONTRAPROPUESTA (MOVIDAS A ÁMBITO GLOBAL) ---
+    function generarCamposCuotasNeg(cantidad, total, fechaLimite) {
+        const $cuotasListNeg = $('#negociacion-cuotas-list');
+        $cuotasListNeg.empty();
+        const montoIndividual = (total / cantidad).toFixed(2);
+        let acumulado = 0;
+        for (let i = 1; i <= cantidad; i++) {
+            const monto = (i === cantidad) ? (total - acumulado).toFixed(2) : montoIndividual;
+            acumulado += parseFloat(monto);
+            const row = `
+            <div class="row g-2 mb-2 neg-cuota-row">
+                <div class="col-1 small fw-bold mt-1">${i}.</div>
+                <div class="col-6">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control neg-cuota-monto" value="${monto}" readonly>
+                    </div>
+                </div>
+                <div class="col-5">
+                    <input type="date" class="form-control form-control-sm neg-cuota-fecha" value="${fechaLimite}" max="${fechaLimite}">
+                </div>
+            </div>`;
+            $cuotasListNeg.append(row);
+        }
+    }
+
+    function cargarCuotasExistentesNeg(cuotas, fechaLimite) {
+        const $cuotasListNeg = $('#negociacion-cuotas-list');
+        $cuotasListNeg.empty();
+        cuotas.forEach(c => {
+            const row = `
+            <div class="row g-2 mb-2 neg-cuota-row">
+                <div class="col-1 small fw-bold mt-1">${c.num_cuota}.</div>
+                <div class="col-6">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control neg-cuota-monto" value="${c.monto}" readonly>
+                    </div>
+                </div>
+                <div class="col-5">
+                    <input type="date" class="form-control form-control-sm neg-cuota-fecha" value="${c.fecha_vencimiento}" max="${fechaLimite}">
+                </div>
+            </div>`;
+            $cuotasListNeg.append(row);
+        });
+    }
+
     function recalcularPropuestaCliente() {
         const medioPago = $('#negociacion-medio-pago').val();
         const fechaPago = $('#negociacion-fecha-pago').val();
@@ -85,6 +132,12 @@ $(document).ready(function () {
         $('#totalPropuestoKPI').text(f(totalNeto));
         $('#medioPagoKPI').text(medioPago);
         $('#fechaPropuestaKPI').text(new Date(fechaPago + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }));
+
+        // --- NUEVO: Recalcular Cuotas si están visibles ---
+        const $cantCuotasNeg = $('#negociacion-cantidad-cuotas');
+        if ($cantCuotasNeg.length && parseInt($cantCuotasNeg.val()) > 1) {
+            generarCamposCuotasNeg(parseInt($cantCuotasNeg.val()), totalNeto, fechaPago);
+        }
     }
 
     // Eventos que disparan el recálculo
@@ -159,16 +212,11 @@ $(document).ready(function () {
                 render: function (data, type, row) {
                     // Pasamos el cod_cliente al botón para usarlo después
                     let btnVer = `<button class="btn btn-primary btn-sm btn-detalle" data-id="${row.id}" data-cod-cliente="${row.cod_cliente}" title="Ver Detalle"><i class="fa-solid fa-eye"></i></button>`;
-                    let btnAdjuntar = '';
-
                     if (row.estado === 'VENCIDA') {
                         return btnVer;
                     }
-                    if (row.estado === 'ACEPTADA') {
-                        btnAdjuntar = `<button class="btn btn-info btn-sm ms-1 btn-adjuntar" data-id="${row.id}" title="Adjuntar Comprobante"><i class="fa-solid fa-paperclip"></i></button>`;
-                    }
 
-                    return btnVer + btnAdjuntar;
+                    return btnVer;
                 }
             }
         ],
@@ -178,7 +226,7 @@ $(document).ready(function () {
 
 
     // 2. LÓGICA PARA ABRIR EL MODAL Y CARGAR EL DETALLE
-    $('#tabla-propuestas-cliente').on('click', '.btn-detalle', function () {
+    $(document).on('click', '.btn-detalle', function () {
         const idPropuesta = $(this).data('id');
         // Leemos el código del cliente desde el atributo data del botón
         const codCliente = $(this).data('cod-cliente');
@@ -216,19 +264,18 @@ $(document).ready(function () {
 
     // ======================= INICIO DE LA LÓGICA CORREGIDA PARA SUBIR ARCHIVOS =======================
 
-    // Evento para el nuevo botón "Adjuntar", usando delegación de eventos
-    // Esto asegura que el evento funcione incluso para botones añadidos después de cargar la página
-    $('#tabla-propuestas-cliente tbody').on('click', '.btn-adjuntar', function () {
-        const idPropuesta = $(this).data('id');
-        console.log('Botón Adjuntar clickeado para propuesta ID:', idPropuesta); // <-- Línea de depuración
+    // ======================= LÓGICA PARA SUBIR ARCHIVOS POR CUOTA =======================
 
-        // Preparamos el modal
+    // Evento para adjuntar desde DENTRO del detalle de cuota
+    $('#detalle-propuesta-content').on('click', '.btn-adjuntar-interne', function () {
+        const idPropuesta = $(this).data('id');
+        const idCuota = $(this).data('id-cuota');
+
         $('#uploadPropuestaId').val(idPropuesta);
+        $('#uploadCuotaId').val(idCuota);
         $('#uploadDocForm')[0].reset();
         $('.progress').hide();
-        $('.progress-bar').css('width', '0%').text('0%');
 
-        // Abrimos el modal
         const uploadModal = new bootstrap.Modal(document.getElementById('uploadDocModal'));
         uploadModal.show();
     });
@@ -270,6 +317,23 @@ $(document).ready(function () {
                     bootstrap.Modal.getInstance(document.getElementById('uploadDocModal')).hide();
                     tablaPropuestas.ajax.reload();
                     cargarKPIsCliente();
+
+                    // Si el modal de detalle está abierto, recargamos su contenido
+                    // Usamos el ID del título del modal para mayor seguridad si los botones están ocultos
+                    const titleText = $('#detallePropuestaModalLabel').text();
+                    const match = titleText.match(/#(\d+)/);
+                    const idPropActual = match ? match[1] : null;
+
+                    if (idPropActual) {
+                        $.ajax({
+                            url: `api/propuestas_controller.php?action=ver_detalle&id=${idPropActual}`,
+                            type: 'GET',
+                            dataType: 'json',
+                            success: function (res) {
+                                if (res.success) renderizarDetallePropuesta(res.data);
+                            }
+                        });
+                    }
                 } else {
                     Swal.fire('Error', response.message, 'error');
                 }
@@ -295,9 +359,10 @@ $(document).ready(function () {
         let resumenHtml = `<div class="row mb-4"><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Total Propuesto</h6><p class="card-text fs-4 fw-bold text-primary mb-0" id="totalPropuestoKPI">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p></div></div></div><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Fecha Propuesta de Pago</h6><p class="card-text fs-4 fw-bold mb-0" id="fechaPropuestaKPI">${fechaHtml}</p></div></div></div><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Medio de Pago</h6><p class="card-text fs-4 fw-bold mb-0" id="medioPagoKPI">${propuesta.medio_de_pago || 'N/A'}</p></div></div></div></div>`;
 
         let adjuntosHtml = '';
-        if (adjuntos && adjuntos.length > 0) {
-            adjuntosHtml = `<h5 class="mt-4"><i class="fa-solid fa-folder-open me-2"></i>Documentación de Pago Adjuntada</h5><div class="row row-cols-1 row-cols-md-2 g-3 mb-4">`;
-            adjuntos.forEach(adjunto => {
+        const adjuntosGenerales = (adjuntos || []).filter(a => !a.id_cuota);
+        if (adjuntosGenerales.length > 0) {
+            adjuntosHtml = `<h5 class="mt-4"><i class="fa-solid fa-folder-open me-2"></i>Documentación General</h5><div class="row row-cols-1 row-cols-md-2 g-3 mb-4">`;
+            adjuntosGenerales.forEach(adjunto => {
                 const url = adjunto.ruta_archivo;
                 const extension = adjunto.nombre_archivo.split('.').pop().toLowerCase();
                 const esImagen = ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
@@ -328,13 +393,107 @@ $(document).ready(function () {
 
         itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="2" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr></tfoot></table>`;
 
+        let cuotasHtml = '';
+        if (data.cuotas && data.cuotas.length > 0) {
+            cuotasHtml = `<h5 class="mt-4"><i class="fa-solid fa-calendar-day me-2 text-primary"></i>Plan de Pagos Acordado</h5><div class="row row-cols-1 row-cols-md-2 g-3 mb-4">`;
+            data.cuotas.forEach(c => {
+                const fechaFmt = new Date(c.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+                // Buscamos adjuntos para esta cuota
+                let adjuntosCuotaHtml = '';
+                const adjuntosCuota = (data.adjuntos || []).filter(a => a.id_cuota == c.id);
+                const tieneAdjuntos = adjuntosCuota.length > 0;
+
+                if (tieneAdjuntos) {
+                    adjuntosCuotaHtml = '<div class="mt-2 border-top pt-2">';
+                    adjuntosCuota.forEach(a => {
+                        adjuntosCuotaHtml += `<div class="small d-flex justify-content-between align-items-center mb-1 bg-white p-1 rounded border">
+                            <span class="text-truncate text-muted" style="max-width: 130px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice me-1"></i>${a.nombre_archivo}</span>
+                            <div class="btn-group">
+                                <a href="${a.ruta_archivo}" target="_blank" class="btn btn-xs btn-outline-primary" title="Ver archivo"><i class="fa-solid fa-eye"></i></a>
+                                <button class="btn btn-xs btn-outline-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>`;
+                    });
+                    adjuntosCuotaHtml += '</div>';
+                }
+
+                // Botón adjuntar solo si la propuesta está aceptada y no ha pasado a revisión final
+                const puedeAdjuntar = propuesta.estado === 'ACEPTADA';
+                const checkVerde = tieneAdjuntos ? '<i class="fa-solid fa-circle-check text-success me-2" title="Documentación cargada"></i>' : '';
+                const btnAdjuntarCuota = puedeAdjuntar ? `<button class="btn btn-xs btn-outline-info btn-adjuntar-interne" data-id="${propuesta.id}" data-id-cuota="${c.id}" title="Adjuntar Documento"><i class="fa-solid fa-cloud-arrow-up"></i></button>` : '';
+
+                cuotasHtml += `
+                <div class="col">
+                    <div class="card border-0 bg-light shadow-sm h-100">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>
+                                    ${checkVerde}
+                                    <span class="badge bg-primary me-2">Pago ${c.num_cuota}</span> 
+                                    <strong class="text-dark">${parseFloat(c.monto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong>
+                                </span>
+                                <div class="d-flex align-items-center">
+                                    <span class="small text-muted me-2"><i class="fa-solid fa-calendar-check me-1"></i>${fechaFmt}</span>
+                                    ${btnAdjuntarCuota}
+                                </div>
+                            </div>
+                            ${adjuntosCuotaHtml}
+                        </div>
+                    </div>
+                </div>`;
+            });
+            cuotasHtml += `</div>`;
+        }
+
         let negociacionHtml = '';
         const esNegociable = propuesta.estado === 'PENDIENTE_APROBACION_CLIENTE' || propuesta.estado === 'PENDIENTE_APROBACION_FINAL';
 
         if (esNegociable) {
             const fechaActual = propuesta.fecha_propuesta_pago ? propuesta.fecha_propuesta_pago.split(' ')[0] : new Date().toISOString().split('T')[0];
 
-            negociacionHtml = `<div class="card bg-light border-primary mt-4"><div class="card-body"><h5 class="card-title">Negociar Propuesta</h5><div class="row"><div class="col-md-6 mb-3"><label for="negociacion-medio-pago" class="form-label"><strong>Cambiar Medio de Pago:</strong></label><select class="form-select" id="negociacion-medio-pago"><option value="ECHECK" ${propuesta.medio_de_pago === 'ECHECK' ? 'selected' : ''}>ECHECK</option><option value="TRANSFERENCIA" ${propuesta.medio_de_pago === 'TRANSFERENCIA' ? 'selected' : ''}>TRANSFERENCIA</option></select></div><div class="col-md-6 mb-3"><label for="negociacion-fecha-pago" class="form-label"><strong>Proponer Nueva Fecha:</strong></label><input type="date" class="form-control" id="negociacion-fecha-pago" value="${fechaActual}"></div></div><div class="mb-3"><label for="comentario-contrapropuesta" class="form-label"><strong>Agregar Comentario (Requerido para Contrapropuesta):</strong></label><textarea class="form-control" id="comentario-contrapropuesta" rows="2" placeholder="Ej: Propongo pagar en esta nueva fecha..."></textarea></div></div></div>`;
+            negociacionHtml = `
+            <div class="card bg-white border-primary mt-4 shadow-sm">
+                <div class="card-header bg-primary text-white py-2">
+                    <h5 class="card-title mb-0 fs-6"><i class="fa-solid fa-comments-dollar me-2"></i>Negociar Propuesta / Contrapropuesta</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="negociacion-medio-pago" class="form-label fw-bold">Medio de Pago:</label>
+                            <select class="form-select" id="negociacion-medio-pago">
+                                <option value="ECHECK" ${propuesta.medio_de_pago === 'ECHECK' ? 'selected' : ''}>ECHECK</option>
+                                <option value="TRANSFERENCIA" ${propuesta.medio_de_pago === 'TRANSFERENCIA' ? 'selected' : ''}>TRANSFERENCIA</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="negociacion-fecha-pago" class="form-label fw-bold">Nueva Fecha Límite:</label>
+                            <input type="date" class="form-control" id="negociacion-fecha-pago" value="${fechaActual}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="negociacion-cantidad-cuotas" class="form-label fw-bold">Cantidad de Pagos:</label>
+                            <select class="form-select" id="negociacion-cantidad-cuotas">
+                                <option value="1" ${(!data.cuotas || data.cuotas.length <= 1) ? 'selected' : ''}>1 Pago Único</option>
+                                <option value="2" ${data.cuotas && data.cuotas.length === 2 ? 'selected' : ''}>2 Pagos</option>
+                                <option value="3" ${data.cuotas && data.cuotas.length === 3 ? 'selected' : ''}>3 Pagos</option>
+                                <option value="4" ${data.cuotas && data.cuotas.length === 4 ? 'selected' : ''}>4 Pagos</option>
+                                <option value="5" ${data.cuotas && data.cuotas.length === 5 ? 'selected' : ''}>5 Pagos</option>
+                                <option value="6" ${data.cuotas && data.cuotas.length === 6 ? 'selected' : ''}>6 Pagos</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="negociacion-cuotas-container" class="mt-2 p-3 bg-light border rounded mb-3" style="${(data.cuotas && data.cuotas.length > 1) ? '' : 'display:none;'}">
+                        <h6 class="small fw-bold mb-3">Plan de Pagos Propuesto:</h6>
+                        <div id="negociacion-cuotas-list"></div>
+                    </div>
+
+                    <div class="mb-0">
+                        <label for="comentario-contrapropuesta" class="form-label fw-bold">Comentario / Justificación (Requerido para enviar):</label>
+                        <textarea class="form-control" id="comentario-contrapropuesta" rows="2" placeholder="Explique brevemente el motivo de su contrapropuesta..."></textarea>
+                    </div>
+                </div>
+            </div>`;
         }
 
         // historialHtml se calcula después...
@@ -359,7 +518,44 @@ $(document).ready(function () {
             $('#btn-aceptar-propuesta').show();
         }
 
-        contentDiv.html(resumenHtml + adjuntosHtml + itemsHtml + negociacionHtml + historialHtml);
+        contentDiv.html(resumenHtml + adjuntosHtml + itemsHtml + cuotasHtml + negociacionHtml + historialHtml);
+
+        // --- Nueva lógica para manejo de cuotas en Negociación ---
+        const $cantCuotasNeg = $('#negociacion-cantidad-cuotas');
+        const $cuotasContainerNeg = $('#negociacion-cuotas-container');
+        const $cuotasListNeg = $('#negociacion-cuotas-list');
+        const $fechaLimiteNeg = $('#negociacion-fecha-pago');
+
+        if ($cantCuotasNeg.length) {
+            $cantCuotasNeg.off('change').on('change', function () {
+                const cant = parseInt($(this).val());
+                if (cant > 1) {
+                    $cuotasContainerNeg.show();
+                    // Obtenemos el total actualizado del DOM
+                    const totalActual = parseFloat($('#total-neto-tabla').text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
+                    generarCamposCuotasNeg(cant, totalActual, $fechaLimiteNeg.val());
+                } else {
+                    $cuotasContainerNeg.hide();
+                }
+            });
+
+            // Si ya venía con cuotas, las cargamos en el editor
+            if (data.cuotas && data.cuotas.length > 1) {
+                cargarCuotasExistentesNeg(data.cuotas, $fechaLimiteNeg.val());
+            }
+
+            $fechaLimiteNeg.off('change').on('change', function () {
+                // El cambio de fecha dispara recalcularPropuestaCliente()
+                // que a su vez llama a generarCamposCuotasNeg si es necesario
+                // Pero también actualizamos los 'max' por si acaso
+                const nuevaFecha = $(this).val();
+                $('.neg-cuota-fecha').attr('max', nuevaFecha);
+                $('.neg-cuota-fecha').each(function () {
+                    if ($(this).val() > nuevaFecha) $(this).val(nuevaFecha);
+                });
+            });
+        }
+
     }
 
     // 3. LÓGICA PARA LOS BOTONES DE ACCIÓN DEL MODAL
@@ -389,6 +585,10 @@ $(document).ready(function () {
         } else {
             // Flujo de ENVIAR CONTRAPROPUESTA
             const comentario = $('#comentario-contrapropuesta').val();
+            const nuevaFecha = $('#negociacion-fecha-pago').val();
+            const nuevoMedio = $('#negociacion-medio-pago').val();
+            const cantCuotas = parseInt($('#negociacion-cantidad-cuotas').val());
+
             if (!comentario) {
                 Swal.fire({
                     icon: 'warning',
@@ -398,16 +598,76 @@ $(document).ready(function () {
                 return;
             }
 
+            let cuotasArr = [];
+            if (cantCuotas > 1) {
+                $('.neg-cuota-row').each(function (index) {
+                    const m = $(this).find('.neg-cuota-monto').val();
+                    const f = $(this).find('.neg-cuota-fecha').val();
+                    cuotasArr.push({ num_cuota: index + 1, monto: m, fecha_vencimiento: f });
+                });
+            }
+
             // Recolectamos los datos de la contrapropuesta
             const datosContrapropuesta = {
                 nuevo_total: parseFloat($('#total-neto-tabla').text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0,
                 nueva_fecha: $('#negociacion-fecha-pago').val(),
-                nuevo_medio_pago: $('#negociacion-medio-pago').val()
+                nuevo_medio_pago: $('#negociacion-medio-pago').val(),
+                cuotas: cuotasArr.length > 0 ? cuotasArr : null // Añadimos el array de cuotas si existe
             };
 
             enviarAccion(idPropuesta, 'CONTRAPROPUESTA_CLIENTE', comentario, datosContrapropuesta);
         }
-        // ======================== FIN DE LA MODIFICACIÓN =========================
+    });
+
+    // Evento para eliminar adjuntos
+    $('#detalle-propuesta-content').on('click', '.btn-eliminar-adjunto', function () {
+        const idAdjunto = $(this).data('id-adjunto');
+        const titleText = $('#detallePropuestaModalLabel').text();
+        const match = titleText.match(/#(\d+)/);
+        const idPropuesta = match ? match[1] : null;
+
+        Swal.fire({
+            title: '¿Eliminar comprobante?',
+            text: "Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: 'api/propuestas_controller.php?action=eliminar_adjunto',
+                    type: 'POST',
+                    data: { id_adjunto: idAdjunto },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire('¡Eliminado!', response.message, 'success');
+                            // Recargamos el detalle
+                            if (idPropuesta) {
+                                $.ajax({
+                                    url: `api/propuestas_controller.php?action=ver_detalle&id=${idPropuesta}`,
+                                    type: 'GET',
+                                    dataType: 'json',
+                                    success: function (res) {
+                                        if (res.success) renderizarDetallePropuesta(res.data);
+                                    }
+                                });
+                            }
+                            tablaPropuestas.ajax.reload();
+                            cargarKPIsCliente();
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'No se pudo eliminar el archivo.', 'error');
+                    }
+                });
+            }
+        });
     });
 
     function enviarAccion(idPropuesta, nuevoEstado, comentario, datosContrapropuesta) {
@@ -512,9 +772,21 @@ $(document).ready(function () {
                                 detallesHtml += '<ul class="list-group list-group-flush">';
                                 eventosDelDia.forEach(evento => {
                                     const montoFormateado = parseFloat(evento.monto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
-                                    detallesHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">Propuesta #${evento.id}<span class="badge bg-primary rounded-pill">${montoFormateado}</span></li>`;
+                                    const cuotaInfo = evento.total_cuotas > 1 ? `<span class="badge bg-light text-primary border border-primary ms-2">Pago ${evento.num_cuota} de ${evento.total_cuotas}</span>` : '';
+
+                                    detallesHtml += `
+                                    <div class="card mb-2 border-left-primary shadow-sm">
+                                        <div class="card-body p-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Propuesta #${evento.id} ${cuotaInfo}</div>
+                                                    <div class="h6 mb-0 font-weight-bold text-gray-800">${montoFormateado}</div>
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-primary btn-detalle" data-id="${evento.id}" data-cod-cliente="${evento.cod_cliente}">Ver</button>
+                                            </div>
+                                        </div>
+                                    </div>`;
                                 });
-                                detallesHtml += '</ul>';
                                 contenedorDetalles.html(detallesHtml);
                             } else {
                                 // ======================= MENSAJE MEJORADO =======================

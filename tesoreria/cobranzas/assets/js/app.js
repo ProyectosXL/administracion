@@ -580,60 +580,192 @@ $(document).ready(function () {
 
         Swal.fire({
             title: 'Finalizar Propuesta',
+            width: '600px',
             html: `
-            <p class="mb-2">Monto Total de la Propuesta: <strong>${totalNetoSeleccionado.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong></p>
-            <div class="mb-3 text-start">
-                <label for="swal-medio-pago" class="form-label">Medio de Pago</label>
-                <select id="swal-medio-pago" class="form-select">
-                    <option value="ECHECK" selected>ECHECK</option>
-                    <option value="TRANSFERENCIA">TRANSFERENCIA</option>
-                </select>
+            <p class="mb-3">Monto Total de la Propuesta: <strong class="fs-5 text-primary">${totalNetoSeleccionado.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong></p>
+            
+            <div class="row g-3 text-start">
+                <div class="col-md-6">
+                    <label for="swal-medio-pago" class="form-label fw-bold">Medio de Pago</label>
+                    <select id="swal-medio-pago" class="form-select shadow-sm">
+                        <option value="ECHECK" selected>ECHECK</option>
+                        <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="swal-cantidad-cuotas" class="form-label fw-bold">Plan de Pagos</label>
+                    <select id="swal-cantidad-cuotas" class="form-select shadow-sm">
+                        <option value="1" selected>1 Pago Único</option>
+                        <option value="2">2 Pagos</option>
+                        <option value="3">3 Pagos</option>
+                        <option value="4">4 Pagos</option>
+                        <option value="5">5 Pagos</option>
+                        <option value="6">6 Pagos</option>
+                    </select>
+                </div>
             </div>
-            <div class="mb-2 text-start">
-                <label class="form-label">Fecha Propuesta de Pago</label>
-                <div id="datepicker-container-swal"></div>
+
+            <div class="mb-3 mt-3 text-start">
+                <label class="form-label fw-bold">Fecha Límite de la Propuesta</label>
+                <div id="datepicker-container-swal" class="border rounded bg-white shadow-sm"></div>
                 <input type="hidden" id="fecha-propuesta-swal-input">
             </div>
+
+            <div id="cuotas-container" class="mt-4 p-3 bg-light border rounded" style="display:none;">
+                <h6 class="border-bottom pb-2 mb-3"><i class="fa-solid fa-list-ol me-2"></i>Desglose de Cobranza</h6>
+                <div id="cuotas-list"></div>
+                <div class="mt-2 text-end small">
+                    <span id="suma-cuotas-test" class="badge bg-secondary">Total: $ 0.00</span>
+                </div>
+            </div>
         `,
-            confirmButtonText: 'Crear Propuesta',
+            confirmButtonText: 'Enviar Propuesta',
             showCancelButton: true,
+            cancelButtonText: 'Cancelar',
             didOpen: () => {
-                $("#datepicker-container-swal").datepicker({
-                    dateFormat: "yy-mm-dd", minDate: 0,
+                const $datepicker = $("#datepicker-container-swal");
+                const $inputFecha = $('#fecha-propuesta-swal-input');
+                const $cuotasContainer = $('#cuotas-container');
+                const $cuotasList = $('#cuotas-list');
+                const $cantCuotas = $('#swal-cantidad-cuotas');
+
+                $datepicker.datepicker({
+                    dateFormat: "yy-mm-dd",
+                    minDate: 0,
                     onSelect: function (dateText) {
-                        $('#fecha-propuesta-swal-input').val(dateText);
+                        $inputFecha.val(dateText).trigger('change'); // Disparamos el cambio
+                        // Validar las fechas de las cuotas si ya existen
+                        $('.cuota-fecha').each(function () {
+                            $(this).attr('max', dateText); // Sincronizamos el máximo permitido
+                            const val = $(this).val();
+                            if (val && val > dateText) {
+                                $(this).addClass('is-invalid');
+                            } else {
+                                $(this).removeClass('is-invalid');
+                            }
+                        });
                     }
                 });
+
                 const hoy = new Date();
-                $("#datepicker-container-swal").datepicker('setDate', hoy);
-                $('#fecha-propuesta-swal-input').val($.datepicker.formatDate('yy-mm-dd', hoy));
+                $datepicker.datepicker('setDate', hoy);
+                $inputFecha.val($.datepicker.formatDate('yy-mm-dd', hoy));
+
+                $cantCuotas.on('change', function () {
+                    const cant = parseInt($(this).val());
+                    if (cant > 1) {
+                        $cuotasContainer.show();
+                        generarCamposCuotas(cant, totalNetoSeleccionado, $inputFecha.val());
+                    } else {
+                        $cuotasContainer.hide();
+                    }
+                });
+
+                function generarCamposCuotas(cantidad, total, fechaLimite) {
+                    $cuotasList.empty();
+                    const montoIndividual = (total / cantidad).toFixed(2);
+                    let acumulado = 0;
+
+                    for (let i = 1; i <= cantidad; i++) {
+                        // Ajuste para la última cuota para evitar errores de decimales
+                        const monto = (i === cantidad) ? (total - acumulado).toFixed(2) : montoIndividual;
+                        acumulado += parseFloat(monto);
+
+                        const cuotaHtml = `
+                        <div class="row g-2 mb-2 align-items-center cuota-row">
+                            <div class="col-1 text-center fw-bold text-muted">${i}.</div>
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control cuota-monto shadow-none" value="${monto}" step="0.01" readonly>
+                                </div>
+                            </div>
+                            <div class="col-5">
+                                <input type="date" class="form-control form-control-sm cuota-fecha shadow-none" value="${fechaLimite}" max="${fechaLimite}">
+                            </div>
+                        </div>`;
+                        $cuotasList.append(cuotaHtml);
+                    }
+                    actualizarTestSuma();
+                }
+
+                function actualizarTestSuma() {
+                    let suma = 0;
+                    $('.cuota-monto').each(function () { suma += parseFloat($(this).val()) || 0; });
+                    $('#suma-cuotas-test').text('Suma: ' + suma.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+                }
+
+                // Si se cambia la fecha límite, actualizar el max de las cuotas
+                $inputFecha.on('change', function () {
+                    $('.cuota-fecha').attr('max', $(this).val());
+                });
             },
             preConfirm: () => {
                 const fecha = $('#fecha-propuesta-swal-input').val();
+                const medioPago = $('#swal-medio-pago').val();
+                const cantCuotas = parseInt($('#swal-cantidad-cuotas').val());
+
                 if (!fecha) {
-                    Swal.showValidationMessage('Por favor, seleccione una fecha.');
+                    Swal.showValidationMessage('Por favor, seleccione una fecha límite.');
                     return false;
                 }
+
+                let cuotasArr = [];
+                if (cantCuotas > 1) {
+                    let totalCuotas = 0;
+                    let errorFechas = false;
+                    $('.cuota-row').each(function (index) {
+                        const m = parseFloat($(this).find('.cuota-monto').val());
+                        const f = $(this).find('.cuota-fecha').val();
+
+                        if (!f) {
+                            errorFechas = true;
+                            return false;
+                        }
+
+                        if (f > fecha) {
+                            errorFechas = true;
+                            Swal.showValidationMessage(`La cuota ${index + 1} excede la fecha de la propuesta.`);
+                            return false;
+                        }
+
+                        totalCuotas += m;
+                        cuotasArr.push({ num_cuota: index + 1, monto: m, fecha_vencimiento: f });
+                    });
+
+                    if (errorFechas && !Swal.getValidationMessage()) {
+                        Swal.showValidationMessage('Complete todas las fechas de las cuotas.');
+                        return false;
+                    }
+
+                    // Pequeño margen por decimales
+                    if (Math.abs(totalCuotas - totalNetoSeleccionado) > 0.05) {
+                        Swal.showValidationMessage('La suma de las cuotas debe coincidir con el total.');
+                        return false;
+                    }
+                }
+
                 return {
                     fecha: fecha,
-                    medioPago: $('#swal-medio-pago').val()
+                    medioPago: medioPago,
+                    cuotas: cuotasArr
                 };
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                const { fecha, medioPago } = result.value;
+                const { fecha, medioPago, cuotas } = result.value;
                 btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
                 $.ajax({
                     url: 'api/cobranzas_controller.php?action=crear_propuesta',
                     type: 'POST',
                     data: {
-                        // La variable 'codCliente' definida al principio del evento es visible aquí
                         cod_cliente: codCliente,
                         comprobantes: comprobantesSeleccionados,
                         total_propuesto: totalNetoSeleccionado,
                         fecha_propuesta_pago: fecha,
-                        medio_de_pago: medioPago
+                        medio_de_pago: medioPago,
+                        cuotas: cuotas // Pasamos el array de cuotas
                     },
                     dataType: 'json',
                     success: function (response) {
@@ -946,7 +1078,7 @@ $(document).ready(function () {
     // ======================== FIN DE LA CORRECCIÓN DEL EVENTO =========================
     // *** MODIFICADO ***: Renderiza el modal de gestión con descuentos editables si es necesario
     function renderizarDetallePropuestaAdmin(data) {
-        const { propuesta, items, historial, adjuntos } = data;
+        const { propuesta, items, historial, adjuntos, cuotas } = data;
         const contentDiv = $('#detalle-propuesta-content');
 
         // --- Mantenemos tu código original para el resumen y lo mejoramos ---
@@ -968,7 +1100,7 @@ $(document).ready(function () {
             <div class="col-md-4">
                 <div class="card bg-light shadow-sm h-100">
                     <div class="card-body text-center">
-                        <h6 class="card-title text-muted text-uppercase small">Fecha Propuesta de Pago</h6>
+                        <h6 class="card-title text-muted text-uppercase small">Fecha Límite Pago</h6>
                         <p class="card-text fs-4 fw-bold mb-0">${fechaHtml}</p>
                     </div>
                 </div>
@@ -984,13 +1116,49 @@ $(document).ready(function () {
         </div>
     `;
 
+        let cuotasHtml = '';
+        if (cuotas && cuotas.length > 0) {
+            cuotasHtml = `<h5 class="mt-4"><i class="fa-solid fa-list-check me-2 text-success"></i>Esquema de Facilidades de Pago</h5><div class="row row-cols-1 row-cols-md-3 g-2 mb-3">`;
+            cuotas.forEach(c => {
+                const fVenc = new Date(c.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR');
+
+                // Buscar adjuntos de esta cuota para el admin
+                let adjuntosCuotaHtml = '';
+                const adjuntosCuota = (adjuntos || []).filter(a => a.id_cuota == c.id);
+                if (adjuntosCuota.length > 0) {
+                    adjuntosCuotaHtml = '<div class="mt-2 border-top pt-1 text-start">';
+                    adjuntosCuota.forEach(a => {
+                        adjuntosCuotaHtml += `<div class="x-small d-flex justify-content-between align-items-center mb-1" style="font-size: 0.75rem;">
+                            <span class="text-truncate" style="max-width: 120px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice-dollar me-1 text-success"></i>${a.nombre_archivo}</span>
+                            <a href="${a.ruta_archivo}" target="_blank" class="text-primary"><i class="fa-solid fa-download"></i></a>
+                        </div>`;
+                    });
+                    adjuntosCuotaHtml += '</div>';
+                }
+
+                cuotasHtml += `
+                <div class="col">
+                    <div class="card border-success bg-white shadow-sm h-100">
+                        <div class="card-body p-2 text-center">
+                            <span class="badge bg-success mb-1">Pago ${c.num_cuota}</span>
+                            <div class="fw-bold fs-6">${parseFloat(c.monto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>
+                            <div class="small text-muted">${fVenc}</div>
+                            ${adjuntosCuotaHtml}
+                        </div>
+                    </div>
+                </div>`;
+            });
+            cuotasHtml += `</div>`;
+        }
+
         let adjuntosHtml = '';
-        if (adjuntos && adjuntos.length > 0) {
-            adjuntosHtml = `<h5 class="mt-4"><i class="fa-solid fa-folder-open me-2"></i>Comprobantes Adjuntos</h5><ul class="list-group">`;
-            adjuntos.forEach(adjunto => {
-                const url = adjunto.ruta_archivo; // Usar la ruta relativa que guardas
+        const adjuntosGenerales = (adjuntos || []).filter(a => !a.id_cuota);
+        if (adjuntosGenerales.length > 0) {
+            adjuntosHtml = `<h5 class="mt-4"><i class="fa-solid fa-folder-open me-2"></i>Documentación General</h5><ul class="list-group">`;
+            adjuntosGenerales.forEach(adjunto => {
+                const url = adjunto.ruta_archivo;
                 const fechaSubida = new Date(adjunto.fecha_subida).toLocaleString('es-AR');
-                adjuntosHtml += `<li class="list-group-item d-flex justify-content-between align-items-center"><div><i class="fa-solid fa-file-arrow-down me-2"></i> ${adjunto.nombre_archivo}<small class="d-block text-muted">Subido el: ${fechaSubida}</small></div><a href="${url}" target="_blank" class="btn btn-outline-primary btn-sm">Descargar</a></li>`;
+                adjuntosHtml += `<li class="list-group-item d-flex justify-content-between align-items-center"><div><i class="fa-solid fa-file-arrow-down me-2 text-primary"></i> ${adjunto.nombre_archivo}<small class="d-block text-muted">Subido el: ${fechaSubida}</small></div><a href="${url}" target="_blank" class="btn btn-outline-primary btn-sm">Ver</a></li>`;
             });
             adjuntosHtml += '</ul>';
         }
@@ -1073,7 +1241,7 @@ $(document).ready(function () {
         footer.prepend('<button class="btn btn-success me-auto" id="btn-exportar-excel"><i class="fa-solid fa-file-excel me-2"></i>Exportar a Excel</button>');
         $('#btn-exportar-excel').show();
 
-        contentDiv.html(resumenHtml + itemsHtml + historialHtml + adjuntosHtml + accionAdminHtml);
+        contentDiv.html(resumenHtml + itemsHtml + cuotasHtml + historialHtml + adjuntosHtml + accionAdminHtml);
     }
 
     $('#detallePropuestaModal').on('click', '#btn-exportar-excel', function () {
