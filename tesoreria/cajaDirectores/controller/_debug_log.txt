@@ -22,3 +22,9 @@ Mensaje: Error al conectar con la base de datos APPS en Director
 Archivo: D:\htdocs\administracion\tesoreria\cajaDirectores\Class\Director.php
 Línea: 17
 --------------------------------------------------
+[2026-02-13 18:57:09] FATAL ERROR en pago_servicios_controller.php: 
+Acción: listar_pagos_filtrados
+Mensaje: Error al conectar con la base de datos APPS en Director
+Archivo: D:\htdocs\administracion\tesoreria\cajaDirectores\Class\Director.php
+Línea: 17
+--------------------------------------------------

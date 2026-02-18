@@ -935,74 +935,88 @@ $(document).ready(function () {
     let tablaGestion = null;
 
     function initializeGestionDataTable() {
-        // 1. Preparamos la interfaz para la vista de gestión
-        $('#summary-cards').hide();
-        $('#gestion-dashboard').show();
-        $('#btn-abrir-parametros').hide();
+    $('#summary-cards').hide();
+    $('#gestion-dashboard').show();
+    $('#btn-abrir-parametros').hide();
 
-        // 2. Cargamos/Recargamos los datos del dashboard (KPIs y gráficos)
-        cargarDashboardGestion();
+    cargarDashboardGestion();
+    sincronizarEstados();
+    enviarAvisosVencimiento();
 
-        // 3. Ejecutamos la sincronización en segundo plano
-        sincronizarEstados();
-
-        // ======================= NUEVA LLAMADA AÑADIDA =======================
-        // 4. Ejecutamos el envío de AVISOS DE VENCIMIENTO en segundo plano
-        enviarAvisosVencimiento();
-
-        // 5. Inicializamos o recargamos la tabla de DataTables
-        if (tablaGestion) {
-            tablaGestion.ajax.reload();
-        } else {
-            tablaGestion = $('#tabla-gestion-propuestas').DataTable({
-                ajax: { url: 'api/propuestas_controller.php?action=listar_admin', dataSrc: 'data' },
-                columns: [
-                    { data: 'id', title: 'ID', className: 'text-center fw-bold' },
-                    { data: 'cod_cliente', title: 'Código', className: 'text-center' },
-                    { data: 'razon_social', title: 'Razón Social' },
-                    { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
-                    {
-                        data: 'fecha_ultima_modificacion',
-                        title: 'Últ. Act.',
-                        render: function (data) {
-                            return data ? new Date(data).toLocaleString('es-AR') : '-';
-                        }
-                    },
-                    {
-                        data: 'estado', title: 'Estado',
-                        render: function (data) {
-                            let badgeClass = 'secondary';
-                            if (data === 'PAGADO') badgeClass = 'success';
-                            if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
-                            if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
-                            if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning text-dark';
-                            if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
-                            if (data === 'ACEPTADA') badgeClass = 'success';
-                            return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
-                        }
-                    },
-                    {
-                        data: null, title: 'Acciones', orderable: false, className: 'text-center',
-                        render: function (data, type, row) {
-                            return `
-                                <div class="btn-group">
-                                    <button class="btn btn-outline-info btn-sm btn-ver-propuesta-admin" data-id="${row.id}" title="Revisar / Editar">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm btn-eliminar-propuesta" data-id="${row.id}" title="Eliminar definitivamente">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </div>
-                            `;
-                        }
+    if (tablaGestion) {
+        tablaGestion.ajax.reload();
+    } else {
+        tablaGestion = $('#tabla-gestion-propuestas').DataTable({
+            ajax: { 
+                url: 'api/propuestas_controller.php?action=listar_admin', 
+                dataSrc: 'data',
+                // Enviamos los filtros al PHP
+                data: function(d) {
+                    d.f_desde = $('#filter-fecha-desde').val();
+                    d.f_hasta = $('#filter-fecha-hasta').val();
+                    d.codigo  = $('#filter-codigo').val();
+                    d.razon   = $('#filter-razon-social').val();
+                    d.estado  = $('#filter-estado').val();
+                }
+            },
+            columns: [
+                // ... (mantén tus columnas actuales igual) ...
+                { data: 'id', title: 'ID', className: 'text-center fw-bold' },
+                { data: 'cod_cliente', title: 'Código', className: 'text-center' },
+                { data: 'razon_social', title: 'Razón Social' },
+                { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
+                {
+                    data: 'fecha_ultima_modificacion',
+                    title: 'Últ. Act.',
+                    render: function (data) {
+                        return data ? new Date(data).toLocaleString('es-AR') : '-';
                     }
-                ],
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-                order: [[0, 'desc']], // Ordenar por ID descendente por defecto
-                responsive: true
-            });
-        }
+                },
+                {
+                    data: 'estado', title: 'Estado',
+                    render: function (data) {
+                        let badgeClass = 'secondary';
+                        if (data === 'PAGADO') badgeClass = 'success';
+                        if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
+                        if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
+                        if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning text-dark';
+                        if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
+                        if (data === 'ACEPTADA') badgeClass = 'success';
+                        return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
+                    }
+                },
+                {
+                    data: null, title: 'Acciones', orderable: false, className: 'text-center',
+                    render: function (data, type, row) {
+                        return `
+                            <div class="btn-group">
+                                <button class="btn btn-outline-info btn-sm btn-ver-propuesta-admin" data-id="${row.id}" title="Revisar / Editar">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm btn-eliminar-propuesta" data-id="${row.id}" title="Eliminar definitivamente">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            ],
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+            order: [[0, 'desc']],
+            responsive: true
+        });
     }
+}
+
+// Eventos para los botones de filtrado (Agrega esto al final del $(document).ready)
+$('#btn-aplicar-filtros').on('click', function() {
+    if(tablaGestion) tablaGestion.ajax.reload();
+});
+
+$('#btn-limpiar-filtros').on('click', function() {
+    $('#filter-form-gestion')[0].reset();
+    if(tablaGestion) tablaGestion.ajax.reload();
+});
 
     $('body').on('click', '.btn-ver-propuesta-admin', function () {
         const idPropuesta = $(this).data('id');

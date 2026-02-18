@@ -459,8 +459,55 @@ try {
             $conn_apps = Database::getConnection('apps');
             $conn_central = Database::getConnection('central');
 
-            $sql = "SELECT id, cod_cliente, fecha_ultima_modificacion, total_propuesto, estado FROM FP_propuestas_pago ORDER BY fecha_ultima_modificacion DESC";
-            $stmt = sqlsrv_query($conn_apps, $sql);
+            // --- RECOLECCIÓN DE FILTROS ---
+            $f_desde = $_GET['f_desde'] ?? '';
+            $f_hasta = $_GET['f_hasta'] ?? '';
+            $codigo  = $_GET['codigo'] ?? '';
+            $razon   = $_GET['razon'] ?? '';
+            $estado  = $_GET['estado'] ?? '';
+
+            $where = " WHERE 1=1";
+            $params = [];
+
+            if (!empty($f_desde)) {
+                $where .= " AND fecha_creacion >= ?";
+                $params[] = $f_desde . ' 00:00:00';
+            }
+            if (!empty($f_hasta)) {
+                $where .= " AND fecha_creacion <= ?";
+                $params[] = $f_hasta . ' 23:59:59';
+            }
+            if (!empty($codigo)) {
+                $where .= " AND cod_cliente LIKE ?";
+                $params[] = "%$codigo%";
+            }
+            if (!empty($estado)) {
+                $where .= " AND estado = ?";
+                $params[] = $estado;
+            }
+
+            // --- FILTRO POR RAZÓN SOCIAL (Requiere búsqueda en base central) ---
+            if (!empty($razon) && $conn_central) {
+                $sql_razon = "SELECT COD_CLIENT FROM GVA14 WHERE RAZON_SOCI LIKE ?";
+                $stmt_razon = sqlsrv_query($conn_central, $sql_razon, ["%$razon%"]);
+                $cods_filtrados = [];
+                if ($stmt_razon) {
+                    while ($r = sqlsrv_fetch_array($stmt_razon, SQLSRV_FETCH_ASSOC)) {
+                        $cods_filtrados[] = "'" . trim($r['COD_CLIENT']) . "'";
+                    }
+                }
+                
+                if (!empty($cods_filtrados)) {
+                    $where .= " AND cod_cliente IN (" . implode(',', $cods_filtrados) . ")";
+                } else {
+                    // Si buscó y no hubo coincidencias en GVA14, forzamos resultado vacío
+                    $where .= " AND 1=0";
+                }
+            }
+
+            $sql = "SELECT id, cod_cliente, fecha_ultima_modificacion, total_propuesto, estado FROM FP_propuestas_pago" . $where . " ORDER BY id DESC";
+            $stmt = sqlsrv_query($conn_apps, $sql, $params);
+            
             $propuestas = [];
             $codigos = [];
             if ($stmt) {
@@ -472,7 +519,7 @@ try {
                 }
             }
 
-            // Obtener nombres desde la base central
+            // Obtener nombres para los resultados (base central)
             $nombres = [];
             if (!empty($codigos)) {
                 $codigos_str = implode(',', array_unique($codigos));
@@ -508,15 +555,77 @@ try {
 
         case 'obtener_kpis_cliente':
             $codigos = $_SESSION['codigos_cliente_agrupados'] ?? [];
-            if (empty($codigos)) {
-                echo json_encode(['success' => true, 'data' => []]);
-                exit;
+            
+            // Estructura por defecto en caso de que no haya clientes o falle algo
+            $resultado = [
+                'deudaTotalPendiente' => 0,
+                'montoEnNegociacion' => 0,
+                'pendienteDePago' => 0,
+                'propuestasRequierenAccion' => 0
+            ];
+
+            if (!empty($codigos)) {
+                // IMPORTANTE: Resetear las llaves del array para evitar errores en sqlsrv
+                $params = array_values($codigos);
+                $placeholders = implode(',', array_fill(0, count($params), '?'));
+                
+                $conn_apps = Database::getConnection('apps');
+                $conn_central = Database::getConnection('central');
+
+                // 1. Obtener Deuda Total del Sistema (GVA12)
+                // Usamos un try/check para que si falla la conexión central, no rompa todo el dashboard
+                $total_deuda_sistema = 0;
+                
+                if ($conn_central) {
+                    $sql_total = "SELECT SUM(SALDO) as total FROM GVA12 WHERE COD_CLIENT IN ($placeholders)";
+                    $stmt_total = sqlsrv_query($conn_central, $sql_total, $params);
+                    
+                    if ($stmt_total) {
+                        $row_total = sqlsrv_fetch_array($stmt_total, SQLSRV_FETCH_ASSOC);
+                        $total_deuda_sistema = floatval($row_total['total'] ?? 0);
+                    }
+                }
+
+                // 2. Obtener Deuda ya Comprometida en Propuestas (Activas)
+                $deuda_comprometida = 0;
+                $sql_comprometido = "SELECT SUM(i.importe_bruto) as comprometido 
+                                     FROM FP_propuestas_pago_items i 
+                                     JOIN FP_propuestas_pago p ON i.id_propuesta = p.id 
+                                     WHERE p.cod_cliente IN ($placeholders) 
+                                     AND p.estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'ACEPTADA', 'CONTRAPROPUESTA_CLIENTE', 'DOCUMENTACION_ADJUNTADA')";
+                
+                $stmt_comp = sqlsrv_query($conn_apps, $sql_comprometido, $params);
+                if ($stmt_comp) {
+                    $row_comp = sqlsrv_fetch_array($stmt_comp, SQLSRV_FETCH_ASSOC);
+                    $deuda_comprometida = floatval($row_comp['comprometido'] ?? 0);
+                }
+
+                // Cálculo de Deuda Real (Lo del sistema menos lo que ya está en una propuesta)
+                $deuda_pendiente_real = $total_deuda_sistema - $deuda_comprometida;
+                if ($deuda_pendiente_real < 0) $deuda_pendiente_real = 0;
+
+                // 3. Obtener el resto de KPIs desde la APP Local
+                $sql = "SELECT 
+                        SUM(CASE WHEN estado LIKE 'PENDIENTE%' OR estado = 'CONTRAPROPUESTA_CLIENTE' THEN total_propuesto ELSE 0 END) AS montoEnNegociacion, 
+                        COUNT(CASE WHEN estado IN ('PENDIENTE_APROBACION_CLIENTE', 'ACEPTADA') THEN 1 END) AS propuestasRequierenAccion, 
+                        SUM(CASE WHEN estado = 'ACEPTADA' THEN total_propuesto ELSE 0 END) AS pendienteDePago 
+                        FROM FP_propuestas_pago 
+                        WHERE cod_cliente IN ($placeholders) 
+                        AND estado NOT IN ('RECHAZADA', 'PAGADO', 'VENCIDA', 'CANCELADA')";
+                
+                $stmt = sqlsrv_query($conn_apps, $sql, $params);
+                
+                if ($stmt) {
+                    $datos = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+                    
+                    $resultado['deudaTotalPendiente'] = round($deuda_pendiente_real, 2);
+                    $resultado['montoEnNegociacion'] = round(floatval($datos['montoEnNegociacion'] ?? 0), 2);
+                    $resultado['pendienteDePago'] = round(floatval($datos['pendienteDePago'] ?? 0), 2);
+                    $resultado['propuestasRequierenAccion'] = intval($datos['propuestasRequierenAccion'] ?? 0);
+                }
             }
-            $placeholders = implode(',', array_fill(0, count($codigos), '?'));
-            $conn_apps = Database::getConnection('apps');
-            $sql = "SELECT SUM(CASE WHEN estado LIKE 'PENDIENTE%' OR estado = 'CONTRAPROPUESTA_CLIENTE' THEN total_propuesto ELSE 0 END) AS montoEnNegociacion, COUNT(CASE WHEN estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'ACEPTADA') THEN 1 END) AS propuestasRequierenAccion, SUM(CASE WHEN estado = 'ACEPTADA' THEN total_propuesto ELSE 0 END) AS pendienteDePago FROM FP_propuestas_pago WHERE cod_cliente IN ($placeholders) AND estado NOT IN ('RECHAZADA', 'PAGADO', 'VENCIDA')";
-            $stmt = sqlsrv_query($conn_apps, $sql, $codigos);
-            echo json_encode(['success' => true, 'data' => sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)]);
+
+            echo json_encode(['success' => true, 'data' => $resultado]);
             break;
 
         case 'obtener_cronograma_cliente':
@@ -527,8 +636,7 @@ try {
             }
             $placeholders = implode(',', array_fill(0, count($codigos), '?'));
             $conn_apps = Database::getConnection('apps');
-            $sql = "SELECT p.id, p.cod_cliente, ISNULL(c.fecha_vencimiento, p.fecha_propuesta_pago) as fecha, ISNULL(c.monto, p.total_propuesto) as monto FROM FP_propuestas_pago p LEFT JOIN FP_propuestas_pago_cuotas c ON p.id = c.id_propuesta WHERE p.cod_cliente IN ($placeholders) AND p.estado = 'ACEPTADA'";
-            $params = array_merge($codigos, $codigos);
+            $sql = "SELECT p.id, p.cod_cliente, ISNULL(c.fecha_vencimiento, p.fecha_propuesta_pago) as fecha, ISNULL(c.monto, p.total_propuesto) as monto, c.num_cuota, (SELECT COUNT(*) FROM FP_propuestas_pago_cuotas WHERE id_propuesta = p.id) as total_cuotas FROM FP_propuestas_pago p LEFT JOIN FP_propuestas_pago_cuotas c ON p.id = c.id_propuesta WHERE p.cod_cliente IN ($placeholders) AND p.estado = 'ACEPTADA'";
             $stmt = sqlsrv_query($conn_apps, $sql, $codigos);
             $eventos = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
@@ -536,7 +644,9 @@ try {
                     'date' => ($row['fecha'] instanceof DateTime) ? $row['fecha']->format('Y-m-d') : substr($row['fecha'], 0, 10),
                     'id' => $row['id'],
                     'cod_cliente' => $row['cod_cliente'],
-                    'monto' => $row['monto']
+                    'monto' => $row['monto'],
+                    'num_cuota' => $row['num_cuota'] ?? 1,
+                    'total_cuotas' => $row['total_cuotas'] ?? 1
                 ];
             }
             echo json_encode(['success' => true, 'data' => $eventos]);
@@ -618,10 +728,157 @@ try {
             }
             break;
 
-        case 'subir_comprobante':
-        case 'eliminar_adjunto':
         case 'actualizar_estado':
-            echo json_encode(['success' => true, 'message' => 'Acción procesada (Simulada para restauración)']);
+            $id = $_POST['id_propuesta'] ?? 0;
+            $estado = $_POST['nuevo_estado'] ?? '';
+            $comentario = $_POST['comentario'] ?? '';
+
+            if (!$id || !$estado) {
+                echo json_encode(['success' => false, 'message' => 'Faltan datos requeridos.']);
+                exit;
+            }
+
+            $conn_apps = Database::getConnection('apps');
+            sqlsrv_begin_transaction($conn_apps);
+
+            try {
+                // 1. Actualizar estado y fecha
+                $sql_update = "UPDATE FP_propuestas_pago SET estado = ?, fecha_ultima_modificacion = GETDATE() WHERE id = ?";
+                $params = [$estado, $id];
+
+                // Si es contrapropuesta, actualizamos totales y fechas propuestas
+                if ($estado === 'CONTRAPROPUESTA_CLIENTE' && isset($_POST['contrapropuesta'])) {
+                    // Nota: los datos vienen como array en $_POST['contrapropuesta'] si usamos FormData correctamente
+                    // Pero PHP a veces no parsea arrays anidados de FormData automáticamente si no tienen índices explícitos
+                    // En JS se envió como contrapropuesta[nuevo_total], etc.
+                    $cp = $_POST['contrapropuesta'] ?? [];
+
+                    if (!empty($cp['nuevo_total'])) {
+                        $sql_update = "UPDATE FP_propuestas_pago SET estado = ?, fecha_ultima_modificacion = GETDATE(), total_propuesto = ?, fecha_propuesta_pago = ?, medio_de_pago = ? WHERE id = ?";
+                        $params = [
+                            $estado,
+                            $cp['nuevo_total'],
+                            $cp['nueva_fecha'] ?? null,
+                            $cp['nuevo_medio_pago'] ?? null,
+                            $id
+                        ];
+                    }
+
+                    // Manejo de cuotas si existen (para contrapropuestas del cliente)
+                    if (!empty($cp['cuotas'])) {
+                        $todas_cuotas = json_decode($cp['cuotas'], true);
+                        if (is_array($todas_cuotas) && count($todas_cuotas) > 0) {
+                            // Limpiamos cuotas anteriores
+                            sqlsrv_query($conn_apps, "DELETE FROM FP_propuestas_pago_cuotas WHERE id_propuesta = ?", [$id]);
+
+                            foreach ($todas_cuotas as $c) {
+                                // Asegurar que fecha_vencimiento sea válida o NULL
+                                $f_venc = !empty($c['fecha_vencimiento']) ? $c['fecha_vencimiento'] : null;
+
+                                $sql_cuota = "INSERT INTO FP_propuestas_pago_cuotas (id_propuesta, num_cuota, monto, fecha_vencimiento, estado) VALUES (?, ?, ?, ?, 'PENDIENTE')";
+                                $stmt_cuota = sqlsrv_query($conn_apps, $sql_cuota, [$id, $c['num_cuota'], $c['monto'], $f_venc]);
+
+                                if (!$stmt_cuota)
+                                    throw new Exception("Error al guardar cuota {$c['num_cuota']}.");
+                            }
+                        }
+                    }
+                } elseif ($estado === 'ACEPTADA') {
+                    // Si se acepta, aseguramos que la fecha de propuesta de pago sea válida (si no estaba seteda, se podría poner hoy o mantener la original)
+                    // Por ahora solo cambiamos estado.
+                }
+
+                $stmt = sqlsrv_query($conn_apps, $sql_update, $params);
+                if (!$stmt)
+                    throw new Exception("Error al actualizar la propuesta.");
+
+                // 2. Registrar historial
+                $tipo_usuario = (isset($_SESSION['usuario_rol']) && $_SESSION['usuario_rol'] === 'admin') ? 'ADMIN' : 'CLIENTE';
+                $id_usuario = $_SESSION['usuario_id'];
+
+                $descripcion = "Cambio de estado a " . str_replace('_', ' ', $estado);
+                if ($estado === 'ACEPTADA')
+                    $descripcion = "Propuesta aceptada por el cliente.";
+                if ($estado === 'CONTRAPROPUESTA_CLIENTE')
+                    $descripcion = "Contrapropuesta enviada por el cliente.";
+
+                $sql_hist = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)";
+                sqlsrv_query($conn_apps, $sql_hist, [$id, $id_usuario, $tipo_usuario, $descripcion, $comentario]);
+
+                sqlsrv_commit($conn_apps);
+                echo json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
+
+            } catch (Exception $e) {
+                sqlsrv_rollback($conn_apps);
+                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            }
+            break;
+
+case 'subir_comprobante':
+            $id_propuesta = $_POST['id_propuesta'] ?? 0;
+            $id_cuota = $_POST['id_cuota'] ?? null;
+            if (empty($id_cuota) || $id_cuota == 'undefined') $id_cuota = null;
+
+            // Verificamos que el archivo venga con el nombre correcto 'comprobante'
+            if (!isset($_FILES['comprobante']) || $_FILES['comprobante']['error'] !== UPLOAD_ERR_OK) {
+                echo json_encode(['success' => false, 'message' => 'No se recibió el archivo o hubo un error en la carga.']);
+                exit;
+            }
+
+            $conn_apps = Database::getConnection('apps');
+            $uploadDir = __DIR__ . '/../adjuntos/';
+            if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+
+            $originalName = $_FILES['comprobante']['name'];
+            $ext = pathinfo($originalName, PATHINFO_EXTENSION);
+            $filename = 'comp_' . $id_propuesta . '_' . ($id_cuota ? 'cuota'.$id_cuota.'_' : 'pago_unico_') . uniqid() . '.' . $ext;
+            $targetPath = $uploadDir . $filename;
+            $publicPath = 'adjuntos/' . $filename;
+
+            if (move_uploaded_file($_FILES['comprobante']['tmp_name'], $targetPath)) {
+                
+                // 1. Insertar el adjunto
+                $sql_adj = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, id_cuota, ruta_archivo, nombre_archivo, fecha_subida) VALUES (?, ?, ?, ?, GETDATE())";
+                sqlsrv_query($conn_apps, $sql_adj, [$id_propuesta, $id_cuota, $publicPath, $originalName]);
+
+                // 2. Cambiar estado a DOCUMENTACION_ADJUNTADA
+                $sql_estado = "UPDATE FP_propuestas_pago SET estado = 'DOCUMENTACION_ADJUNTADA', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
+                sqlsrv_query($conn_apps, $sql_estado, [$id_propuesta]);
+
+                // 3. Insertar en el Historial (ESTO ES LO QUE TE FALTABA PARA QUE APAREZCA ABAJO)
+                $desc_historial = "Cliente adjuntó comprobante: " . $originalName . ($id_cuota ? " (Cuota)" : " (Pago Único)");
+                $sql_hist = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, fecha_evento) VALUES (?, ?, 'CLIENTE', ?, GETDATE())";
+                sqlsrv_query($conn_apps, $sql_hist, [$id_propuesta, $_SESSION['usuario_id'], $desc_historial]);
+
+                echo json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Error al guardar el archivo físico en el servidor.']);
+            }
+            break;
+
+        case 'eliminar_adjunto':
+            $id_adjunto = $_POST['id_adjunto'] ?? 0;
+            $conn_apps = Database::getConnection('apps');
+
+            // Obtener ruta para borrar archivo físico
+            $sql_get = "SELECT ruta_archivo, id_propuesta FROM FP_propuestas_adjuntos WHERE id = ?";
+            $stmt_get = sqlsrv_query($conn_apps, $sql_get, [$id_adjunto]);
+            $row = sqlsrv_fetch_array($stmt_get, SQLSRV_FETCH_ASSOC);
+
+            if ($row) {
+                $ruta_fisica = __DIR__ . '/../' . $row['ruta_archivo'];
+                if (file_exists($ruta_fisica))
+                    unlink($ruta_fisica);
+
+                sqlsrv_query($conn_apps, "DELETE FROM FP_propuestas_adjuntos WHERE id = ?", [$id_adjunto]);
+
+                // Historial
+                sqlsrv_query($conn_apps, "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)", [$row['id_propuesta'], $_SESSION['usuario_id'], 'CLIENTE', 'Se eliminó un comprobante adjunto.']);
+
+                echo json_encode(['success' => true, 'message' => 'Adjunto eliminado correctamente.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Adjunto no encontrado.']);
+            }
             break;
     }
 } catch (Exception $e) {

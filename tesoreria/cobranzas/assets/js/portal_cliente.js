@@ -155,15 +155,21 @@ $(document).ready(function () {
                 if (response.success) {
                     const data = response.data;
                     const options = { style: 'currency', currency: 'ARS' };
-                    $('#kpi-deuda-total').text(parseFloat(data.deudaTotalPendiente).toLocaleString('es-AR', options));
-                    $('#kpi-monto-negociacion').text(parseFloat(data.montoEnNegociacion).toLocaleString('es-AR', options));
 
-                    // ======== NUEVA LÍNEA ========
-                    $('#kpi-pendiente-pago').text(parseFloat(data.pendienteDePago).toLocaleString('es-AR', options));
-                    // =============================
+                    // Validar y formatear cada valor, usando 0 si es null/undefined
+                    const deudaTotal = parseFloat(data.deudaTotalPendiente || 0);
+                    const montoNegociacion = parseFloat(data.montoEnNegociacion || 0);
+                    const pendientePago = parseFloat(data.pendienteDePago || 0);
+                    const requiereAccion = parseInt(data.propuestasRequierenAccion || 0);
 
-                    $('#kpi-requiere-accion').text(data.propuestasRequierenAccion);
+                    $('#kpi-deuda-total').text(deudaTotal.toLocaleString('es-AR', options));
+                    $('#kpi-monto-negociacion').text(montoNegociacion.toLocaleString('es-AR', options));
+                    $('#kpi-pendiente-pago').text(pendientePago.toLocaleString('es-AR', options));
+                    $('#kpi-requiere-accion').text(requiereAccion);
                 }
+            },
+            error: function () {
+                console.error('Error al cargar KPIs del cliente');
             }
         });
     }
@@ -281,71 +287,76 @@ $(document).ready(function () {
     });
 
     // Evento para el botón "Subir" dentro del modal (este debería estar bien, pero lo revisamos)
-    $('#btnSubirComprobante').on('click', function () {
-        const form = $('#uploadDocForm')[0];
-        const formData = new FormData(form);
-        const fileInput = $('#comprobanteFile')[0];
+$('#btnSubirComprobante').on('click', function () {
+    const fileInput = $('#comprobanteFile')[0];
+    if (fileInput.files.length === 0) {
+        Swal.fire('Atención', 'Por favor, seleccione un archivo.', 'warning');
+        return;
+    }
 
-        if (fileInput.files.length === 0) {
-            Swal.fire('Atención', 'Por favor, seleccione un archivo.', 'warning');
-            return;
-        }
+    const formData = new FormData();
+    formData.append('id_propuesta', $('#uploadPropuestaId').val());
+    formData.append('id_cuota', $('#uploadCuotaId').val());
+    formData.append('comprobante', fileInput.files[0]); // Nombre exacto: 'comprobante'
 
-        const btn = $(this);
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Subiendo...');
-        $('.progress').show();
+    const btn = $(this);
+    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Subiendo...');
+    $('.progress').show();
 
-        $.ajax({
-            url: 'api/propuestas_controller.php?action=subir_comprobante',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            xhr: function () {
-                const xhr = new window.XMLHttpRequest();
-                xhr.upload.addEventListener('progress', function (evt) {
-                    if (evt.lengthComputable) {
-                        const percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                        $('.progress-bar').css('width', percentComplete + '%').text(percentComplete + '%');
-                    }
-                }, false);
-                return xhr;
-            },
-            success: function (response) {
-                if (response.success) {
-                    Swal.fire('¡Éxito!', response.message, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('uploadDocModal')).hide();
-                    tablaPropuestas.ajax.reload();
-                    cargarKPIsCliente();
-
-                    // Si el modal de detalle está abierto, recargamos su contenido
-                    // Usamos el ID del título del modal para mayor seguridad si los botones están ocultos
-                    const titleText = $('#detallePropuestaModalLabel').text();
-                    const match = titleText.match(/#(\d+)/);
-                    const idPropActual = match ? match[1] : null;
-
-                    if (idPropActual) {
-                        $.ajax({
-                            url: `api/propuestas_controller.php?action=ver_detalle&id=${idPropActual}`,
-                            type: 'GET',
-                            dataType: 'json',
-                            success: function (res) {
-                                if (res.success) renderizarDetallePropuesta(res.data);
-                            }
-                        });
-                    }
-                } else {
-                    Swal.fire('Error', response.message, 'error');
+    $.ajax({
+        url: 'api/propuestas_controller.php?action=subir_comprobante',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        xhr: function () {
+            const xhr = new window.XMLHttpRequest();
+            xhr.upload.addEventListener('progress', function (evt) {
+                if (evt.lengthComputable) {
+                    const percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                    $('.progress-bar').css('width', percentComplete + '%').text(percentComplete + '%');
                 }
-            },
-            error: function () {
-                Swal.fire('Error', 'Error de conexión. No se pudo subir el archivo.', 'error');
-            },
-            complete: function () {
-                btn.prop('disabled', false).html('<i class="fa-solid fa-upload me-2"></i>Subir');
+            }, false);
+            return xhr;
+        },
+        success: function (response) {
+            if (response.success) {
+                Swal.fire('¡Éxito!', response.message, 'success');
+                
+                // Cerrar modal de subida
+                bootstrap.Modal.getInstance(document.getElementById('uploadDocModal')).hide();
+                
+                // Recargar tablas y KPIs
+                tablaPropuestas.ajax.reload(null, false); 
+                cargarKPIsCliente();
+
+                // RECARGA DEL DETALLE (Para ver el nuevo historial y estado)
+                const titleText = $('#detallePropuestaModalLabel').text();
+                const match = titleText.match(/#(\d+)/);
+                if (match && match[1]) {
+                    $.ajax({
+                        url: `api/propuestas_controller.php?action=ver_detalle&id=${match[1]}`,
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function (res) {
+                            if (res.success) renderizarDetallePropuesta(res.data);
+                        }
+                    });
+                }
+            } else {
+                Swal.fire('Error', response.message, 'error');
             }
-        });
+        },
+        error: function () {
+            Swal.fire('Error', 'Error de conexión al servidor.', 'error');
+        },
+        complete: function () {
+            btn.prop('disabled', false).html('<i class="fa-solid fa-upload me-2"></i>Subir');
+            $('.progress').hide();
+            $('.progress-bar').css('width', '0%');
+        }
     });
+});
 
 
     function renderizarDetallePropuesta(data) {
@@ -393,6 +404,7 @@ $(document).ready(function () {
 
         itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="2" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr></tfoot></table>`;
 
+
         let cuotasHtml = '';
         if (data.cuotas && data.cuotas.length > 0) {
             cuotasHtml = `<h5 class="mt-4"><i class="fa-solid fa-calendar-day me-2 text-primary"></i>Plan de Pagos Acordado</h5><div class="row row-cols-1 row-cols-md-2 g-3 mb-4">`;
@@ -418,7 +430,7 @@ $(document).ready(function () {
                     adjuntosCuotaHtml += '</div>';
                 }
 
-                // Botón adjuntar solo si la propuesta está aceptada y no ha pasado a revisión final
+                // Botón adjuntar solo si la propuesta está aceptada
                 const puedeAdjuntar = propuesta.estado === 'ACEPTADA';
                 const checkVerde = tieneAdjuntos ? '<i class="fa-solid fa-circle-check text-success me-2" title="Documentación cargada"></i>' : '';
                 const btnAdjuntarCuota = puedeAdjuntar ? `<button class="btn btn-xs btn-outline-info btn-adjuntar-interne" data-id="${propuesta.id}" data-id-cuota="${c.id}" title="Adjuntar Documento"><i class="fa-solid fa-cloud-arrow-up"></i></button>` : '';
@@ -444,6 +456,47 @@ $(document).ready(function () {
                 </div>`;
             });
             cuotasHtml += `</div>`;
+        } else if (propuesta.estado === 'ACEPTADA') {
+            // Si no hay cuotas pero la propuesta está aceptada, mostramos la sección de adjuntar comprobante de pago único
+            const adjuntosGeneralesPago = (adjuntos || []).filter(a => !a.id_cuota);
+            const tieneAdjuntosPago = adjuntosGeneralesPago.length > 0;
+
+            let adjuntosListHtml = '';
+            if (tieneAdjuntosPago) {
+                adjuntosListHtml = '<div class="mt-2 border-top pt-2">';
+                adjuntosGeneralesPago.forEach(a => {
+                    adjuntosListHtml += `<div class="small d-flex justify-content-between align-items-center mb-1 bg-white p-1 rounded border">
+                        <span class="text-truncate text-muted" style="max-width: 200px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice me-1"></i>${a.nombre_archivo}</span>
+                        <div class="btn-group">
+                            <a href="${a.ruta_archivo}" target="_blank" class="btn btn-xs btn-outline-primary" title="Ver archivo"><i class="fa-solid fa-eye"></i></a>
+                            <button class="btn btn-xs btn-outline-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>`;
+                });
+                adjuntosListHtml += '</div>';
+            }
+
+            const checkVerde = tieneAdjuntosPago ? '<i class="fa-solid fa-circle-check text-success me-2" title="Documentación cargada"></i>' : '';
+            const fechaFmt = propuesta.fecha_propuesta_pago ? new Date(propuesta.fecha_propuesta_pago + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Fecha no definida';
+
+            cuotasHtml = `
+            <h5 class="mt-4"><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i>Comprobante de Pago</h5>
+            <div class="card border-0 bg-light shadow-sm mb-4">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            ${checkVerde}
+                            <span class="badge bg-success me-2">Pago Único</span>
+                            <strong class="text-dark">${parseFloat(propuesta.total_propuesto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong>
+                            <span class="small text-muted ms-3"><i class="fa-solid fa-calendar-check me-1"></i>${fechaFmt}</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-info btn-adjuntar-interne" data-id="${propuesta.id}" data-id-cuota="" title="Adjuntar Comprobante">
+                            <i class="fa-solid fa-cloud-arrow-up me-1"></i>Adjuntar Comprobante
+                        </button>
+                    </div>
+                    ${adjuntosListHtml}
+                </div>
+            </div>`;
         }
 
         let negociacionHtml = '';
@@ -682,6 +735,10 @@ $(document).ready(function () {
             formData.append('contrapropuesta[nuevo_total]', datosContrapropuesta.nuevo_total);
             formData.append('contrapropuesta[nueva_fecha]', datosContrapropuesta.nueva_fecha);
             formData.append('contrapropuesta[nuevo_medio_pago]', datosContrapropuesta.nuevo_medio_pago);
+
+            if (datosContrapropuesta.cuotas) {
+                formData.append('contrapropuesta[cuotas]', JSON.stringify(datosContrapropuesta.cuotas));
+            }
         }
 
         $.ajax({

@@ -110,8 +110,7 @@ include 'templates/layout/header.php';
                         <div class="mb-3">
                             <label for="comprobanteFile" class="form-label">Seleccione el archivo (PDF, JPG,
                                 PNG):</label>
-                            <input class="form-control" type="file" id="comprobanteFile" name="comprobanteFile[]"
-                                accept=".pdf,.jpg,.jpeg,.png" multiple required>
+                            <input class="form-control" type="file" id="comprobanteFile" name="comprobante" accept=".pdf,.jpg,.jpeg,.png" required>
                         </div>
                         <div class="progress" style="display: none;">
                             <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0"
