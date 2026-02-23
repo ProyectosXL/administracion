@@ -181,7 +181,7 @@ foreach ($todosLosImportes as $key => $value) {
                         <div class="row" style="margin-left:50px; margin-top:20px">
                         
 
-                            <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:40px"></i>Control Masivo de Cobranza - <?= $dataSucursal[1] ?>( <?= $medioPagoSelected[1] ?>)</strong></h3>
+                            <h3><strong><i class="bi bi-cash" style="margin-right:20px;font-size:40px"></i>Control Masivo de Cobranza - <?= $dataSucursal[1] ?> (<?= $medioPagoSelected ?>)</strong></h3>
 
 
                         </div>
@@ -320,8 +320,8 @@ foreach ($todosLosImportes as $key => $value) {
                                             }
                                         ?>
 
-                                        <td style="text-align:center">$<?= number_format($importe['COTIZACION_TC'], 0, ',', '.') ?></td>
-                                        <td style="text-align:center">$<?=  number_format($totalEnPesos, 0, ',', '.')  ?></td>
+                                        <td style="text-align:center">$<?= number_format($importe['COTIZACION_TC'], (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 3 : 0, ',', '.') ?></td>
+                                        <td style="text-align:center">$<?=  number_format($totalEnPesos, (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 2 : 0, ',', '.')  ?></td>
                                         <td style="text-align:center"><input type="text" style="text-align:center;width:100%" onchange="calcularDiferecias(this)" id="valorFisico" value="$<?= number_format($importe['IMPORTE_$_FISICO'], 0, ',', '.') ?>" <?= ($importe['VERIFICADO'] == 1) ? "disabled" : "" ?>></td>
 
                                         <td style="text-align:center" id="diferencias">0</td>

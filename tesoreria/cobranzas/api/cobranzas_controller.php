@@ -65,11 +65,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
         sqlsrv_commit($conn_apps);
         // --- INICIO DE LA NOTIFICACIÓN (CASO A) ---
         require_once __DIR__ . '/notificaciones_controller.php';
-        $email_destinatario = obtenerEmailFranquiciado($cod_cliente);
-        if ($email_destinatario) {
-            $asunto = "Nueva Propuesta de Pago Recibida (ID: #{$id_propuesta})";
-            $cuerpo = "<h1>Nueva Propuesta de Pago</h1><p>Ha recibido una nueva propuesta de pago de XL Extra Large. Por favor, ingrese al portal de clientes para revisarla.</p>";
-            enviarNotificacion($email_destinatario, $asunto, $cuerpo);
+        $datos_cliente = obtenerEmailFranquiciado($cod_cliente);
+        if ($datos_cliente && $datos_cliente['email']) {
+            $titulo = "Nueva Propuesta de Pago Recibida (ID: #{$id_propuesta})";
+            $mensaje = "Hola <strong>{$datos_cliente['razon_social']}</strong>,<br><br>Se ha generado una nueva propuesta de pago para regularizar su cuenta corriente. Por favor, ingrese al portal de clientes para revisar el detalle y responder (Aceptar o Contraproponer) dentro de las próximas 96 horas hábiles.";
+            $cuerpo = generarCuerpoEmail($titulo, $mensaje, "Ver Propuesta", "https://app.xl.com.ar/administracion/tesoreria/cobranzas/portal_cliente.php");
+            enviarNotificacion($datos_cliente['email'], $titulo, $cuerpo);
         }
         // --- FIN DE LA NOTIFICACIÓN ---
         echo json_encode(['success' => true, 'message' => 'Propuesta de pago enviada correctamente.']);

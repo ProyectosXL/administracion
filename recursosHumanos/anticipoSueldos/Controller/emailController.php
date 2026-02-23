@@ -1,12 +1,14 @@
 <?php
-require_once 'C:\xampp\htdocs\administracion\recursosHumanos\Class\Anticipo.php';
-require_once 'C:\xampp\htdocs\administracion\recursosHumanos\Class\Email.php';
+require_once 'D:\htdocs\administracion\recursosHumanos\Class\Anticipo.php';
+require_once 'D:\htdocs\administracion\recursosHumanos\Class\Email.php';
 
 function iniciarEnvioAutomatico($periodoActual) {
     
     $anticipo = new Anticipo();
     $fechas = $anticipo->getFechasPorPeriodo($periodoActual);
     $emails = $anticipo->getEmails($periodoActual);
+    var_dump($emails);
+    die();
 
     $fechaHoy = date('Y-m-d');
 

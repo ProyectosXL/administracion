@@ -419,16 +419,40 @@ try {
             $stmt = sqlsrv_query($conn_apps, $sql);
             $avisos_enviados = 0;
             while ($p = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $horas = (time() - strtotime($p['fecha_creacion']->format('Y-m-d H:i:s'))) / 3600;
+                $fecha_creacion = $p['fecha_creacion'];
+                if ($fecha_creacion instanceof DateTime) {
+                    $ts = $fecha_creacion->getTimestamp();
+                } else {
+                    $ts = strtotime($fecha_creacion);
+                }
+                $horas = (time() - $ts) / 3600;
+
                 if ($horas >= 72) {
-                    $email = obtenerEmailFranquiciado($p['cod_cliente']);
-                    if ($email && enviarNotificacion($email, "Aviso de Vencimiento", "Su propuesta #{$p['id']} está por vencer.")) {
-                        sqlsrv_query($conn_apps, "UPDATE FP_propuestas_pago SET aviso_vencimiento_enviado = 1 WHERE id = ?", [$p['id']]);
-                        $avisos_enviados++;
+                    $datos_cliente = obtenerEmailFranquiciado($p['cod_cliente']);
+                    if ($datos_cliente && $datos_cliente['email']) {
+                        $titulo = "Aviso de Vencimiento Próximo (ID: #{$p['id']})";
+                        $mensaje = "Hola <strong>{$datos_cliente['razon_social']}</strong>,<br><br>Su propuesta de pago #{$p['id']} vencerá en las próximas 24 horas.<br><br>Por favor, ingrese al portal para revisarla y tomar una acción.";
+                        $cuerpo = generarCuerpoEmail($titulo, $mensaje, "Ver Propuesta", "https://app.xl.com.ar/administracion/tesoreria/cobranzas/portal_cliente.php");
+
+                        if (enviarNotificacion($datos_cliente['email'], $titulo, $cuerpo)) {
+                            sqlsrv_query($conn_apps, "UPDATE FP_propuestas_pago SET aviso_vencimiento_enviado = 1 WHERE id = ?", [$p['id']]);
+                            $avisos_enviados++;
+                        }
                     }
                 }
             }
-            echo json_encode(['success' => true, 'message' => "Enviados $avisos_enviados avisos."]);
+            echo json_encode(['success' => true, 'message' => "Se procesaron $avisos_enviados avisos de vencimiento (72hs)."]);
+            break;
+
+        case 'ejecutar_recordatorios':
+            if (!$es_admin) {
+                http_response_code(403);
+                exit;
+            }
+            require_once __DIR__ . '/cron_recordatorio_pagos.php';
+            $conn_apps = Database::getConnection('apps');
+            $enviados = ejecutarRecordatoriosPago($conn_apps);
+            echo json_encode(['success' => true, 'message' => "Se procesaron $enviados recordatorios de pago."]);
             break;
 
         case 'obtener_cronograma_admin':
@@ -462,9 +486,9 @@ try {
             // --- RECOLECCIÓN DE FILTROS ---
             $f_desde = $_GET['f_desde'] ?? '';
             $f_hasta = $_GET['f_hasta'] ?? '';
-            $codigo  = $_GET['codigo'] ?? '';
-            $razon   = $_GET['razon'] ?? '';
-            $estado  = $_GET['estado'] ?? '';
+            $codigo = $_GET['codigo'] ?? '';
+            $razon = $_GET['razon'] ?? '';
+            $estado = $_GET['estado'] ?? '';
 
             $where = " WHERE 1=1";
             $params = [];
@@ -496,7 +520,7 @@ try {
                         $cods_filtrados[] = "'" . trim($r['COD_CLIENT']) . "'";
                     }
                 }
-                
+
                 if (!empty($cods_filtrados)) {
                     $where .= " AND cod_cliente IN (" . implode(',', $cods_filtrados) . ")";
                 } else {
@@ -507,7 +531,7 @@ try {
 
             $sql = "SELECT id, cod_cliente, fecha_ultima_modificacion, total_propuesto, estado FROM FP_propuestas_pago" . $where . " ORDER BY id DESC";
             $stmt = sqlsrv_query($conn_apps, $sql, $params);
-            
+
             $propuestas = [];
             $codigos = [];
             if ($stmt) {
@@ -550,12 +574,31 @@ try {
             $conn_apps = Database::getConnection('apps');
             sqlsrv_query($conn_apps, "UPDATE FP_propuestas_pago SET estado = ?, fecha_ultima_modificacion = GETDATE() WHERE id = ?", [$estado, $id]);
             sqlsrv_query($conn_apps, "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)", [$id, $_SESSION['usuario_id'], 'ADMIN', "Actualización de estado por admin", $_POST['comentario'] ?? '']);
+
+            // --- NOTIFICACIÓN AL CLIENTE ---
+            try {
+                require_once __DIR__ . '/notificaciones_controller.php';
+                $stmt_c = sqlsrv_query($conn_apps, "SELECT cod_cliente FROM FP_propuestas_pago WHERE id = ?", [$id]);
+                $p_row = sqlsrv_fetch_array($stmt_c, SQLSRV_FETCH_ASSOC);
+                if ($p_row && $estado === 'PENDIENTE_APROBACION_CLIENTE') {
+                    $datos_cliente = obtenerEmailFranquiciado($p_row['cod_cliente']);
+                    if ($datos_cliente && $datos_cliente['email']) {
+                        $titulo = "Actualización de Propuesta (ID: #{$id})";
+                        $mensaje = "Hola <strong>{$datos_cliente['razon_social']}</strong>,<br><br>La administración ha actualizado los términos de su propuesta de pago #{$id}.<br><br>Por favor, ingrese al portal de clientes para revisarla.";
+                        $cuerpo = generarCuerpoEmail($titulo, $mensaje, "Ver Propuesta", "https://app.xl.com.ar/administracion/tesoreria/cobranzas/portal_cliente.php");
+                        enviarNotificacion($datos_cliente['email'], $titulo, $cuerpo);
+                    }
+                }
+            } catch (Exception $e_mail) {
+                error_log("Error in notification: " . $e_mail->getMessage());
+            }
+
             echo json_encode(['success' => true]);
             break;
 
         case 'obtener_kpis_cliente':
             $codigos = $_SESSION['codigos_cliente_agrupados'] ?? [];
-            
+
             // Estructura por defecto en caso de que no haya clientes o falle algo
             $resultado = [
                 'deudaTotalPendiente' => 0,
@@ -568,18 +611,18 @@ try {
                 // IMPORTANTE: Resetear las llaves del array para evitar errores en sqlsrv
                 $params = array_values($codigos);
                 $placeholders = implode(',', array_fill(0, count($params), '?'));
-                
+
                 $conn_apps = Database::getConnection('apps');
                 $conn_central = Database::getConnection('central');
 
                 // 1. Obtener Deuda Total del Sistema (GVA12)
                 // Usamos un try/check para que si falla la conexión central, no rompa todo el dashboard
                 $total_deuda_sistema = 0;
-                
+
                 if ($conn_central) {
                     $sql_total = "SELECT SUM(SALDO) as total FROM GVA12 WHERE COD_CLIENT IN ($placeholders)";
                     $stmt_total = sqlsrv_query($conn_central, $sql_total, $params);
-                    
+
                     if ($stmt_total) {
                         $row_total = sqlsrv_fetch_array($stmt_total, SQLSRV_FETCH_ASSOC);
                         $total_deuda_sistema = floatval($row_total['total'] ?? 0);
@@ -593,7 +636,7 @@ try {
                                      JOIN FP_propuestas_pago p ON i.id_propuesta = p.id 
                                      WHERE p.cod_cliente IN ($placeholders) 
                                      AND p.estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'ACEPTADA', 'CONTRAPROPUESTA_CLIENTE', 'DOCUMENTACION_ADJUNTADA')";
-                
+
                 $stmt_comp = sqlsrv_query($conn_apps, $sql_comprometido, $params);
                 if ($stmt_comp) {
                     $row_comp = sqlsrv_fetch_array($stmt_comp, SQLSRV_FETCH_ASSOC);
@@ -602,7 +645,8 @@ try {
 
                 // Cálculo de Deuda Real (Lo del sistema menos lo que ya está en una propuesta)
                 $deuda_pendiente_real = $total_deuda_sistema - $deuda_comprometida;
-                if ($deuda_pendiente_real < 0) $deuda_pendiente_real = 0;
+                if ($deuda_pendiente_real < 0)
+                    $deuda_pendiente_real = 0;
 
                 // 3. Obtener el resto de KPIs desde la APP Local
                 $sql = "SELECT 
@@ -612,12 +656,12 @@ try {
                         FROM FP_propuestas_pago 
                         WHERE cod_cliente IN ($placeholders) 
                         AND estado NOT IN ('RECHAZADA', 'PAGADO', 'VENCIDA', 'CANCELADA')";
-                
+
                 $stmt = sqlsrv_query($conn_apps, $sql, $params);
-                
+
                 if ($stmt) {
                     $datos = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-                    
+
                     $resultado['deudaTotalPendiente'] = round($deuda_pendiente_real, 2);
                     $resultado['montoEnNegociacion'] = round(floatval($datos['montoEnNegociacion'] ?? 0), 2);
                     $resultado['pendienteDePago'] = round(floatval($datos['pendienteDePago'] ?? 0), 2);
@@ -721,6 +765,27 @@ try {
                 sqlsrv_query($conn_apps, $sql_hist, [$id, $_SESSION['usuario_id'], 'ADMIN', $desc_hist, $comentario]);
 
                 sqlsrv_commit($conn_apps);
+
+                // --- NOTIFICACIÓN AL CLIENTE ---
+                try {
+                    require_once __DIR__ . '/notificaciones_controller.php';
+                    // Obtenemos el cod_cliente de la propuesta para saber a quién notificar
+                    $stmt_c = sqlsrv_query($conn_apps, "SELECT cod_cliente FROM FP_propuestas_pago WHERE id = ?", [$id]);
+                    $p_row = sqlsrv_fetch_array($stmt_c, SQLSRV_FETCH_ASSOC);
+
+                    if ($p_row) {
+                        $datos_cliente = obtenerEmailFranquiciado($p_row['cod_cliente']);
+                        if ($datos_cliente && $datos_cliente['email']) {
+                            $titulo = "Contrapropuesta Aceptada (ID: #{$id})";
+                            $mensaje = "Hola <strong>{$datos_cliente['razon_social']}</strong>,<br><br>La administración ha <strong>ACEPTADO</strong> su contrapropuesta para la propuesta #{$id}.<br><br>Ya puede proceder con los pagos según el cronograma acordado.";
+                            $cuerpo = generarCuerpoEmail($titulo, $mensaje, "Ver Detalles", "https://app.xl.com.ar/administracion/tesoreria/cobranzas/portal_cliente.php");
+                            enviarNotificacion($datos_cliente['email'], $titulo, $cuerpo);
+                        }
+                    }
+                } catch (Exception $e_mail) {
+                    error_log("Error in notification: " . $e_mail->getMessage());
+                }
+
                 echo json_encode(['success' => true, 'message' => 'Propuesta aceptada y actualizada correctamente.']);
             } catch (Exception $e) {
                 sqlsrv_rollback($conn_apps);
@@ -806,6 +871,28 @@ try {
                 sqlsrv_query($conn_apps, $sql_hist, [$id, $id_usuario, $tipo_usuario, $descripcion, $comentario]);
 
                 sqlsrv_commit($conn_apps);
+
+                // --- INICIO DE LA NOTIFICACIÓN AL ADMIN (CASO B) ---
+                if ($estado === 'ACEPTADA' || $estado === 'CONTRAPROPUESTA_CLIENTE' || $estado === 'DOCUMENTACION_ADJUNTADA') {
+                    try {
+                        require_once __DIR__ . '/notificaciones_controller.php';
+                        $admin_mail = obtenerEmailAdmin();
+                        $datos_cliente = obtenerEmailFranquiciado($_SESSION['usuario_cod_client_individual'] ?? null);
+                        $cliente_nom = $datos_cliente ? $datos_cliente['razon_social'] : ($_SESSION['usuario_nombre'] ?? 'Cliente');
+
+                        $accion_txt = ($estado === 'ACEPTADA') ? 'ACEPTADO la propuesta' : (($estado === 'CONTRAPROPUESTA_CLIENTE') ? 'enviado una CONTRAPROPUESTA' : 'ADJUNTADO DOCUMENTACIÓN');
+                        $titulo = "Acción de Cliente en Portal: Propuesta #{$id}";
+                        $mensaje = "El cliente <strong>{$cliente_nom}</strong> ha <strong>{$accion_txt}</strong> para la propuesta #{$id}.<br><br>Por favor, ingrese al panel de administración para ver los detalles y procesar si corresponde.";
+                        $cuerpo = generarCuerpoEmail($titulo, $mensaje, "Ver en Admin", "https://app.xl.com.ar/administracion/tesoreria/cobranzas/index.php");
+
+                        enviarNotificacion($admin_mail, $titulo, $cuerpo);
+                    } catch (Exception $e_mail) {
+                        // No cortamos el flujo si falla el mail
+                        error_log("Error enviando mail al admin: " . $e_mail->getMessage());
+                    }
+                }
+                // --- FIN DE LA NOTIFICACIÓN ---
+
                 echo json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
 
             } catch (Exception $e) {
@@ -814,10 +901,11 @@ try {
             }
             break;
 
-case 'subir_comprobante':
+        case 'subir_comprobante':
             $id_propuesta = $_POST['id_propuesta'] ?? 0;
             $id_cuota = $_POST['id_cuota'] ?? null;
-            if (empty($id_cuota) || $id_cuota == 'undefined') $id_cuota = null;
+            if (empty($id_cuota) || $id_cuota == 'undefined')
+                $id_cuota = null;
 
             // Verificamos que el archivo venga con el nombre correcto 'comprobante'
             if (!isset($_FILES['comprobante']) || $_FILES['comprobante']['error'] !== UPLOAD_ERR_OK) {
@@ -827,16 +915,17 @@ case 'subir_comprobante':
 
             $conn_apps = Database::getConnection('apps');
             $uploadDir = __DIR__ . '/../adjuntos/';
-            if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
+            if (!file_exists($uploadDir))
+                mkdir($uploadDir, 0777, true);
 
             $originalName = $_FILES['comprobante']['name'];
             $ext = pathinfo($originalName, PATHINFO_EXTENSION);
-            $filename = 'comp_' . $id_propuesta . '_' . ($id_cuota ? 'cuota'.$id_cuota.'_' : 'pago_unico_') . uniqid() . '.' . $ext;
+            $filename = 'comp_' . $id_propuesta . '_' . ($id_cuota ? 'cuota' . $id_cuota . '_' : 'pago_unico_') . uniqid() . '.' . $ext;
             $targetPath = $uploadDir . $filename;
             $publicPath = 'adjuntos/' . $filename;
 
             if (move_uploaded_file($_FILES['comprobante']['tmp_name'], $targetPath)) {
-                
+
                 // 1. Insertar el adjunto
                 $sql_adj = "INSERT INTO FP_propuestas_adjuntos (id_propuesta, id_cuota, ruta_archivo, nombre_archivo, fecha_subida) VALUES (?, ?, ?, ?, GETDATE())";
                 sqlsrv_query($conn_apps, $sql_adj, [$id_propuesta, $id_cuota, $publicPath, $originalName]);

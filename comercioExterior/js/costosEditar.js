@@ -114,9 +114,15 @@ const iniciarCalculo = (div)=>{
     console.log("Valores obtenidos - USD:", importeUsd, "TC:", tipoCambio);
 
     // Calcular importe en pesos
+    // Si el tipo de cambio es 0 o vacío, multiplicar por 1 (usar el valor directo)
     let importePesos = 0;
-    if (importeUsd > 0 && tipoCambio > 0) {
-        importePesos = importeUsd * tipoCambio;
+    if (importeUsd > 0) {
+        if (tipoCambio > 0) {
+            importePesos = importeUsd * tipoCambio;
+        } else {
+            // Sin tipo de cambio, usar el valor directo (multiplicar por 1)
+            importePesos = importeUsd * 1;
+        }
     }
     
     console.log("Importe en pesos calculado:", importePesos);
@@ -170,12 +176,12 @@ const totalGastos = ()=> {
     
     let sum = 0;
     
-    // Sumar todos los importes en pesos
-    document.querySelectorAll("table tr:not(:first-child)").forEach(row => {
+    // Sumar todos los importes en pesos (excluyendo la fila de totales)
+    document.querySelectorAll("table tbody tr:not(.total-row)").forEach(row => {
         let cells = row.querySelectorAll("td");
         if (cells.length >= 5) {
             let importePesosInput = cells[4].querySelector("input");
-            if (importePesosInput && importePesosInput.value) {
+            if (importePesosInput && importePesosInput.value && importePesosInput.value !== '0,00') {
                 let valor = window.convertirANumero(importePesosInput.value);
                 sum += valor;
                 console.log("Sumando:", valor, "Total parcial:", sum);
@@ -187,9 +193,9 @@ const totalGastos = ()=> {
     
     // Formatear y mostrar total
     let sumFormateada = window.formatearNumero(sum);
-    totalElement.textContent = 'Gastos: $' + sumFormateada;
+    totalElement.textContent = '$ ' + sumFormateada;
     totalElement.setAttribute("attr-value", sum);
-    totalResultElement.textContent = sumFormateada;
+    totalResultElement.textContent = '$ ' + sumFormateada;
     
     // Calcular porcentaje total
     let valorPesosFobElement = document.querySelector("#valorPesosFob");

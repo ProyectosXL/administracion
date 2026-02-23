@@ -940,8 +940,11 @@ $(document).ready(function () {
     $('#btn-abrir-parametros').hide();
 
     cargarDashboardGestion();
-    sincronizarEstados();
-    enviarAvisosVencimiento();
+    // sincronizarEstados();
+    // enviarAvisosVencimiento();
+
+    // Nueva llamada para recordatorios de pago (48hs antes del vencimiento)
+    // $.get('api/propuestas_controller.php?action=ejecutar_recordatorios');
 
     if (tablaGestion) {
         tablaGestion.ajax.reload();

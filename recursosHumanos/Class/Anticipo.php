@@ -14,6 +14,7 @@ class Anticipo
     function __construct()
     {
         date_default_timezone_set('America/Argentina/Buenos_Aires'); 
+        var_dump($_SERVER);
         require_once $_SERVER['DOCUMENT_ROOT'].'/administracion/Class/Conexion.php';
         $this->cid = new Conexion();
         $this->cid_central = $this->cid->conectar('central');

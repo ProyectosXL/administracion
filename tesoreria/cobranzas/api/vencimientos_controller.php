@@ -20,10 +20,10 @@ if (!function_exists('verificarYActualizarVencimientosCliente')) {
         // Soportamos que cod_cliente sea un array (agrupación) o un string individual
         if (is_array($cod_cliente)) {
             $placeholders = implode(',', array_fill(0, count($cod_cliente), '?'));
-            $sql_candidatas = "SELECT id, fecha_creacion FROM FP_propuestas_pago WHERE estado = 'PENDIENTE_APROBACION_CLIENTE' AND cod_cliente IN ($placeholders)";
+            $sql_candidatas = "SELECT id, fecha_creacion, cod_cliente FROM FP_propuestas_pago WHERE estado = 'PENDIENTE_APROBACION_CLIENTE' AND cod_cliente IN ($placeholders)";
             $params = $cod_cliente;
         } else {
-            $sql_candidatas = "SELECT id, fecha_creacion FROM FP_propuestas_pago WHERE estado = 'PENDIENTE_APROBACION_CLIENTE' AND cod_cliente = ?";
+            $sql_candidatas = "SELECT id, fecha_creacion, cod_cliente FROM FP_propuestas_pago WHERE estado = 'PENDIENTE_APROBACION_CLIENTE' AND cod_cliente = ?";
             $params = [$cod_cliente];
         }
 
@@ -93,6 +93,25 @@ if (!function_exists('verificarYActualizarVencimientosCliente')) {
 
                     sqlsrv_commit($conn);
                     $propuestas_vencidas_count++;
+
+                    // --- NOTIFICACIÓN DE VENCIMIENTO ---
+                    try {
+                        require_once __DIR__ . '/notificaciones_controller.php';
+                        $datos_cliente = obtenerEmailFranquiciado($propuesta['cod_cliente'] ?? null); // Corregido
+                        $admin_mail = obtenerEmailAdmin();
+
+                        $titulo = "Propuesta de Pago Vencida (ID: #{$propuesta['id']})";
+                        $mensaje = "La propuesta de pago #{$propuesta['id']} ha sido marcada como <strong>VENCIDA</strong> debido a que ha superado el plazo de 96 horas hábiles sin respuesta.<br><br>Por favor, contacte a administración para generar una nueva negociación.";
+                        $cuerpo = generarCuerpoEmail($titulo, $mensaje);
+
+                        if ($datos_cliente && $datos_cliente['email']) {
+                            enviarNotificacion($datos_cliente['email'], $titulo, $cuerpo);
+                        }
+                        enviarNotificacion($admin_mail, "Sistema: Propuesta #{$propuesta['id']} Vencida", $mensaje);
+                    } catch (Exception $e_mail) {
+                        error_log("Error in notifications for expired proposal: " . $e_mail->getMessage());
+                    }
+                    // -----------------------------------
 
                 } catch (Exception $e) {
                     sqlsrv_rollback($conn);

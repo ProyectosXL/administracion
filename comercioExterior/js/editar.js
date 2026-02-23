@@ -44,25 +44,39 @@ rows.forEach((x,e)=>{
       },
     })
     .done(function(e) {
+      // Actualizar la tabla RO_COSTOS_NACIONALIZACION ejecutando el stored procedure
       $.ajax({
-        url: '/administracion/comercioExterior/class/Orden.php',
+        url: '/administracion/comercioExterior/controller/updateCostoNacionalizacion.php',
         method: 'POST',
         data:{
           "nroOrdenDeCompra": nroOrden
         },
-      });
-
-      Swal.fire({
-        title: 'Detalle guardado!',
-        icon: 'success',
-        showDenyButton: true,
-        showCancelButton: false,
-        showConfirmButton: false,
-        denyButtonText: `Volver`,
+      })
+      .done(function(response) {
+        console.log('Costo de nacionalización actualizado:', response);
+        
+        Swal.fire({
+          title: 'Detalle guardado!',
+          icon: 'success',
+          showDenyButton: true,
+          showCancelButton: false,
+          showConfirmButton: false,
+          denyButtonText: `Volver`,
         })
         .then((e) => {
           window.location = "/administracion/comercioExterior/tabs/costoNacionalizacion.php"
         })
+      })
+      .fail(function(xhr, status, error) {
+        console.error('Error al actualizar costo de nacionalización:', error);
+        
+        Swal.fire({
+          title: 'Error',
+          text: 'Hubo un problema al actualizar el costo de nacionalización',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      });
     })
 })
 
