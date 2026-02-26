@@ -69,18 +69,28 @@ class ReindexRequest(BaseModel):
 # MODELOS DE CONSULTAS RAG
 # ============================================================================
 
+class HistorialItem(BaseModel):
+    """Un intercambio previo en la conversación."""
+    pregunta: str
+    respuesta: str
+
+
 class QueryRequest(BaseModel):
     """
     Request para consultas RAG en lenguaje natural.
     """
     pregunta: str = Field(..., min_length=3, max_length=500, description="Pregunta en lenguaje natural")
     top_k: Optional[int] = Field(5, ge=1, le=20, description="Número de chunks a recuperar")
-    
+    historial: List[HistorialItem] = Field(default=[], description="Historial de la conversación (últimos N intercambios)")
+
     class Config:
         schema_extra = {
             "example": {
-                "pregunta": "¿Cuál es la política de vacaciones?",
-                "top_k": 5
+                "pregunta": "¿Y cuánto tiempo tarda ese proceso?",
+                "top_k": 5,
+                "historial": [
+                    {"pregunta": "¿Cómo se hace una solicitud de compra?", "respuesta": "Según el instructivo..."}
+                ]
             }
         }
 

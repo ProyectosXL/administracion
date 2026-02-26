@@ -9,7 +9,7 @@ import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 
-from app.config import CHROMA_DB_PATH, CHROMA_COLLECTION_NAME
+from utils.config import CHROMA_DB_PATH, CHROMA_COLLECTION_NAME
 
 logger = logging.getLogger(__name__)
 

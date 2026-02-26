@@ -12,7 +12,7 @@ class RagWebhook
     private $rag_service_url;
     private $enabled;
     
-    public function __construct($rag_service_url = 'http://localhost:8000', $enabled = true)
+    public function __construct($rag_service_url = 'https://cfedetrejo-docugest-unified.hf.space', $enabled = true)
     {
         $this->rag_service_url = $rag_service_url;
         $this->enabled = $enabled;
@@ -114,8 +114,8 @@ class RagWebhook
         
         $ch = curl_init($health_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
         
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);

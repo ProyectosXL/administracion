@@ -4,9 +4,16 @@
  */
 
 // Configuración
-const RAG_API_URL = 'https://gentle-perception-production-25da.up.railway.app';
+const RAG_API_URL = 'https://cfedetrejo-docugest-unified.hf.space';
 let chatbotOpen = false;
 let chatHistory = [];
+
+// Estado de wake-up del HF Space
+let ragWakingUp = false;
+let ragWakeRetryCount = 0;
+const RAG_WAKE_MAX_RETRIES = 15;        // 15 intentos
+const RAG_WAKE_RETRY_INTERVAL = 20000;  // 20 segundos entre reintentos (~5 min máx)
+let ragWakeRetryTimer = null;
 
 // Inicializar chatbot al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
@@ -121,9 +128,10 @@ async function verificarServicioRAG() {
     ocultarOverlayCarga();
     
     try {
-        // Crear un timeout de 3 segundos para el health check
+        // Timeout más largo si estamos esperando que despierte el HF Space
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutDuration = ragWakingUp ? 30000 : 10000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
         
         const response = await fetch(`${RAG_API_URL}/health`, {
             method: 'GET',
@@ -138,6 +146,24 @@ async function verificarServicioRAG() {
         if (response.ok) {
             const data = await response.json();
             
+            // --- Si estábamos en modo wake-up, notificar éxito ---
+            if (ragWakingUp) {
+                ragWakingUp = false;
+                ragWakeRetryCount = 0;
+                if (ragWakeRetryTimer) { clearTimeout(ragWakeRetryTimer); ragWakeRetryTimer = null; }
+                
+                // Rehabilitar input
+                const inp = document.getElementById('chatbot-input');
+                const btn = document.getElementById('chatbot-send-btn');
+                if (inp) { inp.disabled = false; inp.placeholder = 'Escribe tu pregunta aquí...'; }
+                if (btn) btn.disabled = false;
+                
+                agregarMensajeSistema(
+                    '✅ ¡Asistente listo!',
+                    'El servicio se ha iniciado correctamente. Ya puedes hacer tus consultas.'
+                );
+            }
+            
             // Verificar documentos faltantes (sin esperar)
             verificarDocumentosFaltantes(data.total_chunks).catch(err => 
                 console.warn('Error verificando documentos faltantes:', err)
@@ -149,25 +175,67 @@ async function verificarServicioRAG() {
             if (data.total_chunks === 0) {
                 statusText.textContent = 'En línea - Sin documentos indexados';
             } else {
-                const docCount = data.total_documents || Math.floor(data.total_chunks / 10);
+                const docCount = data.total_documentos || data.total_documents || Math.floor(data.total_chunks / 10);
                 statusText.textContent = `En línea - ${docCount} documentos (${data.total_chunks} chunks)`;
             }
             
             console.log('✅ Servicio RAG conectado correctamente');
         } else {
-            throw new Error('Servicio no disponible');
+            throw new Error('Servicio no disponible (HTTP ' + response.status + ')');
         }
     } catch (error) {
-        statusIcon.className = 'status-dot offline';
-        statusText.textContent = 'Sin conexión';
-        
-        if (error.name === 'AbortError') {
-            console.warn('⏱️ Timeout al conectar con servicio RAG (3s)');
-        } else {
-            console.error('❌ Error al verificar servicio RAG:', error.message);
+        // =====================================================================
+        //  WAKE-UP LOOP: Si el HF Space está dormido, reintentar periódicamente
+        // =====================================================================
+        if (!ragWakingUp) {
+            // Primera falla → activar modo wake-up
+            ragWakingUp = true;
+            ragWakeRetryCount = 0;
+            
+            agregarMensajeSistema(
+                '💤 El asistente está despertando…',
+                'El servicio estaba inactivo y se está reiniciando automáticamente. '
+                + 'Esto puede tomar entre 1 y 3 minutos. Por favor, esperá un momento.'
+            );
+            
+            // Deshabilitar input mientras despierta
+            const inp = document.getElementById('chatbot-input');
+            const btn = document.getElementById('chatbot-send-btn');
+            if (inp) { inp.disabled = true; inp.placeholder = 'Esperando al asistente…'; }
+            if (btn) btn.disabled = true;
         }
         
-        // No mostrar mensaje al usuario, solo indicar estado offline
+        ragWakeRetryCount++;
+        
+        statusIcon.className = 'status-dot waking';
+        statusText.textContent = `Despertando… (${ragWakeRetryCount}/${RAG_WAKE_MAX_RETRIES})`;
+        
+        if (error.name === 'AbortError') {
+            console.warn(`⏱️ Timeout health-check (intento ${ragWakeRetryCount})`);
+        } else {
+            console.warn(`🔄 HF Space no responde (intento ${ragWakeRetryCount}):`, error.message);
+        }
+        
+        if (ragWakeRetryCount < RAG_WAKE_MAX_RETRIES) {
+            ragWakeRetryTimer = setTimeout(() => verificarServicioRAG(), RAG_WAKE_RETRY_INTERVAL);
+        } else {
+            // Se agotaron los reintentos
+            ragWakingUp = false;
+            ragWakeRetryCount = 0;
+            statusIcon.className = 'status-dot offline';
+            statusText.textContent = 'Sin conexión';
+            
+            const inp = document.getElementById('chatbot-input');
+            const btn = document.getElementById('chatbot-send-btn');
+            if (inp) { inp.disabled = false; inp.placeholder = 'Escribe tu pregunta aquí...'; }
+            if (btn) btn.disabled = false;
+            
+            agregarMensajeSistema(
+                '❌ No se pudo conectar',
+                'No fue posible conectarse con el asistente después de varios intentos. '
+                + 'Intenta recargar la página más tarde.'
+            );
+        }
     }
 }
 
@@ -241,6 +309,25 @@ function configurarInputChatbot() {
 }
 
 /**
+ * Agrega un mensaje de sistema al chat (notificaciones, estados)
+ */
+function agregarMensajeSistema(titulo, texto) {
+    const messagesContainer = document.getElementById('chatbot-messages');
+    if (!messagesContainer) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chatbot-message system';
+    messageDiv.innerHTML = `
+        <div class="message-content system-message">
+            <p class="system-title">${titulo}</p>
+            <p class="system-text">${texto}</p>
+        </div>
+    `;
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+/**
  * Envía un mensaje al chatbot
  */
 async function sendChatbotMessage() {
@@ -249,6 +336,15 @@ async function sendChatbotMessage() {
     const message = input.value.trim();
     
     if (!message) return;
+    
+    // Si el Space está despertando, avisar al usuario
+    if (ragWakingUp) {
+        agregarMensajeSistema(
+            '⏳ Un momento…',
+            'El asistente aún se está iniciando. Por favor esperá a que esté disponible.'
+        );
+        return;
+    }
     
     // Agregar mensaje del usuario
     agregarMensajeUsuario(message);
@@ -266,7 +362,12 @@ async function sendChatbotMessage() {
     const typingId = mostrarIndicadorEscritura();
     
     try {
-        // Enviar consulta al servicio RAG
+        // Enviar consulta al servicio RAG con historial de conversación
+        const historial = chatHistory.slice(-5).map(h => ({
+            pregunta: h.pregunta,
+            respuesta: h.respuesta
+        }));
+
         const response = await fetch(`${RAG_API_URL}/api/query`, {
             method: 'POST',
             headers: {
@@ -274,7 +375,8 @@ async function sendChatbotMessage() {
             },
             body: JSON.stringify({
                 pregunta: message,
-                top_k: 5
+                top_k: 5,
+                historial: historial
             })
         });
         

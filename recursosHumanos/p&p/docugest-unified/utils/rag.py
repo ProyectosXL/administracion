@@ -8,7 +8,7 @@ import time
 from typing import List, Dict, Any
 import google.generativeai as genai
 
-from app.config import (
+from utils.config import (
     GOOGLE_API_KEY,
     GENERATION_MODEL,
     GENERATION_TEMPERATURE,
@@ -16,9 +16,9 @@ from app.config import (
     RAG_PROMPT_TEMPLATE,
     DEFAULT_TOP_K
 )
-from app.embeddings import generate_query_embedding, EmbeddingError
-from app.database import get_chroma_client, ChromaDBError
-from app.models import DocumentSource
+from utils.embeddings import generate_query_embedding, EmbeddingError
+from utils.database import get_chroma_client, ChromaDBError
+from utils.models import DocumentSource
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,8 @@ Contenido:
 def generate_rag_response(
     query: str,
     top_k: int = DEFAULT_TOP_K,
-    filter_metadata: Dict[str, Any] = None
+    filter_metadata: Dict[str, Any] = None,
+    historial: List[Any] = None
 ) -> Dict[str, Any]:
     """
     Genera una respuesta completa usando RAG con detección inteligente.
@@ -215,8 +216,28 @@ def generate_rag_response(
             logger.info("No se encontraron chunks en la búsqueda")
             contexto = "No hay documentos relevantes para esta consulta."
         
-        # 3. Construir prompt completo (el LLM decidirá cómo responder)
+        # 3. Obtener lista completa de documentos indexados
+        try:
+            stats = get_chroma_client().get_stats()
+            all_titles = list(stats.get('documents_by_title', {}).keys())
+            documentos_disponibles = "\n".join([f"- {t}" for t in sorted(all_titles)]) if all_titles else "Sin documentos indexados"
+        except Exception:
+            documentos_disponibles = "Lista no disponible"
+
+        # 4. Construir historial de conversación
+        if historial:
+            history_parts = [
+                f"Usuario: {h.pregunta}\nAsistente: {h.respuesta}"
+                for h in historial[-5:]  # Últimos 5 intercambios máximo
+            ]
+            historial_conversacion = "\n\n".join(history_parts)
+        else:
+            historial_conversacion = "(Sin historial previo - primera pregunta)"
+
+        # 5. Construir prompt completo (el LLM decidirá cómo responder)
         prompt = RAG_PROMPT_TEMPLATE.format(
+            historial_conversacion=historial_conversacion,
+            documentos_disponibles=documentos_disponibles,
             contexto_chunks=contexto,
             pregunta=query
         )

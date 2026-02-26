@@ -32,9 +32,9 @@ class RagConfig {
             
             $this->config = [
                 'environment' => 'production',
-                'rag_service_url' => 'http://localhost:8000', // Servicio local en el servidor
+                'rag_service_url' => 'https://cfedetrejo-docugest-unified.hf.space', // HF Space
                 'rag_enabled' => true,
-                'auto_start' => true, // Auto-iniciar si no está corriendo
+                'auto_start' => false, // HF Space se maneja solo
                 'auto_index' => true, // Auto-indexar si ChromaDB está vacío
                 'documentos_path' => __DIR__ . '/documentos',
                 'base_url' => 'https://app.xl.com.ar/administracion/recursosHumanos/p&p',

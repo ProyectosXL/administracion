@@ -36,13 +36,20 @@ try {
     $rag_url = $config->getRagServiceUrl('/health');
     $ch = curl_init($rag_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
     $health_response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
     curl_close($ch);
     
     $servicio_corriendo = ($http_code === 200);
+    
+    // Detectar si el HF Space puede estar dormido (producción)
+    if (!$servicio_corriendo && $config->isProduction()) {
+        $response['detalles'][] = "HF Space posiblemente dormido (HTTP $http_code). El cliente JS reintentará automáticamente.";
+        $response['hf_sleeping'] = true;
+    }
     
     if (!$servicio_corriendo && $config->shouldAutoStart()) {
         $response['detalles'][] = "Servicio RAG no está corriendo, iniciando en segundo plano...";

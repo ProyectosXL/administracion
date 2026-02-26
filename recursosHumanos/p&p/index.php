@@ -395,7 +395,7 @@ $glosario = $politicaObj->obtenerGlosario();
                     <div class="right-column">
                         <div class="card">
                             <div class="card-header">
-                                <h3>Términos Populares</h3>
+                                <h3>Términos Específicos</h3>
                                 <a href="#" class="see-all" onclick="showGlossary()">Ver glosario <i class="fas fa-chevron-right"></i></a>
                             </div>
                             

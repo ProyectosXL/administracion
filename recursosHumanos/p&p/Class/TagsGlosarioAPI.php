@@ -23,7 +23,7 @@ class TagsGlosarioAPI
      * 
      * Configurado para: cfedetrejo
      */
-    private $api_url = 'https://cfedetrejo-docugest-tags.hf.space';
+    private $api_url = 'https://cfedetrejo-docugest-unified.hf.space';
     
     /**
      * Timeout for API requests (in seconds)

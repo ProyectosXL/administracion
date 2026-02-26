@@ -12,7 +12,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 # Importar configuración
-from app.config import (
+from utils.config import (
     GOOGLE_API_KEY,
     USE_LOCAL_EMBEDDINGS,
     LOCAL_EMBEDDING_MODEL,

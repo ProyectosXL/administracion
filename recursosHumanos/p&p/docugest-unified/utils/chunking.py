@@ -6,7 +6,7 @@ Usa LangChain RecursiveCharacterTextSplitter para crear chunks semánticamente c
 import logging
 from typing import List, Dict, Any
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from app.config import CHUNK_SIZE, CHUNK_OVERLAP, CHUNK_SEPARATORS
+from utils.config import CHUNK_SIZE, CHUNK_OVERLAP, CHUNK_SEPARATORS
 
 logger = logging.getLogger(__name__)
 
