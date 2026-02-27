@@ -48,56 +48,85 @@ const totalizar = (div = null) => {
             
             if(e.textContent == 9 || e.textContent == 13 ) {
 
-                let porcentaje = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).getAttribute("attr-porcentaje");
-                let valorId8 = document.querySelector(`#input-8-${s.textContent}`).value.replace(/[$.]/g, "").replace(/ /g,'');
-                document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value ="$"+ parseNumber((parseInt(valorId8) * parseFloat(porcentaje)) / 100);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                let porcentaje = inputActual.getAttribute("attr-porcentaje");
+                let valorId8 = document.querySelector(`#input-8-${s.textContent}`).getAttribute("attr-realvalue") || 0;
+                let calculo = (parseInt(valorId8) * parseFloat(porcentaje)) / 100;
+                
+                inputActual.value ="$"+ parseNumber(calculo);
+                inputActual.setAttribute("attr-realvalue", calculo);
 
             }
 
             // Concepto 16: Restar concepto 9
             if(e.textContent == 16) {
 
-                let valorId9 = document.querySelector(`#input-9-${s.textContent}`).value.replace(/[$.]/g, "");
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
-
-                if ( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9)  < 0) {
-                    inputActual.value = "$0";
-                }else{
-                    inputActual.value ="$"+ parseNumber( parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId9) );
+                let inputConcepto9 = document.querySelector(`#input-9-${s.textContent}`);
+                let valorId9 = parseInt(inputConcepto9.getAttribute('attr-realvalue') || 0);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
+                
+                let calculo = valorBruto - valorId9;
+                if(calculo < 0) {
+                    calculo = 0;
                 }
+                
+                inputActual.value = "$" + parseNumber(calculo);
+                inputActual.setAttribute('attr-realvalue', calculo);
 
             }
             
-            // Concepto 17: Solo mostrar el valor calculado (NO restar nada)
+            // Concepto 17: Calcular porcentaje sobre venta neta y RESTAR concepto 9
             if(e.textContent == 17) {
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
-                let valorReal = parseInt(inputActual.getAttribute('attr-realvalue'));
-                inputActual.value = "$" + parseNumber(valorReal);
+                let inputConcepto9 = document.querySelector(`#input-9-${s.textContent}`);
+                let valorId9 = parseInt(inputConcepto9.getAttribute('attr-realvalue') || 0);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                
+                // Usar el valor BRUTO original (porcentaje sobre venta neta)
+                let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
+                
+                // Restar el concepto 9
+                let calculo = valorBruto - valorId9;
+                if(calculo < 0) {
+                    calculo = 0;
+                }
+                
+                inputActual.value = "$" + parseNumber(calculo);
+                inputActual.setAttribute('attr-realvalue', calculo);
             }
 
             if(e.textContent == 6 || e.textContent == 7 ) {
 
-                let valorId8 = document.querySelector(`#input-8-${s.textContent}`).value.replace(/[$.]/g, "");
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
-                let calculo =  parseInt(inputActual.getAttribute('attr-realvalue')) - parseInt(valorId8) ;
+                let inputConcepto8 = document.querySelector(`#input-8-${s.textContent}`);
+                let valorId8 = parseInt(inputConcepto8.getAttribute('attr-realvalue') || 0);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                
+                // Usar el valor BRUTO original (antes de cualquier resta)
+                let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
+                let calculo = valorBruto - valorId8;
 
                 if(calculo < 0) {
                     calculo = 0;
                 }
-                inputActual.value ="$"+ parseNumber( calculo); 
+                inputActual.value ="$"+ parseNumber(calculo);
+                // IMPORTANTE: Actualizar attr-realvalue con el valor NETO calculado
+                // para que se guarde correctamente en BD
+                inputActual.setAttribute('attr-realvalue', calculo);
 
             }
             
-            // Concepto 14: Calcular sobre el concepto 7 (valor mostrado, ya con el mínimo restado)
+            // Concepto 14: Calcular sobre el concepto 7 NETO (ya con mínimo restado)
             if(e.textContent == 14) {
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
                 let porcentaje = inputActual.getAttribute("attr-porcentaje");
+                let inputConcepto7 = document.querySelector(`#input-7-${s.textContent}`);
                 
-                // Obtener el valor MOSTRADO del concepto 7 (ya tiene el mínimo restado)
-                let valorId7Mostrado = document.querySelector(`#input-7-${s.textContent}`).value.replace(/[$.]/g, "").replace(/ /g,'');
+                // IMPORTANTE: Usar el attr-realvalue del concepto 7 que ahora tiene el valor NETO
+                // (después de restar el mínimo en el bloque anterior)
+                let valorId7Neto = parseInt(inputConcepto7.getAttribute('attr-realvalue') || 0);
                 
                 // Calcular: valor concepto 7 (neto) * porcentaje / 100
-                let calculo = (parseInt(valorId7Mostrado) * parseFloat(porcentaje)) / 100;
+                let calculo = (valorId7Neto * parseFloat(porcentaje)) / 100;
                 
                 inputActual.value = "$" + parseNumber(calculo);
                 // Actualizar attr-realvalue para que se guarde correctamente en BD
@@ -133,33 +162,47 @@ const totalizar = (div = null) => {
     let sucursalActual = div.id.split("-")[2];
     let conceptoActual = div.id.split("-")[1];
     
+    // IMPORTANTE: Parsear el valor ingresado por el usuario y actualizar attr-realvalue
+    // ANTES de llamar a actualizarDetalle()
+    // El valor puede tener formato: $1.234.567 o 1234567 o -$1.234
+    let valorIngresado = div.value.replace(/[$\s]/g, ""); // Eliminar $ y espacios
+    valorIngresado = valorIngresado.replace(/\./g, ""); // Eliminar puntos separadores de miles
+    valorIngresado = parseInt(valorIngresado) || 0;
+    
+    // Actualizar attr-realvalue con el valor parseado correctamente
+    div.setAttribute("attr-realvalue", valorIngresado);
+    
     // DEBUGGING: Log antes de actualizar
     console.group("🎯 DEBUG - Evento onchange disparado");
     console.log("🆔 Input ID:", div.id);
     console.log("🏢 Sucursal:", sucursalActual);
     console.log("📋 Concepto:", conceptoActual);
-    console.log("💾 Valor antes de formatear:", div.value);
+    console.log("💾 Valor original input:", div.value);
+    console.log("🔢 Valor parseado:", valorIngresado);
+    console.log("📊 attr-realvalue actualizado a:", div.getAttribute("attr-realvalue"));
     console.groupEnd();
 
-        actualizarDetalle(div);
+        // Marcar si es una edición principal (no cascada)
+        let esEdicionPrincipal = true;
+        actualizarDetalle(div, esEdicionPrincipal);
 
         if(div.id.split("-")[1] == 8) {
         
             console.log("🔄 Concepto 8 detectado - Actualizando conceptos dependientes");
-            actualizarDetalle(document.querySelector(`#input-6-${sucursalActual}`));
-            actualizarDetalle(document.querySelector(`#input-7-${sucursalActual}`));
-            actualizarDetalle(document.querySelector(`#input-9-${sucursalActual}`));
-            actualizarDetalle(document.querySelector(`#input-13-${sucursalActual}`));
-            actualizarDetalle(document.querySelector(`#input-16-${sucursalActual}`));
-            actualizarDetalle(document.querySelector(`#input-17-${sucursalActual}`));
-            actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`));
+            actualizarDetalle(document.querySelector(`#input-6-${sucursalActual}`), false);
+            actualizarDetalle(document.querySelector(`#input-7-${sucursalActual}`), false);
+            actualizarDetalle(document.querySelector(`#input-9-${sucursalActual}`), false);
+            actualizarDetalle(document.querySelector(`#input-13-${sucursalActual}`), false);
+            actualizarDetalle(document.querySelector(`#input-16-${sucursalActual}`), false);
+            actualizarDetalle(document.querySelector(`#input-17-${sucursalActual}`), false);
+            actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`), false);
             
         }
         
         // Si cambia el concepto 7, recalcular el concepto 14 (que depende del 7)
         if(div.id.split("-")[1] == 7) {
             console.log("🔄 Concepto 7 detectado - Actualizando concepto 14");
-            actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`));
+            actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`), false);
         }
 
         value = div.value.replace(/[$.]/g, "");
@@ -270,7 +313,7 @@ const insertarDetalle = () => {
 
 }
 
-const actualizarDetalle = (div) => {
+const actualizarDetalle = (div, esEdicionPrincipal = false) => {
 
     let periodo = document.querySelector("#periodo").textContent;
     let sucursal = div.id.split("-")[2];
@@ -281,7 +324,9 @@ const actualizarDetalle = (div) => {
     // Obtener valor anterior del atributo attr-realvalue
     let valorAnterior = div.getAttribute("attr-realvalue");
 
-    let importe = div.value.replace(/[$.]/g, "");
+    // IMPORTANTE: Usar attr-realvalue que contiene el valor numérico correcto
+    // en lugar de parsear div.value que está formateado
+    let importe = div.getAttribute("attr-realvalue") || "0";
     let importe9 = 0;
     let importe13 = 0;
 
@@ -300,6 +345,7 @@ const actualizarDetalle = (div) => {
     console.log("➡️  Valor Nuevo:", importe);
     console.log("🔢 Valor Formateado (input):", div.value);
     console.log("🔄 Cambio:", parseFloat(importe) - parseFloat(valorAnterior));
+    console.log("🎯 Es edición principal:", esEdicionPrincipal);
     
     // Advertencia especial para valor cero
     if(importe == "0" || importe == "" || parseFloat(importe) === 0) {
@@ -325,6 +371,15 @@ const actualizarDetalle = (div) => {
             
             // Actualizar el attr-realvalue con el nuevo valor para futuras comparaciones
             div.setAttribute("attr-realvalue", importe);
+            
+            // Si es una edición principal (hecha por el usuario), recargar página
+            // para mostrar todos los valores actualizados correctamente
+            if(esEdicionPrincipal) {
+                console.log("🔄 Recargando página para mostrar valores actualizados...");
+                setTimeout(() => {
+                    location.reload();
+                }, 300);
+            }
         },
         error: function(xhr, status, error) {
             console.error("❌ Error al actualizar detalle:", {
@@ -1231,12 +1286,9 @@ const AplicarAjuste = () => {
                 if (data.status === 'success') {
                     Swal.fire({
                         icon: 'success',
-                        title: '✓ Ajuste aplicado correctamente',
-                        html: `<div style="text-align: center;">
-                                <i class="fas fa-check-circle" style="font-size: 48px; color: #28a745; margin-bottom: 15px;"></i>
-                                <p>Se actualizaron <strong>${data.registros_actualizados}</strong> registro(s)</p>
-                                <p>Coeficiente aplicado: <strong>${data.coeficiente}</strong></p>
-                              </div>`,
+                        title: 'Ajuste aplicado correctamente',
+                        html: `<p>Se actualizaron <strong>${data.registros_actualizados}</strong> registro(s)</p>
+                               <p>Coeficiente aplicado: <strong>${data.coeficiente}</strong></p>`,
                         showConfirmButton: true,
                         confirmButtonText: 'Aceptar'
                     }).then(() => {
@@ -1245,31 +1297,22 @@ const AplicarAjuste = () => {
                 } else if (data.status === 'info') {
                     Swal.fire({
                         icon: 'info',
-                        title: 'ℹ️ Información',
-                        html: `<div style="text-align: center;">
-                                <i class="fas fa-info-circle" style="font-size: 48px; color: #17a2b8; margin-bottom: 15px;"></i>
-                                <p>${data.message}</p>
-                              </div>`,
+                        title: 'Información',
+                        text: data.message,
                         confirmButtonText: 'Entendido'
                     });
                 } else if (data.status === 'warning') {
                     Swal.fire({
                         icon: 'warning',
-                        title: '⚠️ Atención',
-                        html: `<div style="text-align: center;">
-                                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #ffc107; margin-bottom: 15px;"></i>
-                                <p>${data.message}</p>
-                              </div>`,
+                        title: 'Atención',
+                        text: data.message,
                         confirmButtonText: 'Entendido'
                     });
                 } else if (data.status === 'error') {
                     Swal.fire({
                         icon: 'error',
-                        title: '✖ Error',
-                        html: `<div style="text-align: center;">
-                                <i class="fas fa-times-circle" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
-                                <p>${data.message}</p>
-                              </div>`,
+                        title: 'Error',
+                        text: data.message,
                         confirmButtonText: 'Aceptar'
                     });
                 }
@@ -1282,7 +1325,7 @@ const AplicarAjuste = () => {
                 if(response != 1){
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error...',
+                        title: 'Error',
                         text: 'El coeficiente correspondiente al período no se encuentra cargado!'
                     });
                 } else {

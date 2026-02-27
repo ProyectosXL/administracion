@@ -220,6 +220,12 @@ $(document).ready(function () {
                 // Lógica de descuento por defecto (según parámetros del cliente)
                 initialDiscount = (parseFloat(row.DESC_PP_MAX) || 0) * 100;
 
+                // Si el medio por defecto es Transferencia, solemos bajar 2 puntos (del 8 al 6)
+                const medioDef = (row.MEDIO_PAGO_DEFAULT || '').toString().trim().toUpperCase();
+                if ((medioDef === 'TRANSFERENCIA' || medioDef === 'TRANSFERERENCIA') && Math.abs(initialDiscount - 8) < 0.05) {
+                    initialDiscount = 6;
+                }
+
                 // Si el ERP ya calculó un descuento (común en FAC de sucursales normales), lo respetamos
                 if (bruto > 0 && bruto > netoOriginal) {
                     const calcu = ((bruto - netoOriginal) / bruto) * 100;
@@ -579,18 +585,22 @@ $(document).ready(function () {
             return;
         }
 
+        // Obtenemos el medio de pago por defecto del cliente (si está configurado)
+        const firstRow = tablaDetalle.row($('#tabla-detalle-cliente .invoice-checkbox:checked').first().closest('tr')).data();
+        const defaultMedio = (firstRow && firstRow.MEDIO_PAGO_DEFAULT) ? firstRow.MEDIO_PAGO_DEFAULT.toUpperCase() : 'ECHECK';
+
         Swal.fire({
             title: 'Finalizar Propuesta',
             width: '600px',
             html: `
-            <p class="mb-3">Monto Total de la Propuesta: <strong class="fs-5 text-primary">${totalNetoSeleccionado.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong></p>
+            <p class="mb-3">Monto Total de la Propuesta: <strong class="fs-5 text-primary" id="swal-total-display">${totalNetoSeleccionado.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong></p>
             
             <div class="row g-3 text-start">
                 <div class="col-md-6">
                     <label for="swal-medio-pago" class="form-label fw-bold">Medio de Pago</label>
                     <select id="swal-medio-pago" class="form-select shadow-sm">
-                        <option value="ECHECK" selected>ECHECK</option>
-                        <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                        <option value="ECHECK" ${defaultMedio === 'ECHECK' ? 'selected' : ''}>ECHECK</option>
+                        <option value="TRANSFERENCIA" ${defaultMedio.includes('TRANSFERENCIA') || defaultMedio.includes('TRANSFERERENCIA') ? 'selected' : ''}>TRANSFERENCIA</option>
                     </select>
                 </div>
                 <div class="col-md-6">
@@ -651,6 +661,51 @@ $(document).ready(function () {
                 const hoy = new Date();
                 $datepicker.datepicker('setDate', hoy);
                 $inputFecha.val($.datepicker.formatDate('yy-mm-dd', hoy));
+
+                const $medioPagoSelect = $('#swal-medio-pago');
+
+                // --- Lógica para ajustar descuentos según Medio de Pago ---
+                $('#swal-medio-pago').on('change', function () {
+                    const medio = $(this).val();
+                    let cambioRelativo = false;
+
+                    $('#tabla-detalle-cliente .invoice-checkbox:checked').each(function () {
+                        const tr = $(this).closest('tr');
+                        const input = tr.find('.descuento-input');
+                        let currentDesc = parseFloat(input.val());
+
+                        // Regla: 8% para ECHECK, 6% para TRANSFERENCIA (usamos redondeo para evitar decimales flotantes)
+                        let simplifiedDesc = Math.round(currentDesc * 100) / 100;
+
+                        if (medio === 'TRANSFERENCIA' && simplifiedDesc > 7.5) {
+                            input.val(6).trigger('input');
+                            cambioRelativo = true;
+                        } else if (medio === 'ECHECK' && simplifiedDesc < 6.5) {
+                            input.val(8).trigger('input');
+                            cambioRelativo = true;
+                        }
+                    });
+
+                    if (cambioRelativo) {
+                        // Recalculamos el total capturando el valor del footer que ya se actualizó por el trigger('input')
+                        const nuevoTotalTexto = $('#total-neto-container span').text();
+                        $('#swal-total-display').text(nuevoTotalTexto);
+
+                        // Actualizamos la variable local de referencia para el preConfirm y cuotas
+                        totalNetoSeleccionado = parseFloat(nuevoTotalTexto.replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
+
+                        // Si hay cuotas, refrescamos el desglose
+                        const cant = parseInt($cantCuotas.val());
+                        if (cant > 1) {
+                            generarCamposCuotas(cant, totalNetoSeleccionado, $inputFecha.val());
+                        }
+                    }
+                });
+
+                // Disparamos manualmente el cambio al abrir para aplicar reglas si el default ya es Transferencia
+                setTimeout(() => {
+                    $medioPagoSelect.trigger('change');
+                }, 100);
 
                 $cantCuotas.on('change', function () {
                     const cant = parseInt($(this).val());
@@ -740,21 +795,48 @@ $(document).ready(function () {
                     }
 
                     // Pequeño margen por decimales
-                    if (Math.abs(totalCuotas - totalNetoSeleccionado) > 0.05) {
+                    const totalDiferencia = Math.abs(totalCuotas - totalNetoSeleccionado);
+                    if (totalDiferencia > 0.5) { // Un margen un poco mayor por redondeos masivos
                         Swal.showValidationMessage('La suma de las cuotas debe coincidir con el total.');
                         return false;
                     }
                 }
 
+                // --- RE-RECOLECTAMOS LOS DATOS JUSTO ANTES DE ENVIAR ---
+                // (Para capturar los cambios de descuento hechos por el cambio de Medio de Pago)
+                let comprobantesFinales = [];
+                let totalRelativoFinal = 0;
+                const tablaDetalleInner = $('#tabla-detalle-cliente').DataTable();
+
+                $('#tabla-detalle-cliente .invoice-checkbox:checked').each(function () {
+                    const tr = $(this).closest('tr');
+                    const rowData = tablaDetalleInner.row(tr).data();
+                    const desc = parseFloat(tr.find('.descuento-input').val()) || 0;
+                    const bruto = parseFloat(rowData.IMPORTE);
+                    const neto = bruto * (1 - (desc / 100));
+                    const esNC = rowData.T_COMP.trim().startsWith('NC');
+
+                    comprobantesFinales.push({
+                        t_comp: rowData.T_COMP,
+                        n_comp: rowData.N_COMP,
+                        importe_bruto: bruto,
+                        importe_neto: neto,
+                        porcentaje_descuento: desc
+                    });
+                    totalRelativoFinal += esNC ? -neto : neto;
+                });
+
                 return {
                     fecha: fecha,
                     medioPago: medioPago,
-                    cuotas: cuotasArr
+                    cuotas: cuotasArr,
+                    comprobantes: comprobantesFinales,
+                    total_final: totalRelativoFinal
                 };
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                const { fecha, medioPago, cuotas } = result.value;
+                const { fecha, medioPago, cuotas, comprobantes, total_final } = result.value;
                 btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
                 $.ajax({
@@ -762,11 +844,11 @@ $(document).ready(function () {
                     type: 'POST',
                     data: {
                         cod_cliente: codCliente,
-                        comprobantes: comprobantesSeleccionados,
-                        total_propuesto: totalNetoSeleccionado,
+                        comprobantes: comprobantes,
+                        total_propuesto: total_final,
                         fecha_propuesta_pago: fecha,
                         medio_de_pago: medioPago,
-                        cuotas: cuotas // Pasamos el array de cuotas
+                        cuotas: cuotas
                     },
                     dataType: 'json',
                     success: function (response) {
@@ -935,63 +1017,63 @@ $(document).ready(function () {
     let tablaGestion = null;
 
     function initializeGestionDataTable() {
-    $('#summary-cards').hide();
-    $('#gestion-dashboard').show();
-    $('#btn-abrir-parametros').hide();
+        $('#summary-cards').hide();
+        $('#gestion-dashboard').show();
+        $('#btn-abrir-parametros').hide();
 
-    cargarDashboardGestion();
-    // sincronizarEstados();
-    // enviarAvisosVencimiento();
+        cargarDashboardGestion();
+        sincronizarEstados();
+        // enviarAvisosVencimiento();
 
-    // Nueva llamada para recordatorios de pago (48hs antes del vencimiento)
-    // $.get('api/propuestas_controller.php?action=ejecutar_recordatorios');
+        // Nueva llamada para recordatorios de pago (48hs antes del vencimiento)
+        // $.get('api/propuestas_controller.php?action=ejecutar_recordatorios');
 
-    if (tablaGestion) {
-        tablaGestion.ajax.reload();
-    } else {
-        tablaGestion = $('#tabla-gestion-propuestas').DataTable({
-            ajax: { 
-                url: 'api/propuestas_controller.php?action=listar_admin', 
-                dataSrc: 'data',
-                // Enviamos los filtros al PHP
-                data: function(d) {
-                    d.f_desde = $('#filter-fecha-desde').val();
-                    d.f_hasta = $('#filter-fecha-hasta').val();
-                    d.codigo  = $('#filter-codigo').val();
-                    d.razon   = $('#filter-razon-social').val();
-                    d.estado  = $('#filter-estado').val();
-                }
-            },
-            columns: [
-                // ... (mantén tus columnas actuales igual) ...
-                { data: 'id', title: 'ID', className: 'text-center fw-bold' },
-                { data: 'cod_cliente', title: 'Código', className: 'text-center' },
-                { data: 'razon_social', title: 'Razón Social' },
-                { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
-                {
-                    data: 'fecha_ultima_modificacion',
-                    title: 'Últ. Act.',
-                    render: function (data) {
-                        return data ? new Date(data).toLocaleString('es-AR') : '-';
+        if (tablaGestion) {
+            tablaGestion.ajax.reload();
+        } else {
+            tablaGestion = $('#tabla-gestion-propuestas').DataTable({
+                ajax: {
+                    url: 'api/propuestas_controller.php?action=listar_admin',
+                    dataSrc: 'data',
+                    // Enviamos los filtros al PHP
+                    data: function (d) {
+                        d.f_desde = $('#filter-fecha-desde').val();
+                        d.f_hasta = $('#filter-fecha-hasta').val();
+                        d.codigo = $('#filter-codigo').val();
+                        d.razon = $('#filter-razon-social').val();
+                        d.estado = $('#filter-estado').val();
                     }
                 },
-                {
-                    data: 'estado', title: 'Estado',
-                    render: function (data) {
-                        let badgeClass = 'secondary';
-                        if (data === 'PAGADO') badgeClass = 'success';
-                        if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
-                        if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
-                        if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning text-dark';
-                        if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
-                        if (data === 'ACEPTADA') badgeClass = 'success';
-                        return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
-                    }
-                },
-                {
-                    data: null, title: 'Acciones', orderable: false, className: 'text-center',
-                    render: function (data, type, row) {
-                        return `
+                columns: [
+                    // ... (mantén tus columnas actuales igual) ...
+                    { data: 'id', title: 'ID', className: 'text-center fw-bold' },
+                    { data: 'cod_cliente', title: 'Código', className: 'text-center' },
+                    { data: 'razon_social', title: 'Razón Social' },
+                    { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
+                    {
+                        data: 'fecha_ultima_modificacion',
+                        title: 'Últ. Act.',
+                        render: function (data) {
+                            return data ? new Date(data).toLocaleString('es-AR') : '-';
+                        }
+                    },
+                    {
+                        data: 'estado', title: 'Estado',
+                        render: function (data) {
+                            let badgeClass = 'secondary';
+                            if (data === 'PAGADO') badgeClass = 'success';
+                            if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
+                            if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
+                            if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning text-dark';
+                            if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
+                            if (data === 'ACEPTADA') badgeClass = 'success';
+                            return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
+                        }
+                    },
+                    {
+                        data: null, title: 'Acciones', orderable: false, className: 'text-center',
+                        render: function (data, type, row) {
+                            return `
                             <div class="btn-group">
                                 <button class="btn btn-outline-info btn-sm btn-ver-propuesta-admin" data-id="${row.id}" title="Revisar / Editar">
                                     <i class="fa-solid fa-pen-to-square"></i>
@@ -1001,25 +1083,25 @@ $(document).ready(function () {
                                 </button>
                             </div>
                         `;
+                        }
                     }
-                }
-            ],
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-            order: [[0, 'desc']],
-            responsive: true
-        });
+                ],
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                order: [[0, 'desc']],
+                responsive: true
+            });
+        }
     }
-}
 
-// Eventos para los botones de filtrado (Agrega esto al final del $(document).ready)
-$('#btn-aplicar-filtros').on('click', function() {
-    if(tablaGestion) tablaGestion.ajax.reload();
-});
+    // Eventos para los botones de filtrado (Agrega esto al final del $(document).ready)
+    $('#btn-aplicar-filtros').on('click', function () {
+        if (tablaGestion) tablaGestion.ajax.reload();
+    });
 
-$('#btn-limpiar-filtros').on('click', function() {
-    $('#filter-form-gestion')[0].reset();
-    if(tablaGestion) tablaGestion.ajax.reload();
-});
+    $('#btn-limpiar-filtros').on('click', function () {
+        $('#filter-form-gestion')[0].reset();
+        if (tablaGestion) tablaGestion.ajax.reload();
+    });
 
     $('body').on('click', '.btn-ver-propuesta-admin', function () {
         const idPropuesta = $(this).data('id');
@@ -1158,7 +1240,10 @@ $('#btn-limpiar-filtros').on('click', function() {
                     adjuntosCuota.forEach(a => {
                         adjuntosCuotaHtml += `<div class="x-small d-flex justify-content-between align-items-center mb-1" style="font-size: 0.75rem;">
                             <span class="text-truncate" style="max-width: 120px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice-dollar me-1 text-success"></i>${a.nombre_archivo}</span>
-                            <a href="${a.ruta_archivo}" target="_blank" class="text-primary"><i class="fa-solid fa-download"></i></a>
+                            <div class="btn-group">
+                                <a href="${a.ruta_archivo}" target="_blank" class="btn btn-xs btn-outline-primary" title="Ver archivo"><i class="fa-solid fa-eye"></i></a>
+                                <button class="btn btn-xs btn-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                            </div>
                         </div>`;
                     });
                     adjuntosCuotaHtml += '</div>';
@@ -1186,7 +1271,7 @@ $('#btn-limpiar-filtros').on('click', function() {
             adjuntosGenerales.forEach(adjunto => {
                 const url = adjunto.ruta_archivo;
                 const fechaSubida = new Date(adjunto.fecha_subida).toLocaleString('es-AR');
-                adjuntosHtml += `<li class="list-group-item d-flex justify-content-between align-items-center"><div><i class="fa-solid fa-file-arrow-down me-2 text-primary"></i> ${adjunto.nombre_archivo}<small class="d-block text-muted">Subido el: ${fechaSubida}</small></div><a href="${url}" target="_blank" class="btn btn-outline-primary btn-sm">Ver</a></li>`;
+                adjuntosHtml += `<li class="list-group-item d-flex justify-content-between align-items-center"><div><i class="fa-solid fa-file-arrow-down me-2 text-primary"></i> ${adjunto.nombre_archivo}<small class="d-block text-muted">Subido el: ${fechaSubida}</small></div><div class="btn-group"><a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver archivo"><i class="fa-solid fa-eye"></i></a><button class="btn btn-sm btn-danger shadow-sm btn-eliminar-adjunto" data-id-adjunto="${adjunto.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button></div></li>`;
             });
             adjuntosHtml += '</ul>';
         }
@@ -2397,6 +2482,56 @@ $('#btn-limpiar-filtros').on('click', function() {
             }
         </style>
     `;
+
+    // Evento para eliminar adjuntos (Administración)
+    $('#detalle-propuesta-content').on('click', '.btn-eliminar-adjunto', function () {
+        const idAdjunto = $(this).data('id-adjunto');
+        const titleText = $('#detallePropuestaModalLabel').text();
+        const match = titleText.match(/#(\d+)/);
+        const idPropuesta = match ? match[1] : null;
+
+        Swal.fire({
+            title: '¿Eliminar comprobante?',
+            text: "Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: 'api/propuestas_controller.php?action=eliminar_adjunto',
+                    type: 'POST',
+                    data: { id_adjunto: idAdjunto },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire('¡Eliminado!', response.message, 'success');
+                            if (idPropuesta) {
+                                $.ajax({
+                                    url: `api/propuestas_controller.php?action=ver_detalle&id=${idPropuesta}`,
+                                    type: 'GET',
+                                    dataType: 'json',
+                                    success: function (res) {
+                                        if (res.success) renderizarDetallePropuestaAdmin(res.data);
+                                    }
+                                });
+                            }
+                            if (typeof tablaGestion !== 'undefined') tablaGestion.ajax.reload(null, false);
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'No se pudo eliminar el archivo.', 'error');
+                    }
+                });
+            }
+        });
+    });
+
     $('head').append(stylePro);
 
 }); // <--- ESTE ES EL ÚNICO Y CORRECTO CIERRE PARA $(document).ready()

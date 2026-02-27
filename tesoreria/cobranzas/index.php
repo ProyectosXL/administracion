@@ -177,58 +177,62 @@ include 'templates/layout/header.php';
         <div class="card-body">
             <div class="tab-content" id="cobranzasTabContent">
                 <!-- Dentro de <div class="tab-pane fade" id="gestion" ...> -->
-<div class="tab-pane fade" id="gestion" role="tabpanel" aria-labelledby="gestion-tab">
-    
-    <!-- BLOQUE DE FILTROS -->
-    <div class="card border-0 bg-light mb-3 shadow-sm">
-        <div class="card-body p-3">
-            <form id="filter-form-gestion" class="row g-2 align-items-end">
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">Creación Desde</label>
-                    <input type="date" class="form-control form-control-sm" id="filter-fecha-desde">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">Creación Hasta</label>
-                    <input type="date" class="form-control form-control-sm" id="filter-fecha-hasta">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">Código Cliente</label>
-                    <input type="text" class="form-control form-control-sm" id="filter-codigo" placeholder="Ej: FRV01">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold">Razón Social</label>
-                    <input type="text" class="form-control form-control-sm" id="filter-razon-social" placeholder="Nombre del cliente...">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">Estado</label>
-                    <select class="form-select form-select-sm" id="filter-estado">
-                        <option value="">Todos</option>
-                        <option value="PENDIENTE_APROBACION_CLIENTE">Pendiente Cliente</option>
-                        <option value="CONTRAPROPUESTA_CLIENTE">Contrapropuesta</option>
-                        <option value="ACEPTADA">Aceptada</option>
-                        <option value="PENDIENTE_APROBACION_FINAL">Pendiente Final</option>
-                        <option value="DOCUMENTACION_ADJUNTADA">Con Documentos</option>
-                        <option value="PAGADO">Pagado</option>
-                        <option value="VENCIDA">Vencida</option>
-                    </select>
-                </div>
-                <div class="col-md-1 d-flex gap-1">
-                    <button type="button" class="btn btn-primary btn-sm w-100" id="btn-aplicar-filtros" title="Filtrar">
-                        <i class="fa-solid fa-filter"></i>
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="btn-limpiar-filtros" title="Limpiar">
-                        <i class="fa-solid fa-eraser"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+                <div class="tab-pane fade" id="gestion" role="tabpanel" aria-labelledby="gestion-tab">
 
-    <div class="table-responsive">
-        <table id="tabla-gestion-propuestas" class="table table-striped table-hover" style="width:100%">
-        </table>
-    </div>
-</div>
+                    <!-- BLOQUE DE FILTROS -->
+                    <div class="card border-0 bg-light mb-3 shadow-sm">
+                        <div class="card-body p-3">
+                            <form id="filter-form-gestion" class="row g-2 align-items-end">
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Creación Desde</label>
+                                    <input type="date" class="form-control form-control-sm" id="filter-fecha-desde">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Creación Hasta</label>
+                                    <input type="date" class="form-control form-control-sm" id="filter-fecha-hasta">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Código Cliente</label>
+                                    <input type="text" class="form-control form-control-sm" id="filter-codigo"
+                                        placeholder="Ej: FRV01">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Razón Social</label>
+                                    <input type="text" class="form-control form-control-sm" id="filter-razon-social"
+                                        placeholder="Nombre del cliente...">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Estado</label>
+                                    <select class="form-select form-select-sm" id="filter-estado">
+                                        <option value="">Todos</option>
+                                        <option value="PENDIENTE_APROBACION_CLIENTE">Pendiente Cliente</option>
+                                        <option value="CONTRAPROPUESTA_CLIENTE">Contrapropuesta</option>
+                                        <option value="ACEPTADA">Aceptada</option>
+                                        <option value="PENDIENTE_APROBACION_FINAL">Pendiente Final</option>
+                                        <option value="DOCUMENTACION_ADJUNTADA">Con Documentos</option>
+                                        <option value="PAGADO">Pagado</option>
+                                        <option value="VENCIDA">Vencida</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1 d-flex gap-1">
+                                    <button type="button" class="btn btn-primary btn-sm w-100" id="btn-aplicar-filtros"
+                                        title="Filtrar">
+                                        <i class="fa-solid fa-filter"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm w-100"
+                                        id="btn-limpiar-filtros" title="Limpiar">
+                                        <i class="fa-solid fa-eraser"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="tabla-gestion-propuestas" class="table table-striped table-hover" style="width:100%">
+                        </table>
+                    </div>
+                </div>
                 <!-- ======================= PANEL PROFESIONALIZADO DE CRONOGRAMA ======================= -->
                 <div class="tab-pane fade" id="cronograma" role="tabpanel">
 
@@ -370,7 +374,7 @@ include 'templates/layout/footer.php';
 ?>
 
 <!-- Scripts específicos para el panel admin -->
-<script src="assets/js/app.js"></script>
+<script src="assets/js/app.js?v=1.1"></script>
 
 </body>
 

@@ -716,20 +716,33 @@ class EmailNotificacion {
             $mail->isSMTP();
             $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
-            $mail->Username = 'xl.notificaciones@xl.com.ar';
-            $mail->Password = 'oysuyuhsnyoaifin';
-            $mail->SMTPSecure = 'tls';
-            $mail->Port = 587;
+            $mail->Username = 'notificaciones@xl.com.ar';
+            $mail->Password = 'yvsuiewmcztagevs'; // Contraseña de aplicación (16 caracteres sin espacios)
+            $mail->SMTPSecure = 'ssl'; // SSL
+            $mail->Port = 465; // Puerto SSL
+            $mail->SMTPOptions = array(
+                'ssl' => array(
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                )
+            );
             
             // Configuración adicional
             $mail->CharSet = 'UTF-8';
             $mail->Encoding = 'base64';
             
-            // Debug solo en desarrollo
+            // Debug desactivado en producción
             $mail->SMTPDebug = 0; // 0 = sin debug, 2 = debug completo
             
             // Remitente
-            $mail->setFrom('xl.notificaciones@xl.com.ar', 'XL Extralarge');
+            $mail->setFrom('notificaciones@xl.com.ar', 'XL Extralarge');
+            
+            // APLICAR MODO DESARROLLO: redirigir todos los emails
+            if (self::DEVELOP) {
+                error_log("🔧 MODO DESARROLLO ACTIVO: Email redirigido de [{$destinatario}] a [" . self::EMAIL_DEVELOP . "]");
+                $destinatario = self::EMAIL_DEVELOP;
+            }
             
             // Destinatario
             $mail->addAddress($destinatario);

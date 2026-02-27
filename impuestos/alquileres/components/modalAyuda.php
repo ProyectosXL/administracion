@@ -661,12 +661,11 @@
                                             <div class="card-body">
                                                 <p><strong>¿Cómo se calculan?</strong></p>
                                                 <div class="formula-box">
-                                                    <code>Resultado = Venta Bruta × Porcentaje ÷ 100</code>
+                                                    <code>Concepto 15: Venta Bruta × Porcentaje ÷ 100</code><br>
+                                                    <code>Concepto 16: (Venta Bruta × Porcentaje ÷ 100) - Concepto 9 (Fondo de promoción)</code>
                                                 </div>
-                                                <p class="mt-2"><strong>Diferencia con concepto 6:</strong> Estos conceptos <u>NO</u> restan el valor mínimo mensual. Es un cálculo directo de porcentaje sobre la venta bruta.</p>
-                                                <div class="alert alert-secondary mt-2 mb-0">
-                                                    <i class="fas fa-info-circle"></i> El concepto 16 se muestra como: Concepto 16 menos Concepto 9 en la pantalla.
-                                                </div>
+                                                <p class="mt-2"><strong>Diferencia con concepto 6:</strong> Estos conceptos <u>NO</u> restan el valor mínimo mensual.</p>
+                                                <p class="mt-2"><strong>Concepto 16 especial:</strong> Después de calcular el porcentaje sobre venta bruta, se resta el valor del concepto 9 (Fondo de promoción). Si el resultado es negativo, se muestra $0.</p>
                                             </div>
                                         </div>
 
@@ -677,28 +676,33 @@
                                             <div class="card-body">
                                                 <p><strong>¿Cómo se calcula?</strong></p>
                                                 <div class="formula-box">
-                                                    <code>Resultado = Venta Neta × Porcentaje ÷ 100</code>
+                                                    <code>Paso 1: Venta Neta × Porcentaje ÷ 100</code><br>
+                                                    <code>Paso 2: Resultado - Concepto 9 (Fondo de promoción)</code><br>
+                                                    <code>Si el resultado es negativo, se muestra $0</code>
                                                 </div>
-                                                <p class="mt-2"><strong>Diferencia con concepto 7:</strong> Este concepto <u>NO</u> resta el valor mínimo mensual. Es un cálculo directo de porcentaje sobre venta neta.</p>
+                                                <p class="mt-2"><strong>Similar al concepto 16:</strong> Se calcula un porcentaje sobre venta neta y luego se le resta el valor del concepto 9 (Fondo de promoción).</p>
                                                 <p class="mt-2"><strong>Ejemplo con números reales:</strong></p>
                                                 <ul>
                                                     <li>Venta Neta de Sucursal 2: $63,941,966</li>
                                                     <li>Porcentaje configurado: 0.8%</li>
+                                                    <li>Concepto 9 (Fondo de promoción): $50,000</li>
                                                 </ul>
                                                 <div class="bg-light p-2 rounded">
-                                                    <code>Cálculo: 63,941,966 × 0.8 ÷ 100 = $511,535.73</code><br>
-                                                    <code>✅ Resultado final: $511,535.73</code>
+                                                    <code>Paso 1: 63,941,966 × 0.8 ÷ 100 = $511,535.73</code><br>
+                                                    <code>Paso 2: 511,535.73 - 50,000 = $461,535.73</code><br>
+                                                    <code>✅ Resultado final: $461,535.73</code>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div class="card mt-3 mb-3 border-info">
                                             <div class="card-header bg-light">
-                                                <strong>Concepto 9 y 13</strong> - Valores Fijos por Sucursal
+                                                <strong>Concepto 9</strong> - Fondo de promoción (% VMM) <strong>y Concepto 13</strong> - Valores Fijos
                                             </div>
                                             <div class="card-body">
                                                 <p><strong>Tipo:</strong> Son importes fijos configurados previamente para cada sucursal</p>
                                                 <p>No dependen de ventas ni porcentajes. Son montos fijos establecidos por contrato que varían según cada local.</p>
+                                                <p class="mt-2"><strong>Concepto 9 (Fondo de promoción):</strong> Se resta de los conceptos 16 y 17 para calcular el valor final de esos conceptos.</p>
                                             </div>
                                         </div>
 

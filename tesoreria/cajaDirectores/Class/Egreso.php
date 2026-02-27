@@ -30,11 +30,12 @@ class Egreso
         $this->conexion = self::$sharedConexion;
 
         $this->db = $this->conexion->conectar('apps');
-        $this->director = new Director();
 
         if ($this->db === false) {
             throw new Exception("Error al conectar con la base de datos APPS en Egreso");
         }
+
+        $this->director = new Director($this->db);
     }
 
     /**

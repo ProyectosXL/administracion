@@ -287,76 +287,76 @@ $(document).ready(function () {
     });
 
     // Evento para el botón "Subir" dentro del modal (este debería estar bien, pero lo revisamos)
-$('#btnSubirComprobante').on('click', function () {
-    const fileInput = $('#comprobanteFile')[0];
-    if (fileInput.files.length === 0) {
-        Swal.fire('Atención', 'Por favor, seleccione un archivo.', 'warning');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('id_propuesta', $('#uploadPropuestaId').val());
-    formData.append('id_cuota', $('#uploadCuotaId').val());
-    formData.append('comprobante', fileInput.files[0]); // Nombre exacto: 'comprobante'
-
-    const btn = $(this);
-    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Subiendo...');
-    $('.progress').show();
-
-    $.ajax({
-        url: 'api/propuestas_controller.php?action=subir_comprobante',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        xhr: function () {
-            const xhr = new window.XMLHttpRequest();
-            xhr.upload.addEventListener('progress', function (evt) {
-                if (evt.lengthComputable) {
-                    const percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                    $('.progress-bar').css('width', percentComplete + '%').text(percentComplete + '%');
-                }
-            }, false);
-            return xhr;
-        },
-        success: function (response) {
-            if (response.success) {
-                Swal.fire('¡Éxito!', response.message, 'success');
-                
-                // Cerrar modal de subida
-                bootstrap.Modal.getInstance(document.getElementById('uploadDocModal')).hide();
-                
-                // Recargar tablas y KPIs
-                tablaPropuestas.ajax.reload(null, false); 
-                cargarKPIsCliente();
-
-                // RECARGA DEL DETALLE (Para ver el nuevo historial y estado)
-                const titleText = $('#detallePropuestaModalLabel').text();
-                const match = titleText.match(/#(\d+)/);
-                if (match && match[1]) {
-                    $.ajax({
-                        url: `api/propuestas_controller.php?action=ver_detalle&id=${match[1]}`,
-                        type: 'GET',
-                        dataType: 'json',
-                        success: function (res) {
-                            if (res.success) renderizarDetallePropuesta(res.data);
-                        }
-                    });
-                }
-            } else {
-                Swal.fire('Error', response.message, 'error');
-            }
-        },
-        error: function () {
-            Swal.fire('Error', 'Error de conexión al servidor.', 'error');
-        },
-        complete: function () {
-            btn.prop('disabled', false).html('<i class="fa-solid fa-upload me-2"></i>Subir');
-            $('.progress').hide();
-            $('.progress-bar').css('width', '0%');
+    $('#btnSubirComprobante').on('click', function () {
+        const fileInput = $('#comprobanteFile')[0];
+        if (fileInput.files.length === 0) {
+            Swal.fire('Atención', 'Por favor, seleccione un archivo.', 'warning');
+            return;
         }
+
+        const formData = new FormData();
+        formData.append('id_propuesta', $('#uploadPropuestaId').val());
+        formData.append('id_cuota', $('#uploadCuotaId').val());
+        formData.append('comprobante', fileInput.files[0]); // Nombre exacto: 'comprobante'
+
+        const btn = $(this);
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Subiendo...');
+        $('.progress').show();
+
+        $.ajax({
+            url: 'api/propuestas_controller.php?action=subir_comprobante',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            xhr: function () {
+                const xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener('progress', function (evt) {
+                    if (evt.lengthComputable) {
+                        const percentComplete = Math.round((evt.loaded / evt.total) * 100);
+                        $('.progress-bar').css('width', percentComplete + '%').text(percentComplete + '%');
+                    }
+                }, false);
+                return xhr;
+            },
+            success: function (response) {
+                if (response.success) {
+                    Swal.fire('¡Éxito!', response.message, 'success');
+
+                    // Cerrar modal de subida
+                    bootstrap.Modal.getInstance(document.getElementById('uploadDocModal')).hide();
+
+                    // Recargar tablas y KPIs
+                    tablaPropuestas.ajax.reload(null, false);
+                    cargarKPIsCliente();
+
+                    // RECARGA DEL DETALLE (Para ver el nuevo historial y estado)
+                    const titleText = $('#detallePropuestaModalLabel').text();
+                    const match = titleText.match(/#(\d+)/);
+                    if (match && match[1]) {
+                        $.ajax({
+                            url: `api/propuestas_controller.php?action=ver_detalle&id=${match[1]}`,
+                            type: 'GET',
+                            dataType: 'json',
+                            success: function (res) {
+                                if (res.success) renderizarDetallePropuesta(res.data);
+                            }
+                        });
+                    }
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            },
+            error: function () {
+                Swal.fire('Error', 'Error de conexión al servidor.', 'error');
+            },
+            complete: function () {
+                btn.prop('disabled', false).html('<i class="fa-solid fa-upload me-2"></i>Subir');
+                $('.progress').hide();
+                $('.progress-bar').css('width', '0%');
+            }
+        });
     });
-});
 
 
     function renderizarDetallePropuesta(data) {
@@ -378,7 +378,7 @@ $('#btnSubirComprobante').on('click', function () {
                 const extension = adjunto.nombre_archivo.split('.').pop().toLowerCase();
                 const esImagen = ['jpg', 'jpeg', 'png', 'gif'].includes(extension);
                 const icono = esImagen ? 'fa-image' : 'fa-file-pdf';
-                adjuntosHtml += `<div class="col"><div class="card h-100 border-light shadow-sm"><div class="card-body d-flex align-items-center justify-content-between py-2"><div class="text-truncate mr-2"><i class="fa-solid ${icono} text-primary me-2"></i><span class="small fw-bold" title="${adjunto.nombre_archivo}">${adjunto.nombre_archivo}</span></div><a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver archivo"><i class="fa-solid fa-eye"></i></a></div></div></div>`;
+                adjuntosHtml += `<div class="col"><div class="card h-100 border-light shadow-sm"><div class="card-body d-flex align-items-center justify-content-between py-2"><div class="text-truncate mr-2"><i class="fa-solid ${icono} text-primary me-2"></i><span class="small fw-bold" title="${adjunto.nombre_archivo}">${adjunto.nombre_archivo}</span></div><div class="btn-group"><a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm" title="Ver archivo"><i class="fa-solid fa-eye"></i></a><button class="btn btn-sm btn-danger shadow-sm btn-eliminar-adjunto" data-id-adjunto="${adjunto.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button></div></div></div></div>`;
             });
             adjuntosHtml += `</div>`;
         }
@@ -423,7 +423,7 @@ $('#btnSubirComprobante').on('click', function () {
                             <span class="text-truncate text-muted" style="max-width: 130px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice me-1"></i>${a.nombre_archivo}</span>
                             <div class="btn-group">
                                 <a href="${a.ruta_archivo}" target="_blank" class="btn btn-xs btn-outline-primary" title="Ver archivo"><i class="fa-solid fa-eye"></i></a>
-                                <button class="btn btn-xs btn-outline-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                                <button class="btn btn-xs btn-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>`;
                     });
@@ -431,7 +431,7 @@ $('#btnSubirComprobante').on('click', function () {
                 }
 
                 // Botón adjuntar solo si la propuesta está aceptada
-                const puedeAdjuntar = propuesta.estado === 'ACEPTADA';
+                const puedeAdjuntar = propuesta.estado === 'ACEPTADA' || propuesta.estado === 'DOCUMENTACION_ADJUNTADA';
                 const checkVerde = tieneAdjuntos ? '<i class="fa-solid fa-circle-check text-success me-2" title="Documentación cargada"></i>' : '';
                 const btnAdjuntarCuota = puedeAdjuntar ? `<button class="btn btn-xs btn-outline-info btn-adjuntar-interne" data-id="${propuesta.id}" data-id-cuota="${c.id}" title="Adjuntar Documento"><i class="fa-solid fa-cloud-arrow-up"></i></button>` : '';
 
@@ -456,7 +456,7 @@ $('#btnSubirComprobante').on('click', function () {
                 </div>`;
             });
             cuotasHtml += `</div>`;
-        } else if (propuesta.estado === 'ACEPTADA') {
+        } else if (propuesta.estado === 'ACEPTADA' || propuesta.estado === 'DOCUMENTACION_ADJUNTADA') {
             // Si no hay cuotas pero la propuesta está aceptada, mostramos la sección de adjuntar comprobante de pago único
             const adjuntosGeneralesPago = (adjuntos || []).filter(a => !a.id_cuota);
             const tieneAdjuntosPago = adjuntosGeneralesPago.length > 0;
@@ -469,7 +469,7 @@ $('#btnSubirComprobante').on('click', function () {
                         <span class="text-truncate text-muted" style="max-width: 200px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice me-1"></i>${a.nombre_archivo}</span>
                         <div class="btn-group">
                             <a href="${a.ruta_archivo}" target="_blank" class="btn btn-xs btn-outline-primary" title="Ver archivo"><i class="fa-solid fa-eye"></i></a>
-                            <button class="btn btn-xs btn-outline-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                            <button class="btn btn-xs btn-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>`;
                 });

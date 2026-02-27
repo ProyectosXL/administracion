@@ -7,17 +7,21 @@ function iniciarEnvioAutomatico($periodoActual) {
     $anticipo = new Anticipo();
     $fechas = $anticipo->getFechasPorPeriodo($periodoActual);
     $emails = $anticipo->getEmails($periodoActual);
-    var_dump($emails);
-    die();
 
     $fechaHoy = date('Y-m-d');
-
+    
     if ($fechaHoy == $fechas['fechaDesde']) {
         enviarEmailInicio($emails);
     }
 
     if ($fechaHoy == $fechas['fechaHasta']) {
         enviarEmailCierre($emails);
+    }
+    if($fechaHoy != $fechas['fechaDesde'] && $fechaHoy != $fechas['fechaHasta']){
+        echo "No es fecha de envío de emails. Fecha actual: $fechaHoy\n";
+        // dejar un log en un txt como registro de que se intento ejecutar el script en la ruta (C:\xampp\fulogs)
+        file_put_contents('C:\xampp\fulogs\log.txt', "Intento de ejecución en fecha no válida: $fechaHoy\n", FILE_APPEND);
+  
     }
 
 }

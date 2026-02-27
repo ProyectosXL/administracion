@@ -110,7 +110,8 @@ include 'templates/layout/header.php';
                         <div class="mb-3">
                             <label for="comprobanteFile" class="form-label">Seleccione el archivo (PDF, JPG,
                                 PNG):</label>
-                            <input class="form-control" type="file" id="comprobanteFile" name="comprobante" accept=".pdf,.jpg,.jpeg,.png" required>
+                            <input class="form-control" type="file" id="comprobanteFile" name="comprobante"
+                                accept=".pdf,.jpg,.jpeg,.png" required>
                         </div>
                         <div class="progress" style="display: none;">
                             <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0"
@@ -133,7 +134,7 @@ include 'templates/layout/header.php';
 <?php include 'templates/layout/footer.php'; ?>
 
 <!-- Script específico para esta página -->
-<script src="assets/js/portal_cliente.js"></script>
+<script src="assets/js/portal_cliente.js?v=1.1"></script>
 
 </body>
 

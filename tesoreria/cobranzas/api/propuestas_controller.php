@@ -355,7 +355,7 @@ try {
             $conn_central = Database::getConnection('central');
             $propuestas_actualizadas = 0;
             try {
-                $sql_propuestas_a_verificar = "SELECT id FROM FP_propuestas_pago WHERE estado = 'DOCUMENTACION_ADJUNTADA'";
+                $sql_propuestas_a_verificar = "SELECT id FROM FP_propuestas_pago WHERE estado IN ('DOCUMENTACION_ADJUNTADA', 'ACEPTADA')";
                 $stmt_propuestas = sqlsrv_query($conn_apps, $sql_propuestas_a_verificar);
                 $propuestas_a_verificar = [];
                 while ($row = sqlsrv_fetch_array($stmt_propuestas, SQLSRV_FETCH_ASSOC))
@@ -608,45 +608,77 @@ try {
             ];
 
             if (!empty($codigos)) {
-                // IMPORTANTE: Resetear las llaves del array para evitar errores en sqlsrv
-                $params = array_values($codigos);
+                // Limpiamos los códigos para evitar problemas de comparación
+                $params = array_map('trim', array_values($codigos));
                 $placeholders = implode(',', array_fill(0, count($params), '?'));
 
                 $conn_apps = Database::getConnection('apps');
                 $conn_central = Database::getConnection('central');
 
-                // 1. Obtener Deuda Total del Sistema (GVA12)
-                // Usamos un try/check para que si falla la conexión central, no rompa todo el dashboard
-                $total_deuda_sistema = 0;
+                // 1. Obtener todos los comprobantes que ya están en propuestas activas (para excluir en SQL)
+                $facturas_en_propuestas = [];
+                $sql_prop = "SELECT items.n_comp_factura 
+                             FROM FP_propuestas_pago_items items 
+                             JOIN FP_propuestas_pago propuestas ON items.id_propuesta = propuestas.id 
+                             WHERE propuestas.cod_cliente IN ($placeholders) 
+                             AND propuestas.estado NOT IN ('RECHAZADA', 'CANCELADA', 'PAGADO', 'VENCIDA')";
 
-                if ($conn_central) {
-                    $sql_total = "SELECT SUM(SALDO) as total FROM GVA12 WHERE COD_CLIENT IN ($placeholders)";
-                    $stmt_total = sqlsrv_query($conn_central, $sql_total, $params);
-
-                    if ($stmt_total) {
-                        $row_total = sqlsrv_fetch_array($stmt_total, SQLSRV_FETCH_ASSOC);
-                        $total_deuda_sistema = floatval($row_total['total'] ?? 0);
+                $stmt_prop = sqlsrv_query($conn_apps, $sql_prop, $params);
+                if ($stmt_prop !== false) {
+                    while ($r = sqlsrv_fetch_array($stmt_prop, SQLSRV_FETCH_ASSOC)) {
+                        $facturas_en_propuestas[] = trim($r['n_comp_factura']);
                     }
                 }
 
-                // 2. Obtener Deuda ya Comprometida en Propuestas (Activas)
-                $deuda_comprometida = 0;
-                $sql_comprometido = "SELECT SUM(i.importe_bruto) as comprometido 
-                                     FROM FP_propuestas_pago_items i 
-                                     JOIN FP_propuestas_pago p ON i.id_propuesta = p.id 
-                                     WHERE p.cod_cliente IN ($placeholders) 
-                                     AND p.estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'ACEPTADA', 'CONTRAPROPUESTA_CLIENTE', 'DOCUMENTACION_ADJUNTADA')";
+                // 2. Obtener Deuda Total Fuera de Propuesta (Calculado en SQL para máxima velocidad)
+                $deuda_fuera_propuesta = 0;
+                if ($conn_central) {
+                    $vistas = ['RO_V_COBRANZA_PEND_FRANQUICIAS', 'RO_V_COBRANZA_PEND_MAYORISTAS'];
 
-                $stmt_comp = sqlsrv_query($conn_apps, $sql_comprometido, $params);
-                if ($stmt_comp) {
-                    $row_comp = sqlsrv_fetch_array($stmt_comp, SQLSRV_FETCH_ASSOC);
-                    $deuda_comprometida = floatval($row_comp['comprometido'] ?? 0);
+                    // Preparamos el filtro de exclusión si hay facturas en propuestas
+                    $where_exclude = "";
+                    $sql_params = $params; // Empezamos con los códigos de cliente
+
+                    if (!empty($facturas_en_propuestas)) {
+                        $placeholders_excl = implode(',', array_fill(0, count($facturas_en_propuestas), '?'));
+                        $where_exclude = " AND v.N_COMP NOT IN ($placeholders_excl)";
+                        $sql_params = array_merge($sql_params, $facturas_en_propuestas);
+                    }
+
+                    foreach ($vistas as $vista) {
+                        // Replicamos la lógica aritmética exacta de Mariela pero directamente en SQL
+                        $sql_v = "SELECT SUM(
+                                    CASE WHEN v.T_COMP LIKE 'NC%' THEN -1.0 ELSE 1.0 END * 
+                                    (v.IMPORTE * (1.0 - 
+                                        CASE 
+                                            WHEN v.N_COMP LIKE 'A00115%' THEN 
+                                                CASE 
+                                                    WHEN v.T_COMP = 'FAC' THEN 0.0 
+                                                    WHEN v.T_COMP = 'NCP' THEN ISNULL(p.DESC_PP_MAX, 0.0)
+                                                    ELSE 0.0
+                                                END
+                                            ELSE 
+                                                CASE 
+                                                    WHEN v.IMPORTE > 0 AND (v.IMPORTE - ISNULL(v.IMPORTE_NETO, v.IMPORTE)) > (v.IMPORTE * ISNULL(p.DESC_PP_MAX, 0.0))
+                                                    THEN (v.IMPORTE - ISNULL(v.IMPORTE_NETO, v.IMPORTE)) / v.IMPORTE
+                                                    ELSE ISNULL(p.DESC_PP_MAX, 0.0)
+                                                END
+                                        END
+                                    ))
+                                ) as total_neto
+                                FROM $vista v
+                                LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
+                                WHERE v.COD_CLIENT IN ($placeholders) AND v.ESTADO <> 'IMP' $where_exclude";
+
+                        $stmt_v = sqlsrv_query($conn_central, $sql_v, $sql_params);
+                        if ($stmt_v) {
+                            $row_v = sqlsrv_fetch_array($stmt_v, SQLSRV_FETCH_ASSOC);
+                            $deuda_fuera_propuesta += floatval($row_v['total_neto'] ?? 0);
+                        }
+                    }
                 }
 
-                // Cálculo de Deuda Real (Lo del sistema menos lo que ya está en una propuesta)
-                $deuda_pendiente_real = $total_deuda_sistema - $deuda_comprometida;
-                if ($deuda_pendiente_real < 0)
-                    $deuda_pendiente_real = 0;
+                $deuda_pendiente_real = $deuda_fuera_propuesta > 0 ? $deuda_fuera_propuesta : 0;
 
                 // 3. Obtener el resto de KPIs desde la APP Local
                 $sql = "SELECT 
@@ -877,7 +909,13 @@ try {
                     try {
                         require_once __DIR__ . '/notificaciones_controller.php';
                         $admin_mail = obtenerEmailAdmin();
-                        $datos_cliente = obtenerEmailFranquiciado($_SESSION['usuario_cod_client_individual'] ?? null);
+
+                        // Obtenemos el nombre del cliente desde la propuesta para que el mail sea preciso
+                        $stmt_info = sqlsrv_query($conn_apps, "SELECT cod_cliente FROM FP_propuestas_pago WHERE id = ?", [$id]);
+                        $info_p = sqlsrv_fetch_array($stmt_info, SQLSRV_FETCH_ASSOC);
+                        $cod_cli_real = $info_p ? $info_p['cod_cliente'] : ($_SESSION['usuario_cod_client_individual'] ?? null);
+
+                        $datos_cliente = obtenerEmailFranquiciado($cod_cli_real);
                         $cliente_nom = $datos_cliente ? $datos_cliente['razon_social'] : ($_SESSION['usuario_nombre'] ?? 'Cliente');
 
                         $accion_txt = ($estado === 'ACEPTADA') ? 'ACEPTADO la propuesta' : (($estado === 'CONTRAPROPUESTA_CLIENTE') ? 'enviado una CONTRAPROPUESTA' : 'ADJUNTADO DOCUMENTACIÓN');
@@ -934,10 +972,33 @@ try {
                 $sql_estado = "UPDATE FP_propuestas_pago SET estado = 'DOCUMENTACION_ADJUNTADA', fecha_ultima_modificacion = GETDATE() WHERE id = ?";
                 sqlsrv_query($conn_apps, $sql_estado, [$id_propuesta]);
 
-                // 3. Insertar en el Historial (ESTO ES LO QUE TE FALTABA PARA QUE APAREZCA ABAJO)
+                // 3. Insertar en el Historial
                 $desc_historial = "Cliente adjuntó comprobante: " . $originalName . ($id_cuota ? " (Cuota)" : " (Pago Único)");
                 $sql_hist = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, fecha_evento) VALUES (?, ?, 'CLIENTE', ?, GETDATE())";
                 sqlsrv_query($conn_apps, $sql_hist, [$id_propuesta, $_SESSION['usuario_id'], $desc_historial]);
+
+                // --- INICIO DE LA NOTIFICACIÓN AL ADMIN ---
+                try {
+                    require_once __DIR__ . '/notificaciones_controller.php';
+                    $admin_mail = obtenerEmailAdmin();
+
+                    // Obtenemos el nombre del cliente desde la propuesta para que el mail sea preciso
+                    $stmt_info = sqlsrv_query($conn_apps, "SELECT cod_cliente FROM FP_propuestas_pago WHERE id = ?", [$id_propuesta]);
+                    $info_p = sqlsrv_fetch_array($stmt_info, SQLSRV_FETCH_ASSOC);
+                    $cod_cli_real = $info_p ? $info_p['cod_cliente'] : ($_SESSION['usuario_cod_client_individual'] ?? null);
+
+                    $datos_cliente = obtenerEmailFranquiciado($cod_cli_real);
+                    $cliente_nom = $datos_cliente ? $datos_cliente['razon_social'] : ($_SESSION['usuario_nombre'] ?? 'Cliente');
+
+                    $titulo = "Nueva Documentación Adjunta: Propuesta #{$id_propuesta}";
+                    $mensaje = "El cliente <strong>{$cliente_nom}</strong> ha adjuntado un nuevo comprobante para la propuesta #{$id_propuesta}.<br><br><strong>Archivo:</strong> {$originalName}<br><br>Por favor, ingrese al panel de administración para verificar el documento.";
+                    $cuerpo = generarCuerpoEmail($titulo, $mensaje, "Ver en Admin", "https://app.xl.com.ar/administracion/tesoreria/cobranzas/index.php");
+
+                    enviarNotificacion($admin_mail, $titulo, $cuerpo);
+                } catch (Exception $e_mail) {
+                    error_log("Error enviando mail al admin (adjunto): " . $e_mail->getMessage());
+                }
+                // --- FIN DE LA NOTIFICACIÓN ---
 
                 echo json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
             } else {
@@ -949,20 +1010,34 @@ try {
             $id_adjunto = $_POST['id_adjunto'] ?? 0;
             $conn_apps = Database::getConnection('apps');
 
-            // Obtener ruta para borrar archivo físico
+            // Obtener ruta para borrar archivo físico e ID de propuesta
             $sql_get = "SELECT ruta_archivo, id_propuesta FROM FP_propuestas_adjuntos WHERE id = ?";
             $stmt_get = sqlsrv_query($conn_apps, $sql_get, [$id_adjunto]);
             $row = sqlsrv_fetch_array($stmt_get, SQLSRV_FETCH_ASSOC);
 
             if ($row) {
+                $id_propuesta = $row['id_propuesta'];
                 $ruta_fisica = __DIR__ . '/../' . $row['ruta_archivo'];
+
                 if (file_exists($ruta_fisica))
                     unlink($ruta_fisica);
 
                 sqlsrv_query($conn_apps, "DELETE FROM FP_propuestas_adjuntos WHERE id = ?", [$id_adjunto]);
 
+                // --- Verificamos si quedan más adjuntos ---
+                $sql_count = "SELECT COUNT(*) as total FROM FP_propuestas_adjuntos WHERE id_propuesta = ?";
+                $stmt_count = sqlsrv_query($conn_apps, $sql_count, [$id_propuesta]);
+                $count_row = sqlsrv_fetch_array($stmt_count, SQLSRV_FETCH_ASSOC);
+                $quedan_adjuntos = $count_row['total'] > 0;
+
+                // Si no quedan adjuntos y el estado era DOCUMENTACION_ADJUNTADA, volvemos a ACEPTADA
+                if (!$quedan_adjuntos) {
+                    $sql_revert = "UPDATE FP_propuestas_pago SET estado = 'ACEPTADA' WHERE id = ? AND estado = 'DOCUMENTACION_ADJUNTADA'";
+                    sqlsrv_query($conn_apps, $sql_revert, [$id_propuesta]);
+                }
+
                 // Historial
-                sqlsrv_query($conn_apps, "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)", [$row['id_propuesta'], $_SESSION['usuario_id'], 'CLIENTE', 'Se eliminó un comprobante adjunto.']);
+                sqlsrv_query($conn_apps, "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, fecha_evento) VALUES (?, ?, 'CLIENTE', 'Se eliminó un comprobante adjunto.', GETDATE())", [$id_propuesta, $_SESSION['usuario_id']]);
 
                 echo json_encode(['success' => true, 'message' => 'Adjunto eliminado correctamente.']);
             } else {
