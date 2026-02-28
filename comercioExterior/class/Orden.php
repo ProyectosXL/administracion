@@ -94,59 +94,105 @@ class Orden{
             }
     }
 
-    public function EjecutarSp ($nroOrden){
+    /**
+     * Inserta/actualiza RO_COSTOS_NACIONALIZACION directamente,
+     * sin depender de la vista RO_W_COSTO_NACIONALIZACION ni del SP.
+     * Obtiene FECHA_DESP_ADU desde el encabezado usando idEncabezado.
+     */
+    public function insertarCostoNacionalizacion($nroOrden, $idEncabezado, $costoNac) {
 
-        try {
-
-            if(strlen(trim($nroOrden)) == 13){
-                $nroOrden = ' '.trim($nroOrden);
-            }
-
-            $sql = "EXEC RO_SP_INSERTAR_COSTO_NACIONALIZACION '$nroOrden';";
- 
-
-
-            ini_set('max_execution_time', 300);
-
-            $stmt = sqlsrv_query($this->cid_central, $sql);
-
-            $next_result = sqlsrv_next_result($stmt);
-
-            return true;
-          
-        } catch (Exception $e) {
-            return 'Excepción capturada: '.$e->getMessage();
+        $nroOrden = trim($nroOrden);
+        if (strlen($nroOrden) == 13) {
+            $nroOrden = ' ' . $nroOrden;
         }
 
+        // Paso 1: Obtener FECHA_DESP_ADU y ORDEN_COMPRA del encabezado
+        $sqlEnc = "SELECT ORDEN_COMPRA, FECHA_DESP_ADU FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ID = " . intval($idEncabezado);
+        $stmtEnc = sqlsrv_query($this->cid_central, $sqlEnc);
+        if ($stmtEnc === false) {
+            $errors = sqlsrv_errors();
+            error_log('[insertarCostoNacionalizacion] Error buscando encabezado ID=' . $idEncabezado . ': ' . print_r($errors, true));
+            return ['success' => false, 'message' => 'Error al buscar el encabezado ID=' . $idEncabezado];
+        }
+        $enc = sqlsrv_fetch_array($stmtEnc, SQLSRV_FETCH_ASSOC);
+        if (!$enc) {
+            error_log('[insertarCostoNacionalizacion] No se encontró encabezado ID=' . $idEncabezado);
+            return ['success' => false, 'message' => 'No se encontró el encabezado ID=' . $idEncabezado];
+        }
+
+        $ordenCompraReal = $enc['ORDEN_COMPRA']; // Usar el valor exacto de la BD
+        $fechaDesp       = $enc['FECHA_DESP_ADU']; // DateTime o null
+
+        error_log('[insertarCostoNacionalizacion] Encabezado encontrado. ORDEN_COMPRA="' . $ordenCompraReal . '" FECHA_DESP_ADU=' . ($fechaDesp ? $fechaDesp->format('Y-m-d') : 'NULL'));
+
+        // Paso 2: DELETE del registro previo usando el valor exacto de la BD
+        $sqlDelete = "DELETE FROM RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO = '" . str_replace("'", "''", $ordenCompraReal) . "'";
+        $stmtDelete = sqlsrv_query($this->cid_central, $sqlDelete);
+        if ($stmtDelete === false) {
+            $errors = sqlsrv_errors();
+            error_log('[insertarCostoNacionalizacion] Error DELETE: ' . print_r($errors, true));
+            return ['success' => false, 'message' => 'Error al eliminar registro previo'];
+        }
+
+        // Paso 3: INSERT directo con valores concretos
+        $fechaDespStr = $fechaDesp ? "'" . $fechaDesp->format('Y-m-d') . "'" : 'NULL';
+        $costoNacVal  = floatval($costoNac);
+        $ordenEsc     = str_replace("'", "''", $ordenCompraReal);
+
+        $sqlInsert = "INSERT INTO RO_COSTOS_NACIONALIZACION (FECHA_DESP, N_ORDEN_CO, COSTO_NAC, FECHA_MODIF)
+                      VALUES ($fechaDespStr, '$ordenEsc', $costoNacVal, GETDATE())";
+
+        error_log('[insertarCostoNacionalizacion] SQL INSERT: ' . $sqlInsert);
+
+        $stmtInsert = sqlsrv_query($this->cid_central, $sqlInsert);
+        if ($stmtInsert === false) {
+            $errors = sqlsrv_errors();
+            error_log('[insertarCostoNacionalizacion] Error INSERT: ' . print_r($errors, true));
+            return ['success' => false, 'message' => 'Error al insertar: ' . print_r($errors, true)];
+        }
+
+        return ['success' => true, 'message' => 'Costo de nacionalización actualizado correctamente'];
     }
 
     public function updateCostoNacionalizacion($nroOrden){
 
-        if(strlen(trim($nroOrden)) == 13){
-            $nroOrden = ' '.trim($nroOrden);
+        $nroOrden = trim($nroOrden);
+        if(strlen($nroOrden) == 13){
+            $nroOrden = ' '.$nroOrden;
         }
 
-        try {
-
-            $sql = "DELETE FROM  RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO  =  '$nroOrden';";
-
-            $stmt = sqlsrv_query($this->cid_central, $sql);
-
-
-            $sql = "EXEC RO_SP_INSERTAR_COSTO_NACIONALIZACION '$nroOrden';";
-
-
-            ini_set('max_execution_time', 300);
-
-            $stmt = sqlsrv_query($this->cid_central, $sql);
-
-            $next_result = sqlsrv_next_result($stmt);
-
-            return true;
-          
-        } catch (Exception $e) {
-            return 'Excepción capturada: '.$e->getMessage();
+        // DELETE previo
+        $sqlDelete = "DELETE FROM RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO = ?";
+        $stmtDelete = sqlsrv_prepare($this->cid_central, $sqlDelete, array(&$nroOrden));
+        if ($stmtDelete === false || sqlsrv_execute($stmtDelete) === false) {
+            $errors = sqlsrv_errors();
+            error_log('[updateCostoNacionalizacion] Error DELETE: ' . print_r($errors, true));
+            return ['success' => false, 'message' => 'Error al eliminar registro previo: ' . print_r($errors, true)];
         }
+
+        // Ejecutar SP
+        $sqlExec = "EXEC RO_SP_INSERTAR_COSTO_NACIONALIZACION ?";
+        ini_set('max_execution_time', 300);
+        $stmtExec = sqlsrv_prepare($this->cid_central, $sqlExec, array(&$nroOrden));
+        if ($stmtExec === false || sqlsrv_execute($stmtExec) === false) {
+            $errors = sqlsrv_errors();
+            error_log('[updateCostoNacionalizacion] Error EXEC SP: ' . print_r($errors, true));
+            return ['success' => false, 'message' => 'Error al ejecutar SP: ' . print_r($errors, true)];
+        }
+
+        // Verificar cuántas filas insertó
+        $sqlCheck = "SELECT COUNT(*) AS total FROM RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO = ?";
+        $stmtCheck = sqlsrv_prepare($this->cid_central, $sqlCheck, array(&$nroOrden));
+        sqlsrv_execute($stmtCheck);
+        $row = sqlsrv_fetch_array($stmtCheck, SQLSRV_FETCH_ASSOC);
+        $filasInsertadas = $row ? intval($row['total']) : 0;
+
+        if ($filasInsertadas === 0) {
+            error_log('[updateCostoNacionalizacion] SP ejecutado pero no insertó filas. N_ORDEN_CO: ' . $nroOrden);
+            return ['success' => false, 'message' => 'El SP no encontró datos en RO_W_COSTO_NACIONALIZACION para la orden: ' . trim($nroOrden)];
+        }
+
+        return ['success' => true, 'message' => 'Costo de nacionalización actualizado correctamente'];
 
     }
 

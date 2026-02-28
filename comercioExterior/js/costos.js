@@ -159,40 +159,35 @@ if(document.querySelector("#btnSaveDetalle") != null){
     
 
     $.ajax({
-      url: 'Controller/OrdenDeCompraController.php',
+      url: '/administracion/comercioExterior/Controller/OrdenDeCompraController.php',
       method: 'POST',
+      dataType: 'json',
       data:{
-        "array": arrayDatos, 
-        "idEncabezado": idEncabezado
+        "array": arrayDatos,
+        "idEncabezado": '(' + idEncabezado + ')',
+        "nroOrdenDeCompra": nroOrdenDeCompra.trim(),
+        "costoNac": (parseFloat(document.querySelector("#porcentaje").getAttribute("attr-value")) || 0) / 100
       },
-    }).then((e)=>{
-
-      $.ajax({
-          url: 'Controller/ejecutarSpCostoNacionalizacion.php',
-          method: 'POST',
-          data:{
-            "nroOrdenDeCompra": nroOrdenDeCompra
-          },
-        });
-
+    }).done(function(response) {
+      if (response.success) {
         Swal.fire({
-          title: 'Detalle guardado!',
+          title: '¡Costos guardados!',
+          text: 'Los costos de nacionalización fueron registrados correctamente.',
           icon: 'success',
-          showDenyButton: true,
-          showCancelButton: false,
-          showConfirmButton: false,
-          denyButtonText: `Volver`,
-          })
-          .then((e) => {
-
-          
-
-            window.location = "index.php"  
-          })
-   
-
-    })
-
+          confirmButtonText: 'Volver a Gestión de Despachos',
+          confirmButtonColor: '#198754',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+        }).then(() => {
+          window.top.location.href = "/administracion/comercioExterior/index.php";
+        });
+      } else {
+        Swal.fire('Atención', response.message || 'Ocurrió un error al guardar.', 'warning');
+      }
+    }).fail(function(xhr, status, error) {
+      console.error('Error al guardar costos:', error, xhr.responseText);
+      Swal.fire('Error', 'No se pudo conectar con el servidor. Por favor, intente nuevamente.', 'error');
+    });
 
 
 

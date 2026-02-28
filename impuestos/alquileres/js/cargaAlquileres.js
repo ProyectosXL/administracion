@@ -1,193 +1,193 @@
 
 
-const comprobarEstado = (estado) =>{
+const comprobarEstado = (estado) => {
 
-    if(estado == 1){
+    if (estado == 1) {
 
         document.querySelectorAll("input").forEach(e => {
 
             e.readOnly = true;
-            
+
         })
         let idConceptos = document.querySelectorAll("#idConcepto");
         let sucursales = document.querySelectorAll("#sucursal");
-    
+
         sucursales.forEach(s => {
-            
+
             let result = 0;
 
             idConceptos.forEach(e => {
                 let concepto = e.textContent;
                 $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
-                $valorSumar = $valorSumar.replace(/ /g,'');
-    
-                result = parseInt(result) +  parseInt($valorSumar);  
+                $valorSumar = $valorSumar.replace(/ /g, '');
 
-            
+                result = parseInt(result) + parseInt($valorSumar);
+
+
             })
 
-            document.querySelector("#total-"+s.textContent).textContent = "$"+parseNumber(result);
+            document.querySelector("#total-" + s.textContent).textContent = "$" + parseNumber(result);
         });
 
-    }else{
+    } else {
 
         totalizar();
 
     }
 }
 const totalizar = (div = null) => {
- 
+
     let idConceptos = document.querySelectorAll("#idConcepto");
     let sucursales = document.querySelectorAll("#sucursal");
 
     sucursales.forEach(s => {
-        
+
         let result = 0;
         idConceptos.forEach(e => {
             let concepto = e.textContent;
-            
-            if(e.textContent == 9 || e.textContent == 13 ) {
+
+            if (e.textContent == 9 || e.textContent == 13) {
 
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
                 let porcentaje = inputActual.getAttribute("attr-porcentaje");
                 let valorId8 = document.querySelector(`#input-8-${s.textContent}`).getAttribute("attr-realvalue") || 0;
                 let calculo = (parseInt(valorId8) * parseFloat(porcentaje)) / 100;
-                
-                inputActual.value ="$"+ parseNumber(calculo);
+
+                inputActual.value = "$" + parseNumber(calculo);
                 inputActual.setAttribute("attr-realvalue", calculo);
 
             }
 
             // Concepto 16: Restar concepto 9
-            if(e.textContent == 16) {
+            if (e.textContent == 16) {
 
                 let inputConcepto9 = document.querySelector(`#input-9-${s.textContent}`);
                 let valorId9 = parseInt(inputConcepto9.getAttribute('attr-realvalue') || 0);
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
                 let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
-                
+
                 let calculo = valorBruto - valorId9;
-                if(calculo < 0) {
+                if (calculo < 0) {
                     calculo = 0;
                 }
-                
+
                 inputActual.value = "$" + parseNumber(calculo);
                 inputActual.setAttribute('attr-realvalue', calculo);
 
             }
-            
+
             // Concepto 17: Calcular porcentaje sobre venta neta y RESTAR concepto 9
-            if(e.textContent == 17) {
+            if (e.textContent == 17) {
                 let inputConcepto9 = document.querySelector(`#input-9-${s.textContent}`);
                 let valorId9 = parseInt(inputConcepto9.getAttribute('attr-realvalue') || 0);
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
-                
+
                 // Usar el valor BRUTO original (porcentaje sobre venta neta)
                 let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
-                
+
                 // Restar el concepto 9
                 let calculo = valorBruto - valorId9;
-                if(calculo < 0) {
+                if (calculo < 0) {
                     calculo = 0;
                 }
-                
+
                 inputActual.value = "$" + parseNumber(calculo);
                 inputActual.setAttribute('attr-realvalue', calculo);
             }
 
-            if(e.textContent == 6 || e.textContent == 7 ) {
+            if (e.textContent == 6 || e.textContent == 7) {
 
                 let inputConcepto8 = document.querySelector(`#input-8-${s.textContent}`);
                 let valorId8 = parseInt(inputConcepto8.getAttribute('attr-realvalue') || 0);
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
-                
+
                 // Usar el valor BRUTO original (antes de cualquier resta)
                 let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
                 let calculo = valorBruto - valorId8;
 
-                if(calculo < 0) {
+                if (calculo < 0) {
                     calculo = 0;
                 }
-                inputActual.value ="$"+ parseNumber(calculo);
+                inputActual.value = "$" + parseNumber(calculo);
                 // IMPORTANTE: Actualizar attr-realvalue con el valor NETO calculado
                 // para que se guarde correctamente en BD
                 inputActual.setAttribute('attr-realvalue', calculo);
 
             }
-            
+
             // Concepto 14: Calcular sobre el concepto 7 NETO (ya con mínimo restado)
-            if(e.textContent == 14) {
+            if (e.textContent == 14) {
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
                 let porcentaje = inputActual.getAttribute("attr-porcentaje");
                 let inputConcepto7 = document.querySelector(`#input-7-${s.textContent}`);
-                
+
                 // IMPORTANTE: Usar el attr-realvalue del concepto 7 que ahora tiene el valor NETO
                 // (después de restar el mínimo en el bloque anterior)
                 let valorId7Neto = parseInt(inputConcepto7.getAttribute('attr-realvalue') || 0);
-                
+
                 // Calcular: valor concepto 7 (neto) * porcentaje / 100
                 let calculo = (valorId7Neto * parseFloat(porcentaje)) / 100;
-                
+
                 inputActual.value = "$" + parseNumber(calculo);
                 // Actualizar attr-realvalue para que se guarde correctamente en BD
                 inputActual.setAttribute("attr-realvalue", calculo);
             }
 
-            if(e.textContent == 4 || e.textContent == 5  || e.textContent == 18 ) {
+            if (e.textContent == 4 || e.textContent == 5 || e.textContent == 18) {
 
                 let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
 
                 let value = inputActual.value.replace(/[$.]/g, "")
                 let ajustado = inputActual.getAttribute('attr-ajustado');
-            
+
                 // Deshabilitar solo si está marcado como ajustado en la BD
-                if(ajustado == "1") {
+                if (ajustado == "1") {
                     inputActual.disabled = true;
                 }
 
             }
 
             $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
-            $valorSumar = $valorSumar.replace(/ /g,'');
+            $valorSumar = $valorSumar.replace(/ /g, '');
 
-            result = parseInt(result) +  parseInt($valorSumar);  
+            result = parseInt(result) + parseInt($valorSumar);
         });
-        
-        document.querySelector("#total-"+s.textContent).textContent = "$"+parseNumber(result);
+
+        document.querySelector("#total-" + s.textContent).textContent = "$" + parseNumber(result);
 
     });
 
-    if(div != null) {
+    if (div != null) {
 
-    let sucursalActual = div.id.split("-")[2];
-    let conceptoActual = div.id.split("-")[1];
-    
-    // IMPORTANTE: Parsear el valor ingresado por el usuario y actualizar attr-realvalue
-    // ANTES de llamar a actualizarDetalle()
-    // El valor puede tener formato: $1.234.567 o 1234567 o -$1.234
-    let valorIngresado = div.value.replace(/[$\s]/g, ""); // Eliminar $ y espacios
-    valorIngresado = valorIngresado.replace(/\./g, ""); // Eliminar puntos separadores de miles
-    valorIngresado = parseInt(valorIngresado) || 0;
-    
-    // Actualizar attr-realvalue con el valor parseado correctamente
-    div.setAttribute("attr-realvalue", valorIngresado);
-    
-    // DEBUGGING: Log antes de actualizar
-    console.group("🎯 DEBUG - Evento onchange disparado");
-    console.log("🆔 Input ID:", div.id);
-    console.log("🏢 Sucursal:", sucursalActual);
-    console.log("📋 Concepto:", conceptoActual);
-    console.log("💾 Valor original input:", div.value);
-    console.log("🔢 Valor parseado:", valorIngresado);
-    console.log("📊 attr-realvalue actualizado a:", div.getAttribute("attr-realvalue"));
-    console.groupEnd();
+        let sucursalActual = div.id.split("-")[2];
+        let conceptoActual = div.id.split("-")[1];
+
+        // IMPORTANTE: Parsear el valor ingresado por el usuario y actualizar attr-realvalue
+        // ANTES de llamar a actualizarDetalle()
+        // El valor puede tener formato: $1.234.567 o 1234567 o -$1.234
+        let valorIngresado = div.value.replace(/[$\s]/g, ""); // Eliminar $ y espacios
+        valorIngresado = valorIngresado.replace(/\./g, ""); // Eliminar puntos separadores de miles
+        valorIngresado = parseInt(valorIngresado) || 0;
+
+        // Actualizar attr-realvalue con el valor parseado correctamente
+        div.setAttribute("attr-realvalue", valorIngresado);
+
+        // DEBUGGING: Log antes de actualizar
+        console.group("🎯 DEBUG - Evento onchange disparado");
+        console.log("🆔 Input ID:", div.id);
+        console.log("🏢 Sucursal:", sucursalActual);
+        console.log("📋 Concepto:", conceptoActual);
+        console.log("💾 Valor original input:", div.value);
+        console.log("🔢 Valor parseado:", valorIngresado);
+        console.log("📊 attr-realvalue actualizado a:", div.getAttribute("attr-realvalue"));
+        console.groupEnd();
 
         // Marcar si es una edición principal (no cascada)
         let esEdicionPrincipal = true;
         actualizarDetalle(div, esEdicionPrincipal);
 
-        if(div.id.split("-")[1] == 8) {
-        
+        if (div.id.split("-")[1] == 8) {
+
             console.log("🔄 Concepto 8 detectado - Actualizando conceptos dependientes");
             actualizarDetalle(document.querySelector(`#input-6-${sucursalActual}`), false);
             actualizarDetalle(document.querySelector(`#input-7-${sucursalActual}`), false);
@@ -196,27 +196,27 @@ const totalizar = (div = null) => {
             actualizarDetalle(document.querySelector(`#input-16-${sucursalActual}`), false);
             actualizarDetalle(document.querySelector(`#input-17-${sucursalActual}`), false);
             actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`), false);
-            
+
         }
-        
+
         // Si cambia el concepto 7, recalcular el concepto 14 (que depende del 7)
-        if(div.id.split("-")[1] == 7) {
+        if (div.id.split("-")[1] == 7) {
             console.log("🔄 Concepto 7 detectado - Actualizando concepto 14");
             actualizarDetalle(document.querySelector(`#input-14-${sucursalActual}`), false);
         }
 
         value = div.value.replace(/[$.]/g, "");
-        value = parseInt(value.replace(/ /g,''));
+        value = parseInt(value.replace(/ /g, ''));
 
 
-        if(value < 0){
+        if (value < 0) {
 
-            div.value = "- $"+(parseNumber((value * -1),true)  )
+            div.value = "- $" + (parseNumber((value * -1), true))
             console.log("💰 Valor final formateado (negativo):", div.value);
-            
-        }else{
 
-            div.value = "$"+parseNumber(value)
+        } else {
+
+            div.value = "$" + parseNumber(value)
             console.log("💰 Valor final formateado (positivo):", div.value);
         }
 
@@ -224,7 +224,7 @@ const totalizar = (div = null) => {
 
 }
 
-const parseNumber = (number,realValue = null) => {
+const parseNumber = (number, realValue = null) => {
 
     number = parseInt(number);
 
@@ -233,12 +233,12 @@ const parseNumber = (number,realValue = null) => {
         maximumFractionDigits: 0,
         minimumFractionDigits: 0
     });
-    if(realValue != true){
+    if (realValue != true) {
 
-        if(newNumber < 0){
+        if (newNumber < 0) {
             return 0;
         }
-        
+
     }
     return newNumber;
 
@@ -246,7 +246,7 @@ const parseNumber = (number,realValue = null) => {
 
 const insertarDetalle = () => {
 
-    let tabla =document.querySelector("#tablaAlquileres");
+    let tabla = document.querySelector("#tablaAlquileres");
 
     let inputs = tabla.querySelectorAll("input");
     let values = "";
@@ -260,8 +260,8 @@ const insertarDetalle = () => {
     console.log("🏢 Total de sucursales:", sucursales.length);
 
     let conteoRegistros = 0;
-    inputs.forEach((e,x)=> {
-        
+    inputs.forEach((e, x) => {
+
         let data = e.id.split("-");
         let idConcepto = data[1];
         let idSucursal = data[2];
@@ -270,9 +270,9 @@ const insertarDetalle = () => {
 
         sucursales.forEach(sucursal => {
 
-            let infoSucursal =  sucursal.getAttribute("attr-infosuc").split("-")
+            let infoSucursal = sucursal.getAttribute("attr-infosuc").split("-")
 
-            if(idSucursal == infoSucursal[1]) {
+            if (idSucursal == infoSucursal[1]) {
 
                 values += `('${periodo}','${idSucursal}','${infoSucursal[0]}','${valor}','${idConcepto}'),`;
                 conteoRegistros++;
@@ -283,18 +283,18 @@ const insertarDetalle = () => {
 
     });
     values = values.substring(0, values.length - 1);
-    
+
     console.log("📊 Total de registros a insertar:", conteoRegistros);
     console.log("📝 Primeros 200 caracteres del SQL VALUES:", values.substring(0, 200) + "...");
     console.groupEnd();
 
     $.ajax({
-        url: 'Controller/AlquilerController.php?accion=insertarDetalle',   
+        url: 'Controller/AlquilerController.php?accion=insertarDetalle',
         method: 'POST',
         data: {
             values: values
         },
-        success : function(data) {
+        success: function (data) {
             console.log("✅ Respuesta de insertarDetalle:", data);
             console.log("🔄 Recargando página para mostrar datos insertados...");
             // Recargar la página después de insertar para que muestre los datos
@@ -302,7 +302,7 @@ const insertarDetalle = () => {
                 location.reload();
             }, 500);
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error("❌ Error en insertarDetalle:", {
                 status: status,
                 error: error,
@@ -320,7 +320,7 @@ const actualizarDetalle = (div, esEdicionPrincipal = false) => {
     let concepto = div.id.split("-")[1];
 
     let porcentaje = div.getAttribute("attr-porcentaje");
-    
+
     // Obtener valor anterior del atributo attr-realvalue
     let valorAnterior = div.getAttribute("attr-realvalue");
 
@@ -333,7 +333,7 @@ const actualizarDetalle = (div, esEdicionPrincipal = false) => {
     // DEBUGGING: Obtener el entorno actual
     let entornoElement = document.querySelector("#checkEntorno");
     let entorno = entornoElement && entornoElement.checked ? "ARGENTINA (ARG)" : "URUGUAY (UY)";
-    
+
     // DEBUGGING: Mostrar información detallada en consola
     console.group("🔍 DEBUG - Actualizando Detalle");
     console.log("📍 Entorno:", entorno);
@@ -346,42 +346,42 @@ const actualizarDetalle = (div, esEdicionPrincipal = false) => {
     console.log("🔢 Valor Formateado (input):", div.value);
     console.log("🔄 Cambio:", parseFloat(importe) - parseFloat(valorAnterior));
     console.log("🎯 Es edición principal:", esEdicionPrincipal);
-    
+
     // Advertencia especial para valor cero
-    if(importe == "0" || importe == "" || parseFloat(importe) === 0) {
+    if (importe == "0" || importe == "" || parseFloat(importe) === 0) {
         console.warn("⚠️  ADVERTENCIA: El valor nuevo es CERO");
     }
-    
+
     console.groupEnd();
 
     $.ajax({
-        url: 'Controller/AlquilerController.php?accion=actualizarDetalle',   
+        url: 'Controller/AlquilerController.php?accion=actualizarDetalle',
         method: 'POST',
         data: {
-            periodo:  periodo,
+            periodo: periodo,
             sucursal: sucursal,
             concepto: concepto,
-            importe:  importe,
+            importe: importe,
             importe9: importe9,
             importe13: importe13,
             porcentaje: porcentaje
         },
-        success : function(data) {
+        success: function (data) {
             console.log("✅ Respuesta del servidor (actualizarDetalle):", data);
-            
+
             // Actualizar el attr-realvalue con el nuevo valor para futuras comparaciones
             div.setAttribute("attr-realvalue", importe);
-            
+
             // Si es una edición principal (hecha por el usuario), recargar página
             // para mostrar todos los valores actualizados correctamente
-            if(esEdicionPrincipal) {
+            if (esEdicionPrincipal) {
                 console.log("🔄 Recargando página para mostrar valores actualizados...");
                 setTimeout(() => {
                     location.reload();
                 }, 300);
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error("❌ Error al actualizar detalle:", {
                 status: status,
                 error: error,
@@ -394,7 +394,7 @@ const actualizarDetalle = (div, esEdicionPrincipal = false) => {
 
 const actualizarCargaAutomatica = (cerrado = 0) => {
 
-    if(cerrado == 1){
+    if (cerrado == 1) {
         document.querySelectorAll("input").forEach(e => {
             // e.disabled = true;
         })
@@ -402,27 +402,27 @@ const actualizarCargaAutomatica = (cerrado = 0) => {
 
     }
 
-    let tabla =document.querySelector("#tablaAlquileres");
+    let tabla = document.querySelector("#tablaAlquileres");
 
     let inputs = tabla.querySelectorAll("input");
 
     let periodo = document.querySelector("#periodo").textContent;
 
-    inputs.forEach((e,x)=> {
+    inputs.forEach((e, x) => {
 
         let data = e.id.split("-");
         let idConcepto = data[1];
         let valor = e.value.replace(/[$.]/g, "");
         valor = parseFloat(valor).toFixed(2);
 
-        if(['6','7','9','13','14','15','16','17'].includes(idConcepto)) {
+        if (['6', '7', '9', '13', '14', '15', '16', '17'].includes(idConcepto)) {
 
-            if(valor > 0){
+            if (valor > 0) {
                 actualizarDetalle(e);
             }
 
         }
-        
+
 
     });
 
@@ -452,16 +452,16 @@ const procesar = () => {
         data: {
             periodo: periodo
         },
-        success : function(data) {
+        success: function (data) {
             console.log('Respuesta comprobarAjuste:', data);
-            
-            if(data == 1){
+
+            if (data == 1) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Atención',
                     text: 'Debe aplicar el ajuste antes de procesar!'
                 })
-            }else{
+            } else {
                 // VALIDACIÓN 3: Verificar sucursales con total = 0
                 verificarSucursalesSinCostosYProcesar(periodo);
             }
@@ -472,12 +472,12 @@ const procesar = () => {
 const verificarSucursalesSinCostosYProcesar = (periodo) => {
     // Obtener la fila de totales (última fila de la tabla)
     let filaTotales = document.querySelector("tbody tr:last-child");
-    if(!filaTotales) {
+    if (!filaTotales) {
         console.error("No se encontró la fila de totales");
         ejecutarProcesamiento(periodo);
         return;
     }
-    
+
     let celdasTotales = filaTotales.querySelectorAll("td");
     let sucursalesSinCostos = [];
     let sucursalesYaProcesadas = new Set(); // Para evitar duplicados
@@ -485,23 +485,23 @@ const verificarSucursalesSinCostosYProcesar = (periodo) => {
     // Iterar desde la tercera celda (índice 2) en adelante, saltando las dos primeras columnas
     for (let i = 2; i < celdasTotales.length; i++) {
         let element = celdasTotales[i];
-        
+
         // Obtener el número de sucursal del id de la celda (ej: "total-02")
         let idTotal = element.id;
-        if(!idTotal || !idTotal.startsWith('total-')) continue;
-        
+        if (!idTotal || !idTotal.startsWith('total-')) continue;
+
         let nroSucursal = idTotal.replace('total-', '');
-        
+
         // Evitar duplicados
-        if(sucursalesYaProcesadas.has(nroSucursal)) continue;
-        
+        if (sucursalesYaProcesadas.has(nroSucursal)) continue;
+
         // Limpiar el valor del total
         let valorTotal = element.textContent.replace(/[$.\s]/g, "").replace(/-/g, "");
         let total = parseInt(valorTotal) || 0;
-        
+
         console.log(`Verificando sucursal ${nroSucursal}: total = ${total}, texto original = "${element.textContent}"`);
-        
-        if(total === 0){
+
+        if (total === 0) {
             sucursalesSinCostos.push({
                 numero: nroSucursal
             });
@@ -511,7 +511,7 @@ const verificarSucursalesSinCostosYProcesar = (periodo) => {
 
     console.log("Sucursales sin costos detectadas:", sucursalesSinCostos);
 
-    if(sucursalesSinCostos.length > 0) {
+    if (sucursalesSinCostos.length > 0) {
         // Hay sucursales sin costos, preguntar qué hacer
         mostrarModalSucursalesSinCostos(sucursalesSinCostos, periodo);
     } else {
@@ -523,7 +523,7 @@ const verificarSucursalesSinCostosYProcesar = (periodo) => {
 const mostrarModalSucursalesSinCostos = (sucursales, periodo) => {
     // Crear listado simple de sucursales sin costos
     let listaSucursales = sucursales.map(suc => `<strong>${suc.numero}</strong>`).join(', ');
-    
+
     let contenidoHTML = `
         <div style="text-align: center; padding: 20px;">
             <p style="font-size: 15px; margin-bottom: 20px;">
@@ -546,7 +546,7 @@ const mostrarModalSucursalesSinCostos = (sucursales, periodo) => {
             </div>
         </div>
     `;
-    
+
     Swal.fire({
         icon: 'warning',
         title: '⚠️ Sucursales sin costos detectadas',
@@ -594,17 +594,17 @@ const eliminarSucursalSinCostos = (nroSucursal, periodo) => {
                     periodo: periodo,
                     nroSucursal: nroSucursal
                 },
-                success: function(response) {
+                success: function (response) {
                     try {
                         const data = JSON.parse(response);
-                        
-                        if(data.status === 'success') {
+
+                        if (data.status === 'success') {
                             // Eliminar la fila de la tabla del modal
                             const row = document.querySelector(`#row-suc-${nroSucursal}`);
-                            if(row) {
+                            if (row) {
                                 row.remove();
                             }
-                            
+
                             // Mostrar notificación de éxito
                             Swal.fire({
                                 icon: 'success',
@@ -615,10 +615,10 @@ const eliminarSucursalSinCostos = (nroSucursal, periodo) => {
                                 toast: true,
                                 position: 'top-end'
                             });
-                            
+
                             // Verificar si quedan más sucursales en la tabla
                             const tablaSucursales = document.querySelector('#tablaSucursalesSinCostos');
-                            if(tablaSucursales && tablaSucursales.children.length === 0) {
+                            if (tablaSucursales && tablaSucursales.children.length === 0) {
                                 // No quedan más sucursales, cerrar el modal y proceder
                                 Swal.close();
                                 ejecutarProcesamiento(periodo);
@@ -638,7 +638,7 @@ const eliminarSucursalSinCostos = (nroSucursal, periodo) => {
                         });
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error de conexión',
@@ -653,12 +653,12 @@ const eliminarSucursalSinCostos = (nroSucursal, periodo) => {
 const validarYProcesarConTodas = (periodo) => {
     // Validar que TODAS las sucursales tengan costos > 0
     let allTd = document.querySelectorAll("tr")[19].querySelectorAll("td");
-    
+
     for (let i = 2; i < allTd.length; i++) {
         let element = allTd[i];
-        let value = element.textContent.replace(/[$.]/g, "").replace(/ /g,'');
-        
-        if(value == 0 || value == ""){
+        let value = element.textContent.replace(/[$.]/g, "").replace(/ /g, '');
+
+        if (value == 0 || value == "") {
             Swal.fire({
                 icon: 'warning',
                 title: 'Atención',
@@ -667,7 +667,7 @@ const validarYProcesarConTodas = (periodo) => {
             return false;
         }
     }
-    
+
     // Si todas tienen valores, procesar
     ejecutarProcesamiento(periodo);
 }
@@ -679,17 +679,17 @@ const ejecutarProcesamiento = (periodo) => {
         data: {
             periodo: periodo
         },
-        success : function(data) {
+        success: function (data) {
             try {
                 const response = JSON.parse(data);
-                
-                if(response.status === 'error'){
+
+                if (response.status === 'error') {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
                         text: response.message
                     });
-                } else if(response.status === 'success') {
+                } else if (response.status === 'success') {
                     Swal.fire({
                         icon: 'success',
                         title: 'Procesado',
@@ -700,7 +700,7 @@ const ejecutarProcesamiento = (periodo) => {
                 }
             } catch (e) {
                 // Fallback para respuestas que no sean JSON
-                if(data == 1){
+                if (data == 1) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -717,7 +717,7 @@ const ejecutarProcesamiento = (periodo) => {
                 }
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error de conexión',
@@ -733,16 +733,16 @@ const cerrarPeriodo = () => {
     let ultimaFechaDelMes = document.querySelector("#ultimaFechaDelMes").textContent;
 
     mesAnterior = document.querySelector("#mesAnterior").textContent;
-    
+
     $.ajax({
-        url : 'Controller/AlquilerController.php?accion=checkCierrePeriodoAnt',
+        url: 'Controller/AlquilerController.php?accion=checkCierrePeriodoAnt',
         method: 'POST',
         data: {
             mesAnterior: mesAnterior
         },
-        success : function(response) {
-          response = JSON.parse(response)
-             if(response[0]['RegistroExiste'] == 0){
+        success: function (response) {
+            response = JSON.parse(response)
+            if (response[0]['RegistroExiste'] == 0) {
 
                 Swal.fire({
                     icon: 'warning',
@@ -750,25 +750,25 @@ const cerrarPeriodo = () => {
                     text: 'Debe cerrar los periodos anteriores!'
                 })
                 return 1
-                
-            }else{
+
+            } else {
 
                 $.ajax({
-                    url : 'Controller/AlquilerController.php?accion=verificarProcesado',
+                    url: 'Controller/AlquilerController.php?accion=verificarProcesado',
                     method: 'POST',
                     data: {
                         fecha: ultimaFechaDelMes
                     },
-                    success : function(response) {  
+                    success: function (response) {
                         response = JSON.parse(response);
-                
-                        if(response[0]['RegistroExiste'] == 1){
-            
+
+                        if (response[0]['RegistroExiste'] == 1) {
+
                             // Antes de cerrar, verificar si hay diferencias en los valores
                             verificarDiferenciasYCerrar(periodo);
-            
-                        }else{
-            
+
+                        } else {
+
                             Swal.fire({
                                 icon: 'warning',
                                 title: 'Atención',
@@ -791,37 +791,37 @@ const verificarDiferenciasYCerrar = (periodo) => {
     let datosActuales = {};
     let sucursales = document.querySelectorAll("#sucursal");
     let conceptos = document.querySelectorAll("#idConcepto");
-    
+
     sucursales.forEach(sucursal => {
         const nroSucursal = sucursal.textContent.trim();
         datosActuales[nroSucursal] = {};
-        
+
         conceptos.forEach(concepto => {
             const idConcepto = concepto.textContent.trim();
             const inputElement = document.querySelector(`#input-${idConcepto}-${nroSucursal}`);
             if (inputElement) {
                 // Extraer el valor real del input preservando el signo negativo
                 let valorTexto = inputElement.value.trim();
-                
+
                 // Detectar si es negativo
                 const esNegativo = valorTexto.startsWith('-') || valorTexto.startsWith('(');
-                
+
                 // Limpiar formato pero preservar números y decimales
                 valorTexto = valorTexto.replace(/[\$\.\s\(\)]/g, '').replace(',', '.');
-                
+
                 // Parsear valor
                 let valor = parseFloat(valorTexto) || 0;
-                
+
                 // Aplicar signo negativo si corresponde
                 if (esNegativo && valor > 0) {
                     valor = -valor;
                 }
-                
+
                 datosActuales[nroSucursal][idConcepto] = valor;
             }
         });
     });
-    
+
     // Verificar si hay diferencias
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=verificarDiferenciasPreCierre',
@@ -830,9 +830,9 @@ const verificarDiferenciasYCerrar = (periodo) => {
             periodo: periodo,
             datosActuales: datosActuales
         },
-        success: function(response) {
+        success: function (response) {
             const data = JSON.parse(response);
-            
+
             if (data.tieneDiferencias && data.diferencias.length > 0) {
                 mostrarDiferenciasYConfirmar(periodo, data.diferencias);
             } else {
@@ -840,7 +840,7 @@ const verificarDiferenciasYCerrar = (periodo) => {
                 ejecutarCierrePeriodo(periodo, false);
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
@@ -859,7 +859,7 @@ const mostrarDiferenciasYConfirmar = (periodo, diferencias) => {
             inputElement.style.border = '2px solid #ffc107';
         }
     });
-    
+
     // Crear tabla HTML con las diferencias
     let tablaHTML = `
         <div style="max-height: 400px; overflow-y: auto; text-align: left;">
@@ -875,12 +875,12 @@ const mostrarDiferenciasYConfirmar = (periodo, diferencias) => {
                 </thead>
                 <tbody>
     `;
-    
+
     diferencias.forEach(dif => {
         const diferencia = dif.diferencia;
         const colorDif = diferencia > 0 ? 'text-success' : 'text-danger';
         const simbolo = diferencia > 0 ? '+' : '';
-        
+
         tablaHTML += `
             <tr>
                 <td>${dif.sucursal} - ${dif.desc_sucursal}</td>
@@ -891,14 +891,14 @@ const mostrarDiferenciasYConfirmar = (periodo, diferencias) => {
             </tr>
         `;
     });
-    
+
     tablaHTML += `
                 </tbody>
             </table>
         </div>
         <p style="margin-top: 15px; font-weight: bold;">¿Desea actualizar los valores antes de cerrar el período?</p>
     `;
-    
+
     Swal.fire({
         icon: 'warning',
         title: '⚠️ Se detectaron diferencias en los valores',
@@ -942,42 +942,42 @@ const actualizarValoresYCerrar = (periodo) => {
             Swal.showLoading();
         }
     });
-    
+
     // Guardar todos los cambios actuales
     let sucursales = document.querySelectorAll("#sucursal");
     let conceptos = document.querySelectorAll("#idConcepto");
     let promises = [];
-    
+
     sucursales.forEach(sucursal => {
         const nroSucursal = sucursal.textContent.trim();
-        
+
         conceptos.forEach(concepto => {
             const idConcepto = concepto.textContent.trim();
             const inputElement = document.querySelector(`#input-${idConcepto}-${nroSucursal}`);
-            
+
             if (inputElement && inputElement.style.backgroundColor === 'rgb(255, 243, 205)') {
                 // Este input tiene diferencias, actualizarlo
                 const porcentaje = inputElement.getAttribute('attr-porcentaje') || 0;
-                
+
                 // Obtener el valor actual del input preservando el signo negativo
                 let valorTexto = inputElement.value.trim();
-                
+
                 // Detectar si es negativo
                 const esNegativo = valorTexto.startsWith('-') || valorTexto.startsWith('(');
-                
+
                 // Limpiar formato pero preservar números y decimales
                 valorTexto = valorTexto.replace(/[\$\.\s\(\)]/g, '').replace(',', '.');
-                
+
                 // Parsear valor
                 let valorReal = parseFloat(valorTexto) || 0;
-                
+
                 // Aplicar signo negativo si corresponde
                 if (esNegativo && valorReal > 0) {
                     valorReal = -valorReal;
                 }
-                
+
                 console.log(`Actualizando: Sucursal=${nroSucursal}, Concepto=${idConcepto}, Valor=${valorReal}, Porcentaje=${porcentaje}`);
-                
+
                 const promise = $.ajax({
                     url: 'Controller/AlquilerController.php?accion=actualizarDetalle',
                     method: 'POST',
@@ -993,7 +993,7 @@ const actualizarValoresYCerrar = (periodo) => {
             }
         });
     });
-    
+
     // Esperar a que todas las actualizaciones terminen
     Promise.all(promises).then(() => {
         quitarResaltadoDiferencias();
@@ -1020,10 +1020,10 @@ const ejecutarCierrePeriodo = (periodo, forzarCierre) => {
             periodo: periodo,
             forzarCierre: forzarCierre
         },
-        success: function(data) {
+        success: function (data) {
             try {
                 const response = JSON.parse(data);
-                
+
                 if (response.status === 'success') {
                     quitarResaltadoDiferencias();
                     Swal.fire({
@@ -1076,7 +1076,7 @@ const ejecutarCierrePeriodo = (periodo, forzarCierre) => {
                 }
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             Swal.fire({
                 icon: 'error',
                 title: '✖ Error al cerrar período',
@@ -1112,11 +1112,11 @@ const abrirPeriodo = () => {
         data: {
             periodo: periodo
         },
-        success : function(data) {
+        success: function (data) {
             console.log('Respuesta abrirPeriodo:', data); // Debug
-            
+
             // El controlador devuelve 0 para éxito, 1 para error
-            if(data == 0){
+            if (data == 0) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Abierto',
@@ -1124,7 +1124,7 @@ const abrirPeriodo = () => {
                 }).then((result) => {
                     location.reload();
                 })
-            }else{
+            } else {
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -1132,7 +1132,7 @@ const abrirPeriodo = () => {
                 })
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error de conexión',
@@ -1164,10 +1164,10 @@ const revertirProcesamiento = () => {
                 data: {
                     periodo: periodo
                 },
-                success: function(data) {
+                success: function (data) {
                     try {
                         const response = JSON.parse(data);
-                        
+
                         if (response.status === 'success') {
                             Swal.fire({
                                 icon: 'success',
@@ -1191,7 +1191,7 @@ const revertirProcesamiento = () => {
                         });
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -1207,36 +1207,143 @@ const ocultarSucursal = () => {
 
     let sucursal = document.querySelector("#selectOcultarSucursal").value
     let periodo = document.querySelector("#periodo").textContent;
-    
+
     $.ajax({
 
-        url : 'Controller/AlquilerController.php?accion=ocultarSucursal',
+        url: 'Controller/AlquilerController.php?accion=ocultarSucursal',
         method: 'POST',
         data: {
             sucursal: sucursal,
             periodo: periodo
         },
-        success : function(response) {
+        success: function (response) {
 
-            document.querySelectorAll(".suc"+sucursal).forEach(element => {
+            document.querySelectorAll(".suc" + sucursal).forEach(element => {
                 element.remove()
-        });
-        
+            });
+
         }
 
     })
 
-   
+
 }
 
 const AplicarAjuste = () => {
+    let periodo = document.querySelector("#periodo").textContent;
+
+    // Obtener el coeficiente actual antes de mostrar el modal
+    $.ajax({
+        url: 'Controller/AlquilerController.php?accion=traerCoeficiente',
+        method: 'POST',
+        data: { periodo: periodo },
+        success: function (response) {
+            let coeficienteDefault = "1,0000";
+            try {
+                const data = JSON.parse(response);
+                if (data.status === 'success') {
+                    coeficienteDefault = data.coeficiente;
+                }
+            } catch (e) {
+                console.error("Error al obtener coeficiente:", e);
+            }
+
+            mostrarModalAjuste(periodo, coeficienteDefault);
+        },
+        error: function () {
+            mostrarModalAjuste(periodo, "1,0000");
+        }
+    });
+};
+
+const mostrarModalAjuste = (periodo, coeficienteDefault) => {
+    Swal.fire({
+        title: '<span style="color: #3085d6; font-weight: bold;">Aplicar Ajuste Manual</span>',
+        html: `
+            <div style="padding: 10px; text-align: center;">
+                <p style="margin-bottom: 20px; color: #545454; font-size: 16px;">
+                    Cargue el coeficiente para el período <strong style="color: #3085d6;">${periodo}</strong>
+                </p>
+                <div style="background-color: #f8f9fa; border-radius: 12px; padding: 25px; border: 1px solid #e9ecef;">
+                    <label for="coeficiente_manual" style="display: block; margin-bottom: 12px; font-weight: 600; color: #333; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Coeficiente de Ajuste
+                    </label>
+                    <input type="text" id="coeficiente_manual" 
+                        class="form-control" 
+                        style="width: 100%; height: 50px; font-size: 24px; text-align: center; font-weight: bold; border-radius: 8px; border: 2px solid #3085d6; color: #3085d6; box-shadow: 0 4px 6px rgba(48, 133, 214, 0.1);" 
+                        placeholder="1,2000" 
+                        value="${coeficienteDefault}">
+                    <p style="margin-top: 15px; margin-bottom: 0; color: #6c757d; font-size: 13px;">
+                        <i class="fas fa-info-circle"></i> Use coma para decimales (4 dígitos requeridos).
+                    </p>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar y Aplicar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        reverseButtons: true,
+        didOpen: () => {
+            const input = document.getElementById('coeficiente_manual');
+            input.focus();
+            input.select();
+
+            input.addEventListener('input', function (e) {
+                this.value = this.value.replace('.', ',');
+            });
+
+            input.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    Swal.clickConfirm();
+                }
+            });
+        },
+        preConfirm: () => {
+            const coeficiente = document.getElementById('coeficiente_manual').value.trim();
+            if (!coeficiente) {
+                Swal.showValidationMessage('Debe ingresar un coeficiente');
+                return false;
+            }
+            if (!/^\d+(,\d{1,4})?$/.test(coeficiente)) {
+                Swal.showValidationMessage('Formato inválido. Ejemplo: 1,2000');
+                return false;
+            }
+            return coeficiente;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const coeficienteManual = result.value;
+
+            // 1. Guardar el coeficiente en la tabla
+            $.ajax({
+                url: 'Controller/AlquilerController.php?accion=guardarCoeficiente',
+                method: 'POST',
+                data: {
+                    periodo: periodo,
+                    coeficiente: coeficienteManual
+                },
+                success: function (response) {
+                    const data = JSON.parse(response);
+                    if (data.status === 'success') {
+                        // 2. Si se guardó bien, ejecutar la lógica original de aplicar ajuste
+                        ejecutarAplicarAjuste(periodo);
+                    } else {
+                        Swal.fire('Error', data.message, 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Error', 'No se pudo guardar el coeficiente', 'error');
+                }
+            });
+        }
+    });
+};
+
+const ejecutarAplicarAjuste = (periodo) => {
     let sucursales = document.querySelectorAll("#sucursal");
     let newArray = {};
-    let periodo = document.querySelector("#periodo").textContent;
-    
-    // LOG: Ver qué período se está enviando
-    console.log("DEBUG AplicarAjuste - Período desde #periodo:", periodo);
-    console.log("DEBUG AplicarAjuste - Tipo de dato:", typeof periodo);
 
     sucursales.forEach((sucursal) => {
         const sucursalName = sucursal.textContent;
@@ -1244,109 +1351,48 @@ const AplicarAjuste = () => {
 
         ["4", "5", "18"].forEach((concepto) => {
             const div = document.querySelector(`#input-${concepto}-${sucursalName}`);
-            if (!div) {
-                console.log(`DEBUG - Input concepto ${concepto} sucursal ${sucursalName} NO ENCONTRADO`);
-                return;
-            }
-            
+            if (!div) return;
+
             const valor = div.value.replace(/[$.]/g, "").replace(/-/g, "").trim();
             const estaDeshabilitado = div.disabled;
 
-            console.log(`DEBUG - Concepto ${concepto} Sucursal ${sucursalName}: valor="${valor}", disabled=${estaDeshabilitado}, valorOriginal="${div.value}"`);
-
-            // Solo incluir si NO está deshabilitado y tiene valor > 0
             if (valor > 0 && !estaDeshabilitado) {
-                console.log(`  → INCLUIDO`);
                 newArray[sucursalName].push({
                     concepto: concepto,
                     value: valor,
                 });
-            } else {
-                console.log(`  → OMITIDO (valor=${valor}, disabled=${estaDeshabilitado})`);
             }
         });
     });
-
-    console.log("DEBUG AplicarAjuste - Array de datos a enviar:", newArray);
 
     $.ajax({
         url: 'Controller/AlquilerController.php?accion=aplicarAjuste',
         method: 'POST',
         data: {
-            arrayData: JSON.stringify(newArray),  // Convertir a JSON string
+            arrayData: JSON.stringify(newArray),
             periodo: periodo
         },
         success: function (response) {
-            console.log("DEBUG AplicarAjuste - Respuesta del servidor:", response);
-            
             try {
-                // Intentar parsear como JSON
                 const data = JSON.parse(response);
-                
                 if (data.status === 'success') {
                     Swal.fire({
                         icon: 'success',
                         title: 'Ajuste aplicado correctamente',
                         html: `<p>Se actualizaron <strong>${data.registros_actualizados}</strong> registro(s)</p>
                                <p>Coeficiente aplicado: <strong>${data.coeficiente}</strong></p>`,
-                        showConfirmButton: true,
-                        confirmButtonText: 'Aceptar'
                     }).then(() => {
                         location.reload();
-                    });
-                } else if (data.status === 'info') {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Información',
-                        text: data.message,
-                        confirmButtonText: 'Entendido'
-                    });
-                } else if (data.status === 'warning') {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Atención',
-                        text: data.message,
-                        confirmButtonText: 'Entendido'
-                    });
-                } else if (data.status === 'error') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: data.message,
-                        confirmButtonText: 'Aceptar'
-                    });
-                }
-                
-            } catch (e) {
-                console.error("DEBUG AplicarAjuste - Error al parsear JSON:", e);
-                console.log("DEBUG AplicarAjuste - Respuesta cruda:", response);
-                
-                // Fallback para compatibilidad con respuesta legacy
-                if(response != 1){
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'El coeficiente correspondiente al período no se encuentra cargado!'
                     });
                 } else {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Ajuste aplicado correctamente!',
-                        showConfirmButton: false,
-                        timer: 1500
-                    }).then(() => {
-                        location.reload();
-                    });
+                    Swal.fire('Atención', data.message || 'Error desconocido', data.status || 'warning');
                 }
+            } catch (e) {
+                location.reload();
             }
         },
-        error: function(xhr, status, error) {
-            console.error("DEBUG AplicarAjuste - Error en AJAX:", {xhr, status, error});
-            Swal.fire({
-                icon: 'error',
-                title: 'Error de conexión',
-                text: 'No se pudo aplicar el ajuste. Error: ' + error
-            });
+        error: function (xhr, status, error) {
+            Swal.fire('Error', 'No se pudo aplicar el ajuste. Error: ' + error, 'error');
         }
     });
 };
@@ -1354,23 +1400,23 @@ const AplicarAjuste = () => {
 
 const cambiarEntorno = (t) => {
     let entorno = 0;
-    
+
     // Si el checkbox está checked = Argentina (central = 0)
     // Si el checkbox NO está checked = Uruguay (uy = 1)
-    if(t.checked){
+    if (t.checked) {
         entorno = 0; // Argentina
     } else {
         entorno = 1; // Uruguay
     }
-  
+
     $.ajax({
         url: "Controller/cambiarEntorno.php",
         method: "POST",
-        data: {entorno: entorno},
+        data: { entorno: entorno },
         success: function (data) {
             location.reload();
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error('Error al cambiar entorno:', error);
             location.reload();
         }
@@ -1381,7 +1427,7 @@ const descargarPDF = () => {
     let periodo = document.querySelector("#periodo").textContent;
     let mes = document.querySelector("#selectMes").value;
     let anio = document.querySelector("#selectAnio").value;
-    
+
     // Abrir en nueva ventana el archivo PDF
     window.open(`components/generarPDF.php?periodo=${periodo}&mes=${mes}&anio=${anio}`, '_blank');
 }

@@ -147,9 +147,9 @@ const totalGastos = ()=> {
     result = ((sum / valorFobNumerico) * 100);
   }
   
-  let numberResult = isNaN(result) ? '0.00' : (parseFloat(result).toFixed(2));
+  let numberResult = isNaN(result) ? '0,00%' : (parseFloat(result).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%');
   porcentajeSpan.textContent = numberResult;
-  porcentajeSpan.setAttribute("attr-value", isNaN(result) ? '0.00' : result.toFixed(2));
+  porcentajeSpan.setAttribute("attr-value", isNaN(result) ? '0.00' : result.toFixed(4));
 }
 
 if(document.querySelector("#btnSaveDetalle") != null){
@@ -159,7 +159,7 @@ if(document.querySelector("#btnSaveDetalle") != null){
     let rows = document.querySelectorAll("#id");
     let arrayDatos = [];
     let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
-    let nroOrdenDeCompra = document.querySelector("#nroOrdenCompra").textContent;
+    let nroOrdenDeCompra = document.querySelector("#nroOrdenCompra").textContent.trim();
 
     rows.forEach((e, x) => {
       let rowElement = e.closest('tr');
@@ -183,31 +183,48 @@ if(document.querySelector("#btnSaveDetalle") != null){
       arrayDatos[x] = [Gastos, importeEnDolares, tipoCambio, importeEnPesos, sobreFob, observaciones];
     });
 
+    // Porcentaje calculado (guardado como decimal: 8.5% → 0.085)
+    let costoNacDecimal = parseFloat(document.querySelector("#porcentaje").getAttribute("attr-value")) / 100;
+
     $.ajax({
       url: '/administracion/comercioExterior/Controller/OrdenDeCompraController.php',
       method: 'POST',
+      dataType: 'json',
       data:{
-        "array": arrayDatos, 
-        "idEncabezado": idEncabezado
+        "array": arrayDatos,
+        "idEncabezado": idEncabezado,
+        "nroOrdenDeCompra": nroOrdenDeCompra,
+        "costoNac": costoNacDecimal
       },
-    }).then((e)=>{
-      $.ajax({
-        url: 'Controller/ejecutarSpCostoNacionalizacion.php',
-        method: 'POST',
-        data:{
-          "nroOrdenDeCompra": nroOrdenDeCompra
-        },
-      });
-
+    }).done(function(response) {
+      if (response.success) {
+        Swal.fire({
+          title: '¡Costos guardados!',
+          text: 'Los costos de nacionalización fueron registrados correctamente.',
+          icon: 'success',
+          confirmButtonText: 'Volver a Gestión de Despachos',
+          confirmButtonColor: '#198754',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+        }).then(() => {
+          window.top.location.href = "/administracion/comercioExterior/index.php";
+        });
+      } else {
+        Swal.fire({
+          title: 'Atención',
+          text: response.message || 'Ocurrió un error al guardar.',
+          icon: 'warning',
+          confirmButtonText: 'Cerrar',
+          confirmButtonColor: '#ffc107',
+        });
+      }
+    }).fail(function(xhr, status, error) {
+      console.error('Error al guardar costos:', error, xhr.responseText);
       Swal.fire({
-        title: 'Detalle guardado!',
-        icon: 'success',
-        showDenyButton: true,
-        showCancelButton: false,
-        showConfirmButton: false,
-        denyButtonText: `Volver`,
-      }).then((e) => {
-        window.location = "index.php";
+        title: 'Error',
+        text: 'No se pudo conectar con el servidor. Por favor, intente nuevamente.',
+        icon: 'error',
+        confirmButtonText: 'Cerrar',
       });
     });
   });

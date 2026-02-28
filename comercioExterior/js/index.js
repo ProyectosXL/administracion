@@ -166,6 +166,17 @@ $(document).ready(function() {
     console.log('Tabs encontradas:', triggerTabList.length);
     console.log('Tab activa inicial:', document.querySelector('.tab-pane.active')?.id);
 
+    // Activar pestaña según hash de la URL (ej: index.php#costos)
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+        setTimeout(function() {
+            const tabBtn = document.querySelector(`button[data-bs-target="#${hash}"]`);
+            if (tabBtn) {
+                bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+            }
+        }, 150);
+    }
+
     /**
      * Recargar todos los iframes
      */

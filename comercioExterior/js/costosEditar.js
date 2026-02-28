@@ -214,9 +214,11 @@ const totalGastos = ()=> {
     if (valorFob > 0) {
         let porcentajeTotal = (sum / valorFob) * 100;
         porcentajeSpan.textContent = window.formatearNumero(porcentajeTotal) + "%";
+        porcentajeSpan.setAttribute("attr-value", porcentajeTotal.toFixed(4));
         console.log("Porcentaje total calculado:", porcentajeTotal + "%");
     } else {
         porcentajeSpan.textContent = "0,00%";
+        porcentajeSpan.setAttribute("attr-value", "0");
     }
 };
 
@@ -249,27 +251,8 @@ function agregarBotonRecalcular() {
             console.log("Botón de recálculo agregado");
         }
     } else {
-        console.error("No se encontró el botón de guardar");
-        
-        // Intentar encontrar otro lugar para poner el botón
-        let container = document.querySelector(".container, .card-body, form");
-        if (container) {
-            let btnRecalcular = document.createElement("button");
-            btnRecalcular.id = "btnRecalcular";
-            btnRecalcular.type = "button";
-            btnRecalcular.className = "btn btn-warning";
-            btnRecalcular.textContent = "Recalcular Todo";
-            btnRecalcular.style.marginRight = "10px";
-            btnRecalcular.style.marginBottom = "10px";
-            btnRecalcular.style.marginTop = "10px";
-            
-            btnRecalcular.onclick = function() {
-                recalcularTodo();
-            };
-            
-            container.appendChild(btnRecalcular);
-            console.log("Botón de recálculo agregado al contenedor");
-        }
+        // btnSaveDetalle no existe en esta página, no se agrega botón de recálculo
+        return;
     }
 }
 
@@ -371,51 +354,68 @@ if(document.querySelector("#btnSaveDetalle") != null){
                 Swal.showLoading();
             }
         });
+
+        // Porcentaje calculado (guardado como decimal: 8.5% → 0.085)
+        let porcentajeEl = document.querySelector("#porcentaje");
+        let attrValue = porcentajeEl ? porcentajeEl.getAttribute("attr-value") : null;
+        let costoNacDecimal = 0;
+        if (attrValue !== null && !isNaN(parseFloat(attrValue))) {
+            costoNacDecimal = parseFloat(attrValue) / 100;
+        } else if (porcentajeEl) {
+            let txt = porcentajeEl.textContent.replace("%","").replace(",",".").trim();
+            costoNacDecimal = parseFloat(txt) / 100 || 0;
+        }
         
         // Enviar datos
         $.ajax({
             url: '/administracion/comercioExterior/Controller/OrdenDeCompraController.php',
             method: 'POST',
+            dataType: 'json',
             data: {
                 "array": arrayDatos,
-                "idEncabezado": idEncabezado
+                "idEncabezado": '(' + idEncabezado + ')',
+                "nroOrdenDeCompra": nroOrdenDeCompra,
+                "costoNac": costoNacDecimal
             },
             success: function(response) {
-                console.log("Respuesta del servidor:", response);
-                
-                // Ejecutar SP
-                $.ajax({
-                    url: '/administracion/comercioExterior/Controller/ejecutarSpCostoNacionalizacion.php',
-                    method: 'POST',
-                    data: {
-                        "nroOrdenDeCompra": nroOrdenDeCompra
-                    },
-                    success: function(spResponse) {
-                        console.log("SP ejecutado:", spResponse);
-                        Swal.fire({
-                            title: '¡Guardado exitoso!',
-                            icon: 'success',
-                            showDenyButton: true,
-                            showCancelButton: false,
-                            confirmButtonText: 'Quedarse aquí',
-                            denyButtonText: 'Volver al listado'
-                        }).then((result) => {
-                            if (result.isDenied) {
-                                window.location = "index.php";
-                            } else {
-                                location.reload();
-                            }
-                        });
-                    },
-                    error: function(spError) {
-                        console.error("Error en SP:", spError);
-                        Swal.fire('Guardado parcial', 'Los datos se guardaron pero hubo un error al ejecutar el cálculo', 'warning');
-                    }
-                });
+                if (response.success) {
+                    Swal.fire({
+                        title: '¡Costos guardados!',
+                        text: 'Los costos de nacionalización fueron registrados correctamente.',
+                        icon: 'success',
+                        confirmButtonText: 'Volver a Costos de Nacionalización',
+                        confirmButtonColor: '#198754',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                    }).then(() => {
+                        window.location.href = "/administracion/comercioExterior/tabs/costoNacionalizacion.php";
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Atención',
+                        text: response.message || 'Ocurrió un error al guardar.',
+                        icon: 'warning',
+                        confirmButtonText: 'Volver a Costos de Nacionalización',
+                        confirmButtonColor: '#ffc107',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                    }).then(() => {
+                        window.location.href = "/administracion/comercioExterior/tabs/costoNacionalizacion.php";
+                    });
+                }
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 console.error("Error AJAX:", textStatus, errorThrown);
-                Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+                Swal.fire({
+                    title: 'Error',
+                    text: 'No se pudo conectar con el servidor.',
+                    icon: 'error',
+                    confirmButtonText: 'Volver a Costos de Nacionalización',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                }).then(() => {
+                    window.location.href = "/administracion/comercioExterior/tabs/costoNacionalizacion.php";
+                });
             }
         });
     });

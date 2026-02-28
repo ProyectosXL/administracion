@@ -4,80 +4,97 @@ let btnAgregarDetalle = document.querySelector("#btnAgregarDetalle");
 
 btnUpdateDetalle.addEventListener("click",()=> {
     let arrayDatos = [];
-    let idEncabezado = document.querySelector("#idEncabezado").getAttribute("attr-value");
-    idEncabezado = '('+idEncabezado+')';
-    let nroOrden = document.querySelector("#nroOrden").textContent;
-   
-    let table = document.querySelector("#table")
-    let rows = table.querySelectorAll("tr:not(:last-child)")
-  
-rows.forEach((x,e)=>{
-  // Usar querySelector para obtener el input dentro del td
-  let gastos = x.querySelectorAll("td")[1].querySelector("input").value;
-  let idDetalle = x.querySelectorAll("td")[0].getAttribute('attr-value')
-  
-  let importeDolaresInput = x.querySelectorAll("td")[2].querySelector("input");
-  let importeEnDolares = importeDolaresInput ? window.convertirANumero(importeDolaresInput.value) : 0;
-  
-  let tipoCambioInput = x.querySelectorAll("td")[3].querySelector("input");
-  let tipoCambio = tipoCambioInput ? window.convertirANumero(tipoCambioInput.value) : 0;
-  
-  let importePesosInput = x.querySelectorAll("td")[4].querySelector("input");
-  let importeEnPesos = importePesosInput ? window.convertirANumero(importePesosInput.value) : 0;
-  
-  let sobreFobInput = x.querySelectorAll("td")[5].querySelector("input");
-  let sobreFob = sobreFobInput && sobreFobInput.value ? 
-                 window.convertirANumero(sobreFobInput.value.replace("%","")) : 0;
-  
-  let observacionesInput = x.querySelectorAll("td")[6].querySelector("input");
-  let observaciones = observacionesInput ? observacionesInput.value : "";
+    let idEncabezadoRaw = document.querySelector("#idEncabezado").getAttribute("attr-value");
+    let idEncabezado = '(' + idEncabezadoRaw + ')';
+    let nroOrden = document.querySelector("#nroOrden").textContent.trim();
 
-      arrayDatos [e] = [gastos, importeEnDolares, tipoCambio, importeEnPesos, sobreFob, observaciones, idDetalle]
-    })
+    // Porcentaje calculado (guardado como decimal: 8.5% → 0.085)
+    let porcentajeEl = document.querySelector("#porcentaje");
+    let attrValue = porcentajeEl ? porcentajeEl.getAttribute("attr-value") : null;
+    let costoNacDecimal = 0;
+    if (attrValue !== null && !isNaN(parseFloat(attrValue))) {
+        costoNacDecimal = parseFloat(attrValue) / 100;
+    } else if (porcentajeEl) {
+        // Fallback: leer del textContent (ej: "8,53%") 
+        let txt = porcentajeEl.textContent.replace("%","").replace(",",".").trim();
+        costoNacDecimal = parseFloat(txt) / 100 || 0;
+    }
+   
+    let table = document.querySelector("#table");
+    let rows = table.querySelectorAll("tr:not(:last-child)");
+  
+    rows.forEach((x, e) => {
+        let gastos = x.querySelectorAll("td")[1].querySelector("input").value;
+        let idDetalle = x.querySelectorAll("td")[0].getAttribute('attr-value');
+
+        let importeDolaresInput = x.querySelectorAll("td")[2].querySelector("input");
+        let importeEnDolares = importeDolaresInput ? window.convertirANumero(importeDolaresInput.value) : 0;
+
+        let tipoCambioInput = x.querySelectorAll("td")[3].querySelector("input");
+        let tipoCambio = tipoCambioInput ? window.convertirANumero(tipoCambioInput.value) : 0;
+
+        let importePesosInput = x.querySelectorAll("td")[4].querySelector("input");
+        let importeEnPesos = importePesosInput ? window.convertirANumero(importePesosInput.value) : 0;
+
+        let sobreFobInput = x.querySelectorAll("td")[5].querySelector("input");
+        let sobreFob = sobreFobInput && sobreFobInput.value ?
+                       window.convertirANumero(sobreFobInput.value.replace("%","")) : 0;
+
+        let observacionesInput = x.querySelectorAll("td")[6].querySelector("input");
+        let observaciones = observacionesInput ? observacionesInput.value : "";
+
+        arrayDatos[e] = [gastos, importeEnDolares, tipoCambio, importeEnPesos, sobreFob, observaciones, idDetalle];
+    });
 
     $.ajax({
-      url: '/administracion/comercioExterior/Controller/OrdenDeCompraController.php',
-      method: 'POST',
-      data:{
-        "array": arrayDatos, 
-        "idEncabezado": idEncabezado
-      },
-    })
-    .done(function(e) {
-      // Actualizar la tabla RO_COSTOS_NACIONALIZACION ejecutando el stored procedure
-      $.ajax({
-        url: '/administracion/comercioExterior/controller/updateCostoNacionalizacion.php',
+        url: '/administracion/comercioExterior/Controller/OrdenDeCompraController.php',
         method: 'POST',
-        data:{
-          "nroOrdenDeCompra": nroOrden
+        dataType: 'json',
+        data: {
+            "array": arrayDatos,
+            "idEncabezado": idEncabezado,
+            "nroOrdenDeCompra": nroOrden,
+            "costoNac": costoNacDecimal
         },
-      })
-      .done(function(response) {
-        console.log('Costo de nacionalización actualizado:', response);
-        
+    }).done(function(response) {
+        if (response.success) {
+            Swal.fire({
+                title: '¡Costos guardados!',
+                text: 'Los costos de nacionalización fueron registrados correctamente.',
+                icon: 'success',
+                confirmButtonText: 'Volver a Costos de Nacionalización',
+                confirmButtonColor: '#198754',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            }).then(() => {
+                window.location.href = "/administracion/comercioExterior/tabs/costoNacionalizacion.php";
+            });
+        } else {
+            Swal.fire({
+                title: 'Atención',
+                text: response.message || 'Ocurrió un error al guardar.',
+                icon: 'warning',
+                confirmButtonText: 'Volver a Costos de Nacionalización',
+                confirmButtonColor: '#ffc107',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+            }).then(() => {
+                window.location.href = "/administracion/comercioExterior/tabs/costoNacionalizacion.php";
+            });
+        }
+    }).fail(function(xhr, status, error) {
+        console.error('Error al guardar costos:', error, xhr.responseText);
         Swal.fire({
-          title: 'Detalle guardado!',
-          icon: 'success',
-          showDenyButton: true,
-          showCancelButton: false,
-          showConfirmButton: false,
-          denyButtonText: `Volver`,
-        })
-        .then((e) => {
-          window.location = "/administracion/comercioExterior/tabs/costoNacionalizacion.php"
-        })
-      })
-      .fail(function(xhr, status, error) {
-        console.error('Error al actualizar costo de nacionalización:', error);
-        
-        Swal.fire({
-          title: 'Error',
-          text: 'Hubo un problema al actualizar el costo de nacionalización',
-          icon: 'error',
-          confirmButtonText: 'OK'
+            title: 'Error',
+            text: 'No se pudo conectar con el servidor. Por favor, intente nuevamente.',
+            icon: 'error',
+            confirmButtonText: 'Volver a Costos de Nacionalización',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        }).then(() => {
+            window.location.href = "/administracion/comercioExterior/tabs/costoNacionalizacion.php";
         });
-      });
-    })
+    });
 })
 
 btnAgregarDetalle.addEventListener("click",()=>{

@@ -201,7 +201,7 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
             </table>
 
             <div class="btn-group-actions">
-                <a href="../gestionDespachos.php" class="btn-modern btn-secondary-modern">
+                <a href="/administracion/comercioExterior/index.php" target="_top" class="btn-modern btn-secondary-modern">
                     <i class="bi bi-arrow-left"></i>
                     Volver
                 </a>

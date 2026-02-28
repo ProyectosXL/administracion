@@ -22,7 +22,11 @@ class Alquiler
         $this->cid_central = $cid->conectar($database);
 
         if ($this->cid_central === false) {
-            error_log("Error al conectar con la base de datos {$database} en Alquiler");
+            $errors = sqlsrv_errors();
+            $errorMsg = "Error al conectar con la base de datos {$database} en Alquiler: " . print_r($errors, true);
+            error_log($errorMsg);
+            // Si no hay conexión, mejor detener la ejecución con un mensaje claro que un Fatal Error posterior
+            die("Error de conexión a la base de datos ($database). Por favor, contacte al administrador. Detalles: " . json_encode($errors));
         }
     }
 
@@ -742,6 +746,44 @@ class Alquiler
         } catch (\Throwable $th) {
             error_log("DEBUG traerCoeficiente - Exception: " . $th->getMessage());
             throw $th;
+        }
+    }
+
+    public function guardarCoeficiente($periodo, $coeficiente)
+    {
+        // Normalizar el período (ej: "07-2025" -> "7-2025")
+        $partes = explode('-', $periodo);
+        if (count($partes) == 2) {
+            $mes = (int) $partes[0];
+            $anio = $partes[1];
+            $periodo = $mes . '-' . $anio;
+        }
+
+        // Asegurar que el coeficiente use punto como separador decimal para SQL
+        $coeficiente = str_replace(',', '.', $coeficiente);
+
+        // Verificar si ya existe el período
+        $sqlCheck = "SELECT 1 FROM RO_T_COEFICIENTES_AJUSTE WHERE PERIODO = '$periodo'";
+        $stmtCheck = sqlsrv_query($this->cid_central, $sqlCheck);
+
+        if ($stmtCheck !== false && sqlsrv_has_rows($stmtCheck)) {
+            // Update
+            $sql = "UPDATE RO_T_COEFICIENTES_AJUSTE SET COEFICIENTE = '$coeficiente' WHERE PERIODO = '$periodo'";
+        } else {
+            // Insert (si falló el check o no hay filas, intentamos insertar)
+            $sql = "INSERT INTO RO_T_COEFICIENTES_AJUSTE (PERIODO, COEFICIENTE) VALUES ('$periodo', '$coeficiente')";
+        }
+
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+            if ($stmt === false) {
+                error_log("Error al guardar coeficiente: " . print_r(sqlsrv_errors(), true));
+                return false;
+            }
+            return true;
+        } catch (\Throwable $th) {
+            error_log("Excepción al guardar coeficiente: " . $th->getMessage());
+            return false;
         }
     }
 
