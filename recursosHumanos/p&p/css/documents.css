@@ -67,10 +67,6 @@
     color: var(--success-color);
 }
 
-.action-btn.star:hover {
-    color: var(--warning-color);
-}
-
 /* Modal para visor de PDF */
 .modal {
     display: none;

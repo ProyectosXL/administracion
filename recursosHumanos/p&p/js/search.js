@@ -160,7 +160,7 @@ function filterProcedures() {
 
 // Filtrar documentos por sector específico
 function filterBySection(sectorId) {
-    window.location.href = 'index.php?sector=' + sectorId;
+    window.location.href = 'index.php?sector=' + sectorId + '&tab=all-documents';
 }
 
 // Buscar dentro de un PDF
@@ -181,7 +181,7 @@ function searchAdvanced(searchTerm) {
     }
     
     const container = document.getElementById('searchResults');
-    container.innerHTML = '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Buscando en tags...</div>';
+    container.innerHTML = '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Buscando en documentos...</div>';
     container.style.display = 'block';
     
     // Realizar búsqueda AJAX
@@ -265,39 +265,52 @@ function displaySearchResults(resultados, termino) {
     `;
     
     resultados.forEach(resultado => {
+        // Separar los tipos de coincidencias para el header vs badges
+        const tituloMatch = resultado.coincidencias.find(c => c.tipo === 'titulo');
+        const otrasCoincidencias = resultado.coincidencias.filter(c => c.tipo !== 'titulo');
+
+        // Si hay match en título, usar el texto resaltado como nombre del documento
+        const tituloMostrado = tituloMatch
+            ? tituloMatch.texto
+            : resultado.titulo;
+
         html += `
             <div class="search-result-item">
                 <div class="result-header">
                     <h5 onclick="viewDocument(${resultado.id})" style="cursor: pointer;">
-                        <i class="fas fa-file-pdf"></i> ${resultado.titulo}
+                        <i class="fas fa-file-pdf"></i> ${tituloMostrado}
                     </h5>
                     <span class="result-type badge-${resultado.tipo}">${resultado.tipo}</span>
                 </div>
-                <div class="result-matches">
         `;
-        
-        resultado.coincidencias.forEach(coincidencia => {
-            if (coincidencia.tipo === 'tag') {
-                html += `
-                    <div class="match-item match-tag">
-                        <i class="fas fa-tag"></i>
-                        <span>${coincidencia.texto}</span>
-                    </div>
-                `;
-            } else {
-                html += `
-                    <div class="match-item match-content">
-                        <i class="fas fa-quote-left"></i>
-                        <span>${coincidencia.texto}</span>
-                    </div>
-                `;
-            }
-        });
-        
-        html += `
-                </div>
-            </div>
-        `;
+
+        if (tituloMatch) {
+            html += `<div class="match-source-row"><i class="fas fa-heading"></i><span>Coincidencia en t&iacute;tulo</span></div>`;
+        }
+
+        if (otrasCoincidencias.length > 0) {
+            html += `<div class="result-matches">`;
+            otrasCoincidencias.forEach(coincidencia => {
+                if (coincidencia.tipo === 'tag') {
+                    html += `
+                        <div class="match-item match-tag">
+                            <i class="fas fa-tag"></i>
+                            <span>${coincidencia.texto}</span>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="match-item match-content">
+                            <i class="fas fa-quote-left"></i>
+                            <span>${coincidencia.texto}</span>
+                        </div>
+                    `;
+                }
+            });
+            html += `</div>`;
+        }
+
+        html += `</div>`;
     });
     
     html += '</div>';

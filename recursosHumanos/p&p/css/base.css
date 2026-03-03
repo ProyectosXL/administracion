@@ -30,18 +30,20 @@ body {
 }
 
 .section-header {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .section-header h2 {
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
     color: var(--dark-color);
+    letter-spacing: -0.3px;
 }
 
 .section-header p {
-    color: #777;
-    margin-top: 5px;
+    color: #94a3b8;
+    margin-top: 4px;
+    font-size: 14px;
 }
 
 /* Animaciones */

@@ -78,65 +78,71 @@ try {
     
     $resultados = [];
     $searchTermLower = mb_strtolower($searchTerm, 'UTF-8');
-    $documentosConTags = [];
-    $documentosSinTags = [];
-    
-    // Separar documentos con y sin tags para optimizar
+    $todosDocumentos = [];
+
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        if (!empty($row['tags'])) {
-            $documentosConTags[] = $row;
-        } else {
-            $documentosSinTags[] = $row;
-        }
+        $todosDocumentos[] = $row;
     }
-    
-    // 1. Buscar primero en tags (rápido)
-    foreach ($documentosConTags as $row) {
+
+    // Buscar en título + tags para todos los documentos
+    foreach ($todosDocumentos as $row) {
         $coincidencias = [];
         $puntuacion = 0;
-        
-        $tags = array_map('trim', explode(',', $row['tags']));
-        $tagsCoincidentes = [];
-        
-        foreach ($tags as $tag) {
-            $tagLower = mb_strtolower($tag, 'UTF-8');
-            if (strpos($tagLower, $searchTermLower) !== false) {
-                $tagsCoincidentes[] = $tag;
-                $puntuacion += 10; // Alta prioridad para tags
-            }
+
+        // --- Coincidencia en título ---
+        $tituloLower = mb_strtolower($row['titulo'], 'UTF-8');
+        if (strpos($tituloLower, $searchTermLower) !== false) {
+            $tituloResaltado = preg_replace(
+                '/(' . preg_quote($searchTerm, '/') . ')/iu',
+                '<strong>$1</strong>',
+                htmlspecialchars($row['titulo'])
+            );
+            $coincidencias[] = [
+                'tipo' => 'titulo',
+                'texto' => $tituloResaltado
+            ];
+            $puntuacion += 20; // Máxima prioridad para coincidencia en título
         }
-        
-        if (!empty($tagsCoincidentes)) {
-            // Construir lista de tags con el coincidente resaltado
+
+        // --- Coincidencia en tags ---
+        if (!empty($row['tags'])) {
+            $tags = array_map('trim', explode(',', $row['tags']));
+            $hayTagCoincidente = false;
             $tagsHtml = [];
+
             foreach ($tags as $tag) {
                 $tagLower = mb_strtolower($tag, 'UTF-8');
                 if (strpos($tagLower, $searchTermLower) !== false) {
-                    // Resaltar el tag coincidente
                     $tagResaltado = preg_replace(
                         '/(' . preg_quote($searchTerm, '/') . ')/iu',
                         '<strong>$1</strong>',
                         htmlspecialchars($tag)
                     );
                     $tagsHtml[] = $tagResaltado;
+                    $hayTagCoincidente = true;
+                    $puntuacion += 10;
                 } else {
                     $tagsHtml[] = htmlspecialchars($tag);
                 }
             }
-            
-            $coincidencias[] = [
-                'tipo' => 'tag',
-                'texto' => 'Tags: ' . implode(', ', $tagsHtml)
-            ];
-            
-            // Agregar a resultados (ya tiene coincidencias en tags)
+
+            if ($hayTagCoincidente) {
+                $coincidencias[] = [
+                    'tipo' => 'tag',
+                    'texto' => 'Tags: ' . implode(', ', $tagsHtml)
+                ];
+            }
+        }
+
+        // Solo agregar si tiene al menos una coincidencia
+        if (!empty($coincidencias)) {
             $resultados[] = [
-                'id' => $row['id'],
-                'titulo' => $row['titulo'],
-                'tipo' => $row['tipo'],
-                'archivo' => $row['archivo_nombre'],
+                'id'          => $row['id'],
+                'titulo'      => $row['titulo'],
+                'tipo'        => $row['tipo'],
+                'archivo'     => $row['archivo_nombre'],
                 'coincidencias' => $coincidencias,
-                'puntuacion' => $puntuacion
+                'puntuacion'  => $puntuacion
             ];
         }
     }
