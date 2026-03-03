@@ -97,9 +97,12 @@
         <div class="card" id="cardTablaCostoM2" style="display: none;">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Costo de Ocupación por Metro Cuadrado</h5>
-                <div>
+                <div style="display:flex; gap:8px; align-items:center;">
                     <button class="btn btn-success btn-sm" id="btnExportarCostoM2">
                         <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+                    </button>
+                    <button class="pdf-btn btn-sm" id="btnPDFCostoM2" title="Descargar PDF">
+                        <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
                     </button>
                 </div>
             </div>

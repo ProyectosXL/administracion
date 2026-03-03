@@ -127,6 +127,7 @@ function renderizarComparacion(data) {
     $('#comparacionKpi').fadeIn();
     $('#tableSectionComparar').fadeIn();
     $('#btnExportarComparar').show();
+    $('#btnPDFComparar').show();
     
     // Renderizar KPI de resumen
     renderizarKpiComparacion(data.resumen);
@@ -291,6 +292,7 @@ function limpiarFiltrosComparacion() {
     $('#comparacionKpi').hide();
     $('#tableSectionComparar').hide();
     $('#btnExportarComparar').hide();
+    $('#btnPDFComparar').hide();
     $('#emptyStateComparar').fadeIn();
     
     // Limpiar datos

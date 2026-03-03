@@ -96,6 +96,10 @@
                     <i class="bi bi-download"></i>
                     Exportar
                 </button>
+                <button class="pdf-btn" id="btnPDFRanking" title="Descargar PDF">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                    Descargar PDF
+                </button>
             </div>
         </div>
         

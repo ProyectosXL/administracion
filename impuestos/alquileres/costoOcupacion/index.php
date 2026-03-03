@@ -298,7 +298,34 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
             background-color: #fff9c4 !important;
             border-top: 2px solid #FFC107 !important;
         }
-    </style>
+        /* Botón PDF */
+        .pdf-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: #fff;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 6px rgba(231, 76, 60, 0.35);
+        }
+
+        .pdf-btn:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            box-shadow: 0 4px 14px rgba(231, 76, 60, 0.55);
+            transform: translateY(-1px);
+            color: #fff;
+        }
+
+        .pdf-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(231, 76, 60, 0.35);
+        }    </style>
 
 </head>
 
@@ -471,6 +498,10 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                             <i class="bi bi-file-earmark-excel"></i>
                             Exportar
                         </button>
+                        <button class="pdf-btn" id="btnPDFAnalisis" title="Descargar PDF">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            Descargar PDF
+                        </button>
                     </div>
                 </div>
                 
@@ -598,6 +629,10 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                                     <i class="bi bi-file-earmark-excel"></i>
                                     Exportar
                                 </button>
+                                <button class="pdf-btn" id="btnPDFReporteFecha" title="Descargar PDF">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                    Descargar PDF
+                                </button>
                             </div>
                         </div>
                         
@@ -671,6 +706,8 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -766,6 +803,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     </script>
     
     <!-- Custom JS -->
+    <script src="js/pdfExport.js"></script>
     <script src="js/modalEvolucion.js"></script>
     <script src="js/costoOcupacion.js"></script>
     <script src="js/compararSucursales.js"></script>

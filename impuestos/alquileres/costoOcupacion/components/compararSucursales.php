@@ -510,6 +510,10 @@ div.dataTables_scrollHead table.table-bordered {
                     <i class="bi bi-download"></i>
                     Exportar
                 </button>
+                <button type="button" class="pdf-btn" id="btnPDFComparar" style="display: none;" title="Descargar PDF">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                    Descargar PDF
+                </button>
             </div>
         </div>
     </div>
