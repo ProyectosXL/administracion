@@ -19,13 +19,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 20px;
-    margin-bottom: 30px;
+    padding: 0 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 10px;
 }
 
 .logo h1 {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
 .sidebar-menu {
@@ -66,37 +68,51 @@
 /* Main Content */
 .main-content {
     flex: 1;
-    padding: 20px;
+    padding: 28px 34px;
     transition: all 0.3s ease;
+    min-width: 0; /* evita overflow en flex containers */
 }
 
 .header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e0e0e0;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding: 16px 20px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 /* Tabs */
 .tabs {
     display: flex;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 22px;
+    border-bottom: 2px solid #eef0f3;
+    gap: 4px;
 }
 
 .tab {
-    padding: 12px 20px;
+    padding: 11px 22px;
     cursor: pointer;
     border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
     font-weight: 600;
-    color: #777;
+    font-size: 14px;
+    color: #888;
+    border-radius: 6px 6px 0 0;
+    transition: color 0.2s, background 0.2s;
+}
+
+.tab:hover {
+    color: var(--primary-color);
+    background: rgba(52,152,219,0.05);
 }
 
 .tab.active {
     border-bottom-color: var(--primary-color);
     color: var(--primary-color);
+    background: rgba(52,152,219,0.06);
 }
 
 /* Grid Systems */
@@ -108,9 +124,9 @@
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
 }
 
 .sectors-grid {

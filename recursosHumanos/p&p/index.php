@@ -1,4 +1,4 @@
-
+﻿
 <?php
 // Iniciar sesión para gestión de usuarios (si se implementa)
 session_start();
@@ -32,6 +32,12 @@ $documentos_recientes = $politicaObj->obtenerTodos($filtros);
 
 // Obtener términos del glosario
 $glosario = $politicaObj->obtenerGlosario();
+
+// ── Color único para todos los ítems de sector ──
+$sectorColorMap = [];
+foreach ($sectores as $i => $s) {
+    $sectorColorMap[$s['id']] = '#5b8db8';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -235,7 +241,7 @@ $glosario = $politicaObj->obtenerGlosario();
                 </li>
                 <li>
                     <a href="#" onclick="toggleChatbot()" id="chatbotMenuBtn">
-                        <i class="fas fa-robot"></i>
+                        <i class="fas fa-headset"></i>
                         <span>Asistente IA</span>
                     </a>
                 </li>
@@ -243,12 +249,6 @@ $glosario = $politicaObj->obtenerGlosario();
                     <a href="#" onclick="showTab('upload')">
                         <i class="fas fa-upload"></i>
                         <span>Subir Documento</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" onclick="showTab('update')">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>Actualizar Documento</span>
                     </a>
                 </li>
                 <li>
@@ -271,24 +271,30 @@ $glosario = $politicaObj->obtenerGlosario();
                     <input type="text" class="search-input" id="searchInput" placeholder="Buscar políticas, procedimientos o términos...">
                 </div>
                 
-                <div class="user-menu">
-                    <div class="notifications">
-                        <i class="fas fa-bell"></i>
-                        <span class="badge">3</span>
-                    </div>
-                    
-                    <div class="user-profile">
-                        <div class="avatar">
-                            <span>AB</span>
-                        </div>
-                        <div class="user-info">
-                            <h4>Admin</h4>
-                            <p>Administrador</p>
-                        </div>
-                    </div>
-                </div>
+
             </header>
-            
+
+            <?php
+            // Banner de filtro activo
+            $filtroSectorId = isset($_GET['sector']) && !empty($_GET['sector']) ? (int)$_GET['sector'] : null;
+            $filtroTipo     = isset($_GET['tipo'])   && !empty($_GET['tipo'])   ? $_GET['tipo']         : null;
+            $filtroSectorNombre = '';
+            if ($filtroSectorId) {
+                foreach ($sectores as $s) {
+                    if ($s['id'] == $filtroSectorId) { $filtroSectorNombre = $s['nombre']; break; }
+                }
+            }
+            if ($filtroSectorId || $filtroTipo):
+                $partes = [];
+                if ($filtroSectorNombre) $partes[] = 'Sector: <strong>' . htmlspecialchars($filtroSectorNombre) . '</strong>';
+                if ($filtroTipo)         $partes[] = 'Tipo: <strong>' . ($filtroTipo == 'politica' ? 'Pol&iacute;ticas' : 'Procedimientos') . '</strong>';
+            ?>
+            <div class="filter-banner">
+                <span class="filter-banner-label"><i class="fas fa-filter"></i> Filtrando por: <?php echo implode(' &mdash; ', $partes); ?></span>
+                <a href="index.php" class="filter-banner-clear"><i class="fas fa-times-circle"></i> Limpiar filtro</a>
+            </div>
+            <?php endif; ?>
+
             <div class="section-header">
                 <h2>Panel de Control</h2>
                 <p>Bienvenido al sistema de gestión de políticas y procedimientos</p>
@@ -297,7 +303,7 @@ $glosario = $politicaObj->obtenerGlosario();
             <!-- Estadísticas generales -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="icon blue">
+                    <div class="icon politica">
                         <i class="fas fa-file-alt"></i>
                     </div>
                     <div class="stat-info">
@@ -307,7 +313,7 @@ $glosario = $politicaObj->obtenerGlosario();
                 </div>
 
                 <div class="stat-card">
-                    <div class="icon red">
+                    <div class="icon procedimiento">
                         <i class="fas fa-tasks"></i>
                     </div>
                     <div class="stat-info">
@@ -317,7 +323,7 @@ $glosario = $politicaObj->obtenerGlosario();
                 </div>
                 
                 <div class="stat-card">
-                    <div class="icon green">
+                    <div class="icon sectores">
                         <i class="fas fa-building"></i>
                     </div>
                     <div class="stat-info">
@@ -327,7 +333,7 @@ $glosario = $politicaObj->obtenerGlosario();
                 </div>
                 
                 <div class="stat-card">
-                    <div class="icon orange">
+                    <div class="icon glosario">
                         <i class="fas fa-book"></i>
                     </div>
                     <div class="stat-info">
@@ -381,9 +387,6 @@ $glosario = $politicaObj->obtenerGlosario();
                                             <button class="action-btn download" onclick="downloadDocument(<?php echo $doc['id']; ?>)">
                                                 <i class="fas fa-download"></i>
                                             </button>
-                                            <button class="action-btn star">
-                                                <i class="far fa-star"></i>
-                                            </button>
                                         </div>
                                     </li>
                                     <?php endforeach; ?>
@@ -432,8 +435,9 @@ $glosario = $politicaObj->obtenerGlosario();
                     </div>
                     <?php else: ?>
                         <?php foreach ($sectores as $sector): ?>
+                        <?php $sc = $sectorColorMap[$sector['id']] ?? '#3498db'; ?>
                         <div class="sector-card" onclick="filterBySection(<?php echo $sector['id']; ?>)">
-                            <div class="icon">
+                            <div class="icon" style="background:<?php echo $sc; ?>1a; color:<?php echo $sc; ?>">
                                 <i class="fas <?php echo htmlspecialchars($sector['icono'] ? $sector['icono'] : 'fa-folder'); ?>"></i>
                             </div>
                             <h3><?php echo htmlspecialchars($sector['nombre']); ?></h3>
@@ -508,9 +512,6 @@ $glosario = $politicaObj->obtenerGlosario();
                                     <button class="action-btn download" onclick="downloadDocument(<?php echo $policy['id']; ?>)">
                                         <i class="fas fa-download"></i>
                                     </button>
-                                    <button class="action-btn star">
-                                        <i class="far fa-star"></i>
-                                    </button>
                                 </div>
                             </li>
                             <?php endforeach; ?>
@@ -579,9 +580,6 @@ $glosario = $politicaObj->obtenerGlosario();
                                     <button class="action-btn download" onclick="downloadDocument(<?php echo $procedure['id']; ?>)">
                                         <i class="fas fa-download"></i>
                                     </button>
-                                    <button class="action-btn star">
-                                        <i class="far fa-star"></i>
-                                    </button>
                                 </div>
                             </li>
                             <?php endforeach; ?>
@@ -594,59 +592,134 @@ $glosario = $politicaObj->obtenerGlosario();
             <div id="statistics-content" class="tab-content" style="display: none;">
                 <div class="section-header">
                     <h2>Estadísticas</h2>
-                    <p>Análisis de uso y actividad del sistema</p>
+                    <p>An&aacute;lisis de uso y actividad del sistema</p>
                 </div>
-                
-                <div class="stats-container">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Documentos más vistos</h3>
+
+                <?php
+                $total_docs = count($documentos_recientes);
+                $total_pol = count(array_filter($documentos_recientes, fn($d) => $d['tipo'] == 'politica'));
+                $total_proc = $total_docs - $total_pol;
+                $max_vistas = 1;
+                $max_descargas = 1;
+                if (!empty($estadisticas['mas_vistos'])) {
+                    foreach ($estadisticas['mas_vistos'] as $d) $max_vistas = max($max_vistas, $d['vistas']);
+                }
+                if (!empty($estadisticas['mas_descargados'])) {
+                    foreach ($estadisticas['mas_descargados'] as $d) $max_descargas = max($max_descargas, $d['descargas']);
+                }
+                ?>
+
+                <!-- Tarjetas resumen -->
+                <div class="stats-summary-grid">
+                    <div class="stats-summary-card blue">
+                        <div class="ssc-icon"><i class="fas fa-file-alt"></i></div>
+                        <div class="ssc-body">
+                            <span class="ssc-number"><?php echo $total_docs; ?></span>
+                            <span class="ssc-label">Documentos totales</span>
                         </div>
-                        <ul class="stats-list">
-                            <?php if (isset($estadisticas['mas_vistos']) && !empty($estadisticas['mas_vistos'])): ?>
-                                <?php foreach ($estadisticas['mas_vistos'] as $doc): ?>
-                                <li class="stats-item">
-                                    <div class="stats-info">
-                                        <h4><?php echo htmlspecialchars($doc['titulo']); ?></h4>
-                                        <div class="stats-bar">
-                                            <div class="stats-progress" style="width: <?php echo min(100, ($doc['vistas'] / 100) * 100); ?>%"></div>
-                                        </div>
-                                    </div>
-                                    <div class="stats-count"><?php echo $doc['vistas']; ?> vistas</div>
-                                </li>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <li class="no-stats">
-                                    <p>No hay datos disponibles.</p>
-                                </li>
-                            <?php endif; ?>
-                        </ul>
                     </div>
-                    
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Documentos más descargados</h3>
+                    <div class="stats-summary-card politica">
+                        <div class="ssc-icon"><i class="fas fa-file-contract"></i></div>
+                        <div class="ssc-body">
+                            <span class="ssc-number"><?php echo $total_pol; ?></span>
+                            <span class="ssc-label">Pol&iacute;ticas</span>
                         </div>
-                        <ul class="stats-list">
-                            <?php if (isset($estadisticas['mas_descargados']) && !empty($estadisticas['mas_descargados'])): ?>
-                                <?php foreach ($estadisticas['mas_descargados'] as $doc): ?>
-                                <li class="stats-item">
-                                    <div class="stats-info">
-                                        <h4><?php echo htmlspecialchars($doc['titulo']); ?></h4>
-                                        <div class="stats-bar">
-                                            <div class="stats-progress" style="width: <?php echo min(100, ($doc['descargas'] / 50) * 100); ?>%"></div>
-                                        </div>
-                                    </div>
-                                    <div class="stats-count"><?php echo $doc['descargas']; ?> descargas</div>
-                                </li>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <li class="no-stats">
-                                    <p>No hay datos disponibles.</p>
-                                </li>
-                            <?php endif; ?>
-                        </ul>
                     </div>
+                    <div class="stats-summary-card procedimiento">
+                        <div class="ssc-icon"><i class="fas fa-tasks"></i></div>
+                        <div class="ssc-body">
+                            <span class="ssc-number"><?php echo $total_proc; ?></span>
+                            <span class="ssc-label">Procedimientos</span>
+                        </div>
+                    </div>
+                    <div class="stats-summary-card orange">
+                        <div class="ssc-icon"><i class="fas fa-building"></i></div>
+                        <div class="ssc-body">
+                            <span class="ssc-number"><?php echo count($sectores); ?></span>
+                            <span class="ssc-label">Sectores activos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ranking de documentos -->
+                <div class="stats-rankings">
+                    <div class="card stats-rank-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-eye" style="color:#3498db;margin-right:8px;"></i>M&aacute;s vistos</h3>
+                        </div>
+                        <?php if (isset($estadisticas['mas_vistos']) && !empty($estadisticas['mas_vistos'])): ?>
+                        <ul class="stats-rank-list">
+                            <?php foreach ($estadisticas['mas_vistos'] as $i => $doc): ?>
+                            <li class="stats-rank-item">
+                                <span class="rank-pos rank-pos-<?php echo $i+1; ?>"><?php echo $i+1; ?></span>
+                                <div class="rank-info">
+                                    <span class="rank-title"><?php echo htmlspecialchars($doc['titulo']); ?></span>
+                                    <div class="rank-bar-wrap">
+                                        <div class="rank-bar blue-bar" style="width:<?php echo round(($doc['vistas']/$max_vistas)*100); ?>%"></div>
+                                    </div>
+                                </div>
+                                <span class="rank-badge blue-badge"><?php echo $doc['vistas']; ?> <small>vistas</small></span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <?php else: ?>
+                        <div class="stats-empty"><i class="fas fa-chart-bar"></i><p>Sin datos disponibles</p></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="card stats-rank-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-download" style="color:#2ecc71;margin-right:8px;"></i>M&aacute;s descargados</h3>
+                        </div>
+                        <?php if (isset($estadisticas['mas_descargados']) && !empty($estadisticas['mas_descargados'])): ?>
+                        <ul class="stats-rank-list">
+                            <?php foreach ($estadisticas['mas_descargados'] as $i => $doc): ?>
+                            <li class="stats-rank-item">
+                                <span class="rank-pos rank-pos-<?php echo $i+1; ?>"><?php echo $i+1; ?></span>
+                                <div class="rank-info">
+                                    <span class="rank-title"><?php echo htmlspecialchars($doc['titulo']); ?></span>
+                                    <div class="rank-bar-wrap">
+                                        <div class="rank-bar green-bar" style="width:<?php echo round(($doc['descargas']/$max_descargas)*100); ?>%"></div>
+                                    </div>
+                                </div>
+                                <span class="rank-badge green-badge"><?php echo $doc['descargas']; ?> <small>descargas</small></span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <?php else: ?>
+                        <div class="stats-empty"><i class="fas fa-chart-bar"></i><p>Sin datos disponibles</p></div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Distribución por sector -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-pie" style="color:#9b59b6;margin-right:8px;"></i>Distribuci&oacute;n por sector</h3>
+                    </div>
+                    <?php if (!empty($sectores)): ?>
+                    <div class="stats-sectors-grid">
+                        <?php foreach ($sectores as $sector):
+                            $cnt = count(array_filter($documentos_recientes, fn($d) => $d['sector_id'] == $sector['id']));
+                            $pct = $total_docs > 0 ? round(($cnt / $total_docs) * 100) : 0;
+                            $sc2 = $sectorColorMap[$sector['id']] ?? '#3498db';
+                        ?>
+                        <div class="stats-sector-row">
+                            <div class="ssr-label">
+                                <i class="fas <?php echo htmlspecialchars($sector['icono'] ?: 'fa-folder'); ?>" style="color:<?php echo $sc2; ?>"></i>
+                                <span><?php echo htmlspecialchars($sector['nombre']); ?></span>
+                            </div>
+                            <div class="ssr-bar-wrap">
+                                <div class="ssr-bar" style="width:<?php echo $pct; ?>%; background:<?php echo $sc2; ?>"></div>
+                            </div>
+                            <span class="ssr-count"><?php echo $cnt; ?> doc<?php echo $cnt != 1 ? 's' : ''; ?></span>
+                            <span class="ssr-pct"><?php echo $pct; ?>%</span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="stats-empty"><i class="fas fa-chart-pie"></i><p>Sin datos disponibles</p></div>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -751,261 +824,218 @@ $glosario = $politicaObj->obtenerGlosario();
                 </div>
             </div>
 
-            <!-- Vista de Actualización de Documentos -->
-<div id="update-content" class="tab-content" style="display: none;">
-    <div class="section-header">
-        <h2>Actualizar Documento</h2>
-        <p>Cargar una nueva versión de un documento existente</p>
-    </div>
-    
-    <div class="upload-container">
-        <!-- Información sobre el proceso -->
-        <div class="upload-info">
-            <h4><i class="fas fa-info-circle"></i> Información sobre la actualización de documentos</h4>
-            <ul>
-                <li>Seleccione el documento que desea actualizar de la lista.</li>
-                <li>Sólo podrá modificar el archivo y opcionalmente la descripción y etiquetas.</li>
-                <li>La nueva versión reemplazará a la anterior pero se mantendrá un historial.</li>
-                <li>Sólo se permiten archivos en formato PDF.</li>
-            </ul>
-        </div>
-        
-        <!-- Formulario de selección de documento -->
-        <div class="upload-form">
-            <div class="upload-form-title">
-                <h3>Paso 1: Seleccione el documento a actualizar</h3>
-            </div>
-            
-            <div class="form-group">
-                <label for="documentSelect">Documento:</label>
-                <select id="documentSelect" name="documento_id" required onchange="loadDocumentDetails(this.value)">
-                    <option value="" disabled selected>Seleccione un documento</option>
-                    <?php
-                    // Obtener todos los documentos para mostrarlos en el selector
-                    $todos_documentos = $politicaObj->obtenerTodos();
-                    foreach ($todos_documentos as $doc) {
-                        echo '<option value="'.$doc['id'].'">' . htmlspecialchars($doc['titulo']) . ' ('. htmlspecialchars($doc['sector_nombre']) .')</option>';
-                    }
-                    ?>
-                </select>
-            </div>
-            
-            <!-- Área donde se mostrarán los detalles del documento seleccionado -->
-            <div id="documentDetails" style="display: none;" class="document-details">
-                <div class="document-info-card">
-                    <h4>Información del documento</h4>
-                    <div class="info-row">
-                        <span class="label">Título:</span>
-                        <span id="docDetailTitle" class="value"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Tipo:</span>
-                        <span id="docDetailType" class="value"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Sector:</span>
-                        <span id="docDetailSector" class="value"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Versión actual:</span>
-                        <span id="docDetailVersion" class="value"></span>
-                        <button type="button" class="btn-link" onclick="showVersionHistory(document.getElementById('updateDocId').value)">
-                            <i class="fas fa-history"></i> Ver historial
-                        </button>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Última actualización:</span>
-                        <span id="docDetailDate" class="value"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal para historial de versiones -->
-        <div id="versionHistoryModal" class="modal">
-            <div class="modal-content history-modal">
-                <span class="close-modal" onclick="closeVersionHistory()">&times;</span>
-                <h3>Historial de Versiones</h3>
-                <div id="versionHistoryContent">
-                    <p>Cargando historial...</p>
-                </div>
-            </div>
-        </div>
-        
-                    <!-- Formulario de actualización -->
-                    <div id="updateForm" class="upload-form" style="display: none;">
-                        <div class="upload-form-title">
-                            <h3>Paso 2: Actualizar documento</h3>
-                        </div>
-                        
-                        <form id="documentUpdateForm" action="Controller/actualizar_documento.php" method="post" enctype="multipart/form-data">
-                            <input type="hidden" id="updateDocId" name="documento_id" value="">
-                            
-                            <div class="form-group">
-                                <label for="updateVersion">Nueva versión:</label>
-                                <input type="text" id="updateVersion" name="version" placeholder="Ej: 2.0" required>
-                                <span class="field-info">La versión actual se mostrará como referencia</span>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="updateDesc">Descripción (opcional):</label>
-                                <textarea id="updateDesc" name="descripcion" rows="3" placeholder="Describa los cambios realizados en esta versión"></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="updateTags">Etiquetas (opcional):</label>
-                                <input type="text" id="updateTags" name="tags" placeholder="Separadas por comas">
-                                <div class="tags-container" id="updateTagsContainer"></div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Archivo PDF <span class="required">*</span></label>
-                                <div class="file-upload-container">
-                                    <div class="file-upload-button" id="updateFileUploadBtn">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <div class="main-text">Arrastre y suelte la nueva versión aquí</div>
-                                        <p>o haga clic para seleccionar un archivo</p>
-                                        <p class="file-types">Solo archivos PDF (máx. 10 MB)</p>
-                                    </div>
-                                    <input type="file" id="updateDocFile" name="archivo" accept=".pdf" required class="file-upload-input">
-                                    
-                                    <div class="file-info" id="updateFileInfo">
-                                        <i class="fas fa-file-pdf"></i>
-                                        <span class="file-name" id="updateFileName">nombre_del_archivo.pdf</span>
-                                        <span class="file-size" id="updateFileSize">0 KB</span>
-                                        <i class="fas fa-times remove-file" onclick="removeUpdateFile()"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-actions">
-                                <button type="button" class="btn secondary" onclick="cancelUpdate()">Cancelar</button>
-                                <button type="submit" class="btn primary">
-                                    <i class="fas fa-sync-alt"></i> Actualizar Documento
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-                        
             <!-- Vista de Configuración -->
             <div id="settings-content" class="tab-content" style="display: none;">
                 <div class="section-header">
-                    <h2>Configuración</h2>
-                    <p>Administrar sectores y configuración del sistema</p>
+                    <h2>Configuraci&oacute;n</h2>
+                    <p>Administrar sectores y glosario del sistema</p>
                 </div>
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Gestión de Sectores</h3>
-                        <button class="btn primary" id="newSectorBtn">
-                            <i class="fas fa-plus"></i> Nuevo Sector
-                        </button>
-                    </div>
-                    
-                    <div id="newSectorForm" style="display: none;" class="settings-form">
-                        <form id="sectorForm" action="procesar_sector.php" method="post">
-                            <div class="form-group">
-                                <label for="sectorName">Nombre del sector:</label>
-                                <input type="text" id="sectorName" name="nombre" required>
+
+                <div class="settings-layout">
+
+                    <!-- Sectores -->
+                    <div class="card cfg-card">
+                        <div class="card-header cfg-card-header">
+                            <div class="cfg-card-title">
+                                <div class="cfg-card-icon orange">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <div>
+                                    <h3>Sectores</h3>
+                                    <p class="cfg-card-subtitle">Gestionar los sectores de la organizaci&oacute;n</p>
+                                </div>
                             </div>
-                            
-                            <div class="form-group">
-                                <label for="sectorDesc">Descripción:</label>
-                                <textarea id="sectorDesc" name="descripcion" rows="2"></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="sectorIcon">Icono:</label>
-                                <select id="sectorIcon" name="icono">
-                                    <option value="fa-folder">📁 Carpeta</option>
-                                    <option value="fa-building">🏢 Edificio</option>
-                                    <option value="fa-users">👥 Personas</option>
-                                    <option value="fa-laptop-code">💻 Programación</option>
-                                    <option value="fa-coins">💰 Finanzas</option>
-                                    <option value="fa-shopping-cart">🛒 Ventas</option>
-                                    <option value="fa-cogs">⚙️ Operaciones</option>
-                                    <option value="fa-calculator">🧮 Contabilidad</option>
-                                    <option value="fa-bullhorn">📣 Marketing</option>
-                                    <option value="fa-balance-scale">⚖️ Legal</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-actions">
-                                <button type="submit" class="btn primary">Guardar Sector</button>
-                                <button type="button" class="btn secondary" id="cancelSectorBtn">Cancelar</button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <ul class="sectors-list">
-                        <?php if (empty($sectores)): ?>
-                        <li class="no-sectors">
-                            <p>No hay sectores disponibles.</p>
-                        </li>
-                        <?php else: ?>
-                            <?php foreach ($sectores as $sector): ?>
-                            <li class="sector-item">
-                                <div class="sector-info">
-                                    <div class="sector-icon">
-                                        <i class="fas <?php echo htmlspecialchars($sector['icono'] ? $sector['icono'] : 'fa-folder'); ?>"></i>
+                            <button class="btn primary btn-sm" id="newSectorBtn">
+                                <i class="fas fa-plus"></i> Nuevo
+                            </button>
+                        </div>
+
+                        <div id="newSectorForm" style="display: none;" class="cfg-inline-form">
+                            <form id="sectorForm" action="procesar_sector.php" method="post">
+                                <div class="cfg-form-row">
+                                    <div class="form-group">
+                                        <label for="sectorName">Nombre <span class="required">*</span></label>
+                                        <input type="text" id="sectorName" name="nombre" required placeholder="Ej: Recursos Humanos">
                                     </div>
-                                    <div class="sector-details">
-                                        <h4><?php echo htmlspecialchars($sector['nombre']); ?></h4>
-                                        <p><?php echo htmlspecialchars($sector['descripcion']); ?></p>
+                                    <div class="form-group">
+                                        <label for="sectorIcon">Icono</label>
+                                        <select id="sectorIcon" name="icono">
+                                            <option value="fa-folder">&#128193; Carpeta</option>
+                                            <option value="fa-building">&#127970; Edificio</option>
+                                            <option value="fa-users">&#128101; Personas</option>
+                                            <option value="fa-laptop-code">&#128187; Programaci&oacute;n</option>
+                                            <option value="fa-coins">&#128176; Finanzas</option>
+                                            <option value="fa-shopping-cart">&#128722; Ventas</option>
+                                            <option value="fa-cogs">&#9881;&#65039; Operaciones</option>
+                                            <option value="fa-calculator">&#129518; Contabilidad</option>
+                                            <option value="fa-bullhorn">&#128226; Marketing</option>
+                                            <option value="fa-balance-scale">&#9878;&#65039; Legal</option>
+                                        </select>
                                     </div>
                                 </div>
-                                <div class="sector-actions">
-                                    <button class="action-btn edit" onclick="editSector(<?php echo $sector['id']; ?>)">
-                                        <i class="fas fa-edit"></i>
+                                <div class="form-group">
+                                    <label for="sectorDesc">Descripci&oacute;n</label>
+                                    <textarea id="sectorDesc" name="descripcion" rows="2" placeholder="Descripci&oacute;n breve del sector..."></textarea>
+                                </div>
+                                <div class="cfg-form-actions">
+                                    <button type="submit" class="btn primary"><i class="fas fa-check"></i> Guardar</button>
+                                    <button type="button" class="btn secondary" id="cancelSectorBtn"><i class="fas fa-times"></i> Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <ul class="cfg-list">
+                            <?php if (empty($sectores)): ?>
+                            <li class="cfg-empty">
+                                <i class="fas fa-building"></i>
+                                <p>No hay sectores creados a&uacute;n.</p>
+                            </li>
+                            <?php else: ?>
+                                <?php
+                                                foreach ($sectores as $idx => $sector):
+                                    $color = $sectorColorMap[$sector['id']] ?? '#3498db';
+                                ?>
+                                <li class="cfg-list-item">
+                                    <div class="cfg-item-icon" style="background:<?php echo $color; ?>20; color:<?php echo $color; ?>">
+                                        <i class="fas <?php echo htmlspecialchars($sector['icono'] ?: 'fa-folder'); ?>"></i>
+                                    </div>
+                                    <div class="cfg-item-info">
+                                        <h4><?php echo htmlspecialchars($sector['nombre']); ?></h4>
+                                        <?php if (!empty($sector['descripcion'])): ?>
+                                        <p><?php echo htmlspecialchars($sector['descripcion']); ?></p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="cfg-item-actions">
+                                        <button class="cfg-action-btn cfg-edit" onclick="editSector(<?php echo $sector['id']; ?>)" title="Editar">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
+                                        <button class="cfg-action-btn cfg-delete" onclick="confirmDeleteSector(<?php echo $sector['id']; ?>)" title="Eliminar">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </li>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </ul>
+                    </div>
+
+                    <!-- Glosario -->
+                    <div class="card cfg-card">
+                        <div class="card-header cfg-card-header">
+                            <div class="cfg-card-title">
+                                <div class="cfg-card-icon purple">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <div>
+                                    <h3>Glosario</h3>
+                                    <p class="cfg-card-subtitle">Gestionar los t&eacute;rminos del glosario</p>
+                                </div>
+                            </div>
+                            <button class="btn primary btn-sm" id="newTermBtn">
+                                <i class="fas fa-plus"></i> Nuevo
+                            </button>
+                        </div>
+
+                        <div id="newTermForm" style="display: none;" class="cfg-inline-form">
+                            <form id="termForm" action="procesar_glosario.php" method="post">
+                                <div class="form-group">
+                                    <label for="termName">T&eacute;rmino <span class="required">*</span></label>
+                                    <input type="text" id="termName" name="termino" required placeholder="Ej: Procedimiento Operativo">
+                                </div>
+                                <div class="form-group">
+                                    <label for="termDefinition">Definici&oacute;n <span class="required">*</span></label>
+                                    <textarea id="termDefinition" name="definicion" rows="3" required placeholder="Escriba la definici&oacute;n del t&eacute;rmino..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="termSector">Sector (opcional)</label>
+                                    <select id="termSector" name="sector_id">
+                                        <option value="">Sin sector espec&iacute;fico</option>
+                                        <?php foreach ($sectores as $sector): ?>
+                                        <option value="<?php echo $sector['id']; ?>"><?php echo htmlspecialchars($sector['nombre']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="cfg-form-actions">
+                                    <button type="submit" class="btn primary"><i class="fas fa-check"></i> Guardar</button>
+                                    <button type="button" class="btn secondary" id="cancelTermBtn"><i class="fas fa-times"></i> Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="cfg-glossary-count">
+                            <i class="fas fa-info-circle"></i>
+                            <?php echo count($glosario); ?> t&eacute;rmino<?php echo count($glosario) != 1 ? 's' : ''; ?> registrado<?php echo count($glosario) != 1 ? 's' : ''; ?>.
+                            <a href="#" onclick="showGlossary(); return false;">Ver glosario completo <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Vista de Todos los Documentos -->
+            <div id="all-documents-content" class="tab-content" style="display: none;">
+                <div class="section-header">
+                    <h2>Todos los Documentos</h2>
+                    <?php if ($filtroSectorNombre || $filtroTipo): ?>
+                    <p>Mostrando <?php echo count($documentos_recientes); ?> documento<?php echo count($documentos_recientes) != 1 ? 's' : ''; ?><?php echo $filtroSectorNombre ? ' del sector <strong>'.htmlspecialchars($filtroSectorNombre).'</strong>' : ''; ?><?php echo $filtroTipo ? ' &mdash; tipo <strong>'.($filtroTipo=='politica'?'Pol&iacute;tica':'Procedimiento').'</strong>' : ''; ?></p>
+                    <?php else: ?>
+                    <p>Listado completo de pol&iacute;ticas y procedimientos</p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Documentos</h3>
+                        <div class="filter-options">
+                            <select class="filter-select" id="sectorFilterAll" onchange="filterAllDocuments()">
+                                <option value="" <?php echo !$filtroSectorId ? 'selected' : ''; ?>>Todos los sectores</option>
+                                <?php foreach ($sectores as $sector): ?>
+                                <option value="<?php echo $sector['id']; ?>" <?php echo ($filtroSectorId == $sector['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($sector['nombre']); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <select class="filter-select" id="typeFilterAll" onchange="filterAllDocuments()">
+                                <option value="" <?php echo !$filtroTipo ? 'selected' : ''; ?>>Todos los tipos</option>
+                                <option value="politica" <?php echo ($filtroTipo == 'politica') ? 'selected' : ''; ?>>Pol&iacute;ticas</option>
+                                <option value="procedimiento" <?php echo ($filtroTipo == 'procedimiento') ? 'selected' : ''; ?>>Procedimientos</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <ul class="policy-list" id="allDocumentsList">
+                        <?php if (empty($documentos_recientes)): ?>
+                        <li class="no-documents">
+                            <p>No hay documentos disponibles.</p>
+                        </li>
+                        <?php else: ?>
+                            <?php foreach ($documentos_recientes as $doc): ?>
+                            <li class="policy-item all-doc-item"
+                                data-sector="<?php echo $doc['sector_id']; ?>"
+                                data-tipo="<?php echo htmlspecialchars($doc['tipo']); ?>">
+                                <div class="policy-info">
+                                    <div class="policy-icon">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </div>
+                                    <div class="policy-details">
+                                        <h4><?php echo htmlspecialchars($doc['titulo']); ?></h4>
+                                        <p><strong><?php echo $doc['tipo'] == 'politica' ? 'Pol&iacute;tica' : 'Procedimiento'; ?></strong> &mdash;
+                                        Sector <?php echo htmlspecialchars($doc['sector_nombre']); ?> &mdash;
+                                        Actualizado: <?php echo isset($doc['fecha_actualizacion']) ? date('d/m/Y', is_string($doc['fecha_actualizacion']) ? strtotime($doc['fecha_actualizacion']) : strtotime($doc['fecha_actualizacion']->format('Y-m-d'))) : 'Fecha no disponible'; ?></p>
+                                    </div>
+                                </div>
+                                <div class="policy-actions">
+                                    <button class="action-btn view" onclick="viewDocument(<?php echo $doc['id']; ?>)">
+                                        <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="action-btn delete" onclick="confirmDeleteSector(<?php echo $sector['id']; ?>)">
-                                        <i class="fas fa-trash"></i>
+                                    <button class="action-btn download" onclick="downloadDocument(<?php echo $doc['id']; ?>)">
+                                        <i class="fas fa-download"></i>
                                     </button>
                                 </div>
                             </li>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </ul>
-                </div>
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Gestión del Glosario</h3>
-                        <button class="btn primary" id="newTermBtn">
-                            <i class="fas fa-plus"></i> Nuevo Término
-                        </button>
-                    </div>
-                    
-                    <div id="newTermForm" style="display: none;" class="settings-form">
-                        <form id="termForm" action="procesar_glosario.php" method="post">
-                            <div class="form-group">
-                                <label for="termName">Término:</label>
-                                <input type="text" id="termName" name="termino" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="termDefinition">Definición:</label>
-                                <textarea id="termDefinition" name="definicion" rows="3" required></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="termSector">Sector (opcional):</label>
-                                <select id="termSector" name="sector_id">
-                                    <option value="">Sin sector específico</option>
-                                    <?php foreach ($sectores as $sector): ?>
-                                    <option value="<?php echo $sector['id']; ?>"><?php echo htmlspecialchars($sector['nombre']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            
-                            <div class="form-actions">
-                                <button type="submit" class="btn primary">Guardar Término</button>
-                                <button type="button" class="btn secondary" id="cancelTermBtn">Cancelar</button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
             </div>
         </main>
@@ -1129,7 +1159,7 @@ $glosario = $politicaObj->obtenerGlosario();
     <div id="chatbot-container" class="chatbot-container">
         <div class="chatbot-header">
             <div class="chatbot-header-content">
-                <i class="fas fa-robot"></i>
+                <i class="fas fa-headset"></i>
                 <div>
                     <h3>Asistente DocuGest</h3>
                     <p class="chatbot-status">
@@ -1146,16 +1176,16 @@ $glosario = $politicaObj->obtenerGlosario();
         <div class="chatbot-messages" id="chatbot-messages">
             <div class="chatbot-message bot">
                 <div class="message-avatar">
-                    <i class="fas fa-robot"></i>
+                    <i class="fas fa-headset"></i>
                 </div>
                 <div class="message-content">
                     <p>👋 ¡Hola! Soy tu asistente virtual de DocuGest.</p>
-                    <p>Puedo ayudarte a encontrar información en las políticas y procedimientos usando lenguaje natural.</p>
+                    <p>Puedo ayudarte a encontrar información en las políticas y procedimientos.</p>
                     <p><strong>Ejemplos de preguntas:</strong></p>
                     <ul>
-                        <li>¿Cuál es el proceso de solicitud de vacaciones?</li>
-                        <li>¿Qué dice la política sobre trabajo remoto?</li>
-                        <li>¿Cómo se realiza el reporte de gastos?</li>
+                        <li>¿Cómo se cargan proyectos de desarrollo en Trello?</li>
+                        <li>¿Cómo funciona el sistema de etiquetas de precios?</li>
+                        <li>¿Cuál es el procedimiento de remisión y despacho de mercadería en locales propios?</li>
                     </ul>
                 </div>
             </div>
@@ -1175,7 +1205,7 @@ $glosario = $politicaObj->obtenerGlosario();
     </div>
     
     <button id="chatbot-toggle-btn" class="chatbot-toggle-btn" onclick="toggleChatbot()">
-        <i class="fas fa-robot"></i>
+        <i class="fas fa-comment-dots"></i>
         <span class="chatbot-badge" id="chatbot-badge" style="display: none;">1</span>
     </button>
     <!-- ==================================================================== -->
@@ -1186,7 +1216,6 @@ $glosario = $politicaObj->obtenerGlosario();
     <script src="js/glossary.js"></script>
     <script src="js/upload-form.js"></script>
     <script src="js/sectors.js"></script>
-    <script src="js/update-document.js"></script>
     <script src="js/chatbot.js"></script>
     <script src="js/main.js"></script>
  

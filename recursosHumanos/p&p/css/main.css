@@ -19,8 +19,5 @@
 /* Formularios */
 @import 'forms.css';
 
-/* Update Documents */
-@import 'update-document.css';
-
 /* Resultados de búsqueda */
 @import 'search-results.css';

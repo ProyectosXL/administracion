@@ -116,13 +116,13 @@
 }
 
 .badge-politica {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: #dbeafe;
+    color: #1d6fa8;
 }
 
 .badge-procedimiento {
-    background: #f3e5f5;
-    color: #7b1fa2;
+    background: #ccfbf1;
+    color: #0d9488;
 }
 
 /* Coincidencias encontradas */
@@ -180,6 +180,34 @@
     border-radius: 3px;
     font-weight: 700;
     color: #2d3436;
+}
+
+/* Coincidencia en título del documento */
+.match-source-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2980b9;
+    background: #ebf5ff;
+    border: 1px solid #aed6f1;
+    border-radius: 20px;
+    padding: 3px 10px;
+}
+
+.match-source-row i {
+    font-size: 11px;
+}
+
+/* Resaltado dentro del título en el resultado */
+.result-header h5 strong {
+    background: #fff3cd;
+    color: #856404;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 700;
 }
 
 /* Estados de carga y error */

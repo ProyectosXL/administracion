@@ -15,8 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof initFileUpload === 'function') initFileUpload();
     if (typeof initTagsInput === 'function') initTagsInput();
     if (typeof initFormValidation === 'function') initFormValidation();
-    if (typeof initFormValidation === 'function') initUpdateForm();
-    if (typeof initFormValidation === 'function') checkUrlTab();
+    if (typeof checkUrlTab === 'function') checkUrlTab();
     
     // Verificar si hay mensajes de estado en la URL
     checkUrlMessages();
@@ -31,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
     window.onclick = function(event) {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
+            // Restaurar el scroll del body siempre que se cierre cualquier modal
+            document.body.style.overflow = '';
+            document.body.classList.remove('no-scroll');
         }
     };
     
@@ -377,4 +379,14 @@ function closeAutoTagsModal() {
     if (modal) {
         modal.style.display = 'none';
     }
+}
+
+// ===== Función para filtrar todos los documentos =====
+function filterAllDocuments() {
+    const sectorVal = document.getElementById('sectorFilterAll')?.value || '';
+    const tipoVal   = document.getElementById('typeFilterAll')?.value   || '';
+    let url = 'index.php?tab=all-documents';
+    if (sectorVal) url += '&sector=' + encodeURIComponent(sectorVal);
+    if (tipoVal)   url += '&tipo='   + encodeURIComponent(tipoVal);
+    window.location.href = url;
 }
