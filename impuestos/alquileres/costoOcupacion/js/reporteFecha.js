@@ -100,6 +100,50 @@ function aplicarFiltrosReporte() {
             console.log('Respuesta del servidor:', response);
             
             if (response.success) {
+                // Verificar si hay sucursales y si hay datos
+                if (!response.data.sucursales || response.data.sucursales.length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sin sucursales',
+                        text: 'No se encontraron sucursales para el entorno seleccionado.',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#f39c12'
+                    });
+                    return;
+                }
+                
+                // Verificar si hay conceptos con datos
+                let hayDatos = false;
+                if (response.data.conceptos && response.data.conceptos.length > 0) {
+                    for (let concepto of response.data.conceptos) {
+                        for (let idSucursal in concepto.valores) {
+                            if (concepto.valores[idSucursal] != 0) {
+                                hayDatos = true;
+                                break;
+                            }
+                        }
+                        if (hayDatos) break;
+                    }
+                }
+                
+                if (!hayDatos) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Sin datos',
+                        html: `No se encontraron datos para el período seleccionado:<br>
+                               <strong>Desde:</strong> ${fechaDesde}<br>
+                               <strong>Hasta:</strong> ${fechaHasta}<br><br>
+                               <small>Intente con otro rango de fechas o verifique que existan datos cargados en el sistema para este período.</small>`,
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#3498db'
+                    });
+                    // Renderizar la tabla vacía de todas formas para que el usuario vea la estructura
+                    datosReporteFecha = response.data;
+                    renderizarReporteFecha(response.data);
+                    mostrarSeccionesReporte();
+                    return;
+                }
+                
                 datosReporteFecha = response.data;
                 renderizarReporteFecha(response.data);
                 mostrarSeccionesReporte();

@@ -51,52 +51,61 @@ try {
     $sucursalObj = new Sucursal();
     
     // Obtener todas las sucursales activas
+    // La clase Sucursal ya filtra según el entorno (Uruguay o Argentina)
     $todasLasSucursales = $sucursalObj->traerLocales(true);
     
     // Debug: Log de sucursales obtenidas
     error_log("Total sucursales obtenidas: " . count($todasLasSucursales));
     if (count($todasLasSucursales) > 0) {
         error_log("Primera sucursal: " . print_r($todasLasSucursales[0], true));
+        // Log detallado de todas las sucursales para debugging
+        foreach ($todasLasSucursales as $idx => $suc) {
+            error_log("Sucursal #{$idx}: NRO={$suc['NRO_SUCURSAL']}, DESC={$suc['DESC_SUCURSAL']}");
+        }
     }
     
-    // Filtrar sucursales según el entorno (Argentina o Uruguay)
+    // Obtener entorno para logging
     $entorno = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
     error_log("Entorno actual: " . $entorno);
+    
+    // Convertir las sucursales al formato esperado
+    // No aplicamos filtro adicional porque traerLocales() ya devuelve las sucursales correctas según el entorno
     $sucursalesFiltradas = [];
     
     foreach ($todasLasSucursales as $sucursal) {
-        // Lógica de filtrado según entorno
-        if ($entorno === 'uy') {
-            // Uruguay: solo sucursales de Uruguay (>= 900)
-            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] >= 900) {
-                $sucursalesFiltradas[] = [
-                    'id' => $sucursal['ID'],
-                    'numero' => $sucursal['NRO_SUCURSAL'],
-                    'nombre' => isset($sucursal['DESC_SUCURSAL']) ? $sucursal['DESC_SUCURSAL'] : 'Sucursal ' . $sucursal['NRO_SUCURSAL']
-                ];
-            }
-        } else {
-            // Argentina: todas las sucursales normales (< 900)
-            // Esto incluye 'central', 'sistemas' y cualquier otro entorno que no sea Uruguay
-            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] < 900) {
-                $sucursalesFiltradas[] = [
-                    'id' => $sucursal['ID'],
-                    'numero' => $sucursal['NRO_SUCURSAL'],
-                    'nombre' => isset($sucursal['DESC_SUCURSAL']) ? $sucursal['DESC_SUCURSAL'] : 'Sucursal ' . $sucursal['NRO_SUCURSAL']
-                ];
-            }
+        if (isset($sucursal['NRO_SUCURSAL'])) {
+            $sucursalesFiltradas[] = [
+                'id' => $sucursal['ID'],
+                'numero' => $sucursal['NRO_SUCURSAL'],
+                'nombre' => isset($sucursal['DESC_SUCURSAL']) ? $sucursal['DESC_SUCURSAL'] : 'Sucursal ' . $sucursal['NRO_SUCURSAL']
+            ];
         }
     }
     
     // Debug: Log de sucursales filtradas
     error_log("Sucursales filtradas: " . count($sucursalesFiltradas));
+    if (count($sucursalesFiltradas) === 0) {
+        error_log("ADVERTENCIA: No hay sucursales después del filtrado. Entorno: {$entorno}");
+    }
     
     // Array para almacenar datos por sucursal (período actual)
     $datosPorSucursal = [];
     
     // Obtener dataset de cada sucursal (período actual)
     foreach ($sucursalesFiltradas as $sucursal) {
+        error_log("Obteniendo dataset para sucursal {$sucursal['numero']} (ID: {$sucursal['id']})");
         $dataset = $service->construirDataset($sucursal['id'], $fechaDesde, $fechaHasta);
+        
+        // Log para verificar si el dataset tiene datos
+        $totalFilas = isset($dataset['filas']) ? count($dataset['filas']) : 0;
+        error_log("Dataset obtenido para sucursal {$sucursal['numero']}: {$totalFilas} filas");
+        
+        if ($totalFilas > 0) {
+            $primerFila = $dataset['filas'][0];
+            $totalPrimeraFila = isset($primerFila['total']) ? $primerFila['total'] : 0;
+            error_log("Primera fila ({$primerFila['concepto']}): Total = {$totalPrimeraFila}");
+        }
+        
         $datosPorSucursal[$sucursal['id']] = $dataset;
     }
     
@@ -174,6 +183,26 @@ try {
             'entorno' => $entorno
         ]
     ];
+    
+    // Log final de resultados
+    error_log("=================== RESUMEN DE RESPUESTA ===================");
+    error_log("Total sucursales devueltas: " . count($sucursalesFiltradas));
+    error_log("Total conceptos devueltos: " . count($conceptos));
+    error_log("Período consultado: {$fechaDesde} a {$fechaHasta}");
+    error_log("Entorno: {$entorno}");
+    
+    // Verificar si hay datos con valores no cero
+    $hayDatosReales = false;
+    foreach ($conceptos as $concepto) {
+        foreach ($concepto['valores'] as $valor) {
+            if ($valor != 0) {
+                $hayDatosReales = true;
+                break 2;
+            }
+        }
+    }
+    error_log("¿Hay datos con valores no cero?: " . ($hayDatosReales ? 'SÍ' : 'NO'));
+    error_log("===========================================================");
     
     echo json_encode($response);
     
