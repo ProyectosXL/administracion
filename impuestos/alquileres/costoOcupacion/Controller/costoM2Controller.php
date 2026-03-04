@@ -1,4 +1,9 @@
 <?php
+// Limpiar cualquier caché de código PHP (OPcache)
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+}
+
 // Enable error reporting for debugging
 ini_set('display_errors', 0); // Don't display errors in output
 error_reporting(E_ALL);
@@ -11,6 +16,9 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-chec
 header('Pragma: no-cache');
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Fecha en el pasado
 header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+
+// Log de inicio para verificar que se ejecuta la versión correcta
+error_log("========== costoM2Controller INICIADO - VERSION DETALLADA ==========");
 
 try {
     // Check if files exist before requiring
@@ -56,32 +64,19 @@ try {
     $entorno = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
 
     // Obtener sucursales
+    // La clase Sucursal ya filtra según el entorno (Uruguay o Argentina)
     $sucursalService = new Sucursal();
-    $sucursales = $sucursalService->traerLocales(true); // true para ordenar por nombre
-
-    if (empty($sucursales)) {
-        throw new Exception('No se encontraron sucursales');
-    }
-
-    // Filtrar sucursales por entorno
-    $sucursalesFiltradas = array();
-    foreach ($sucursales as $sucursal) {
-        $nroSucursal = intval($sucursal['NRO_SUCURSAL']);
-        
-        // Lógica invertida: si es uy, >= 900, sino < 900
-        if ($entorno === 'uy') {
-            if ($nroSucursal >= 900) {
-                $sucursalesFiltradas[] = $sucursal;
-            }
-        } else {
-            if ($nroSucursal < 900) {
-                $sucursalesFiltradas[] = $sucursal;
-            }
-        }
-    }
+    $sucursalesFiltradas = $sucursalService->traerLocales(true); // true para ordenar por nombre
 
     if (empty($sucursalesFiltradas)) {
-        throw new Exception('No se encontraron sucursales para el entorno seleccionado');
+        throw new Exception('No se encontraron sucursales');
+    }
+    
+    error_log("costoM2Controller - Entorno: {$entorno}, Sucursales obtenidas: " . count($sucursalesFiltradas));
+    
+    // Log de las sucursales antes de procesarlas
+    foreach ($sucursalesFiltradas as $idx => $suc) {
+        error_log("costoM2Controller - Sucursal #{$idx}: ID={$suc['ID']}, NRO={$suc['NRO_SUCURSAL']}, NOMBRE={$suc['DESC_SUCURSAL']}");
     }
 
     // Inicializar servicios
@@ -90,9 +85,14 @@ try {
 
     // Obtener números de sucursales
     $nrosSucursales = array_map(function($s) { return intval($s['NRO_SUCURSAL']); }, $sucursalesFiltradas);
+    error_log("costoM2Controller - Números de sucursales para buscar superficies: " . implode(", ", $nrosSucursales));
 
     // Obtener superficies de todas las sucursales
     $superficies = $superficieService->obtenerSuperficies($nrosSucursales);
+    error_log("costoM2Controller - Superficies obtenidas: " . count($superficies));
+    foreach ($superficies as $nro => $sup) {
+        error_log("costoM2Controller - Superficie[{$nro}] = {$sup}");
+    }
 
     // Procesar datos por sucursal
     $resultado = array();
@@ -100,31 +100,40 @@ try {
     $totalAlquiler = 0;
     $totalSuperficie = 0;
     $countConSuperficie = 0;
+    
+    error_log("costoM2Controller - INICIANDO PROCESAMIENTO DE SUCURSALES con fechas: {$fechaDesde} a {$fechaHasta}");
 
     foreach ($sucursalesFiltradas as $sucursal) {
+        $idSucursal = $sucursal['ID']; // ID de la sucursal (lo que espera construirDataset)
         $nroSucursal = intval($sucursal['NRO_SUCURSAL']);
         $nombreSucursal = $sucursal['DESC_SUCURSAL']; // Campo correcto de traerLocales()
 
         // Obtener superficie
         $superficie = isset($superficies[$nroSucursal]) ? $superficies[$nroSucursal] : 0;
-
-        if ($superficie <= 0) {
-            // Sucursal sin superficie registrada, la incluimos pero con valores en 0
-            $resultado[] = array(
-                'nro_sucursal' => $nroSucursal,
-                'nombre' => $nombreSucursal,
-                'superficie' => 0,
-                'expensas' => 0,
-                'alquiler' => 0,
-                'expensas_m2' => 0,
-                'alquiler_m2' => 0,
-                'sin_superficie' => true
-            );
-            continue;
-        }
+        $sinSuperficie = ($superficie <= 0);
+        
+        error_log("costoM2Controller - Procesando sucursal {$nroSucursal}: Superficie={$superficie}, SinSuperficie=" . ($sinSuperficie ? "SI" : "NO"));
 
         // Obtener dataset para esta sucursal individual
-        $dataset = $costoService->construirDataset($nroSucursal, $fechaDesde, $fechaHasta);
+        // IMPORTANTE: construirDataset espera el ID, no el número de sucursal
+        $dataset = $costoService->construirDataset($idSucursal, $fechaDesde, $fechaHasta);
+        
+        $numFilas = isset($dataset['filas']) ? count($dataset['filas']) : 0;
+        error_log("costoM2Controller - Sucursal {$nroSucursal} (ID: {$idSucursal}): {$numFilas} filas obtenidas");
+        
+        // Log detallado del dataset para debugging
+        if ($numFilas > 0) {
+            error_log("costoM2Controller - Conceptos disponibles para sucursal {$nroSucursal}:");
+            foreach ($dataset['filas'] as $fila) {
+                $concepto = isset($fila['concepto']) ? $fila['concepto'] : 'N/A';
+                $total = isset($fila['total']) ? $fila['total'] : 0;
+                $isSubtotal = isset($fila['is_subtotal']) ? 'SI' : 'NO';
+                error_log("  - {$concepto}: Total={$total}, IsSubtotal={$isSubtotal}");
+            }
+        } else {
+            error_log("costoM2Controller - ADVERTENCIA: No se obtuvieron filas para sucursal {$nroSucursal} (ID: {$idSucursal})");
+            error_log("costoM2Controller - Período: {$fechaDesde} a {$fechaHasta}");
+        }
         
         // Obtener datos del dataset
         $expensas = 0;
@@ -135,19 +144,23 @@ try {
                 // Buscar Expensas por nombre del grupo
                 if (isset($fila['concepto']) && $fila['concepto'] === 'Expensas' && isset($fila['total'])) {
                     $expensas = floatval($fila['total']);
+                    error_log("costoM2Controller - Sucursal {$nroSucursal}: Expensas encontradas = {$expensas}");
                 }
                 
                 // Subtotal gastos de alquiler incluye TODO (incluidas las Expensas)
                 // Es la fila con is_subtotal = true
                 if (isset($fila['is_subtotal']) && $fila['is_subtotal'] === true && isset($fila['total'])) {
                     $alquiler = floatval($fila['total']);
+                    error_log("costoM2Controller - Sucursal {$nroSucursal}: Alquiler (subtotal) encontrado = {$alquiler}");
                 }
             }
         }
+        
+        error_log("costoM2Controller - Sucursal {$nroSucursal}: Expensas={$expensas}, Alquiler={$alquiler}, Superficie={$superficie}");
 
         // Calcular costos por M²
-        $expensasM2 = $superficie > 0 ? $expensas / $superficie : 0;
-        $alquilerM2 = $superficie > 0 ? $alquiler / $superficie : 0;
+        $expensasM2 = ($superficie > 0 && $expensas > 0) ? $expensas / $superficie : 0;
+        $alquilerM2 = ($superficie > 0 && $alquiler > 0) ? $alquiler / $superficie : 0;
 
         $resultado[] = array(
             'nro_sucursal' => $nroSucursal,
@@ -157,14 +170,16 @@ try {
             'alquiler' => $alquiler,
             'expensas_m2' => $expensasM2,
             'alquiler_m2' => $alquilerM2,
-            'sin_superficie' => false
+            'sin_superficie' => $sinSuperficie
         );
 
         // Acumular totales solo de sucursales con superficie
-        $totalExpensas += $expensas;
-        $totalAlquiler += $alquiler;
-        $totalSuperficie += $superficie;
-        $countConSuperficie++;
+        if (!$sinSuperficie) {
+            $totalExpensas += $expensas;
+            $totalAlquiler += $alquiler;
+            $totalSuperficie += $superficie;
+            $countConSuperficie++;
+        }
     }
 
     // Calcular promedios

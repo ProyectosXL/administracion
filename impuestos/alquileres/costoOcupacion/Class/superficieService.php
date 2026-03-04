@@ -74,6 +74,9 @@ class SuperficieService
     public function obtenerSuperficies($nrosSucursales = null)
     {
         try {
+            $entorno = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
+            error_log("SuperficieService::obtenerSuperficies - Entorno: {$entorno}");
+            
             $sql = "SELECT 
                         NRO_SUCURS, 
                         (ISNULL(M2_VENTA, 0) + ISNULL(M2_DEPOSITO, 0) + ISNULL(M2_BAULERA, 0)) AS SUPERFICIE 
@@ -85,19 +88,28 @@ class SuperficieService
                 $placeholders = implode(',', array_fill(0, count($nrosSucursales), '?'));
                 $sql .= " WHERE NRO_SUCURS IN ($placeholders)";
                 $params = $nrosSucursales;
+                error_log("SuperficieService::obtenerSuperficies - Buscando sucursales: " . implode(", ", $nrosSucursales));
             }
+            
+            error_log("SuperficieService::obtenerSuperficies - SQL: " . $sql);
             
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             
             if ($stmt === false) {
-                error_log("Error en query obtenerSuperficies: " . print_r(sqlsrv_errors(), true));
+                $errors = sqlsrv_errors();
+                error_log("SuperficieService::obtenerSuperficies - ERROR en query: " . print_r($errors, true));
                 return array();
             }
             
             $superficies = array();
+            $count = 0;
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $count++;
                 $superficies[$row['NRO_SUCURS']] = floatval($row['SUPERFICIE']);
+                error_log("SuperficieService::obtenerSuperficies - Encontrada: NRO={$row['NRO_SUCURS']}, SUP={$row['SUPERFICIE']}");
             }
+            
+            error_log("SuperficieService::obtenerSuperficies - Total registros encontrados: {$count}");
             
             sqlsrv_free_stmt($stmt);
             

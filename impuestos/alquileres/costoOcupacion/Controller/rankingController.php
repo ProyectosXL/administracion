@@ -45,25 +45,12 @@ try {
     $sucursalObj = new Sucursal();
     
     // Obtener todas las sucursales activas
-    $todasLasSucursales = $sucursalObj->traerLocales(true);
+    // La clase Sucursal ya filtra según el entorno (Uruguay o Argentina)
+    $sucursales = $sucursalObj->traerLocales(true);
     
-    // Filtrar sucursales según el entorno
+    // Obtener entorno para logging
     $entorno = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $sucursales = [];
-    
-    foreach ($todasLasSucursales as $sucursal) {
-        if ($entorno === 'uy') {
-            // Uruguay: sucursales >= 900
-            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] >= 900) {
-                $sucursales[] = $sucursal;
-            }
-        } else {
-            // Argentina: sucursales < 900 (incluye 'central', 'sistemas', etc.)
-            if (isset($sucursal['NRO_SUCURSAL']) && $sucursal['NRO_SUCURSAL'] < 900) {
-                $sucursales[] = $sucursal;
-            }
-        }
-    }
+    error_log("rankingController - Entorno: {$entorno}, Sucursales obtenidas: " . count($sucursales));
     
     // Calcular % Costo de Ocupación para cada sucursal en ambos períodos
     $ranking = [];
