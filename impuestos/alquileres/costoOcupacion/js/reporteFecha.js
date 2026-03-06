@@ -516,26 +516,155 @@ function exportarReporteFecha() {
  */
 function mostrarLeyendaReporte() {
     Swal.fire({
-        title: 'Leyenda de Colores',
+        title: '<i class="bi bi-info-circle-fill"></i> Guía de Interpretación',
+        showCloseButton: true,
         html: `
-            <div style="text-align: left; padding: 10px;">
-                <div style="margin-bottom: 10px;">
-                    <span style="display: inline-block; width: 20px; height: 20px; background-color: #e8f5e9; border: 1px solid #ccc; margin-right: 10px;"></span>
-                    <strong>Verde claro:</strong> Valores positivos bajos
+            <div style="text-align: left; max-height: 600px; overflow-y: auto;">
+                <!-- Sección Rangos de Costo -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                    <h5 style="margin: 0 0 15px 0; display: flex; align-items: center; font-weight: 600;">
+                        <i class="bi bi-speedometer2" style="font-size: 24px; margin-right: 10px;"></i>
+                        Rangos de % Costo de Ocupación
+                    </h5>
+                    
+                    <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; margin-bottom: 10px; backdrop-filter: blur(10px);">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; flex: 1;">
+                                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #27ae60, #229954); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 12px; box-shadow: 0 2px 8px rgba(39, 174, 96, 0.4);">
+                                    <i class="bi bi-check-circle-fill" style="color: white; font-size: 18px;"></i>
+                                </div>
+                                <div>
+                                    <strong style="font-size: 15px;">Óptimo</strong>
+                                    <div style="font-size: 13px; opacity: 0.9;">Gestión eficiente</div>
+                                </div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.95); color: #27ae60; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                                &lt; 15%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; margin-bottom: 10px; backdrop-filter: blur(10px);">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; flex: 1;">
+                                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #f39c12, #e67e22); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 12px; box-shadow: 0 2px 8px rgba(243, 156, 18, 0.4);">
+                                    <i class="bi bi-exclamation-circle-fill" style="color: white; font-size: 18px;"></i>
+                                </div>
+                                <div>
+                                    <strong style="font-size: 15px;">Moderado</strong>
+                                    <div style="font-size: 13px; opacity: 0.9;">Requiere atención</div>
+                                </div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.95); color: #f39c12; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                                15% - 20%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; backdrop-filter: blur(10px);">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; flex: 1;">
+                                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #e74c3c, #c0392b); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-right: 12px; box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);">
+                                    <i class="bi bi-x-circle-fill" style="color: white; font-size: 18px;"></i>
+                                </div>
+                                <div>
+                                    <strong style="font-size: 15px;">Alto</strong>
+                                    <div style="font-size: 13px; opacity: 0.9;">Acción urgente necesaria</div>
+                                </div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.95); color: #e74c3c; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                                &gt; 20%
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div style="margin-bottom: 10px;">
-                    <span style="display: inline-block; width: 20px; height: 20px; background-color: #ffebee; border: 1px solid #ccc; margin-right: 10px;"></span>
-                    <strong>Rojo claro:</strong> Valores negativos o críticos
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <span style="display: inline-block; width: 20px; height: 20px; background-color: #fff3e0; border: 1px solid #ccc; margin-right: 10px;"></span>
-                    <strong>Naranja claro:</strong> Valores de atención
+                
+                <!-- Sección Agrupación de Conceptos -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 2px solid #e9ecef;">
+                    <h5 style="margin: 0 0 15px 0; color: #2c3e50; display: flex; align-items: center; font-weight: 600;">
+                        <i class="bi bi-list-check" style="font-size: 22px; margin-right: 10px; color: #3498db;"></i>
+                        Agrupación de Conceptos
+                    </h5>
+                    
+                    <div style="display: grid; gap: 10px;">
+                        <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: #3498db; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center;">
+                                <i class="bi bi-building" style="margin-right: 8px;"></i>
+                                Alquiler
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">Alquiler + Complementario + Valor mínimo mensual</div>
+                        </div>
+                        
+                        <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid #9b59b6; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: #9b59b6; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center;">
+                                <i class="bi bi-key-fill" style="margin-right: 8px;"></i>
+                                Llave
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px; margin-bottom: 6px;">[25% de (Alquiler + Complementario + VMM)] + Comisiones + FPC Lanzamiento</div>
+                            <div style="background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 8px; border-radius: 6px; font-size: 13px; display: flex; align-items: start;">
+                                <i class="bi bi-info-circle-fill" style="margin-right: 8px; margin-top: 2px; flex-shrink: 0;"></i>
+                                <span>Solo se calcula si existe valor en <code style="background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">RO_V_CONTRATOS_VALOR_LLAVE</code>, de lo contrario es 0</span>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid #e67e22; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: #e67e22; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center;">
+                                <i class="bi bi-percent" style="margin-right: 8px;"></i>
+                                Alquiler porcentual
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">Porc. S/ventas brutas + Porc. S/ventas netas</div>
+                        </div>
+                        
+                        <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid #16a085; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: #16a085; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center;">
+                                <i class="bi bi-megaphone-fill" style="margin-right: 8px;"></i>
+                                Fondo de promoción
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">Fondo de promoción (% VMM) + Fondo promoción mensual</div>
+                        </div>
+                        
+                        <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid #27ae60; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: #27ae60; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center;">
+                                <i class="bi bi-box" style="margin-right: 8px;"></i>
+                                Baulera
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">Se calcula por separado (no incluida en Alquiler)</div>
+                        </div>
+                        
+                        <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid #e74c3c; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: #e74c3c; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center;">
+                                <i class="bi bi-cash-stack" style="margin-right: 8px;"></i>
+                                Gastos varios
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">Gastos publicidad + Gastos administrativos</div>
+                        </div>
+                        
+                        <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid #f39c12; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: #f39c12; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center;">
+                                <i class="bi bi-receipt" style="margin-right: 8px;"></i>
+                                Expensas
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">Expensas + impuestos expensables</div>
+                        </div>
+                        
+                        <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid #95a5a6; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="color: #95a5a6; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center;">
+                                <i class="bi bi-arrow-left-right" style="margin-right: 8px;"></i>
+                                Diferencia
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 14px;">Diferencia de acuerdo</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `,
-        icon: 'info',
-        confirmButtonText: 'Entendido',
-        confirmButtonColor: '#3498db'
+        confirmButtonText: '<i class="bi bi-check-lg"></i> Entendido',
+        confirmButtonColor: '#3498db',
+        width: '700px',
+        customClass: {
+            popup: 'swal-wide-popup',
+            htmlContainer: 'swal-html-no-padding'
+        }
     });
 }
 

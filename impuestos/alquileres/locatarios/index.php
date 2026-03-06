@@ -44,6 +44,7 @@
                         <option value="66">Dot</option>
                         <option value="76">Soleil</option>
                         <option value="78">Arcos</option>
+                        <option value="84">Malvinas</option>
                     </select>
                 </div>
             </div>

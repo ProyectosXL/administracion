@@ -150,8 +150,11 @@ class ProrrateoController {
         // Buscar PHP
         $phpPath = 'php'; // Por defecto asumir que está en PATH
         
-        // Construir comando
-        $cmd = "\"$phpPath\" \"$scriptPath\" $idProceso \"$desde\" \"$hasta\"";
+        // Obtener entorno actual de la sesión
+        $entorno = $_SESSION['entorno'] ?? 'central';
+        
+        // Construir comando (ahora incluye el entorno como 4to parámetro)
+        $cmd = "\"$phpPath\" \"$scriptPath\" $idProceso \"$desde\" \"$hasta\" \"$entorno\"";
         
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // Windows - ejecutar sin mostrar ventana

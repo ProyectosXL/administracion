@@ -18,7 +18,7 @@ class CostoOcupacionService
         'Gastos varios' => [10, 13, 14], // Gastos publicidad, Gastos administrativos, Gastos administrativos (S/Vtas. netas)
         'Expensas' => [11], // Expensas + imp expensables
         'Diferencia' => [12], // Diferencia acuerdo
-        'Llave' => [4, 5, 18] // Renovación contrato (llave) - Se calculará
+        'Llave' => [4, 5, 18] // Concepto 4 (25% de Alquiler+Complementario+VMM) + Comisiones (5) + FPC Lanzamiento (18). Solo si hay valor en RO_V_CONTRATOS_VALOR_LLAVE
     ];
 
     public function __construct()
@@ -219,7 +219,8 @@ class CostoOcupacionService
                 }
             }
 
-            // Calcular Llave (25% de suma de conceptos 1, 2 y 8) solo si hay valor en RO_V_CONTRATOS_VALOR_LLAVE
+            // Calcular Llave = Concepto 4 calculado (25% de conceptos 1, 2 y 8) + Comisiones (5) + FPC Lanzamiento (18) de BD
+            // Solo se calcula si hay valor en RO_V_CONTRATOS_VALOR_LLAVE, de lo contrario es 0
             $llaveCalculada = [];
             foreach ($meses as $mes) {
                 $suma = 0;

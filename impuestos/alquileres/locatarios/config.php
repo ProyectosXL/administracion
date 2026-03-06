@@ -26,7 +26,8 @@ define('LOCATARIOS_SUCURSALES', [
     48 => 'Alto Rosario',
     66 => 'Dot',
     76 => 'Soleil',
-    78 => 'Arcos'
+    78 => 'Arcos',
+    84 => 'Malvinas'
 ]);
 
 // Stored Procedure
