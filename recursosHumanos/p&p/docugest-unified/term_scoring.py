@@ -279,7 +279,11 @@ class TermScorer:
         self.definition_patterns = [
             r'\b(?:se define|significa|define como|entiende por|denomina)\b.*?{term}',
             r'{term}.*?\b(?:es|son|significa|se define)\b',
-            r'(?:glosario|definiciones?).*?{term}'
+            r'(?:glosario|definiciones?).*?{term}',
+            # Patrones adicionales en español formal
+            r'\b(?:consiste\s+en|hace\s+referencia\s+a|se\s+denomina|se\s+refiere\s+a)\b.*?{term}',
+            r'{term}.*?\b(?:consiste\s+en|hace\s+referencia\s+a|comprende|tiene\s+por\s+objeto)\b',
+            r'por\s+{term}\s+se\s+entiende',
         ]
         
         # Patrones para detectar personas en contexto
@@ -1308,7 +1312,7 @@ class TermScorer:
             return 0.52, "rare_term"
         
         # 5. Default
-        return 0.58, "default"
+        return 0.54, "default"  # era 0.58 — reducido para capturar más términos en español
     
     def _extract_context_snippets(
         self, 

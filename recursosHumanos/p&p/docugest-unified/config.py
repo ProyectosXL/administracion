@@ -36,7 +36,7 @@ class FeatureWeights(BaseModel):
     pos_ner: float = Field(default=0.15, ge=0.0, le=1.0)
     doc_frequency: float = Field(default=0.18, ge=0.0, le=1.0)
     shape_surface: float = Field(default=0.15, ge=0.0, le=1.0)
-    specificity: float = Field(default=0.12, ge=0.0, le=1.0)  # Antes genericity_penalty
+    specificity: float = Field(default=0.09, ge=0.0, le=1.0)  # era 0.12 — corregido para que pesos sumen 1.00
 
 
 class ThresholdConfig(BaseModel):
