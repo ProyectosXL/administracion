@@ -266,7 +266,8 @@ class Ingreso {
             // Convertir a INT para la comparación
             $idSba05Int = (int)$idSba05;
             
-            $sql = "SELECT COUNT(*) as count FROM ingresos WHERE ID_SBA05 = ? AND origen = 'TESORERIA'";
+            // Verificar si ya existe el ID_SBA05 sin importar el origen
+            $sql = "SELECT COUNT(*) as count FROM ingresos WHERE ID_SBA05 = ?";
             $stmt = sqlsrv_query($this->db, $sql, [$idSba05Int]);
             
             if ($stmt === false) {
@@ -278,7 +279,7 @@ class Ingreso {
             
             return $row['count'] > 0 ? 1 : 0;
         } catch (Exception $e) {
-            error_log("Error en verificarRecibido599: " . $e->getMessage());
+            error_log("Error en verificarRecibidoTesoreria: " . $e->getMessage());
             return 0;
         }
     }
@@ -374,7 +375,7 @@ class Ingreso {
                         observaciones, recibido, fecha_carga, origen
                     ) VALUES (
                         ?, ?, ?, ?, ?,
-                        ?, 0, GETDATE(), 'TESORERIA'
+                        ?, 1, GETDATE(), 'TESORERIA'
                     )";
             
             $params = [
@@ -523,6 +524,34 @@ class Ingreso {
             return (float)$result['total'];
         } catch (Exception $e) {
             error_log("Error al obtener total gastos: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Obtiene el total histórico de ingresos desde 599
+     */
+    public function obtenerTotal599(): float {
+        try {
+            $fechaInicioApp = Config::getFechaInicioApp();
+            $sql = "SELECT COALESCE(SUM(CAST(importe_efectivo AS FLOAT)), 0) as total 
+                    FROM sj_administracion_cobros 
+                    WHERE importe_efectivo > 0
+                      AND rendido = 1
+                      AND CAST(fecha_cobro AS DATE) >= ?";
+            
+            $stmt = sqlsrv_query($this->dbCentral, $sql, [$fechaInicioApp]);
+            
+            if ($stmt === false) {
+                throw new Exception("Error en consulta 599 total: " . print_r(sqlsrv_errors(), true));
+            }
+            
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+            
+            return (float)$result['total'];
+        } catch (Exception $e) {
+            error_log("Error al obtener total 599: " . $e->getMessage());
             return 0.0;
         }
     }

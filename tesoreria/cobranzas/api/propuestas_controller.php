@@ -25,7 +25,7 @@ try {
 
             $placeholders = implode(',', array_fill(0, count($codigos_cliente), '?'));
             $conn_apps = Database::getConnection('apps');
-            $sql = "SELECT id, cod_cliente, fecha_creacion, total_propuesto, estado FROM FP_propuestas_pago WHERE cod_cliente IN ($placeholders) ORDER BY fecha_creacion DESC";
+            $sql = "SELECT id, cod_cliente, fecha_creacion, fecha_propuesta_pago, total_propuesto, estado FROM FP_propuestas_pago WHERE cod_cliente IN ($placeholders) ORDER BY fecha_creacion DESC";
             $stmt = sqlsrv_query($conn_apps, $sql, $codigos_cliente);
             $propuestas = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
@@ -68,7 +68,7 @@ try {
             while ($row = sqlsrv_fetch_array($stmt_items, SQLSRV_FETCH_ASSOC))
                 $items[] = $row;
 
-            $sql_historial = "SELECT fecha_evento, tipo_usuario, descripcion, comentario, ruta_adjunto FROM FP_propuestas_pago_historial WHERE id_propuesta = ? ORDER BY fecha_evento ASC";
+            $sql_historial = "SELECT fecha_evento, tipo_usuario, descripcion, comentario, ruta_adjunto, json_data FROM FP_propuestas_pago_historial WHERE id_propuesta = ? ORDER BY fecha_evento ASC";
             $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, [$id_propuesta]);
             $historial = [];
             while ($row = sqlsrv_fetch_array($stmt_historial, SQLSRV_FETCH_ASSOC))
@@ -108,6 +108,12 @@ try {
                 exit;
             }
             $conn_apps = Database::getConnection('apps');
+
+            // --- AUTO-VENCIMIENTO GLOBAL ---
+            // Revisamos vencimientos de todos los clientes antes de mostrar los KPIs
+            require_once __DIR__ . '/vencimientos_controller.php';
+            verificarYActualizarVencimientosCliente($conn_apps, null);
+
             $response = [];
             $sql_kpis = "SELECT COUNT(CASE WHEN estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE') THEN 1 END) AS totalActivas, SUM(CASE WHEN estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE') THEN total_propuesto ELSE 0 END) AS montoEnNegociacion, COUNT(CASE WHEN estado = 'CONTRAPROPUESTA_CLIENTE' THEN 1 END) AS contrapropuestas, COUNT(CASE WHEN estado = 'ACEPTADA' AND fecha_ultima_modificacion >= DATEADD(day, -30, GETDATE()) THEN 1 END) AS aceptadasMes, SUM(CASE WHEN estado = 'VENCIDA' THEN total_propuesto ELSE 0 END) AS montoVencido FROM FP_propuestas_pago";
             $stmt_kpis = sqlsrv_query($conn_apps, $sql_kpis);
@@ -483,6 +489,11 @@ try {
             $conn_apps = Database::getConnection('apps');
             $conn_central = Database::getConnection('central');
 
+            // --- AUTO-VENCIMIENTO GLOBAL ---
+            // Refrescamos estados antes de listar
+            require_once __DIR__ . '/vencimientos_controller.php';
+            verificarYActualizarVencimientosCliente($conn_apps, null);
+
             // --- RECOLECCIÓN DE FILTROS ---
             $f_desde = $_GET['f_desde'] ?? '';
             $f_hasta = $_GET['f_hasta'] ?? '';
@@ -529,7 +540,7 @@ try {
                 }
             }
 
-            $sql = "SELECT id, cod_cliente, fecha_ultima_modificacion, total_propuesto, estado FROM FP_propuestas_pago" . $where . " ORDER BY id DESC";
+            $sql = "SELECT id, cod_cliente, fecha_creacion, fecha_propuesta_pago, fecha_ultima_modificacion, total_propuesto, estado FROM FP_propuestas_pago" . $where . " ORDER BY id DESC";
             $stmt = sqlsrv_query($conn_apps, $sql, $params);
 
             $propuestas = [];
@@ -648,7 +659,7 @@ try {
                     foreach ($vistas as $vista) {
                         // Replicamos la lógica aritmética exacta de Mariela pero directamente en SQL
                         $sql_v = "SELECT SUM(
-                                    CASE WHEN v.T_COMP LIKE 'NC%' THEN -1.0 ELSE 1.0 END * 
+                                    CASE WHEN v.T_COMP LIKE 'NC%' OR (v.T_COMP = 'REC' AND v.ESTADO = 'CTA') THEN -1.0 ELSE 1.0 END * 
                                     (v.IMPORTE * (1.0 - 
                                         CASE 
                                             WHEN v.N_COMP LIKE 'A00115%' THEN 
@@ -766,6 +777,7 @@ try {
             $comentario = $_POST['comentario'] ?? '';
             $total_propuesto = $_POST['total_propuesto'] ?? 0;
             $items = json_decode($_POST['comprobantes'] ?? '[]', true);
+            $cuotas = json_decode($_POST['cuotas'] ?? '[]', true);
 
             $conn_apps = Database::getConnection('apps');
             sqlsrv_begin_transaction($conn_apps);
@@ -789,6 +801,15 @@ try {
                         $item['importe_neto'],
                         $item['porcentaje_descuento']
                     ]);
+                }
+
+                // 2.5. Actualizar Cuotas si se enviaron
+                if (!empty($cuotas)) {
+                    sqlsrv_query($conn_apps, "DELETE FROM FP_propuestas_pago_cuotas WHERE id_propuesta = ?", [$id]);
+                    foreach ($cuotas as $c) {
+                        $sql_cuota = "INSERT INTO FP_propuestas_pago_cuotas (id_propuesta, num_cuota, monto, fecha_vencimiento, estado) VALUES (?, ?, ?, ?, 'PENDIENTE')";
+                        sqlsrv_query($conn_apps, $sql_cuota, [$id, $c['num_cuota'], $c['monto'], $c['fecha_vencimiento']]);
+                    }
                 }
 
                 // 3. Agregar historial
@@ -880,14 +901,70 @@ try {
                             }
                         }
                     }
+
+                    // Manejo de ITEMS (Estrategia de Limpiar y Re-insertar para máxima precisión)
+                    if (isset($cp['items']) && !empty($cp['items'])) {
+                        $items_raw = $cp['items'];
+
+                        // Diagnóstico de entrada
+                        if (is_string($items_raw)) {
+                            $items_nuevos = json_decode($items_raw, true);
+                            if (json_last_error() !== JSON_ERROR_NONE) {
+                                error_log("Error decodificando items JSON: " . json_last_error_msg());
+                                $items_nuevos = null;
+                            }
+                        } else {
+                            $items_nuevos = $items_raw;
+                        }
+
+                        if (is_array($items_nuevos) && count($items_nuevos) > 0) {
+                            // 1. Limpiamos items anteriores de esta propuesta
+                            $sql_del = "DELETE FROM FP_propuestas_pago_items WHERE id_propuesta = ?";
+                            sqlsrv_query($conn_apps, $sql_del, [$id]);
+
+                            // 2. Insertamos la nueva versión de los items con sus descuentos actualizados
+                            $insertados = 0;
+                            foreach ($items_nuevos as $it) {
+                                $sql_item = "INSERT INTO FP_propuestas_pago_items (id_propuesta, t_comp_factura, n_comp_factura, importe_bruto, importe_neto, porcentaje_descuento) VALUES (?, ?, ?, ?, ?, ?)";
+
+                                // Aseguramos tipos numéricos correctos
+                                $imp_bruto = floatval($it['importe_bruto'] ?? 0);
+                                $imp_neto = floatval($it['importe_neto'] ?? 0);
+                                $p_desc = floatval($it['porcentaje_descuento'] ?? 0);
+
+                                $params_it = [
+                                    $id,
+                                    trim($it['t_comp'] ?? ''),
+                                    trim($it['n_comp'] ?? ''),
+                                    $imp_bruto,
+                                    $imp_neto,
+                                    $p_desc
+                                ];
+                                $stmt_item = sqlsrv_query($conn_apps, $sql_item, $params_it);
+
+                                if (!$stmt_item) {
+                                    $errs = print_r(sqlsrv_errors(), true);
+                                    error_log("Error fatal insertando ítem en propuesta #{$id}: " . $errs);
+                                    throw new Exception("Error al procesar el listado de facturas. Por favor reintente.");
+                                }
+                                $insertados++;
+                            }
+                        } else {
+                            error_log("Contrapropuesta #$id recibida sin un listado de items válido.");
+                        }
+                    } else {
+                        error_log("No se detectaron items en el objeto contrapropuesta para ID #$id.");
+                    }
                 } elseif ($estado === 'ACEPTADA') {
-                    // Si se acepta, aseguramos que la fecha de propuesta de pago sea válida (si no estaba seteda, se podría poner hoy o mantener la original)
                     // Por ahora solo cambiamos estado.
                 }
 
                 $stmt = sqlsrv_query($conn_apps, $sql_update, $params);
-                if (!$stmt)
-                    throw new Exception("Error al actualizar la propuesta.");
+                if (!$stmt) {
+                    $errs = print_r(sqlsrv_errors(), true);
+                    error_log("Error actualizando cabecera de propuesta #$id: " . $errs);
+                    throw new Exception("Error al actualizar la propuesta principal.");
+                }
 
                 // 2. Registrar historial
                 $tipo_usuario = (isset($_SESSION['usuario_rol']) && $_SESSION['usuario_rol'] === 'admin') ? 'ADMIN' : 'CLIENTE';
@@ -899,8 +976,21 @@ try {
                 if ($estado === 'CONTRAPROPUESTA_CLIENTE')
                     $descripcion = "Contrapropuesta enviada por el cliente.";
 
-                $sql_hist = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)";
-                sqlsrv_query($conn_apps, $sql_hist, [$id, $id_usuario, $tipo_usuario, $descripcion, $comentario]);
+                $json_snapshot = null;
+                if ($estado === 'CONTRAPROPUESTA_CLIENTE' && isset($cp)) {
+                    // Para el snapshot usamos el mismo array de items que acabamos de procesar
+                    $snapshot = [
+                        'total' => $cp['nuevo_total'] ?? 0,
+                        'fecha' => $cp['nueva_fecha'] ?? null,
+                        'medio_pago' => $cp['nuevo_medio_pago'] ?? null,
+                        'cuotas' => isset($cp['cuotas']) ? json_decode($cp['cuotas'], true) : null,
+                        'items' => $items_nuevos ?? null
+                    ];
+                    $json_snapshot = json_encode($snapshot);
+                }
+
+                $sql_hist = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario, json_data) VALUES (?, ?, ?, ?, ?, ?)";
+                sqlsrv_query($conn_apps, $sql_hist, [$id, $id_usuario, $tipo_usuario, $descripcion, $comentario, $json_snapshot]);
 
                 sqlsrv_commit($conn_apps);
 

@@ -3,7 +3,6 @@
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-use Dotenv\Dotenv;
 
 // Incluimos el autoloader de Composer (está en la raíz de administración)
 require_once __DIR__ . '/../../../vendor/autoload.php';
@@ -13,13 +12,8 @@ require_once __DIR__ . '/../../egresosDirectores/PHPMailer/PHPMailer.php';
 require_once __DIR__ . '/../../egresosDirectores/PHPMailer/SMTP.php';
 require_once __DIR__ . '/../../egresosDirectores/PHPMailer/Exception.php';
 
-// Cargamos las variables de entorno desde el .env de la raíz (W:\.env)
-try {
-    $dotenv = Dotenv::createImmutable(__DIR__ . '/../../../../');
-    $dotenv->load();
-} catch (\Exception $e) {
-    error_log('Aviso: No se pudo cargar el archivo .env. ' . $e->getMessage());
-}
+// Las variables de entorno ya son cargadas por database.php mediante putenv() y $_ENV
+// No es necesario volver a cargarlas aquí con Dotenv.
 
 if (!function_exists('enviarNotificacion')) {
     function enviarNotificacion($destinatarios, $asunto, $cuerpo_html)

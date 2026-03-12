@@ -199,8 +199,8 @@ $(document).ready(function () {
             className: 'text-end importe-bruto-cell',
             render: function (data, type, row) {
                 let valor = parseFloat(data);
-                // Si es Nota de Crédito (empieza con NC), lo hacemos negativo
-                if (row.T_COMP.trim().startsWith('NC')) {
+                // Si es Nota de Crédito (empieza con NC) o Recibo A Cuenta (REC + CTA), lo hacemos negativo
+                if (row.T_COMP.trim().startsWith('NC') || (row.T_COMP.trim() === 'REC' && row.ESTADO.trim() === 'CTA')) {
                     valor = valor * -1;
                 }
                 const numeroFormateado = $.fn.dataTable.render.number('.', ',', 2, '$ ').display(valor);
@@ -215,7 +215,13 @@ $(document).ready(function () {
                 const nComp = (row.N_COMP || '').trim();
                 const bruto = parseFloat(row.IMPORTE) || 0;
                 const netoOriginal = parseFloat(row.IMPORTE_NETO) || 0;
+                const estado = (row.ESTADO || '').trim();
                 let initialDiscount = 0;
+
+                // Los Recibos A Cuenta no suelen llevar descuento
+                if (tComp === 'REC' && estado === 'CTA') {
+                    return `<input type="number" class="form-control form-control-sm descuento-input" value="0.00" readonly style="width: 80px;">`;
+                }
 
                 // Lógica de descuento por defecto (según parámetros del cliente)
                 initialDiscount = (parseFloat(row.DESC_PP_MAX) || 0) * 100;
@@ -425,13 +431,15 @@ $(document).ready(function () {
         $('#tabla-detalle-cliente .invoice-checkbox:checked').each(function () {
             const tr = $(this).closest('tr');
             const rowData = tablaDetalle.row(tr).data();
-            const esNC = rowData.T_COMP.trim().startsWith('NC');
+            const tComp = rowData.T_COMP.trim();
+            const estado = rowData.ESTADO.trim();
+            const esNegativo = tComp.startsWith('NC') || (tComp === 'REC' && estado === 'CTA');
 
             let bruto = parseFloat(rowData.IMPORTE);
             // Leemos el neto de la celda, que ya está calculado y tiene el signo correcto
             let neto = parseFloat(tr.find('.importe-neto-cell').text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
 
-            totalBruto += esNC ? -bruto : bruto;
+            totalBruto += esNegativo ? -bruto : bruto;
             totalNeto += neto;
 
             if (rowData.FECHA_PROB_COBRO) {
@@ -497,11 +505,13 @@ $(document).ready(function () {
         }
         // ======================== FIN DE LA MODIFICACIÓN A00115 =========================
 
+        const estadoComp = (rowData.ESTADO || '').trim();
+
         // Forzamos el importe neto basado en el descuento
         let importeNeto = importeBruto * (1 - (descuento / 100));
 
-        // Si es Nota de Crédito, el neto también es negativo
-        if (tipoComp.startsWith('NC')) {
+        // Si es Nota de Crédito o Recibo A Cuenta, el neto también es negativo
+        if (tipoComp.startsWith('NC') || (tipoComp === 'REC' && estadoComp === 'CTA')) {
             // Aseguramos que sea negativo independientemente de si el importeBruto ya lo era
             importeNeto = Math.abs(importeNeto) * -1;
         } else {
@@ -566,7 +576,9 @@ $(document).ready(function () {
                 const descuento = parseFloat(tr.find('.descuento-input').val()) || 0;
                 const importeBrutoOriginal = parseFloat(rowData.IMPORTE);
                 let importeNetoRecalculado = importeBrutoOriginal * (1 - (descuento / 100));
-                const esNC = rowData.T_COMP.trim().startsWith('NC');
+                const tComp = rowData.T_COMP.trim();
+                const estado = rowData.ESTADO.trim();
+                const esNegativo = tComp.startsWith('NC') || (tComp === 'REC' && estado === 'CTA');
 
                 comprobantesSeleccionados.push({
                     t_comp: rowData.T_COMP,
@@ -576,7 +588,7 @@ $(document).ready(function () {
                     porcentaje_descuento: descuento
                 });
 
-                totalNetoSeleccionado += esNC ? -importeNetoRecalculado : importeNetoRecalculado;
+                totalNetoSeleccionado += esNegativo ? -importeNetoRecalculado : importeNetoRecalculado;
             }
         });
 
@@ -677,10 +689,14 @@ $(document).ready(function () {
                         // Regla: 8% para ECHECK, 6% para TRANSFERENCIA (usamos redondeo para evitar decimales flotantes)
                         let simplifiedDesc = Math.round(currentDesc * 100) / 100;
 
-                        if (medio === 'TRANSFERENCIA' && simplifiedDesc > 7.5) {
+                        // Solo automatizamos si el descuento es el 'estándar'. Si el usuario puso 0 o un valor manual, lo respetamos.
+                        // Cambio 8 -> 6 al pasar a Transferencia
+                        if (medio === 'TRANSFERENCIA' && simplifiedDesc > 7.5 && simplifiedDesc < 8.5) {
                             input.val(6).trigger('input');
                             cambioRelativo = true;
-                        } else if (medio === 'ECHECK' && simplifiedDesc < 6.5) {
+                        }
+                        // Cambio 6 -> 8 al pasar a Echeck
+                        else if (medio === 'ECHECK' && simplifiedDesc > 5.5 && simplifiedDesc < 6.5) {
                             input.val(8).trigger('input');
                             cambioRelativo = true;
                         }
@@ -814,7 +830,9 @@ $(document).ready(function () {
                     const desc = parseFloat(tr.find('.descuento-input').val()) || 0;
                     const bruto = parseFloat(rowData.IMPORTE);
                     const neto = bruto * (1 - (desc / 100));
-                    const esNC = rowData.T_COMP.trim().startsWith('NC');
+                    const tComp = rowData.T_COMP.trim();
+                    const estado = rowData.ESTADO.trim();
+                    const esNegativo = tComp.startsWith('NC') || (tComp === 'REC' && estado === 'CTA');
 
                     comprobantesFinales.push({
                         t_comp: rowData.T_COMP,
@@ -823,7 +841,7 @@ $(document).ready(function () {
                         importe_neto: neto,
                         porcentaje_descuento: desc
                     });
-                    totalRelativoFinal += esNC ? -neto : neto;
+                    totalRelativoFinal += esNegativo ? -neto : neto;
                 });
 
                 return {
@@ -1051,6 +1069,31 @@ $(document).ready(function () {
                     { data: 'razon_social', title: 'Razón Social' },
                     { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
                     {
+                        data: null,
+                        title: 'Plazo',
+                        className: 'text-center',
+                        render: function (data, type, row) {
+                            if (!row.fecha_creacion || !row.fecha_propuesta_pago) return '-';
+
+                            const fCreacion = new Date(row.fecha_creacion);
+                            const fPropuesta = new Date(row.fecha_propuesta_pago);
+
+                            // Resetear horas para comparar solo días naturales
+                            fCreacion.setHours(0, 0, 0, 0);
+                            fPropuesta.setHours(0, 0, 0, 0);
+
+                            const diffTime = fPropuesta - fCreacion;
+                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                            let colorClass = 'text-muted';
+                            if (diffDays > 30) colorClass = 'text-danger fw-bold';
+                            else if (diffDays > 15) colorClass = 'text-warning fw-bold';
+                            else if (diffDays > 0) colorClass = 'text-success fw-bold';
+
+                            return `<span class="${colorClass}">${diffDays} días</span>`;
+                        }
+                    },
+                    {
                         data: 'fecha_ultima_modificacion',
                         title: 'Últ. Act.',
                         render: function (data) {
@@ -1203,7 +1246,7 @@ $(document).ready(function () {
                 <div class="card bg-light shadow-sm h-100">
                     <div class="card-body text-center">
                         <h6 class="card-title text-muted text-uppercase small">Total Propuesto</h6>
-                        <p class="card-text fs-4 fw-bold text-primary mb-0">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p>
+                        <p class="card-text fs-4 fw-bold text-primary mb-0" id="total-propuesto-kpi">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p>
                     </div>
                 </div>
             </div>
@@ -1226,9 +1269,9 @@ $(document).ready(function () {
         </div>
     `;
 
-        let cuotasHtml = '';
+        let cuotasHtml = `<div id="cuotas-container-admin">`;
         if (cuotas && cuotas.length > 0) {
-            cuotasHtml = `<h5 class="mt-4"><i class="fa-solid fa-list-check me-2 text-success"></i>Esquema de Facilidades de Pago</h5><div class="row row-cols-1 row-cols-md-3 g-2 mb-3">`;
+            cuotasHtml += `<h5 class="mt-4"><i class="fa-solid fa-list-check me-2 text-success"></i>Esquema de Facilidades de Pago</h5><div class="row row-cols-1 row-cols-md-3 g-2 mb-3">`;
             cuotas.forEach(c => {
                 const fVenc = new Date(c.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR');
 
@@ -1254,8 +1297,8 @@ $(document).ready(function () {
                     <div class="card border-success bg-white shadow-sm h-100">
                         <div class="card-body p-2 text-center">
                             <span class="badge bg-success mb-1">Pago ${c.num_cuota}</span>
-                            <div class="fw-bold fs-6">${parseFloat(c.monto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>
-                            <div class="small text-muted">${fVenc}</div>
+                            <div class="fw-bold fs-6 cuota-monto-admin" data-original-monto="${c.monto}">${parseFloat(c.monto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>
+                            <div class="small text-muted cuota-fecha-admin">${fVenc}</div>
                             ${adjuntosCuotaHtml}
                         </div>
                     </div>
@@ -1263,6 +1306,7 @@ $(document).ready(function () {
             });
             cuotasHtml += `</div>`;
         }
+        cuotasHtml += `</div>`;
 
         let adjuntosHtml = '';
         const adjuntosGenerales = (adjuntos || []).filter(a => !a.id_cuota);
@@ -1288,10 +1332,11 @@ $(document).ready(function () {
             const descuento = parseFloat(item.porcentaje_descuento) || 0;
             const tComp = (item.t_comp_factura || '').trim();
             const nComp = (item.n_comp_factura || '').trim();
-            const esNC = tComp.startsWith('NC');
+            // En la vista admin, si es REC asumimos que es negativo (porque solo entran los CTA)
+            const esNegativo = tComp.startsWith('NC') || tComp === 'REC';
 
-            totalBrutoTabla += esNC ? -bruto : bruto;
-            totalNetoTabla += esNC ? -neto : neto;
+            totalBrutoTabla += esNegativo ? -bruto : bruto;
+            totalNetoTabla += esNegativo ? -neto : neto;
 
             let inputDisabled = '';
             if (esEditable) {
@@ -1304,7 +1349,7 @@ $(document).ready(function () {
             const descuentoHtml = esEditable ? `<input type="number" class="form-control form-control-sm descuento-input-admin" value="${descuento.toFixed(2)}" min="0" max="100" step="0.01" style="width: 80px;" ${inputDisabled}>` : `${descuento.toFixed(2)} %`;
             const accionesHtml = esEditable ? `<td class="text-center"><button class="btn btn-danger btn-sm btn-eliminar-factura-propuesta" title="Quitar factura"><i class="fa-solid fa-trash"></i></button></td>` : '';
 
-            itemsHtml += `<tr data-importe-bruto="${bruto}" data-ncomp="${nComp}" data-tcomp="${tComp}"><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNC ? 'text-danger' : ''}">${(esNC ? -bruto : bruto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center">${descuentoHtml}</td><td class="text-end fw-bold importe-neto-cell-admin ${esNC ? 'text-danger' : ''}">${(esNC ? -neto : neto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${accionesHtml}</tr>`;
+            itemsHtml += `<tr data-importe-bruto="${bruto}" data-ncomp="${nComp}" data-tcomp="${tComp}"><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNegativo ? 'text-danger' : ''}">${(esNegativo ? -bruto : bruto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center">${descuentoHtml}</td><td class="text-end fw-bold importe-neto-cell-admin ${esNegativo ? 'text-danger' : ''}">${(esNegativo ? -neto : neto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${accionesHtml}</tr>`;
         });
 
         itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="2" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${esEditable ? '<td></td>' : ''}</tr></tfoot></table>`;
@@ -1326,6 +1371,32 @@ $(document).ready(function () {
                 </div>`;
             }
 
+            // --- Lógica para mostrar el Snapshot (JSON) ---
+            let snapshotBtn = '';
+            if (h.json_data) {
+                try {
+                    const snap = JSON.parse(h.json_data);
+                    const totalFmt = (parseFloat(snap.total) || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+                    const fechaFmt = snap.fecha ? snap.fecha.split(' ')[0] : 'N/A';
+
+                    // Preparamos un string detallado para mostrar
+                    let infoSnap = `Total: ${totalFmt} | Fecha: ${fechaFmt} | Medio: ${snap.medio_pago || 'N/A'}`;
+                    if (snap.cuotas && snap.cuotas.length > 0) {
+                        infoSnap += ` | Pagos: ${snap.cuotas.length}`;
+                    }
+
+                    snapshotBtn = `
+                    <div class="mt-2 text-start">
+                        <button class="btn btn-xs btn-outline-info p-1 px-2 border-0 bg-light btn-ver-snapshot" style="font-size: 0.7rem;" 
+                                data-snapshot='${h.json_data.replace(/'/g, "&apos;")}'>
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i> Ver condiciones de esta versión
+                        </button>
+                    </div>`;
+                } catch (e) {
+                    console.error("Error parsing snapshot JSON", e);
+                }
+            }
+
             historialHtml += `
             <div class="timeline-item timeline-item-${align}">
                 <div class="timeline-icon"><i class="fas ${icon}"></i></div>
@@ -1333,11 +1404,46 @@ $(document).ready(function () {
                     <span class="timeline-date">${h.fecha_evento}</span>
                     <p><strong>${h.descripcion}</strong></p>
                     ${h.comentario ? `<p class="fst-italic bg-light p-2 rounded">"${h.comentario}"</p>` : ''}
-                    ${adjuntoHtml} <!-- Se añade el HTML de la imagen aquí -->
+                    ${adjuntoHtml}
+                    ${snapshotBtn}
                 </div>
             </div>`;
         });
         historialHtml += '</div>';
+
+        // --- MANEJADOR GLOBAL PARA VER SNAPSHOTS (EN APP.JS) ---
+        $(document).off('click', '.btn-ver-snapshot').on('click', '.btn-ver-snapshot', function (e) {
+            e.preventDefault();
+            try {
+                const snap = JSON.parse($(this).attr('data-snapshot'));
+                const f = (n) => (parseFloat(n) || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+                const fechaFmt = snap.fecha ? snap.fecha.split(' ')[0] : 'N/A';
+
+                let html = `<div class='text-start small'>
+                    <p><strong>Fecha de pago:</strong> ${fechaFmt}</p>
+                    <p><strong>Monto Total:</strong> <span class='text-primary fw-bold'>${f(snap.total)}</span></p>
+                    <p><strong>Medio:</strong> ${snap.medio_pago || 'N/A'}</p>`;
+
+                if (snap.cuotas && snap.cuotas.length > 0) {
+                    html += `<hr><p class='fw-bold mb-1'>Esquema de Pagos:</p>
+                    <ul class='list-unstyled mb-0'>
+                        ${snap.cuotas.map(c => `<li><i class='fa-solid fa-circle-check text-success me-1'></i> ${f(c.monto)} (${c.fecha_vencimiento})</li>`).join('')}
+                    </ul>`;
+                }
+
+                html += `</div>`;
+
+                Swal.fire({
+                    title: 'Detalles de esta Versión',
+                    html: html,
+                    icon: 'info',
+                    confirmButtonText: 'Cerrar',
+                    width: '450px'
+                });
+            } catch (err) {
+                console.error("Error al mostrar snapshot", err);
+            }
+        });
         // ======================== FIN DE LA MODIFICACIÓN DEL HISTORIAL ========================
 
         let accionAdminHtml = '';
@@ -1399,16 +1505,19 @@ $(document).ready(function () {
         }
         // ===================================================================================
 
-        const importeNeto = importeBruto * (1 - (descuento / 100));
-        tr.find('.importe-neto-cell-admin').text(importeNeto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+        const esNC = tipoComp.startsWith('NC');
+        let importeNeto = importeBruto * (1 - (descuento / 100));
+        if (esNC) importeNeto = -importeNeto;
 
-        let totalGeneral = 0;
-        $('#tabla-detalle-propuesta-admin tbody tr').each(function () {
-            const cellNeto = $(this).find('.importe-neto-cell-admin');
-            const valorNeto = parseFloat(cellNeto.text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
-            totalGeneral += valorNeto;
-        });
-        $('#total-propuesta-admin').text(totalGeneral.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+        const cellNeto = tr.find('.importe-neto-cell-admin');
+        cellNeto.text(importeNeto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+
+        if (esNC) {
+            cellNeto.addClass('text-danger');
+        } else {
+            cellNeto.removeClass('text-danger');
+        }
+
         recalcularTotalesAdmin();
     });
 
@@ -1425,7 +1534,9 @@ $(document).ready(function () {
             const tr = $(this);
             const bruto = parseFloat(tr.data('importe-bruto'));
             const descuento = parseFloat(tr.find('.descuento-input-admin').val()) || 0;
-            const neto = bruto * (1 - (descuento / 100));
+            const esNC = (tr.data('tcomp') || '').startsWith('NC');
+            let neto = bruto * (1 - (descuento / 100));
+            if (esNC) neto = -neto;
 
             comprobantesFinales.push({
                 t_comp: tr.data('tcomp'),
@@ -1435,10 +1546,8 @@ $(document).ready(function () {
                 porcentaje_descuento: descuento
             });
 
-            // El neto ya tiene el signo correcto, lo leemos de la celda
-            const netoTexto = tr.find('.importe-neto-cell-admin').text();
-            const netoReal = parseFloat(netoTexto.replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
-            totalNetoFinal += netoReal;
+            // Usamos el neto ya calculado para el total final
+            totalNetoFinal += neto;
         });
         // ======================== FIN DE LA RECOLECCIÓN DE DATOS =========================
 
@@ -1459,6 +1568,24 @@ $(document).ready(function () {
                 // --- Nuevos datos que enviamos ---
                 formData.append('total_propuesto', totalNetoFinal);
                 formData.append('comprobantes', JSON.stringify(comprobantesFinales));
+
+                // Recolectar cuotas actualizadas
+                const cuotasActualizadas = [];
+                $('.cuota-monto-admin').each(function (idx) {
+                    const montoTxt = $(this).text();
+                    const monto = parseFloat(montoTxt.replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
+                    const fecha = $(this).closest('.card-body').find('.cuota-fecha-admin').text();
+                    // Necesitamos la fecha en formato YYYY-MM-DD para el SQL
+                    const [d, m, y] = fecha.split('/');
+                    const fechaISO = `${y}-${m}-${d}`;
+
+                    cuotasActualizadas.push({
+                        num_cuota: idx + 1,
+                        monto: monto,
+                        fecha_vencimiento: fechaISO
+                    });
+                });
+                formData.append('cuotas', JSON.stringify(cuotasActualizadas));
 
                 const adjuntoFile = $('#historial-adjunto-admin')[0].files[0];
                 if (adjuntoFile) {
@@ -1573,18 +1700,49 @@ $(document).ready(function () {
         $('#tabla-detalle-propuesta-admin tbody tr').each(function () {
             const tr = $(this);
             const bruto = parseFloat(tr.data('importe-bruto'));
-            const esNC = tr.data('tcomp').trim().startsWith('NC');
+            const tComp = tr.data('tcomp').trim();
+            // En admin asumimos que REC es negativo
+            const esNegativo = tComp.startsWith('NC') || tComp === 'REC';
             const netoTexto = tr.find('.importe-neto-cell-admin').text();
-            const neto = parseFloat(netoTexto.replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
+            // Limpieza robusta de espacios para evitar NaN con signo negativo: "- $ 10" -> "-10"
+            const neto = parseFloat(netoTexto.replace(/\$/g, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.')) || 0;
 
-            totalBruto += esNC ? -bruto : bruto;
-            totalNeto += neto; // El neto ya tiene el signo correcto por la visualización
+            totalBruto += esNegativo ? -bruto : bruto;
+            totalNeto += neto; // El neto ya tiene el signo correcto
         });
 
         const f = (num) => num.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
 
         $('#total-bruto-tabla').text(f(totalBruto));
         $('#total-neto-tabla').text(f(totalNeto));
+
+        // Aplicar color rojo si el total es negativo
+        if (totalBruto < 0) $('#total-bruto-tabla').addClass('text-danger'); else $('#total-bruto-tabla').removeClass('text-danger');
+        if (totalNeto < 0) $('#total-neto-tabla').addClass('text-danger'); else $('#total-neto-tabla').removeClass('text-danger');
+
+        // Actualizar KPI Superior
+        $('#total-propuesto-kpi').text(f(totalNeto));
+        if (totalNeto < 0) $('#total-propuesto-kpi').addClass('text-danger'); else $('#total-propuesto-kpi').removeClass('text-danger');
+
+        // --- Recalcular Cuotas proporcionalmente ---
+        const $cuotas = $('.cuota-monto-admin');
+        const numCuotas = $cuotas.length;
+        if (numCuotas > 0) {
+            const montoPorCuota = Math.floor((totalNeto / numCuotas) * 100) / 100;
+            let totalAsignado = 0;
+
+            $cuotas.each(function (idx) {
+                let montoFinal;
+                if (idx === numCuotas - 1) {
+                    // La última cuota absorbe el redondeo
+                    montoFinal = totalNeto - totalAsignado;
+                } else {
+                    montoFinal = montoPorCuota;
+                    totalAsignado += montoFinal;
+                }
+                $(this).text(f(montoFinal));
+            });
+        }
     }
     // ===== NUEVA FUNCIÓN PARA EXPORTAR A EXCEL =====
     function exportarPropuestaExcel(data) {

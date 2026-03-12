@@ -125,222 +125,82 @@ function mostrarCargandoTarjetas(mostrar = true) {
     });
 }
 
-// Mostrar/ocultar indicador de carga en las tarjetas
-function mostrarCargandoTarjetas(mostrar = true) {
-    const tarjetas = ['totalIngresos', 'totalEgresos', 'saldoActual'];
-    
-    tarjetas.forEach(id => {
-        const elemento = document.getElementById(id);
-        if (elemento) {
-            if (mostrar) {
-                elemento.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Cargando...';
-            }
-        }
-    });
-}
-
 // Actualizar resumen de caja (tarjetas superiores)
-async function actualizarResumen(soloSaldo = false, filtrosActivos = null) {
+async function actualizarResumen(filtrosActivos = null) {
     console.log('Actualizando resumen de caja...');
     
-    // Asegurar que tenemos la fecha de inicio cargada
     if (!FECHA_INICIO_APP) {
         await cargarFechaInicioApp();
     }
     
-    // Mostrar indicador de carga
-    mostrarCargandoTarjetas(true);
-    
-    // Mostrar indicador de carga
     mostrarCargandoTarjetas(true);
     
     try {
-        // Para calcular SALDO: usar desde la fecha de inicio de la app hasta hoy
         const hoy = new Date();
-        const fechaDesdeSaldo = FECHA_INICIO_APP; // Usar la fecha de inicio configurada
-        const fechaHastaSaldo = hoy.toISOString().split('T')[0];
-        
-        console.log('[DEBUG] Calculando saldo desde:', fechaDesdeSaldo, 'hasta:', fechaHastaSaldo);
-        
-        // Usar limitador de peticiones concurrentes
-        const resultSaldo = await ejecutarConLimite(async () => {
-            let urlSaldo = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
-            urlSaldo += `&fecha_desde=${fechaDesdeSaldo}`;
-            urlSaldo += `&fecha_hasta=${fechaHastaSaldo}`;
-            
-            const responseSaldo = await fetch(urlSaldo, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache'
-                }
-            });
-            
-            if (!responseSaldo.ok) {
-                await manejarErrorResponse(responseSaldo);
-            }
-            
-            const textSaldo = await responseSaldo.text();
-            let result;
-            
-            try {
-                result = JSON.parse(textSaldo);
-            } catch (jsonError) {
-                console.error('Respuesta no es JSON válido:', textSaldo);
-                throw new Error('Respuesta del servidor no es JSON válido');
-            }
-            
-            return result;
+        let fechaDesde, fechaHasta;
+
+        if (filtrosActivos && filtrosActivos.fecha_desde && filtrosActivos.fecha_hasta) {
+            fechaDesde = filtrosActivos.fecha_desde;
+            fechaHasta = filtrosActivos.fecha_hasta;
+        } else {
+            const hace15Dias = new Date(hoy);
+            hace15Dias.setDate(hoy.getDate() - 15);
+            fechaDesde = hace15Dias.toISOString().split('T')[0];
+            fechaHasta = hoy.toISOString().split('T')[0];
+        }
+
+        // 1. FETCH PARA INGRESOS Y EGRESOS DEL PERÍODO
+        let urlRango = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
+        urlRango += `&fecha_desde=${fechaDesde}`;
+        urlRango += `&fecha_hasta=${fechaHasta}`;
+
+        const [resRango, resSaldo] = await Promise.all([
+            fetch(urlRango).then(r => r.json()),
+            fetch(`controller/caja_reporte_controller.php?accion=saldo&_=${Date.now()}`).then(r => r.json())
+        ]);
+
+        const formatoMoneda = new Intl.NumberFormat('es-AR', { 
+            style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0
         });
-        
-        console.log('Datos para saldo (todos los períodos):', resultSaldo.data);
-        
-        if (resultSaldo.success) {
-            const formatoMoneda = new Intl.NumberFormat('es-AR', { 
-                style: 'currency', 
-                currency: 'ARS',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            });
-            
-            // Calcular saldo sobre TODOS los períodos
-            let totalIngresosParaSaldo = 0;
-            let totalEgresosParaSaldo = 0;
-            
-            resultSaldo.data.forEach(mov => {
+
+        // Procesar Período
+        if (resRango.success) {
+            let totalIngresos = 0;
+            let totalEgresos = 0;
+
+            resRango.data.forEach(mov => {
                 if (mov.tipo === 'INGRESO' && mov.recibido == 1) {
-                    totalIngresosParaSaldo += parseFloat(mov.importe);
+                    totalIngresos += parseFloat(mov.importe);
                 } else if (mov.tipo === 'EGRESO') {
-                    totalEgresosParaSaldo += parseFloat(mov.importe);
+                    totalEgresos += parseFloat(mov.importe);
                 }
             });
-            
-            // El saldo SIEMPRE se calcula con todos los datos (ingresos - egresos)
-            const saldo = totalIngresosParaSaldo - totalEgresosParaSaldo;
-            console.log('Saldo calculado sobre todos los períodos:', saldo);
-            
+
+            document.getElementById('totalIngresos').textContent = formatoMoneda.format(totalIngresos);
+            document.getElementById('totalEgresos').textContent = formatoMoneda.format(totalEgresos);
+        }
+
+        // Procesar Saldo Histórico (REAL)
+        if (resSaldo.success) {
+            const saldoReal = resSaldo.data.saldo;
             const elementoSaldo = document.getElementById('saldoActual');
-            elementoSaldo.textContent = formatoMoneda.format(saldo);
+            elementoSaldo.textContent = formatoMoneda.format(saldoReal);
             
-            // Cambiar color según saldo positivo o negativo
             const cardSaldo = elementoSaldo.closest('.card');
-            if (saldo < 0) {
+            if (saldoReal < 0) {
                 cardSaldo.classList.remove('bg-primary');
                 cardSaldo.classList.add('bg-warning');
-                cardSaldo.querySelector('.card-text').textContent = 'Déficit en caja';
+                document.getElementById('saldoActualText').textContent = 'Déficit Total';
             } else {
                 cardSaldo.classList.remove('bg-warning');
                 cardSaldo.classList.add('bg-primary');
-                cardSaldo.querySelector('.card-text').textContent = 'Disponible';
-            }
-            
-            // Si solo se actualiza el saldo, ocultar el indicador de carga aquí
-            if (soloSaldo) {
-                mostrarCargandoTarjetas(false);
-            }
-            
-            // Solo actualizar ingresos y egresos si no estamos en modo "solo saldo"
-            if (!soloSaldo) {
-                // Para INGRESOS y EGRESOS: usar filtros activos si existen, sino usar totales generales
-                let fechaDesdeIngEgr, fechaHastaIngEgr;
-                
-                if (filtrosActivos && filtrosActivos.fecha_desde && filtrosActivos.fecha_hasta) {
-                    // Hay filtros activos: usar esas fechas
-                    fechaDesdeIngEgr = filtrosActivos.fecha_desde;
-                    fechaHastaIngEgr = filtrosActivos.fecha_hasta;
-                    console.log('📅 Usando filtros de fecha:', fechaDesdeIngEgr, 'a', fechaHastaIngEgr);
-                } else {
-                    // No hay filtros activos: usar rango por defecto (últimos 15 días)
-                    const hace15Dias = new Date(hoy);
-                    hace15Dias.setDate(hoy.getDate() - 15);
-                    fechaDesdeIngEgr = hace15Dias.toISOString().split('T')[0];
-                    fechaHastaIngEgr = hoy.toISOString().split('T')[0];
-                    console.log('📅 Usando rango por defecto (últimos 15 días):', fechaDesdeIngEgr, 'a', fechaHastaIngEgr);
-                }
-                
-                console.log('🌐 URL completa para movimientos:', `controller/caja_reporte_controller.php?accion=movimientos&fecha_desde=${fechaDesdeIngEgr}&fecha_hasta=${fechaHastaIngEgr}`);
-                
-                let urlIngEgr = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
-                urlIngEgr += `&fecha_desde=${fechaDesdeIngEgr}`;
-                urlIngEgr += `&fecha_hasta=${fechaHastaIngEgr}`;
-                
-                const responseIngEgr = await fetch(urlIngEgr, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-                
-                if (!responseIngEgr.ok) {
-                    throw new Error(`HTTP ${responseIngEgr.status}: ${responseIngEgr.statusText}`);
-                }
-                
-                const textIngEgr = await responseIngEgr.text();
-                let resultIngEgr;
-                
-                try {
-                    resultIngEgr = JSON.parse(textIngEgr);
-                } catch (jsonError) {
-                    console.error('Respuesta no es JSON válido:', textIngEgr);
-                    throw new Error('Respuesta del servidor no es JSON válido');
-                }
-                
-                if (resultIngEgr.success) {
-                    let totalIngresosRango = 0;
-                    let totalEgresosRango = 0;
-                    
-                    console.log('=== DEBUG: Procesando movimientos para tarjetas ===');
-                    console.log('Total de movimientos recibidos:', resultIngEgr.data.length);
-                    
-                    // Filtrar y mostrar solo egresos con nuevos motivos
-                    const egresosNuevosMotivos = resultIngEgr.data.filter(mov => 
-                        mov.tipo === 'EGRESO' && 
-                        (mov.concepto.includes('Pago de tarjetas') || 
-                         mov.concepto.includes('Transf. Haberes') || 
-                         mov.concepto.includes('Otros'))
-                    );
-                    
-                    if (egresosNuevosMotivos.length > 0) {
-                        console.log('✅ Egresos con nuevos motivos encontrados:', egresosNuevosMotivos);
-                    } else {
-                        console.log('⚠️ NO se encontraron egresos con nuevos motivos en la respuesta');
-                    }
-                    
-                    resultIngEgr.data.forEach(mov => {
-                        if (mov.tipo === 'INGRESO' && mov.recibido == 1) {
-                            totalIngresosRango += parseFloat(mov.importe);
-                        } else if (mov.tipo === 'EGRESO') {
-                            totalEgresosRango += parseFloat(mov.importe);
-                            
-                            // Log especial para nuevos motivos
-                            if (mov.concepto.includes('Otros') || mov.concepto.includes('Pago de tarjetas') || mov.concepto.includes('Transf. Haberes')) {
-                                console.log('💰 Sumando egreso nuevo motivo:', mov.concepto, '- Importe:', mov.importe);
-                            }
-                        }
-                    });
-                    
-                    console.log('Tarjetas actualizadas - Ingresos:', totalIngresosRango, 'Egresos:', totalEgresosRango);
-                    console.log('=== FIN DEBUG ===');
-                    
-                    document.getElementById('totalIngresos').textContent = 
-                        formatoMoneda.format(totalIngresosRango);
-                    
-                    document.getElementById('totalEgresos').textContent = 
-                        formatoMoneda.format(totalEgresosRango);
-                        
-                    // Ocultar indicador de carga cuando se completa la actualización
-                    mostrarCargandoTarjetas(false);
-                } else {
-                    console.error('Error en respuesta del servidor:', resultIngEgr);
-                    // Ocultar indicador de carga en caso de error
-                    mostrarCargandoTarjetas(false);
-                }
+                document.getElementById('saldoActualText').textContent = 'Histórico Acumulado';
             }
         }
+        
     } catch (error) {
         console.error('Error al actualizar resumen:', error);
-        // Ocultar indicador de carga en caso de error
+    } finally {
         mostrarCargandoTarjetas(false);
     }
 }
@@ -425,8 +285,10 @@ function mostrarReporte(movimientos, filtros = {}) {
     }
     
     // Obtener cantidad seleccionada para paginación (por defecto 50)
-    const cantidadSeleccionada = parseInt(localStorage.getItem('reporteCantidadPorPagina') || '50');
-    const movimientosPaginados = movimientos.slice(0, cantidadSeleccionada);
+    let cantidadSeleccionada = parseInt(localStorage.getItem('reporteCantidadPorPagina') || '50');
+    
+    // Si la cantidad es 999999, mostramos todos los movimientos
+    const movimientosPaginados = (cantidadSeleccionada >= 999999) ? movimientos : movimientos.slice(0, cantidadSeleccionada);
     
     const formatoMoneda = new Intl.NumberFormat('es-AR', { 
         style: 'currency', 
@@ -435,10 +297,9 @@ function mostrarReporte(movimientos, filtros = {}) {
         maximumFractionDigits: 0
     });
     
-    // Actualizar tarjetas superiores: pasar filtros para ingresos/egresos, saldo siempre general
-    if (filtros && (filtros.fecha_desde || filtros.fecha_hasta) && filtros.aplicadoManualmente) {
-        // Filtros aplicados manualmente: actualizar ingresos/egresos con el rango, saldo sigue siendo general
-        actualizarResumen(false, filtros);
+    // Actualizar tarjetas superiores con los mismos filtros del reporte
+    if (filtros && filtros.fecha_desde && filtros.fecha_hasta) {
+        actualizarResumen(filtros);
     }
     
     let html = `
@@ -450,6 +311,7 @@ function mostrarReporte(movimientos, filtros = {}) {
                     <option value="100" ${cantidadSeleccionada === 100 ? 'selected' : ''}>100</option>
                     <option value="200" ${cantidadSeleccionada === 200 ? 'selected' : ''}>200</option>
                     <option value="500" ${cantidadSeleccionada === 500 ? 'selected' : ''}>500</option>
+                    <option value="999999" ${cantidadSeleccionada === 999999 ? 'selected' : ''}>Todos</option>
                 </select>
                 <span class="text-muted">movimientos</span>
             </div>
@@ -478,6 +340,15 @@ function mostrarReporte(movimientos, filtros = {}) {
     
     let saldoAcumulado = 0;
     
+    // El saldo acumulado en el footer debe ser de TODOS los movimientos filtrados, no solo los paginados
+    movimientos.forEach(mov => {
+        if (mov.tipo === 'INGRESO' && mov.recibido == 1) {
+            saldoAcumulado += parseFloat(mov.importe);
+        } else if (mov.tipo === 'EGRESO') {
+            saldoAcumulado -= parseFloat(mov.importe);
+        }
+    });
+
     movimientosPaginados.forEach(mov => {
         // Usar directamente el campo fecha del movimiento
         const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
@@ -508,8 +379,7 @@ function mostrarReporte(movimientos, filtros = {}) {
         if (mov.tipo === 'INGRESO') {
             if (mov.recibido == 1) {
                 estadoBadge = '<span class="badge bg-success">Recibido</span>';
-                saldoAcumulado += parseFloat(mov.importe);
-} else {
+            } else {
                 estadoBadge = '<span class="badge bg-warning">Pendiente</span>';
                 
                 // *** LÓGICA CORREGIDA PARA EL BOTÓN DE ACCIÓN ***
@@ -527,6 +397,7 @@ function mostrarReporte(movimientos, filtros = {}) {
             data-cod-comp="${mov.COD_COMP || ''}"
             data-n-comp="${mov.N_COMP || ''}"
             data-concepto="${(mov.observaciones || mov.concepto || '').replace(/"/g, '&quot;')}"
+            data-id-original="${mov.id}"
             data-importe="${mov.importe}"
             style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
             title="Importar de Tesorería">
@@ -556,7 +427,6 @@ function mostrarReporte(movimientos, filtros = {}) {
             }
         } else {
             estadoBadge = '<span class="badge bg-success">Pagado</span>';
-            saldoAcumulado -= parseFloat(mov.importe);
             origenBadge = '<span class="badge bg-primary">Manual</span>'; // Egresos siempre manuales
         }
         
@@ -752,7 +622,7 @@ async function marcarRecibidoDesdeReporte(botonElemento, event) {
             
             setTimeout(() => {
                 if (fechaDesde && fechaHasta) {
-                    actualizarResumen(false, { fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
+                    actualizarResumen({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
                 } else {
                     actualizarResumen();
                 }
@@ -834,9 +704,12 @@ async function marcarRecibidoTesoreria(botonElemento, event) {
             
             setTimeout(() => {
                 if (fechaDesde && fechaHasta) {
-                    actualizarResumen(false, { fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
+                    // Adicionalmente refrescar el reporte para que desaparezca el botón
+                    cargarReporte({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
+                    actualizarResumen({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
                 } else {
                     actualizarResumen();
+                    cargarReporte();
                 }
             }, 800);
             
@@ -853,79 +726,6 @@ async function marcarRecibidoTesoreria(botonElemento, event) {
     }
     
     return false; // Prevenir cualquier comportamiento adicional
-}
-
-// Marcar ingreso TESORERÍA como recibido
-async function marcarRecibidoTesoreria(botonElemento) {
-    console.log('[TESORERÍA] 🚀 Procesando importación...');
-    
-    try {
-        // Obtener datos
-        const idSba05 = botonElemento.dataset.idSba05;
-        const fecha = botonElemento.dataset.fecha;
-        const codComp = botonElemento.dataset.codComp;
-        const nComp = botonElemento.dataset.nComp;
-        const concepto = botonElemento.dataset.concepto;
-        const importe = botonElemento.dataset.importe;
-        
-        // Deshabilitar botón
-        botonElemento.disabled = true;
-        botonElemento.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-        
-        const formData = new FormData();
-        formData.append('accion', 'marcar_recibido_tesoreria');
-        formData.append('id_sba05', String(idSba05)); 
-        formData.append('fecha', String(fecha));
-        formData.append('cod_comp', String(codComp || ''));
-        formData.append('n_comp', String(nComp || ''));
-        formData.append('observaciones', String(concepto || ''));
-        formData.append('importe', String(importe || 0));
-        
-        const response = await fetch('controller/caja_ingresos_controller.php?' + new Date().getTime(), {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            console.log('✅ Tesorería importada correctamente');
-            
-            // 1. ACTUALIZACIÓN VISUAL INMEDIATA
-            botonElemento.disabled = true;
-            botonElemento.classList.add('checked');
-            botonElemento.innerHTML = '<i class="bi bi-check-square-fill text-success"></i>';
-            botonElemento.title = "Importado";
-            
-            // 2. ACTUALIZAR CELDA DE ESTADO
-            const fila = botonElemento.closest('tr');
-            if (fila && fila.cells[7]) {
-                fila.cells[7].innerHTML = '<span class="badge bg-success">Recibido</span>';
-            }
-
-            // 3. ACTUALIZAR TOTALES (sin recargar tabla)
-            const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
-            const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
-            
-            setTimeout(() => {
-                if (fechaDesde && fechaHasta) {
-                    actualizarResumen(false, { fecha_desde: fechaDesde, fecha_hasta: fechaHasta });
-                } else {
-                    actualizarResumen();
-                }
-            }, 800);
-            
-        } else {
-            botonElemento.disabled = false;
-            botonElemento.innerHTML = '☐';
-            mostrarAlerta('Error', result.message);
-        }
-    } catch (error) {
-        console.error('[ERROR]', error);
-        botonElemento.disabled = false;
-        botonElemento.innerHTML = '☐';
-        mostrarAlerta('Error', 'Error de conexión: ' + error.message);
-    }
 }
 
 // Exportar reporte (función placeholder para futura implementación)
@@ -979,7 +779,7 @@ async function exportarReporteExcel() {
         }
         
         const movimientos = result.data;
-        const movimientosPaginados = movimientos.slice(0, cantidadSeleccionada);
+        const movimientosAExportar = (cantidadSeleccionada >= 999999) ? movimientos : movimientos.slice(0, cantidadSeleccionada);
         
         // Preparar datos para Excel
         const datosExcel = [];
@@ -998,7 +798,7 @@ async function exportarReporteExcel() {
         let saldoAcumulado = 0;
         
         // Agregar filas de datos
-        movimientosPaginados.forEach(mov => {
+        movimientosAExportar.forEach(mov => {
             const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
             const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
             
@@ -1154,7 +954,7 @@ function aplicarFiltrosReporte() {
     
     // Actualizar tanto el reporte como las tarjetas con los filtros aplicados
     cargarReporte(filtros);
-    actualizarResumen(false, filtros);
+    actualizarResumen(filtros);
 }
 
 // Limpiar filtros y volver a los últimos 15 días

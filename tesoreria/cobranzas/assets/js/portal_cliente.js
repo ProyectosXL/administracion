@@ -85,7 +85,9 @@ $(document).ready(function () {
             const tr = $(this);
             const bruto = parseFloat(tr.data('importe-bruto'));
             const tipoComp = tr.data('tcomp');
-            const esNC = tipoComp && tipoComp.startsWith('NC');
+            // Nota: En la negociación usamos tr.attr('data-estado') si estuviera disponible, 
+            // pero para simplificar si es REC en este contexto es a cuenta.
+            const esNegativo = tipoComp && (tipoComp.startsWith('NC') || tipoComp === 'REC');
             const descuentoOriginal = parseFloat(tr.data('descuento-original'));
 
             const nComp = (tr.data('ncomp') || '').trim();
@@ -115,13 +117,16 @@ $(document).ready(function () {
 
             // Actualizamos la tabla visualmente
             tr.find('.descuento-cell').text(porcentajeAplicar.toFixed(2) + ' %');
+            tr.attr('data-nuevo-descuento', porcentajeAplicar); // Guardamos el valor numérico puro
+            tr.attr('data-nuevo-neto', netoRecalculado); // Guardamos el neto numérico puro
 
-            // Aplicamos el signo negativo para visualización si es NC
-            const netoFinal = esNC ? -netoRecalculado : netoRecalculado;
+            // Aplicamos el signo negativo para visualización si es NC o REC A Cuenta
+            esNegativo = tipoComp && (tipoComp.startsWith('NC') || (tipoComp === 'REC' && (tr.attr('data-estado') || '').trim() === 'CTA'));
+            const netoFinal = esNegativo ? -netoRecalculado : netoRecalculado;
             tr.find('.importe-neto-cell').text(netoFinal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
 
             // Sumamos a los totales
-            totalBruto += esNC ? -bruto : bruto;
+            totalBruto += esNegativo ? -bruto : bruto;
             totalNeto += netoFinal;
         });
 
@@ -367,7 +372,33 @@ $(document).ready(function () {
             ? new Date(propuesta.fecha_propuesta_pago + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })
             : 'No definida';
 
-        let resumenHtml = `<div class="row mb-4"><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Total Propuesto</h6><p class="card-text fs-4 fw-bold text-primary mb-0" id="totalPropuestoKPI">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p></div></div></div><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Fecha Propuesta de Pago</h6><p class="card-text fs-4 fw-bold mb-0" id="fechaPropuestaKPI">${fechaHtml}</p></div></div></div><div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">Medio de Pago</h6><p class="card-text fs-4 fw-bold mb-0" id="medioPagoKPI">${propuesta.medio_de_pago || 'N/A'}</p></div></div></div></div>`;
+        let resumenHtml = `
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-light shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-muted text-uppercase small">Total Propuesto</h6>
+                        <p class="card-text fs-4 fw-bold text-primary mb-0" id="totalPropuestoKPI">${(parseFloat(propuesta.total_propuesto) || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-muted text-uppercase small">Fecha Límite Pago</h6>
+                        <p class="card-text fs-4 fw-bold mb-0" id="fechaPropuestaKPI">${fechaHtml}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-muted text-uppercase small">Medio de Pago</h6>
+                        <p class="card-text fs-4 fw-bold mb-0" id="medioPagoKPI">${propuesta.medio_de_pago || 'N/A'}</p>
+                    </div>
+                </div>
+            </div>
+        </div>`;
 
         let adjuntosHtml = '';
         const adjuntosGenerales = (adjuntos || []).filter(a => !a.id_cuota);
@@ -394,12 +425,13 @@ $(document).ready(function () {
             const descuento = parseFloat(item.porcentaje_descuento) || 0;
             const nComp = (item.n_comp_factura || '').trim();
             const tComp = (item.t_comp_factura || '').trim();
-            const esNC = tComp.startsWith('NC');
+            // Para visualización de propuestas ya creadas, REC siempre es negativo
+            const esNegativo = tComp.startsWith('NC') || tComp === 'REC';
 
-            totalBrutoTabla += esNC ? -bruto : bruto;
-            totalNetoTabla += esNC ? -neto : neto;
+            totalBrutoTabla += esNegativo ? -bruto : bruto;
+            totalNetoTabla += esNegativo ? -neto : neto;
 
-            itemsHtml += `<tr data-importe-bruto="${bruto}" data-tcomp="${tComp}" data-ncomp="${nComp}" data-descuento-original="${descuento}"><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNC ? 'text-danger' : ''}">${(esNC ? -bruto : bruto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center descuento-cell">${descuento.toFixed(2)} %</td><td class="text-end fw-bold importe-neto-cell ${esNC ? 'text-danger' : ''}">${(esNC ? -neto : neto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr>`;
+            itemsHtml += `<tr data-importe-bruto="${bruto}" data-tcomp="${tComp}" data-ncomp="${nComp}" data-descuento-original="${descuento}"><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNegativo ? 'text-danger' : ''}">${(esNegativo ? -bruto : bruto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center descuento-cell">${descuento.toFixed(2)} %</td><td class="text-end fw-bold importe-neto-cell ${esNegativo ? 'text-danger' : ''}">${(esNegativo ? -neto : neto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr>`;
         });
 
         itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="2" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr></tfoot></table>`;
@@ -407,20 +439,18 @@ $(document).ready(function () {
 
         let cuotasHtml = '';
         if (data.cuotas && data.cuotas.length > 0) {
-            cuotasHtml = `<h5 class="mt-4"><i class="fa-solid fa-calendar-day me-2 text-primary"></i>Plan de Pagos Acordado</h5><div class="row row-cols-1 row-cols-md-2 g-3 mb-4">`;
+            cuotasHtml = `<h5 class="mt-4"><i class="fa-solid fa-list-check me-2 text-success"></i>Esquema de Facilidades de Pago</h5><div class="row row-cols-1 row-cols-md-3 g-2 mb-3">`;
             data.cuotas.forEach(c => {
-                const fechaFmt = new Date(c.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const fVenc = new Date(c.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR');
 
-                // Buscamos adjuntos para esta cuota
+                // Buscar adjuntos de esta cuota para el admin
                 let adjuntosCuotaHtml = '';
                 const adjuntosCuota = (data.adjuntos || []).filter(a => a.id_cuota == c.id);
-                const tieneAdjuntos = adjuntosCuota.length > 0;
-
-                if (tieneAdjuntos) {
-                    adjuntosCuotaHtml = '<div class="mt-2 border-top pt-2">';
+                if (adjuntosCuota.length > 0) {
+                    adjuntosCuotaHtml = '<div class="mt-2 border-top pt-1 text-start">';
                     adjuntosCuota.forEach(a => {
-                        adjuntosCuotaHtml += `<div class="small d-flex justify-content-between align-items-center mb-1 bg-white p-1 rounded border">
-                            <span class="text-truncate text-muted" style="max-width: 130px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice me-1"></i>${a.nombre_archivo}</span>
+                        adjuntosCuotaHtml += `<div class="x-small d-flex justify-content-between align-items-center mb-1" style="font-size: 0.75rem;">
+                            <span class="text-truncate" style="max-width: 120px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice-dollar me-1 text-success"></i>${a.nombre_archivo}</span>
                             <div class="btn-group">
                                 <a href="${a.ruta_archivo}" target="_blank" class="btn btn-xs btn-outline-primary" title="Ver archivo"><i class="fa-solid fa-eye"></i></a>
                                 <button class="btn btn-xs btn-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
@@ -430,26 +460,19 @@ $(document).ready(function () {
                     adjuntosCuotaHtml += '</div>';
                 }
 
-                // Botón adjuntar solo si la propuesta está aceptada
                 const puedeAdjuntar = propuesta.estado === 'ACEPTADA' || propuesta.estado === 'DOCUMENTACION_ADJUNTADA';
+                const tieneAdjuntos = adjuntosCuota.length > 0;
                 const checkVerde = tieneAdjuntos ? '<i class="fa-solid fa-circle-check text-success me-2" title="Documentación cargada"></i>' : '';
-                const btnAdjuntarCuota = puedeAdjuntar ? `<button class="btn btn-xs btn-outline-info btn-adjuntar-interne" data-id="${propuesta.id}" data-id-cuota="${c.id}" title="Adjuntar Documento"><i class="fa-solid fa-cloud-arrow-up"></i></button>` : '';
+                const btnAdjuntarCuota = puedeAdjuntar ? `<button class="btn btn-xs btn-outline-info btn-adjuntar-interne mt-2" data-id="${propuesta.id}" data-id-cuota="${c.id}" title="Adjuntar Documento"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Adjuntar</button>` : '';
 
                 cuotasHtml += `
                 <div class="col">
-                    <div class="card border-0 bg-light shadow-sm h-100">
-                        <div class="card-body p-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span>
-                                    ${checkVerde}
-                                    <span class="badge bg-primary me-2">Pago ${c.num_cuota}</span> 
-                                    <strong class="text-dark">${parseFloat(c.monto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong>
-                                </span>
-                                <div class="d-flex align-items-center">
-                                    <span class="small text-muted me-2"><i class="fa-solid fa-calendar-check me-1"></i>${fechaFmt}</span>
-                                    ${btnAdjuntarCuota}
-                                </div>
-                            </div>
+                    <div class="card border-success bg-white shadow-sm h-100">
+                        <div class="card-body p-2 text-center">
+                            <span class="badge bg-success mb-1">Pago ${c.num_cuota}</span>
+                            <div class="fw-bold fs-6">${checkVerde}${parseFloat(c.monto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>
+                            <div class="small text-muted">${fVenc}</div>
+                            ${btnAdjuntarCuota}
                             ${adjuntosCuotaHtml}
                         </div>
                     </div>
@@ -550,7 +573,7 @@ $(document).ready(function () {
         }
 
         // historialHtml se calcula después...
-        let historialHtml = '<h5>Historial de la Negociación</h5><div class="timeline">';
+        let historialHtml = '<h5>Historial</h5><div class="timeline">';
         historial.forEach(h => {
             const icon = h.tipo_usuario === 'ADMIN' ? 'fa-user-shield' : 'fa-user-tie';
             const align = h.tipo_usuario === 'ADMIN' ? 'left' : 'right';
@@ -560,9 +583,61 @@ $(document).ready(function () {
                 adjuntoHtml = `<div class="mt-2 historial-adjunto"><a href="${h.ruta_adjunto}" target="_blank" title="Ver imagen adjunta"><img src="${h.ruta_adjunto}" alt="Adjunto del historial" class="img-thumbnail" style="max-width: 150px; cursor: pointer;"></a></div>`;
             }
 
-            historialHtml += `<div class="timeline-item timeline-item-${align}"><div class="timeline-icon"><i class="fas ${icon}"></i></div><div class="timeline-content"><span class="timeline-date">${h.fecha_evento}</span><p><strong>${h.descripcion}</strong></p>${h.comentario ? `<p class="fst-italic bg-light p-2 rounded">Comentario: "${h.comentario}"</p>` : ''}${adjuntoHtml}</div></div>`;
+            // Snapshot button for client portal
+            let snapshotBtn = '';
+            if (h.json_data) {
+                snapshotBtn = `
+                <div class="mt-2 text-start">
+                    <button class="btn btn-xs btn-outline-info p-1 px-2 border-0 bg-light btn-ver-snapshot-cliente" style="font-size: 0.7rem;" 
+                            data-snapshot='${h.json_data.replace(/'/g, "&apos;")}'>
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Ver condiciones de esta versión
+                    </button>
+                </div>`;
+            }
+
+            historialHtml += `
+            <div class="timeline-item timeline-item-${align}">
+                <div class="timeline-icon"><i class="fas ${icon}"></i></div>
+                <div class="timeline-content">
+                    <span class="timeline-date">${h.fecha_evento}</span>
+                    <p><strong>${h.descripcion}</strong></p>
+                    ${h.comentario ? `<p class="fst-italic bg-light p-2 rounded">Comentario: "${h.comentario}"</p>` : ''}
+                    ${adjuntoHtml}
+                    ${snapshotBtn}
+                </div>
+            </div>`;
         });
         historialHtml += '</div>';
+
+        // Event handler for snapshots in client portal
+        $(document).off('click', '.btn-ver-snapshot-cliente').on('click', '.btn-ver-snapshot-cliente', function (e) {
+            e.preventDefault();
+            try {
+                const snap = JSON.parse($(this).attr('data-snapshot'));
+                const f = (n) => (parseFloat(n) || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+                const fechaFmt = snap.fecha ? snap.fecha.split(' ')[0] : 'N/A';
+
+                let html = `<div class='text-start small'>
+                    <p><strong>Fecha de pago:</strong> ${fechaFmt}</p>
+                    <p><strong>Monto Total:</strong> <span class='text-primary fw-bold'>${f(snap.total)}</span></p>
+                    <p><strong>Medio:</strong> ${snap.medio_pago || 'N/A'}</p>`;
+
+                if (snap.cuotas && snap.cuotas.length > 0) {
+                    html += `<hr><p class='fw-bold mb-1'>Esquema de Pagos:</p>
+                    <ul class='list-unstyled mb-0'>
+                        ${snap.cuotas.map(c => `<li><i class='fa-solid fa-circle-check text-success me-1'></i> ${f(c.monto)} (${c.fecha_vencimiento})</li>`).join('')}
+                    </ul>`;
+                }
+                html += `</div>`;
+
+                Swal.fire({
+                    title: 'Condiciones de esta Versión',
+                    html: html,
+                    icon: 'info',
+                    confirmButtonText: 'Cerrar'
+                });
+            } catch (err) { console.error(err); }
+        });
 
         // Mostramos los botones de acción según el estado
         if (propuesta.estado === 'PENDIENTE_APROBACION_CLIENTE') {
@@ -598,17 +673,17 @@ $(document).ready(function () {
             }
 
             $fechaLimiteNeg.off('change').on('change', function () {
-                // El cambio de fecha dispara recalcularPropuestaCliente()
-                // que a su vez llama a generarCamposCuotasNeg si es necesario
-                // Pero también actualizamos los 'max' por si acaso
                 const nuevaFecha = $(this).val();
                 $('.neg-cuota-fecha').attr('max', nuevaFecha);
                 $('.neg-cuota-fecha').each(function () {
                     if ($(this).val() > nuevaFecha) $(this).val(nuevaFecha);
                 });
+                $('#fechaPropuestaKPI').text(new Date(nuevaFecha + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }));
             });
+            if (esNegociable) {
+                recalcularPropuestaCliente();
+            }
         }
-
     }
 
     // 3. LÓGICA PARA LOS BOTONES DE ACCIÓN DEL MODAL
@@ -660,12 +735,31 @@ $(document).ready(function () {
                 });
             }
 
+            // Recolectamos los items actualizados para que el admin vea los nuevos netos/descuentos
+            let itemsArr = [];
+            $('#tabla-detalle-propuesta-cliente tbody tr').each(function () {
+                const tr = $(this);
+                const bruto = parseFloat(tr.data('importe-bruto')) || 0;
+                // Intentamos leer del atributo nuevo, sino del texto, sino del original
+                const desc = parseFloat(tr.attr('data-nuevo-descuento')) || parseFloat(tr.find('.descuento-cell').text()) || parseFloat(tr.data('descuento-original')) || 0;
+                const neto = parseFloat(tr.attr('data-nuevo-neto')) || (bruto * (1 - (desc / 100)));
+
+                itemsArr.push({
+                    t_comp: tr.data('tcomp'),
+                    n_comp: tr.data('ncomp'),
+                    importe_bruto: bruto,
+                    importe_neto: neto,
+                    porcentaje_descuento: desc
+                });
+            });
+
             // Recolectamos los datos de la contrapropuesta
             const datosContrapropuesta = {
                 nuevo_total: parseFloat($('#total-neto-tabla').text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0,
                 nueva_fecha: $('#negociacion-fecha-pago').val(),
                 nuevo_medio_pago: $('#negociacion-medio-pago').val(),
-                cuotas: cuotasArr.length > 0 ? cuotasArr : null // Añadimos el array de cuotas si existe
+                cuotas: cuotasArr.length > 0 ? cuotasArr : null,
+                items: itemsArr // Enviamos el detalle de facturas actualizado
             };
 
             enviarAccion(idPropuesta, 'CONTRAPROPUESTA_CLIENTE', comentario, datosContrapropuesta);
@@ -738,6 +832,9 @@ $(document).ready(function () {
 
             if (datosContrapropuesta.cuotas) {
                 formData.append('contrapropuesta[cuotas]', JSON.stringify(datosContrapropuesta.cuotas));
+            }
+            if (datosContrapropuesta.items) {
+                formData.append('contrapropuesta[items]', JSON.stringify(datosContrapropuesta.items));
             }
         }
 

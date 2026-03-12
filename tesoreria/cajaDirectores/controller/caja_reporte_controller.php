@@ -25,7 +25,7 @@ try {
             $ingreso = new Ingreso();
             $egreso = new Egreso();
             
-            $totalIngresos = $ingreso->obtenerTotalRecibido();
+            $totalIngresos = $ingreso->obtenerTotalRecibido() + $ingreso->obtenerTotal599();
             $totalEgresos = $egreso->obtenerTotal();
             $saldo = $totalIngresos - $totalEgresos;
             

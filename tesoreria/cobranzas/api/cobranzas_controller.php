@@ -43,13 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
                 throw new Exception("Error al insertar item: " . $comp['n_comp']);
         }
 
-        $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion) VALUES (?, ?, ?, ?)";
-        $desc_historial = "Propuesta de pago creada por el administrador.";
-        $params_historial = [$id_propuesta, $id_usuario_admin, 'ADMIN', $desc_historial];
-        $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
-        if ($stmt_historial === false)
-            throw new Exception("Error al registrar historial.");
-
         // --- NUEVO: Guardar Cuotas (Facilidades de Pago) ---
         $cuotas = $_POST['cuotas'] ?? [];
         if (!empty($cuotas)) {
@@ -62,18 +55,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
             }
         }
 
+        // --- GUARDAR SNAPSHOT INICIAL (AHORA CON CUOTAS YA CARGADAS) ---
+        $snapshot = [
+            'total' => $total_propuesto,
+            'fecha' => $fecha_propuesta_pago,
+            'medio_pago' => $medio_de_pago,
+            'comprobantes' => $comprobantes,
+            'cuotas' => $cuotas
+        ];
+        $json_snapshot = json_encode($snapshot);
+
+        $sql_historial = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, json_data) VALUES (?, ?, ?, ?, ?)";
+        $desc_historial = "Propuesta de pago creada por el administrador.";
+        $params_historial = [$id_propuesta, $id_usuario_admin, 'ADMIN', $desc_historial, $json_snapshot];
+        $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
+        if ($stmt_historial === false)
+            throw new Exception("Error al registrar historial.");
+
         sqlsrv_commit($conn_apps);
+
+        // --- RESPONDER AL CLIENTE INMEDIATAMENTE PARA EVITAR TIMEOUT ---
+        echo json_encode(['success' => true, 'message' => 'Propuesta de pago enviada correctamente.']);
+
+        // Si el servidor soporta flush o fastcgi_finish_request lo usamos para cerrar la conexión con el navegador
+        // pero que el script siga enviando el correo.
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            // Fallback: intentamos cerrar la conexión enviando longitud de contenido
+            // (A veces no funciona en todos los servers, pero lo intentamos)
+            ignore_user_abort(true);
+        }
+
         // --- INICIO DE LA NOTIFICACIÓN (CASO A) ---
-        require_once __DIR__ . '/notificaciones_controller.php';
-        $datos_cliente = obtenerEmailFranquiciado($cod_cliente);
-        if ($datos_cliente && $datos_cliente['email']) {
-            $titulo = "Nueva Propuesta de Pago Recibida (ID: #{$id_propuesta})";
-            $mensaje = "Hola <strong>{$datos_cliente['razon_social']}</strong>,<br><br>Se ha generado una nueva propuesta de pago para regularizar su cuenta corriente. Por favor, ingrese al portal de clientes para revisar el detalle y responder (Aceptar o Contraproponer) dentro de las próximas 96 horas hábiles.";
-            $cuerpo = generarCuerpoEmail($titulo, $mensaje, "Ver Propuesta", "https://app.xl.com.ar/administracion/tesoreria/cobranzas/portal_cliente.php");
-            enviarNotificacion($datos_cliente['email'], $titulo, $cuerpo);
+        // Ahora el correo se envía "en segundo plano" tras el commit.
+        try {
+            require_once __DIR__ . '/notificaciones_controller.php';
+            $datos_cliente = obtenerEmailFranquiciado($cod_cliente);
+            if ($datos_cliente && $datos_cliente['email']) {
+                $titulo = "Nueva Propuesta de Pago Recibida (ID: #{$id_propuesta})";
+                $mensaje = "Hola <strong>{$datos_cliente['razon_social']}</strong>,<br><br>Se ha generado una nueva propuesta de pago para regularizar su cuenta corriente. Por favor, ingrese al portal de clientes para revisar el detalle y responder (Aceptar o Contraproponer) dentro de las próximas 96 horas hábiles.";
+                $cuerpo = generarCuerpoEmail($titulo, $mensaje, "Ver Propuesta", "https://app.xl.com.ar/administracion/tesoreria/cobranzas/portal_cliente.php");
+                enviarNotificacion($datos_cliente['email'], $titulo, $cuerpo);
+            }
+        } catch (Exception $e_mail) {
+            error_log("Error enviando mail al cliente: " . $e_mail->getMessage());
         }
         // --- FIN DE LA NOTIFICACIÓN ---
-        echo json_encode(['success' => true, 'message' => 'Propuesta de pago enviada correctamente.']);
 
     } catch (Exception $e) {
         sqlsrv_rollback($conn_apps);
@@ -160,7 +188,7 @@ try {
     } else {
         // --- VISTA DE RESUMEN ---
         // Obtenemos todos los registros pendientes y agrupamos en PHP para evitar errores de conexión cruzada
-        $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.IMPORTE, v.IMPORTE_NETO,
+        $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.ESTADO, v.IMPORTE, v.IMPORTE_NETO,
                        ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX
                 FROM $vista v
                 LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
@@ -188,7 +216,7 @@ try {
                 ];
             }
 
-            $esNC = (strpos($v['T_COMP'], 'NC') === 0);
+            $esNegativo = (strpos($v['T_COMP'], 'NC') === 0) || ($v['T_COMP'] === 'REC' && trim($v['ESTADO']) === 'CTA');
             $importe = (float) $v['IMPORTE'];
             $descPP = (float) $v['DESC_PP_MAX'];
             $porcDesc = 0;
@@ -208,8 +236,8 @@ try {
 
             $netoItem = $importe * (1 - $porcDesc);
             $resumenClientes[$cod]['CANT_FACTURAS']++;
-            $resumenClientes[$cod]['TOTAL_BRUTO'] += ($esNC ? -$importe : $importe);
-            $resumenClientes[$cod]['TOTAL_NETO'] += ($esNC ? -$netoItem : $netoItem);
+            $resumenClientes[$cod]['TOTAL_BRUTO'] += ($esNegativo ? -$importe : $importe);
+            $resumenClientes[$cod]['TOTAL_NETO'] += ($esNegativo ? -$netoItem : $netoItem);
         }
 
         foreach ($resumenClientes as $cliente) {

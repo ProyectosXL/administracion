@@ -366,7 +366,7 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                 <div class="col-md-4">
                                     <div class="card text-white bg-success mb-3">
                                         <div class="card-header">
-                                            <i class="bi bi-arrow-down-circle"></i> Total Ingresos (Rango Seleccionado)
+                                            <i class="bi bi-download"></i> Total Ingresos (Período)
                                         </div>
                                         <div class="card-body">
                                             <h3 class="card-title" id="totalIngresos">$0</h3>
@@ -377,7 +377,7 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                 <div class="col-md-4">
                                     <div class="card text-white bg-danger mb-3">
                                         <div class="card-header">
-                                            <i class="bi bi-arrow-up-circle"></i> Total Egresos (Rango Seleccionado)
+                                            <i class="bi bi-upload"></i> Total Egresos (Período)
                                         </div>
                                         <div class="card-body">
                                             <h3 class="card-title" id="totalEgresos">$0</h3>
@@ -388,11 +388,11 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                 <div class="col-md-4">
                                     <div class="card text-white bg-primary mb-3">
                                         <div class="card-header">
-                                            <i class="bi bi-cash-stack"></i> Saldo Actual en Caja   
+                                            <i class="bi bi-cash-stack"></i> Saldo Actual en Caja
                                         </div>
                                         <div class="card-body">
                                             <h3 class="card-title" id="saldoActual">$0</h3>
-                                            <p class="card-text">Disponible</p>
+                                            <p class="card-text" id="saldoActualText">Histórico Acumulado</p>
                                         </div>
                                     </div>
                                 </div>

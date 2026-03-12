@@ -1311,4 +1311,28 @@ class Egreso
             return false;
         }
     }
+
+    /**
+     * Obtiene el total histórico real de todos los egresos (sin filtros)
+     */
+    public function obtenerTotalReal(): float
+    {
+        try {
+            $fechaInicioApp = Config::getFechaInicioApp();
+            $sql = "SELECT COALESCE(SUM(importe), 0) as total FROM egresos WHERE fecha >= ?";
+            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
+
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta real: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+
+            return (float) $result['total'];
+        } catch (Exception $e) {
+            error_log("Error al obtener total real: " . $e->getMessage());
+            return 0.0;
+        }
+    }
 }
