@@ -450,14 +450,15 @@ def procesar_documento_texto(texto: str, sector: Optional[str] = None) -> tuple:
     if extractor is None or scorer is None:
         raise HTTPException(status_code=503, detail="Modelos de Tags/Glosario no inicializados")
 
-    keybert_candidates = extractor.extract_with_keybert(texto, top_n=120)
-    yake_candidates = extractor.extract_with_yake(texto, top_n=120)
+    keybert_candidates = extractor.extract_with_keybert(texto, top_n=150)
+    yake_candidates = extractor.extract_with_yake(texto, top_n=150)
+    spacy_candidates = extractor.extract_with_spacy_chunks(texto, top_n=150)
 
     candidatos_unicos = {}
     for term, score_kb in keybert_candidates:
         norm_key = normalize_candidate(term)
         if norm_key not in candidatos_unicos:
-            candidatos_unicos[norm_key] = {'term': term, 'keybert_score': score_kb, 'yake_score': 0.0, 'tech_shape': has_technical_shape(term)}
+            candidatos_unicos[norm_key] = {'term': term, 'keybert_score': score_kb, 'yake_score': 0.0, 'spacy_score': 0.0, 'tech_shape': has_technical_shape(term)}
         else:
             existing = candidatos_unicos[norm_key]
             if score_kb > existing['keybert_score'] or (score_kb == existing['keybert_score'] and len(term) > len(existing['term'])):
@@ -468,9 +469,21 @@ def procesar_documento_texto(texto: str, sector: Optional[str] = None) -> tuple:
         if norm_key in candidatos_unicos:
             candidatos_unicos[norm_key]['yake_score'] = score_yake
         else:
-            candidatos_unicos[norm_key] = {'term': term, 'keybert_score': 0.0, 'yake_score': score_yake, 'tech_shape': has_technical_shape(term)}
+            candidatos_unicos[norm_key] = {'term': term, 'keybert_score': 0.0, 'yake_score': score_yake, 'spacy_score': 0.0, 'tech_shape': has_technical_shape(term)}
 
-    candidatos_sorted = sorted(candidatos_unicos.values(), key=lambda x: (x['keybert_score'], x['yake_score']), reverse=True)[:250]
+    # Tercera fuente: spaCy noun chunks (ATE state-of-the-art — captura sintagmas nominales)
+    for term, score_sp in spacy_candidates:
+        norm_key = normalize_candidate(term)
+        if norm_key in candidatos_unicos:
+            candidatos_unicos[norm_key]['spacy_score'] = score_sp
+        else:
+            candidatos_unicos[norm_key] = {'term': term, 'keybert_score': 0.0, 'yake_score': 0.0, 'spacy_score': score_sp, 'tech_shape': has_technical_shape(term)}
+
+    candidatos_sorted = sorted(
+        candidatos_unicos.values(),
+        key=lambda x: (x['keybert_score'] + x.get('spacy_score', 0.0), x['yake_score']),
+        reverse=True
+    )[:350]
 
     # Filtrar verbos/adverbios de 1 palabra
     candidatos_list = []
@@ -524,10 +537,35 @@ def procesar_documento_texto(texto: str, sector: Optional[str] = None) -> tuple:
             and term_score.total_score >= 0.60
             and term_score.features.get('short_tech_evidence', 0.0) >= 1.0
         )
-        is_glossary = is_short_tech_glossary or (
-            context_patterns_score >= 0.30
-            and term_score.total_score >= 0.72
-            and (is_multiword or is_technical)
+        # Siglas técnicas reales: ALL CAPS, 2-4 chars, sin contexto definitorio necesario.
+        # Restricciones estrictas para 0 FP:
+        #   - term.isupper(): excluye "Accedé", "Observada", "Repetí" (verbos argentinos
+        #     con mayúscula inicial que el sistema confunde con acronym)
+        #   - len <= 4: excluye "RETIRA"(6), "FALLA"(5), "CENTRAL"(7) — palabras
+        #     castellanas en ALL CAPS que son section labels, no siglas técnicas
+        #   - len >= 2: excluye tokens de 1 char
+        # Captura: HTML(4), PHP(3), SQL(3), API(3), CSS(3), SSMS(4)
+        is_high_confidence_acronym = (
+            term_score.term_typology == "acronym"
+            and term_score.term.isupper()               # estrictamente all-caps
+            and 2 <= len(term_score.term) <= 4          # sigla corta, no palabra completa
+            and term_score.total_score >= 0.62
+        )
+        # CamelCase/techshape de 1 sola palabra (JavaScript, PostgreSQL, OAuth, etc.)
+        is_high_confidence_techshape = (
+            term_score.term_typology == "techshape"
+            and len(term_score.term.split()) == 1       # solo palabras simples, no compuestos
+            and term_score.total_score >= 0.65
+        )
+        is_glossary = (
+            is_short_tech_glossary
+            or is_high_confidence_acronym
+            or is_high_confidence_techshape
+            or (
+                context_patterns_score >= 0.25      # era 0.30
+                and term_score.total_score >= 0.65  # era 0.72
+                and (is_multiword or is_technical)
+            )
         )
 
         if is_glossary:

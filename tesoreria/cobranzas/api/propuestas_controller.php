@@ -857,6 +857,20 @@ try {
             }
 
             $conn_apps = Database::getConnection('apps');
+
+            // --- PROTECCIÓN CONTRA DUPLICADOS (Doble Click) ---
+            if (!$es_admin && $estado === 'CONTRAPROPUESTA_CLIENTE') {
+                $sql_check = "SELECT estado FROM FP_propuestas_pago WHERE id = ?";
+                $stmt_check = sqlsrv_query($conn_apps, $sql_check, [$id]);
+                if ($row_check = sqlsrv_fetch_array($stmt_check, SQLSRV_FETCH_ASSOC)) {
+                    // Si ya está en contrapropuesta, no permitimos otra consecutiva del cliente
+                    if ($row_check['estado'] === 'CONTRAPROPUESTA_CLIENTE') {
+                        echo json_encode(['success' => false, 'message' => 'Ya hemos recibido su contrapropuesta. Por favor, espere a que la administración la revise.']);
+                        exit;
+                    }
+                }
+            }
+
             sqlsrv_begin_transaction($conn_apps);
 
             try {

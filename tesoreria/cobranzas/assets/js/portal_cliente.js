@@ -818,6 +818,19 @@ $(document).ready(function () {
     });
 
     function enviarAccion(idPropuesta, nuevoEstado, comentario, datosContrapropuesta) {
+        // Bloqueamos botones para evitar duplicados y damos feedback visual
+        const $btnContra = $('#btn-enviar-contrapropuesta');
+        const $btnAceptar = $('#btn-aceptar-propuesta');
+        
+        $btnContra.prop('disabled', true);
+        $btnAceptar.prop('disabled', true);
+
+        if (nuevoEstado === 'CONTRAPROPUESTA_CLIENTE') {
+            $btnContra.html('<span class="spinner-border spinner-border-sm me-2"></span>Enviando...');
+        } else {
+            $btnAceptar.html('<span class="spinner-border spinner-border-sm me-2"></span>Procesando...');
+        }
+
         // ===== USAMOS FormData PARA ENVIAR ARCHIVOS =====
         const formData = new FormData();
         formData.append('id_propuesta', idPropuesta);
@@ -886,8 +899,12 @@ $(document).ready(function () {
                 Swal.fire('Error', 'Error de conexión al realizar la acción.', 'error');
             },
             complete: function () {
-                // Habilitamos los botones de nuevo (solo si no se cerró el modal)
-                $('#btn-enviar-contrapropuesta, #btn-aceptar-propuesta').prop('disabled', false);
+                // Habilitamos los botones de nuevo y restauramos texto original
+                const $btnContra = $('#btn-enviar-contrapropuesta');
+                const $btnAceptar = $('#btn-aceptar-propuesta');
+                
+                $btnContra.prop('disabled', false).html('<i class="fa-solid fa-comments-dollar me-2"></i>Enviar Contrapropuesta');
+                $btnAceptar.prop('disabled', false).html('<i class="fa-solid fa-check-circle me-2"></i>Aceptar Propuesta');
             }
         });
     }
