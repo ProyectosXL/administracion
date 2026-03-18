@@ -45,7 +45,7 @@
                 <!-- Filtros -->
                 <div class="filters-section">
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">
                                 <i class="fas fa-calendar-alt me-1"></i>Año
                             </label>
@@ -53,7 +53,7 @@
                                 <option value="">Todos los años</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">
                                 <i class="fas fa-calendar-day me-1"></i>Mes
                             </label>
@@ -73,7 +73,15 @@
                                 <option value="12">Diciembre</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label">
+                                <i class="fas fa-building me-1"></i>Departamento
+                            </label>
+                            <select id="departamentoFilter" class="form-select">
+                                <option value="">Todos los departamentos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label">
                                 <i class="fas fa-search me-1"></i>Buscar
                             </label>

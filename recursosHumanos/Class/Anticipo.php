@@ -233,8 +233,31 @@ class Anticipo
         return $periodos;
      }
  
+     // Método para obtener los departamentos disponibles
+     public function obtenerDepartamentos()
+     {
+         $sql = "SELECT DISTINCT b.DESC_DEPARTAMENTO
+                 FROM RO_T_DETALLE_ANTICIPOS a
+                 LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO b ON a.NRO_LEGAJO = b.NRO_LEGAJO
+                 WHERE b.DESC_DEPARTAMENTO IS NOT NULL
+                 ORDER BY b.DESC_DEPARTAMENTO";
+
+         $stmt = sqlsrv_query($this->cid_central, $sql);
+
+         if ($stmt === false) {
+             throw new Exception("Error al obtener departamentos: " . print_r(sqlsrv_errors(), true));
+         }
+
+         $departamentos = array();
+         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+             $departamentos[] = $row['DESC_DEPARTAMENTO'];
+         }
+
+         return $departamentos;
+     }
+
      // Método para obtener los anticipos
-     public function obtenerAnticipos($start, $length, $search = '', $periodo = '', $orderColumn = 'FECHA_CARGA', $orderDir = 'DESC')
+     public function obtenerAnticipos($start, $length, $search = '', $periodo = '', $orderColumn = 'FECHA_CARGA', $orderDir = 'DESC', $departamento = '')
     {
         // Validar dirección de ordenamiento
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
@@ -284,6 +307,11 @@ class Anticipo
             $params[] = $searchParam;
             $params[] = $searchParam;
         }
+
+        if (!empty($departamento)) {
+            $sql .= " AND b.DESC_DEPARTAMENTO = ?";
+            $params[] = $departamento;
+        }
         
         $sql .= " ORDER BY $orderBy $orderDir OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
         $params[] = (int)$start;
@@ -303,29 +331,42 @@ class Anticipo
         return $data;
     }
      // Método para contar total de registros
-     public function contarAnticipos($search = '', $periodo = '')
+     public function contarAnticipos($search = '', $periodo = '', $departamento = '')
      {
-         $sql = "SELECT COUNT(*) as total FROM RO_T_DETALLE_ANTICIPOS WHERE 1=1";
+         if (!empty($departamento)) {
+             $sql = "SELECT COUNT(*) as total
+                     FROM RO_T_DETALLE_ANTICIPOS a
+                     LEFT JOIN [XL-SUELDOS].LAKERS_CORP_SA.DBO.RO_V_LEGAJO b ON a.NRO_LEGAJO = b.NRO_LEGAJO
+                     WHERE 1=1";
+         } else {
+             $sql = "SELECT COUNT(*) as total FROM RO_T_DETALLE_ANTICIPOS a WHERE 1=1";
+         }
+
          $params = array();
          
          if (!empty($periodo)) {
              // Si el período contiene guión, es mes-año específico (ej: "1-2026")
              if (strpos($periodo, '-') !== false) {
-                 $sql .= " AND PERIODO = ?";
+                 $sql .= " AND a.PERIODO = ?";
                  $params[] = $periodo;
              } else {
                  // Si es solo año (ej: "2026"), buscar todos los meses de ese año
-                 $sql .= " AND PERIODO LIKE ?";
+                 $sql .= " AND a.PERIODO LIKE ?";
                  $params[] = '%-' . $periodo;
              }
          }
          
          if (!empty($search)) {
-             $sql .= " AND (APELLIDO_Y_NOMBRE LIKE ? OR CAST(DNI as VARCHAR) LIKE ? OR CAST(NRO_LEGAJO as VARCHAR) LIKE ?)";
+             $sql .= " AND (a.APELLIDO_Y_NOMBRE LIKE ? OR CAST(a.DNI as VARCHAR) LIKE ? OR CAST(a.NRO_LEGAJO as VARCHAR) LIKE ?)";
              $searchParam = '%' . $search . '%';
              $params[] = $searchParam;
              $params[] = $searchParam;
              $params[] = $searchParam;
+         }
+
+         if (!empty($departamento)) {
+             $sql .= " AND b.DESC_DEPARTAMENTO = ?";
+             $params[] = $departamento;
          }
          
          $stmt = sqlsrv_query($this->cid_central, $sql, $params);

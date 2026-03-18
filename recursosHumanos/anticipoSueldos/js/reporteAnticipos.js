@@ -3,6 +3,28 @@
 $(document).ready(function() {
     let table = null;
     
+    // Cargar departamentos disponibles
+    function cargarDepartamentos() {
+        $.ajax({
+            url: 'Controller/getDepartamentos.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                const select = $('#departamentoFilter');
+                select.empty();
+                select.append('<option value="">Todos los departamentos</option>');
+                if (Array.isArray(response)) {
+                    response.forEach(function(dep) {
+                        select.append(new Option(dep, dep));
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al cargar departamentos:', error, xhr.responseText);
+            }
+        });
+    }
+
     // Cargar años disponibles
     function cargarYearsDisponibles() {
         $.ajax({
@@ -139,10 +161,12 @@ $(document).ready(function() {
                 type: 'POST',
                 data: function(d) {
                     const periodo = getPeriodoSeleccionado();
-                    console.log('Enviando período:', periodo);
+                    const departamento = $('#departamentoFilter').val();
+                    console.log('Enviando período:', periodo, 'Departamento:', departamento);
                     return {
                         ...d,
-                        periodo: periodo
+                        periodo: periodo,
+                        departamento: departamento
                     };
                 },
                 error: function(xhr, error, thrown) {
@@ -273,10 +297,10 @@ $(document).ready(function() {
     }
     
     // Event listeners para filtros
-    $(document).on('change', '#yearFilter, #monthFilter', function() {
+    $(document).on('change', '#yearFilter, #monthFilter, #departamentoFilter', function() {
         const year = $('#yearFilter').val();
         const month = $('#monthFilter').val();
-        console.log('Cambio de filtros - Año:', year, 'Mes:', month);
+        console.log('Cambio de filtros - Año:', year, 'Mes:', month, 'Departamento:', $('#departamentoFilter').val());
         
         actualizarTituloPagina();
         
@@ -289,6 +313,7 @@ $(document).ready(function() {
     $(document).on('click', '#clearFilters', function() {
         $('#yearFilter').val('');
         $('#monthFilter').val('');
+        $('#departamentoFilter').val('');
         $('#searchBox').val('');
         
         actualizarTituloPagina();
@@ -306,6 +331,7 @@ $(document).ready(function() {
 
     // Inicializar la aplicación
     cargarYearsDisponibles();
+    cargarDepartamentos();
 
     // Administración de períodos
     $('#periodosModal').on('show.bs.modal', function() {
