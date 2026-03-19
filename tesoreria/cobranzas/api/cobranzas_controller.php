@@ -192,7 +192,7 @@ try {
                        ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX
                 FROM $vista v
                 LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                WHERE v.ESTADO <> 'IMP'";
+                WHERE v.ESTADO <> 'IMP' AND v.T_COMP <> 'REC' AND v.T_COMP NOT LIKE 'NCR%' AND v.T_COMP NOT LIKE 'NCP%'";
 
         $stmt = sqlsrv_query($conn_central, $sql);
         if ($stmt === false) {
@@ -216,7 +216,7 @@ try {
                 ];
             }
 
-            $esNegativo = (strpos($v['T_COMP'], 'NC') === 0) || ($v['T_COMP'] === 'REC' && trim($v['ESTADO']) === 'CTA');
+            $esNegativo = (strpos($v['T_COMP'], 'NC') === 0);
             $importe = (float) $v['IMPORTE'];
             $descPP = (float) $v['DESC_PP_MAX'];
             $porcDesc = 0;

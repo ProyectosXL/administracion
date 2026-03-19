@@ -44,6 +44,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/costoOcupacion.css">
     <link rel="stylesheet" href="css/modalEvolucion.css">
+    <link rel="stylesheet" href="css/indicadores.css">
     
     <style>
         /* KPI Button Card */
@@ -365,18 +366,18 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 <nav class="nav-tabs-custom">
                     <ul class="nav nav-tabs" id="mainTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <a class="nav-link active" id="analisis-tab" data-toggle="tab" href="#analisis" role="tab" aria-controls="analisis" aria-selected="true">
+                            <a class="nav-link active" id="indicadores-tab" data-toggle="tab" href="#indicadores" role="tab" aria-controls="indicadores"aria-selected="true">
+                                <i class="bi bi-graph-up-arrow"></i> Indicadores
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="analisis-tab" data-toggle="tab" href="#analisis" role="tab" aria-controls="analisis" aria-selected="false">
                                 <i class="bi bi-building"></i> Reporte por Sucursal
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="reporte-fecha-tab" data-toggle="tab" href="#reporte-fecha" role="tab" aria-controls="reporte-fecha" aria-selected="false">
                                 <i class="bi bi-calendar-range"></i> Reporte a Fecha
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="ranking-tab" data-toggle="tab" href="#ranking" role="tab" aria-controls="ranking" aria-selected="false">
-                                <i class="bi bi-bar-chart"></i> Ranking
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -396,7 +397,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
             <!-- Tab Content -->
             <div class="tab-content" id="mainTabContent">
                 <!-- Pestaña 1: Análisis Individual -->
-                <div class="tab-pane fade show active" id="analisis" role="tabpanel" aria-labelledby="analisis-tab">
+                <div class="tab-pane fade" id="analisis" role="tabpanel" aria-labelledby="analisis-tab">
                     <!-- Filtros Section -->
                     <div class="filters-section">
                 <div class="section-title">
@@ -528,6 +529,9 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 <h3>Seleccione una sucursal para comenzar</h3>
                 <p>Elija una sucursal y rango de fechas para visualizar el análisis de costos de ocupación</p>
             </div>
+                </div>
+                <!-- Pestaña: Indicadores -->
+                <div class="tab-pane fade show active" id="indicadores" role="tabpanel"aria-labelledby="indicadores-tab"> <?php include 'components/indicadoresTab.php'; ?>
                 </div>
                 <!-- Fin Pestaña 1 -->
 
@@ -668,12 +672,6 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 </div>
                 <!-- Fin Pestaña 2: Reporte a Fecha -->
 
-                <!-- Pestaña 3: Ranking -->
-                <div class="tab-pane fade" id="ranking" role="tabpanel" aria-labelledby="ranking-tab">
-                    <?php include 'components/rankingTab.php'; ?>
-                </div>
-                <!-- Fin Pestaña 3: Ranking -->
-
                 <!-- Pestaña 4: Costo por M² -->
                 <?php include 'components/costoM2Tab.php'; ?>
                 <!-- Fin Pestaña 4: Costo por M² -->
@@ -808,7 +806,7 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="js/costoOcupacion.js"></script>
     <script src="js/compararSucursales.js"></script>
     <script src="js/reporteFecha.js"></script>
-    <script src="js/ranking.js"></script>
     <script src="js/costoM2.js"></script>
+    <script src="js/indicadores.js"></script>
 </body>
 </html>

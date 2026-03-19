@@ -85,9 +85,8 @@ $(document).ready(function () {
             const tr = $(this);
             const bruto = parseFloat(tr.data('importe-bruto'));
             const tipoComp = tr.data('tcomp');
-            // Nota: En la negociación usamos tr.attr('data-estado') si estuviera disponible, 
-            // pero para simplificar si es REC en este contexto es a cuenta.
-            const esNegativo = tipoComp && (tipoComp.startsWith('NC') || tipoComp === 'REC');
+            // Si es NC, es negativo.
+            const esNegativo = tipoComp && tipoComp.startsWith('NC');
             const descuentoOriginal = parseFloat(tr.data('descuento-original'));
 
             const nComp = (tr.data('ncomp') || '').trim();
@@ -117,11 +116,9 @@ $(document).ready(function () {
 
             // Actualizamos la tabla visualmente
             tr.find('.descuento-cell').text(porcentajeAplicar.toFixed(2) + ' %');
-            tr.attr('data-nuevo-descuento', porcentajeAplicar); // Guardamos el valor numérico puro
-            tr.attr('data-nuevo-neto', netoRecalculado); // Guardamos el neto numérico puro
+            tr.attr('data-nuevo-descuento', porcentajeAplicar);
+            tr.attr('data-nuevo-neto', netoRecalculado);
 
-            // Aplicamos el signo negativo para visualización si es NC o REC A Cuenta
-            esNegativo = tipoComp && (tipoComp.startsWith('NC') || (tipoComp === 'REC' && (tr.attr('data-estado') || '').trim() === 'CTA'));
             const netoFinal = esNegativo ? -netoRecalculado : netoRecalculado;
             tr.find('.importe-neto-cell').text(netoFinal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
 
@@ -425,8 +422,8 @@ $(document).ready(function () {
             const descuento = parseFloat(item.porcentaje_descuento) || 0;
             const nComp = (item.n_comp_factura || '').trim();
             const tComp = (item.t_comp_factura || '').trim();
-            // Para visualización de propuestas ya creadas, REC siempre es negativo
-            const esNegativo = tComp.startsWith('NC') || tComp === 'REC';
+            // Para visualización de propuestas ya creadas, NC siempre es negativo
+            const esNegativo = tComp.startsWith('NC');
 
             totalBrutoTabla += esNegativo ? -bruto : bruto;
             totalNetoTabla += esNegativo ? -neto : neto;
@@ -678,11 +675,12 @@ $(document).ready(function () {
                 $('.neg-cuota-fecha').each(function () {
                     if ($(this).val() > nuevaFecha) $(this).val(nuevaFecha);
                 });
-                $('#fechaPropuestaKPI').text(new Date(nuevaFecha + 'T00:00:00').toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }));
-            });
-            if (esNegociable) {
                 recalcularPropuestaCliente();
-            }
+            });
+
+            $('#negociacion-medio-pago').off('change').on('change', function () {
+                recalcularPropuestaCliente();
+            });
         }
     }
 

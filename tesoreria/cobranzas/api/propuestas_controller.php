@@ -659,7 +659,7 @@ try {
                     foreach ($vistas as $vista) {
                         // Replicamos la lógica aritmética exacta de Mariela pero directamente en SQL
                         $sql_v = "SELECT SUM(
-                                    CASE WHEN v.T_COMP LIKE 'NC%' OR (v.T_COMP = 'REC' AND v.ESTADO = 'CTA') THEN -1.0 ELSE 1.0 END * 
+                                    CASE WHEN v.T_COMP LIKE 'NC%' THEN -1.0 ELSE 1.0 END * 
                                     (v.IMPORTE * (1.0 - 
                                         CASE 
                                             WHEN v.N_COMP LIKE 'A00115%' THEN 
@@ -679,7 +679,7 @@ try {
                                 ) as total_neto
                                 FROM $vista v
                                 LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                                WHERE v.COD_CLIENT IN ($placeholders) AND v.ESTADO <> 'IMP' $where_exclude";
+                                WHERE v.COD_CLIENT IN ($placeholders) AND v.ESTADO <> 'IMP' AND v.T_COMP <> 'REC' AND v.T_COMP NOT LIKE 'NCR%' AND v.T_COMP NOT LIKE 'NCP%' $where_exclude";
 
                         $stmt_v = sqlsrv_query($conn_central, $sql_v, $sql_params);
                         if ($stmt_v) {

@@ -199,8 +199,8 @@ $(document).ready(function () {
             className: 'text-end importe-bruto-cell',
             render: function (data, type, row) {
                 let valor = parseFloat(data);
-                // Si es Nota de Crédito (empieza con NC) o Recibo A Cuenta (REC + CTA), lo hacemos negativo
-                if (row.T_COMP.trim().startsWith('NC') || (row.T_COMP.trim() === 'REC' && row.ESTADO.trim() === 'CTA')) {
+                // Si es Nota de Crédito (empieza con NC), lo hacemos negativo
+                if (row.T_COMP.trim().startsWith('NC')) {
                     valor = valor * -1;
                 }
                 const numeroFormateado = $.fn.dataTable.render.number('.', ',', 2, '$ ').display(valor);
@@ -217,11 +217,6 @@ $(document).ready(function () {
                 const netoOriginal = parseFloat(row.IMPORTE_NETO) || 0;
                 const estado = (row.ESTADO || '').trim();
                 let initialDiscount = 0;
-
-                // Los Recibos A Cuenta no suelen llevar descuento
-                if (tComp === 'REC' && estado === 'CTA') {
-                    return `<input type="number" class="form-control form-control-sm descuento-input" value="0.00" readonly style="width: 80px;">`;
-                }
 
                 // Lógica de descuento por defecto (según parámetros del cliente)
                 initialDiscount = (parseFloat(row.DESC_PP_MAX) || 0) * 100;
@@ -433,7 +428,7 @@ $(document).ready(function () {
             const rowData = tablaDetalle.row(tr).data();
             const tComp = rowData.T_COMP.trim();
             const estado = rowData.ESTADO.trim();
-            const esNegativo = tComp.startsWith('NC') || (tComp === 'REC' && estado === 'CTA');
+            const esNegativo = tComp.startsWith('NC');
 
             let bruto = parseFloat(rowData.IMPORTE);
             // Leemos el neto de la celda, que ya está calculado y tiene el signo correcto
@@ -510,8 +505,8 @@ $(document).ready(function () {
         // Forzamos el importe neto basado en el descuento
         let importeNeto = importeBruto * (1 - (descuento / 100));
 
-        // Si es Nota de Crédito o Recibo A Cuenta, el neto también es negativo
-        if (tipoComp.startsWith('NC') || (tipoComp === 'REC' && estadoComp === 'CTA')) {
+        // Si es Nota de Crédito, el neto también es negativo
+        if (tipoComp.startsWith('NC')) {
             // Aseguramos que sea negativo independientemente de si el importeBruto ya lo era
             importeNeto = Math.abs(importeNeto) * -1;
         } else {
@@ -578,7 +573,7 @@ $(document).ready(function () {
                 let importeNetoRecalculado = importeBrutoOriginal * (1 - (descuento / 100));
                 const tComp = rowData.T_COMP.trim();
                 const estado = rowData.ESTADO.trim();
-                const esNegativo = tComp.startsWith('NC') || (tComp === 'REC' && estado === 'CTA');
+                const esNegativo = tComp.startsWith('NC');
 
                 comprobantesSeleccionados.push({
                     t_comp: rowData.T_COMP,
