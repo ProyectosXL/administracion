@@ -428,8 +428,51 @@
                         </div>
                     </div>
 
-                    <!-- Insight automático -->
+                    <!-- Insight automático combinado -->
                     <div id="indInsightBox" class="ind-insight" style="display:none"></div>
+                </div>
+            </div>
+
+            <!-- Panel m² -->
+            <div class="ind-panel" id="indM2Panel" style="display:none">
+                <div class="ind-panel-header">
+                    <h3 class="ind-panel-title">
+                        <i class="bi bi-rulers"></i>
+                        Eficiencia del Espacio — m²
+                    </h3>
+                    <span id="indM2Badge" class="ind-m2-badge"></span>
+                </div>
+                <div class="ind-panel-body">
+                    <div class="det-row">
+                        <span class="det-row-label">Superficie total</span>
+                        <span class="det-row-val" id="detSuperficieM2">—</span>
+                    </div>
+                    <div class="det-row">
+                        <span class="det-row-label">Ventas por m²</span>
+                        <span class="det-row-val info" id="detVentasM2">—</span>
+                    </div>
+                    <div class="det-row">
+                        <span class="det-row-label">Promedio cadena / m²</span>
+                        <span class="det-row-val" id="detPromedioM2">—</span>
+                    </div>
+                    <div class="det-row" style="background:#f0f4f8;border-radius:6px;padding:9px 10px;margin-top:4px">
+                        <span class="det-row-label" style="font-weight:700;color:#2c3e50">
+                            <i class="bi bi-arrow-left-right" style="color:#3498db"></i>
+                            Diferencia vs promedio
+                        </span>
+                        <span class="det-row-val" id="detDeltaM2">—</span>
+                    </div>
+                    <div class="det-row">
+                        <span class="det-row-label">
+                            Índice de eficiencia
+                            <i class="bi bi-info-circle" style="color:#95a5a6;cursor:help"
+                               title="Ventas/m² ÷ % Costo de Ocupación. Mayor = más eficiente."></i>
+                        </span>
+                        <span class="det-row-val" id="detIndiceEficiencia">—</span>
+                    </div>
+
+                    <!-- Insight m² -->
+                    <div id="indM2InsightBox" class="ind-insight" style="display:none;margin-top:12px"></div>
                 </div>
             </div>
 
@@ -485,6 +528,7 @@
                             <span class="det-row-label">Brecha</span>
                             <span class="det-row-val" id="beGap">—</span>
                         </div>
+                        <div id="beBrechaMsg" style="display:none;text-align:center;margin-top:8px;font-size:11.5px;font-weight:600;line-height:1.4"></div>
                     </div>
 
                     <p style="font-size:10px;color:#bdc3c7;text-align:center;margin-top:12px">

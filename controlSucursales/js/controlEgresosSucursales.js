@@ -102,8 +102,8 @@ const checkControl = (div) => {
 
 // Función para mostrar imágenes con lógica de compatibilidad
 const mostrarImagen = (divImagen, startIndex = 0) => {
-    let nComp = divImagen.parentElement.parentElement.querySelectorAll("td")[3].textContent;
-    let codCta = divImagen.parentElement.parentElement.querySelectorAll("td")[4].textContent;
+    let nComp = divImagen.parentElement.parentElement.querySelectorAll("td")[3].textContent.trim();
+    let codCta = divImagen.parentElement.parentElement.querySelectorAll("td")[4].textContent.trim();
     let codComp = divImagen.parentElement.parentElement.querySelectorAll("td")[2].textContent; // COD_COMP
     let nroSucursal = divImagen.parentElement.parentElement.querySelectorAll("td")[1].textContent;
     let fechaComprobante = divImagen.parentElement.parentElement.querySelectorAll("td")[0].textContent; // FECHA

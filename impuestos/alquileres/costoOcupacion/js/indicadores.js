@@ -7,13 +7,14 @@
 
 /* ─── Estado del módulo ─────────────────────────────────────── */
 const IndicadoresModule = {
-    chart:          null,
-    data:           null,           // último payload del servidor
-    selectedId:     null,           // ID de la sucursal seleccionada
-    currentFilter:  null,           // 'verde' | 'amarillo' | 'rojo' | null
-    fechaDesde:     '',
-    fechaHasta:     '',
-    initialized:    false,
+    chart:              null,
+    data:               null,           // último payload del servidor
+    selectedId:         null,           // ID de la sucursal seleccionada
+    currentFilter:      null,           // 'verde' | 'amarillo' | 'rojo' | null
+    fechaDesde:         '',
+    fechaHasta:         '',
+    initialized:        false,
+    promedioVentasM2:   null,           // promedio cadena ventas/m²
 };
 
 /* ─── Umbrales (deben coincidir con IndicadoresService.php) ─── */
@@ -157,12 +158,14 @@ function fetchIndicadores(fechaDesde, fechaHasta) {
 
 /* ─── Render completo ───────────────────────────────────────── */
 function _render(data) {
+    IndicadoresModule.promedioVentasM2 = data.kpis_cadena.promedio_ventas_m2 ?? null;
     _renderKPIs(data.kpis_cadena, data.fecha_desde_ant, data.fecha_hasta_ant);
     _renderRanking(data.ranking);
     _renderSemaforo(data.sucursales, data.semaforo_counts);
     _renderDestacado(data.ranking);
     $('#indDetailSection').hide();
     $('#indInsightBox').hide();
+    $('#indM2Panel').hide();
 }
 
 /* ─── Destacado automático (sucursal con mayor costo) ───────── */
@@ -504,7 +507,10 @@ function _renderDetalle(suc) {
     const gapSign = gap !== null && gap > 0 ? '+' : '';
     _setDetVal('#detGapObjetivo', gap !== null ? `${gapSign}${gap.toFixed(2)} pp` : '—', gapCl);
 
-    // Insight automático
+    // M²
+    _renderM2(suc);
+
+    // Insight combinado (costo + m²)
     _renderInsight(suc);
 
     // Break-even
@@ -538,6 +544,22 @@ function _renderBreakeven(suc) {
         : '—';
     _setDetVal('#beGap', brechaTxt, brechaCl);
 
+    // Mensaje explicativo de brecha en %
+    if (brechaPct !== null) {
+        const absPct = Math.abs(brechaPct).toFixed(1);
+        let msg, color;
+        if (brechaPct < 0) {
+            msg   = `Debería haber vendido un <strong>${absPct}%</strong> más para alcanzar el objetivo`;
+            color = '#e74c3c';
+        } else {
+            msg   = `Vendió un <strong>${absPct}%</strong> por encima del objetivo`;
+            color = '#27ae60';
+        }
+        $('#beBrechaMsg').html(msg).css('color', color).show();
+    } else {
+        $('#beBrechaMsg').hide();
+    }
+
     // Gauge: mapear venta actual a 0-100% donde 100% = maxVal
     const maxVal     = Math.max(be * 1.4, actual * 1.2, 1);
     const needlePct  = Math.min(93, Math.max(4, (actual / maxVal) * 100));
@@ -554,7 +576,104 @@ function _renderBreakeven(suc) {
     $('#beAxisMax').text(_fmtPesos(maxVal));
 }
 
-/* ─── Insight automático ────────────────────────────────────── */
+/* ─── Panel m² ───────────────────────────────────────── */
+function _renderM2(suc) {
+    const sup      = suc.superficie_m2 || null;
+    const vm2      = suc.ventas_m2     || null;
+    const promedio = IndicadoresModule.promedioVentasM2;
+
+    if (!sup && !vm2) {
+        $('#indM2Panel').hide();
+        return;
+    }
+
+    $('#indM2Panel').show();
+
+    // Superficie
+    $('#detSuperficieM2').text(sup ? `${sup.toLocaleString('es-AR')} m²` : 'Sin datos');
+
+    // Ventas/m²
+    if (vm2) {
+        $('#detVentasM2').text(_fmtPesos(vm2) + ' / m²');
+    } else {
+        $('#detVentasM2').text('Sin datos');
+    }
+
+    // Promedio cadena
+    if (promedio) {
+        $('#detPromedioM2').text(_fmtPesos(promedio) + ' / m²');
+    } else {
+        $('#detPromedioM2').text('Sin datos');
+    }
+
+    // Delta vs promedio
+    if (vm2 && promedio) {
+        const delta    = vm2 - promedio;
+        const deltaPct = (delta / promedio) * 100;
+        const sign     = delta >= 0 ? '+' : '';
+        const cl       = delta >= 0 ? 'good' : 'danger';
+        _setDetVal('#detDeltaM2',
+            `${sign}${_fmtPesos(delta)} (${sign}${deltaPct.toFixed(1)}%)`, cl);
+    } else {
+        $('#detDeltaM2').text('Sin datos');
+    }
+
+    // Índice de eficiencia: ventas/m² ÷ % costo
+    const costo = suc.pct_actual;
+    if (vm2 && costo && costo > 0) {
+        const indice = vm2 / costo;
+        $('#detIndiceEficiencia')
+            .text(indice.toFixed(1))
+            .removeClass('good warn danger')
+            .addClass(indice >= (promedio ? promedio / IND_UMBRAL_VERDE : 0) ? 'good' : 'warn');
+    } else {
+        $('#detIndiceEficiencia').text('Sin datos');
+    }
+
+    // Badge nivel (alto / medio / bajo)
+    if (vm2 && promedio) {
+        const ratio = vm2 / promedio;
+        let nivel, badgeCl;
+        if (ratio >= 1.1)       { nivel = 'Alto';  badgeCl = 'm2-badge-alto';  }
+        else if (ratio >= 0.9)  { nivel = 'Medio'; badgeCl = 'm2-badge-medio'; }
+        else                    { nivel = 'Bajo';  badgeCl = 'm2-badge-bajo';  }
+        $('#indM2Badge')
+            .text(`Rendimiento ${nivel}`)
+            .removeClass('m2-badge-alto m2-badge-medio m2-badge-bajo ind-m2-badge')
+            .addClass(`ind-m2-badge ${badgeCl}`);
+    } else {
+        $('#indM2Badge').text('');
+    }
+
+    // Insight m²
+    _renderM2Insight(suc, vm2, promedio);
+}
+
+function _renderM2Insight(suc, vm2, promedio) {
+    const $box = $('#indM2InsightBox');
+    if (!$box.length || !vm2 || !promedio) { $box.hide(); return; }
+
+    const costo = suc.pct_actual;
+    const porArriba = vm2 >= promedio;
+    const costoOk   = costo !== null && costo <= IND_UMBRAL_VERDE;
+
+    let texto, cls;
+    if (costoOk && porArriba) {
+        cls   = 'insight-ok';
+        texto = '<i class="bi bi-check-circle-fill"></i> Sucursal eficiente: buen nivel de ocupación y buen uso del espacio.';
+    } else if (costoOk && !porArriba) {
+        cls   = 'insight-warn';
+        texto = '<i class="bi bi-exclamation-circle-fill"></i> Costo controlado pero bajo rendimiento por m² — espacio subutilizado.';
+    } else if (!costoOk && porArriba) {
+        cls   = 'insight-warn';
+        texto = '<i class="bi bi-exclamation-circle-fill"></i> Buen rendimiento por m², pero costo elevado. Evaluar renegociación del alquiler.';
+    } else {
+        cls   = 'insight-alert';
+        texto = '<i class="bi bi-x-circle-fill"></i> Sucursal ineficiente: alto costo y bajo rendimiento del espacio. Requiere acción prioritaria.';
+    }
+
+    $box.show().removeClass('insight-ok insight-warn insight-alert').addClass(cls).html(texto);
+}
 function _renderInsight(suc) {
     const $box = $('#indInsightBox');
     if (!$box.length) return;

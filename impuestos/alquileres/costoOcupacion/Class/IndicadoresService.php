@@ -9,6 +9,7 @@
 class IndicadoresService
 {
     private $costoService;
+    private $superficieService;
 
     // Umbrales del semáforo (igual que en el frontend JS)
     const UMBRAL_VERDE  = 15;   // <= 15% → verde (Eficiente)
@@ -18,7 +19,9 @@ class IndicadoresService
     public function __construct()
     {
         require_once __DIR__ . '/../../costoOcupacion/Class/costoOcupacionService.php';
-        $this->costoService = new CostoOcupacionService();
+        require_once __DIR__ . '/../../costoOcupacion/Class/superficieService.php';
+        $this->costoService      = new CostoOcupacionService();
+        $this->superficieService = new SuperficieService();
     }
 
     // ----------------------------------------------------------------
@@ -135,6 +138,8 @@ class IndicadoresService
             'brecha_pct'          => $brechaPct  !== null ? $brechaPct : null,
             'semaforo'            => $this->clasificarSemaforo($pctActual),
             'tiene_datos_ant'     => ($pctAnterior !== null),
+            'superficie_m2'       => null, // se enriquece en buildIndicadores
+            'ventas_m2'           => null, // se enriquece en buildIndicadores
         ];
     }
 
@@ -162,6 +167,26 @@ class IndicadoresService
 
         // Filtrar solo los que tienen datos
         $conDatos = array_filter($datos, fn($d) => $d['pct_actual'] !== null);
+
+        // Enriquecer con m² — una sola consulta para todas las sucursales
+        $nrosSucursales = array_map(fn($d) => $d['numero'], $datos);
+        $superficies    = $this->superficieService->obtenerSuperficies($nrosSucursales);
+
+        foreach ($datos as &$d) {
+            $nro = $d['numero'];
+            $sup = isset($superficies[$nro]) && $superficies[$nro] > 0 ? $superficies[$nro] : null;
+            $d['superficie_m2'] = $sup ? round($sup, 2) : null;
+            $d['ventas_m2']     = ($sup && $d['venta_neta'] > 0)
+                ? round($d['venta_neta'] / $sup, 2)
+                : null;
+        }
+        unset($d);
+
+        // Promedio ventas/m² de la cadena (solo sucursales con datos)
+        $conM2 = array_filter($datos, fn($d) => $d['ventas_m2'] !== null);
+        $promedioVentasM2 = count($conM2) > 0
+            ? round(array_sum(array_column(array_values($conM2), 'ventas_m2')) / count($conM2), 2)
+            : null;
 
         // KPIs de cadena (promedio ponderado por venta neta)
         $totalVenta      = array_sum(array_column(array_values($conDatos), 'venta_neta'));
@@ -206,6 +231,7 @@ class IndicadoresService
                 'semaforo'            => $this->clasificarSemaforo($pctCadena),
                 'total_venta'         => round($totalVenta,  2),
                 'total_costo'         => round($totalCosto,  2),
+                'promedio_ventas_m2'  => $promedioVentasM2,
             ],
             'semaforo_counts' => $sem,
             'ranking'         => $ranking,

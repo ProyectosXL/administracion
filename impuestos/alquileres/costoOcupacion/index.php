@@ -39,7 +39,6 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/costoOcupacion.css">
@@ -63,67 +62,64 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
             transform: translateY(-3px) scale(1.01);
         }
  
-        /* Toggle styles */
-        .toggle-on, .toggle-off {
-            font-size: 12px !important;
-            font-weight: bold !important;
-            color: white !important;
-            text-shadow: none !important;
-            line-height: 30px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            background-size: auto !important;
-            background-image: none !important;
-            background-repeat: no-repeat !important;
-            background-position: center !important;
-            height: auto !important;
-            width: auto !important;
-            min-height: 34px !important;
-            min-width: 45px !important;
-        }
-
-        .toggle.btn {
-            height: 38px !important;
-            min-width: 90px !important;
-            border-radius: 6px !important;
-            padding: 0 !important;
-        }
-
-        .toggle-on {
-            background-color: #007bff !important;
-            border-color: #007bff !important;
-        }
-        
-        .toggle-off {
-            background-color: #6c757d !important;
-            border-color: #6c757d !important;
-        }
-
-        .flag-indicator {
-            width: 40px;
-            height: 30px;
-            margin-left: 10px;
-            border-radius: 4px;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            border: 2px solid #ddd;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .environment-controls {
+        /* Pill environment toggle */
+        .env-pill-wrapper {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .country-label {
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            margin-left: 5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        .env-pill-label {
+            color: rgba(255,255,255,0.75);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+        }
+
+        .env-pill-toggle {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            border-radius: 999px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .env-pill-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            border: none;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            color: rgba(255,255,255,0.65);
+            background: transparent;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .env-pill-btn.active {
+            background: #5b5fc7;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(91,95,199,0.45);
+        }
+
+        .env-pill-btn:not(.active):hover {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+        }
+
+        .env-flag {
+            width: 20px;
+            height: 14px;
+            object-fit: cover;
+            border-radius: 2px;
+            vertical-align: middle;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         /* Tabs Styles */
@@ -345,15 +341,21 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                     </div>
                 </div>
                 
-                <div class="environment-toggle">
-                    <div class="environment-controls">
-                        <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
-                               data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
-                               class="custom-toggle" onchange="cambiarEntorno(this)" 
-                               id="checkEntorno">
-                        <div class="flag-indicator" style="background-image: url('<?= $imagenBandera ?>');" 
-                             title="<?= $nombrePais ?>"></div>
-                        <span class="country-label"><?= $nombrePais ?></span>
+                <div class="env-pill-wrapper">
+                    <span class="env-pill-label">Cambiar entorno:</span>
+                    <div class="env-pill-toggle">
+                        <button type="button"
+                                class="env-pill-btn <?= $checkedValue === 'central' ? 'active' : '' ?>"
+                                onclick="cambiarEntorno('central')"
+                                title="Argentina">
+                            <img src="../../../assets/images/bandera_con_sol__55757_std.jpg" class="env-flag" alt="AR"> ARG
+                        </button>
+                        <button type="button"
+                                class="env-pill-btn <?= $checkedValue === 'uy' ? 'active' : '' ?>"
+                                onclick="cambiarEntorno('uy')"
+                                title="Uruguay">
+                            <img src="../../../assets/images/UY.png" class="env-flag" alt="UY"> UY
+                        </button>
                     </div>
                 </div>
             </div>
@@ -700,7 +702,6 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -709,52 +710,10 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
 
     <script>
         $(document).ready(function() {
-            // Ajustar estilos del toggle
-            setTimeout(() => {
-                const toggle = document.querySelector(".toggle");
-                if (toggle) {
-                    toggle.style.width = "90px";
-                    toggle.style.height = "38px";
-                }
-                
-                const toggleOn = document.querySelector(".toggle-on");
-                const toggleOff = document.querySelector(".toggle-off");
-                
-                if (toggleOn) {
-                    toggleOn.style.backgroundImage = "none";
-                    toggleOn.style.backgroundSize = "auto";
-                    toggleOn.style.width = "auto";
-                    toggleOn.style.height = "auto";
-                    toggleOn.style.minWidth = "45px";
-                    toggleOn.style.minHeight = "34px";
-                    toggleOn.style.fontSize = "12px";
-                    toggleOn.style.fontWeight = "bold";
-                    toggleOn.style.color = "white";
-                    toggleOn.style.display = "flex";
-                    toggleOn.style.alignItems = "center";
-                    toggleOn.style.justifyContent = "center";
-                    toggleOn.style.textShadow = "none";
-                }
-                if (toggleOff) {
-                    toggleOff.style.backgroundImage = "none";
-                    toggleOff.style.backgroundSize = "auto";
-                    toggleOff.style.width = "auto";
-                    toggleOff.style.height = "auto";
-                    toggleOff.style.minWidth = "45px";
-                    toggleOff.style.minHeight = "34px";
-                    toggleOff.style.fontSize = "12px";
-                    toggleOff.style.fontWeight = "bold";
-                    toggleOff.style.color = "white";
-                    toggleOff.style.display = "flex";
-                    toggleOff.style.alignItems = "center";
-                    toggleOff.style.justifyContent = "center";
-                    toggleOff.style.textShadow = "none";
-                }
-            }, 100);
         });
 
-        const cambiarEntorno = (toggle) => {
-            const entorno = toggle.checked ? 0 : 1;
+        const cambiarEntorno = (codigo) => {
+            const entorno = (codigo === 'central') ? 0 : 1;
             
             Swal.fire({
                 title: 'Cambiando entorno',

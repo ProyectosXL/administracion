@@ -228,7 +228,7 @@ function controlTesoreria($sucursal){
 }
 
 function contarFotosEnCarpeta() {
-    $nComp = (isset($_POST['nComp'])) ? $_POST['nComp'] : "";
+    $nComp = (isset($_POST['nComp'])) ? trim($_POST['nComp']) : "";
     $nroSucursal = (isset($_POST['nroSucursal'])) ? $_POST['nroSucursal'] : "";
     $codCta = (isset($_POST['codCta'])) ? $_POST['codCta'] : "";
     $codComp = (isset($_POST['codComp'])) ? $_POST['codComp'] : "";

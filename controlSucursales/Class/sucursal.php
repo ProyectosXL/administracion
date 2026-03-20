@@ -713,7 +713,7 @@ class Sucursal
             LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES b on REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '') collate Latin1_General_BIN 
             AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA 
             AND A.COD_CTA = B.COD_CUENTA 
-            LEFT JOIN SJ_EGRESOS_DE_CAJA_GUARDADO c on a.N_COMP = c.N_COMP collate Latin1_General_BIN 
+            LEFT JOIN SJ_EGRESOS_DE_CAJA_GUARDADO c on LTRIM(RTRIM(a.N_COMP)) = LTRIM(RTRIM(c.N_COMP)) collate Latin1_General_BIN 
             AND A.NRO_SUCURS = C.NRO_SUCURSAL 
             AND A.COD_CTA = C.COD_CTA 
             AND (
