@@ -139,13 +139,10 @@ $nroSucurs = $_SESSION['numsuc'];
                                 <i class="bi bi-cash"></i>
                                 Seleccionar Egresos
                             </label>
-                            <div class="d-flex gap-2 mb-2">
+                            <div class="mb-2">
                                 <select class="form-select" id="selectEgresos">
                                     <option value="">Cargando egresos...</option>
                                 </select>
-                                <button type="button" class="btn btn-primary btn-sm" id="btnAgregarEgreso">
-                                    <i class="bi bi-plus-lg"></i>
-                                </button>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-sm table-egresos" id="tablaEgresos">
@@ -170,13 +167,10 @@ $nroSucurs = $_SESSION['numsuc'];
                             <i class="bi bi-file-earmark-text"></i>
                             Seleccionar Remitos
                         </label>
-                        <div class="d-flex gap-2 mb-2">
+                        <div class="mb-2">
                             <select class="form-select" id="selectRemitos">
                                 <option value="">Cargando remitos...</option>
                             </select>
-                            <button type="button" class="btn btn-primary btn-sm" id="btnAgregarRemito">
-                                <i class="bi bi-plus-lg"></i>
-                            </button>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-sm table-remitos" id="tablaRemitos">
