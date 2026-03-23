@@ -86,12 +86,12 @@ async function validarFormulario(esBorrador = false) {
 
     // --- Validaciones para TODOS (Borrador y Registro) ---
     if (entrego && recibio && entrego.split('++')[0] === recibio) {
-        await mostrarAlerta('Error', 'La persona que entrega no puede ser la misma que recibe.');
+        await mostrarAlerta('Error de Validación', 'La persona que entrega no puede ser la misma que recibe.');
         return false;
     }
     
     if (enviaValores !== 'SI' && $('#bodyRemitos tr').length === 0) {
-         await mostrarAlerta('Error', 'Debe cargar al menos un remito si no envía valores.');
+         await mostrarAlerta('Campo Requerido', 'Debe agregar al menos un remito en la tabla si no envía valores.');
          return false;
     }
 
@@ -100,25 +100,61 @@ async function validarFormulario(esBorrador = false) {
     }
 
     // --- Validaciones SÓLO para Registro Final (estado = 2) ---
-    if (!entrego || !recibio || !enviaValores) {
-        await mostrarAlerta('Error', 'Complete los campos: Entregó, Recibió y Envía Valores.');
+    // Validar campo por campo para mensajes específicos
+    if (!entrego) {
+        await mostrarAlerta('Campo Requerido', 'Por favor, seleccione quién <strong>Entregó</strong> en el formulario.');
         return false;
     }
 
+    if (!recibio) {
+        await mostrarAlerta('Campo Requerido', 'Por favor, seleccione quién <strong>Recibió</strong> en el formulario.');
+        return false;
+    }
+
+    if (!enviaValores) {
+        await mostrarAlerta('Campo Requerido', 'Por favor, seleccione la opción <strong>Envía Valores</strong> (SI o NO).');
+        return false;
+    }
+
+    // Validaciones específicas cuando envía valores
     if (enviaValores === 'SI') {
         const numeroPrecinto = $('#numeroPrecinto').val().trim();
-        if (!numeroPrecinto || isNaN(numeroPrecinto) || parseInt(numeroPrecinto) <= 0) {
-            await mostrarAlerta('Error', 'El número de precinto es obligatorio y debe ser un número positivo.');
+        
+        if (!numeroPrecinto) {
+            await mostrarAlerta('Campo Requerido', 'Falta completar el campo <strong>Número de Precinto</strong>.');
             return false;
         }
+        
+        if (isNaN(numeroPrecinto) || parseInt(numeroPrecinto) <= 0) {
+            await mostrarAlerta('Valor Inválido', 'El <strong>Número de Precinto</strong> debe ser un número positivo válido.');
+            return false;
+        }
+        
         if ($('#bodyEgresos tr').length === 0) {
-            await mostrarAlerta('Error', 'Debe agregar al menos un egreso si envía valores.');
+            await mostrarAlerta('Tabla Vacía', 'Debe agregar al menos un <strong>Egreso</strong> en la tabla cuando envía valores.');
             return false;
         }
     }
     
+    // Validar que haya al menos un remito o valores
+    if (enviaValores === 'NO' && $('#bodyRemitos tr').length === 0) {
+        await mostrarAlerta('Tabla Vacía', 'Debe agregar al menos un <strong>Remito</strong> en la tabla.');
+        return false;
+    }
+    
+    // Validar que todos los remitos tengan bultos
+    const remitosConCeroBultos = $('.input-bultos').filter(function() {
+        return !this.value || parseInt(this.value) <= 0;
+    });
+    
+    if (remitosConCeroBultos.length > 0) {
+        await mostrarAlerta('Valor Inválido', 'Todos los remitos deben tener al menos <strong>1 bulto</strong>. Por favor, verifique la tabla de remitos.');
+        return false;
+    }
+    
+    // Validar firma
     if (signaturePad.isEmpty()) {
-        await mostrarAlerta('Error', 'La firma es obligatoria para registrar.');
+        await mostrarAlerta('Campo Requerido', 'Debe agregar su <strong>Firma</strong> en el recuadro para poder registrar.');
         return false;
     }
 
@@ -257,9 +293,12 @@ async function enviarFormulario(estado) {
 // ===============================================
 
 async function mostrarAlerta(titulo, texto, tipo = 'error') {
+    // Detectar si el texto contiene HTML
+    const contieneHTML = /<[^>]*>/g.test(texto);
+    
     return await Swal.fire({
         title: titulo,
-        text: texto,
+        [contieneHTML ? 'html' : 'text']: texto,
         icon: tipo,
         confirmButtonText: 'Aceptar',
         confirmButtonColor: tipo === 'success' ? '#198754' : '#0d6efd',
@@ -329,25 +368,65 @@ $('#enviaValores').on('change', function() {
     $('#precintoContainer').toggle(this.value === 'SI');
 }).trigger('change');
 
-$('#btnAgregarRemito').on('click', async function() {
-    const select = $('#selectRemitos');
-    if (!select.val()) return await mostrarAlerta('Error', 'Por favor, seleccione un remito');
-    const datos = JSON.parse(select.val());
-    if ($('#bodyRemitos td:first-child').filter(function() { return $(this).text().trim() === datos.remito; }).length > 0) {
-        return await mostrarAlerta('Error', 'Este remito ya ha sido agregado');
+// Agregar remito automáticamente al seleccionarlo
+$('#selectRemitos').on('change', async function() {
+    const select = $(this);
+    const valorSeleccionado = select.val();
+    
+    if (!valorSeleccionado) return; // Si no hay selección, no hacer nada
+    
+    try {
+        const datos = JSON.parse(valorSeleccionado);
+        
+        // Verificar si ya existe el remito en la tabla
+        const yaExiste = $('#bodyRemitos td:first-child').filter(function() { 
+            return $(this).text().trim() === datos.remito; 
+        }).length > 0;
+        
+        if (yaExiste) {
+            await mostrarAlerta('Error', 'Este remito ya ha sido agregado');
+            select.val('').trigger('change');
+            return;
+        }
+        
+        // Agregar el remito a la tabla
+        $('#bodyRemitos').append(crearFilaRemito(datos));
+        actualizarTotalBultos();
+        
+        // Limpiar la selección
+        select.val('').trigger('change');
+    } catch (error) {
+        console.error('Error al procesar el remito:', error);
     }
-    $('#bodyRemitos').append(crearFilaRemito(datos));
-    actualizarTotalBultos();
-    select.val('').trigger('change');
 });
 
-$('#btnAgregarEgreso').on('click', async function() {
-    const select = $('#selectEgresos');
-    if (!select.val()) return await mostrarAlerta('Error', 'Por favor, seleccione un egreso');
-    const datos = JSON.parse(select.val());
-    if ($('#bodyEgresos td:nth-child(2)').filter(function() { return $(this).text() === datos.comprobante; }).length > 0) {
-        return await mostrarAlerta('Error', 'Este comprobante ya ha sido agregado');
+// Agregar egreso automáticamente al seleccionarlo
+$('#selectEgresos').on('change', async function() {
+    const select = $(this);
+    const valorSeleccionado = select.val();
+    
+    if (!valorSeleccionado) return; // Si no hay selección, no hacer nada
+    
+    try {
+        const datos = JSON.parse(valorSeleccionado);
+        
+        // Verificar si ya existe el egreso en la tabla
+        const yaExiste = $('#bodyEgresos td:nth-child(2)').filter(function() { 
+            return $(this).text() === datos.comprobante; 
+        }).length > 0;
+        
+        if (yaExiste) {
+            await mostrarAlerta('Error', 'Este comprobante ya ha sido agregado');
+            select.val('').trigger('change');
+            return;
+        }
+        
+        // Agregar el egreso a la tabla
+        $('#bodyEgresos').append(crearFilaEgreso(datos));
+        
+        // Limpiar la selección
+        select.val('').trigger('change');
+    } catch (error) {
+        console.error('Error al procesar el egreso:', error);
     }
-    $('#bodyEgresos').append(crearFilaEgreso(datos));
-    select.val('').trigger('change');
 });
