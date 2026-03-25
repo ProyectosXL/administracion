@@ -34,10 +34,13 @@ if (!function_exists('enviarNotificacion')) {
 
             $mail->setFrom($mail->Username, 'XL Extra Large');
 
-            $destinatarios_array = is_array($destinatarios) ? $destinatarios : [$destinatarios];
+            // Normalizamos los destinatarios a un array, soportando separación por punto y coma (;)
+            $destinatarios_array = is_array($destinatarios) ? $destinatarios : explode(';', (string)$destinatarios);
+
             foreach ($destinatarios_array as $email) {
+                $email = trim($email);
                 if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $mail->addAddress(trim($email));
+                    $mail->addAddress($email);
                 }
             }
 
@@ -60,13 +63,13 @@ if (!function_exists('enviarNotificacion')) {
 if (!function_exists('obtenerEmailFranquiciado')) {
     function obtenerEmailFranquiciado($cod_cliente)
     {
-        $conn = Database::getConnection('central');
-        $sql = "SELECT MAIL_NEXO, RAZON_SOCI FROM GVA14 WHERE COD_CLIENT = ?";
+        $conn = Database::getConnection('lakers');
+        $sql = "SELECT MAIL_GRUP_EMP, DESC_SUCURSAL FROM DIRECCIONARIO WHERE COD_CLIENT = ? AND CANAL = 'FRANQUICIAS' AND NRO_SUC_MADRE IS NULL";
         $stmt = sqlsrv_query($conn, $sql, [$cod_cliente]);
         if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
             return [
-                'email' => !empty($row['MAIL_NEXO']) ? trim($row['MAIL_NEXO']) : null,
-                'razon_social' => trim($row['RAZON_SOCI'])
+                'email' => !empty($row['MAIL_GRUP_EMP']) ? trim($row['MAIL_GRUP_EMP']) : null,
+                'razon_social' => trim($row['DESC_SUCURSAL'])
             ];
         }
         return null;

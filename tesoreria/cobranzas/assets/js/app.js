@@ -864,6 +864,7 @@ $(document).ready(function () {
                         cuotas: cuotas
                     },
                     dataType: 'json',
+                    timeout: 60000,
                     success: function (response) {
                         if (response.success) {
                             Swal.fire({
@@ -871,18 +872,28 @@ $(document).ready(function () {
                                 title: '¡Éxito!',
                                 text: response.message
                             }).then(() => {
-                                // Recarga completa para actualizar KPIs y limpiar tablas
                                 window.location.reload();
                             });
                         } else {
-                            // Mostramos el mensaje de error específico que viene del backend
                             Swal.fire('Error', response.message, 'error');
                         }
                     },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        // Mostramos un error más detallado en la consola
-                        console.error("Error AJAX:", jqXHR.responseText, textStatus, errorThrown);
-                        Swal.fire('Error de Comunicación', 'No se pudo completar la solicitud. Revisa la consola para más detalles.', 'error');
+                    error: function (xhr, status, error) {
+                        if (status === 'timeout' || xhr.status === 0) {
+                            Swal.fire({
+                                title: '⚠️ Verificando Envío',
+                                text: 'La conexión demoró más de lo esperado. Comprobando si la propuesta se generó...',
+                                icon: 'info',
+                                timer: 4000,
+                                showConfirmButton: false,
+                                didOpen: () => { Swal.showLoading(); }
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            console.error("Error AJAX:", xhr.responseText);
+                            Swal.fire('Error de Comunicación', 'No se pudo completar la solicitud. Por favor intenta nuevamente.', 'error');
+                        }
                     },
                     complete: function () {
                         btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-2"></i> Enviar Propuesta');
@@ -1594,18 +1605,32 @@ $(document).ready(function () {
                     processData: false,
                     contentType: false,
                     dataType: 'json',
+                    timeout: 60000,
                     success: function (response) {
                         if (response.success) {
                             Swal.fire('¡Éxito!', response.message, 'success');
                             $('#detallePropuestaModal').modal('hide');
-                            tablaGestion.ajax.reload(); // Recarga la tabla principal
-                            cargarDashboardGestion(); // Recarga los KPIs
+                            if (typeof tablaGestion !== 'undefined') tablaGestion.ajax.reload();
+                            if (typeof cargarDashboardGestion === 'function') cargarDashboardGestion();
                         } else {
                             Swal.fire('Error', response.message, 'error');
                         }
                     },
-                    error: function () {
-                        Swal.fire('Error', 'Error de conexión.', 'error');
+                    error: function (xhr, status, error) {
+                        if (status === 'timeout' || xhr.status === 0) {
+                            Swal.fire({
+                                title: '⚠️ Verificando Operación',
+                                text: 'La conexión demoró más de lo esperado. Estamos comprobando si la acción se completó...',
+                                icon: 'info',
+                                timer: 3000,
+                                showConfirmButton: false,
+                                didOpen: () => { Swal.showLoading(); }
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', 'No se pudo completar la acción. Revisa la consola o intenta de nuevo.', 'error');
+                        }
                     },
                     complete: function () {
                         btn.prop('disabled', false);

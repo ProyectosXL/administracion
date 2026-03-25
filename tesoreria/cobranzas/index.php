@@ -374,7 +374,7 @@ include 'templates/layout/footer.php';
 ?>
 
 <!-- Scripts específicos para el panel admin -->
-<script src="assets/js/app.js?v=1.1"></script>
+<script src="assets/js/app.js?v=1.5"></script>
 
 </body>
 

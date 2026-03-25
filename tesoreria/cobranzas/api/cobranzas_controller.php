@@ -71,24 +71,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
         $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, $params_historial);
         if ($stmt_historial === false)
             throw new Exception("Error al registrar historial.");
-
+        
         sqlsrv_commit($conn_apps);
 
-        // --- RESPONDER AL CLIENTE INMEDIATAMENTE PARA EVITAR TIMEOUT ---
-        echo json_encode(['success' => true, 'message' => 'Propuesta de pago enviada correctamente.']);
-
-        // Si el servidor soporta flush o fastcgi_finish_request lo usamos para cerrar la conexión con el navegador
-        // pero que el script siga enviando el correo.
+        // --- RESPUESTA INMEDIATA Y CIERRE DE CONEXIÓN ---
+        $response = json_encode(['success' => true, 'message' => 'Propuesta de pago enviada correctamente.']);
+        
+        // Limpiamos cualquier salida previa accidental
+        if (ob_get_level()) ob_end_clean();
+        
+        // Configuramos cabeceras para forzar al navegador a cerrar la conexión tras recibir el JSON
+        header('Connection: close');
+        header('Content-Length: ' . strlen($response));
+        header('Content-Type: application/json');
+        
+        echo $response;
+        
+        // Forzamos el envío de los buffers al navegador
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         } else {
-            // Fallback: intentamos cerrar la conexión enviando longitud de contenido
-            // (A veces no funciona en todos los servers, pero lo intentamos)
+            flush();
+            if (session_id()) session_write_close();
             ignore_user_abort(true);
         }
 
-        // --- INICIO DE LA NOTIFICACIÓN (CASO A) ---
-        // Ahora el correo se envía "en segundo plano" tras el commit.
+        // --- PROCESO EN SEGUNDO PLANO: NOTIFICACIÓN ---
         try {
             require_once __DIR__ . '/notificaciones_controller.php';
             $datos_cliente = obtenerEmailFranquiciado($cod_cliente);

@@ -311,6 +311,7 @@ $(document).ready(function () {
             data: formData,
             processData: false,
             contentType: false,
+            timeout: 60000, // Aumentamos timeout por si el envío de mails es lento
             xhr: function () {
                 const xhr = new window.XMLHttpRequest();
                 xhr.upload.addEventListener('progress', function (evt) {
@@ -326,13 +327,15 @@ $(document).ready(function () {
                     Swal.fire('¡Éxito!', response.message, 'success');
 
                     // Cerrar modal de subida
-                    bootstrap.Modal.getInstance(document.getElementById('uploadDocModal')).hide();
+                    const modalEl = document.getElementById('uploadDocModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
 
                     // Recargar tablas y KPIs
-                    tablaPropuestas.ajax.reload(null, false);
-                    cargarKPIsCliente();
+                    if (typeof tablaPropuestas !== 'undefined') tablaPropuestas.ajax.reload(null, false);
+                    if (typeof cargarKPIsCliente === 'function') cargarKPIsCliente();
 
-                    // RECARGA DEL DETALLE (Para ver el nuevo historial y estado)
+                    // RECARGA DEL DETALLE
                     const titleText = $('#detallePropuestaModalLabel').text();
                     const match = titleText.match(/#(\d+)/);
                     if (match && match[1]) {
@@ -349,8 +352,27 @@ $(document).ready(function () {
                     Swal.fire('Error', response.message, 'error');
                 }
             },
-            error: function () {
-                Swal.fire('Error', 'Error de conexión al servidor.', 'error');
+            error: function (xhr, status, error) {
+                // Manejo especial para timeouts en subida
+                if (status === 'timeout' || xhr.status === 0) {
+                    Swal.fire({
+                        title: '⚠️ Verificando Subida',
+                        text: 'La conexión demoró más de lo esperado. Estamos comprobando si el archivo se subió correctamente...',
+                        icon: 'info',
+                        timer: 3000,
+                        showConfirmButton: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    }).then(() => {
+                        // Forzamos recarga del detalle para ver si el archivo aparece
+                        const titleText = $('#detallePropuestaModalLabel').text();
+                        const match = titleText.match(/#(\d+)/);
+                        if (match && match[1]) {
+                            location.reload(); 
+                        }
+                    });
+                } else {
+                    Swal.fire('Error', 'Hubo un error al subir el comprobante. Por favor intente de nuevo.', 'error');
+                }
             },
             complete: function () {
                 btn.prop('disabled', false).html('<i class="fa-solid fa-upload me-2"></i>Subir');
@@ -856,45 +878,51 @@ $(document).ready(function () {
             processData: false,  // Importante para no procesar el FormData
             contentType: false, // Importante para que el navegador establezca el tipo correcto
             dataType: 'json',
+            timeout: 60000, // Aumentamos el tiempo de espera a 60 segundos por si el envío de mails es lento
             success: function (response) {
                 if (response.success) {
                     Swal.fire('¡Acción Realizada!', response.message, 'success');
 
-                    // ======================= INICIO DE LA MODIFICACIÓN =======================
-                    // Recargamos los datos del modal y de la página principal en segundo plano
-                    tablaPropuestas.ajax.reload();
-                    if ($('#cronograma-calendario').length > 0) {
-                        $('#cronograma-calendario').datepicker('destroy').empty();
-                        inicializarCronograma();
-                    }
-
-                    // Si fue una contrapropuesta, recargamos el contenido del modal
+                    // Recargamos los datos
+                    if (typeof tablaPropuestas !== 'undefined') tablaPropuestas.ajax.reload();
+                    
                     if (nuevoEstado === 'CONTRAPROPUESTA_CLIENTE') {
-                        // Volvemos a pedir los datos actualizados de la propuesta
                         $.ajax({
                             url: `api/propuestas_controller.php?action=ver_detalle&id=${idPropuesta}`,
                             type: 'GET',
                             dataType: 'json',
                             success: function (detailResponse) {
                                 if (detailResponse.success) {
-                                    // Renderizamos el modal de nuevo con los datos frescos
                                     renderizarDetallePropuesta(detailResponse.data);
-                                    // Ocultamos los controles de negociación porque la pelota está del lado del admin ahora
                                     $('#negociar-propuesta-card, #btn-enviar-contrapropuesta, #btn-aceptar-propuesta').hide();
                                 }
                             }
                         });
                     } else {
-                        // Si fue aceptada, simplemente cerramos el modal
                         $('#detallePropuestaModal').modal('hide');
                     }
-                    // ======================== FIN DE LA MODIFICACIÓN =========================
                 } else {
                     Swal.fire('Error', response.message, 'error');
                 }
             },
-            error: function () {
-                Swal.fire('Error', 'Error de conexión al realizar la acción.', 'error');
+            error: function (xhr, status, error) {
+                // Si el error es un timeout o un error de conexión, es probable que se haya procesado igual
+                // ya que el servidor primero comitea en la BD y luego envía el mail (que es lo que suele tardar)
+                if (status === 'timeout' || xhr.status === 0) {
+                    Swal.fire({
+                        title: '⚠️ Verificando Estado',
+                        text: 'La conexión demoró más de lo esperado. Estamos verificando si la operación se completó...',
+                        icon: 'info',
+                        timer: 3000,
+                        showConfirmButton: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    }).then(() => {
+                        // Recargamos para ver si cambió el estado
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', 'Hubo un problema al procesar su solicitud. Por favor, recargue la página o intente nuevamente.', 'error');
+                }
             },
             complete: function () {
                 // Habilitamos los botones de nuevo y restauramos texto original

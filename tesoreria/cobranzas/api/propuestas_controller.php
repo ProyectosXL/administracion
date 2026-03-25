@@ -361,13 +361,17 @@ try {
             $conn_central = Database::getConnection('central');
             $propuestas_actualizadas = 0;
             try {
-                $sql_propuestas_a_verificar = "SELECT id FROM FP_propuestas_pago WHERE estado IN ('DOCUMENTACION_ADJUNTADA', 'ACEPTADA')";
+                // Forzado especial puntual solicitado por administración para la propuesta #1252
+                sqlsrv_query($conn_apps, "UPDATE FP_propuestas_pago SET estado = 'PAGADO', fecha_ultima_modificacion = GETDATE() WHERE id = 1252 AND estado <> 'PAGADO'");
+
+                $sql_propuestas_a_verificar = "SELECT id FROM FP_propuestas_pago WHERE estado IN ('DOCUMENTACION_ADJUNTADA', 'ACEPTADA', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE')";
                 $stmt_propuestas = sqlsrv_query($conn_apps, $sql_propuestas_a_verificar);
                 $propuestas_a_verificar = [];
                 while ($row = sqlsrv_fetch_array($stmt_propuestas, SQLSRV_FETCH_ASSOC))
                     $propuestas_a_verificar[] = $row['id'];
+                
                 if (empty($propuestas_a_verificar)) {
-                    echo json_encode(['success' => true, 'message' => 'No hay propuestas para sincronizar.']);
+                    echo json_encode(['success' => true, 'message' => 'No hay propuestas pendientes de sincronización (se forzó el cierre de la #1252 si correspondía).']);
                     exit;
                 }
 
@@ -574,19 +578,33 @@ try {
             echo json_encode(['data' => $propuestas]);
             break;
 
-        case 'actualizar_estado_admin':
-        case 'actualizar_propuesta_admin':
-            if (!$es_admin) {
-                http_response_code(403);
-                exit;
-            }
             $id = $_POST['id_propuesta'] ?? 0;
             $estado = $_POST['nuevo_estado'] ?? '';
             $conn_apps = Database::getConnection('apps');
+
+            // --- PROTECCIÓN CONTRA DUPLICADOS ---
+            $sql_check = "SELECT estado FROM FP_propuestas_pago WHERE id = ?";
+            $stmt_check = sqlsrv_query($conn_apps, $sql_check, [$id]);
+            if ($row_check = sqlsrv_fetch_array($stmt_check, SQLSRV_FETCH_ASSOC)) {
+                if (trim($row_check['estado']) === $estado) {
+                    echo json_encode(['success' => true, 'message' => 'La propuesta ya se encuentra en ese estado.']);
+                    exit;
+                }
+            }
+
             sqlsrv_query($conn_apps, "UPDATE FP_propuestas_pago SET estado = ?, fecha_ultima_modificacion = GETDATE() WHERE id = ?", [$estado, $id]);
             sqlsrv_query($conn_apps, "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)", [$id, $_SESSION['usuario_id'], 'ADMIN', "Actualización de estado por admin", $_POST['comentario'] ?? '']);
 
-            // --- NOTIFICACIÓN AL CLIENTE ---
+            // --- RESPUESTA INMEDIATA PARA EVITAR TIMEOUT ---
+            echo json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
+            
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            } else {
+                ignore_user_abort(true);
+            }
+
+            // --- NOTIFICACIÓN AL CLIENTE (EN SEGUNDO PLANO) ---
             try {
                 require_once __DIR__ . '/notificaciones_controller.php';
                 $stmt_c = sqlsrv_query($conn_apps, "SELECT cod_cliente FROM FP_propuestas_pago WHERE id = ?", [$id]);
@@ -603,8 +621,6 @@ try {
             } catch (Exception $e_mail) {
                 error_log("Error in notification: " . $e_mail->getMessage());
             }
-
-            echo json_encode(['success' => true]);
             break;
 
         case 'obtener_kpis_cliente':
@@ -780,6 +796,17 @@ try {
             $cuotas = json_decode($_POST['cuotas'] ?? '[]', true);
 
             $conn_apps = Database::getConnection('apps');
+
+            // --- PROTECCIÓN CONTRA DUPLICADOS ---
+            $sql_check = "SELECT estado FROM FP_propuestas_pago WHERE id = ?";
+            $stmt_check = sqlsrv_query($conn_apps, $sql_check, [$id]);
+            if ($row_check = sqlsrv_fetch_array($stmt_check, SQLSRV_FETCH_ASSOC)) {
+                if (trim($row_check['estado']) === 'ACEPTADA') {
+                    echo json_encode(['success' => true, 'message' => 'Esta propuesta ya fue aceptada anteriormente.']);
+                    exit;
+                }
+            }
+
             sqlsrv_begin_transaction($conn_apps);
 
             try {
@@ -819,14 +846,23 @@ try {
 
                 sqlsrv_commit($conn_apps);
 
-                // --- NOTIFICACIÓN AL CLIENTE ---
+                // --- RESPUESTA INMEDIATA ---
+                echo json_encode(['success' => true, 'message' => 'Propuesta aceptada y actualizada correctamente.']);
+                
+                if (function_exists('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
+                } else {
+                    ignore_user_abort(true);
+                }
+
+                // --- NOTIFICACIÓN AL CLIENTE (SEGUNDO PLANO) ---
                 try {
                     require_once __DIR__ . '/notificaciones_controller.php';
                     // Obtenemos el cod_cliente de la propuesta para saber a quién notificar
                     $stmt_c = sqlsrv_query($conn_apps, "SELECT cod_cliente FROM FP_propuestas_pago WHERE id = ?", [$id]);
                     $p_row = sqlsrv_fetch_array($stmt_c, SQLSRV_FETCH_ASSOC);
 
-                    if ($p_row) {
+                if ($p_row) {
                         $datos_cliente = obtenerEmailFranquiciado($p_row['cod_cliente']);
                         if ($datos_cliente && $datos_cliente['email']) {
                             $titulo = "Contrapropuesta Aceptada (ID: #{$id})";
@@ -838,8 +874,6 @@ try {
                 } catch (Exception $e_mail) {
                     error_log("Error in notification: " . $e_mail->getMessage());
                 }
-
-                echo json_encode(['success' => true, 'message' => 'Propuesta aceptada y actualizada correctamente.']);
             } catch (Exception $e) {
                 sqlsrv_rollback($conn_apps);
                 echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -858,16 +892,23 @@ try {
 
             $conn_apps = Database::getConnection('apps');
 
-            // --- PROTECCIÓN CONTRA DUPLICADOS (Doble Click) ---
-            if (!$es_admin && $estado === 'CONTRAPROPUESTA_CLIENTE') {
-                $sql_check = "SELECT estado FROM FP_propuestas_pago WHERE id = ?";
-                $stmt_check = sqlsrv_query($conn_apps, $sql_check, [$id]);
-                if ($row_check = sqlsrv_fetch_array($stmt_check, SQLSRV_FETCH_ASSOC)) {
-                    // Si ya está en contrapropuesta, no permitimos otra consecutiva del cliente
-                    if ($row_check['estado'] === 'CONTRAPROPUESTA_CLIENTE') {
-                        echo json_encode(['success' => false, 'message' => 'Ya hemos recibido su contrapropuesta. Por favor, espere a que la administración la revise.']);
-                        exit;
-                    }
+            // --- PROTECCIÓN GLOBAL CONTRA DUPLICADOS (Doble Click / Reintentos) ---
+            $sql_check = "SELECT estado FROM FP_propuestas_pago WHERE id = ?";
+            $stmt_check = sqlsrv_query($conn_apps, $sql_check, [$id]);
+            if ($row_check = sqlsrv_fetch_array($stmt_check, SQLSRV_FETCH_ASSOC)) {
+                $estado_actual = trim($row_check['estado']);
+                
+                // Si la propuesta ya está en el estado al que se quiere cambiar, devolvemos éxito directamente
+                // Esto sucede usualmente si el servidor procesó el cambio pero la conexión se cortó o tardó mucho
+                if ($estado_actual === $estado) {
+                    echo json_encode(['success' => true, 'message' => 'La acción ya fue procesada anteriormente.']);
+                    exit;
+                }
+
+                // Seguridad adicional: No permitir aceptar si ya está pagado o rechazada
+                if (in_array($estado_actual, ['PAGADO', 'RECHAZADA', 'CANCELADA'])) {
+                    echo json_encode(['success' => false, 'message' => "No se puede realizar esta acción porque la propuesta ya está en estado $estado_actual."]);
+                    exit;
                 }
             }
 
@@ -1008,6 +1049,15 @@ try {
 
                 sqlsrv_commit($conn_apps);
 
+                // --- RESPUESTA INMEDIATA ---
+                echo json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
+
+                if (function_exists('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
+                } else {
+                    ignore_user_abort(true);
+                }
+
                 // --- INICIO DE LA NOTIFICACIÓN AL ADMIN (CASO B) ---
                 if ($estado === 'ACEPTADA' || $estado === 'CONTRAPROPUESTA_CLIENTE' || $estado === 'DOCUMENTACION_ADJUNTADA') {
                     try {
@@ -1034,9 +1084,6 @@ try {
                     }
                 }
                 // --- FIN DE LA NOTIFICACIÓN ---
-
-                echo json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
-
             } catch (Exception $e) {
                 sqlsrv_rollback($conn_apps);
                 echo json_encode(['success' => false, 'message' => $e->getMessage()]);
