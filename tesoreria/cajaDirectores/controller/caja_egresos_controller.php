@@ -27,7 +27,8 @@ try {
                 Egreso::MOTIVO_PROVEEDORES,
                 Egreso::MOTIVO_RETIROS,
                 Egreso::MOTIVO_COMPENSACION_IVA,
-                Egreso::MOTIVO_AJUSTE
+                Egreso::MOTIVO_AJUSTE,
+                Egreso::MOTIVO_GASTOS_DIRECTORES
             ];
 
             if (!in_array($_POST['motivo'], $motivosValidos)) {
@@ -62,6 +63,14 @@ try {
             if ($_POST['motivo'] === Egreso::MOTIVO_COMPENSACION_IVA) {
                 if (empty($_POST['nombre_director'])) {
                     throw new Exception('Debe seleccionar un director para compensación IVA');
+                }
+                $datos['nombre_director'] = $_POST['nombre_director'];
+            }
+
+            // Si es gastos de directores, agregar director
+            if ($_POST['motivo'] === Egreso::MOTIVO_GASTOS_DIRECTORES) {
+                if (empty($_POST['nombre_director'])) {
+                    throw new Exception('Debe seleccionar un director para gastos de directores');
                 }
                 $datos['nombre_director'] = $_POST['nombre_director'];
             }

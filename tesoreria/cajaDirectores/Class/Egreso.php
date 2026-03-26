@@ -20,6 +20,7 @@ class Egreso
     public const MOTIVO_RETIROS = 'RETIROS';
     public const MOTIVO_COMPENSACION_IVA = 'COMPENSACION_IVA';
     public const MOTIVO_AJUSTE = 'AJUSTE';
+    public const MOTIVO_GASTOS_DIRECTORES = 'GASTOS_DIRECTORES';
 
     public function __construct()
     {
@@ -103,6 +104,17 @@ class Egreso
 
             // Validar director si es compensación IVA
             if ($datos['motivo'] === self::MOTIVO_COMPENSACION_IVA) {
+                if (
+                    empty($datos['nombre_director']) ||
+                    !$this->director->existeDirector($datos['nombre_director'])
+                ) {
+                    throw new Exception("Director no válido");
+                }
+                $nombreDirector = $datos['nombre_director'];
+            }
+
+            // Validar director si es gastos de directores
+            if ($datos['motivo'] === self::MOTIVO_GASTOS_DIRECTORES) {
                 if (
                     empty($datos['nombre_director']) ||
                     !$this->director->existeDirector($datos['nombre_director'])
@@ -231,6 +243,10 @@ class Egreso
                 if (!isset($filtros['incluir_compensacion_iva']) || $filtros['incluir_compensacion_iva'] !== true) {
                     $sql .= " AND e.motivo != 'COMPENSACION_IVA'";
                 }
+                // Por defecto, excluir GASTOS_DIRECTORES (no impacta saldo de caja)
+                if (!isset($filtros['incluir_gastos_directores']) || $filtros['incluir_gastos_directores'] !== true) {
+                    $sql .= " AND e.motivo != 'GASTOS_DIRECTORES'";
+                }
 
                 // Para otros egresos, el filtro de fecha se aplica sobre la `fecha` del egreso
                 if (!empty($filtros['fecha_desde'])) {
@@ -314,6 +330,7 @@ class Egreso
                     FROM egresos 
                     WHERE COD_COMP != 'GAS'
                       AND motivo != 'COMPENSACION_IVA'
+                      AND motivo != 'GASTOS_DIRECTORES'
                       AND (tipo_gasto IS NULL OR tipo_gasto != 'Servicios')
                       AND fecha >= ?";
             $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);

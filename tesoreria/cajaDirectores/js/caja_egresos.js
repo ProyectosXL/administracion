@@ -291,6 +291,9 @@ document.getElementById('motivoEgreso')?.addEventListener('change', function() {
     } else if (this.value === 'COMPENSACION_IVA') {
         divDirector.classList.remove('d-none');
         selectDirector.required = true;
+    } else if (this.value === 'GASTOS_DIRECTORES') {
+        divDirector.classList.remove('d-none');
+        selectDirector.required = true;
     } else if (this.value === 'SUELDOS') {
         divCentroCosto.classList.remove('d-none');
         selectCentroCosto.required = false;
@@ -409,6 +412,12 @@ function mostrarListaEgresos(egresos) {
             concepto += ` - ${egreso.nombre_director}`;
         }
         
+        // GASTOS_DIRECTORES: motivo - director
+        if (egreso.motivo === 'GASTOS_DIRECTORES' && egreso.nombre_director) {
+            concepto = 'Gastos de Directores';
+            concepto += ` - ${egreso.nombre_director}`;
+        }
+        
         // SUELDOS: motivo - centro_costo
         if (egreso.motivo === 'SUELDOS' && egreso.centro_costo_nombre) {
             concepto += ` - ${egreso.centro_costo_nombre}`;
@@ -482,6 +491,13 @@ document.getElementById('formEgreso')?.addEventListener('submit', async function
         const director = document.getElementById('nombreDirector').value;
         if (!director) {
             mostrarAlerta('Error', 'Debe seleccionar un director para compensación IVA');
+            return;
+        }
+        formData.append('nombre_director', director);
+    } else if (motivo === 'GASTOS_DIRECTORES') {
+        const director = document.getElementById('nombreDirector').value;
+        if (!director) {
+            mostrarAlerta('Error', 'Debe seleccionar un director para gastos de directores');
             return;
         }
         formData.append('nombre_director', director);
