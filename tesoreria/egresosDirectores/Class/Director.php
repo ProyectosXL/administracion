@@ -192,7 +192,6 @@ class Director {
             
             $sql = "SELECT ID_DIRECTOR, NOMBRE 
                     FROM RO_T_DIRECTORES 
-                    WHERE ID_DIRECTOR != 1123
                     ORDER BY NOMBRE";
             
             $stmt = sqlsrv_query($this->db, $sql);

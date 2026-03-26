@@ -890,15 +890,8 @@ function configurarTipoAsignacion() {
         });
     }
     
-    // Escuchar cambios en el importe para recalcular distribución
-    if (importeInput) {
-        importeInput.addEventListener('input', function() {
-            const tipoMultiple = document.getElementById('tipoMultiple');
-            if (tipoMultiple && tipoMultiple.checked) {
-                calcularDistribucionEquitativa();
-            }
-        });
-    }
+    // No se recalcula automáticamente al cambiar el importe;
+    // el usuario usa el botón "Distribuir equitativamente" si lo necesita.
 }
 
 /**
@@ -915,11 +908,9 @@ async function mostrarDistribucion() {
         await cargarDirectoresDistribucion();
     }
     
-    // Generar tabla
+    // Generar tabla (importes inician en 0, el usuario llena manualmente
+    // o usa el botón "Distribuir equitativamente")
     generarTablaDistribucion();
-    
-    // Calcular distribución equitativa
-    calcularDistribucionEquitativa();
 }
 
 /**

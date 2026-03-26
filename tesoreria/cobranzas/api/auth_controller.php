@@ -86,8 +86,13 @@ if ($action === 'login') {
         echo json_encode(['success' => false, 'message' => 'Error del servidor: ' . $e->getMessage()]);
     }
 } elseif ($action === 'logout') {
+    $origen = $_SESSION['origen'] ?? '';
     session_destroy();
-    header('Location: ../login.php');
+    if ($origen === 'grupo') {
+        header('Location: https://app.xl.com.ar/sistemas/login.php');
+    } else {
+        header('Location: ../login.php');
+    }
     exit;
 }
 ?>

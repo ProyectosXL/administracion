@@ -158,8 +158,13 @@ $titulo_pagina = $usuario;
                                         
                                         <div class="alert alert-info mb-3">
                                             <i class="bi bi-info-circle"></i>
-                                            El importe será distribuido entre los directores. Puede editar los valores manualmente. 
-                                            La suma debe coincidir exactamente con el importe total.
+                                            Ingrese manualmente el importe para cada director. La suma debe coincidir exactamente con el importe total.
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="calcularDistribucionEquitativa()">
+                                                <i class="bi bi-calculator"></i> Distribuir equitativamente
+                                            </button>
                                         </div>
                                         
                                         <div class="table-responsive">
