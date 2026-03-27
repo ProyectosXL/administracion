@@ -56,10 +56,17 @@ $proveedorClass = new Proveedor();
                 </h1>
                 <p class="page-subtitle">Administra tus despachos de importación</p>
             </div>
-            <a href="cargaInicial.php" class="btn-nuevo-despacho">
-                <i class="bi bi-plus-circle"></i>
-                Nuevo Despacho
-            </a>
+            <div class="d-flex gap-2">
+                <button id="btnVerOcPendientes" class="btn btn-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    Ver OC Pendientes
+                    <span id="badgeOcPendientes" class="badge bg-danger" style="display: none;">0</span>
+                </button>
+                <a href="cargaInicial.php" class="btn-nuevo-despacho">
+                    <i class="bi bi-plus-circle"></i>
+                    Nuevo Despacho
+                </a>
+            </div>
         </div>
 
         <!-- Content Card -->
@@ -81,6 +88,47 @@ $proveedorClass = new Proveedor();
                         <!-- Los datos se cargarán dinámicamente -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Órdenes de Compra Pendientes -->
+    <div class="modal fade" id="modalOcPendientes" tabindex="-1" aria-labelledby="modalOcPendientesLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalOcPendientesLabel">
+                        <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                        Órdenes de Compra Pendientes (Últimos 18 meses)
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Estas son las órdenes de compra que no tienen despacho asignado. 
+                        Puedes crear un despacho directamente desde aquí.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm" id="tablaOcPendientes">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">Cod. Proveedor</th>
+                                    <th style="width: 250px;">Proveedor</th>
+                                    <th style="width: 150px;">N° Orden Compra</th>
+                                    <th style="width: 120px;">Fecha Ingreso</th>
+                                    <th style="width: 150px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Los datos se cargarán dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>

@@ -68,6 +68,42 @@ class OrdenDeCompra
         }
     }
 
+    public function traerOrdenesPendientes()
+    {
+        try {
+            // Consulta SQL que trae todas las OC del último año y medio que NO tienen despacho asignado
+            $sql = "SELECT 
+                        C.COD_PROVEE, 
+                        UPPER(LTRIM(RTRIM(P.NOM_PROVEE))) AS PROVEEDOR,
+                        C.N_ORDEN_CO,
+                        CAST(C.FECHA_INGRESO AS DATE) AS FECHA_INGRESO
+                    FROM CPA35 C
+                    LEFT JOIN CPA01 P ON LTRIM(RTRIM(C.COD_PROVEE)) = LTRIM(RTRIM(P.COD_PROVEE))
+                    WHERE C.N_ORDEN_CO NOT IN (
+                        SELECT ORDEN_COMPRA 
+                        FROM RO_T_IMPORTACIONES_ENCABEZADO 
+                        WHERE ORDEN_COMPRA IS NOT NULL AND ORDEN_COMPRA <> ''
+                    )
+                    AND C.FECHA_INGRESO >= DATEADD(MONTH, -18, GETDATE()) AND C.COD_PROVEE LIKE 'Z%'
+                    ORDER BY C.FECHA_INGRESO DESC";
+
+            $rows = $this->retornarArray($sql);
+
+            // Formatear fechas DateTime a string
+            foreach ($rows as &$row) {
+                if (isset($row['FECHA_INGRESO']) && is_object($row['FECHA_INGRESO'])) {
+                    $row['FECHA_INGRESO'] = $row['FECHA_INGRESO']->format('Y-m-d');
+                }
+            }
+
+            return $rows;
+
+        } catch (\Throwable $th) {
+            error_log("Error al buscar OC pendientes: " . $th->getMessage());
+            return [];
+        }
+    }
+
     public function verificarOrdenCompra($ordenDeCompra)
     {
         $orden_limpia = trim($ordenDeCompra);

@@ -21,14 +21,19 @@ if (!function_exists('enviarNotificacion')) {
         if (empty($destinatarios))
             return false;
 
+        // Aseguramos que las variables de entorno (.env) estén cargadas
+        // Esto cargará $_ENV con los valores correctos (notificaciones@xl.com.ar / yvsuiewmcztagevs)
+        require_once __DIR__ . '/../config/database.php';
+        Database::getConnection('apps'); 
+
         $mail = new PHPMailer(true);
         try {
-            // Usamos las variables del .env si existen, o fallbacks hardcodeados
+            // Usamos las variables del .env si existen, o fallbacks hardcodeados actualizados
             $mail->isSMTP();
             $mail->Host = $_ENV['HOST_EMAIL_EGRESOS'] ?? 'smtp.gmail.com';
             $mail->SMTPAuth = true;
-            $mail->Username = $_ENV['USER_EMAIL_EGRESOS'] ?? 'xl.notificaciones@xl.com.ar';
-            $mail->Password = $_ENV['PASS_EMAIL_EGRESOS'] ?? 'oysuyuhsnyoaifin';
+            $mail->Username = $_ENV['USER_EMAIL_EGRESOS'] ?? 'notificaciones@xl.com.ar';
+            $mail->Password = $_ENV['PASS_EMAIL_EGRESOS'] ?? 'yvsuiewmcztagevs';
             $mail->SMTPSecure = 'tls';
             $mail->Port = $_ENV['PORT_EMAIL_EGRESOS'] ?? 587;
 

@@ -1244,6 +1244,11 @@ $(document).ready(function() {
     // PRIMERO: Inicializar todos los datepickers ANTES de cargar datos
     inicializarDatepickers();
     
+    // Detectar parámetros URL para preselección desde OC Pendientes
+    const urlParams = new URLSearchParams(window.location.search);
+    const proveedorParam = urlParams.get('proveedor');
+    const ordenCompraParam = urlParams.get('ordenCompra');
+    
     // LUEGO: Cargar datos si estamos en modo edición
     if (modoEdicion && typeof datosDespacho !== 'undefined' && datosDespacho) {
         // MODO EDICIÓN - Cargar datos existentes
@@ -1252,6 +1257,11 @@ $(document).ready(function() {
     } else {
         // MODO ALTA - Establecer modo inicial
         establecerModoFormulario(false);
+        
+        // Si vienen parámetros de URL, preseleccionar proveedor y OC
+        if (proveedorParam && ordenCompraParam && !modoEdicion) {
+            preseleccionarProveedorYOrden(proveedorParam, ordenCompraParam);
+        }
     }
     
     // IMPORTANTE: Siempre limpiar campo ETD al inicio (en modo alta debe estar vacío)
@@ -1804,6 +1814,144 @@ function eliminarPago(idPago) {
             });
         }
     });
+}
+
+// ========== FUNCIONES PARA PRESELECCIÓN DESDE OC PENDIENTES ==========
+
+/**
+ * Preselecciona el proveedor y la orden de compra cuando vienen por parámetros URL
+ * Esta función se ejecuta cuando se crea un despacho desde el modal de OC Pendientes
+ */
+function preseleccionarProveedorYOrden(codProveedor, nOrdenCo) {
+    console.log('Preseleccionando proveedor y OC:', codProveedor, nOrdenCo);
+    
+    // Mostrar notificación de carga
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true
+    });
+    
+    Toast.fire({
+        icon: 'info',
+        title: 'Cargando datos de la orden...'
+    });
+    
+    // Preseleccionar el proveedor en el select
+    const $selectProveedor = $('#proveedor');
+    $selectProveedor.val(codProveedor);
+    
+    // Disparar el evento change para cargar las órdenes
+    $selectProveedor.trigger('change');
+    
+    // Esperar un momento para que se carguen las órdenes y luego agregar la OC
+    setTimeout(function() {
+        agregarOrdenPrecarga(nOrdenCo);
+    }, 1500);
+}
+
+/**
+ * Agrega automáticamente una orden de compra específica al contenedor
+ * Esta función se usa después de preseleccionar un proveedor
+ */
+function agregarOrdenPrecarga(nOrdenCo) {
+    console.log('Agregando orden precargada:', nOrdenCo);
+    
+    // Verificar que las órdenes estén cargadas en localStorage
+    const ordenesStorage = localStorage.getItem('ordenes');
+    if (!ordenesStorage) {
+        console.warn('No se encontraron órdenes en localStorage');
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atención',
+            text: 'Por favor, vuelve a seleccionar el proveedor para cargar las órdenes',
+            confirmButtonColor: '#7066e0'
+        });
+        return;
+    }
+    
+    let ordenes = [];
+    try {
+        ordenes = JSON.parse(ordenesStorage);
+    } catch (e) {
+        console.error('Error al parsear órdenes:', e);
+        return;
+    }
+    
+    // Verificar que la orden exista en la lista
+    const ordenEncontrada = ordenes.find(orden => orden.N_ORDEN_CO && orden.N_ORDEN_CO.trim() === nOrdenCo.trim());
+    
+    if (!ordenEncontrada) {
+        console.warn('La orden no se encontró en la lista del proveedor:', nOrdenCo);
+        Swal.fire({
+            icon: 'warning',
+            title: 'Atención',
+            text: `La orden ${nOrdenCo} no se encontró en la lista del proveedor seleccionado`,
+            confirmButtonColor: '#7066e0'
+        });
+        return;
+    }
+    
+    // Crear el chip/badge de la orden y agregarlo al contenedor
+    const ordenesSeleccionadas = document.querySelector('#ordenesSeleccionadas');
+    if (!ordenesSeleccionadas) {
+        console.error('No se encontró el contenedor #ordenesSeleccionadas');
+        return;
+    }
+    
+    // Verificar que no esté ya agregada
+    const yaExiste = Array.from(ordenesSeleccionadas.querySelectorAll('#ordenDeCompra')).some(el => {
+        const span = el.querySelector('#nroOrdenSpan');
+        const texto = span ? span.textContent.trim() : el.textContent.trim().replace('×', '').trim();
+        return texto === nOrdenCo.trim();
+    });
+    
+    if (yaExiste) {
+        console.log('La orden ya está agregada');
+        return;
+    }
+    
+    // Crear el elemento de orden de compra (chip)
+    const div = document.createElement('div');
+    div.className = 'badge bg-primary me-2 mb-2 d-inline-flex align-items-center';
+    div.id = 'ordenDeCompra';
+    div.style.fontSize = '0.9rem';
+    div.style.padding = '0.5rem 0.75rem';
+    
+    const span = document.createElement('span');
+    span.id = 'nroOrdenSpan';
+    span.textContent = nOrdenCo.trim();
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn-close btn-close-white ms-2';
+    closeBtn.style.fontSize = '0.7rem';
+    closeBtn.setAttribute('aria-label', 'Eliminar');
+    closeBtn.onclick = function() {
+        div.remove();
+    };
+    
+    div.appendChild(span);
+    div.appendChild(closeBtn);
+    ordenesSeleccionadas.appendChild(div);
+    
+    // Mostrar notificación de éxito
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true
+    });
+    
+    Toast.fire({
+        icon: 'success',
+        title: `Orden ${nOrdenCo} agregada correctamente`
+    });
+    
+    console.log('Orden agregada exitosamente:', nOrdenCo);
 }
 
 /**

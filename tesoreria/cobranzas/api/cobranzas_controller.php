@@ -4,6 +4,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     session_start();
     header('Content-Type: application/json');
     require_once '../config/database.php';
+    require_once __DIR__ . '/notificaciones_controller.php';
 
     $comprobantes = $_POST['comprobantes'] ?? [];
     $total_propuesto = $_POST['total_propuesto'] ?? 0;
@@ -98,7 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
 
         // --- PROCESO EN SEGUNDO PLANO: NOTIFICACIÓN ---
         try {
-            require_once __DIR__ . '/notificaciones_controller.php';
             $datos_cliente = obtenerEmailFranquiciado($cod_cliente);
             if ($datos_cliente && $datos_cliente['email']) {
                 $titulo = "Nueva Propuesta de Pago Recibida (ID: #{$id_propuesta})";

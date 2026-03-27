@@ -1,8 +1,17 @@
 let tablaDespachos = null;
+let tablaOcPendientes = null;
 
 $(document).ready(function() {
     // Cargar despachos
     cargarDespachos();
+    
+    // Cargar contador de OC pendientes
+    cargarContadorOcPendientes();
+    
+    // Event listener para botón de OC Pendientes
+    $('#btnVerOcPendientes').on('click', function() {
+        abrirModalOcPendientes();
+    });
 });
 
 function cargarDespachos() {
@@ -174,4 +183,164 @@ function eliminarDespacho(id, contenedor) {
             });
         }
     });
+}
+
+// ========== FUNCIONES PARA ÓRDENES DE COMPRA PENDIENTES ==========
+
+/**
+ * Carga el contador de órdenes de compra pendientes (badge en el botón)
+ */
+function cargarContadorOcPendientes() {
+    $.ajax({
+        url: '../controller/traerOrdenesPendientesController.php',
+        method: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response && Array.isArray(response) && response.length > 0) {
+                $('#badgeOcPendientes').text(response.length).show();
+            } else {
+                $('#badgeOcPendientes').hide();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cargar contador de OC pendientes:', error);
+            $('#badgeOcPendientes').hide();
+        }
+    });
+}
+
+/**
+ * Abre el modal y carga las órdenes de compra pendientes
+ */
+function abrirModalOcPendientes() {
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalOcPendientes'));
+    modal.show();
+    
+    // Mostrar loading
+    const tbody = $('#tablaOcPendientes tbody');
+    tbody.html(`
+        <tr>
+            <td colspan="5" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando órdenes de compra pendientes...</p>
+            </td>
+        </tr>
+    `);
+    
+    // Cargar datos
+    $.ajax({
+        url: '../controller/traerOrdenesPendientesController.php',
+        method: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response && Array.isArray(response)) {
+                mostrarOcPendientes(response);
+            } else {
+                mostrarOcPendientesVacio();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error al cargar OC pendientes:', error);
+            tbody.html(`
+                <tr>
+                    <td colspan="5" class="text-center text-danger">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <p class="mt-2">Error al cargar las órdenes de compra pendientes</p>
+                    </td>
+                </tr>
+            `);
+        }
+    });
+}
+
+/**
+ * Muestra las órdenes de compra pendientes en la tabla del modal
+ */
+function mostrarOcPendientes(ordenes) {
+    const tbody = $('#tablaOcPendientes tbody');
+    tbody.empty();
+    
+    if (ordenes.length === 0) {
+        mostrarOcPendientesVacio();
+        return;
+    }
+    
+    ordenes.forEach(function(orden) {
+        const row = `
+            <tr>
+                <td><strong>${orden.COD_PROVEE || '-'}</strong></td>
+                <td>${orden.PROVEEDOR || '-'}</td>
+                <td><strong>${orden.N_ORDEN_CO || '-'}</strong></td>
+                <td>${formatearFecha(orden.FECHA_INGRESO)}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" 
+                            onclick="crearDespachoDesdeOc('${orden.COD_PROVEE}', '${orden.N_ORDEN_CO}')"
+                            data-bs-toggle="tooltip" 
+                            data-bs-placement="top" 
+                            data-bs-title="Crear despacho con esta OC">
+                        <i class="bi bi-plus-circle"></i>
+                        Crear Despacho
+                    </button>
+                </td>
+            </tr>
+        `;
+        tbody.append(row);
+    });
+    
+    // Reinicializar tooltips
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    
+    // Destruir DataTable existente si existe
+    if ($.fn.DataTable.isDataTable('#tablaOcPendientes')) {
+        $('#tablaOcPendientes').DataTable().destroy();
+    }
+    
+    // Inicializar DataTable
+    tablaOcPendientes = $('#tablaOcPendientes').DataTable({
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.1/i18n/es-ES.json'
+        },
+        order: [[3, 'desc']], // Ordenar por fecha ingreso descendente
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+        responsive: true,
+        autoWidth: false,
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
+    });
+}
+
+/**
+ * Muestra mensaje cuando no hay órdenes de compra pendientes
+ */
+function mostrarOcPendientesVacio() {
+    const tbody = $('#tablaOcPendientes tbody');
+    tbody.html(`
+        <tr>
+            <td colspan="5" class="text-center">
+                <div class="empty-state">
+                    <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3">¡No hay órdenes de compra pendientes!</h5>
+                    <p class="text-muted">Todas las órdenes del último año y medio tienen despacho asignado.</p>
+                </div>
+            </td>
+        </tr>
+    `);
+}
+
+/**
+ * Redirige a la página de carga inicial con proveedor y OC preseleccionados
+ */
+function crearDespachoDesdeOc(codProvee, nOrdenCo) {
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalOcPendientes'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Redirigir con parámetros GET
+    window.location.href = `cargaInicial.php?proveedor=${encodeURIComponent(codProvee)}&ordenCompra=${encodeURIComponent(nOrdenCo)}`;
 }

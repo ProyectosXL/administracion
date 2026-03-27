@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-*.pyo
-.env
-chroma_db/
-/tmp/
-*.log
-logs/
-.DS_Store

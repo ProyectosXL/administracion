@@ -3,6 +3,7 @@ session_start();
 
 header('Content-Type: application/json');
 require_once '../config/database.php';
+require_once __DIR__ . '/notificaciones_controller.php';
 
 if (!isset($_SESSION['usuario_id'])) {
     http_response_code(401);
@@ -577,7 +578,11 @@ try {
 
             echo json_encode(['data' => $propuestas]);
             break;
-
+        case 'actualizar_estado_admin':
+            if (!$es_admin) {
+                http_response_code(403);
+                exit;
+            }
             $id = $_POST['id_propuesta'] ?? 0;
             $estado = $_POST['nuevo_estado'] ?? '';
             $conn_apps = Database::getConnection('apps');
@@ -596,11 +601,17 @@ try {
             sqlsrv_query($conn_apps, "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, comentario) VALUES (?, ?, ?, ?, ?)", [$id, $_SESSION['usuario_id'], 'ADMIN', "Actualización de estado por admin", $_POST['comentario'] ?? '']);
 
             // --- RESPUESTA INMEDIATA PARA EVITAR TIMEOUT ---
-            echo json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
-            
+            $response = json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
+            if (ob_get_level()) ob_end_clean();
+            header('Connection: close');
+            header('Content-Length: ' . strlen($response));
+            header('Content-Type: application/json');
+            echo $response;
             if (function_exists('fastcgi_finish_request')) {
                 fastcgi_finish_request();
             } else {
+                flush();
+                if (session_id()) session_write_close();
                 ignore_user_abort(true);
             }
 
@@ -847,17 +858,23 @@ try {
                 sqlsrv_commit($conn_apps);
 
                 // --- RESPUESTA INMEDIATA ---
-                echo json_encode(['success' => true, 'message' => 'Propuesta aceptada y actualizada correctamente.']);
-                
+                $response = json_encode(['success' => true, 'message' => 'Propuesta aceptada y actualizada correctamente.']);
+                if (ob_get_level()) ob_end_clean();
+                header('Connection: close');
+                header('Content-Length: ' . strlen($response));
+                header('Content-Type: application/json');
+                echo $response;
                 if (function_exists('fastcgi_finish_request')) {
                     fastcgi_finish_request();
                 } else {
+                    flush();
+                    if (session_id()) session_write_close();
                     ignore_user_abort(true);
                 }
 
                 // --- NOTIFICACIÓN AL CLIENTE (SEGUNDO PLANO) ---
                 try {
-                    require_once __DIR__ . '/notificaciones_controller.php';
+                        // require_once moved to top
                     // Obtenemos el cod_cliente de la propuesta para saber a quién notificar
                     $stmt_c = sqlsrv_query($conn_apps, "SELECT cod_cliente FROM FP_propuestas_pago WHERE id = ?", [$id]);
                     $p_row = sqlsrv_fetch_array($stmt_c, SQLSRV_FETCH_ASSOC);
@@ -1050,18 +1067,24 @@ try {
                 sqlsrv_commit($conn_apps);
 
                 // --- RESPUESTA INMEDIATA ---
-                echo json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
-
+                $response = json_encode(['success' => true, 'message' => 'Estado actualizado correctamente.']);
+                if (ob_get_level()) ob_end_clean();
+                header('Connection: close');
+                header('Content-Length: ' . strlen($response));
+                header('Content-Type: application/json');
+                echo $response;
                 if (function_exists('fastcgi_finish_request')) {
                     fastcgi_finish_request();
                 } else {
+                    flush();
+                    if (session_id()) session_write_close();
                     ignore_user_abort(true);
                 }
 
                 // --- INICIO DE LA NOTIFICACIÓN AL ADMIN (CASO B) ---
                 if ($estado === 'ACEPTADA' || $estado === 'CONTRAPROPUESTA_CLIENTE' || $estado === 'DOCUMENTACION_ADJUNTADA') {
                     try {
-                        require_once __DIR__ . '/notificaciones_controller.php';
+                            // require_once moved to top
                         $admin_mail = obtenerEmailAdmin();
 
                         // Obtenemos el nombre del cliente desde la propuesta para que el mail sea preciso
@@ -1151,7 +1174,21 @@ try {
                 }
                 // --- FIN DE LA NOTIFICACIÓN ---
 
-                echo json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
+                // --- RESPUESTA INMEDIATA ---
+                $response = json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
+                if (ob_get_level()) ob_end_clean();
+                header('Connection: close');
+                header('Content-Length: ' . strlen($response));
+                header('Content-Type: application/json');
+                echo $response;
+
+                if (function_exists('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
+                } else {
+                    flush();
+                    if (session_id()) session_write_close();
+                    ignore_user_abort(true);
+                }
             } else {
                 echo json_encode(['success' => false, 'message' => 'Error al guardar el archivo físico en el servidor.']);
             }
