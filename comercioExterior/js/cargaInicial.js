@@ -1244,10 +1244,22 @@ $(document).ready(function() {
     // PRIMERO: Inicializar todos los datepickers ANTES de cargar datos
     inicializarDatepickers();
     
-    // Detectar parámetros URL para preselección desde OC Pendientes
+    // Detectar parámetros URL o sessionStorage para preselección desde OC Pendientes
     const urlParams = new URLSearchParams(window.location.search);
-    const proveedorParam = urlParams.get('proveedor');
-    const ordenCompraParam = urlParams.get('ordenCompra');
+    let proveedorParam = urlParams.get('proveedor');
+    let ordenCompraParam = urlParams.get('ordenCompra');
+    
+    // Si no vienen por URL, intentar leer de sessionStorage
+    if (!proveedorParam && sessionStorage.getItem('ocPendiente_proveedor')) {
+        proveedorParam = sessionStorage.getItem('ocPendiente_proveedor');
+        ordenCompraParam = sessionStorage.getItem('ocPendiente_ordenCompra');
+        
+        // Limpiar sessionStorage después de leer
+        sessionStorage.removeItem('ocPendiente_proveedor');
+        sessionStorage.removeItem('ocPendiente_ordenCompra');
+        
+        console.log('Datos de OC pendiente recuperados de sessionStorage:', proveedorParam, ordenCompraParam);
+    }
     
     // LUEGO: Cargar datos si estamos en modo edición
     if (modoEdicion && typeof datosDespacho !== 'undefined' && datosDespacho) {
@@ -1258,7 +1270,7 @@ $(document).ready(function() {
         // MODO ALTA - Establecer modo inicial
         establecerModoFormulario(false);
         
-        // Si vienen parámetros de URL, preseleccionar proveedor y OC
+        // Si vienen parámetros de URL o sessionStorage, preseleccionar proveedor y OC
         if (proveedorParam && ordenCompraParam && !modoEdicion) {
             preseleccionarProveedorYOrden(proveedorParam, ordenCompraParam);
         }

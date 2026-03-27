@@ -12,6 +12,16 @@ $(document).ready(function() {
     $('#btnVerOcPendientes').on('click', function() {
         abrirModalOcPendientes();
     });
+    
+    // Limpiar modales y backdrops cuando la página se esté descargando
+    $(window).on('beforeunload', function() {
+        $('.modal').modal('hide');
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css({
+            'overflow': '',
+            'padding-right': ''
+        });
+    });
 });
 
 function cargarDespachos() {
@@ -299,17 +309,18 @@ function mostrarOcPendientes(ordenes) {
         $('#tablaOcPendientes').DataTable().destroy();
     }
     
-    // Inicializar DataTable
+    // Inicializar DataTable sin paginado
     tablaOcPendientes = $('#tablaOcPendientes').DataTable({
         language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.1/i18n/es-ES.json'
         },
         order: [[3, 'desc']], // Ordenar por fecha ingreso descendente
-        pageLength: 10,
-        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+        paging: false, // Sin paginado - mostrar todo
+        searching: true, // Mantener búsqueda
+        info: false, // Sin información de "Mostrando X de Y registros"
         responsive: true,
         autoWidth: false,
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
+        dom: '<"row"<"col-sm-12"f>>rt' // Solo búsqueda y tabla
     });
 }
 
@@ -335,12 +346,18 @@ function mostrarOcPendientesVacio() {
  * Redirige a la página de carga inicial con proveedor y OC preseleccionados
  */
 function crearDespachoDesdeOc(codProvee, nOrdenCo) {
-    // Cerrar modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalOcPendientes'));
-    if (modal) {
-        modal.hide();
-    }
+    // Guardar los datos en sessionStorage
+    sessionStorage.setItem('ocPendiente_proveedor', codProvee);
+    sessionStorage.setItem('ocPendiente_ordenCompra', nOrdenCo);
     
-    // Redirigir con parámetros GET
-    window.location.href = `cargaInicial.php?proveedor=${encodeURIComponent(codProvee)}&ordenCompra=${encodeURIComponent(nOrdenCo)}`;
+    // Limpiar cualquier backdrop o modal abierto antes de navegar
+    $('.modal-backdrop').remove();
+    $('body').removeClass('modal-open').css({
+        'overflow': '',
+        'padding-right': ''
+    });
+    
+    // Navegar directamente sin intentar cerrar el modal
+    // El cambio de página limpiará automáticamente el modal
+    window.location.href = 'cargaInicial.php';
 }
