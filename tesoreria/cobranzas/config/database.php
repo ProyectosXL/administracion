@@ -71,7 +71,7 @@ class Database {
                 }
                 
                 $uid     = $_ENV['USER'];
-                $pwd     = $_ENV['PASS'];
+                $pwd     = ($connectionName === 'lakers') ? $_ENV['PASS_LOCALES'] : $_ENV['PASS'];
                 $charset = $_ENV['CHARACTER'];
 
                 if (empty($dbName) || empty($uid)) { // PWD puede estar vacío

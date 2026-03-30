@@ -1047,99 +1047,99 @@ $(document).ready(function () {
 
         cargarDashboardGestion();
         sincronizarEstados();
-        // enviarAvisosVencimiento();
 
-        // Nueva llamada para recordatorios de pago (48hs antes del vencimiento)
-        // $.get('api/propuestas_controller.php?action=ejecutar_recordatorios');
+        // Siempre (re)creamos la tabla para asegurar que las nuevas definiciones de columnas se apliquen
+        tablaGestion = $('#tabla-gestion-propuestas').DataTable({
+            destroy: true, // Importante: permite actualizar la definición de la tabla sin refrescar la página
+            ajax: {
+                url: 'api/propuestas_controller.php?action=listar_admin',
+                dataSrc: 'data',
+                data: function (d) {
+                    d.f_desde = $('#filter-fecha-desde').val();
+                    d.f_hasta = $('#filter-fecha-hasta').val();
+                    d.codigo = $('#filter-codigo').val();
+                    d.razon = $('#filter-razon-social').val();
+                    d.estado = $('#filter-estado').val();
+                }
+            },
+            columns: [
+                { data: 'id', title: 'ID', className: 'text-center fw-bold' },
+                { data: 'cod_cliente', title: 'Código', className: 'text-center' },
+                { data: 'razon_social', title: 'Razón Social' },
+                { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
+                {
+                    data: 'dias_plazo',
+                    title: 'Plazo',
+                    type: 'num',
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        if (data === null || data === undefined) {
+                            return type === 'sort' ? -1 : '-';
+                        }
+                        const diffDays = parseInt(data);
+                        if (type === 'sort') return diffDays;
 
-        if (tablaGestion) {
-            tablaGestion.ajax.reload();
-        } else {
-            tablaGestion = $('#tabla-gestion-propuestas').DataTable({
-                ajax: {
-                    url: 'api/propuestas_controller.php?action=listar_admin',
-                    dataSrc: 'data',
-                    // Enviamos los filtros al PHP
-                    data: function (d) {
-                        d.f_desde = $('#filter-fecha-desde').val();
-                        d.f_hasta = $('#filter-fecha-hasta').val();
-                        d.codigo = $('#filter-codigo').val();
-                        d.razon = $('#filter-razon-social').val();
-                        d.estado = $('#filter-estado').val();
+                        let colorClass = 'text-muted';
+                        if (diffDays > 30) colorClass = 'text-danger fw-bold';
+                        else if (diffDays > 15) colorClass = 'text-warning fw-bold';
+                        else if (diffDays > 0) colorClass = 'text-success fw-bold';
+
+                        return `<span class="${colorClass}">${diffDays} días</span>`;
                     }
                 },
-                columns: [
-                    // ... (mantén tus columnas actuales igual) ...
-                    { data: 'id', title: 'ID', className: 'text-center fw-bold' },
-                    { data: 'cod_cliente', title: 'Código', className: 'text-center' },
-                    { data: 'razon_social', title: 'Razón Social' },
-                    { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
-                    {
-                        data: null,
-                        title: 'Plazo',
-                        className: 'text-center',
-                        render: function (data, type, row) {
-                            if (!row.fecha_creacion || !row.fecha_propuesta_pago) return '-';
-
-                            const fCreacion = new Date(row.fecha_creacion);
-                            const fPropuesta = new Date(row.fecha_propuesta_pago);
-
-                            // Resetear horas para comparar solo días naturales
-                            fCreacion.setHours(0, 0, 0, 0);
-                            fPropuesta.setHours(0, 0, 0, 0);
-
-                            const diffTime = fPropuesta - fCreacion;
-                            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                            let colorClass = 'text-muted';
-                            if (diffDays > 30) colorClass = 'text-danger fw-bold';
-                            else if (diffDays > 15) colorClass = 'text-warning fw-bold';
-                            else if (diffDays > 0) colorClass = 'text-success fw-bold';
-
-                            return `<span class="${colorClass}">${diffDays} días</span>`;
-                        }
-                    },
-                    {
-                        data: 'fecha_ultima_modificacion',
-                        title: 'Últ. Act.',
-                        render: function (data) {
-                            return data ? new Date(data).toLocaleString('es-AR') : '-';
-                        }
-                    },
-                    {
-                        data: 'estado', title: 'Estado',
-                        render: function (data) {
-                            let badgeClass = 'secondary';
-                            if (data === 'PAGADO') badgeClass = 'success';
-                            if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
-                            if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
-                            if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning text-dark';
-                            if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
-                            if (data === 'ACEPTADA') badgeClass = 'success';
-                            return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
-                        }
-                    },
-                    {
-                        data: null, title: 'Acciones', orderable: false, className: 'text-center',
-                        render: function (data, type, row) {
-                            return `
-                            <div class="btn-group">
-                                <button class="btn btn-outline-info btn-sm btn-ver-propuesta-admin" data-id="${row.id}" title="Revisar / Editar">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm btn-eliminar-propuesta" data-id="${row.id}" title="Eliminar definitivamente">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </div>
-                        `;
-                        }
+                {
+                    data: 'fecha_ultima_modificacion',
+                    title: 'Últ. Act.',
+                    render: function (data) {
+                        return data ? new Date(data).toLocaleString('es-AR') : '-';
                     }
-                ],
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-                order: [[0, 'desc']],
-                responsive: true
-            });
-        }
+                },
+                {
+                    data: 'estado', title: 'Estado',
+                    render: function (data) {
+                        let badgeClass = 'secondary';
+                        if (data === 'PAGADO') badgeClass = 'success';
+                        if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
+                        if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
+                        if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning text-dark';
+                        if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
+                        if (data === 'ACEPTADA') badgeClass = 'success';
+                        return `<span class="badge bg-${badgeClass}">${data.replace(/_/g, ' ')}</span>`;
+                    }
+                },
+                {
+                    data: null, title: 'Acciones', orderable: false, className: 'text-center',
+                    render: function (data, type, row) {
+                        return `
+                        <div class="btn-group">
+                            <button class="btn btn-outline-info btn-sm btn-ver-propuesta-admin" data-id="${row.id}" title="Revisar / Editar">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm btn-eliminar-propuesta" data-id="${row.id}" title="Eliminar definitivamente">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>`;
+                    }
+                }
+            ],
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+            order: [[4, 'desc']], // Por defecto, ordenamos por la columna 'Plazo' (índice 4) Descendente
+            responsive: true,
+            drawCallback: function (settings) {
+                const api = this.api();
+                const filteredData = api.rows({ filter: 'applied' }).data().toArray();
+                let totalDias = 0;
+                let count = 0;
+                filteredData.forEach(row => {
+                    if (row.dias_plazo !== null && row.dias_plazo !== undefined) {
+                        totalDias += parseInt(row.dias_plazo);
+                        count++;
+                    }
+                });
+                const promedio = count > 0 ? (totalDias / count).toFixed(1) : '0';
+                $('#kpi-promedio-plazo').text(promedio);
+            }
+        });
     }
 
     // Eventos para los botones de filtrado (Agrega esto al final del $(document).ready)

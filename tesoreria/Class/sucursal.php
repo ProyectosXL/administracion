@@ -263,7 +263,7 @@ class Sucursal {
                             AND A.COD_PRO_CL LIKE 'GT%'
                             AND A.N_COMP COLLATE Latin1_General_BIN NOT IN (
                                 SELECT N_COMP COLLATE Latin1_General_BIN 
-                                FROM RO_REMITOS_GUIA_RETIROS_SUC
+                                FROM GIT 
                             )
 
                         UNION ALL

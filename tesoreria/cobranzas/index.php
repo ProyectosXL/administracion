@@ -121,6 +121,15 @@ include 'templates/layout/header.php';
                     </div>
                 </div>
             </div>
+            <!-- NUEVA TARJETA: Promedio Plazo -->
+            <div class="col-xl col-md-6 mb-4">
+                <div class="card shadow-sm border-left-indigo h-100 py-2" style="border-left: 0.25rem solid #6610f2 !important;">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-indigo text-uppercase mb-1" style="color: #6610f2;">Promedio Plazo (Días)</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-promedio-plazo">-</div>
+                    </div>
+                </div>
+            </div>
         </div>
         <!-- ======================== FIN DEL BLOQUE A REEMPLAZAR ========================= -->
         <div class="row" id="charts-row">

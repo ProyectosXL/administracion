@@ -116,7 +116,24 @@ try {
             verificarYActualizarVencimientosCliente($conn_apps, null);
 
             $response = [];
-            $sql_kpis = "SELECT COUNT(CASE WHEN estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE') THEN 1 END) AS totalActivas, SUM(CASE WHEN estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE') THEN total_propuesto ELSE 0 END) AS montoEnNegociacion, COUNT(CASE WHEN estado = 'CONTRAPROPUESTA_CLIENTE' THEN 1 END) AS contrapropuestas, COUNT(CASE WHEN estado = 'ACEPTADA' AND fecha_ultima_modificacion >= DATEADD(day, -30, GETDATE()) THEN 1 END) AS aceptadasMes, SUM(CASE WHEN estado = 'VENCIDA' THEN total_propuesto ELSE 0 END) AS montoVencido FROM FP_propuestas_pago";
+            $sql_kpis = "SELECT 
+                COUNT(CASE WHEN p.estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE') THEN 1 END) AS totalActivas, 
+                SUM(CASE WHEN p.estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE') THEN p.total_propuesto ELSE 0 END) AS montoEnNegociacion, 
+                COUNT(CASE WHEN p.estado = 'CONTRAPROPUESTA_CLIENTE' THEN 1 END) AS contrapropuestas, 
+                (SELECT COUNT(DISTINCT h.id_propuesta) 
+                 FROM FP_propuestas_pago_historial h
+                 JOIN FP_propuestas_pago p2 ON h.id_propuesta = p2.id
+                 WHERE CAST(h.descripcion AS varchar(max)) LIKE 'Propuesta aceptada por el cliente%'
+                   AND h.fecha_evento >= DATEADD(day, -30, GETDATE())
+                   AND NOT EXISTS (
+                       SELECT 1 FROM FP_propuestas_pago_historial h2 
+                       WHERE h2.id_propuesta = p2.id 
+                         AND (CAST(h2.descripcion AS varchar(max)) LIKE '%Contrapropuesta%' 
+                              OR CAST(h2.descripcion AS varchar(max)) LIKE '%actualizada por administración%')
+                   )
+                ) AS aceptadasMes, 
+                SUM(CASE WHEN p.estado = 'VENCIDA' THEN p.total_propuesto ELSE 0 END) AS montoVencido 
+            FROM FP_propuestas_pago p";
             $stmt_kpis = sqlsrv_query($conn_apps, $sql_kpis);
             $response['kpis'] = sqlsrv_fetch_array($stmt_kpis, SQLSRV_FETCH_ASSOC);
 
@@ -127,7 +144,19 @@ try {
                 $grafico_estados[] = $row;
             $response['graficoEstados'] = $grafico_estados;
 
-            $sql_actividad = "SELECT CAST(fecha_ultima_modificacion AS DATE) AS dia, COUNT(*) as cantidad FROM FP_propuestas_pago WHERE estado IN ('ACEPTADA', 'DOCUMENTACION_ADJUNTADA') AND fecha_ultima_modificacion >= DATEADD(day, -7, GETDATE()) GROUP BY CAST(fecha_ultima_modificacion AS DATE) ORDER BY dia ASC";
+            $sql_actividad = "SELECT CAST(h.fecha_evento AS DATE) AS dia, COUNT(DISTINCT h.id_propuesta) as cantidad 
+                             FROM FP_propuestas_pago_historial h
+                             JOIN FP_propuestas_pago p ON h.id_propuesta = p.id
+                             WHERE CAST(h.descripcion AS varchar(max)) LIKE 'Propuesta aceptada por el cliente%'
+                               AND h.fecha_evento >= DATEADD(day, -7, GETDATE())
+                               AND NOT EXISTS (
+                                   SELECT 1 FROM FP_propuestas_pago_historial h2 
+                                   WHERE h2.id_propuesta = p.id 
+                                     AND (CAST(h2.descripcion AS varchar(max)) LIKE '%Contrapropuesta%' 
+                                          OR CAST(h2.descripcion AS varchar(max)) LIKE '%actualizada por administración%')
+                               )
+                             GROUP BY CAST(h.fecha_evento AS DATE) 
+                             ORDER BY dia ASC";
             $stmt_actividad = sqlsrv_query($conn_apps, $sql_actividad);
             $grafico_actividad = [];
             while ($row = sqlsrv_fetch_array($stmt_actividad, SQLSRV_FETCH_ASSOC))
@@ -146,7 +175,18 @@ try {
             $conn_central = Database::getConnection('central');
             $indicadores = [];
 
-            $sql_ciclo = "SELECT AVG(CAST(DATEDIFF(hour, p.fecha_creacion, h.fecha_evento) AS FLOAT)) as avg_horas FROM FP_propuestas_pago p JOIN FP_propuestas_pago_historial h ON p.id = h.id_propuesta WHERE h.tipo_usuario = 'CLIENTE' AND p.estado NOT IN ('RECHAZADA')";
+            $sql_ciclo = "WITH PrimerasRespuestas AS (
+                SELECT id_propuesta, MIN(fecha_evento) as fecha_respuesta
+                FROM FP_propuestas_pago_historial
+                WHERE tipo_usuario = 'CLIENTE'
+                  AND (CAST(descripcion AS varchar(max)) LIKE '%aceptada por el cliente%' 
+                       OR CAST(descripcion AS varchar(max)) LIKE '%Contrapropuesta enviada%')
+                GROUP BY id_propuesta
+            )
+            SELECT AVG(CAST(DATEDIFF(hour, p.fecha_creacion, pr.fecha_respuesta) AS FLOAT)) as avg_horas 
+            FROM FP_propuestas_pago p 
+            JOIN PrimerasRespuestas pr ON p.id = pr.id_propuesta 
+            WHERE p.estado NOT IN ('RECHAZADA')";
             $stmt_ciclo = sqlsrv_query($conn_apps, $sql_ciclo);
             $row_ciclo = sqlsrv_fetch_array($stmt_ciclo, SQLSRV_FETCH_ASSOC);
             $indicadores['tiempo_promedio_horas'] = round($row_ciclo['avg_horas'] ?? 0, 1);
@@ -171,7 +211,19 @@ try {
             $indicadores['cantidad_concretadas'] = $cant_conc;
             $indicadores['total_propuestas'] = $tot_prop;
 
-            $sql_demora = "SELECT TOP 5 p.cod_cliente, AVG(CAST(DATEDIFF(hour, p.fecha_creacion, h.fecha_evento) AS FLOAT)) as promedio FROM FP_propuestas_pago p JOIN FP_propuestas_pago_historial h ON p.id = h.id_propuesta WHERE h.tipo_usuario = 'CLIENTE' GROUP BY p.cod_cliente ORDER BY promedio DESC";
+            $sql_demora = "WITH PrimerasRespuestas AS (
+                SELECT id_propuesta, MIN(fecha_evento) as fecha_respuesta
+                FROM FP_propuestas_pago_historial
+                WHERE tipo_usuario = 'CLIENTE'
+                  AND (CAST(descripcion AS varchar(max)) LIKE '%aceptada por el cliente%' 
+                       OR CAST(descripcion AS varchar(max)) LIKE '%Contrapropuesta enviada%')
+                GROUP BY id_propuesta
+            )
+            SELECT TOP 5 p.cod_cliente, AVG(CAST(DATEDIFF(hour, p.fecha_creacion, pr.fecha_respuesta) AS FLOAT)) as promedio 
+            FROM FP_propuestas_pago p 
+            JOIN PrimerasRespuestas pr ON p.id = pr.id_propuesta 
+            GROUP BY p.cod_cliente 
+            ORDER BY promedio DESC";
             $stmt_demora = sqlsrv_query($conn_apps, $sql_demora);
             $codigos_demora = [];
             $ranking_demora_tmp = [];
@@ -545,7 +597,9 @@ try {
                 }
             }
 
-            $sql = "SELECT id, cod_cliente, fecha_creacion, fecha_propuesta_pago, fecha_ultima_modificacion, total_propuesto, estado FROM FP_propuestas_pago" . $where . " ORDER BY id DESC";
+            $sql = "SELECT id, cod_cliente, fecha_creacion, fecha_propuesta_pago, fecha_ultima_modificacion, total_propuesto, estado, 
+                           DATEDIFF(day, fecha_creacion, fecha_propuesta_pago) as dias_plazo 
+                    FROM FP_propuestas_pago" . $where . " ORDER BY id DESC";
             $stmt = sqlsrv_query($conn_apps, $sql, $params);
 
             $propuestas = [];
@@ -1151,9 +1205,26 @@ try {
                 $sql_hist = "INSERT INTO FP_propuestas_pago_historial (id_propuesta, id_usuario_evento, tipo_usuario, descripcion, fecha_evento) VALUES (?, ?, 'CLIENTE', ?, GETDATE())";
                 sqlsrv_query($conn_apps, $sql_hist, [$id_propuesta, $_SESSION['usuario_id'], $desc_historial]);
 
-                // --- INICIO DE LA NOTIFICACIÓN AL ADMIN ---
+                // --- RESPUESTA INMEDIATA (AHORA CORRECTAMENTE ANTES DE LA NOTIFICACIÓN) ---
+                $response = json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
+                if (ob_get_level()) ob_end_clean();
+                header('Connection: close');
+                header('Content-Length: ' . strlen($response));
+                header('Content-Type: application/json');
+                echo $response;
+
+                if (function_exists('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
+                } else {
+                    flush();
+                    if (session_id()) session_write_close();
+                    ignore_user_abort(true);
+                }
+
+                // --- INICIO DE LA NOTIFICACIÓN AL ADMIN (SEGUNDO PLANO) ---
                 try {
-                    require_once __DIR__ . '/notificaciones_controller.php';
+                    file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] Preparando mail para Admin para propuesta #$id_propuesta\n", FILE_APPEND);
+                    // require_once moved to top
                     $admin_mail = obtenerEmailAdmin();
 
                     // Obtenemos el nombre del cliente desde la propuesta para que el mail sea preciso
@@ -1173,22 +1244,6 @@ try {
                     error_log("Error enviando mail al admin (adjunto): " . $e_mail->getMessage());
                 }
                 // --- FIN DE LA NOTIFICACIÓN ---
-
-                // --- RESPUESTA INMEDIATA ---
-                $response = json_encode(['success' => true, 'message' => 'Comprobante subido y propuesta actualizada.']);
-                if (ob_get_level()) ob_end_clean();
-                header('Connection: close');
-                header('Content-Length: ' . strlen($response));
-                header('Content-Type: application/json');
-                echo $response;
-
-                if (function_exists('fastcgi_finish_request')) {
-                    fastcgi_finish_request();
-                } else {
-                    flush();
-                    if (session_id()) session_write_close();
-                    ignore_user_abort(true);
-                }
             } else {
                 echo json_encode(['success' => false, 'message' => 'Error al guardar el archivo físico en el servidor.']);
             }

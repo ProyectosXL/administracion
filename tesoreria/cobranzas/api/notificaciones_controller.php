@@ -21,6 +21,8 @@ if (!function_exists('enviarNotificacion')) {
         if (empty($destinatarios))
             return false;
 
+        file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] Enviando mail a: " . (is_array($destinatarios) ? implode(',', $destinatarios) : $destinatarios) . " | Asunto: $asunto\n", FILE_APPEND);
+        
         // Aseguramos que las variables de entorno (.env) estén cargadas
         // Esto cargará $_ENV con los valores correctos (notificaciones@xl.com.ar / yvsuiewmcztagevs)
         require_once __DIR__ . '/../config/database.php';
@@ -57,9 +59,11 @@ if (!function_exists('enviarNotificacion')) {
             $mail->Subject = $asunto;
             $mail->Body = $cuerpo_html;
             $mail->send();
+            file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] Mail enviado con éxito!\n", FILE_APPEND);
             return true;
         } catch (Exception $e) {
             error_log("PHPMailer Error: {$mail->ErrorInfo}");
+            file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] ERROR PHPMailer: " . $mail->ErrorInfo . "\n", FILE_APPEND);
             return false;
         }
     }
@@ -68,14 +72,21 @@ if (!function_exists('enviarNotificacion')) {
 if (!function_exists('obtenerEmailFranquiciado')) {
     function obtenerEmailFranquiciado($cod_cliente)
     {
-        $conn = Database::getConnection('lakers');
-        $sql = "SELECT MAIL_GRUP_EMP, DESC_SUCURSAL FROM DIRECCIONARIO WHERE COD_CLIENT = ? AND CANAL = 'FRANQUICIAS' AND NRO_SUC_MADRE IS NULL";
-        $stmt = sqlsrv_query($conn, $sql, [$cod_cliente]);
-        if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            return [
-                'email' => !empty($row['MAIL_GRUP_EMP']) ? trim($row['MAIL_GRUP_EMP']) : null,
-                'razon_social' => trim($row['DESC_SUCURSAL'])
-            ];
+        try {
+            // Usamos un try-catch local para evitar que el 'die()' central de Database.php detenga el script
+            $conn = Database::getConnection('lakers');
+            if (!$conn) return null;
+
+            $sql = "SELECT MAIL_GRUP_EMP, DESC_SUCURSAL FROM DIRECCIONARIO WHERE COD_CLIENT = ? AND CANAL = 'FRANQUICIAS' AND NRO_SUC_MADRE IS NULL";
+            $stmt = sqlsrv_query($conn, $sql, [$cod_cliente]);
+            if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                return [
+                    'email' => !empty($row['MAIL_GRUP_EMP']) ? trim($row['MAIL_GRUP_EMP']) : null,
+                    'razon_social' => trim($row['DESC_SUCURSAL'])
+                ];
+            }
+        } catch (Throwable $e_db) {
+            error_log("Error buscando datos en Lakers para $cod_cliente: " . $e_db->getMessage());
         }
         return null;
     }
