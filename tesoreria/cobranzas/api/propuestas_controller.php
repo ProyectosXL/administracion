@@ -66,8 +66,23 @@ try {
             $sql_items = "SELECT t_comp_factura, n_comp_factura, importe_bruto, importe_neto, porcentaje_descuento FROM FP_propuestas_pago_items WHERE id_propuesta = ?";
             $stmt_items = sqlsrv_query($conn_apps, $sql_items, [$id_propuesta]);
             $items = [];
-            while ($row = sqlsrv_fetch_array($stmt_items, SQLSRV_FETCH_ASSOC))
+            
+            $conn_central = Database::getConnection('central');
+
+            while ($row = sqlsrv_fetch_array($stmt_items, SQLSRV_FETCH_ASSOC)) {
+                $row['fecha_emision'] = 'N/A';
+                if ($conn_central) {
+                    $t_comp = trim($row['t_comp_factura']);
+                    $n_comp = trim($row['n_comp_factura']);
+                    $sql_fecha = "SELECT TOP 1 FECHA_EMIS FROM GVA12 WHERE T_COMP = ? AND N_COMP = ?";
+                    $stmt_fecha = sqlsrv_query($conn_central, $sql_fecha, [$t_comp, $n_comp]);
+                    if ($stmt_fecha && $row_fecha = sqlsrv_fetch_array($stmt_fecha, SQLSRV_FETCH_ASSOC)) {
+                        $f = $row_fecha['FECHA_EMIS'];
+                        $row['fecha_emision'] = ($f instanceof DateTime) ? $f->format('d/m/Y') : date('d/m/Y', strtotime(substr($f, 0, 10)));
+                    }
+                }
                 $items[] = $row;
+            }
 
             $sql_historial = "SELECT fecha_evento, tipo_usuario, descripcion, comentario, ruta_adjunto, json_data FROM FP_propuestas_pago_historial WHERE id_propuesta = ? ORDER BY fecha_evento ASC";
             $stmt_historial = sqlsrv_query($conn_apps, $sql_historial, [$id_propuesta]);
@@ -818,6 +833,177 @@ try {
                 ];
             }
             echo json_encode(['success' => true, 'data' => $eventos]);
+            break;
+
+        case 'obtener_reporte_plazos':
+            $conn_apps = Database::getConnection('apps');
+            $conn_central = Database::getConnection('central');
+
+            if (!$conn_apps) {
+                error_log("Reporte plazos Error: No hay conexion a APPS");
+                echo json_encode(['success' => false, 'message' => 'No hay conexioón a base de apps']);
+                exit;
+            }
+
+            // 1. Obtener propuestas desde ACEPTADA en adelante (incluye DOCUMENTACION ADJUNTADA y PAGADO)
+            $sql = "SELECT id, cod_cliente, fecha_creacion, fecha_propuesta_pago, fecha_ultima_modificacion, estado,
+                           DATEDIFF(day, fecha_creacion, fecha_propuesta_pago) as diff_prop,
+                           DATEDIFF(day, fecha_creacion, fecha_ultima_modificacion) as diff_fallback
+                    FROM FP_propuestas_pago 
+                    WHERE estado LIKE '%ACEPTADA%' 
+                       OR estado LIKE '%REVISADA%' 
+                       OR estado LIKE '%DOCUMENTACION%' 
+                       OR estado LIKE '%PAGADO%'";
+            $stmt = sqlsrv_query($conn_apps, $sql);
+            
+            $datos_crudos = [];
+            $codigos = [];
+
+            if ($stmt === false) {
+                error_log("Reporte Error: Query fallo: " . print_r(sqlsrv_errors(), true));
+            } else {
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                    $datos_crudos[] = $row;
+                    $codigos[] = "'" . trim($row['cod_cliente']) . "'";
+                }
+            }
+
+            // Funcion auxiliar para manejar fechas
+            $parseFecha = function($f) {
+                if ($f instanceof DateTime) return $f;
+                if (empty($f)) return null;
+                try { return new DateTime($f); } catch (Exception $e) { return null; }
+            };
+            // Diagnóstico
+            error_log("Reporte reporte_plazos: " . count($datos_crudos) . " propuestas encontradas para estados finales.");
+
+            if (empty($datos_crudos)) {
+                echo json_encode(['success' => true, 'reporte_franquicias' => [], 'reporte_razon_social' => []]);
+                exit;
+            }
+
+            // 2. Buscar fechas de subida de comprobantes (Prioridad para Pago Final)
+            $ids_propuestas = array_column($datos_crudos, 'id');
+            $fechas_pago_real = [];
+            if (!empty($ids_propuestas)) {
+                $ids_str = implode(',', $ids_propuestas);
+                
+                // Prioridad A: Fecha en la que el cliente subió el último comprobante
+                $sql_adj = "SELECT id_propuesta, MAX(fecha_subida) as f_adjunto 
+                            FROM FP_propuestas_adjuntos 
+                            WHERE id_propuesta IN ($ids_str) 
+                            GROUP BY id_propuesta";
+                $stmt_adj = sqlsrv_query($conn_apps, $sql_adj);
+                if ($stmt_adj) {
+                    while ($ra = sqlsrv_fetch_array($stmt_adj, SQLSRV_FETCH_ASSOC)) {
+                        $fechas_pago_real[$ra['id_propuesta']] = $parseFecha($ra['f_adjunto']);
+                    }
+                }
+
+                // Prioridad B: Si no hay adjunto, buscamos fecha de paso a PAGADO en historial
+                $sql_h = "SELECT id_propuesta, MAX(fecha_evento) as f_pago 
+                          FROM FP_propuestas_pago_historial 
+                          WHERE id_propuesta IN ($ids_str) 
+                            AND id_propuesta NOT IN (SELECT id_propuesta FROM FP_propuestas_adjuntos WHERE id_propuesta IN ($ids_str))
+                            AND descripcion LIKE '%PAGADO%'
+                          GROUP BY id_propuesta";
+                $stmt_h = sqlsrv_query($conn_apps, $sql_h);
+                if ($stmt_h) {
+                    while ($rh = sqlsrv_fetch_array($stmt_h, SQLSRV_FETCH_ASSOC)) {
+                        $fechas_pago_real[$rh['id_propuesta']] = $parseFecha($rh['f_pago']);
+                    }
+                }
+            }
+
+            // 3. Nombres
+            $nombres = [];
+            if (!empty($codigos)) {
+                $unique_codigos = array_unique($codigos);
+                $codigos_str = implode(',', $unique_codigos);
+                $sql_n = "SELECT COD_CLIENT, RAZON_SOCI FROM GVA14 WHERE COD_CLIENT IN ($codigos_str)";
+                $stmt_n = sqlsrv_query($conn_central, $sql_n);
+                if ($stmt_n) {
+                    while ($rn = sqlsrv_fetch_array($stmt_n, SQLSRV_FETCH_ASSOC)) {
+                        $nombres[trim($rn['COD_CLIENT'])] = trim($rn['RAZON_SOCI']);
+                    }
+                }
+            }
+
+            // 4. Agrupar con contadores independientes
+            $por_franquicia = [];
+            $por_razon_social = [];
+
+            foreach ($datos_crudos as $d) {
+                $id_p = $d['id'];
+                $cod = trim($d['cod_cliente']);
+                $razon = $nombres[$cod] ?? 'Desconocido';
+                $estado = $d['estado'];
+
+                // Días propuestos (Calculados por SQL exacto)
+                $val_prop = (int)$d['diff_prop'];
+                
+                // Días reales (Basado en adjuntos o historial de pago)
+                $val_real = null;
+                $f_pago = $fechas_pago_real[$id_p] ?? null;
+                
+                if ($f_pago) {
+                    $f_crea = $parseFecha($d['fecha_creacion']);
+                    if ($f_crea) {
+                        $val_real = floor(($f_pago->getTimestamp() - $f_crea->getTimestamp()) / 86400);
+                    }
+                } else if ($estado === 'PAGADO') {
+                    // Fallback extremo: fecha_ultima_modificacion si el admin lo marcó como pagado a mano
+                    $val_real = (int)$d['diff_fallback'];
+                }
+
+                // Agregación Franquicia
+                if (!isset($por_franquicia[$cod])) {
+                    $por_franquicia[$cod] = ['codigo' => $cod, 'razon_social' => $razon, 'sum_prop' => 0, 'count_prop' => 0, 'sum_real' => 0, 'count_real' => 0];
+                }
+                $por_franquicia[$cod]['sum_prop'] += $val_prop;
+                $por_franquicia[$cod]['count_prop']++;
+                if ($val_real !== null) {
+                    $por_franquicia[$cod]['sum_real'] += $val_real;
+                    $por_franquicia[$cod]['count_real']++;
+                }
+
+                // Agregación Razón Social
+                if (!isset($por_razon_social[$razon])) {
+                    $por_razon_social[$razon] = ['razon_social' => $razon, 'sum_prop' => 0, 'count_prop' => 0, 'sum_real' => 0, 'count_real' => 0];
+                }
+                $por_razon_social[$razon]['sum_prop'] += $val_prop;
+                $por_razon_social[$razon]['count_prop']++;
+                if ($val_real !== null) {
+                    $por_razon_social[$razon]['sum_real'] += $val_real;
+                    $por_razon_social[$razon]['count_real']++;
+                }
+            }
+
+            // 5. Resultados
+            $resp_franquicia = [];
+            foreach ($por_franquicia as $f) {
+                $resp_franquicia[] = [
+                    'codigo' => $f['codigo'],
+                    'razon_social' => $f['razon_social'],
+                    'avg_propuesto' => $f['count_prop'] > 0 ? ceil($f['sum_prop'] / $f['count_prop']) : 0,
+                    'avg_real' => $f['count_real'] > 0 ? ceil($f['sum_real'] / $f['count_real']) : 0
+                ];
+            }
+
+            $resp_razon = [];
+            foreach ($por_razon_social as $r) {
+                $resp_razon[] = [
+                    'razon_social' => $r['razon_social'],
+                    'avg_propuesto' => $r['count_prop'] > 0 ? ceil($r['sum_prop'] / $r['count_prop']) : 0,
+                    'avg_real' => $r['count_real'] > 0 ? ceil($r['sum_real'] / $r['count_real']) : 0
+                ];
+            }
+
+            echo json_encode([
+                'success' => true, 
+                'reporte_franquicias' => $resp_franquicia, 
+                'reporte_razon_social' => $resp_razon
+            ]);
             break;
 
         case 'eliminar_propuesta':

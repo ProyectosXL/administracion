@@ -181,6 +181,12 @@ include 'templates/layout/header.php';
                         <i class="fa-solid fa-gauge-high me-1"></i> Indicadores
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reportes-tab" data-bs-toggle="tab" data-bs-target="#reportes"
+                        type="button" role="tab">
+                        <i class="fa-solid fa-chart-line me-1"></i> Reportes
+                    </button>
+                </li>
             </ul>
         </div>
         <div class="card-body">
@@ -322,6 +328,29 @@ include 'templates/layout/header.php';
                         </div>
                     </div>
                 </div>
+                <div class="tab-pane fade" id="reportes" role="tabpanel">
+                    <div class="p-4">
+                        <div class="row mb-5">
+                            <div class="col-12">
+                                <h5 class="mb-4 text-primary fw-bold"><i class="fa-solid fa-store me-2"></i> Reporte Promedio Plazos Fin de Mes por Franquicia</h5>
+                                <div class="table-responsive">
+                                    <table id="tabla-reporte-franquicias" class="table table-striped table-hover align-middle border shadow-sm" style="width:100%">
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <hr class="my-5 opacity-25">
+                                <h5 class="mb-4 text-secondary fw-bold"><i class="fa-solid fa-users me-2"></i> Reporte Agrupado por Razón Social</h5>
+                                <div class="table-responsive">
+                                    <table id="tabla-reporte-razon-social" class="table table-striped table-hover align-middle border shadow-sm" style="width:100%">
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -382,6 +411,9 @@ include 'templates/layout/header.php';
 include 'templates/layout/footer.php';
 ?>
 
+<script>
+    const globalUsuarioNombre = "<?php echo isset($_SESSION['usuario_nombre']) ? addslashes($_SESSION['usuario_nombre']) : ''; ?>";
+</script>
 <!-- Scripts específicos para el panel admin -->
 <script src="assets/js/app.js?v=1.5"></script>
 

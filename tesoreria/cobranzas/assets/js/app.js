@@ -61,13 +61,21 @@ $(document).ready(function () {
         const ctx = document.getElementById('chartEstados').getContext('2d');
         const labels = data.map(item => item.estado.replace(/_/g, ' '));
         const cantidades = data.map(item => item.cantidad);
+        const total = cantidades.reduce((a, b) => a + b, 0);
 
-        const backgroundColors = [
-            'rgba(255, 193, 7, 0.7)',  // Amarillo para Pendiente
-            'rgba(13, 110, 253, 0.7)', // Azul para Contrapropuesta
-            'rgba(25, 135, 84, 0.7)',  // Verde para Aceptada
-            'rgba(13, 202, 240, 0.7)'   // Cian para Pendiente Final
-        ];
+        // Mapeo de colores estricto por estado para evitar repeticiones
+        const colorMap = {
+            'PENDIENTE_APROBACION_CLIENTE': 'rgba(255, 193, 7, 0.8)',   // Amarillo
+            'CONTRAPROPUESTA_CLIENTE': 'rgba(13, 110, 253, 0.8)',      // Azul
+            'ACEPTADA': 'rgba(25, 135, 84, 0.8)',                     // Verde
+            'PENDIENTE_APROBACION_FINAL': 'rgba(253, 126, 20, 0.8)',    // Naranja
+            'DOCUMENTACION_ADJUNTADA': 'rgba(108, 117, 125, 0.8)',     // Gris
+            'PAGADO': 'rgba(13, 202, 240, 0.8)',                       // Cian
+            'VENCIDA': 'rgba(220, 53, 69, 0.8)',                       // Rojo
+            'RECHAZADA': 'rgba(0, 0, 0, 0.8)'                          // Negro
+        };
+
+        const backgroundColors = data.map(item => colorMap[item.estado] || 'rgba(200, 200, 200, 0.8)');
 
         if (chartEstadosInstance) {
             chartEstadosInstance.destroy();
@@ -81,16 +89,50 @@ $(document).ready(function () {
                     label: 'Propuestas',
                     data: cantidades,
                     backgroundColor: backgroundColors,
-                    borderColor: backgroundColors.map(color => color.replace('0.7', '1')),
-                    borderWidth: 1
+                    borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+                    borderWidth: 2
                 }]
             },
+            plugins: [ChartDataLabels], // Registrar el plugin para este gráfico
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '50%',
                 plugins: {
                     legend: {
                         position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: {
+                            weight: 'bold',
+                            size: 11
+                        },
+                        formatter: (value, ctx) => {
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            // Solo mostramos si el porcentaje es significativo para que no se amontonen
+                            return value > 0 ? `${value}\n(${percentage}%)` : null;
+                        },
+                        anchor: 'center',
+                        align: 'center',
+                        offset: 0,
+                        textAlign: 'center',
+                        textShadowColor: 'rgba(0, 0, 0, 0.5)',
+                        textShadowBlur: 4
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw;
+                                const pct = ((val / total) * 100).toFixed(1);
+                                return ` ${context.label}: ${val} (${pct}%)`;
+                            }
+                        }
                     }
                 }
             }
@@ -1130,8 +1172,12 @@ $(document).ready(function () {
                 const filteredData = api.rows({ filter: 'applied' }).data().toArray();
                 let totalDias = 0;
                 let count = 0;
+
+                // Definimos los estados que consideramos "Aceptados en adelante"
+                const estadosValidos = ['ACEPTADA', 'DOCUMENTACION_ADJUNTADA', 'PAGADO'];
+
                 filteredData.forEach(row => {
-                    if (row.dias_plazo !== null && row.dias_plazo !== undefined) {
+                    if (row.dias_plazo !== null && row.dias_plazo !== undefined && estadosValidos.includes(row.estado)) {
                         totalDias += parseInt(row.dias_plazo);
                         count++;
                     }
@@ -1327,7 +1373,8 @@ $(document).ready(function () {
         }
 
         let esEditable = propuesta.estado === 'CONTRAPROPUESTA_CLIENTE';
-        let itemsHtml = `<h5 class="mt-4">Facturas Incluidas</h5><table class="table table-sm table-bordered" id="tabla-detalle-propuesta-admin"><thead class="table-light"><tr><th class="text-center">Tipo</th><th>Comprobante</th><th class="text-end">Importe Bruto</th><th class="text-center">% Descuento</th><th class="text-end">Importe Neto</th>${esEditable ? '<th class="text-center">Acciones</th>' : ''}</tr></thead><tbody>`;
+        let puedeEditarDescuento = esEditable && (typeof globalUsuarioNombre !== 'undefined' && globalUsuarioNombre === 'SilviaF');
+        let itemsHtml = `<h5 class="mt-4">Facturas Incluidas</h5><table class="table table-sm table-bordered" id="tabla-detalle-propuesta-admin"><thead class="table-light"><tr><th class="text-center">Fecha</th><th class="text-center">Tipo</th><th>Comprobante</th><th class="text-end">Importe Bruto</th><th class="text-center">% Descuento</th><th class="text-end">Importe Neto</th>${esEditable ? '<th class="text-center">Acciones</th>' : ''}</tr></thead><tbody>`;
 
         let totalBrutoTabla = 0;
         let totalNetoTabla = 0;
@@ -1341,24 +1388,30 @@ $(document).ready(function () {
             // En la vista admin, si es REC asumimos que es negativo (porque solo entran los CTA)
             const esNegativo = tComp.startsWith('NC') || tComp === 'REC';
 
-            totalBrutoTabla += esNegativo ? -bruto : bruto;
-            totalNetoTabla += esNegativo ? -neto : neto;
+            // Usamos Math.abs para asegurar que no se invierta el signo si el bruto ya viene negativo de la BD
+            const brutoReal = esNegativo ? -Math.abs(bruto) : Math.abs(bruto);
+            const netoReal = esNegativo ? -Math.abs(neto) : Math.abs(neto);
+
+            totalBrutoTabla += brutoReal;
+            totalNetoTabla += netoReal;
 
             let inputDisabled = '';
-            if (esEditable) {
+            if (puedeEditarDescuento) {
                 // Reglas de negocio A00115: Bloquear descuentos SOLO en FAC de la 115
                 if (nComp.startsWith('A00115') && tComp === 'FAC') {
                     inputDisabled = 'disabled';
                 }
+            } else {
+                inputDisabled = 'disabled';
             }
 
-            const descuentoHtml = esEditable ? `<input type="number" class="form-control form-control-sm descuento-input-admin" value="${descuento.toFixed(2)}" min="0" max="100" step="0.01" style="width: 80px;" ${inputDisabled}>` : `${descuento.toFixed(2)} %`;
+            const descuentoHtml = puedeEditarDescuento ? `<input type="number" class="form-control form-control-sm descuento-input-admin" value="${descuento.toFixed(2)}" min="0" max="100" step="0.01" style="width: 80px;" ${inputDisabled}>` : `<span class="descuento-texto-admin">${descuento.toFixed(2)} %</span><input type="hidden" class="descuento-input-admin" value="${descuento.toFixed(2)}">`;
             const accionesHtml = esEditable ? `<td class="text-center"><button class="btn btn-danger btn-sm btn-eliminar-factura-propuesta" title="Quitar factura"><i class="fa-solid fa-trash"></i></button></td>` : '';
 
-            itemsHtml += `<tr data-importe-bruto="${bruto}" data-ncomp="${nComp}" data-tcomp="${tComp}"><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNegativo ? 'text-danger' : ''}">${(esNegativo ? -bruto : bruto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center">${descuentoHtml}</td><td class="text-end fw-bold importe-neto-cell-admin ${esNegativo ? 'text-danger' : ''}">${(esNegativo ? -neto : neto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${accionesHtml}</tr>`;
+            itemsHtml += `<tr data-importe-bruto="${brutoReal}" data-ncomp="${nComp}" data-tcomp="${tComp}"><td class="text-center">${item.fecha_emision || 'N/A'}</td><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNegativo ? 'text-danger' : ''}">${brutoReal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center">${descuentoHtml}</td><td class="text-end fw-bold importe-neto-cell-admin ${esNegativo ? 'text-danger' : ''}">${netoReal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${accionesHtml}</tr>`;
         });
 
-        itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="2" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${esEditable ? '<td></td>' : ''}</tr></tfoot></table>`;
+        itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="3" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${esEditable ? '<td></td>' : ''}</tr></tfoot></table>`;
 
         // ======================= INICIO DE LA MODIFICACIÓN DEL HISTORIAL =======================
         let historialHtml = '<h5>Historial</h5><div class="timeline">';
@@ -1455,8 +1508,8 @@ $(document).ready(function () {
         let accionAdminHtml = '';
 
         if (esEditable) {
-            accionAdminHtml = `<div class="card bg-light border-primary mt-4"><div class="card-body"><h5 class="card-title">Acción Requerida: Contrapropuesta del Cliente</h5><p>El cliente ha propuesto nuevas condiciones. Revise los cambios y decida si aceptar la contrapropuesta.</p><div class="mb-3"><label for="comentario-admin" class="form-label"><strong>Añadir un comentario (Opcional):</strong></label><textarea class="form-control" id="comentario-admin" rows="2"></textarea></div>                <div class="mb-3">
-                    <label for="historial-adjunto-admin" class="form-label"><small>Adjuntar imagen (opcional):</small></label>
+            accionAdminHtml = `<div class="card bg-light border-primary mt-4"><div class="card-body"><h5 class="card-title">Acción Requerida: Contrapropuesta del Cliente</h5><p>El cliente ha propuesto nuevas condiciones. Revise los cambios y decida si aceptar la contrapropuesta.</p><div class="mb-3"><label for="comentario-admin" class="form-label"><strong>Añadir un comentario (Opcional):</strong> <small class="text-muted">(Puedes presionar Ctrl + V para pegar una captura)</small></label><textarea class="form-control" id="comentario-admin" rows="2" placeholder="Escribe tu comentario o pega una imagen aquí..."></textarea></div>                <div class="mb-3">
+                    <label for="historial-adjunto-admin" class="form-label"><small>Adjuntar imagen (opcional):</small> <span id="badge-imagen-pegada" class="badge bg-success d-none ms-2"><i class="fa-solid fa-check"></i> Imagen capturada del portapapeles</span></label>
                     <input class="form-control form-control-sm" type="file" id="historial-adjunto-admin" accept="image/png, image/jpeg, image/gif">
                 </div><button class="btn btn-success" id="btn-aceptar-contrapropuesta" data-id="${propuesta.id}"><i class="fa-solid fa-check-double me-2"></i> Aceptar Contrapropuesta</button></div></div>`;
         }
@@ -1482,6 +1535,38 @@ $(document).ready(function () {
                 }
             }
         });
+    });
+
+    // *** NUEVO EVENTO ***: Pegar imagen en el comentario admin con Ctrl + V
+    $('#detallePropuestaModal').off('paste', '#comentario-admin').on('paste', '#comentario-admin', function (e) {
+        const items = (e.originalEvent || e).clipboardData.items;
+        let imageF = null;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") === 0) {
+                imageF = items[i].getAsFile();
+                break;
+            }
+        }
+        
+        if (imageF) {
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(imageF);
+            // Inyectar secretamente el archivo pegado dentro de nuestro input de carga original
+            document.getElementById('historial-adjunto-admin').files = dataTransfer.files;
+            
+            // Mostrar un indicador visual de que funcionó
+            $('#badge-imagen-pegada').removeClass('d-none');
+            
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: '¡Imagen adjuntada!',
+                text: 'La captura de tu portapapeles se enviará oculta y segura junto con tu respuesta.',
+                showConfirmButton: false,
+                timer: 3500
+            });
+        }
     });
 
     // *** NUEVO EVENTO ***: Lógica de recálculo para el modal de GESTIÓN
@@ -1511,8 +1596,11 @@ $(document).ready(function () {
         }
         // ===================================================================================
 
-        const esNC = tipoComp.startsWith('NC');
-        let importeNeto = importeBruto * (1 - (descuento / 100));
+        const esNC = tipoComp.startsWith('NC') || tipoComp === 'REC';
+        const brutoBasePositivo = Math.abs(importeBruto);
+        let importeNeto = brutoBasePositivo * (1 - (descuento / 100));
+        
+        // Asignamos el signo que corresponde a la nota de crédito o recibo
         if (esNC) importeNeto = -importeNeto;
 
         const cellNeto = tr.find('.importe-neto-cell-admin');
@@ -1540,8 +1628,10 @@ $(document).ready(function () {
             const tr = $(this);
             const bruto = parseFloat(tr.data('importe-bruto'));
             const descuento = parseFloat(tr.find('.descuento-input-admin').val()) || 0;
-            const esNC = (tr.data('tcomp') || '').startsWith('NC');
-            let neto = bruto * (1 - (descuento / 100));
+            const esNC = (tr.data('tcomp') || '').startsWith('NC') || (tr.data('tcomp') || '') === 'REC';
+            
+            const brutoBasePositivo = Math.abs(bruto);
+            let neto = brutoBasePositivo * (1 - (descuento / 100));
             if (esNC) neto = -neto;
 
             comprobantesFinales.push({
@@ -1575,22 +1665,42 @@ $(document).ready(function () {
                 formData.append('total_propuesto', totalNetoFinal);
                 formData.append('comprobantes', JSON.stringify(comprobantesFinales));
 
-                // Recolectar cuotas actualizadas
+                // Recolectar cuotas actualizadas con recálculo matemático seguro en el mismo acto (garantía de precisión sin parseos raros del DOM)
                 const cuotasActualizadas = [];
-                $('.cuota-monto-admin').each(function (idx) {
-                    const montoTxt = $(this).text();
-                    const monto = parseFloat(montoTxt.replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
-                    const fecha = $(this).closest('.card-body').find('.cuota-fecha-admin').text();
-                    // Necesitamos la fecha en formato YYYY-MM-DD para el SQL
-                    const [d, m, y] = fecha.split('/');
-                    const fechaISO = `${y}-${m}-${d}`;
+                const $cuotasDom = $('#detallePropuestaModal .cuota-monto-admin');
+                const numCuotasToSave = $cuotasDom.length;
 
-                    cuotasActualizadas.push({
-                        num_cuota: idx + 1,
-                        monto: monto,
-                        fecha_vencimiento: fechaISO
+                if (numCuotasToSave > 0) {
+                    const montoPorCuota = Math.floor((totalNetoFinal / numCuotasToSave) * 100) / 100;
+                    let totalAsignado = 0;
+
+                    $cuotasDom.each(function (idx) {
+                        let montoFinal;
+                        if (idx === numCuotasToSave - 1) {
+                            // La última cuota absorbe la diferencia de centavos
+                            montoFinal = totalNetoFinal - totalAsignado;
+                        } else {
+                            montoFinal = montoPorCuota;
+                            totalAsignado += montoFinal;
+                        }
+
+                        const fechaTxt = $(this).closest('.card-body').find('.cuota-fecha-admin').text().trim();
+                        // Necesitamos la fecha en formato YYYY-MM-DD para el SQL
+                        const partes = fechaTxt.split('/');
+                        let fechaISO = '';
+                        if (partes.length === 3) {
+                            fechaISO = `${partes[2]}-${partes[1]}-${partes[0]}`;
+                        } else {
+                            fechaISO = fechaTxt;
+                        }
+
+                        cuotasActualizadas.push({
+                            num_cuota: idx + 1,
+                            monto: Math.round(montoFinal * 100) / 100,
+                            fecha_vencimiento: fechaISO
+                        });
                     });
-                });
+                }
                 formData.append('cuotas', JSON.stringify(cuotasActualizadas));
 
                 const adjuntoFile = $('#historial-adjunto-admin')[0].files[0];
@@ -1724,11 +1834,16 @@ $(document).ready(function () {
             // En admin asumimos que REC es negativo
             const esNegativo = tComp.startsWith('NC') || tComp === 'REC';
             const netoTexto = tr.find('.importe-neto-cell-admin').text();
+            
             // Limpieza robusta de espacios para evitar NaN con signo negativo: "- $ 10" -> "-10"
-            const neto = parseFloat(netoTexto.replace(/\$/g, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+            // También lidiamos con posible texto como " -$ 10" usando regular expressions más fuertes
+            const netoMonto = netoTexto.replace(/\$/g, '').replace(/[^\d,\.-]/g, '').replace(/\./g, '').replace(',', '.');
+            const neto = parseFloat(netoMonto) || 0;
 
-            totalBruto += esNegativo ? -bruto : bruto;
-            totalNeto += neto; // El neto ya tiene el signo correcto
+            const brutoAsignable = esNegativo ? -Math.abs(bruto) : Math.abs(bruto);
+            
+            totalBruto += brutoAsignable;
+            totalNeto += neto; // El neto ya tiene el signo correcto gracias a la UI
         });
 
         const f = (num) => num.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
@@ -2660,6 +2775,104 @@ $(document).ready(function () {
             }
         </style>
     `;
+
+    function cargarReportes() {
+        console.log("Iniciando carga de reportes plazos...");
+        
+        // Bloquear tablas con mensaje de carga (Vaciando previos si existen)
+        if ($.fn.DataTable.isDataTable('#tabla-reporte-franquicias')) {
+            $('#tabla-reporte-franquicias').DataTable().destroy();
+        }
+        if ($.fn.DataTable.isDataTable('#tabla-reporte-razon-social')) {
+            $('#tabla-reporte-razon-social').DataTable().destroy();
+        }
+
+        const loadingHtml = '<tr><td colspan="4" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando datos estratégicos...</p></td></tr>';
+        $('#tabla-reporte-franquicias, #tabla-reporte-razon-social').html('<tbody>' + loadingHtml + '</tbody>');
+
+        $.ajax({
+            url: 'api/propuestas_controller.php?action=obtener_reporte_plazos',
+            type: 'GET',
+            dataType: 'json',
+            success: function (response) {
+                console.log("Respuesta recibida:", response);
+                
+                // Limpiar HTML de carga para que DataTables tome el control limpio
+                $('#tabla-reporte-franquicias, #tabla-reporte-razon-social').empty();
+
+                if (response.success) {
+                    // Inicializar Tabla por Franquicia 
+                    $('#tabla-reporte-franquicias').DataTable({
+                        data: response.reporte_franquicias,
+                        columns: [
+                            { data: 'codigo', title: 'Código' },
+                            { data: 'razon_social', title: 'Razón Social' },
+                            { 
+                                data: 'avg_propuesto', 
+                                title: 'Promedio Plazo Propuesto Final (Días)', 
+                                className: 'text-center fw-bold',
+                                render: (data) => `<span class="badge bg-light text-dark border">${data} días</span>`
+                            },
+                            { 
+                                data: 'avg_real', 
+                                title: 'Promedio Plazo Pago Final (Días)', 
+                                className: 'text-center fw-bold',
+                                render: (data) => `<span class="badge bg-soft-success text-success border-success">${data} días</span>`
+                            }
+                        ],
+                        order: [[3, 'desc']],
+                        language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                        dom: 'Bfrtip',
+                        buttons: [
+                            { extend: 'excel', text: '<i class="fa-solid fa-file-excel me-1"></i> Excel', className: 'btn btn-success btn-sm' },
+                            { extend: 'pdf', text: '<i class="fa-solid fa-file-pdf me-1"></i> PDF', className: 'btn btn-danger btn-sm' },
+                            { extend: 'print', text: '<i class="fa-solid fa-print me-1"></i> Imprimir', className: 'btn btn-info btn-sm' }
+                        ]
+                    });
+
+                    // Inicializar Tabla por Razón Social
+                    $('#tabla-reporte-razon-social').DataTable({
+                        data: response.reporte_razon_social,
+                        columns: [
+                            { data: 'razon_social', title: 'Razón Social' },
+                            { 
+                                data: 'avg_propuesto', 
+                                title: 'Promedio Plazo Propuesto Final (Días)', 
+                                className: 'text-center fw-bold',
+                                render: (data) => `<span class="badge bg-light text-dark border">${data} días</span>`
+                            },
+                            { 
+                                data: 'avg_real', 
+                                title: 'Promedio Plazo Pago Final (Días)', 
+                                className: 'text-center fw-bold',
+                                render: (data) => `<span class="badge bg-soft-success text-success border-success">${data} días</span>`
+                            }
+                        ],
+                        order: [[2, 'desc']],
+                        language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                        dom: 'Bfrtip',
+                        buttons: [
+                            { extend: 'excel', text: '<i class="fa-solid fa-file-excel me-1"></i> Excel', className: 'btn btn-success btn-sm' },
+                            { extend: 'pdf', text: '<i class="fa-solid fa-file-pdf me-1"></i> PDF', className: 'btn btn-danger btn-sm' }
+                        ]
+                    });
+                } else {
+                    Swal.fire('Atención', 'El servidor no pudo procesar el reporte: ' + (response.message || 'Error desconocido'), 'warning');
+                    $('#tabla-reporte-franquicias, #tabla-reporte-razon-social').html('<tr><td colspan="4" class="text-center text-danger py-5">No se pudieron cargar los datos del reporte.</td></tr>');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("Error AJAX reporte:", error);
+                $('#tabla-reporte-franquicias, #tabla-reporte-razon-social').html('<tr><td colspan="4" class="text-center text-danger py-5">Error de conexión con el servidor.</td></tr>');
+                Swal.fire('Error de Conexión', 'No se pudo conectar con el servidor para obtener el reporte.', 'error');
+            }
+        });
+    }
+
+    // Listener para cuando se activa la pestaña de reportes
+    $(document).on('shown.bs.tab', '#reportes-tab', function () {
+        cargarReportes();
+    });
 
     // Evento para eliminar adjuntos (Administración)
     $('#detalle-propuesta-content').on('click', '.btn-eliminar-adjunto', function () {

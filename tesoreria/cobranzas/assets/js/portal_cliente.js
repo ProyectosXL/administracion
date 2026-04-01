@@ -433,7 +433,7 @@ $(document).ready(function () {
             adjuntosHtml += `</div>`;
         }
 
-        let itemsHtml = `<h5 class="mt-4">Facturas Incluidas</h5><table class="table table-sm table-bordered" id="tabla-detalle-propuesta-cliente"><thead class="table-light"><tr><th class="text-center">Tipo</th><th>Comprobante</th><th class="text-end">Importe Bruto</th><th class="text-center">% Descuento</th><th class="text-end">Importe Neto</th></tr></thead><tbody>`;
+        let itemsHtml = `<h5 class="mt-4">Facturas Incluidas</h5><table class="table table-sm table-bordered" id="tabla-detalle-propuesta-cliente"><thead class="table-light"><tr><th class="text-center">Fecha</th><th class="text-center">Tipo</th><th>Comprobante</th><th class="text-end">Importe Bruto</th><th class="text-center">% Descuento</th><th class="text-end">Importe Neto</th></tr></thead><tbody>`;
 
         let totalBrutoTabla = 0;
         let totalNetoTabla = 0;
@@ -447,13 +447,16 @@ $(document).ready(function () {
             // Para visualización de propuestas ya creadas, NC siempre es negativo
             const esNegativo = tComp.startsWith('NC');
 
-            totalBrutoTabla += esNegativo ? -bruto : bruto;
-            totalNetoTabla += esNegativo ? -neto : neto;
+            const brutoReal = esNegativo ? -Math.abs(bruto) : Math.abs(bruto);
+            const netoReal = esNegativo ? -Math.abs(neto) : Math.abs(neto);
 
-            itemsHtml += `<tr data-importe-bruto="${bruto}" data-tcomp="${tComp}" data-ncomp="${nComp}" data-descuento-original="${descuento}"><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNegativo ? 'text-danger' : ''}">${(esNegativo ? -bruto : bruto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center descuento-cell">${descuento.toFixed(2)} %</td><td class="text-end fw-bold importe-neto-cell ${esNegativo ? 'text-danger' : ''}">${(esNegativo ? -neto : neto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr>`;
+            totalBrutoTabla += brutoReal;
+            totalNetoTabla += netoReal;
+
+            itemsHtml += `<tr data-importe-bruto="${brutoReal}" data-tcomp="${tComp}" data-ncomp="${nComp}" data-descuento-original="${descuento}"><td class="text-center">${item.fecha_emision || 'N/A'}</td><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNegativo ? 'text-danger' : ''}">${brutoReal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center descuento-cell">${descuento.toFixed(2)} %</td><td class="text-end fw-bold importe-neto-cell ${esNegativo ? 'text-danger' : ''}">${netoReal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr>`;
         });
 
-        itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="2" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr></tfoot></table>`;
+        itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="3" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td></tr></tfoot></table>`;
 
 
         let cuotasHtml = '';

@@ -373,8 +373,9 @@ class CostoOcupacionService
         $ventas = [];
 
         foreach ($meses as $mes) {
-            $fecha = DateTime::createFromFormat('Y-m', $mes);
-            $periodo = $fecha->format('Y-m');
+            // Usar el mes directamente para evitar overflow: createFromFormat('Y-m') hereda el día actual
+            // y en días ≥29 puede desbordar meses cortos (ej: feb+31días → marzo)
+            $periodo = $mes;
 
             $sql = "
                 SELECT 
@@ -663,7 +664,8 @@ class CostoOcupacionService
         $datosAnteriores = [];
 
         foreach ($ultimos6Meses as $mes) {
-            $fecha = DateTime::createFromFormat('Y-m', $mes);
+            // Forzar día 01 para evitar overflow en meses cortos cuando el día actual es 29-31
+            $fecha = new DateTime($mes . '-01');
 
             // Mes actual
             $desde = $fecha->format('Y-m-01');
