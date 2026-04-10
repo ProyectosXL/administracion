@@ -704,52 +704,168 @@ class Sucursal
     public function traerGastosCajaSucursales ($desde, $hasta, $sucursal, $facturado = null)
     {
         try {
-            $prefix = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? "[LAKERBIS].SUCURSALES_URUGUAY.dbo." : "[LAKERBIS].locales_lakers.dbo.";
-
-            // SQL actualizada con lógica de compatibilidad para fotos
-            $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO,b.CONTABILIZADA,b.AUTORIZADO,b.FECHA_AUTORIZADO,
-            (CASE WHEN c.FECHA_GUARDADO IS NOT NULL THEN 1 ELSE 0 END) guardado
-            FROM ".$prefix."RO_V_GASTOS_CAJA_SUCURSALES a 
-            LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES b on REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '') collate Latin1_General_BIN 
-            AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA 
-            AND A.COD_CTA = B.COD_CUENTA 
-            LEFT JOIN SJ_EGRESOS_DE_CAJA_GUARDADO c on LTRIM(RTRIM(a.N_COMP)) = LTRIM(RTRIM(c.N_COMP)) collate Latin1_General_BIN 
-            AND A.NRO_SUCURS = C.NRO_SUCURSAL 
-            AND A.COD_CTA = C.COD_CTA 
-            AND (
-                -- Nueva modalidad con COD_COMP
-                (A.COD_COMP = C.COD_COMP COLLATE Latin1_General_BIN AND C.COD_COMP IS NOT NULL AND C.COD_COMP != '') 
-                OR 
-                -- Modalidad vieja sin COD_COMP, solo si es del mismo año
-                (
-                    (C.COD_COMP IS NULL OR C.COD_COMP = '') 
-                    AND YEAR(A.FECHA) = YEAR(C.FECHA_GUARDADO)
+            // UY: mantiene lógica via vista en LAKERBIS
+            if (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') {
+                $sql = "SELECT a.*,b.FACTURA, b.CONTROL , b.RECIBIDO, b.FECHA_RECIBIDO,b.CONTABILIZADA,b.AUTORIZADO,b.FECHA_AUTORIZADO,
+                (CASE WHEN c.FECHA_GUARDADO IS NOT NULL THEN 1 ELSE 0 END) guardado
+                FROM [LAKERBIS].SUCURSALES_URUGUAY.dbo.RO_V_GASTOS_CAJA_SUCURSALES a 
+                LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES b on REPLACE(a.N_COMP, ' ', '') = REPLACE (b.N_COMP, ' ', '') collate Latin1_General_BIN 
+                AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA 
+                LEFT JOIN SJ_EGRESOS_DE_CAJA_GUARDADO c on LTRIM(RTRIM(a.N_COMP)) = LTRIM(RTRIM(c.N_COMP)) collate Latin1_General_BIN 
+                AND A.NRO_SUCURS = C.NRO_SUCURSAL AND A.COD_CTA = C.COD_CTA 
+                AND (
+                    (A.COD_COMP = C.COD_COMP COLLATE Latin1_General_BIN AND C.COD_COMP IS NOT NULL AND C.COD_COMP != '') 
+                    OR ((C.COD_COMP IS NULL OR C.COD_COMP = '') AND YEAR(A.FECHA) = YEAR(C.FECHA_GUARDADO))
                 )
-            )
-            AND c.NRO_SUCURSAL = '$sucursal'
-            WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = $sucursal";
-            
-            if($facturado == true){
-                $sql = $sql." AND b.FACTURA = 1";
+                AND c.NRO_SUCURSAL = '$sucursal'
+                WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = '$sucursal'";
+
+                if ($facturado == true) $sql .= " AND b.FACTURA = 1";
+                $sql .= " ORDER BY FECHA ASC;";
+
+                $stmt = sqlsrv_query($this->cid_uy, $sql);
+                if ($stmt === false) {
+                    error_log("SQL Error en traerGastosCajaSucursales UY: " . print_r(sqlsrv_errors(), true));
+                    return [];
+                }
+                $v = [];
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) $v[] = $row;
+                return $v;
             }
 
-            $sql = $sql." ORDER BY FECHA ASC;";
+            // ARG: leer directamente de la base local via OPENQUERY (evita depender de replicación)
+            $nroSucursalInt = (int)$sucursal;
+            $sucursalEsc    = str_replace("'", "''", $sucursal);
 
-            $conexion = $this->conexion;
+            // Usar cid_central con prefijo LAKERBIS igual que traerLocales()
+            $sqlSucursal = "SELECT TOP 1 BASE_NOMBRE, CONEXION_DNS
+                            FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS
+                            WHERE NRO_SUCURSAL = $nroSucursalInt
+                              AND CANAL IN ('PROPIOS', 'EXTERIOR') AND HABILITADO = 1";
 
-            if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy'){
-                $conexion = $this->cid_uy;
+            $stmtSuc = sqlsrv_query($this->cid_central, $sqlSucursal);
+            if (!$stmtSuc) {
+                error_log("traerGastosCajaSucursales: error query sucursal NRO=$nroSucursalInt - " . print_r(sqlsrv_errors(), true));
+                return [];
+            }
+            $rowSuc = sqlsrv_fetch_array($stmtSuc, SQLSRV_FETCH_ASSOC);
+            if (!$rowSuc) {
+                error_log("traerGastosCajaSucursales: no se encontró sucursal NRO=$nroSucursalInt");
+                return [];
             }
 
-            $stmt = sqlsrv_query($conexion , $sql);
+            // OPENQUERY necesita correr sobre 'locales' (donde están los linked servers de sucursales)
+            $cid_openquery = $this->cid->conectar('locales');
 
-            $v = [];
-            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
-                $v[] = $row;
+            $baseNombre = '[' . str_replace(']', ']]', $rowSuc['BASE_NOMBRE']) . ']';
+            $dnsQuoted  = '[' . str_replace(']', ']]', $rowSuc['CONEXION_DNS'])  . ']';
+
+            // --- Fuente 1: OPENQUERY local (datos frescos, no depende de replicación) ---
+            $sqlOQ = "
+                SELECT a.*, b.FACTURA, b.CONTROL, b.RECIBIDO, b.FECHA_RECIBIDO,
+                       b.CONTABILIZADA, b.AUTORIZADO, b.FECHA_AUTORIZADO,
+                       (CASE WHEN c.FECHA_GUARDADO IS NOT NULL THEN 1 ELSE 0 END) guardado
+                FROM (
+                    SELECT '$sucursalEsc' AS NRO_SUCURS, FECHA, COD_COMP, N_COMP, COD_CTA,
+                           DESC_CUENTA, MONTO, USUARIO, LEYENDA
+                    FROM OPENQUERY($dnsQuoted, '
+                        SELECT
+                            CAST(A.FECHA AS DATE) FECHA,
+                            A.COD_COMP,
+                            A.N_COMP,
+                            A.COD_CTA,
+                            C.DESCRIPCIO AS DESC_CUENTA,
+                            CAST(A.MONTO AS FLOAT) AS MONTO,
+                            UPPER(B.USUARIO) AS USUARIO,
+                            ISNULL(NULLIF(A.LEYENDA, ''''),
+                                (SELECT TOP 1 LEYENDA FROM $baseNombre.dbo.SBA05 x2
+                                 WHERE x2.N_COMP = A.N_COMP AND x2.COD_COMP = A.COD_COMP
+                                   AND x2.LEYENDA <> '''' AND x2.LEYENDA IS NOT NULL)
+                            ) AS LEYENDA
+                        FROM $baseNombre.dbo.SBA05 A
+                        INNER JOIN $baseNombre.dbo.SBA04 B
+                            ON A.N_COMP = B.N_COMP AND A.COD_COMP = B.COD_COMP
+                        INNER JOIN $baseNombre.dbo.SBA01 C
+                            ON A.COD_CTA = C.COD_CTA
+                        WHERE A.FECHA BETWEEN ''$desde'' AND ''$hasta''
+                          AND A.D_H = ''D''
+                          AND A.COD_CTA LIKE ''5%''
+                          AND A.COD_CTA NOT IN (''522400'')
+                    ')
+                ) a
+                LEFT JOIN [XL-TANGO].LAKER_SA.dbo.RO_T_GASTOS_CAJA_SUCURSALES b
+                    ON REPLACE(a.N_COMP, ' ', '') = REPLACE(b.N_COMP, ' ', '') COLLATE Latin1_General_BIN
+                    AND a.NRO_SUCURS = b.NRO_SUCURSAL
+                    AND a.COD_COMP  = b.TIPO_COMP COLLATE Latin1_General_BIN
+                    AND a.COD_CTA   = b.COD_CUENTA
+                LEFT JOIN [XL-TANGO].LAKER_SA.dbo.SJ_EGRESOS_DE_CAJA_GUARDADO c
+                    ON LTRIM(RTRIM(a.N_COMP)) = LTRIM(RTRIM(c.N_COMP)) COLLATE Latin1_General_BIN
+                    AND a.NRO_SUCURS = c.NRO_SUCURSAL
+                    AND a.COD_CTA   = c.COD_CTA
+                    AND (
+                        (a.COD_COMP = c.COD_COMP COLLATE Latin1_General_BIN AND c.COD_COMP IS NOT NULL AND c.COD_COMP != '')
+                        OR ((c.COD_COMP IS NULL OR c.COD_COMP = '') AND YEAR(a.FECHA) = YEAR(c.FECHA_GUARDADO))
+                    )
+                    AND c.NRO_SUCURSAL = '$sucursalEsc'
+            ";
+
+            $resultado = [];
+            $keysOQ    = [];
+
+            $stmtOQ = sqlsrv_query($cid_openquery, $sqlOQ);
+            if ($stmtOQ !== false) {
+                while ($row = sqlsrv_fetch_array($stmtOQ, SQLSRV_FETCH_ASSOC)) {
+                    $key = trim($row['N_COMP']) . '|' . $row['COD_COMP'] . '|' . $row['COD_CTA'];
+                    $resultado[$key] = $row;
+                    $keysOQ[$key]    = true;
+                }
+            } else {
+                error_log("SQL Error OPENQUERY en traerGastosCajaSucursales (sucursal=$sucursal): " . print_r(sqlsrv_errors(), true));
             }
+
+            // --- Fuente 2: LAKERBIS (datos históricos ya replicados) ---
+            $sqlLK = "SELECT a.*,b.FACTURA, b.CONTROL, b.RECIBIDO, b.FECHA_RECIBIDO,
+                b.CONTABILIZADA, b.AUTORIZADO, b.FECHA_AUTORIZADO,
+                (CASE WHEN c.FECHA_GUARDADO IS NOT NULL THEN 1 ELSE 0 END) guardado
+                FROM [LAKERBIS].locales_lakers.dbo.RO_V_GASTOS_CAJA_SUCURSALES a
+                LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES b
+                    ON REPLACE(a.N_COMP, ' ', '') = REPLACE(b.N_COMP, ' ', '') COLLATE Latin1_General_BIN
+                    AND a.NRO_SUCURS = b.NRO_SUCURSAL AND a.COD_COMP = b.TIPO_COMP COLLATE Latin1_General_BIN AND a.COD_CTA = b.COD_CUENTA
+                LEFT JOIN SJ_EGRESOS_DE_CAJA_GUARDADO c
+                    ON LTRIM(RTRIM(a.N_COMP)) = LTRIM(RTRIM(c.N_COMP)) COLLATE Latin1_General_BIN
+                    AND a.NRO_SUCURS = c.NRO_SUCURSAL AND a.COD_CTA = c.COD_CTA
+                    AND (
+                        (a.COD_COMP = c.COD_COMP COLLATE Latin1_General_BIN AND c.COD_COMP IS NOT NULL AND c.COD_COMP != '')
+                        OR ((c.COD_COMP IS NULL OR c.COD_COMP = '') AND YEAR(a.FECHA) = YEAR(c.FECHA_GUARDADO))
+                    )
+                    AND c.NRO_SUCURSAL = '$sucursal'
+                WHERE a.FECHA BETWEEN '$desde' AND '$hasta' AND a.NRO_SUCURS = '$sucursal'";
+
+            if ($facturado == true) $sqlLK .= " AND b.FACTURA = 1";
+
+            $stmtLK = sqlsrv_query($this->conexion, $sqlLK);
+            if ($stmtLK !== false) {
+                while ($row = sqlsrv_fetch_array($stmtLK, SQLSRV_FETCH_ASSOC)) {
+                    $key = trim($row['N_COMP']) . '|' . $row['COD_COMP'] . '|' . $row['COD_CTA'];
+                    // Solo agregar si NO está ya en OPENQUERY (para no pisar datos frescos)
+                    if (!isset($keysOQ[$key])) {
+                        $resultado[$key] = $row;
+                    }
+                }
+            } else {
+                error_log("SQL Error LAKERBIS en traerGastosCajaSucursales (sucursal=$sucursal): " . print_r(sqlsrv_errors(), true));
+            }
+
+            // Ordenar por fecha ascendente
+            $v = array_values($resultado);
+            usort($v, function($a, $b) {
+                $fa = ($a['FECHA'] instanceof \DateTime) ? $a['FECHA']->getTimestamp() : strtotime($a['FECHA']);
+                $fb = ($b['FECHA'] instanceof \DateTime) ? $b['FECHA']->getTimestamp() : strtotime($b['FECHA']);
+                return $fa - $fb;
+            });
 
             return $v;
-          
+
         } catch (Exception $e) {
             echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
