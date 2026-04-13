@@ -503,8 +503,8 @@ async function crearSolicitud() {
         if (result.success) {
             let mensaje = '';
             
-            // Verificar si es creación múltiple
-            if (result.solicitudes_creadas && result.solicitudes_creadas > 1) {
+            // Verificar si es creación múltiple (incluye el caso de 1 sola solicitud).
+            if (result.solicitudes_creadas) {
                 mensaje = `✅ ${result.solicitudes_creadas} solicitudes creadas correctamente\n\n`;
                 mensaje += `📋 Grupo: ${result.id_base}\n\n`;
                 
