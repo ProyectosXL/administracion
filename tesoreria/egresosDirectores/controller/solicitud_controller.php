@@ -243,15 +243,15 @@ try {
                 try {
                     $emailNotificacion = new EmailNotificacion();
                     
-                    // Verificar si es solicitud múltiple
-                    if (isset($resultado['solicitudes_creadas']) && $resultado['solicitudes_creadas'] > 1) {
-                        // Es solicitud múltiple - enviar UN SOLO email con el detalle completo
+                    // Verificar si el resultado proviene del flujo múltiple.
+                    // Puede contener una sola solicitud si se cargó un único director con tipo_asignacion = MULTIPLE.
+                    if (isset($resultado['solicitudes_creadas'])) {
                         error_log("DEBUG - Enviando email de solicitud múltiple con " . $resultado['solicitudes_creadas'] . " solicitudes");
                         
                         $emailEnviado = $emailNotificacion->notificarNuevaSolicitudMultiple([
-                            'id_base' => $resultado['id_base'],
-                            'solicitudes_creadas' => $resultado['solicitudes_creadas'],
-                            'detalles' => $resultado['detalles'],
+                            'id_base' => $resultado['id_base'] ?? '',
+                            'solicitudes_creadas' => $resultado['solicitudes_creadas'] ?? 0,
+                            'detalles' => $resultado['detalles'] ?? [],
                             'observaciones' => $_POST['observaciones'] ?? ''
                         ]);
                         
@@ -275,7 +275,7 @@ try {
                             error_log("DEBUG - No se pudo enviar la notificación por email");
                         }
                     }
-                } catch (Exception $emailException) {
+                } catch (Throwable $emailException) {
                     // Capturar cualquier error de email pero no interrumpir el flujo
                     error_log("ERROR al enviar email: " . $emailException->getMessage());
                     error_log("TRACE: " . $emailException->getTraceAsString());
@@ -378,7 +378,7 @@ try {
                     } else {
                         error_log("DEBUG - No se pudo enviar la notificación de O.C. cargada");
                     }
-                } catch (Exception $emailException) {
+                } catch (Throwable $emailException) {
                     // Capturar cualquier error de email pero no interrumpir el flujo
                     error_log("ERROR al enviar email O.C.: " . $emailException->getMessage());
                     error_log("TRACE: " . $emailException->getTraceAsString());
@@ -398,7 +398,7 @@ try {
                     } else {
                         error_log("DEBUG - No se pudo enviar la notificación de pago realizado");
                     }
-                } catch (Exception $emailException) {
+                } catch (Throwable $emailException) {
                     // Capturar cualquier error de email pero no interrumpir el flujo
                     error_log("ERROR al enviar email de pago: " . $emailException->getMessage());
                     error_log("TRACE: " . $emailException->getTraceAsString());

@@ -3,7 +3,7 @@
 session_start();
 
 // Convertir el nombre del usuario a formato capitalizado (primera letra en mayúscula)
-$usuario = ucwords(strtolower($_SESSION['descLocal']));
+$usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLocal'])) : 'Usuario';
 $id_usuario = $_SESSION['idUsuario'] ?? null;
 
 $titulo_pagina = $usuario;

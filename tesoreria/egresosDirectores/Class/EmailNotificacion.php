@@ -26,7 +26,7 @@ class EmailNotificacion {
     private const EMAIL_FROM_NAME = 'Sistema Egresos Directores';
     
     // Modo desarrollo: enviar todos los emails a ramiro.orozco@xl.com.ar
-    private const DEVELOP = FALSE;
+    private const DEVELOP = false;
     private const EMAIL_DEVELOP = 'ramiro.orozco@xl.com.ar';
     
     private $db;
@@ -48,14 +48,22 @@ class EmailNotificacion {
      */
     public function notificarNuevaSolicitud(array $solicitud) {
         try {
-            $motivo = $solicitud['motivo'];
-            $idSolicitud = $solicitud['id_solicitud'];
+            $motivo = $solicitud['motivo'] ?? '';
+            $idSolicitud = $solicitud['id_solicitud'] ?? null;
+
+            if (!is_string($idSolicitud) || trim($idSolicitud) === '') {
+                throw new Exception("ID de solicitud inválido para notificación individual");
+            }
             
             // Obtener datos completos de la solicitud
             $datosCompletos = $this->obtenerDatosSolicitud($idSolicitud);
             
             if (!$datosCompletos) {
                 throw new Exception("No se pudo obtener datos de la solicitud");
+            }
+
+            if ($motivo === '') {
+                $motivo = $datosCompletos['motivo'] ?? '';
             }
             
             if ($motivo === 'COMPRA_PERSONAL') {
@@ -76,7 +84,7 @@ class EmailNotificacion {
                 // RETIRO_DINERO - Solo enviar a Tesorería
                 return $this->enviarEmailNuevoRetiroDinero($datosCompletos, self::EMAIL_TESORERIA);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error al enviar notificación de nueva solicitud: " . $e->getMessage());
             return false;
         }
@@ -91,7 +99,7 @@ class EmailNotificacion {
         try {
             // Enviar solo a Tesorería
             return $this->enviarEmailNuevoRetiroMultiple($datosMultiple, self::EMAIL_TESORERIA);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error al enviar notificación de solicitud múltiple: " . $e->getMessage());
             return false;
         }
@@ -111,7 +119,7 @@ class EmailNotificacion {
             }
             
             return $this->enviarEmailOrdenCompraCargada($datosCompletos, self::EMAIL_TESORERIA);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error al enviar notificación de O.C. cargada: " . $e->getMessage());
             return false;
         }
@@ -140,7 +148,7 @@ class EmailNotificacion {
                 // RETIRO_DINERO
                 return $this->enviarEmailRetiroPagado($datosCompletos, $destinatario);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error al enviar notificación de pago realizado: " . $e->getMessage());
             return false;
         }
@@ -171,8 +179,13 @@ class EmailNotificacion {
      * @param string $idSolicitud
      * @return array|null
      */
-    private function obtenerDatosSolicitud(string $idSolicitud) {
+    private function obtenerDatosSolicitud(?string $idSolicitud) {
         try {
+            if (!is_string($idSolicitud) || trim($idSolicitud) === '') {
+                error_log("obtenerDatosSolicitud: idSolicitud inválido");
+                return null;
+            }
+
             $sql = "SELECT 
                         s.id_solicitud,
                         s.id_director,
