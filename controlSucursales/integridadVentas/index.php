@@ -13,7 +13,7 @@ $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Integridad de Ventas</title>
+    <title>Integridad y Auditoría de Sucursales</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -45,23 +45,21 @@ $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
                             </a>
                             <h3>
                                 <i class="bi bi-shield-check"></i>
-                                Integridad de Ventas por Sucursal
+                                Integridad y Auditoría de Sucursales
                             </h3>
                         </div>
                         <div class="integridadVentas_country-selector">
-                            <div class="integridadVentas_country-info">
-                                <span class="integridadVentas_country-label">País actual:</span>
-                                <div class="integridadVentas_country-display">
-                                    <img src="<?= $banderaActual ?>" 
-                                         alt="<?= $paisActual ?>" 
-                                         class="integridadVentas_flag">
-                                    <span class="integridadVentas_country-name"><?= $paisActual ?></span>
+                            <span class="integridadVentas_country-label">Cambiar entorno:</span>
+                            <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)">
+                                <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
+                                    <img src="../../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
+                                    <span>ARG</span>
+                                </div>
+                                <div class="toggle-flag <?= ($checkedValue === 'suc_uy') ? 'active' : '' ?>" data-entorno="suc_uy">
+                                    <img src="../../assets/images/UY.png" alt="Uruguay">
+                                    <span>UY</span>
                                 </div>
                             </div>
-                            <select class="integridadVentas_country-select" onchange="cambiarEntorno(this)" id="selectPais">
-                                <option value="ARG" <?= ($checkedValue === 'central') ? 'selected' : '' ?>>🇦🇷 Argentina</option>
-                                <option value="URY" <?= ($checkedValue === 'suc_uy') ? 'selected' : '' ?>>🇺🇾 Uruguay</option>
-                            </select>
                         </div>
                     </div>
                 </div>
@@ -83,6 +81,11 @@ $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
                             <i class="bi bi-card-checklist me-2"></i>Venta vs Cobranza
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-arqueoCaja" data-bs-toggle="tab" data-bs-target="#arqueoCaja" type="button" role="tab" aria-controls="arqueoCaja" aria-selected="false">
+                            <i class="bi bi-cash-coin me-2"></i>Arqueo vs Caja
+                        </button>
+                    </li>
                 </ul>
                 
                 <!-- Contenido de las tabs -->
@@ -102,7 +105,12 @@ $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
                     <div class="tab-pane fade" id="ventaVsCobranza" role="tabpanel" aria-labelledby="tab-ventaVsCobranza">
                         <?php include 'components/tabVentaVsCobranza.php'; ?>
                     </div>
-                    
+
+                    <!-- Tab 4: Arqueo vs Caja -->
+                    <div class="tab-pane fade" id="arqueoCaja" role="tabpanel" aria-labelledby="tab-arqueoCaja">
+                        <?php include 'components/tabArqueoCaja.php'; ?>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -140,6 +148,7 @@ $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
     <script src="js/controlVentas.js"></script>
     <script src="js/diferenciaIVA.js"></script>
     <script src="js/ventaVsCobranza.js"></script>
-    
+    <script src="js/arqueoCaja.js"></script>
+
 </body>
 </html>

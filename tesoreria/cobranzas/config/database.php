@@ -62,6 +62,7 @@ class Database {
                     $serverName = $_ENV['HOST_CENTRAL'];
                     $dbName     = $_ENV['DATABASE_CENTRAL'];
                 } elseif ($connectionName === 'apps') {
+                    $serverName = $_ENV['HOST_APPS'] ?? $_ENV['HOST_CENTRAL'] ?? '';
                     $dbName     = $_ENV['DATABASE_APPS'];
                 } elseif ($connectionName === 'lakers') {
                     $serverName = 'XL-LAKERBIS';

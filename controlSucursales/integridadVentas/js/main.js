@@ -16,30 +16,26 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Función para cambiar el entorno (Argentina/Uruguay)
- * @param {HTMLSelectElement} selectElement - El elemento <select> que disparó el evento
+ * Cambiar entorno mediante el toggle visual (ARG / UY)
+ * @param {HTMLElement} container - El .custom-toggle-container clickeado
  */
-function cambiarEntorno(selectElement) {
-    const loadingOverlay = document.getElementById('loading-overlay');
-    if (loadingOverlay) {
-        loadingOverlay.style.display = 'flex';
-    }
-    
-    const entorno = (selectElement.value === "ARG") ? 0 : 1;
-    
+function cambiarEntornoCustom(container) {
+    const activeFlag = $(container).find('.toggle-flag.active');
+    const nuevoEntorno = (activeFlag.data('entorno') === 'central') ? 1 : 0;
+
+    mostrarLoading();
+
     $.ajax({
         url: 'Controller/cambiarEntorno.php',
         method: 'POST',
-        data: { entorno: entorno },
-        success: function (data) {
+        data: { entorno: nuevoEntorno },
+        success: function () {
             location.reload();
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error('Error al cambiar entorno:', error);
-            if (loadingOverlay) {
-                loadingOverlay.style.display = 'none';
-            }
-            alert('Error al cambiar el país. Por favor, intente nuevamente.');
+            ocultarLoading();
+            alert('Error al cambiar el entorno. Por favor, intente nuevamente.');
         }
     });
 }

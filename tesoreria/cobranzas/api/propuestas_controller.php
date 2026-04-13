@@ -432,18 +432,53 @@ try {
                 // Forzado especial puntual solicitado por administración para la propuesta #1252
                 sqlsrv_query($conn_apps, "UPDATE FP_propuestas_pago SET estado = 'PAGADO', fecha_ultima_modificacion = GETDATE() WHERE id = 1252 AND estado <> 'PAGADO'");
 
-                $sql_propuestas_a_verificar = "SELECT id FROM FP_propuestas_pago WHERE estado IN ('DOCUMENTACION_ADJUNTADA', 'ACEPTADA', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE')";
+                // Filtramos SOLO las que ya empezaron su flujo documental para evitar cierres prematuros
+                $sql_propuestas_a_verificar = "SELECT id FROM FP_propuestas_pago WHERE estado = 'DOCUMENTACION_ADJUNTADA'";
                 $stmt_propuestas = sqlsrv_query($conn_apps, $sql_propuestas_a_verificar);
                 $propuestas_a_verificar = [];
                 while ($row = sqlsrv_fetch_array($stmt_propuestas, SQLSRV_FETCH_ASSOC))
                     $propuestas_a_verificar[] = $row['id'];
                 
                 if (empty($propuestas_a_verificar)) {
-                    echo json_encode(['success' => true, 'message' => 'No hay propuestas pendientes de sincronización (se forzó el cierre de la #1252 si correspondía).']);
+                    echo json_encode(['success' => true, 'message' => 'No hay propuestas con documentación adjunta pendientes de sincronizar.']);
                     exit;
                 }
 
                 foreach ($propuestas_a_verificar as $id_propuesta) {
+                    // --- VERIFICACIÓN DE TOTALIDAD DE COMPROBANTES ---
+                    // 1. Ver cuántas cuotas tiene la propuesta (si tiene)
+                    $sql_count_cuotas = "SELECT COUNT(*) as total_cuotas FROM FP_propuestas_pago_cuotas WHERE id_propuesta = ?";
+                    $stmt_count_cuotas = sqlsrv_query($conn_apps, $sql_count_cuotas, [$id_propuesta]);
+                    $row_count_cuotas = sqlsrv_fetch_array($stmt_count_cuotas, SQLSRV_FETCH_ASSOC);
+                    $total_cuotas = (int)($row_count_cuotas['total_cuotas'] ?? 0);
+
+                    // 2. Ver cuántas cuotas únicas tienen adjunto
+                    $sql_count_adj = "SELECT COUNT(DISTINCT id_cuota) as cuotas_con_adj FROM FP_propuestas_adjuntos WHERE id_propuesta = ? AND id_cuota IS NOT NULL";
+                    $stmt_count_adj = sqlsrv_query($conn_apps, $sql_count_adj, [$id_propuesta]);
+                    $row_count_adj = sqlsrv_fetch_array($stmt_count_adj, SQLSRV_FETCH_ASSOC);
+                    $cuotas_con_adj = (int)($row_count_adj['cuotas_con_adj'] ?? 0);
+
+                    // 3. Ver si tiene adjunto de Pago Único (id_cuota NULL)
+                    $sql_pago_unico = "SELECT COUNT(*) as unico_adj FROM FP_propuestas_adjuntos WHERE id_propuesta = ? AND id_cuota IS NULL";
+                    $stmt_p_u = sqlsrv_query($conn_apps, $sql_pago_unico, [$id_propuesta]);
+                    $row_p_u = sqlsrv_fetch_array($stmt_p_u, SQLSRV_FETCH_ASSOC);
+                    $tiene_pago_unico = (int)($row_p_u['unico_adj'] ?? 0) > 0;
+
+                    // Lógica de "Completitud":
+                    // Si tiene cuotas -> cuotas_con_adj debe ser igual al total de cuotas.
+                    // Si no tiene cuotas -> debe tener al menos un adjunto de pago único.
+                    $documentacion_completa = false;
+                    if ($total_cuotas > 0) {
+                        $documentacion_completa = ($cuotas_con_adj === $total_cuotas);
+                    } else {
+                        $documentacion_completa = $tiene_pago_unico;
+                    }
+
+                    if (!$documentacion_completa) {
+                        continue; // Todavía faltan comprobantes que subir, no verificamos contra GVA12
+                    }
+
+                    // --- VERIFICACIÓN CONTRA CENTRAL (SI YA SUBIÓ TODO) ---
                     $sql_items = "SELECT t_comp_factura, n_comp_factura FROM FP_propuestas_pago_items WHERE id_propuesta = ?";
                     $stmt_items = sqlsrv_query($conn_apps, $sql_items, [$id_propuesta]);
                     $items_de_propuesta = [];
