@@ -18,11 +18,13 @@ class InsertContratoController {
             if (!$nroSucursal || !$vigDesde || !$vigHasta) {
                 throw new Exception("Datos incompletos.");
             }
-            $vigenciaOk = $this->alquiler->validarVigencia($nroSucursal, $vigDesde, $vigHasta);
-            
-            if(!$vigenciaOk){
-                // ERROR YA EXSTE VIGENCIA
-                throw new Exception("Ya existe un contrato vigente para la franquicia seleccionada.");
+            $ignorarSolapamiento = isset($_POST['ignorarSolapamiento']) && $_POST['ignorarSolapamiento'] === '1';
+
+            if (!$ignorarSolapamiento) {
+                $vigenciaOk = $this->alquiler->validarVigencia($nroSucursal, $vigDesde, $vigHasta);
+                if (!$vigenciaOk) {
+                    throw new Exception("Ya existe un contrato vigente para la franquicia seleccionada.");
+                }
             }
 
             $contratoComercial = $this->uploadFile('contratoComercial');
@@ -109,26 +111,18 @@ class InsertContratoController {
     }
 
     private function basicPDFCompression($inputFile, $outputFile) {
-        try {
-            // Compresión básica copiando el archivo con configuración optimizada
-            $source = file_get_contents($inputFile);
-            if ($source !== false) {
-                // Aplicar compresión de contenido si es posible
-                $compressed = gzcompress($source, 9);
-                if ($compressed !== false) {
-                    // Si la compresión reduce el tamaño significativamente, usar el original
-                    if (strlen($compressed) < strlen($source) * 0.9) {
-                        file_put_contents($outputFile, gzuncompress($compressed));
-                    } else {
-                        file_put_contents($outputFile, $source);
-                    }
+        // Intentar qpdf (lineariza el PDF, suele reducir tamaño)
+        if (function_exists('exec')) {
+            exec('qpdf --version 2>&1', $out, $code);
+            if ($code === 0) {
+                exec('qpdf --linearize "' . $inputFile . '" "' . $outputFile . '" 2>&1', $out, $ret);
+                if ($ret === 0 && file_exists($outputFile)) {
                     return true;
                 }
             }
-            return move_uploaded_file($inputFile, $outputFile);
-        } catch (Exception $e) {
-            return move_uploaded_file($inputFile, $outputFile);
         }
+        // Fallback: mover el archivo original sin comprimir
+        return move_uploaded_file($inputFile, $outputFile);
     }
 }
 

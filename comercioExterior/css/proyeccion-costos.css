@@ -282,6 +282,40 @@ body {
     color: var(--pci-success);
 }
 
+/* Campo con valor editado manualmente (override del cálculo automático) */
+.importe-editable.override-activo {
+    border-color: #f59e0b;
+    background-color: #fffbeb;
+}
+
+.importe-editable.override-activo:focus {
+    border-color: #d97706;
+    box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
+}
+
+/* Botón de reset override */
+.btn-reset-override {
+    flex-shrink: 0;
+    padding: 0.2rem 0.35rem;
+    font-size: 0.7rem;
+    line-height: 1;
+    color: #b45309;
+    border-color: #fcd34d;
+    background-color: #fef3c7;
+}
+
+.btn-reset-override:hover {
+    background-color: #fde68a;
+    border-color: #f59e0b;
+    color: #92400e;
+}
+
+.input-override-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 /* Totals Card */
 .totals-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

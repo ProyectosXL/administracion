@@ -38,7 +38,7 @@ $(document).ready(function() {
                 sizeText += ' - ⚠️ Archivo muy grande (máx. 10MB)';
                 sizeClass = 'text-danger';
             } else if (file.size > largeSize) {
-                sizeText += ' - Se comprimirá automáticamente';
+                sizeText += ' - El servidor intentará optimizar el archivo';
                 sizeClass = 'text-warning';
                 $(`#${compressionId}`).addClass('show');
             }
@@ -96,9 +96,9 @@ $(document).ready(function() {
         });
     });
 
-    $('#contratoAlquilerForm').on('submit', function(e) {
+    $('#contratoAlquilerForm').on('submit', async function(e) {
         e.preventDefault();
-        
+
         let sucursal = document.querySelector('#franquicia').value;
         let fechaDesde = document.querySelector('#fechaDesde').value;
         let fechaHasta = document.querySelector('#fechaHasta').value;
@@ -140,7 +140,36 @@ $(document).ready(function() {
             return;
         }
 
+        // Chequeo de solapamiento de vigencia antes de subir archivos
+        let ignorarSolapamiento = false;
+        try {
+            const vigenciaCheck = await $.post('controller/validarVigenciaController.php', {
+                franquicia: sucursal,
+                fechaDesde: fechaDesde,
+                fechaHasta: fechaHasta
+            });
+
+            if (vigenciaCheck.overlap) {
+                const confirmResult = await Swal.fire({
+                    icon: 'warning',
+                    title: 'Solapamiento de vigencia',
+                    text: 'Ya existe un contrato cuyas fechas se superponen con las ingresadas. ¿Deseas cargarlo de todas formas?',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, continuar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#f0ad4e'
+                });
+                if (!confirmResult.isConfirmed) return;
+                ignorarSolapamiento = true;
+            }
+        } catch (err) {
+            // Si el chequeo previo falla, continuar y dejar que el backend decida
+        }
+
         var formData = new FormData(this);
+        if (ignorarSolapamiento) {
+            formData.append('ignorarSolapamiento', '1');
+        }
 
         $('#spinner').show();
         $('#btnGuardar').attr('disabled', true);

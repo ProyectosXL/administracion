@@ -163,25 +163,28 @@ function generarFormularioConceptos() {
             const param1 = valorExistente ? valorExistente.VALOR_DEFAULT_1 : concepto.VALOR_DEFAULT_1;
             const param2 = valorExistente ? valorExistente.VALOR_DEFAULT_2 : concepto.VALOR_DEFAULT_2;
             const confirmado = valorExistente ? valorExistente.CONFIRMADO : 0;
-            
-            // Determinar importe inicial según estado:
-            // - Si CONFIRMADO = 1: usar IMPORTE de BD (valor histórico congelado)
-            // - Si CONFIRMADO = 0: usar parámetro para inicializar, luego se recalculará
+
+            // Determinar importe inicial:
+            // - Si hay IMPORTE guardado (confirmado o borrador): usar ese valor
+            // - Si no hay estimación previa: usar parámetro como valor inicial
             let importe = 0;
-            
-            if (confirmado === 1 && valorExistente && valorExistente.IMPORTE !== null) {
-                // Modo confirmado: usar valor guardado en BD
+            let tieneOverride = false;
+
+            if (valorExistente && valorExistente.IMPORTE !== null) {
+                // Usar IMPORTE guardado en BD (borrador o confirmado)
                 const importeGuardado = parseFloat(valorExistente.IMPORTE);
                 importe = !isNaN(importeGuardado) ? importeGuardado : 0;
+                // Para tipo P: marcar override para que no se recalcule automáticamente
+                tieneOverride = (concepto.TIPO_VALOR === 'P') || (confirmado === 1);
             } else {
-                // Modo borrador o nuevo: usar parámetro como valor inicial
+                // Sin estimación previa: usar parámetro como valor inicial
                 if (param1 !== null && param1 !== undefined) {
                     const param1Num = parseFloat(param1);
                     importe = !isNaN(param1Num) ? param1Num : 0;
                 }
             }
-            
-            fila = generarFilaConcepto(concepto, param1, param2, importe, confirmado, index);
+
+            fila = generarFilaConcepto(concepto, param1, param2, importe, confirmado, index, tieneOverride);
         }
         
         tbody.append(fila);
@@ -223,7 +226,7 @@ function generarFilaCalculada(nombre) {
 /**
  * Generar HTML para una fila de concepto
  */
-function generarFilaConcepto(concepto, param1, param2, importe, confirmado, index) {
+function generarFilaConcepto(concepto, param1, param2, importe, confirmado, index, tieneOverride = false) {
     const tipoValor = concepto.TIPO_VALOR; // 'P' = Porcentaje, 'I' = Importe
     const tipoTexto = tipoValor === 'P' ? 'Porcentaje' : 'Importe Fijo';
     const param1Display = param1 !== null ? formatearParametro(param1, tipoValor) : '-';
@@ -236,9 +239,41 @@ function generarFilaConcepto(concepto, param1, param2, importe, confirmado, inde
     const readonlyAttr = esConfirmado ? 'readonly' : '';
     const confirmadoClass = esConfirmado ? 'confirmado' : '';
     
+    // Para tipo P: envolver el input con el ícono de override
+    const overrideActivo = tieneOverride && !esConfirmado;
+    let celdaImporte;
+    if (tipoValor === 'P' && !esConfirmado) {
+        celdaImporte = `
+            <div class="input-override-wrapper">
+                <input type="text"
+                       class="form-control importe-editable text-end ${overrideActivo ? 'override-activo' : ''}"
+                       value="${formatearMoneda(importe)}"
+                       data-valor="${importe}"
+                       data-override="${overrideActivo ? 'true' : 'false'}"
+                       onkeyup="handleImporteChange(this)"
+                       onblur="formatearCampoMoneda(this)">
+                <button type="button"
+                        class="btn btn-reset-override ${overrideActivo ? '' : 'd-none'}"
+                        onclick="resetearOverride(this)"
+                        title="Valor editado manualmente. Haga clic para recalcular automáticamente">
+                    <i class="bi bi-pencil-fill"></i>
+                </button>
+            </div>`;
+    } else {
+        celdaImporte = `
+            <input type="text"
+                   class="form-control importe-editable text-end ${confirmadoClass}"
+                   value="${formatearMoneda(importe)}"
+                   data-valor="${importe}"
+                   data-override="${tieneOverride ? 'true' : 'false'}"
+                   ${readonlyAttr}
+                   onkeyup="handleImporteChange(this)"
+                   onblur="formatearCampoMoneda(this)">`;
+    }
+
     return `
-        <tr data-concepto-id="${concepto.ID_CE}" 
-            data-concepto-nombre="${concepto.CONCEPTO}" 
+        <tr data-concepto-id="${concepto.ID_CE}"
+            data-concepto-nombre="${concepto.CONCEPTO}"
             data-tipo="${tipoValor}"
             data-confirmado="${confirmado || 0}">
             <td class="concepto-nombre">
@@ -255,15 +290,7 @@ function generarFilaConcepto(concepto, param1, param2, importe, confirmado, inde
                 <span class="parametro-badge">${param2Display}</span>
                 <input type="hidden" class="param2" value="${param2 || 0}">
             </td>
-            <td>
-                <input type="text" 
-                       class="form-control importe-editable text-end ${confirmadoClass}" 
-                       value="${formatearMoneda(importe)}" 
-                       data-valor="${importe}"
-                       ${readonlyAttr}
-                       onkeyup="handleImporteChange(this)"
-                       onblur="formatearCampoMoneda(this)">
-            </td>
+            <td>${celdaImporte}</td>
         </tr>
     `;
 }
@@ -274,107 +301,169 @@ function generarFilaConcepto(concepto, param1, param2, importe, confirmado, inde
 function handleImporteChange(input) {
     const valor = parseNumero($(input).val());
     $(input).data('valor', valor);
-    
+
+    // Si es tipo P y el usuario lo edita manualmente, marcar como override
+    // para que el recálculo automático no sobreescriba el valor ingresado
+    const $row = $(input).closest('tr');
+    if ($row.data('tipo') === 'P') {
+        $(input).attr('data-override', 'true').addClass('override-activo');
+        $row.find('.btn-reset-override').removeClass('d-none');
+    }
+
     // Recalcular todos los conceptos
     calcularTodosLosConceptos();
 }
 
 /**
- * Calcular todos los conceptos según la lógica de negocio
+ * Restaurar el cálculo automático de un concepto tipo P,
+ * quitando el override manual y recalculando desde los parámetros.
+ */
+function resetearOverride(btn) {
+    const $row = $(btn).closest('tr');
+    const $input = $row.find('.importe-editable');
+
+    $input.attr('data-override', 'false').removeClass('override-activo');
+    $(btn).addClass('d-none');
+
+    // Recalcular para que el valor vuelva al automático
+    calcularTodosLosConceptos();
+}
+
+/**
+ * Calcular todos los conceptos según la lógica de negocio.
+ * Para conceptos tipo P con override manual, se usa el valor guardado en lugar del calculado.
  */
 function calcularTodosLosConceptos() {
     const fob = parseFloat($('#valorFOB').val()) || 0;
-    
+
     // 1. FOB (valor fijo del despacho)
     setValorCalculado('FOB', fob);
-    
+
     // 2. Flete (ID_CE=1): Importe fijo editable
     const flete = getConceptoValorEditable(CONCEPTOS_ID.FLETE);
-    
-    // 3. Seguro (ID_CE=2): (FOB + Flete) * Parámetro1
-    const seguroParam = getConceptoParam1(CONCEPTOS_ID.SEGURO);
-    const seguro = (fob + flete) * seguroParam;
-    setConceptoValorCalculado(CONCEPTOS_ID.SEGURO, seguro);
-    
+
+    // 3. Seguro (ID_CE=2): (FOB + Flete) * Parámetro1  [override posible]
+    let seguro;
+    const seguroOverride = getInputOverride(CONCEPTOS_ID.SEGURO);
+    if (seguroOverride !== null) {
+        seguro = seguroOverride;
+    } else {
+        const seguroParam = getConceptoParam1(CONCEPTOS_ID.SEGURO);
+        seguro = (fob + flete) * seguroParam;
+        setConceptoValorCalculado(CONCEPTOS_ID.SEGURO, seguro);
+    }
+
     // 4. CIF (calculado, no guardado): FOB + Flete + Seguro
     const cif = fob + flete + seguro;
     setValorCalculado('CIF', cif);
-    
-    // 5. Derechos (ID_CE=3): CIF * Parámetro1
-    const derechosParam = getConceptoParam1(CONCEPTOS_ID.DERECHOS);
-    const derechos = cif * derechosParam;
-    setConceptoValorCalculado(CONCEPTOS_ID.DERECHOS, derechos);
-    
-    // 6. Tasa Estadística (ID_CE=4): CIF * Parámetro1
-    const tasaParam = getConceptoParam1(CONCEPTOS_ID.TASA_ESTADISTICA);
-    const tasaEstadistica = cif * tasaParam;
-    setConceptoValorCalculado(CONCEPTOS_ID.TASA_ESTADISTICA, tasaEstadistica);
-    
+
+    // 5. Derechos (ID_CE=3): CIF * Parámetro1  [override posible]
+    let derechos;
+    const derechosOverride = getInputOverride(CONCEPTOS_ID.DERECHOS);
+    if (derechosOverride !== null) {
+        derechos = derechosOverride;
+    } else {
+        const derechosParam = getConceptoParam1(CONCEPTOS_ID.DERECHOS);
+        derechos = cif * derechosParam;
+        setConceptoValorCalculado(CONCEPTOS_ID.DERECHOS, derechos);
+    }
+
+    // 6. Tasa Estadística (ID_CE=4): CIF * Parámetro1  [override posible]
+    let tasaEstadistica;
+    const tasaOverride = getInputOverride(CONCEPTOS_ID.TASA_ESTADISTICA);
+    if (tasaOverride !== null) {
+        tasaEstadistica = tasaOverride;
+    } else {
+        const tasaParam = getConceptoParam1(CONCEPTOS_ID.TASA_ESTADISTICA);
+        tasaEstadistica = cif * tasaParam;
+        setConceptoValorCalculado(CONCEPTOS_ID.TASA_ESTADISTICA, tasaEstadistica);
+    }
+
     // 7. Base Imponible (calculada, no guardada): CIF + Derechos + Tasa
     const baseImponible = cif + derechos + tasaEstadistica;
     setValorCalculado('Base imponible', baseImponible);
-    
-    // 8. IVA General (ID_CE=5): Base Imponible * Parámetro1
-    const ivaGeneralParam = getConceptoParam1(CONCEPTOS_ID.IVA_GENERAL);
-    const ivaGeneral = baseImponible * ivaGeneralParam;
-    setConceptoValorCalculado(CONCEPTOS_ID.IVA_GENERAL, ivaGeneral);
-    
-    // 9. IVA Adicional (ID_CE=6): Base Imponible * Parámetro1
-    const ivaAdicionalParam = getConceptoParam1(CONCEPTOS_ID.IVA_ADICIONAL);
-    const ivaAdicional = baseImponible * ivaAdicionalParam;
-    setConceptoValorCalculado(CONCEPTOS_ID.IVA_ADICIONAL, ivaAdicional);
-    
-    // 10. IIGG (ID_CE=7): Base Imponible * Parámetro1
-    const iiggParam = getConceptoParam1(CONCEPTOS_ID.IIGG);
-    const iigg = baseImponible * iiggParam;
-    setConceptoValorCalculado(CONCEPTOS_ID.IIGG, iigg);
-    
-    // 11. IIBB (ID_CE=8): Base Imponible * Parámetro1
-    const iibbParam = getConceptoParam1(CONCEPTOS_ID.IIBB);
-    const iibb = baseImponible * iibbParam;
-    setConceptoValorCalculado(CONCEPTOS_ID.IIBB, iibb);
-    
+
+    // 8. IVA General (ID_CE=5): Base Imponible * Parámetro1  [override posible]
+    let ivaGeneral;
+    const ivaGeneralOverride = getInputOverride(CONCEPTOS_ID.IVA_GENERAL);
+    if (ivaGeneralOverride !== null) {
+        ivaGeneral = ivaGeneralOverride;
+    } else {
+        const ivaGeneralParam = getConceptoParam1(CONCEPTOS_ID.IVA_GENERAL);
+        ivaGeneral = baseImponible * ivaGeneralParam;
+        setConceptoValorCalculado(CONCEPTOS_ID.IVA_GENERAL, ivaGeneral);
+    }
+
+    // 9. IVA Adicional (ID_CE=6): Base Imponible * Parámetro1  [override posible]
+    let ivaAdicional;
+    const ivaAdicionalOverride = getInputOverride(CONCEPTOS_ID.IVA_ADICIONAL);
+    if (ivaAdicionalOverride !== null) {
+        ivaAdicional = ivaAdicionalOverride;
+    } else {
+        const ivaAdicionalParam = getConceptoParam1(CONCEPTOS_ID.IVA_ADICIONAL);
+        ivaAdicional = baseImponible * ivaAdicionalParam;
+        setConceptoValorCalculado(CONCEPTOS_ID.IVA_ADICIONAL, ivaAdicional);
+    }
+
+    // 10. IIGG (ID_CE=7): Base Imponible * Parámetro1  [override posible]
+    let iigg;
+    const iiggOverride = getInputOverride(CONCEPTOS_ID.IIGG);
+    if (iiggOverride !== null) {
+        iigg = iiggOverride;
+    } else {
+        const iiggParam = getConceptoParam1(CONCEPTOS_ID.IIGG);
+        iigg = baseImponible * iiggParam;
+        setConceptoValorCalculado(CONCEPTOS_ID.IIGG, iigg);
+    }
+
+    // 11. IIBB (ID_CE=8): Base Imponible * Parámetro1  [override posible]
+    let iibb;
+    const iibbOverride = getInputOverride(CONCEPTOS_ID.IIBB);
+    if (iibbOverride !== null) {
+        iibb = iibbOverride;
+    } else {
+        const iibbParam = getConceptoParam1(CONCEPTOS_ID.IIBB);
+        iibb = baseImponible * iibbParam;
+        setConceptoValorCalculado(CONCEPTOS_ID.IIBB, iibb);
+    }
+
     // 12. SIM (ID_CE=9): Importe fijo editable
     const sim = getConceptoValorEditable(CONCEPTOS_ID.SIM);
-    
+
     // 13. Antidumping (ID_CE=10): Valor manual editable
     const antidumping = getConceptoValorEditable(CONCEPTOS_ID.ANTIDUMPING);
-    
-    // 14. Total Nacionalización (calculado): Suma de Seguro + conceptos 5-13
-    const totalNac = seguro + derechos + tasaEstadistica + ivaGeneral + 
+
+    // 14. Total Nacionalización (calculado): seguro + derechos + tasa + IVA + IIGG + IIBB + SIM + antidumping
+    const totalNac = seguro + derechos + tasaEstadistica + ivaGeneral +
                      ivaAdicional + iigg + iibb + sim + antidumping;
     setValorCalculado('Total nacionalización', totalNac);
-    
-    // 15. Despachante (ID_CE=11): Cálculo especial
-    // Fórmula: ((FOB * 0.01) + Param1) * 1.21
-    // Param1 = valor base (450 Laffitte, 120 Farre)
-    // 1.21 = IVA fijo del 21%
-    const despachanteParam1 = getConceptoParam1(CONCEPTOS_ID.DESPACHANTE);
-    const despachante = ((fob * 0.01) + despachanteParam1) * 1.21;
-    
-    // Debug: mostrar valores en consola
-    console.log('=== CÁLCULO DESPACHANTE ===');
-    console.log('FOB:', fob);
-    console.log('FOB * 0.01:', fob * 0.01);
-    console.log('Parámetro 1:', despachanteParam1);
-    console.log('(FOB * 0.01) + Param1:', (fob * 0.01) + despachanteParam1);
-    console.log('Despachante final:', despachante);
-    console.log('==========================');
-    
-    setConceptoValorCalculado(CONCEPTOS_ID.DESPACHANTE, despachante);
-    
+
+    // 15. Despachante (ID_CE=11): ((FOB * 0.01) + Param1) * 1.21  [override posible]
+    let despachante;
+    const despachanteOverride = getInputOverride(CONCEPTOS_ID.DESPACHANTE);
+    if (despachanteOverride !== null) {
+        despachante = despachanteOverride;
+    } else {
+        const despachanteParam1 = getConceptoParam1(CONCEPTOS_ID.DESPACHANTE);
+        despachante = ((fob * 0.01) + despachanteParam1) * 1.21;
+        setConceptoValorCalculado(CONCEPTOS_ID.DESPACHANTE, despachante);
+    }
+
     // 16. Terminal (ID_CE=12): Importe fijo editable
     const terminal = getConceptoValorEditable(CONCEPTOS_ID.TERMINAL);
-    
+
     // 17. Total Cashflow (calculado): Total Nac + Despachante + Terminal
     const totalCashflow = totalNac + despachante + terminal;
     setValorCalculado('Total Cashflow', totalCashflow);
-    
-    // 18. Suma Asegurada (ID_CE=13): ((FOB + Flete) * (1 + Param1)) * (1 + Param2)
-    const sumaParam1 = getConceptoParam1(CONCEPTOS_ID.SUMA_ASEGURADA);
-    const sumaParam2 = getConceptoParam2(CONCEPTOS_ID.SUMA_ASEGURADA);
-    const sumaAsegurada = ((fob + flete) * (1 + sumaParam1)) * (1 + sumaParam2);
-    setConceptoValorCalculado(CONCEPTOS_ID.SUMA_ASEGURADA, sumaAsegurada);
+
+    // 18. Suma Asegurada (ID_CE=13): ((FOB + Flete) * (1 + Param1)) * (1 + Param2)  [override posible]
+    const sumaAseguradaOverride = getInputOverride(CONCEPTOS_ID.SUMA_ASEGURADA);
+    if (sumaAseguradaOverride === null) {
+        const sumaParam1 = getConceptoParam1(CONCEPTOS_ID.SUMA_ASEGURADA);
+        const sumaParam2 = getConceptoParam2(CONCEPTOS_ID.SUMA_ASEGURADA);
+        const sumaAsegurada = ((fob + flete) * (1 + sumaParam1)) * (1 + sumaParam2);
+        setConceptoValorCalculado(CONCEPTOS_ID.SUMA_ASEGURADA, sumaAsegurada);
+    }
 }
 
 /**
@@ -404,20 +493,34 @@ function getConceptoParam2(idCe) {
 }
 
 /**
+ * Obtener valor override de un concepto tipo P (si fue editado manualmente o cargado desde BD).
+ * Retorna el valor numérico si tiene override, o null si debe calcularse normalmente.
+ */
+function getInputOverride(idCe) {
+    const $input = $(`tr[data-concepto-id="${idCe}"]`).find('.importe-editable');
+    if ($input.attr('data-override') === 'true') {
+        return parseFloat($input.data('valor')) || 0;
+    }
+    return null;
+}
+
+/**
  * Establecer valor calculado de un concepto
  */
 function setConceptoValorCalculado(idCe, valor) {
     const $row = $(`tr[data-concepto-id="${idCe}"]`);
     const $input = $row.find('.importe-editable');
     const confirmado = parseInt($row.data('confirmado')) || 0;
-    
+    const override = $input.attr('data-override') === 'true';
+
     // NO actualizar si:
     // 1. El concepto está confirmado (valores congelados)
     // 2. El usuario está editando el campo actualmente
-    if (confirmado === 1 || $input.is(':focus')) {
+    // 3. El usuario (o la carga inicial desde BD) marcó un override manual
+    if (confirmado === 1 || $input.is(':focus') || override) {
         return;
     }
-    
+
     // Actualizar el valor calculado en modo borrador
     $input.val(formatearMoneda(valor)).data('valor', valor);
 }
