@@ -1374,7 +1374,20 @@ $(document).ready(function () {
 
         let esEditable = propuesta.estado === 'CONTRAPROPUESTA_CLIENTE';
         let puedeEditarDescuento = esEditable && (typeof globalUsuarioNombre !== 'undefined' && globalUsuarioNombre === 'SilviaF');
-        let itemsHtml = `<h5 class="mt-4">Facturas Incluidas</h5><table class="table table-sm table-bordered" id="tabla-detalle-propuesta-admin"><thead class="table-light"><tr><th class="text-center">Fecha</th><th class="text-center">Tipo</th><th>Comprobante</th><th class="text-end">Importe Bruto</th><th class="text-center">% Descuento</th><th class="text-end">Importe Neto</th>${esEditable ? '<th class="text-center">Acciones</th>' : ''}</tr></thead><tbody>`;
+        
+        let descuentoMasivoHtml = '';
+        if (puedeEditarDescuento) {
+            descuentoMasivoHtml = `
+            <div class="d-flex align-items-center">
+                <label for="descuento-masivo-admin" class="me-2 fw-bold text-muted small mb-0">Descuento Masivo (%):</label>
+                <div class="input-group input-group-sm" style="width: 140px;">
+                    <input type="number" id="descuento-masivo-admin" class="form-control" min="0" max="100" step="1" placeholder="Ej: 5">
+                    <button class="btn btn-primary" type="button" id="btn-aplicar-descuento-masivo" title="Aplicar a la base autorizada"><i class="fa-solid fa-check"></i></button>
+                </div>
+            </div>`;
+        }
+
+        let itemsHtml = `<div class="d-flex justify-content-between align-items-center mt-4 mb-2"><h5 class="mb-0">Facturas Incluidas</h5>${descuentoMasivoHtml}</div><table class="table table-sm table-bordered" id="tabla-detalle-propuesta-admin"><thead class="table-light"><tr><th class="text-center">Fecha</th><th class="text-center">Tipo</th><th>Comprobante</th><th class="text-end">Importe Bruto</th><th class="text-center">% Descuento</th><th class="text-end">Importe Neto</th>${esEditable ? '<th class="text-center">Acciones</th>' : ''}</tr></thead><tbody>`;
 
         let totalBrutoTabla = 0;
         let totalNetoTabla = 0;
@@ -1504,6 +1517,30 @@ $(document).ready(function () {
             }
         });
         // ======================== FIN DE LA MODIFICACIÓN DEL HISTORIAL ========================
+
+        // --- NUEVO MANEJADOR PARA DESCUENTO MASIVO ---
+        $(document).off('click', '#btn-aplicar-descuento-masivo').on('click', '#btn-aplicar-descuento-masivo', function() {
+            let pct = parseInt($('#descuento-masivo-admin').val());
+            if (isNaN(pct) || pct < 0 || pct > 100) return Swal.fire('Atención', 'Ingrese un porcentaje válido entero entre 0 y 100.', 'warning');
+            
+            $('#tabla-detalle-propuesta-admin tbody tr').each(function() {
+                const tr = $(this);
+                const tComp = (tr.data('tcomp') || '').trim();
+                const nComp = (tr.data('ncomp') || '').trim();
+                const input = tr.find('.descuento-input-admin');
+                
+                // Excluir Notas de Crédito, Notas de Débito Positivas y la sucursal A00115
+                if (tComp.startsWith('NC') || tComp.startsWith('NDP') || nComp.startsWith('A00115')) {
+                    return; // Continuar con el siguiente iterador
+                }
+                
+                if (input.length && !input.prop('disabled')) {
+                    input.val(pct);
+                    input.trigger('input'); // Dispara el recálculo individual existente
+                }
+            });
+        });
+        // ---------------------------------------------
 
         let accionAdminHtml = '';
 

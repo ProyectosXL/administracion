@@ -111,6 +111,8 @@ $(document).ready(function () {
             // =======================================================================================
 
             // Calculamos el nuevo importe neto
+            // (El atributo data-importe-bruto ya almacena los valores NC con signo negativo,
+            // por lo tanto netoRecalculado heredará el signo correcto automáticamente)
             let netoRecalculado = bruto * (1 - (porcentajeAplicar / 100));
             // ======================== FIN DE LA LÓGICA CORRECTA Y SIMPLIFICADA =========================
 
@@ -119,12 +121,12 @@ $(document).ready(function () {
             tr.attr('data-nuevo-descuento', porcentajeAplicar);
             tr.attr('data-nuevo-neto', netoRecalculado);
 
-            const netoFinal = esNegativo ? -netoRecalculado : netoRecalculado;
-            tr.find('.importe-neto-cell').text(netoFinal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
+            // Mantenemos el signo original al momento de mostrar el texto formateado
+            tr.find('.importe-neto-cell').text(netoRecalculado.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }));
 
-            // Sumamos a los totales
-            totalBruto += esNegativo ? -bruto : bruto;
-            totalNeto += netoFinal;
+            // Sumamos algebraicamente a los totales (preserva restas de Notas de Crédito)
+            totalBruto += bruto;
+            totalNeto += netoRecalculado;
         });
 
         // Actualizamos los totales de la tabla y los KPIs
