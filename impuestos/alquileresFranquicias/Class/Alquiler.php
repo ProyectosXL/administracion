@@ -252,6 +252,21 @@ class Alquiler
         }
     }
 
+    public function actualizarObservacion($id, $observacion)
+    {
+        $sql = "UPDATE RO_T_CONTRATOS_ALQUILER_FRANQUICIAS SET OBSERVACIONES = ? WHERE ID = ?";
+        $params = array($observacion, $id);
+
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error al actualizar la observación: " . print_r(sqlsrv_errors(), true));
+        }
+
+        sqlsrv_free_stmt($stmt);
+        return true;
+    }
+
     public function eliminarArchivoContrato($id, $tipo)
     {
         // Determinar la columna

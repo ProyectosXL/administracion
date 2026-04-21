@@ -67,6 +67,12 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
         .upload-progress { display: none; margin-top: 8px; }
         @keyframes fadeInForm { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
+        .obs-cell { min-width: 180px; }
+        .obs-text { white-space: pre-wrap; word-break: break-word; font-size: 0.85rem; }
+        .obs-textarea { font-size: 0.85rem; min-width: 160px; resize: vertical; }
+        .btn-edit-obs { padding: 1px 6px; font-size: 0.75rem; opacity: 0.6; }
+        .btn-edit-obs:hover { opacity: 1; }
+
         @media (max-width: 768px) {
             .icon-container { width: 40px; height: 40px; }
             .icon-container i { font-size: 1.4rem !important; }
@@ -171,6 +177,7 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
                         <th>Contrato Comercial</th>
                         <th>Contrato Locación</th>
                         <th>Habilitación Local</th>
+                        <th>Observaciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -223,6 +230,21 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
                                         <i class="fas fa-upload"></i> Subir
                                     </button>
                                 <?php endif; ?>
+                            </td>
+                            <td class="obs-cell">
+                                <div class="obs-view">
+                                    <span class="obs-text"><?php echo htmlspecialchars($contrato['OBSERVACIONES'] ?? ''); ?></span>
+                                    <button class="btn btn-outline-secondary btn-sm btn-edit-obs ms-1" data-id="<?php echo $contrato['ID']; ?>" title="Editar">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                </div>
+                                <div class="obs-edit" style="display:none;">
+                                    <textarea class="form-control obs-textarea" rows="2"><?php echo htmlspecialchars($contrato['OBSERVACIONES'] ?? ''); ?></textarea>
+                                    <div class="d-flex gap-1 mt-1">
+                                        <button class="btn btn-success btn-sm btn-save-obs"><i class="fas fa-check"></i></button>
+                                        <button class="btn btn-secondary btn-sm btn-cancel-obs"><i class="fas fa-times"></i></button>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -427,6 +449,52 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
                 $('#pdfPreview').hide().attr('src', '');
                 $('#verPdfBtn').hide();
                 $(this).hide();
+            });
+
+            // Observaciones - edición inline
+            $(document).on('click', '.btn-edit-obs', function() {
+                var cell = $(this).closest('.obs-cell');
+                cell.find('.obs-view').hide();
+                cell.find('.obs-edit').show();
+                cell.find('.obs-textarea').focus();
+            });
+
+            $(document).on('click', '.btn-cancel-obs', function() {
+                var cell = $(this).closest('.obs-cell');
+                var original = cell.find('.obs-text').text();
+                cell.find('.obs-textarea').val(original);
+                cell.find('.obs-edit').hide();
+                cell.find('.obs-view').show();
+            });
+
+            $(document).on('click', '.btn-save-obs', function() {
+                var btn  = $(this);
+                var cell = btn.closest('.obs-cell');
+                var id   = cell.closest('tr').find('.btn-edit-obs').data('id');
+                var obs  = cell.find('.obs-textarea').val();
+
+                btn.prop('disabled', true);
+                $.ajax({
+                    url: 'Controller/guardarObservacionController.php',
+                    method: 'POST',
+                    data: { id: id, observacion: obs },
+                    dataType: 'json',
+                    success: function(resp) {
+                        if (resp.success) {
+                            cell.find('.obs-text').text(obs);
+                            cell.find('.obs-edit').hide();
+                            cell.find('.obs-view').show();
+                        } else {
+                            Swal.fire('Error', resp.error || 'No se pudo guardar la observación.', 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'Error de comunicación.', 'error');
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false);
+                    }
+                });
             });
         });
     </script>
