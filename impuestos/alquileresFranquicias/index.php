@@ -116,8 +116,9 @@ $contratosPorVencer = $alquiler->traerContratosPorVencer();
                     <select id="sucursal" name="sucursal" class="form-select select2">
                         <option value="">Todas las sucursales</option>
                         <?php foreach ($franquicias as $franquicia): ?>
-                            <option value="<?php echo htmlspecialchars($franquicia['NRO_SUCURSAL']); ?>">
-                                <?php echo htmlspecialchars($franquicia['DESC_SUCURSAL']); ?>
+                            <option value="<?php echo htmlspecialchars($franquicia['NRO_SUCURSAL']); ?>"
+                                <?php echo $sucursal === (string)$franquicia['NRO_SUCURSAL'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($franquicia['NRO_SUCURSAL'] . ' - ' . $franquicia['DESC_SUCURSAL']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
