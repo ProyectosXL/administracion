@@ -6,7 +6,8 @@ $(document).ready(function() {
         width: '100%',
         placeholder: 'Seleccione una franquicia',
         allowClear: true,
-        dropdownAutoWidth: true
+        dropdownAutoWidth: true,
+        dropdownParent: $('#nuevoContratoModal')
     });
 
     // Función para formatear el tamaño de archivo

@@ -5,7 +5,7 @@ require_once 'Class/Alquiler.php';
 $alquiler = new Alquiler();
 $franquicias = $alquiler->traerFranquicias();
 usort($franquicias, function($a, $b) {
-    return strcmp($a['DESC_SUCURSAL'], $b['DESC_SUCURSAL']);
+    return (int)$a['NRO_SUCURSAL'] - (int)$b['NRO_SUCURSAL'];
 });
 $sucursal = isset($_GET['sucursal']) ? $_GET['sucursal'] : '';
 $vigente = isset($_GET['contratoVigente']) ? $_GET['contratoVigente'] : 'actual';
