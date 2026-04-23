@@ -85,8 +85,8 @@ $(document).ready(function () {
             const tr = $(this);
             const bruto = parseFloat(tr.data('importe-bruto'));
             const tipoComp = tr.data('tcomp');
-            // Si es NC, es negativo.
-            const esNegativo = tipoComp && tipoComp.startsWith('NC');
+            // Si es NC o REC, es negativo.
+            const esNegativo = tipoComp && (tipoComp.startsWith('NC') || tipoComp === 'REC');
             const descuentoOriginal = parseFloat(tr.data('descuento-original'));
 
             const nComp = (tr.data('ncomp') || '').trim();
@@ -446,8 +446,8 @@ $(document).ready(function () {
             const descuento = parseFloat(item.porcentaje_descuento) || 0;
             const nComp = (item.n_comp_factura || '').trim();
             const tComp = (item.t_comp_factura || '').trim();
-            // Para visualización de propuestas ya creadas, NC siempre es negativo
-            const esNegativo = tComp.startsWith('NC');
+            // Para visualización de propuestas ya creadas, NC y REC siempre son negativos
+            const esNegativo = tComp.startsWith('NC') || tComp === 'REC';
 
             const brutoReal = esNegativo ? -Math.abs(bruto) : Math.abs(bruto);
             const netoReal = esNegativo ? -Math.abs(neto) : Math.abs(neto);
