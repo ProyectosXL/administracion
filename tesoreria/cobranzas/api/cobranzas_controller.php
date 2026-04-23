@@ -131,6 +131,8 @@ if ($tipo === 'franquicias') {
     $vista = 'RO_V_COBRANZA_PEND_FRANQUICIAS';
 } elseif ($tipo === 'mayoristas') {
     $vista = 'RO_V_COBRANZA_PEND_MAYORISTAS';
+} elseif ($tipo === 'sugerencias') {
+    $vista = 'RO_V_COBRANZA_PEND_FRANQUICIAS'; // Las sugerencias por ahora son para franquicias
 } else {
     echo json_encode(['error' => 'Tipo no válido']);
     exit;
@@ -194,13 +196,12 @@ try {
         }
 
     } else {
-        // --- VISTA DE RESUMEN ---
-        // Obtenemos todos los registros pendientes y agrupamos en PHP para evitar errores de conexión cruzada
-        $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.ESTADO, v.IMPORTE, v.IMPORTE_NETO,
-                       ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX
+        // --- VISTA DE RESUMEN O SUGERENCIAS ---
+        $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.ESTADO, v.IMPORTE, v.IMPORTE_NETO, v.FECHA_PROB_COBRO,
+                       ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX, p.MEDIO_PAGO_DEFAULT
                 FROM $vista v
                 LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                WHERE v.ESTADO <> 'IMP' AND v.T_COMP <> 'REC' AND v.T_COMP NOT LIKE 'NCR%' AND v.T_COMP NOT LIKE 'NCP%'";
+                WHERE v.ESTADO <> 'IMP' AND v.T_COMP <> 'REC'";
 
         $stmt = sqlsrv_query($conn_central, $sql);
         if ($stmt === false) {
@@ -220,7 +221,10 @@ try {
                     'RAZON_SOCI' => $v['RAZON_SOCI'],
                     'CANT_FACTURAS' => 0,
                     'TOTAL_BRUTO' => 0,
-                    'TOTAL_NETO' => 0
+                    'TOTAL_NETO' => 0,
+                    'COMPROBANTES' => [],
+                    'FECHA_MIN' => null,
+                    'FECHA_MAX' => null
                 ];
             }
 
@@ -243,22 +247,106 @@ try {
             }
 
             $netoItem = $importe * (1 - $porcDesc);
+            $valNeto = ($esNegativo ? -$netoItem : $netoItem);
+            
             $resumenClientes[$cod]['CANT_FACTURAS']++;
             $resumenClientes[$cod]['TOTAL_BRUTO'] += ($esNegativo ? -$importe : $importe);
-            $resumenClientes[$cod]['TOTAL_NETO'] += ($esNegativo ? -$netoItem : $netoItem);
+            $resumenClientes[$cod]['TOTAL_NETO'] += $valNeto;
+            
+            // Para sugerencias, guardamos el detalle
+            if ($tipo === 'sugerencias') {
+                $fProbCobro = $v['FECHA_PROB_COBRO'] instanceof DateTime ? $v['FECHA_PROB_COBRO']->format('Y-m-d') : $v['FECHA_PROB_COBRO'];
+                
+                $resumenClientes[$cod]['COMPROBANTES_ALL'][] = [
+                    't_comp' => trim($v['T_COMP']),
+                    'n_comp' => trim($v['N_COMP']),
+                    'importe_bruto' => ($esNegativo ? -$importe : $importe),
+                    'importe_neto' => $valNeto,
+                    'porcentaje_descuento' => $porcDesc * 100,
+                    'fecha_prob_cobro' => $fProbCobro
+                ];
+                
+                if ($fProbCobro) {
+                    if (!$resumenClientes[$cod]['FECHA_MIN'] || $fProbCobro < $resumenClientes[$cod]['FECHA_MIN']) $resumenClientes[$cod]['FECHA_MIN'] = $fProbCobro;
+                }
+            }
         }
 
-        foreach ($resumenClientes as $cliente) {
+        foreach ($resumenClientes as $cod => $cliente) {
             if (round($cliente['TOTAL_BRUTO'], 2) != 0) {
-                $tableData[] = $cliente;
+                if ($tipo === 'sugerencias') {
+                    // Ordenamos TODOS los comprobantes por fecha (vieja a nueva)
+                    usort($resumenClientes[$cod]['COMPROBANTES_ALL'], function($a, $b) {
+                        return strcmp($a['fecha_prob_cobro'] ?? '', $b['fecha_prob_cobro'] ?? '');
+                    });
+
+                    // SEGMENTACIÓN: Tomamos solo los primeros 10 comprobantes (más viejos)
+                    $maxSugeridos = 10;
+                    $sugeridos = array_slice($resumenClientes[$cod]['COMPROBANTES_ALL'], 0, $maxSugeridos);
+                    
+                    // Recalculamos totales de la SUGERENCIA específica
+                    $totalBrutoSug = 0;
+                    $totalNetoSug = 0;
+                    foreach($sugeridos as $s) {
+                        $totalBrutoSug += $s['importe_bruto'];
+                        $totalNetoSug += $s['importe_neto'];
+                    }
+
+                    // Si la sugerencia da un saldo negativo o cero, no es una "propuesta de pago"
+                    if ($totalNetoSug <= 0) {
+                        unset($resumenClientes[$cod]);
+                        continue;
+                    }
+
+                    $resumenClientes[$cod]['COMPROBANTES'] = $sugeridos;
+                    $resumenClientes[$cod]['TOTAL_BRUTO_SUG'] = $totalBrutoSug;
+                    $resumenClientes[$cod]['TOTAL_NETO_SUG'] = $totalNetoSug;
+                    $resumenClientes[$cod]['TOTAL_PENDIENTE_CLIENTE'] = $cliente['TOTAL_BRUTO'];
+                    $resumenClientes[$cod]['CANT_TOTAL_PENDIENTE'] = count($cliente['COMPROBANTES_ALL']);
+                    
+                    // --- CÁLCULO DE FECHA LÍMITE SUGERIDA: Factura más nueva + 15 días hábiles ---
+                    $ultimaFechaStr = null;
+                    foreach($sugeridos as $s) {
+                        if (!$ultimaFechaStr || $s['fecha_prob_cobro'] > $ultimaFechaStr) $ultimaFechaStr = $s['fecha_prob_cobro'];
+                    }
+                    
+                    if ($ultimaFechaStr) {
+                         $fechaBase = new DateTime($ultimaFechaStr);
+                         $fechaSugerida = sumarDiasHabilesCobranzas($fechaBase, 15);
+                         $hoy = new DateTime();
+                         $hoy->setTime(0, 0, 0); // Solo comparar fechas sin horas
+                         
+                         if ($fechaSugerida < $hoy) $fechaSugerida = $hoy;
+                         
+                         $resumenClientes[$cod]['FECHA_SUGERIDA'] = $fechaSugerida->format('Y-m-d');
+                    } else {
+                         $resumenClientes[$cod]['FECHA_SUGERIDA'] = (new DateTime())->format('Y-m-d');
+                    }
+                    
+                    unset($resumenClientes[$cod]['COMPROBANTES_ALL']); // Limpiamos para no enviar peso extra innecesario
+                    $tableData[] = $resumenClientes[$cod];
+                } else {
+                    unset($cliente['COMPROBANTES']);
+                    unset($cliente['FECHA_MIN']);
+                    unset($cliente['FECHA_MAX']);
+                    $tableData[] = $cliente;
+                }
                 $summary['totalNeto'] += $cliente['TOTAL_NETO'];
                 $summary['totalComprobantes'] += $cliente['CANT_FACTURAS'];
             }
         }
         $summary['totalClientes'] = count($tableData);
-        usort($tableData, function ($a, $b) {
-            return $b['TOTAL_NETO'] <=> $a['TOTAL_NETO'];
-        });
+
+        if ($tipo === 'sugerencias') {
+            // Ordenamos el listado general por la fecha mas vieja de cada cliente
+            usort($tableData, function ($a, $b) {
+                return strcmp($a['FECHA_MIN'] ?? '', $b['FECHA_MIN'] ?? '');
+            });
+        } else {
+            usort($tableData, function ($a, $b) {
+                return $b['TOTAL_NETO'] <=> $a['TOTAL_NETO'];
+            });
+        }
     }
 
     // Unificamos la respuesta final
@@ -268,4 +356,19 @@ try {
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Error en el servidor: ' . $e->getMessage()]);
+}
+
+function sumarDiasHabilesCobranzas($fechaInicio, $diasASumar) {
+    $feriados = ['2026-01-01','2026-03-02','2026-03-03','2026-03-24','2026-04-02','2026-04-03','2026-05-01','2026-05-25','2026-06-15','2026-06-20','2026-07-09','2026-08-17','2026-10-12','2026-11-23','2026-12-08','2026-12-25'];
+    $fecha = clone $fechaInicio;
+    $diasContados = 0;
+    while ($diasContados < $diasASumar) {
+        $fecha->modify('+1 day');
+        $diaSemana = (int) $fecha->format('N');
+        $fechaSoloDia = $fecha->format('Y-m-d');
+        if ($diaSemana >= 1 && $diaSemana <= 5 && !in_array($fechaSoloDia, $feriados)) {
+            $diasContados++;
+        }
+    }
+    return $fecha;
 }

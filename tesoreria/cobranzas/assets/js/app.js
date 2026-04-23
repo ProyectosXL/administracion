@@ -387,6 +387,9 @@ $(document).ready(function () {
         } else if (targetId === 'indicadores-tab') {
             // --- VISTA INDICADORES ---
             cargarIndicadoresPro();
+        } else if (targetId === 'sugerencias-tab') {
+            // --- VISTA SUGERENCIAS ---
+            initializeSugerenciasDataTable();
         } else {
             // --- VISTA PENDIENTES (FRANQUICIAS) ---
             $('#summary-cards').show(); // Mostramos los KPIs de deuda total

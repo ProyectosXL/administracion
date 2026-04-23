@@ -187,6 +187,12 @@ include 'templates/layout/header.php';
                         <i class="fa-solid fa-chart-line me-1"></i> Reportes
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sugerencias-tab" data-bs-toggle="tab" data-bs-target="#sugerencias"
+                        type="button" role="tab">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Sugerencias
+                    </button>
+                </li>
             </ul>
         </div>
         <div class="card-body">
@@ -320,6 +326,23 @@ include 'templates/layout/header.php';
                         </table>
                     </div>
                 </div>
+                <div class="tab-pane fade" id="sugerencias" role="tabpanel" aria-labelledby="sugerencias-tab">
+                    <div class="card bg-light mb-3 shadow-sm border-left-primary">
+                        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-lightbulb me-2"></i>Propuestas Sugeridas Automáticamente</h6>
+                                <p class="small text-muted mb-0">Basado en comprobantes pendientes ordenados por Fecha Probable de Cobro.</p>
+                            </div>
+                            <button class="btn btn-primary btn-sm shadow-sm" id="btn-generar-sugerencias">
+                                <i class="fa-solid fa-sync me-1"></i> Recalcular Sugerencias
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="tabla-sugerencias" class="table table-striped table-hover" style="width:100%">
+                        </table>
+                    </div>
+                </div>
                 <div class="tab-pane fade" id="indicadores" role="tabpanel">
                     <div class="row" id="container-indicadores">
                         <div class="col-12 text-center p-5">
@@ -405,6 +428,32 @@ include 'templates/layout/header.php';
         </div>
     </div>
 </div>
+<!-- ======================= MODAL PARA DETALLE DE SUGERENCIA ======================= -->
+<div class="modal fade" id="modalSugerenciaDetalle" tabindex="-1" aria-labelledby="modalSugerenciaDetalleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalSugerenciaDetalleLabel">
+                    <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Propuesta Sugerida
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="sugerencia-detalle-body">
+                <!-- Se llenará dinámicamente con JS imitando renderizarDetallePropuestaAdmin -->
+                <div class="text-center p-5"><div class="spinner-border" role="status"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success me-auto" id="btn-exportar-sugerencia-excel">
+                    <i class="fa-solid fa-file-excel me-1"></i> Exportar a Excel
+                </button>
+                <button type="button" class="btn btn-success" id="btn-crear-propuesta-desde-sug">
+                    <i class="fa-solid fa-paper-plane me-1"></i> Generar y Enviar Propuesta
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- ======================================================================================== -->
 
 <?php
@@ -415,6 +464,7 @@ include 'templates/layout/footer.php';
     const globalUsuarioNombre = "<?php echo isset($_SESSION['usuario_nombre']) ? addslashes($_SESSION['usuario_nombre']) : ''; ?>";
 </script>
 <!-- Scripts específicos para el panel admin -->
+<script src="assets/js/sugerencias.js"></script>
 <script src="assets/js/app.js?v=1.5"></script>
 
 </body>
