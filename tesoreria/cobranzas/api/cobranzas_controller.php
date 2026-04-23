@@ -175,9 +175,13 @@ try {
         $sql_facturas = "
             SELECT 
                 v.COD_CLIENT, v.RAZON_SOCI, v.FECHA_EMIS, v.T_COMP, v.N_COMP, 
-                v.ESTADO, v.IMPORTE, v.FECHA_PROB_COBRO, v.PPP, v.IMPORTE_NETO,
+                v.ESTADO, 
+                CAST(ISNULL(s.IMPORTE_VT - s.IMPORT_CAN, v.IMPORTE) AS FLOAT) as IMPORTE,
+                v.FECHA_PROB_COBRO, v.PPP, 
+                CAST(ISNULL((s.IMPORTE_VT - s.IMPORT_CAN) * (v.IMPORTE_NETO / NULLIF(v.IMPORTE, 0)), v.IMPORTE_NETO) AS FLOAT) as IMPORTE_NETO,
                 p.MEDIO_PAGO_DEFAULT, p.DIAS_PP_MAX, p.DESC_PP_MAX
             FROM $vista v
+            LEFT JOIN SJ_SALDOS_CC_DETALLE s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
             LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
             WHERE v.COD_CLIENT = ? 
               AND v.ESTADO <> 'IMP'
@@ -196,12 +200,14 @@ try {
         }
 
     } else {
-        // --- VISTA DE RESUMEN O SUGERENCIAS ---
-        $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.ESTADO, v.IMPORTE, v.IMPORTE_NETO, v.FECHA_PROB_COBRO,
-                       ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX, p.MEDIO_PAGO_DEFAULT
+        // --- VISTA DE RESUMEN ---
+        // Obtenemos todos los registros pendientes y agrupamos en PHP para evitar errores de conexión cruzada
+        $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.ESTADO, v.IMPORTE, v.IMPORTE_NETO,
+                       ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX
                 FROM $vista v
+                LEFT JOIN SJ_SALDOS_CC_DETALLE s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
                 LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                WHERE v.ESTADO <> 'IMP' AND v.T_COMP <> 'REC'";
+                WHERE v.ESTADO <> 'IMP' AND v.T_COMP <> 'REC' AND v.T_COMP NOT LIKE 'NCR%' AND v.T_COMP NOT LIKE 'NCP%'";
 
         $stmt = sqlsrv_query($conn_central, $sql);
         if ($stmt === false) {
@@ -228,7 +234,7 @@ try {
                 ];
             }
 
-            $esNegativo = (strpos($v['T_COMP'], 'NC') === 0);
+            $esNegativo = (strpos($v['T_COMP'], 'NC') === 0 || trim($v['T_COMP']) === 'REC');
             $importe = (float) $v['IMPORTE'];
             $descPP = (float) $v['DESC_PP_MAX'];
             $porcDesc = 0;
@@ -240,10 +246,26 @@ try {
                     $porcDesc = $descPP;
             } else {
                 $diff = $v['IMPORTE'] - $v['IMPORTE_NETO'];
-                if ($v['IMPORTE'] > 0 && $diff > ($v['IMPORTE'] * $descPP))
+                if ($v['IMPORTE'] > 0 && $diff > ($v['IMPORTE'] * $descPP)) {
                     $porcDesc = $diff / $v['IMPORTE'];
-                else
+                } else {
                     $porcDesc = $descPP;
+                }
+
+                // --- VALIDACIÓN DE ANTIGÜEDAD PARA DESCUENTO PRONTO PAGO ---
+                if ($v['FECHA_EMIS'] && $v['DIAS_PP_MAX'] > 0) {
+                    $f_emis = $v['FECHA_EMIS'];
+                    $fecha_base = ($f_emis instanceof DateTime) ? $f_emis : new DateTime($f_emis);
+                    $hoy = new DateTime();
+                    $intervalo = $hoy->diff($fecha_base);
+                    $antiguedad = $intervalo->days;
+
+                    // Si la antigüedad supera el límite y el descuento no viene "puesto" de Tango
+                    // (consideramos que viene puesto si diff es mayor que un margen de error mínimo)
+                    if ($antiguedad > $v['DIAS_PP_MAX'] && $diff < 0.01) {
+                        $porcDesc = 0;
+                    }
+                }
             }
 
             $netoItem = $importe * (1 - $porcDesc);

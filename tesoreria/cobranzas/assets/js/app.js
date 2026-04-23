@@ -241,8 +241,8 @@ $(document).ready(function () {
             className: 'text-end importe-bruto-cell',
             render: function (data, type, row) {
                 let valor = parseFloat(data);
-                // Si es Nota de Crédito (empieza con NC), lo hacemos negativo
-                if (row.T_COMP.trim().startsWith('NC')) {
+                // Si es Nota de Crédito (empieza con NC) o es un Recibo (REC), lo hacemos negativo
+                if (row.T_COMP.trim().startsWith('NC') || row.T_COMP.trim() === 'REC') {
                     valor = valor * -1;
                 }
                 const numeroFormateado = $.fn.dataTable.render.number('.', ',', 2, '$ ').display(valor);
@@ -262,6 +262,21 @@ $(document).ready(function () {
 
                 // Lógica de descuento por defecto (según parámetros del cliente)
                 initialDiscount = (parseFloat(row.DESC_PP_MAX) || 0) * 100;
+
+                // --- VALIDACIÓN DE ANTIGÜEDAD PARA DESCUENTO PRONTO PAGO ---
+                const maxDiasPP = parseInt(row.DIAS_PP_MAX) || 0;
+                if (maxDiasPP > 0) {
+                    const fEmis = new Date(row.FECHA_EMIS + 'T00:00:00');
+                    const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
+                    const diff = hoy - fEmis;
+                    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    
+                    // Si la factura tiene más días que el límite, el descuento inicial es 0%
+                    if (dias > maxDiasPP) {
+                        initialDiscount = 0;
+                    }
+                }
 
                 // Si el medio por defecto es Transferencia, solemos bajar 2 puntos (del 8 al 6)
                 const medioDef = (row.MEDIO_PAGO_DEFAULT || '').toString().trim().toUpperCase();
@@ -322,8 +337,8 @@ $(document).ready(function () {
                 // Forzamos el importe neto basado en el descuento calculado arriba
                 let valor = bruto * (1 - (initialDiscount / 100));
 
-                // Aplicamos signo negativo si es NC
-                if (tComp.startsWith('NC')) {
+                // Aplicamos signo negativo si es NC o REC
+                if (tComp.startsWith('NC') || tComp === 'REC') {
                     valor = valor * -1;
                 }
 
@@ -473,7 +488,7 @@ $(document).ready(function () {
             const rowData = tablaDetalle.row(tr).data();
             const tComp = rowData.T_COMP.trim();
             const estado = rowData.ESTADO.trim();
-            const esNegativo = tComp.startsWith('NC');
+            const esNegativo = tComp.startsWith('NC') || tComp === 'REC';
 
             let bruto = parseFloat(rowData.IMPORTE);
             // Leemos el neto de la celda, que ya está calculado y tiene el signo correcto
@@ -550,8 +565,8 @@ $(document).ready(function () {
         // Forzamos el importe neto basado en el descuento
         let importeNeto = importeBruto * (1 - (descuento / 100));
 
-        // Si es Nota de Crédito, el neto también es negativo
-        if (tipoComp.startsWith('NC')) {
+        // Si es Nota de Crédito o REC, el neto también es negativo
+        if (tipoComp.startsWith('NC') || tipoComp === 'REC') {
             // Aseguramos que sea negativo independientemente de si el importeBruto ya lo era
             importeNeto = Math.abs(importeNeto) * -1;
         } else {
