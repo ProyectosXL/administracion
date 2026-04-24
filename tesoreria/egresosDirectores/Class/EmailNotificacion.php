@@ -730,7 +730,7 @@ class EmailNotificacion {
             $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
             $mail->Username = 'notificaciones@xl.com.ar';
-            $mail->Password = 'yvsuiewmcztagevs'; // Contraseña de aplicación (16 caracteres sin espacios)
+            $mail->Password = 'zyzuvwqzyabjcuok'; // Contraseña de aplicación (16 caracteres sin espacios)
             $mail->SMTPSecure = 'ssl'; // SSL
             $mail->Port = 465; // Puerto SSL
             $mail->SMTPOptions = array(

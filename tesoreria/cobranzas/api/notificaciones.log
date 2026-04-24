@@ -809,3 +809,25 @@ sending limits go to
 [2026-04-23 16:45:29] Mail enviado con éxito!
 [2026-04-23 19:47:05] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2517)
 [2026-04-23 19:47:09] Mail enviado con éxito!
+[2026-04-24 12:43:37] Preparando mail para Admin para propuesta #2495
+[2026-04-24 12:43:37] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2495
+[2026-04-24 12:43:39] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-04-24 12:43:45] Preparando mail para Admin para propuesta #2495
+[2026-04-24 12:43:45] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2495
+[2026-04-24 12:43:48] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-04-24 13:50:00] Enviando mail a: ilerot17@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2536)
+[2026-04-24 13:50:02] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-04-24 14:29:50] Enviando mail a: bantonova@hotmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2537)
+[2026-04-24 14:29:53] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-04-24 15:23:59] Enviando mail a: gabrielortega37@hotmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2538)
+[2026-04-24 15:24:03] Mail enviado con éxito!
+[2026-04-24 15:25:13] Enviando mail a: gabrielortega37@hotmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2539)
+[2026-04-24 15:25:17] Mail enviado con éxito!
+[2026-04-24 15:59:48] Preparando mail para Admin para propuesta #2489
+[2026-04-24 15:59:48] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2489
+[2026-04-24 15:59:52] Mail enviado con éxito!
+[2026-04-24 16:00:01] Preparando mail para Admin para propuesta #2489
+[2026-04-24 16:00:02] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2489
+[2026-04-24 16:00:06] Mail enviado con éxito!
+[2026-04-24 17:31:30] Enviando mail a: xllomas@hotmail.com;fabilanati@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2540)
+[2026-04-24 17:31:35] Mail enviado con éxito!
