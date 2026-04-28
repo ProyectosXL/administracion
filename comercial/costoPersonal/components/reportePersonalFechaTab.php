@@ -1,0 +1,108 @@
+<?php
+// Variables disponibles desde index.php: $todosLosLocales, $rangoDefault
+?>
+<!-- Pestaña 2: Reporte por Sucursal -->
+<div class="reporte-sucursal-cp-container">
+
+    <!-- Filtros -->
+    <div class="filters-section-cp" style="background:#fff;border-radius:12px;padding:22px 25px;margin-bottom:22px;box-shadow:0 4px 15px rgba(0,0,0,0.07);border-left:4px solid #3498db;">
+        <div style="display:flex;align-items:center;margin-bottom:18px;font-size:17px;font-weight:700;color:#2c3e50;">
+            <i class="bi bi-funnel" style="margin-right:10px;color:#3498db;font-size:20px;"></i>
+            Filtros
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <label style="font-weight:600;color:#2c3e50;margin-bottom:6px;display:block;">
+                    <i class="bi bi-building"></i> Sucursal
+                </label>
+                <select class="form-control" id="cpRpfSucursal" style="border-radius:8px;border:2px solid #e9ecef;height:calc(2.25rem + 4px);">
+                    <option value="">Seleccionar sucursal…</option>
+                    <?php foreach ($todosLosLocales as $local): ?>
+                        <option value="<?= htmlspecialchars($local['ID']) ?>"><?= htmlspecialchars($local['DESC_SUCURSAL'] ?? $local['SUCURSAL'] ?? $local['ID']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label style="font-weight:600;color:#2c3e50;margin-bottom:6px;display:block;">
+                    <i class="bi bi-calendar-event"></i> Fecha Desde
+                </label>
+                <input type="date" class="form-control" id="cpRpfDesde" value="<?= $rangoDefault['desde'] ?>"
+                       style="border-radius:8px;border:2px solid #e9ecef;height:calc(2.25rem + 4px);">
+            </div>
+            <div class="col-md-3">
+                <label style="font-weight:600;color:#2c3e50;margin-bottom:6px;display:block;">
+                    <i class="bi bi-calendar-event"></i> Fecha Hasta
+                </label>
+                <input type="date" class="form-control" id="cpRpfHasta" value="<?= $rangoDefault['hasta'] ?>"
+                       style="border-radius:8px;border:2px solid #e9ecef;height:calc(2.25rem + 4px);">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-primary w-100" id="cpRpfBtnAplicar"
+                        style="border-radius:8px;font-weight:600;height:calc(2.25rem + 4px);">
+                    <i class="bi bi-search"></i> Consultar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div id="cpRpfKpisSection" style="display:none;margin-bottom:22px;">
+        <div class="row">
+            <div class="col-md-4">
+                <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,0.07);border-left:4px solid #3498db;">
+                    <div style="font-size:12px;font-weight:700;color:#7f8c8d;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                        <i class="bi bi-cash-stack"></i> Costo Total Período
+                    </div>
+                    <div id="cpRpfKpiCosto" style="font-size:26px;font-weight:800;color:#2c3e50;">—</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,0.07);border-left:4px solid #e67e22;">
+                    <div style="font-size:12px;font-weight:700;color:#7f8c8d;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                        <i class="bi bi-percent"></i> % Costo Personal
+                    </div>
+                    <div id="cpRpfKpiPct" style="font-size:26px;font-weight:800;color:#2c3e50;">—</div>
+                    <div id="cpRpfKpiPctBadge" style="margin-top:5px;display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#ecf0f1;color:#7f8c8d;">—</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,0.07);border-left:4px solid #9b59b6;">
+                    <div style="font-size:12px;font-weight:700;color:#7f8c8d;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+                        <i class="bi bi-arrow-up-down"></i> Variación YoY (pp)
+                    </div>
+                    <div id="cpRpfKpiYoy" style="font-size:26px;font-weight:800;color:#2c3e50;">—</div>
+                    <div id="cpRpfKpiYoyPeriod" style="font-size:11px;color:#95a5a6;margin-top:4px;">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div id="cpRpfTableSection" style="display:none;background:#fff;border-radius:12px;padding:22px 25px;box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #ecf0f1;">
+            <h3 style="margin:0;font-size:17px;font-weight:700;color:#2c3e50;">
+                <i class="bi bi-table" style="color:#3498db;margin-right:8px;"></i>
+                Detalle por Mes
+                <span id="cpRpfSucursalNombre" style="color:#7f8c8d;font-size:14px;font-weight:500;margin-left:10px;"></span>
+            </h3>
+            <div style="display:flex;gap:8px;">
+                <button type="button" class="pdf-btn" id="cpRpfBtnPDF" style="display:none;" title="Descargar PDF">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered" id="cpTablaReporteSucursal" style="font-size:13px;">
+                <!-- Llenado dinámico -->
+            </table>
+        </div>
+    </div>
+
+    <!-- Estado vacío -->
+    <div id="cpRpfEmptyState" style="text-align:center;padding:60px 20px;background:#fff;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+        <i class="bi bi-building" style="font-size:4rem;color:#bdc3c7;display:block;margin-bottom:20px;"></i>
+        <h3 style="color:#2c3e50;font-weight:600;margin-bottom:10px;">Seleccione una sucursal</h3>
+        <p style="color:#7f8c8d;font-size:15px;">Elija una sucursal y un rango de fechas para ver el detalle mensual de costos de personal.</p>
+    </div>
+
+</div>

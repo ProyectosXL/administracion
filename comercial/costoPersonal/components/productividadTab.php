@@ -1,0 +1,135 @@
+<?php
+// Variables disponibles desde index.php: $rangoDefault
+?>
+<!-- Pestaña 4: Productividad -->
+<div class="productividad-cp-container">
+
+    <!-- Período pills -->
+    <div style="background:#fff;border-radius:12px;padding:20px 25px;margin-bottom:20px;box-shadow:0 4px 15px rgba(0,0,0,0.07);border-left:4px solid #f39c12;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:700;color:#2c3e50;white-space:nowrap;">
+                <i class="bi bi-lightning-fill" style="color:#f39c12;"></i> Período:
+            </span>
+            <div id="cpProdPeriodPills" style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="period-pill cp-prod-pill" data-months="3">3 meses</button>
+                <button type="button" class="period-pill cp-prod-pill" data-months="6">6 meses</button>
+                <button type="button" class="period-pill cp-prod-pill active" data-months="12">12 meses</button>
+                <button type="button" class="period-pill cp-prod-pill" data-months="0">Personalizado</button>
+            </div>
+            <span id="cpProdPeriodLabel" style="font-size:12px;color:#95a5a6;font-style:italic;margin-left:6px;"></span>
+        </div>
+        <div id="cpProdCustomRange" style="display:none;margin-top:14px;">
+            <div class="row">
+                <div class="col-md-3">
+                    <label style="font-weight:600;color:#2c3e50;margin-bottom:5px;font-size:13px;display:block;">Desde</label>
+                    <input type="date" class="form-control" id="cpProdFechaDesde" style="border-radius:8px;border:2px solid #e9ecef;height:calc(2.25rem + 2px);">
+                </div>
+                <div class="col-md-3">
+                    <label style="font-weight:600;color:#2c3e50;margin-bottom:5px;font-size:13px;display:block;">Hasta</label>
+                    <input type="date" class="form-control" id="cpProdFechaHasta" style="border-radius:8px;border:2px solid #e9ecef;height:calc(2.25rem + 2px);">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-warning w-100" id="cpProdBtnAplicar"
+                            style="border-radius:8px;font-weight:600;height:calc(2.25rem + 2px);color:#fff;">
+                        <i class="bi bi-search"></i> Aplicar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spinner -->
+    <div id="cpProdLoading" style="display:none;text-align:center;padding:60px 20px;">
+        <div class="spinner-border" style="color:#f39c12;width:3rem;height:3rem;" role="status"></div>
+        <p style="margin-top:15px;color:#7f8c8d;font-weight:500;">Calculando productividad por sucursal…</p>
+    </div>
+
+    <!-- Contenido (oculto hasta cargar) -->
+    <div id="cpProdContent" style="display:none;">
+
+        <!-- KPIs -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div style="background:linear-gradient(135deg,#f39c12 0%,#e67e22 100%);border-radius:12px;padding:20px;color:#fff;box-shadow:0 4px 15px rgba(243,156,18,0.3);">
+                    <div style="font-size:11px;font-weight:700;opacity:0.85;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">
+                        <i class="bi bi-lightning-fill"></i> Productividad Cadena
+                    </div>
+                    <div id="cpProdKpiCadena" style="font-size:28px;font-weight:800;">—</div>
+                    <div style="font-size:11px;opacity:0.8;margin-top:4px;">Venta Neta / Costo Personal (ponderado)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="background:linear-gradient(135deg,#27ae60 0%,#229954 100%);border-radius:12px;padding:20px;color:#fff;box-shadow:0 4px 15px rgba(39,174,96,0.3);">
+                    <div style="font-size:11px;font-weight:700;opacity:0.85;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">
+                        <i class="bi bi-trophy-fill"></i> Mayor Productividad
+                    </div>
+                    <div id="cpProdKpiMejorVal" style="font-size:22px;font-weight:800;">—</div>
+                    <div id="cpProdKpiMejorNombre" style="font-size:12px;opacity:0.85;margin-top:4px;">—</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="background:linear-gradient(135deg,#e74c3c 0%,#c0392b 100%);border-radius:12px;padding:20px;color:#fff;box-shadow:0 4px 15px rgba(231,76,60,0.3);">
+                    <div style="font-size:11px;font-weight:700;opacity:0.85;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Menor Productividad
+                    </div>
+                    <div id="cpProdKpiPeorVal" style="font-size:22px;font-weight:800;">—</div>
+                    <div id="cpProdKpiPeorNombre" style="font-size:12px;opacity:0.85;margin-top:4px;">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico ranking -->
+        <div style="background:#fff;border-radius:12px;padding:22px 25px;margin-bottom:22px;box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #ecf0f1;">
+                <h3 style="margin:0;font-size:17px;font-weight:700;color:#2c3e50;">
+                    <i class="bi bi-bar-chart-fill" style="color:#f39c12;margin-right:8px;"></i>
+                    Ranking de Productividad (Venta / Costo Personal)
+                </h3>
+                <button class="pdf-btn" id="cpProdBtnPDF" title="Descargar PDF">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+            </div>
+            <div id="cpProdChartWrap" style="position:relative;height:450px;">
+                <canvas id="cpProdChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabla detalle -->
+        <div style="background:#fff;border-radius:12px;padding:22px 25px;box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #ecf0f1;">
+                <h3 style="margin:0;font-size:17px;font-weight:700;color:#2c3e50;">
+                    <i class="bi bi-table" style="color:#3498db;margin-right:8px;"></i>
+                    Detalle por Sucursal
+                </h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered table-hover" id="cpProdTabla" style="font-size:13px;">
+                    <thead>
+                        <tr style="background:linear-gradient(135deg,#2c3e50 0%,#34495e 100%);color:#fff;">
+                            <th style="position:sticky;left:0;background:#2c3e50;z-index:10;min-width:200px;">Sucursal</th>
+                            <th class="text-right">Venta Neta</th>
+                            <th class="text-right">Costo Personal</th>
+                            <th class="text-right">% Costo</th>
+                            <th class="text-right">Productividad</th>
+                            <th class="text-right">Prod. Ant. (YoY)</th>
+                            <th class="text-right">Var. YoY</th>
+                            <th class="text-center">Eficiencia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cpProdTablaBody">
+                        <!-- Llenado dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- /cpProdContent -->
+
+    <!-- Estado vacío -->
+    <div id="cpProdEmptyState" style="text-align:center;padding:60px 20px;background:#fff;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.07);">
+        <i class="bi bi-lightning" style="font-size:4rem;color:#bdc3c7;display:block;margin-bottom:20px;"></i>
+        <h3 style="color:#2c3e50;font-weight:600;margin-bottom:10px;">Seleccione un período</h3>
+        <p style="color:#7f8c8d;font-size:15px;">Elija un rango de tiempo para calcular la productividad de cada sucursal.</p>
+    </div>
+
+</div>
