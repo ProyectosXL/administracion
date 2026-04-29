@@ -115,6 +115,11 @@ function fetchIndicadoresPersonal(fechaDesde, fechaHasta) {
                 IndicadoresPersonalModule.currentFilter = null;
                 _render(response.data);
                 $('#cpIndContent').fadeIn(250);
+                CostoPersonalGlobal.renderBannerMesesSinDatos(
+                    response.data.meses_sin_datos           || [],
+                    response.data.meses_totales_periodo     || 0,
+                    response.data.meses_con_datos_completos || 0
+                );
             } else {
                 _showError(response.message || 'No se pudieron obtener los indicadores.');
             }
@@ -140,10 +145,22 @@ function _render(data) {
 function _renderDestacado(ranking) {
     const $el = $('#cpIndDestacadoCritico');
     if (!$el.length || !ranking || !ranking.length) return;
-    const peor = ranking[0];
-    if (peor && peor.pct_actual !== null) {
+
+    // Encontrar la peor sucursal con pct recalculado (no necesariamente ranking[0])
+    let peorPct = -Infinity;
+    let peor = null;
+    ranking.forEach(s => {
+        let pct = s.pct_actual;
+        if (s.costos_por_categoria && s.venta_neta > 0) {
+            const costo = CostoPersonalGlobal.calcularCostoTotal(s.costos_por_categoria);
+            pct = (costo / s.venta_neta) * 100;
+        }
+        if (pct !== null && pct > peorPct) { peorPct = pct; peor = { ...s, pct_recalc: pct }; }
+    });
+
+    if (peor) {
         $el.show().html(
-            `<i class="bi bi-exclamation-triangle-fill"></i> Mayor costo de personal: <strong>${CostoPersonalGlobal.esc(peor.nombre)}</strong> — <strong>${peor.pct_actual.toFixed(1)}%</strong>`
+            `<i class="bi bi-exclamation-triangle-fill"></i> Mayor costo de personal: <strong>${CostoPersonalGlobal.esc(peor.nombre)}</strong> — <strong>${peor.pct_recalc.toFixed(1)}%</strong>`
         );
     } else {
         $el.hide();
@@ -202,9 +219,18 @@ function _renderKPIs(kpis, fechaDesdeAnt, fechaHastaAnt, parametros, sucursales)
             : ''
     );
 
-    // KPI 3: sucursales en rojo
-    const nRojo  = IndicadoresPersonalModule.data?.semaforo_counts?.rojo || 0;
-    const nTotal = (IndicadoresPersonalModule.data?.sucursales || []).filter(s => s.pct_actual !== null).length;
+    // KPI 3: sucursales en rojo — recalculado con categorías activas
+    let nRojo = 0, nTotal = 0;
+    (sucursales || []).forEach(s => {
+        let pct = null;
+        if (s.costos_por_categoria && s.venta_neta > 0) {
+            const costo = CostoPersonalGlobal.calcularCostoTotal(s.costos_por_categoria);
+            pct = (costo / s.venta_neta) * 100;
+        } else {
+            pct = s.pct_actual;
+        }
+        if (pct !== null) { nTotal++; if (CostoPersonalGlobal.semClass(pct) === 'rojo') nRojo++; }
+    });
     const pctRed = nTotal > 0 ? Math.round((nRojo / nTotal) * 100) : 0;
 
     $('#cpKpiRojoVal').html(`${nRojo}<small style="font-size:18px;color:#95a5a6">/${nTotal}</small>`);
@@ -233,7 +259,7 @@ function _renderRanking(ranking) {
     const umbralRojo  = CP_CONFIG.umbralRojo;
     const objetivo    = CP_CONFIG.objetivoPct;
 
-    // Recalcular pct con categorías activas
+    // Recalcular pct con categorías activas y reordenar ranking
     const rankingRecalc = ranking.map(s => {
         let pct = s.pct_actual;
         if (s.costos_por_categoria && s.venta_neta > 0) {
@@ -242,6 +268,7 @@ function _renderRanking(ranking) {
         }
         return { ...s, pct_recalc: pct };
     });
+    rankingRecalc.sort((a, b) => (b.pct_recalc ?? -1) - (a.pct_recalc ?? -1));
 
     const barH  = 36;
     const height = Math.max(300, rankingRecalc.length * barH + 80);
@@ -355,9 +382,19 @@ function _renderRanking(ranking) {
 }
 
 function _renderSemaforo(sucursales, counts) {
-    $('#cpSemCountVerde').text(counts.verde || 0);
-    $('#cpSemCountAmarillo').text(counts.amarillo || 0);
-    $('#cpSemCountRojo').text(counts.rojo || 0);
+    // Recalcular conteos con categorías activas
+    const recalc = { verde: 0, amarillo: 0, rojo: 0, sin_datos: 0 };
+    sucursales.forEach(s => {
+        let pct = null;
+        if (s.costos_por_categoria && s.venta_neta > 0) {
+            const costo = CostoPersonalGlobal.calcularCostoTotal(s.costos_por_categoria);
+            pct = (costo / s.venta_neta) * 100;
+        }
+        recalc[CostoPersonalGlobal.semClass(pct)]++;
+    });
+    $('#cpSemCountVerde').text(recalc.verde);
+    $('#cpSemCountAmarillo').text(recalc.amarillo);
+    $('#cpSemCountRojo').text(recalc.rojo);
     _buildSemList(sucursales);
 }
 

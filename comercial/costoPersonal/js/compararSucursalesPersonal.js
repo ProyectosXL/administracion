@@ -71,6 +71,11 @@ const CompararSucursalesPersonalModule = (() => {
                 if (response.success) {
                     _data = response.data;
                     _render();
+                    CostoPersonalGlobal.renderBannerMesesSinDatos(
+                        response.data.meses_sin_datos           || [],
+                        response.data.meses_totales_periodo     || 0,
+                        response.data.meses_con_datos_completos || 0
+                    );
                 } else {
                     _showError(response.message || 'No se pudo realizar la comparación.');
                 }

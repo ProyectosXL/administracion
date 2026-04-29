@@ -34,9 +34,17 @@ try {
     if (!$dDesde || !$dHasta) throw new Exception('Formato de fecha inválido.');
     if ($dDesde > $dHasta)    throw new Exception('La fecha desde no puede ser mayor a la fecha hasta.');
 
-    $dataset = $service->construirDataset((int) $idSucursal, $fechaDesde, $fechaHasta);
+    // Detectar meses sin datos y filtrar el cálculo
+    $deteccion = $service->detectarMesesSinDatos($fechaDesde, $fechaHasta);
+    $mesesOk   = $deteccion['meses_ok'];
 
-    // Datos de evolución (últimos 6 meses vs YoY) para modal de gráfico
+    $dataset = $service->construirDataset((int) $idSucursal, $fechaDesde, $fechaHasta, $mesesOk);
+
+    // Agregar metadata de meses sin datos
+    $dataset['meses_sin_datos']           = $deteccion['meses_sin_datos'];
+    $dataset['meses_con_datos_completos'] = count($mesesOk);
+    $dataset['meses_totales_periodo']     = $deteccion['total_meses'];
+
     $evolucion = $service->obtenerDatosEvolucion((int) $idSucursal, $dataset['meses']);
 
     echo json_encode([

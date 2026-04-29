@@ -16,12 +16,6 @@ const CostoPersonalGlobal = (() => {
     let _activas = [...TODAS_CATS];   // categorías actualmente activas
 
     /* ── Inicialización ──────────────────────────────────────── */
-    function init() {
-        _cargarDesdeStorage();
-        _renderCheckboxes();
-        _bindEvents();
-    }
-
     function _cargarDesdeStorage() {
         try {
             const raw = sessionStorage.getItem(STORAGE_KEY);
@@ -63,6 +57,9 @@ const CostoPersonalGlobal = (() => {
 
     /* ── Binding de eventos ──────────────────────────────────── */
     function _bindEvents() {
+        // El <input> está dentro del <label>, así que el browser ya lo togglea
+        // al hacer clic en cualquier parte de la píldora — no se necesita handler
+        // adicional de click (agregaría un segundo toggle cancelando el primero).
         $(document).on('change', '#cpCategoriasToggle .cat-toggle', function () {
             const val     = $(this).val();
             const checked = $(this).prop('checked');
@@ -81,12 +78,6 @@ const CostoPersonalGlobal = (() => {
             _guardarEnStorage();
             _renderCheckboxes();
             _dispatchChange();
-        });
-
-        // Click en la píldora completa (toggle sin necesitar el <input> directo)
-        $(document).on('click', '#cpCategoriasToggle .cp-cat-pill', function (e) {
-            if ($(e.target).is('input')) return;  // ya lo maneja el change
-            $(this).find('input[type=checkbox]').not(':disabled').trigger('click');
         });
     }
 
@@ -191,13 +182,109 @@ const CostoPersonalGlobal = (() => {
         return cl === 'verde' ? '#27ae60' : cl === 'amarillo' ? '#e67e22' : '#e74c3c';
     }
 
+    /* ── Banner: meses sin datos ────────────────────────────────── */
+
+    const _NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+    const _VERBO = {
+        SIN_COSTOS: { sing: 'no tiene costos cargados',          plur: 'no tienen costos cargados' },
+        SIN_VENTAS: { sing: 'no tiene ventas cargadas',           plur: 'no tienen ventas cargadas' },
+        AMBOS:      { sing: 'no tiene costos ni ventas cargados', plur: 'no tienen costos ni ventas cargados' },
+    };
+
+    function _parseFecha(fecha) {
+        const [y, m] = fecha.split('-');
+        return { nombre: _NOMBRES_MES[parseInt(m) - 1], anio: parseInt(y) };
+    }
+
+    function _formatGrupo(fechas, estado) {
+        const parsed = fechas.map(_parseFecha);
+        const n      = parsed.length;
+        const v      = (_VERBO[estado] || _VERBO.AMBOS);
+        const verbo  = n === 1 ? v.sing : v.plur;
+
+        if (n === 1) return `${parsed[0].nombre} ${parsed[0].anio} ${verbo}`;
+
+        const anyos = [...new Set(parsed.map(p => p.anio))];
+
+        if (n === 2) {
+            // "Febrero 2025 y Marzo 2025 …"
+            return `${parsed[0].nombre} ${parsed[0].anio} y ${parsed[1].nombre} ${parsed[1].anio} ${verbo}`;
+        }
+
+        // 3 o más
+        if (anyos.length === 1) {
+            // "Febrero, Marzo y Abril 2025 …"
+            const head = parsed.slice(0, -1).map(p => p.nombre).join(', ');
+            return `${head} y ${parsed[n - 1].nombre} ${anyos[0]} ${verbo}`;
+        }
+
+        // Años distintos: cada mes lleva su año
+        const head = parsed.slice(0, -1).map(p => `${p.nombre} ${p.anio}`).join(', ');
+        return `${head} y ${parsed[n - 1].nombre} ${parsed[n - 1].anio} ${verbo}`;
+    }
+
+    function _buildBannerMsg(mesesSinDatos) {
+        const grupos = {};
+        for (const mes of mesesSinDatos) {
+            if (!grupos[mes.estado]) grupos[mes.estado] = [];
+            grupos[mes.estado].push(mes.mes);
+        }
+        const partes = Object.entries(grupos).map(([est, fechas]) => _formatGrupo(fechas, est));
+        return partes.join('. ') + '.';
+    }
+
+    /**
+     * Muestra u oculta el banner de "meses sin datos" en #cp-banner-meses-sin-datos.
+     * @param {Array}  mesesSinDatos   Array de {fecha, estado} devuelto por el backend.
+     * @param {number} periodoCompleto Total de meses en el período seleccionado.
+     * @param {number} periodoConDatos Meses con datos completos que se usaron.
+     */
+    function renderBannerMesesSinDatos(mesesSinDatos, periodoCompleto, periodoConDatos) {
+        const $banner = $('#cp-banner-meses-sin-datos');
+        if (!$banner.length) return;
+
+        if (!mesesSinDatos || mesesSinDatos.length === 0) {
+            $banner.hide().empty();
+            return;
+        }
+
+        const msg  = _buildBannerMsg(mesesSinDatos);
+        const sub  = periodoConDatos < periodoCompleto
+            ? `Se calculó con ${periodoConDatos} de ${periodoCompleto} meses disponibles. `
+            : '';
+
+        $banner.html(
+            `<div class="cp-banner-warning">` +
+                `<span class="cp-banner-icon">&#9888;</span>` +
+                `<div class="cp-banner-content">` +
+                    `<strong>Período incompleto</strong>` +
+                    `<small>${sub}${esc(msg)}</small>` +
+                `</div>` +
+            `</div>`
+        ).show();
+    }
+
     /* ── Auto-init cuando el DOM esté listo ────────────────────── */
+    function init() {
+        _cargarDesdeStorage();
+        _renderCheckboxes();
+        _bindEvents();
+
+        // Ocultar banner al cambiar de pestaña
+        $('a[data-toggle="tab"]').on('shown.bs.tab', () => {
+            $('#cp-banner-meses-sin-datos').hide().empty();
+        });
+    }
+
     $(document).ready(init);
 
     return {
         getActivas,
         calcularCostoTotal,
         calcularPorcentaje,
+        renderBannerMesesSinDatos,
         fmtPesos,
         fmtPct,
         fmtDateHuman,

@@ -6,10 +6,59 @@
 
     <!-- Filtros -->
     <div style="background:#fff;border-radius:12px;padding:22px 25px;margin-bottom:22px;box-shadow:0 4px 15px rgba(0,0,0,0.07);border-left:4px solid #9b59b6;">
-        <div style="display:flex;align-items:center;margin-bottom:18px;font-size:17px;font-weight:700;color:#2c3e50;">
-            <i class="bi bi-funnel" style="margin-right:10px;color:#9b59b6;font-size:20px;"></i>
-            Período de Consulta
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <div style="font-size:17px;font-weight:700;color:#2c3e50;display:flex;align-items:center;">
+                <i class="bi bi-funnel" style="margin-right:10px;color:#9b59b6;font-size:20px;"></i>
+                Período de Consulta
+            </div>
+            <button type="button" class="ind-help-btn"
+                    data-toggle="modal" data-target="#modalAyudaReporteFecha">
+                <i class="bi bi-info-circle-fill"></i> ¿Cómo leer esto?
+            </button>
         </div>
+
+    <!-- MODAL AYUDA: Reporte a Fecha -->
+    <div class="modal fade" id="modalAyudaReporteFecha" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content ind-help-modal">
+                <div class="modal-header ind-help-modal-header">
+                    <div class="d-flex align-items-center" style="gap:12px">
+                        <div class="ind-help-icon-wrap"><i class="bi bi-calendar-range"></i></div>
+                        <div>
+                            <h5 class="modal-title">Reporte a Fecha — Guía de lectura</h5>
+                            <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.75)">Todas las sucursales en un vistazo, comparadas por concepto</p>
+                        </div>
+                    </div>
+                    <button type="button" class="ind-help-close" data-dismiss="modal"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="modal-body ind-help-modal-body">
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-bookmark-fill"></i> Vista transpuesta</div>
+                        <p class="ind-help-text">A diferencia del Reporte por Sucursal, aquí las <strong>sucursales son columnas</strong> y los <strong>conceptos son filas</strong>. Permite detectar de un vistazo qué sucursal tiene el mayor costo en cada concepto.</p>
+                    </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-funnel-fill"></i> Categorías activas</div>
+                        <p class="ind-help-text">Las categorías del toggle superior recalculan totales y % en tiempo real, sin necesidad de volver a consultar el servidor.</p>
+                    </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-speedometer2"></i> KPIs globales</div>
+                        <ul class="ind-help-text" style="padding-left:18px">
+                            <li><strong>Sucursales analizadas</strong>: cantidad de locales con datos en el período.</li>
+                            <li><strong>% Costo total cadena</strong>: costo de personal / venta neta de toda la red.</li>
+                            <li><strong>Mejor / Peor</strong>: locales con menor y mayor % costo de personal.</li>
+                        </ul>
+                    </div>
+                    <div class="ind-help-section" style="border-bottom:none">
+                        <div class="ind-help-section-title"><i class="bi bi-lightbulb-fill"></i> Variación vs. año anterior</div>
+                        <p class="ind-help-text">Cada columna de sucursal muestra un indicador ▲▼ con la diferencia en puntos porcentuales vs. el mismo período del año anterior. Verde = mejoró, rojo = empeoró.</p>
+                    </div>
+                </div>
+                <div class="modal-footer ind-help-modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
         <div class="row align-items-end">
             <div class="col-md-3">
                 <label style="font-weight:600;color:#2c3e50;margin-bottom:6px;display:block;">

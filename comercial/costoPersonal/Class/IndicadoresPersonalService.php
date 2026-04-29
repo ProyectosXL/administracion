@@ -62,12 +62,14 @@ class IndicadoresPersonalService
      * Construye los datos ejecutivos de una sucursal para el período dado.
      * Incluye `costos_por_categoria` y `conceptos_detalle` para que el
      * frontend pueda recalcular al togglear categorías sin AJAX.
+     *
+     * @param array $mesesOk  Meses con datos completos. Vacío = todos los meses.
      */
-    public function buildDatosSucursal(array $sucursal, string $fechaDesde, string $fechaHasta): array
+    public function buildDatosSucursal(array $sucursal, string $fechaDesde, string $fechaHasta, array $mesesOk = []): array
     {
         $id = (int) $sucursal['ID'];
 
-        $dataActual = $this->costoService->construirDatasetSimplificado($id, $fechaDesde, $fechaHasta);
+        $dataActual = $this->costoService->construirDatasetSimplificado($id, $fechaDesde, $fechaHasta, $mesesOk);
 
         $desdeAnt = (new DateTime($fechaDesde))->modify('-12 months')->format('Y-m-d');
         $hastaAnt = (new DateTime($fechaHasta))->modify('-12 months')->format('Y-m-d');
@@ -119,19 +121,23 @@ class IndicadoresPersonalService
 
     public function buildIndicadores(array $sucursales, string $fechaDesde, string $fechaHasta): array
     {
+        // Detectar meses sin datos y filtrar el cálculo
+        $deteccion = $this->costoService->detectarMesesSinDatos($fechaDesde, $fechaHasta);
+        $mesesOk   = $deteccion['meses_ok'];
+
         $datos = [];
         foreach ($sucursales as $suc) {
-            $datos[] = $this->buildDatosSucursal($suc, $fechaDesde, $fechaHasta);
+            $datos[] = $this->buildDatosSucursal($suc, $fechaDesde, $fechaHasta, $mesesOk);
         }
 
         $conDatos = array_values(array_filter($datos, fn($d) => $d['pct_actual'] !== null));
 
-        // KPIs de cadena (promedio ponderado por venta neta)
+        // KPIs de cadena — datos ya filtrados a meses OK
         $totalVenta = array_sum(array_column($conDatos, 'venta_neta'));
         $totalCosto = array_sum(array_column($conDatos, 'costo_total'));
         $pctCadena  = $totalVenta > 0 ? round(($totalCosto / $totalVenta) * 100, 2) : null;
 
-        // YoY cadena
+        // YoY cadena — período anterior sin filtrar (fechas distintas)
         $desdeAnt = (new DateTime($fechaDesde))->modify('-12 months')->format('Y-m-d');
         $hastaAnt = (new DateTime($fechaHasta))->modify('-12 months')->format('Y-m-d');
 
@@ -144,17 +150,13 @@ class IndicadoresPersonalService
         }
         $pctCadenaAnt = $totalVentaAnt > 0 ? round(($totalCostoAnt / $totalVentaAnt) * 100, 2) : null;
 
-        $varPPCadena       = ($pctCadena !== null && $pctCadenaAnt !== null) ? round($pctCadena - $pctCadenaAnt, 2) : null;
-        $varRelCadena      = ($pctCadenaAnt && $pctCadenaAnt != 0 && $pctCadena !== null)
+        $varPPCadena  = ($pctCadena !== null && $pctCadenaAnt !== null) ? round($pctCadena - $pctCadenaAnt, 2) : null;
+        $varRelCadena = ($pctCadenaAnt && $pctCadenaAnt != 0 && $pctCadena !== null)
             ? round((($pctCadena - $pctCadenaAnt) / $pctCadenaAnt) * 100, 2) : null;
 
-        // Semáforo
         $sem = ['verde' => 0, 'amarillo' => 0, 'rojo' => 0, 'sin_datos' => 0];
-        foreach ($datos as $d) {
-            $sem[$d['semaforo']] = ($sem[$d['semaforo']] ?? 0) + 1;
-        }
+        foreach ($datos as $d) $sem[$d['semaforo']] = ($sem[$d['semaforo']] ?? 0) + 1;
 
-        // Ranking mayor → menor
         $ranking = $conDatos;
         usort($ranking, fn($a, $b) => $b['pct_actual'] <=> $a['pct_actual']);
 
@@ -168,18 +170,21 @@ class IndicadoresPersonalService
                 'total_venta'        => round($totalVenta, 2),
                 'total_costo'        => round($totalCosto, 2),
             ],
-            'semaforo_counts' => $sem,
-            'ranking'         => $ranking,
-            'sucursales'      => $datos,
-            'parametros'      => [
+            'semaforo_counts'          => $sem,
+            'ranking'                  => $ranking,
+            'sucursales'               => $datos,
+            'parametros'               => [
                 'umbral_verde' => $this->umbralVerde,
                 'umbral_rojo'  => $this->umbralRojo,
                 'objetivo_pct' => $this->objetivoPct,
             ],
-            'fecha_desde'     => $fechaDesde,
-            'fecha_hasta'     => $fechaHasta,
-            'fecha_desde_ant' => $desdeAnt,
-            'fecha_hasta_ant' => $hastaAnt,
+            'fecha_desde'              => $fechaDesde,
+            'fecha_hasta'              => $fechaHasta,
+            'fecha_desde_ant'          => $desdeAnt,
+            'fecha_hasta_ant'          => $hastaAnt,
+            'meses_sin_datos'          => $deteccion['meses_sin_datos'],
+            'meses_con_datos_completos' => count($mesesOk),
+            'meses_totales_periodo'    => $deteccion['total_meses'],
         ];
     }
 }

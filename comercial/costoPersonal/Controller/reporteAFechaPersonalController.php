@@ -47,6 +47,10 @@ try {
         }
     }
 
+    // Detectar meses sin datos y filtrar el cálculo
+    $deteccion = $service->detectarMesesSinDatos($fechaDesde, $fechaHasta);
+    $mesesOk   = $deteccion['meses_ok'];
+
     // Obtener dataset completo para cada sucursal
     $datosPorSucursal       = [];
     $simplificadoActual     = [];
@@ -54,8 +58,8 @@ try {
 
     foreach ($sucursalesFiltradas as $suc) {
         $id = $suc['id'];
-        $datosPorSucursal[$id]     = $service->construirDataset($id, $fechaDesde, $fechaHasta);
-        $simplificadoActual[$id]   = $service->construirDatasetSimplificado($id, $fechaDesde, $fechaHasta);
+        $datosPorSucursal[$id]     = $service->construirDataset($id, $fechaDesde, $fechaHasta, $mesesOk);
+        $simplificadoActual[$id]   = $service->construirDatasetSimplificado($id, $fechaDesde, $fechaHasta, $mesesOk);
         $simplificadoAnterior[$id] = $service->construirDatasetSimplificado($id, $desdeAnt, $hastaAnt);
     }
 
@@ -130,19 +134,22 @@ try {
     echo json_encode([
         'success' => true,
         'data' => [
-            'sucursales'       => $sucursalesFiltradas,
-            'conceptos'        => $conceptos,
-            'meta_sucursales'  => $metasSucursales,
+            'sucursales'                => $sucursalesFiltradas,
+            'conceptos'                 => $conceptos,
+            'meta_sucursales'           => $metasSucursales,
             'kpis' => [
                 'total_sucursales' => count($sucursalesFiltradas),
                 'pct_total'        => $pctTotal,
                 'mejor'            => $mejor,
                 'peor'             => $peor,
             ],
-            'fecha_desde'      => $fechaDesde,
-            'fecha_hasta'      => $fechaHasta,
-            'fecha_desde_ant'  => $desdeAnt,
-            'fecha_hasta_ant'  => $hastaAnt,
+            'fecha_desde'               => $fechaDesde,
+            'fecha_hasta'               => $fechaHasta,
+            'fecha_desde_ant'           => $desdeAnt,
+            'fecha_hasta_ant'           => $hastaAnt,
+            'meses_sin_datos'           => $deteccion['meses_sin_datos'],
+            'meses_con_datos_completos' => count($mesesOk),
+            'meses_totales_periodo'     => $deteccion['total_meses'],
         ],
     ], JSON_UNESCAPED_UNICODE);
 

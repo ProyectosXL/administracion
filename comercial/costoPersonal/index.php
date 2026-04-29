@@ -128,23 +128,35 @@ $entornoActivo = 'central';
                 </div>
             </div>
 
-            <!-- Toggle ARG / UY — UY deshabilitado -->
-            <div class="env-pill-wrapper">
-                <span class="env-pill-label">Entorno:</span>
-                <div class="env-pill-toggle">
-                    <button type="button"
-                            class="env-pill-btn active"
-                            title="Argentina">
-                        <i class="bi bi-flag-fill" style="color:#75AADB"></i> ARG
-                    </button>
-                    <button type="button"
-                            class="env-pill-btn"
-                            disabled
-                            title="Próximamente">
-                        <i class="bi bi-flag" style="color:#95a5a6;opacity:0.5"></i>
-                        <span style="opacity:0.5">UY</span>
-                    </button>
+            <div style="display:flex;align-items:center;gap:14px;">
+                <!-- Toggle ARG / UY — UY deshabilitado -->
+                <div class="env-pill-wrapper">
+                    <span class="env-pill-label">Entorno:</span>
+                    <div class="env-pill-toggle">
+                        <button type="button"
+                                class="env-pill-btn active"
+                                title="Argentina">
+                            <i class="bi bi-flag-fill" style="color:#75AADB"></i> ARG
+                        </button>
+                        <button type="button"
+                                class="env-pill-btn"
+                                disabled
+                                title="Próximamente">
+                            <i class="bi bi-flag" style="color:#95a5a6;opacity:0.5"></i>
+                            <span style="opacity:0.5">UY</span>
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Botón Administrador -->
+                <button type="button" id="cpBtnAdmin"
+                        title="Administrador"
+                        style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:#fff;padding:8px 11px;cursor:pointer;font-size:17px;line-height:1;transition:background 0.2s;"
+                        onmouseover="this.style.background='rgba(255,255,255,0.28)'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.15)'"
+                        data-toggle="modal" data-target="#cpAdminModal">
+                    <i class="bi bi-gear-fill"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -152,8 +164,11 @@ $entornoActivo = 'central';
 
     <div class="content-wrapper">
 
-        <!-- ── TOGGLE GLOBAL DE CATEGORÍAS ──────────────────── -->
+        <!-- ── BANNER MESES SIN DATOS ────────────────────────── -->
         <div style="padding:18px 24px 0">
+            <div id="cp-banner-meses-sin-datos" style="display:none;"></div>
+
+        <!-- ── TOGGLE GLOBAL DE CATEGORÍAS ──────────────────── -->
             <div class="cp-categorias-toggle" id="cpCategoriasToggle">
                 <span class="cp-toggle-label">
                     <i class="bi bi-funnel-fill"></i> Categorías de costo:
@@ -196,6 +211,11 @@ $entornoActivo = 'central';
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="productividad-tab" data-toggle="tab" href="#productividad" role="tab" aria-selected="false">
+                                <i class="bi bi-lightning-fill"></i> Productividad
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <a class="nav-link" id="reporte-sucursal-tab" data-toggle="tab" href="#reporte-sucursal" role="tab" aria-selected="false">
                                 <i class="bi bi-building"></i> Reporte por Sucursal
                             </a>
@@ -203,11 +223,6 @@ $entornoActivo = 'central';
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="reporte-fecha-tab" data-toggle="tab" href="#reporte-fecha" role="tab" aria-selected="false">
                                 <i class="bi bi-calendar-range"></i> Reporte a Fecha
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="productividad-tab" data-toggle="tab" href="#productividad" role="tab" aria-selected="false">
-                                <i class="bi bi-lightning-fill"></i> Productividad
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -228,19 +243,19 @@ $entornoActivo = 'central';
                 <?php include CP_BASE_PATH . '/components/indicadoresPersonalTab.php'; ?>
             </div>
 
-            <!-- Pestaña 2: Reporte por Sucursal -->
+            <!-- Pestaña 2: Productividad -->
+            <div class="tab-pane fade" id="productividad" role="tabpanel" aria-labelledby="productividad-tab">
+                <?php include CP_BASE_PATH . '/components/productividadTab.php'; ?>
+            </div>
+
+            <!-- Pestaña 3: Reporte por Sucursal -->
             <div class="tab-pane fade" id="reporte-sucursal" role="tabpanel" aria-labelledby="reporte-sucursal-tab">
                 <?php include CP_BASE_PATH . '/components/reportePersonalFechaTab.php'; ?>
             </div>
 
-            <!-- Pestaña 3: Reporte a Fecha -->
+            <!-- Pestaña 4: Reporte a Fecha -->
             <div class="tab-pane fade" id="reporte-fecha" role="tabpanel" aria-labelledby="reporte-fecha-tab">
                 <?php include CP_BASE_PATH . '/components/reporteAFechaPersonalTab.php'; ?>
-            </div>
-
-            <!-- Pestaña 4: Productividad -->
-            <div class="tab-pane fade" id="productividad" role="tabpanel" aria-labelledby="productividad-tab">
-                <?php include CP_BASE_PATH . '/components/productividadTab.php'; ?>
             </div>
 
             <!-- Pestaña 5: Comparar Sucursales -->
@@ -254,6 +269,184 @@ $entornoActivo = 'central';
     <!-- /content-wrapper -->
 </div>
 <!-- /main-container -->
+
+<!-- ── MODAL ADMINISTRADOR ─────────────────────────────────────── -->
+<div class="modal fade" id="cpAdminModal" tabindex="-1" role="dialog" aria-labelledby="cpAdminModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#2c3e50;color:#fff;">
+                <h5 class="modal-title" id="cpAdminModalLabel">
+                    <i class="bi bi-gear-fill"></i> Administrador
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar" style="color:#fff;opacity:0.8;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+
+                <!-- Tabs internos del modal -->
+                <ul class="nav nav-tabs px-3 pt-2" id="cpAdminTabs" role="tablist" style="border-bottom:2px solid #dee2e6;">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="cpAdminTabParam-tab" data-toggle="tab" href="#cpAdminTabParam" role="tab">
+                            <i class="bi bi-sliders"></i> Parámetros
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="cpAdminTabCat-tab" data-toggle="tab" href="#cpAdminTabCat" role="tab">
+                            <i class="bi bi-tags-fill"></i> Categorías
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content p-3" id="cpAdminTabsContent">
+
+                    <!-- ── Tab Parámetros ──────────────────────────────────── -->
+                    <div class="tab-pane fade show active" id="cpAdminTabParam" role="tabpanel">
+                        <p class="text-muted small mb-3">
+                            Valores que determinan los umbrales del semáforo y el objetivo de costo de personal.
+                        </p>
+                        <form id="cpAdminFormParam">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Parámetro</th>
+                                        <th style="width:160px;">Valor (%)</th>
+                                        <th>Descripción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Umbral Verde</strong></td>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm"
+                                                   name="UMBRAL_VERDE" id="cpParamUmbralVerde"
+                                                   min="0" max="100" step="0.5"
+                                                   value="<?= htmlspecialchars($parametros['UMBRAL_VERDE']) ?>">
+                                        </td>
+                                        <td class="text-muted small align-middle">Hasta este % → verde (eficiente)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Umbral Rojo</strong></td>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm"
+                                                   name="UMBRAL_ROJO" id="cpParamUmbralRojo"
+                                                   min="0" max="100" step="0.5"
+                                                   value="<?= htmlspecialchars($parametros['UMBRAL_ROJO']) ?>">
+                                        </td>
+                                        <td class="text-muted small align-middle">Desde este % → rojo (requiere acción)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Objetivo</strong></td>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm"
+                                                   name="OBJETIVO_PCT" id="cpParamObjetivo"
+                                                   min="0" max="100" step="0.5"
+                                                   value="<?= htmlspecialchars($parametros['OBJETIVO_PCT']) ?>">
+                                        </td>
+                                        <td class="text-muted small align-middle">Línea objetivo en gráficos de evolución</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div id="cpAdminParamMsg" class="mt-2" style="display:none;"></div>
+                        </form>
+                    </div>
+
+                    <!-- ── Tab Categorías ──────────────────────────────────── -->
+                    <div class="tab-pane fade" id="cpAdminTabCat" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <p class="text-muted small mb-0">Mapeo de cuentas contables a categorías de costo de personal.</p>
+                            <button type="button" class="btn btn-sm btn-primary" id="cpBtnNuevaCat">
+                                <i class="bi bi-plus-lg"></i> Nueva cuenta
+                            </button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                        <table id="cpTablaCategorias" class="table table-sm table-bordered table-hover" style="width:100%;font-size:12px;">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="min-width:90px;">Cód. Cuenta</th>
+                                    <th style="min-width:160px;">Descripción</th>
+                                    <th style="min-width:100px;">Categoría</th>
+                                    <th style="min-width:130px;">Concepto Agrupado</th>
+                                    <th class="text-center" style="width:75px;">Prorrateo</th>
+                                    <th class="text-center" style="width:65px;">Incluir</th>
+                                    <th class="text-center" style="width:90px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cpCatTbody">
+                                <tr><td colspan="7" class="text-center text-muted">Cargando…</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
+
+                        <!-- Formulario inline para agregar / editar -->
+                        <div id="cpCatForm" style="display:none;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:14px;margin-top:10px;">
+                            <h6 id="cpCatFormTitle" class="mb-3">Nueva cuenta</h6>
+                            <input type="hidden" id="cpCatId" value="0">
+                            <div class="form-row">
+                                <div class="form-group col-md-2">
+                                    <label class="small font-weight-bold">Cód. Cuenta <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="cpCatCodCuenta" maxlength="20" placeholder="ej. 5101">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label class="small font-weight-bold">Descripción <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="cpCatDescCuenta" maxlength="100" placeholder="ej. Sueldos y Jornales">
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <label class="small font-weight-bold">Categoría <span class="text-danger">*</span></label>
+                                    <select class="form-control form-control-sm" id="cpCatCategoria">
+                                        <option value="">Seleccionar…</option>
+                                        <option value="FIJO">FIJO</option>
+                                        <option value="VARIABLE">VARIABLE</option>
+                                        <option value="DIFERIDO">DIFERIDO</option>
+                                        <option value="CONTINGENTE">CONTINGENTE</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <label class="small font-weight-bold">Concepto Agrupado</label>
+                                    <input type="text" class="form-control form-control-sm" id="cpCatConceptoAgrupado" maxlength="60" placeholder="ej. SUELDOS">
+                                </div>
+                                <div class="form-group col-md-1">
+                                    <label class="small font-weight-bold">Prorrateo</label>
+                                    <input type="number" class="form-control form-control-sm" id="cpCatProrratearMeses" min="0" max="36" value="0">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-10">
+                                    <label class="small font-weight-bold">Observaciones</label>
+                                    <input type="text" class="form-control form-control-sm" id="cpCatObservaciones" maxlength="255">
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <label class="small font-weight-bold">Incluir</label>
+                                    <select class="form-control form-control-sm" id="cpCatIncluir">
+                                        <option value="1">Sí</option>
+                                        <option value="0">No</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-success" id="cpBtnGuardarCat">
+                                    <i class="bi bi-check-lg"></i> Guardar
+                                </button>
+                                <button type="button" class="btn btn-sm btn-secondary ml-2" id="cpBtnCancelarCat">
+                                    Cancelar
+                                </button>
+                            </div>
+                            <div id="cpCatFormMsg" class="mt-2" style="display:none;"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary btn-sm" id="cpBtnGuardarParam">
+                    <i class="bi bi-save"></i> Guardar parámetros
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /MODAL ADMINISTRADOR -->
 
 <!-- ── SCRIPTS ─────────────────────────────────────────────────── -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -291,6 +484,7 @@ const CP_CONFIG = {
 <script src="js/productividad.js"></script>
 <script src="js/compararSucursalesPersonal.js"></script>
 <script src="js/pdfExport.js"></script>
+<script src="js/adminPersonal.js"></script>
 
 </body>
 </html>

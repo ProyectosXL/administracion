@@ -188,8 +188,10 @@ body {
 .row-subtotal td    { font-weight:700; color:var(--accent-color); background:rgba(52,152,219,0.05)!important; }
 .row-subtotal       { border-top:2px solid var(--accent-color)!important; border-bottom:2px solid var(--accent-color)!important; }
 .row-metric td      { font-weight:600; color:var(--info-color); }
-.row-percentage     { background:#fff3e0!important; border-top:3px solid #ff9800!important; border-bottom:3px solid #ff9800!important; }
-.row-percentage td  { font-weight:bold; font-size:0.95em; color:#e65100!important; padding:12px 8px!important; }
+.row-percentage,
+.row-porcentaje-cp  { background:#fff3e0!important; border-top:3px solid #ff9800!important; border-bottom:3px solid #ff9800!important; }
+.row-percentage td,
+.row-porcentaje-cp td { font-weight:700; color:#e65100!important; }
 .row-yoy-anterior   { background:#e3f2fd!important; border-top:2px solid #2196F3!important; }
 .row-yoy-variacion  { background:#fff9c4!important; border-top:2px solid #FFC107!important; }
 
@@ -221,12 +223,47 @@ body {
 /* ── Select2 fix ─────────────────────────────────────────────────────────── */
 .select2-container .select2-selection--single { height:2rem!important; }
 
-/* ── Reporte a fecha — columna fija ─────────────────────────────────────── */
-#tablaReporteAFecha .fixed-column   { position:sticky; left:0; background:#fff; z-index:10; font-weight:600; min-width:280px; max-width:280px; }
-#tablaReporteAFecha thead th.fixed-column { z-index:11; }
-#tablaReporteAFecha th:not(.fixed-column),
-#tablaReporteAFecha td:not(.fixed-column) { min-width:120px; max-width:120px; white-space:nowrap; }
-#tablaReporteAFecha tfoot { display:none; }
+/* ── Tablas de datos: Reporte Sucursal / Reporte a Fecha / Comparar ─────── */
+#cpTablaReporteSucursal thead th,
+#cpTablaReporteFecha    thead th,
+#cpTablaComparacion     thead th {
+    vertical-align: middle !important;
+    padding: 11px 12px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+    border: none !important;
+}
+
+#cpTablaReporteSucursal tbody td,
+#cpTablaReporteFecha    tbody td,
+#cpTablaComparacion     tbody td {
+    vertical-align: middle !important;
+    padding: 7px 10px !important;
+    border-color: #ecf0f1 !important;
+}
+
+#cpTablaReporteSucursal tbody tr:hover td,
+#cpTablaReporteFecha    tbody tr:hover td,
+#cpTablaComparacion     tbody tr:hover td { background:#f5f8fa !important; }
+
+/* Columna fija sticky */
+#cpTablaReporteSucursal .fixed-column,
+#cpTablaReporteFecha    .fixed-column,
+#cpTablaComparacion     .fixed-column {
+    position: sticky !important;
+    left: 0; z-index: 5;
+    background: #fff; font-weight: 600;
+}
+#cpTablaReporteSucursal thead .fixed-column,
+#cpTablaReporteFecha    thead .fixed-column,
+#cpTablaComparacion     thead .fixed-column { z-index: 11 !important; background: #2c3e50 !important; }
+
+/* Reporte a Fecha: anchos de columna y pie oculto */
+#cpTablaReporteFecha th:not(.fixed-column),
+#cpTablaReporteFecha td:not(.fixed-column) { min-width:120px; white-space:nowrap; }
+#cpTablaReporteFecha tfoot { display:none; }
 
 /* ── Productividad — badge eficiencia ───────────────────────────────────── */
 .cp-efic-verde   { background:rgba(39,174,96,0.12);  color:#27ae60; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
@@ -237,6 +274,45 @@ body {
 .swal-wide-popup { border-radius:15px!important; box-shadow:0 10px 40px rgba(0,0,0,0.2)!important; }
 .swal-html-no-padding .swal2-html-container { padding:0!important; margin:0!important; }
 .swal2-confirm { background:linear-gradient(135deg,#3498db,#2980b9)!important; }
+
+/* ── Banner meses sin datos ──────────────────────────────────────────────── */
+.cp-banner-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+    border-left: 4px solid #f39c12;
+    padding: 12px 18px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.cp-banner-warning i { color: #e67e22; font-size: 22px; flex-shrink: 0; }
+.cp-banner-content   { flex: 1; }
+.cp-banner-content small { display: block; color: #7f8c8d; margin-top: 4px; }
+
+/* ── Celda sin datos (Reporte por Sucursal) ──────────────────────────────── */
+.cp-celda-sin-datos {
+    background: repeating-linear-gradient(
+        45deg,
+        #f5f5f5,
+        #f5f5f5 6px,
+        #ebebeb 6px,
+        #ebebeb 12px
+    ) !important;
+    color: #95a5a6 !important;
+    font-style: italic;
+    text-align: center !important;
+}
+
+/* ── Period pills (Productividad) — mismo estilo que Indicadores ─────────── */
+.productividad-cp-container .period-pills { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.productividad-cp-container .period-pill {
+    padding:7px 18px; border:2px solid #e0e0e0; background:#fff; border-radius:25px;
+    font-weight:600; color:#7f8c8d; cursor:pointer; transition:all 0.25s ease;
+    font-size:13px; display:flex; align-items:center; gap:6px; font-family:inherit;
+}
+.productividad-cp-container .period-pill:hover  { border-color:#3498db; color:#3498db; transform:translateY(-1px); }
+.productividad-cp-container .period-pill.active { background:linear-gradient(135deg,#3498db,#2980b9); border-color:#2980b9; color:#fff; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width:1200px) { .main-container { padding:15px; } }

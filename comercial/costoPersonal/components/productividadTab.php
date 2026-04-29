@@ -4,20 +4,79 @@
 <!-- Pestaña 4: Productividad -->
 <div class="productividad-cp-container">
 
+    <!-- MODAL AYUDA: Productividad -->
+    <div class="modal fade" id="modalAyudaProductividad" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content ind-help-modal">
+                <div class="modal-header ind-help-modal-header">
+                    <div class="d-flex align-items-center" style="gap:12px">
+                        <div class="ind-help-icon-wrap"><i class="bi bi-lightning-fill"></i></div>
+                        <div>
+                            <h5 class="modal-title">Productividad — Guía de lectura</h5>
+                            <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.75)">Cómo interpretar la relación entre personal y ventas</p>
+                        </div>
+                    </div>
+                    <button type="button" class="ind-help-close" data-dismiss="modal"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="modal-body ind-help-modal-body">
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-bookmark-fill"></i> Concepto clave: retorno sobre el gasto en personal</div>
+                        <p class="ind-help-text">El indicador central responde una pregunta concreta:</p>
+                        <div class="ind-help-formula">Por cada $ 1 invertido en personal → ¿cuántos $ vende la sucursal?</div>
+                        <p class="ind-help-text" style="margin-top:8px">Un ratio alto significa que ese peso de costo genera mucha venta; un ratio bajo es señal de baja productividad o estructura de personal sobredimensionada.</p>
+                    </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-bar-chart-fill"></i> Indicadores por sucursal</div>
+                        <ul class="ind-help-text" style="padding-left:18px">
+                            <li><strong>Venta neta / empleado</strong>: cuánta venta genera en promedio cada persona del equipo. Mayor = más productivo.</li>
+                            <li><strong>Costo personal / empleado</strong>: costo promedio por integrante del equipo en el período.</li>
+                            <li><strong>% Costo de personal</strong>: porcentaje de la venta neta que se destina a personal. Menor = más eficiente.</li>
+                            <li><strong>Ratio venta/costo</strong>: inverso del % → cuántos $ de venta por cada $ de costo. Ej.: ratio 4x = $4 de venta por $1 de costo.</li>
+                        </ul>
+                    </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-arrow-up-down"></i> Variación vs. año anterior (YoY)</div>
+                        <p class="ind-help-text">El delta en puntos porcentuales compara el % de costo del período actual contra el mismo período del año anterior. Un valor positivo indica que el costo de personal creció relativamente a las ventas.</p>
+                    </div>
+                    <div class="ind-help-section" style="border-bottom:none">
+                        <div class="ind-help-section-title"><i class="bi bi-lightbulb-fill"></i> Flujo de análisis sugerido</div>
+                        <ol class="ind-help-steps">
+                            <li>Elegí el <strong>período</strong> con las píldoras (o "Personalizado" para un rango libre).</li>
+                            <li>Revisá el <strong>ranking</strong>: las sucursales con mayor ratio venta/costo son las más eficientes.</li>
+                            <li>Identificá las que tienen <strong>YoY negativo</strong> (empeoraron) aunque su % absoluto parezca aceptable.</li>
+                            <li>Usá el <strong>toggle de categorías</strong> para aislar si el problema es Fijo (estructura), Variable (comisiones) o Diferido (indemnizaciones).</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="modal-footer ind-help-modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Período pills -->
     <div style="background:#fff;border-radius:12px;padding:20px 25px;margin-bottom:20px;box-shadow:0 4px 15px rgba(0,0,0,0.07);border-left:4px solid #f39c12;">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-            <span style="font-size:13px;font-weight:700;color:#2c3e50;white-space:nowrap;">
-                <i class="bi bi-lightning-fill" style="color:#f39c12;"></i> Período:
-            </span>
-            <div id="cpProdPeriodPills" style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button type="button" class="period-pill cp-prod-pill" data-months="3">3 meses</button>
-                <button type="button" class="period-pill cp-prod-pill" data-months="6">6 meses</button>
-                <button type="button" class="period-pill cp-prod-pill active" data-months="12">12 meses</button>
-                <button type="button" class="period-pill cp-prod-pill" data-months="0">Personalizado</button>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:700;color:#2c3e50;white-space:nowrap;">
+                    <i class="bi bi-lightning-fill" style="color:#f39c12;"></i> Período:
+                </span>
+                <div class="period-pills" id="cpProdPeriodPills">
+                    <button type="button" class="period-pill cp-prod-pill" data-months="3"><i class="bi bi-calendar3"></i> 3 meses</button>
+                    <button type="button" class="period-pill cp-prod-pill" data-months="6"><i class="bi bi-calendar3"></i> 6 meses</button>
+                    <button type="button" class="period-pill cp-prod-pill active" data-months="12"><i class="bi bi-calendar3"></i> 12 meses</button>
+                    <button type="button" class="period-pill cp-prod-pill" data-months="0"><i class="bi bi-calendar-range"></i> Personalizado</button>
+                </div>
+                <span id="cpProdPeriodLabel" style="font-size:12px;color:#95a5a6;font-style:italic;margin-left:6px;"></span>
             </div>
-            <span id="cpProdPeriodLabel" style="font-size:12px;color:#95a5a6;font-style:italic;margin-left:6px;"></span>
+            <button type="button" class="ind-help-btn"
+                    data-toggle="modal" data-target="#modalAyudaProductividad">
+                <i class="bi bi-info-circle-fill"></i> ¿Cómo leer esto?
+            </button>
         </div>
+
+        <!-- Solo visible al presionar "Personalizado" -->
         <div id="cpProdCustomRange" style="display:none;margin-top:14px;">
             <div class="row">
                 <div class="col-md-3">

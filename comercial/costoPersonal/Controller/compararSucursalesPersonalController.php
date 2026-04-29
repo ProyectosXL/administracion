@@ -36,8 +36,12 @@ try {
     if (!$dDesde || !$dHasta) throw new Exception('Formato de fecha inválido.');
     if ($dDesde > $dHasta)    throw new Exception('La fecha desde no puede ser mayor a la fecha hasta.');
 
-    $dataset1 = $service->construirDataset((int) $idSuc1, $fechaDesde, $fechaHasta);
-    $dataset2 = $service->construirDataset((int) $idSuc2, $fechaDesde, $fechaHasta);
+    // Detectar meses sin datos y filtrar el cálculo
+    $deteccion = $service->detectarMesesSinDatos($fechaDesde, $fechaHasta);
+    $mesesOk   = $deteccion['meses_ok'];
+
+    $dataset1 = $service->construirDataset((int) $idSuc1, $fechaDesde, $fechaHasta, $mesesOk);
+    $dataset2 = $service->construirDataset((int) $idSuc2, $fechaDesde, $fechaHasta, $mesesOk);
 
     // ── Construir estructura comparada ────────────────────────────────────────
     $conceptos = [];
@@ -82,9 +86,8 @@ try {
         }
     }
 
-    // Datos simplificados para toggle frontend
-    $sim1 = $service->construirDatasetSimplificado((int) $idSuc1, $fechaDesde, $fechaHasta);
-    $sim2 = $service->construirDatasetSimplificado((int) $idSuc2, $fechaDesde, $fechaHasta);
+    $sim1 = $service->construirDatasetSimplificado((int) $idSuc1, $fechaDesde, $fechaHasta, $mesesOk);
+    $sim2 = $service->construirDatasetSimplificado((int) $idSuc2, $fechaDesde, $fechaHasta, $mesesOk);
 
     echo json_encode([
         'success' => true,
@@ -92,7 +95,7 @@ try {
             'conceptos'   => $conceptos,
             'suc1' => [
                 'id'                   => (int) $idSuc1,
-                'nombre'               => $dataset1['filas'][0]['concepto'] ?? 'Sucursal 1',  // se sobreescribe en JS
+                'nombre'               => $dataset1['filas'][0]['concepto'] ?? 'Sucursal 1',
                 'pct_costo'            => $pct1,
                 'costos_por_categoria' => $sim1['costos_por_categoria'],
                 'venta_neta'           => $sim1['total_venta_neta'],
@@ -104,9 +107,12 @@ try {
                 'costos_por_categoria' => $sim2['costos_por_categoria'],
                 'venta_neta'           => $sim2['total_venta_neta'],
             ],
-            'diferencia_pp'  => ($pct1 !== null && $pct2 !== null) ? round($pct2 - $pct1, 2) : null,
-            'fecha_desde'    => $fechaDesde,
-            'fecha_hasta'    => $fechaHasta,
+            'diferencia_pp'             => ($pct1 !== null && $pct2 !== null) ? round($pct2 - $pct1, 2) : null,
+            'fecha_desde'               => $fechaDesde,
+            'fecha_hasta'               => $fechaHasta,
+            'meses_sin_datos'           => $deteccion['meses_sin_datos'],
+            'meses_con_datos_completos' => count($mesesOk),
+            'meses_totales_periodo'     => $deteccion['total_meses'],
         ],
     ], JSON_UNESCAPED_UNICODE);
 

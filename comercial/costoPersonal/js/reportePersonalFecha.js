@@ -13,9 +13,13 @@ const ReportePersonalFechaModule = (() => {
 
     function init() {
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-            if ($(e.target).attr('href') === '#reporte-sucursal' && !_initialized) {
-                _initialized = true;
-                _bindEvents();
+            if ($(e.target).attr('href') === '#reporte-sucursal') {
+                if (!_initialized) {
+                    _initialized = true;
+                    _bindEvents();
+                }
+                // Re-ajustar anchos de columna al mostrar el tab (DataTables+scrollX)
+                if (_dtable) _dtable.columns.adjust().draw(false);
             }
         });
 
@@ -66,6 +70,11 @@ const ReportePersonalFechaModule = (() => {
                 if (response.success) {
                     _data = response.data;
                     _render();
+                    CostoPersonalGlobal.renderBannerMesesSinDatos(
+                        response.data.meses_sin_datos           || [],
+                        response.data.meses_totales_periodo     || 0,
+                        response.data.meses_con_datos_completos || 0
+                    );
                 } else {
                     _showError(response.message || 'No se encontraron datos.');
                 }
@@ -147,11 +156,18 @@ const ReportePersonalFechaModule = (() => {
         const ventaMeses = ventaRow?.meses || {};
         const totalVenta = ventaRow?.total ?? 0;
 
+        // Meses sin datos: mapa mes→estado y set para lookup O(1)
+        const sinDatosMap = Object.fromEntries(
+            (_data.meses_sin_datos || []).map(x => [x.mes, x.estado])
+        );
+        const sinDatosSet = new Set(Object.keys(sinDatosMap));
+
         const subEfectivo = {};
         meses.forEach(m => {
             subEfectivo[m] = activas.reduce((sum, cat) => sum + (catSubtotals[cat]?.[m] || 0), 0);
         });
-        const subEfectivoTotal = Object.values(subEfectivo).reduce((s, v) => s + v, 0);
+        // Solo sumar meses con datos completos (excluir sin-datos del total dinámico)
+        const subEfectivoTotal = meses.reduce((s, m) => sinDatosSet.has(m) ? s : s + (subEfectivo[m] || 0), 0);
 
         const pctEfectivo = {};
         meses.forEach(m => {
@@ -166,7 +182,10 @@ const ReportePersonalFechaModule = (() => {
         thead += '<th class="fixed-column" style="background:#2c3e50;color:#fff;min-width:280px;">Concepto</th>';
         meses.forEach(m => {
             const [y, mn] = m.split('-');
-            thead += `<th class="text-right" style="background:#2c3e50;color:#fff;white-space:nowrap;">${mesNames[parseInt(mn)-1]} ${y}</th>`;
+            const sinD    = sinDatosSet.has(m);
+            const sdCls   = sinD ? ' cp-celda-sin-datos' : '';
+            const sdTitle = sinD ? ` title="${_tooltipEstado(sinDatosMap[m])}"` : '';
+            thead += `<th class="text-right${sdCls}"${sdTitle} style="background:#2c3e50;color:#fff;white-space:nowrap;">${mesNames[parseInt(mn)-1]} ${y}</th>`;
         });
         thead += '<th class="text-right" style="background:#34495e;color:#fff;">Total</th></tr></thead>';
 
@@ -196,8 +215,11 @@ const ReportePersonalFechaModule = (() => {
             tbody += `<tr class="${rowCls}">`;
             tbody += `<td class="fixed-column">${CostoPersonalGlobal.esc(f.concepto ?? '')}</td>`;
             meses.forEach(m => {
-                const val = rowMeses[m] !== undefined ? rowMeses[m] : null;
-                tbody += `<td class="text-right">${_fmtCell(val, f)}</td>`;
+                const val     = rowMeses[m] !== undefined ? rowMeses[m] : null;
+                const sinD    = sinDatosSet.has(m);
+                const sdCls   = sinD ? ' cp-celda-sin-datos' : '';
+                const sdTitle = sinD ? ` title="${_tooltipEstado(sinDatosMap[m])}"` : '';
+                tbody += `<td class="text-right${sdCls}"${sdTitle}>${_fmtCell(val, f)}</td>`;
             });
             tbody += `<td class="text-right" style="font-weight:700;">${_fmtCell(rowTotal, f)}</td>`;
             tbody += '</tr>';
@@ -210,13 +232,14 @@ const ReportePersonalFechaModule = (() => {
             responsive:     false,
             scrollX:        true,
             scrollCollapse: true,
+            autoWidth:      false,
             paging:         false,
             searching:      false,
             info:           false,
             ordering:       false,
-            fixedColumns:   { leftColumns: 1 },
             language: { emptyTable: 'Sin datos', zeroRecords: 'Sin resultados' },
         });
+        _dtable.columns.adjust().draw(false);
     }
 
     /* ── Calcular costo total activo sumando categorías activas ─────── */
@@ -225,6 +248,16 @@ const ReportePersonalFechaModule = (() => {
         const catSubtotals = {};
         filas.filter(f => f.is_subtotal_cat).forEach(f => { catSubtotals[f.categoria] = f.total ?? 0; });
         return activas.reduce((sum, cat) => sum + (catSubtotals[cat] || 0), 0);
+    }
+
+    const _TOOLTIP_ESTADO = {
+        SIN_COSTOS: 'Sin registros de costos de personal',
+        SIN_VENTAS: 'Sin registros de venta neta',
+        INCOMPLETO: 'Datos incompletos para este mes',
+        CERRADO:    'Mes cerrado sin datos',
+    };
+    function _tooltipEstado(estado) {
+        return _TOOLTIP_ESTADO[estado] || 'Mes sin datos completos';
     }
 
     function _fmtCell(val, fila) {

@@ -6,10 +6,66 @@
 
     <!-- Filtros -->
     <div class="filters-section-cp" style="background:#fff;border-radius:12px;padding:22px 25px;margin-bottom:22px;box-shadow:0 4px 15px rgba(0,0,0,0.07);border-left:4px solid #3498db;">
-        <div style="display:flex;align-items:center;margin-bottom:18px;font-size:17px;font-weight:700;color:#2c3e50;">
-            <i class="bi bi-funnel" style="margin-right:10px;color:#3498db;font-size:20px;"></i>
-            Filtros
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <div style="font-size:17px;font-weight:700;color:#2c3e50;display:flex;align-items:center;">
+                <i class="bi bi-funnel" style="margin-right:10px;color:#3498db;font-size:20px;"></i>
+                Filtros
+            </div>
+            <button type="button" class="ind-help-btn"
+                    data-toggle="modal" data-target="#modalAyudaReporteSucursal">
+                <i class="bi bi-info-circle-fill"></i> ¿Cómo leer esto?
+            </button>
         </div>
+
+    <!-- MODAL AYUDA: Reporte por Sucursal -->
+    <div class="modal fade" id="modalAyudaReporteSucursal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content ind-help-modal">
+                <div class="modal-header ind-help-modal-header">
+                    <div class="d-flex align-items-center" style="gap:12px">
+                        <div class="ind-help-icon-wrap"><i class="bi bi-building"></i></div>
+                        <div>
+                            <h5 class="modal-title">Reporte por Sucursal — Guía de lectura</h5>
+                            <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.75)">Cómo interpretar la tabla de costos mes a mes</p>
+                        </div>
+                    </div>
+                    <button type="button" class="ind-help-close" data-dismiss="modal"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="modal-body ind-help-modal-body">
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-bookmark-fill"></i> ¿Qué muestra este reporte?</div>
+                        <p class="ind-help-text">Desglosa el costo de personal de una sucursal <strong>mes a mes</strong>, separado por categoría (Fijo, Variable, Diferido, Contingente) y concepto (Sueldos, Cargas, Comisiones, etc.).</p>
+                        <div class="ind-help-formula">% Costo de Personal = <strong>Costo total activo ÷ Venta neta × 100</strong></div>
+                    </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-funnel-fill"></i> Categorías activas</div>
+                        <p class="ind-help-text">Las píldoras de la barra superior incluyen o excluyen categorías en tiempo real. Las filas de categorías inactivas se ocultan de la tabla y los KPIs se recalculan instantáneamente.</p>
+                    </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-table"></i> Estructura de la tabla</div>
+                        <ul class="ind-help-text" style="padding-left:18px">
+                            <li>Cada columna es un mes del período seleccionado.</li>
+                            <li>La columna <strong>Total</strong> acumula sólo los meses con datos completos.</li>
+                            <li>Celdas con fondo rayado = meses sin datos cargados en el sistema.</li>
+                            <li>La fila <strong>% Costo de Personal</strong> (naranja) muestra el porcentaje por mes.</li>
+                        </ul>
+                    </div>
+                    <div class="ind-help-section" style="border-bottom:none">
+                        <div class="ind-help-section-title"><i class="bi bi-lightbulb-fill"></i> Flujo sugerido</div>
+                        <ol class="ind-help-steps">
+                            <li>Seleccioná la <strong>sucursal</strong> y el <strong>período</strong> y presioná Consultar.</li>
+                            <li>Revisá la fila <strong>% Costo de Personal</strong>: meses en rojo superan el umbral configurado.</li>
+                            <li>Desactivá categorías para aislar si el problema es estructura fija o variable.</li>
+                            <li>El <strong>gráfico de evolución</strong> al pie compara cada mes contra el año anterior.</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="modal-footer ind-help-modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
         <div class="row">
             <div class="col-md-4">
                 <label style="font-weight:600;color:#2c3e50;margin-bottom:6px;display:block;">

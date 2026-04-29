@@ -77,7 +77,7 @@ class CostoPersonalService
         ];
 
         try {
-            $sql  = "SELECT NOMBRE, CAST(VALOR AS FLOAT) AS VALOR FROM RO_T_PARAMETROS_COSTO_PERSONAL";
+            $sql  = "SELECT PARAMETRO AS NOMBRE, CAST(VALOR AS FLOAT) AS VALOR FROM RO_T_PARAMETROS_COSTO_PERSONAL";
             $stmt = sqlsrv_query($this->conn, $sql);
             if (!$stmt) return $defaults;
 
@@ -264,29 +264,31 @@ class CostoPersonalService
     /**
      * Construye el dataset completo para una sucursal.
      *
-     * Estructura de filas devuelta:
-     *   [ { concepto, categoria, meses:{YYYY-MM:v}, total, is_subtotal?, is_metric?, is_percentage? } ]
-     *
-     * Las filas están ordenadas: conceptos dentro de cada categoría →
-     * subtotal por categoría → Total Costo Personal → Venta Neta → % Costo Personal.
+     * @param array $mesesOk  Meses con datos completos. Si se pasa, los totales
+     *                        de cada fila y columna se calculan solo sobre esos meses.
+     *                        Los valores por-mes se devuelven siempre (el frontend
+     *                        marca los meses sin datos con CSS a partir de
+     *                        `meses_sin_datos` en la respuesta del controller).
      */
-    public function construirDataset(int $idSucursal, string $fechaDesde, string $fechaHasta): array
+    public function construirDataset(int $idSucursal, string $fechaDesde, string $fechaHasta, array $mesesOk = []): array
     {
         if (empty($fechaDesde) || empty($fechaHasta)) {
-            $rango     = $this->calcularRangoDefault();
+            $rango      = $this->calcularRangoDefault();
             $fechaDesde = $rango['desde'];
             $fechaHasta = $rango['hasta'];
         }
 
-        $costos   = $this->obtenerCostosDesglosados($idSucursal, $fechaDesde, $fechaHasta);
-        $ventas   = $this->obtenerVentaNetaPorMes($idSucursal, $fechaDesde, $fechaHasta);
-        $meses    = $costos['meses'];
+        $costos = $this->obtenerCostosDesglosados($idSucursal, $fechaDesde, $fechaHasta);
+        $ventas = $this->obtenerVentaNetaPorMes($idSucursal, $fechaDesde, $fechaHasta);
+        $meses  = $costos['meses'];
+
+        // Lookup O(1) para saber si un mes entra en el cálculo de totales
+        $mesesOkSet = !empty($mesesOk) ? array_flip($mesesOk) : null;
 
         // ── Construir filas: una por concepto, agrupadas por categoría ────────
         $filas = [];
 
         foreach (self::CATEGORIAS as $cat) {
-            // Recopilar todos los conceptos que aparecieron en esta categoría
             $conceptosDeCat = [];
             foreach ($meses as $mes) {
                 foreach (($costos['por_mes'][$mes][$cat] ?? []) as $concepto => $importe) {
@@ -295,26 +297,20 @@ class CostoPersonalService
             }
 
             foreach (array_keys($conceptosDeCat) as $concepto) {
-                $filaConcepto = [
-                    'concepto'  => $concepto,
-                    'categoria' => $cat,
-                    'meses'     => [],
-                    'total'     => 0,
-                ];
+                $filaConcepto = ['concepto' => $concepto, 'categoria' => $cat, 'meses' => [], 'total' => 0];
                 foreach ($meses as $mes) {
                     $v = $costos['por_mes'][$mes][$cat][$concepto] ?? 0;
                     $filaConcepto['meses'][$mes] = $v;
-                    $filaConcepto['total'] += $v;
+                    if ($mesesOkSet === null || isset($mesesOkSet[$mes])) $filaConcepto['total'] += $v;
                 }
                 $filas[] = $filaConcepto;
             }
 
-            // Subtotal por categoría
             $subtotalCat = ['concepto' => 'Subtotal ' . ucfirst(strtolower($cat)), 'categoria' => $cat, 'meses' => [], 'total' => 0, 'is_subtotal_cat' => true];
             foreach ($meses as $mes) {
                 $suma = array_sum($costos['por_mes'][$mes][$cat] ?? []);
                 $subtotalCat['meses'][$mes] = $suma;
-                $subtotalCat['total'] += $suma;
+                if ($mesesOkSet === null || isset($mesesOkSet[$mes])) $subtotalCat['total'] += $suma;
             }
             $filas[] = $subtotalCat;
         }
@@ -323,22 +319,18 @@ class CostoPersonalService
         $subtotalTotal = ['concepto' => 'Subtotal Costo Personal Total', 'meses' => [], 'total' => 0, 'is_subtotal' => true];
         foreach ($meses as $mes) {
             $suma = 0;
-            foreach (self::CATEGORIAS as $cat) {
-                $suma += array_sum($costos['por_mes'][$mes][$cat] ?? []);
-            }
+            foreach (self::CATEGORIAS as $cat) $suma += array_sum($costos['por_mes'][$mes][$cat] ?? []);
             $subtotalTotal['meses'][$mes] = $suma;
-            $subtotalTotal['total'] += $suma;
+            if ($mesesOkSet === null || isset($mesesOkSet[$mes])) $subtotalTotal['total'] += $suma;
         }
         $filas[] = $subtotalTotal;
 
-        // ── Venta Neta ────────────────────────────────────────────────────────
-        $totalVenta = array_sum($ventas);
-        $filas[] = [
-            'concepto'  => 'Venta Neta',
-            'meses'     => $ventas,
-            'total'     => $totalVenta,
-            'is_metric' => true,
-        ];
+        // ── Venta Neta (total solo de meses OK) ───────────────────────────────
+        $totalVenta = 0.0;
+        foreach ($meses as $mes) {
+            if ($mesesOkSet === null || isset($mesesOkSet[$mes])) $totalVenta += $ventas[$mes] ?? 0;
+        }
+        $filas[] = ['concepto' => 'Venta Neta', 'meses' => $ventas, 'total' => $totalVenta, 'is_metric' => true];
 
         // ── % Costo Personal ──────────────────────────────────────────────────
         $pctPorMes = [];
@@ -349,14 +341,8 @@ class CostoPersonalService
         }
         $pctTotal = $totalVenta > 0 ? ($subtotalTotal['total'] / $totalVenta) * 100 : null;
 
-        $filas[] = [
-            'concepto'       => '% Costo de Personal',
-            'meses'          => $pctPorMes,
-            'total'          => $pctTotal,
-            'is_percentage'  => true,
-        ];
+        $filas[] = ['concepto' => '% Costo de Personal', 'meses' => $pctPorMes, 'total' => $pctTotal, 'is_percentage' => true];
 
-        // ── KPIs ──────────────────────────────────────────────────────────────
         $kpis = $this->calcularKPIs($pctTotal, $idSucursal, $fechaDesde, $fechaHasta);
 
         return [
@@ -369,6 +355,63 @@ class CostoPersonalService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // DETECCIÓN DE MESES SIN DATOS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Detecta qué meses del período tienen datos incompletos.
+     * Llama a EXEC dbo.RO_PPP_DETECTAR_MESES_SIN_DATOS_PERSONAL.
+     * Si el SP falla, devuelve todos los meses como OK (comportamiento seguro).
+     *
+     * @return array [
+     *   'meses_ok'        => ['YYYY-MM', ...],
+     *   'meses_sin_datos' => [['mes' => 'YYYY-MM', 'estado' => 'SIN_COSTOS'|...], ...],
+     *   'total_meses'     => int,
+     * ]
+     */
+    public function detectarMesesSinDatos(string $fechaDesde, string $fechaHasta): array
+    {
+        $mesesPeriodo = $this->generarMeses($fechaDesde, $fechaHasta);
+        $totalMeses   = count($mesesPeriodo);
+        $fallback     = ['meses_ok' => $mesesPeriodo, 'meses_sin_datos' => [], 'total_meses' => $totalMeses];
+
+        try {
+            $sql    = "EXEC dbo.RO_PPP_DETECTAR_MESES_SIN_DATOS_PERSONAL ?, ?";
+            $params = [$fechaDesde, $fechaHasta];
+            $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+            if (!$stmt || !sqlsrv_execute($stmt)) return $fallback;
+
+            $porMes        = [];
+            $mesesOk       = [];
+            $mesesSinDatos = [];
+
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $fp     = $row['FECHA_PERIODO'];
+                $mes    = ($fp instanceof DateTime) ? $fp->format('Y-m') : substr((string) $fp, 0, 7);
+                $estado = $row['ESTADO'] ?? 'OK';
+                $porMes[$mes] = $estado;
+
+                if ($estado === 'OK') {
+                    $mesesOk[] = $mes;
+                } else {
+                    $mesesSinDatos[] = ['mes' => $mes, 'estado' => $estado];
+                }
+            }
+
+            // Meses del período no devueltos por el SP → asumir OK
+            foreach ($mesesPeriodo as $mes) {
+                if (!isset($porMes[$mes])) $mesesOk[] = $mes;
+            }
+
+            return ['meses_ok' => $mesesOk, 'meses_sin_datos' => $mesesSinDatos, 'total_meses' => $totalMeses];
+
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::detectarMesesSinDatos — ' . $e->getMessage());
+            return $fallback;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // DATASET SIMPLIFICADO (para KPIs, Indicadores, comparaciones)
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -376,28 +419,46 @@ class CostoPersonalService
      * Retorna los totales resumidos + costos desglosados por categoría para
      * que el frontend pueda recalcular al togglear categorías.
      *
+     * @param array $mesesOk  Si se pasa, el cálculo se restringe a esos meses.
+     *                        Dejar vacío para incluir todos (comportamiento histórico).
      * @return array [
      *   'costos_por_categoria'     => ['FIJO' => n, ...],
      *   'conceptos_detalle'        => [['categoria'=>, 'concepto'=>, 'importe'=>], ...],
-     *   'total_costo'              => float,  // suma de TODOS los prorrateados
+     *   'total_costo'              => float,
      *   'total_venta_neta'         => float,
      *   'porcentaje_costo_personal' => float|null,
      * ]
      */
-    public function construirDatasetSimplificado(int $idSucursal, string $fechaDesde, string $fechaHasta): array
+    public function construirDatasetSimplificado(int $idSucursal, string $fechaDesde, string $fechaHasta, array $mesesOk = []): array
     {
         $costos = $this->obtenerCostosDesglosados($idSucursal, $fechaDesde, $fechaHasta);
         $ventas = $this->obtenerVentaNetaPorMes($idSucursal, $fechaDesde, $fechaHasta);
 
-        $totalVenta = array_sum($ventas);
-        $totalCosto = array_sum($costos['total_por_categoria']);
+        // Calcular solo sobre los meses con datos completos
+        $mesesCalculo = !empty($mesesOk)
+            ? array_values(array_intersect($costos['meses'], $mesesOk))
+            : $costos['meses'];
 
-        $pct = $totalVenta > 0 ? ($totalCosto / $totalVenta) * 100 : null;
+        $totalVenta      = 0.0;
+        $catTotales      = array_fill_keys(self::CATEGORIAS, 0.0);
+        $conceptoTotales = [];
 
-        // Armar conceptos_detalle
+        foreach ($mesesCalculo as $mes) {
+            $totalVenta += (float) ($ventas[$mes] ?? 0);
+            foreach (self::CATEGORIAS as $cat) {
+                foreach (($costos['por_mes'][$mes][$cat] ?? []) as $concepto => $importe) {
+                    $catTotales[$cat]          += (float) $importe;
+                    $conceptoTotales[$concepto] = ($conceptoTotales[$concepto] ?? 0.0) + (float) $importe;
+                }
+            }
+        }
+
+        $totalCosto = array_sum($catTotales);
+        $pct        = $totalVenta > 0 ? ($totalCosto / $totalVenta) * 100 : null;
+
+        // Determinar categoría de cada concepto (búsqueda en toda la data, no filtrada)
         $detalle = [];
-        foreach ($costos['total_por_concepto'] as $concepto => $importe) {
-            // Determinar categoría del concepto
+        foreach ($conceptoTotales as $concepto => $importe) {
             $catConcepto = '';
             foreach ($costos['meses'] as $mes) {
                 foreach (self::CATEGORIAS as $cat) {
@@ -407,15 +468,11 @@ class CostoPersonalService
                     }
                 }
             }
-            $detalle[] = [
-                'categoria' => $catConcepto,
-                'concepto'  => $concepto,
-                'importe'   => round($importe, 2),
-            ];
+            $detalle[] = ['categoria' => $catConcepto, 'concepto' => $concepto, 'importe' => round($importe, 2)];
         }
 
         return [
-            'costos_por_categoria'      => array_map(fn($v) => round($v, 2), $costos['total_por_categoria']),
+            'costos_por_categoria'      => array_map(fn($v) => round($v, 2), $catTotales),
             'conceptos_detalle'         => $detalle,
             'total_costo'               => round($totalCosto, 2),
             'total_venta_neta'          => round($totalVenta, 2),
@@ -453,6 +510,140 @@ class CostoPersonalService
     // ─────────────────────────────────────────────────────────────────────────
     // UTILIDAD: Datos de gráfico de evolución (últimos N meses vs YoY)
     // ─────────────────────────────────────────────────────────────────────────
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ADMINISTRACIÓN: PARÁMETROS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Guarda (INSERT o UPDATE) un único parámetro en RO_T_PARAMETROS_COSTO_PERSONAL.
+     */
+    public function guardarParametro(string $nombre, float $valor): bool
+    {
+        $allowed = ['UMBRAL_VERDE', 'UMBRAL_ROJO', 'OBJETIVO_PCT'];
+        if (!in_array($nombre, $allowed, true)) return false;
+
+        try {
+            // UPDATE primero; si no afectó filas, INSERT
+            $sqlUpd  = "UPDATE RO_T_PARAMETROS_COSTO_PERSONAL SET VALOR = ? WHERE PARAMETRO = ?";
+            $pUpd    = [$valor, $nombre];
+            $stmtUpd = sqlsrv_prepare($this->conn, $sqlUpd, $pUpd);
+            if (!$stmtUpd || sqlsrv_execute($stmtUpd) === false) return false;
+
+            if (sqlsrv_rows_affected($stmtUpd) === 0) {
+                $sqlIns  = "INSERT INTO RO_T_PARAMETROS_COSTO_PERSONAL (PARAMETRO, VALOR) VALUES (?, ?)";
+                $pIns    = [$nombre, $valor];
+                $stmtIns = sqlsrv_prepare($this->conn, $sqlIns, $pIns);
+                if (!$stmtIns || sqlsrv_execute($stmtIns) === false) return false;
+            }
+            return true;
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::guardarParametro — ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ADMINISTRACIÓN: CATEGORÍAS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function listarCategorias(): array
+    {
+        try {
+            $sql  = "
+                SELECT ID, COD_CUENTA, DESC_CUENTA, CATEGORIA, CONCEPTO_AGRUPADO,
+                       PRORRATEAR_MESES, INCLUIR, OBSERVACIONES,
+                       CONVERT(varchar(10), FECHA_ALTA, 23)           AS FECHA_ALTA,
+                       CONVERT(varchar(10), FECHA_MODIFICACION, 23)   AS FECHA_MODIFICACION,
+                       USUARIO_MODIFICACION
+                FROM RO_T_CATEGORIAS_COSTO_PERSONAL
+                ORDER BY CATEGORIA, COD_CUENTA
+            ";
+            $stmt = sqlsrv_query($this->conn, $sql);
+            if (!$stmt) return [];
+            $rows = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $rows[] = [
+                    'id'                  => (int) $row['ID'],
+                    'cod_cuenta'          => $row['COD_CUENTA'],
+                    'desc_cuenta'         => $row['DESC_CUENTA'],
+                    'categoria'           => $row['CATEGORIA'],
+                    'concepto_agrupado'   => $row['CONCEPTO_AGRUPADO'],
+                    'prorratear_meses'    => (int) $row['PRORRATEAR_MESES'],
+                    'incluir'             => (bool) $row['INCLUIR'],
+                    'observaciones'       => $row['OBSERVACIONES'] ?? '',
+                    'fecha_alta'          => $row['FECHA_ALTA']          ?? '',
+                    'fecha_modificacion'  => $row['FECHA_MODIFICACION']  ?? '',
+                    'usuario_modificacion'=> $row['USUARIO_MODIFICACION'] ?? '',
+                ];
+            }
+            return $rows;
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::listarCategorias — ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function guardarCategoria(int $id, array $data): array
+    {
+        $codCuenta        = trim($data['cod_cuenta']        ?? '');
+        $descCuenta       = trim($data['desc_cuenta']       ?? '');
+        $categoria        = trim($data['categoria']         ?? '');
+        $conceptoAgrupado = trim($data['concepto_agrupado'] ?? '');
+        $prorratearMeses  = (int) ($data['prorratear_meses'] ?? 0);
+        $incluir          = isset($data['incluir']) && $data['incluir'] === '1' ? 1 : 0;
+        $observaciones    = trim($data['observaciones'] ?? '');
+        $usuario          = $_SESSION['user_name'] ?? 'SISTEMA';
+
+        $allowedCats = ['FIJO', 'VARIABLE', 'DIFERIDO', 'CONTINGENTE'];
+        if ($codCuenta === '')  return ['success' => false, 'message' => 'El código de cuenta es obligatorio.'];
+        if ($descCuenta === '') return ['success' => false, 'message' => 'La descripción es obligatoria.'];
+        if (!in_array($categoria, $allowedCats, true)) return ['success' => false, 'message' => 'Categoría inválida.'];
+
+        try {
+            if ($id === 0) {
+                $sql = "
+                    INSERT INTO RO_T_CATEGORIAS_COSTO_PERSONAL
+                        (COD_CUENTA, DESC_CUENTA, CATEGORIA, CONCEPTO_AGRUPADO, PRORRATEAR_MESES, INCLUIR, OBSERVACIONES, FECHA_ALTA, FECHA_MODIFICACION, USUARIO_MODIFICACION)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE(), ?)
+                ";
+                $params = [$codCuenta, $descCuenta, $categoria, $conceptoAgrupado, $prorratearMeses, $incluir, $observaciones, $usuario];
+                $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+                if (!$stmt || sqlsrv_execute($stmt) === false) return ['success' => false, 'message' => 'Error al insertar.'];
+                $newId = sqlsrv_fetch_array(sqlsrv_query($this->conn, "SELECT SCOPE_IDENTITY() AS ID"), SQLSRV_FETCH_ASSOC);
+                return ['success' => true, 'id' => (int) ($newId['ID'] ?? 0)];
+            } else {
+                $sql = "
+                    UPDATE RO_T_CATEGORIAS_COSTO_PERSONAL
+                    SET COD_CUENTA=?, DESC_CUENTA=?, CATEGORIA=?, CONCEPTO_AGRUPADO=?,
+                        PRORRATEAR_MESES=?, INCLUIR=?, OBSERVACIONES=?,
+                        FECHA_MODIFICACION=GETDATE(), USUARIO_MODIFICACION=?
+                    WHERE ID=?
+                ";
+                $params = [$codCuenta, $descCuenta, $categoria, $conceptoAgrupado, $prorratearMeses, $incluir, $observaciones, $usuario, $id];
+                $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+                if (!$stmt || sqlsrv_execute($stmt) === false) return ['success' => false, 'message' => 'Error al actualizar.'];
+                return ['success' => true, 'id' => $id];
+            }
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::guardarCategoria — ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function eliminarCategoria(int $id): array
+    {
+        try {
+            $sql    = "DELETE FROM RO_T_CATEGORIAS_COSTO_PERSONAL WHERE ID = ?";
+            $params = [$id];
+            $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+            if (!$stmt || sqlsrv_execute($stmt) === false) return ['success' => false, 'message' => 'Error al eliminar.'];
+            return ['success' => true];
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::eliminarCategoria — ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
 
     public function obtenerDatosEvolucion(int $idSucursal, array $meses): array
     {

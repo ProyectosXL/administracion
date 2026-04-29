@@ -36,6 +36,10 @@ try {
     $desdeAnt = (clone $dDesde)->modify('-12 months')->format('Y-m-d');
     $hastaAnt = (clone $dHasta)->modify('-12 months')->format('Y-m-d');
 
+    // Detectar meses sin datos y filtrar el cálculo
+    $deteccion = $service->detectarMesesSinDatos($fechaDesde, $fechaHasta);
+    $mesesOk   = $deteccion['meses_ok'];
+
     $sucursalObj = new Sucursal();
     $sucursales  = $sucursalObj->traerLocales(true);
 
@@ -45,7 +49,7 @@ try {
 
     foreach ($sucursales as $suc) {
         $id   = (int) $suc['ID'];
-        $d    = $service->construirDatasetSimplificado($id, $fechaDesde, $fechaHasta);
+        $d    = $service->construirDatasetSimplificado($id, $fechaDesde, $fechaHasta, $mesesOk);
         $dAnt = $service->construirDatasetSimplificado($id, $desdeAnt, $hastaAnt);
 
         $venta = $d['total_venta_neta'];
@@ -91,13 +95,16 @@ try {
     echo json_encode([
         'success' => true,
         'data' => [
-            'sucursales'          => $resultados,
-            'productividad_cadena' => $prodCadena,
-            'promedio_prod'        => $promProd,
-            'mejor'                => $resultados[0]  ?? null,
-            'peor'                 => end($resultados) ?: null,
-            'fecha_desde'          => $fechaDesde,
-            'fecha_hasta'          => $fechaHasta,
+            'sucursales'                => $resultados,
+            'productividad_cadena'      => $prodCadena,
+            'promedio_prod'             => $promProd,
+            'mejor'                     => $resultados[0]  ?? null,
+            'peor'                      => end($resultados) ?: null,
+            'fecha_desde'               => $fechaDesde,
+            'fecha_hasta'               => $fechaHasta,
+            'meses_sin_datos'           => $deteccion['meses_sin_datos'],
+            'meses_con_datos_completos' => count($mesesOk),
+            'meses_totales_periodo'     => $deteccion['total_meses'],
         ],
     ], JSON_UNESCAPED_UNICODE);
 

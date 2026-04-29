@@ -77,6 +77,11 @@ const ProductividadModule = (() => {
                     _data = response.data;
                     _render();
                     $('#cpProdContent').fadeIn(250);
+                    CostoPersonalGlobal.renderBannerMesesSinDatos(
+                        response.data.meses_sin_datos           || [],
+                        response.data.meses_totales_periodo     || 0,
+                        response.data.meses_con_datos_completos || 0
+                    );
                 } else {
                     _showError(response.message || 'No se pudieron calcular los datos de productividad.');
                 }
