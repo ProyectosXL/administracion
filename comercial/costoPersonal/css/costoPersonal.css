@@ -224,6 +224,13 @@ body {
 .select2-container .select2-selection--single { height:2rem!important; }
 
 /* ── Tablas de datos: Reporte Sucursal / Reporte a Fecha / Comparar ─────── */
+#cpTablaReporteSucursal,
+#cpTablaReporteFecha,
+#cpTablaComparacion {
+    width: 100% !important;
+    table-layout: fixed;
+}
+
 #cpTablaReporteSucursal thead th,
 #cpTablaReporteFecha    thead th,
 #cpTablaComparacion     thead th {
@@ -234,6 +241,7 @@ body {
     white-space: nowrap;
     letter-spacing: 0.3px;
     border: none !important;
+    box-sizing: border-box;
 }
 
 #cpTablaReporteSucursal tbody td,
@@ -242,33 +250,64 @@ body {
     vertical-align: middle !important;
     padding: 7px 10px !important;
     border-color: #ecf0f1 !important;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #cpTablaReporteSucursal tbody tr:hover td,
 #cpTablaReporteFecha    tbody tr:hover td,
 #cpTablaComparacion     tbody tr:hover td { background:#f5f8fa !important; }
 
-/* Columna fija sticky */
+/* Columna fija sticky — MISMO ancho en thead y tbody */
 #cpTablaReporteSucursal .fixed-column,
 #cpTablaReporteFecha    .fixed-column,
 #cpTablaComparacion     .fixed-column {
     position: sticky !important;
-    left: 0; z-index: 5;
-    background: #fff; font-weight: 600;
+    left: 0;
+    z-index: 5;
+    background: #fff;
+    font-weight: 600;
+    min-width: 280px !important;
+    width: 280px !important;
+    max-width: 280px !important;
 }
 #cpTablaReporteSucursal thead .fixed-column,
 #cpTablaReporteFecha    thead .fixed-column,
-#cpTablaComparacion     thead .fixed-column { z-index: 11 !important; background: #2c3e50 !important; }
+#cpTablaComparacion     thead .fixed-column {
+    z-index: 11 !important;
+    background: #2c3e50 !important;
+}
 
-/* Reporte a Fecha: anchos de columna y pie oculto */
-#cpTablaReporteFecha th:not(.fixed-column),
-#cpTablaReporteFecha td:not(.fixed-column) { min-width:120px; white-space:nowrap; }
+/* Columnas de meses/sucursales: ancho uniforme */
+#cpTablaReporteSucursal th:not(.fixed-column),
+#cpTablaReporteSucursal td:not(.fixed-column),
+#cpTablaReporteFecha    th:not(.fixed-column),
+#cpTablaReporteFecha    td:not(.fixed-column),
+#cpTablaComparacion     th:not(.fixed-column),
+#cpTablaComparacion     td:not(.fixed-column) {
+    min-width: 120px;
+    width: 120px;
+    white-space: nowrap;
+}
+
+/* Última columna (Total) un poco más ancha y resaltada */
+#cpTablaReporteSucursal th:last-child,
+#cpTablaReporteSucursal td:last-child {
+    min-width: 140px;
+    width: 140px;
+    background: #f8f9fa;
+}
+
 #cpTablaReporteFecha tfoot { display:none; }
 
 /* ── Productividad — badge eficiencia ───────────────────────────────────── */
-.cp-efic-verde   { background:rgba(39,174,96,0.12);  color:#27ae60; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
-.cp-efic-amarillo{ background:rgba(230,126,34,0.12); color:#e67e22; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
-.cp-efic-rojo    { background:rgba(231,76,60,0.12);  color:#e74c3c; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
+.cp-efic-azul    { background:rgba(52,152,219,0.12);  color:#3498db; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
+.cp-efic-verde   { background:rgba(39,174,96,0.12);   color:#27ae60; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
+.cp-efic-amarillo{ background:rgba(241,196,15,0.12);  color:#b7950b; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
+.cp-efic-naranja { background:rgba(230,126,34,0.12);  color:#e67e22; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
+.cp-efic-rojo    { background:rgba(231,76,60,0.12);   color:#e74c3c; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; }
 
 /* ── SweetAlert customizations ───────────────────────────────────────────── */
 .swal-wide-popup { border-radius:15px!important; box-shadow:0 10px 40px rgba(0,0,0,0.2)!important; }
@@ -289,6 +328,54 @@ body {
 .cp-banner-warning i { color: #e67e22; font-size: 22px; flex-shrink: 0; }
 .cp-banner-content   { flex: 1; }
 .cp-banner-content small { display: block; color: #7f8c8d; margin-top: 4px; }
+
+/* ── Banner cuotas sin ajuste (info) ────────────────────────────────────── */
+.cp-banner-info {
+    background: linear-gradient(135deg, #e8f4fd 0%, #d0eaf9 100%);
+    border-left: 4px solid #3498db;
+    padding: 12px 18px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.cp-banner-icon { color: #2980b9; font-size: 22px; flex-shrink: 0; }
+
+/* ── Toggle ajuste inflación ─────────────────────────────────────────────── */
+.cp-ajuste-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    border-radius: 25px;
+    border: 2px solid #f39c12;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    color: #7f8c8d;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    user-select: none;
+}
+.cp-ajuste-pill:has(input:checked),
+.cp-ajuste-pill.activa {
+    background: rgba(243,156,18,0.1);
+    color: #c67a00;
+    box-shadow: 0 2px 8px rgba(243,156,18,0.25);
+}
+.cp-ajuste-dot-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #bdc3c7;
+    flex-shrink: 0;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.cp-ajuste-dot-indicator.activo {
+    background: #f39c12;
+    box-shadow: 0 0 5px rgba(243,156,18,0.6);
+}
 
 /* ── Celda sin datos (Reporte por Sucursal) ──────────────────────────────── */
 .cp-celda-sin-datos {
@@ -313,6 +400,116 @@ body {
 }
 .productividad-cp-container .period-pill:hover  { border-color:#3498db; color:#3498db; transform:translateY(-1px); }
 .productividad-cp-container .period-pill.active { background:linear-gradient(135deg,#3498db,#2980b9); border-color:#2980b9; color:#fff; }
+
+/* ── Panel consolidado de avisos ─────────────────────────────────────────── */
+.cp-avisos-panel {
+    margin: 0 0 12px 0;
+    border-radius: 10px;
+    border: 1px solid #e3e8ef;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    overflow: hidden;
+}
+
+.cp-avisos-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+}
+.cp-avisos-header:hover { background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); }
+
+.cp-avisos-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.cp-avisos-header-icon { color: #f39c12; font-size: 16px; flex-shrink: 0; }
+
+#cpAvisosResumen {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cp-avisos-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.cp-aviso-mini-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.cp-aviso-mini-badge.badge-sinDatos   { background: #f39c12; color: #fff; }
+.cp-aviso-mini-badge.badge-ajuste     { background: #3498db; color: #fff; }
+.cp-aviso-mini-badge.badge-validacion { background: #8e44ad; color: #fff; }
+
+.cp-avisos-chevron { color: rgba(255,255,255,0.7); flex-shrink: 0; transition: transform 0.25s; }
+.cp-avisos-chevron.open { transform: rotate(180deg); }
+
+.cp-avisos-body { padding: 6px 0; }
+
+/* ── Banner: validación RRHH (purple) ────────────────────────────────────── */
+.cp-banner-validacion {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 18px;
+    background: linear-gradient(135deg, #f5eeff 0%, #ede0f8 100%);
+    border-left: 4px solid #8e44ad;
+    margin: 4px 8px;
+    border-radius: 0 6px 6px 0;
+}
+.cp-banner-validacion .cp-banner-icon { color: #7d3c98; font-size: 22px; flex-shrink: 0; }
+
+/* ── Iconos de validación en encabezados de mes ──────────────────────────── */
+.cp-validado-icon   { color: #27ae60; font-size: 12px; margin-left: 4px; vertical-align: middle; }
+.cp-pendiente-icon  { color: #e67e22; font-size: 12px; margin-left: 4px; vertical-align: middle; }
+
+/* ── Tabla de validación RRHH en el modal admin ──────────────────────────── */
+#cpTablaValidacion thead th { background: #2c3e50; color: #fff; font-size: 12px; }
+#cpTablaValidacion tbody tr:hover { background: #f8f9fa; }
+
+/* ── Botones validar / invalidar ──────────────────────────────────────────── */
+.cp-val-btn, .cp-inval-btn {
+    display:      inline-flex;
+    align-items:  center;
+    gap:          5px;
+    white-space:  nowrap;
+    padding:      4px 12px;
+    font-size:    12px;
+    font-weight:  600;
+    border-radius: 6px;
+}
+.cp-val-btn   { background: #27ae60; border-color: #219a52; color: #fff; }
+.cp-val-btn:hover   { background: #219a52; color: #fff; }
+.cp-inval-btn { background: #fff; border: 1.5px solid #e74c3c; color: #e74c3c; }
+.cp-inval-btn:hover { background: #e74c3c; color: #fff; }
+
+.cp-no-validable {
+    color:       #95a5a6;
+    font-size:   11px;
+    font-style:  italic;
+}
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width:1200px) { .main-container { padding:15px; } }

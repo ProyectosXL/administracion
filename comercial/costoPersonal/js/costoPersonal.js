@@ -8,12 +8,15 @@
 
 const CostoPersonalGlobal = (() => {
 
-    const STORAGE_KEY  = 'cp:categorias_activas';
-    const TODAS_CATS   = ['FIJO', 'VARIABLE', 'DIFERIDO', 'CONTINGENTE'];
-    const MIN_ACTIVAS  = 1;
+    const STORAGE_KEY         = 'cp:categorias_activas';
+    const STORAGE_KEY_AJUSTE  = 'cp:ajuste_inflacion';
+    const STORAGE_KEY_PANEL   = 'cp:avisos_panel_abierto';
+    const TODAS_CATS          = ['FIJO', 'VARIABLE', 'DIFERIDO', 'CONTINGENTE'];
+    const MIN_ACTIVAS         = 1;
 
     /* ── Estado ──────────────────────────────────────────────── */
-    let _activas = [...TODAS_CATS];   // categorías actualmente activas
+    let _activas      = [...TODAS_CATS];   // categorías actualmente activas
+    let _ajusteActivo = false;             // toggle ajuste por inflación
 
     /* ── Inicialización ──────────────────────────────────────── */
     function _cargarDesdeStorage() {
@@ -37,6 +40,20 @@ const CostoPersonalGlobal = (() => {
         } catch (_) {}
     }
 
+    function _cargarAjusteDesdeStorage() {
+        try {
+            _ajusteActivo = sessionStorage.getItem(STORAGE_KEY_AJUSTE) === 'true';
+        } catch (_) {
+            _ajusteActivo = false;
+        }
+    }
+
+    function _guardarAjusteEnStorage() {
+        try {
+            sessionStorage.setItem(STORAGE_KEY_AJUSTE, String(_ajusteActivo));
+        } catch (_) {}
+    }
+
     /* ── Render visual de las píldoras ──────────────────────── */
     function _renderCheckboxes() {
         $('#cpCategoriasToggle .cp-cat-pill').each(function () {
@@ -53,6 +70,28 @@ const CostoPersonalGlobal = (() => {
             $pill.find('input[type=checkbox]').prop('disabled', solaActiva);
             $pill.css('cursor', solaActiva ? 'not-allowed' : 'pointer');
         });
+    }
+
+    /* ── Render del pill de ajuste inflación ────────────────── */
+    function _renderAjustePill() {
+        const $toggle = $('#cpAjusteInflacionToggle');
+        // Solo mostrar si DIFERIDO está activo
+        if (!_activas.includes('DIFERIDO')) {
+            $toggle.hide();
+            return;
+        }
+        $toggle.show();
+        const $check = $('#cpAjusteInflacionCheck');
+        $check.prop('checked', _ajusteActivo);
+        const $dot   = $('.cp-ajuste-dot-indicator');
+        const $label = $('#cpAjusteLabel');
+        if (_ajusteActivo) {
+            $dot.addClass('activo');
+            $label.text('Con ajuste inflación');
+        } else {
+            $dot.removeClass('activo');
+            $label.text('Sin ajuste (nominal)');
+        }
     }
 
     /* ── Binding de eventos ──────────────────────────────────── */
@@ -77,7 +116,16 @@ const CostoPersonalGlobal = (() => {
 
             _guardarEnStorage();
             _renderCheckboxes();
+            _renderAjustePill();
             _dispatchChange();
+        });
+
+        // Toggle ajuste por inflación
+        $('#cpAjusteInflacionCheck').on('change', function () {
+            _ajusteActivo = $(this).prop('checked');
+            _guardarAjusteEnStorage();
+            _renderAjustePill();
+            $(document).trigger('cp:ajuste-inflacion-changed', [{ activo: _ajusteActivo }]);
         });
     }
 
@@ -165,21 +213,155 @@ const CostoPersonalGlobal = (() => {
     /* ── Clasificar semáforo con umbrales dinámicos de CP_CONFIG ─ */
     function semClass(pct) {
         if (pct === null || pct === undefined) return 'sin_datos';
-        const verde = (typeof CP_CONFIG !== 'undefined') ? CP_CONFIG.umbralVerde : 10;
-        const rojo  = (typeof CP_CONFIG !== 'undefined') ? CP_CONFIG.umbralRojo  : 15;
-        if (pct <= verde) return 'verde';
-        if (pct <= rojo)  return 'amarillo';
+        const cfg = typeof CP_CONFIG !== 'undefined' ? CP_CONFIG : {};
+        const azul     = cfg.umbralAzul     ?? 15;
+        const verde    = cfg.umbralVerde    ?? 18;
+        const amarillo = cfg.umbralAmarillo ?? 20;
+        const naranja  = cfg.umbralNaranja  ?? 22;
+        if (pct <= azul)     return 'azul';
+        if (pct <= verde)    return 'verde';
+        if (pct <= amarillo) return 'amarillo';
+        if (pct <= naranja)  return 'naranja';
         return 'rojo';
     }
 
     function semLabel(pct) {
         const cl = semClass(pct);
-        return cl === 'verde' ? 'Eficiente' : cl === 'amarillo' ? 'En rango' : cl === 'rojo' ? 'Requiere acción' : 'Sin datos';
+        const labels = { azul: 'Excelente', verde: 'Eficiente', amarillo: 'Aceptable', naranja: 'Riesgo', rojo: 'Crítico', sin_datos: 'Sin datos' };
+        return labels[cl] || 'Sin datos';
     }
 
     function semColor(pct) {
         const cl = semClass(pct);
-        return cl === 'verde' ? '#27ae60' : cl === 'amarillo' ? '#e67e22' : '#e74c3c';
+        const colors = { azul: '#3498db', verde: '#27ae60', amarillo: '#f1c40f', naranja: '#e67e22', rojo: '#e74c3c', sin_datos: '#95a5a6' };
+        return colors[cl] || '#95a5a6';
+    }
+
+    /* ── Banner: cuotas DIFERIDO sin ajuste ────────────────────── */
+
+    /**
+     * Muestra u oculta el banner de cuotas sin ajuste en #cp-banner-cuotas-sin-ajuste.
+     * Solo aparece cuando el toggle de ajuste está activo y hay cuotas sin procesar.
+     * @param {boolean} ajusteActivo
+     * @param {Object}  cuotas  { total, con_ajuste, sin_ajuste }
+     */
+    function renderBannerCuotasSinAjuste(ajusteActivo, cuotas) {
+        const $banner = $('#cp-banner-cuotas-sin-ajuste');
+        if (!$banner.length) return;
+
+        if (!ajusteActivo || !cuotas || cuotas.sin_ajuste === 0) {
+            $banner.hide().empty();
+            return;
+        }
+
+        const pct = cuotas.total > 0 ? Math.round((cuotas.sin_ajuste / cuotas.total) * 100) : 0;
+        $banner.html(
+            `<div class="cp-banner-info">` +
+                `<span class="cp-banner-icon">&#8505;</span>` +
+                `<div class="cp-banner-content">` +
+                    `<strong>Cuotas DIFERIDO sin ajuste</strong>` +
+                    `<small>${cuotas.sin_ajuste} de ${cuotas.total} cuotas (${pct}%) no tienen factor de inflación aplicado — se usa el importe nominal para esas filas.</small>` +
+                `</div>` +
+            `</div>`
+        ).show();
+    }
+
+    /* ── Panel consolidado de avisos ─────────────────────────────── */
+
+    /**
+     * Punto de entrada único para actualizar los 3 banners y el panel contenedor.
+     * @param {Object} data  response.data devuelto por cualquier controlador
+     */
+    function actualizarPanelAvisos(data) {
+        if (!data) return;
+
+        // Render individual de cada banner interno
+        renderBannerMesesSinDatos(
+            data.meses_sin_datos           || [],
+            data.meses_totales_periodo     || 0,
+            data.meses_con_datos_completos || 0
+        );
+        const aj = data.ajuste_inflacion;
+        renderBannerCuotasSinAjuste(aj ? aj.activo : false, aj ? aj.cuotas : null);
+        _renderBannerValidacion(data.validacion_mensual || null);
+
+        _actualizarCabeceraPanel();
+    }
+
+    function _renderBannerValidacion(vm) {
+        const $banner = $('#cp-banner-validacion-rrhh');
+        if (!$banner.length) return;
+
+        if (!vm || !vm.total_pendientes || vm.total_pendientes === 0) {
+            $banner.hide().empty();
+            return;
+        }
+
+        const n = vm.total_pendientes;
+        const meses = (vm.meses_pendientes || []).map(m => {
+            const [y, mo] = m.split('-');
+            const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            return MESES[parseInt(mo) - 1] + ' ' + y;
+        }).join(', ');
+
+        $banner.html(
+            `<div class="cp-banner-validacion">` +
+                `<span class="cp-banner-icon"><i class="bi bi-shield-exclamation"></i></span>` +
+                `<div class="cp-banner-content">` +
+                    `<strong>Validación RRHH pendiente</strong>` +
+                    `<small>${n} ${n === 1 ? 'mes sin validar' : 'meses sin validar'}: ${esc(meses)}.</small>` +
+                `</div>` +
+            `</div>`
+        ).show();
+    }
+
+    function _actualizarCabeceraPanel() {
+        const $panel  = $('#cp-avisos-panel');
+        if (!$panel.length) return;
+
+        const $banners = [
+            { $el: $('#cp-banner-meses-sin-datos'),    cls: 'badge-sinDatos',   label: 'Meses s/datos' },
+            { $el: $('#cp-banner-cuotas-sin-ajuste'),  cls: 'badge-ajuste',     label: 'Sin ajuste'    },
+            { $el: $('#cp-banner-validacion-rrhh'),    cls: 'badge-validacion', label: 'Validación'    },
+        ];
+
+        // No usar .is(':visible'): los banners están dentro de #cpAvisosBody (display:none),
+        // por lo que la visibilidad heredada siempre es false. Chequeamos solo el estilo propio del elemento.
+        const activos = $banners.filter(b => b.$el.length && b.$el[0].style.display !== 'none' && b.$el.html().trim() !== '');
+
+        if (activos.length === 0) {
+            $panel.hide();
+            return;
+        }
+
+        $panel.show();
+
+        const resumen = activos.length === 1
+            ? '1 aviso activo'
+            : activos.length + ' avisos activos';
+        $('#cpAvisosResumen').text(resumen);
+
+        const $badges = $('#cpAvisosBadges').empty();
+        activos.forEach(b => {
+            $badges.append(`<span class="cp-aviso-mini-badge ${b.cls}">${b.label}</span>`);
+        });
+
+        // Restaurar estado expandido desde sessionStorage
+        const abierto = sessionStorage.getItem(STORAGE_KEY_PANEL) === 'true';
+        _setPanelExpanded(abierto, false);
+    }
+
+    function _setPanelExpanded(abierto, animate) {
+        const $body    = $('#cpAvisosBody');
+        const $chevron = $('#cpAvisosChevronIcon').parent();
+
+        if (abierto) {
+            animate ? $body.slideDown(200) : $body.show();
+            $chevron.addClass('open');
+        } else {
+            animate ? $body.slideUp(200) : $body.hide();
+            $chevron.removeClass('open');
+        }
     }
 
     /* ── Banner: meses sin datos ────────────────────────────────── */
@@ -269,22 +451,32 @@ const CostoPersonalGlobal = (() => {
     /* ── Auto-init cuando el DOM esté listo ────────────────────── */
     function init() {
         _cargarDesdeStorage();
+        _cargarAjusteDesdeStorage();
         _renderCheckboxes();
+        _renderAjustePill();
         _bindEvents();
 
-        // Ocultar banner al cambiar de pestaña
-        $('a[data-toggle="tab"]').on('shown.bs.tab', () => {
-            $('#cp-banner-meses-sin-datos').hide().empty();
+        // Panel expand/collapse
+        $(document).on('click', '#cpAvisosHeader', function () {
+            const abierto = $('#cpAvisosBody').is(':visible');
+            const nuevoEstado = !abierto;
+            try { sessionStorage.setItem(STORAGE_KEY_PANEL, String(nuevoEstado)); } catch (_) {}
+            _setPanelExpanded(nuevoEstado, true);
         });
     }
 
     $(document).ready(init);
 
+    function getAjusteInflacionActivo() { return _ajusteActivo; }
+
     return {
         getActivas,
         calcularCostoTotal,
         calcularPorcentaje,
+        actualizarPanelAvisos,
         renderBannerMesesSinDatos,
+        renderBannerCuotasSinAjuste,
+        getAjusteInflacionActivo,
         fmtPesos,
         fmtPct,
         fmtDateHuman,

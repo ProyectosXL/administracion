@@ -49,6 +49,13 @@
                             <li>Valor positivo = Suc2 es más cara; negativo = más barata.</li>
                         </ul>
                     </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-shield-check"></i> Validación de RRHH</div>
+                        <p class="ind-help-text">
+                            El panel de avisos indica si hay meses del período sin validar por RRHH.
+                            Para gestionar las validaciones, accedé a <strong>Administrador → Validación RRHH</strong>.
+                        </p>
+                    </div>
                     <div class="ind-help-section" style="border-bottom:none">
                         <div class="ind-help-section-title"><i class="bi bi-lightbulb-fill"></i> Cómo usarlo</div>
                         <ol class="ind-help-steps">

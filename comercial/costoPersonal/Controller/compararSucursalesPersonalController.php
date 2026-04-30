@@ -15,15 +15,17 @@ require_once __DIR__ . '/../config.php';
 try {
     require_once CP_BASE_PATH . '/Class/CostoPersonalService.php';
 
-    $idSuc1     = $_POST['idSucursal1'] ?? '';
-    $idSuc2     = $_POST['idSucursal2'] ?? '';
-    $fechaDesde = $_POST['fechaDesde']  ?? '';
-    $fechaHasta = $_POST['fechaHasta']  ?? '';
+    $idSuc1             = $_POST['idSucursal1']        ?? '';
+    $idSuc2             = $_POST['idSucursal2']        ?? '';
+    $fechaDesde         = $_POST['fechaDesde']         ?? '';
+    $fechaHasta         = $_POST['fechaHasta']         ?? '';
+    $conAjusteInflacion = filter_var($_POST['conAjusteInflacion'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
     if (empty($idSuc1) || empty($idSuc2)) throw new Exception('Debe indicar dos sucursales.');
     if ($idSuc1 === $idSuc2)              throw new Exception('Las dos sucursales deben ser distintas.');
 
     $service = new CostoPersonalService();
+    $service->setUsarAjusteInflacion($conAjusteInflacion);
 
     if (empty($fechaDesde) || empty($fechaHasta)) {
         $rango = $service->calcularRangoDefault();
@@ -89,6 +91,9 @@ try {
     $sim1 = $service->construirDatasetSimplificado((int) $idSuc1, $fechaDesde, $fechaHasta, $mesesOk);
     $sim2 = $service->construirDatasetSimplificado((int) $idSuc2, $fechaDesde, $fechaHasta, $mesesOk);
 
+    $ajusteInfo        = $service->detectarCuotasSinAjusteGlobal($fechaDesde, $fechaHasta);
+    $validacionMensual = $service->obtenerEstadoValidacionRango($fechaDesde, $fechaHasta);
+
     echo json_encode([
         'success' => true,
         'data' => [
@@ -113,6 +118,8 @@ try {
             'meses_sin_datos'           => $deteccion['meses_sin_datos'],
             'meses_con_datos_completos' => count($mesesOk),
             'meses_totales_periodo'     => $deteccion['total_meses'],
+            'ajuste_inflacion'          => ['activo' => $conAjusteInflacion, 'cuotas' => $ajusteInfo],
+            'validacion_mensual'        => $validacionMensual,
         ],
     ], JSON_UNESCAPED_UNICODE);
 

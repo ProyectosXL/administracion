@@ -26,6 +26,14 @@ const ReportePersonalFechaModule = (() => {
         $(document).on('cp:categorias-changed', function () {
             if (_data) _recalcularConCategorias();
         });
+
+        $(document).on('cp:ajuste-inflacion-changed', function () {
+            if (_data) _fetch(
+                parseInt($('#cpRpfSucursal').val()),
+                _data.fecha_desde,
+                _data.fecha_hasta
+            );
+        });
     }
 
     function _bindEvents() {
@@ -63,18 +71,14 @@ const ReportePersonalFechaModule = (() => {
             url:      CP_CONFIG.ajaxBase + 'costoPersonalController.php',
             method:   'POST',
             cache:    false,
-            data: { idSucursal, fechaDesde, fechaHasta },
+            data: { idSucursal, fechaDesde, fechaHasta, conAjusteInflacion: CostoPersonalGlobal.getAjusteInflacionActivo() },
             dataType: 'json',
             success(response) {
                 Swal.close();
                 if (response.success) {
                     _data = response.data;
                     _render();
-                    CostoPersonalGlobal.renderBannerMesesSinDatos(
-                        response.data.meses_sin_datos           || [],
-                        response.data.meses_totales_periodo     || 0,
-                        response.data.meses_con_datos_completos || 0
-                    );
+                    CostoPersonalGlobal.actualizarPanelAvisos(response.data);
                 } else {
                     _showError(response.message || 'No se encontraron datos.');
                 }
@@ -176,6 +180,11 @@ const ReportePersonalFechaModule = (() => {
         });
         const pctEfectivoTotal = totalVenta > 0 ? (subEfectivoTotal / totalVenta) * 100 : null;
 
+        // ── Mapa de validación: mes → estado ──────────────────────────────
+        const vm = _data.validacion_mensual || {};
+        const validadosSet  = new Set(vm.meses_validados  || []);
+        const pendientesSet = new Set(vm.meses_pendientes || []);
+
         // ── Header ────────────────────────────────────────────────────────
         const mesNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         let thead = '<thead><tr>';
@@ -185,7 +194,18 @@ const ReportePersonalFechaModule = (() => {
             const sinD    = sinDatosSet.has(m);
             const sdCls   = sinD ? ' cp-celda-sin-datos' : '';
             const sdTitle = sinD ? ` title="${_tooltipEstado(sinDatosMap[m])}"` : '';
-            thead += `<th class="text-right${sdCls}"${sdTitle} style="background:#2c3e50;color:#fff;white-space:nowrap;">${mesNames[parseInt(mn)-1]} ${y}</th>`;
+
+            // Icono de validación: sin datos tiene prioridad, luego pendiente, luego validado
+            let validIcon = '';
+            if (!sinD) {
+                if (pendientesSet.has(m)) {
+                    validIcon = ` <i class="bi bi-shield-exclamation cp-pendiente-icon" title="Validación RRHH pendiente"></i>`;
+                } else if (validadosSet.has(m)) {
+                    validIcon = ` <i class="bi bi-shield-check cp-validado-icon" title="Validado por RRHH"></i>`;
+                }
+            }
+
+            thead += `<th class="text-right${sdCls}"${sdTitle} style="background:#2c3e50;color:#fff;white-space:nowrap;">${mesNames[parseInt(mn)-1]} ${y}${validIcon}</th>`;
         });
         thead += '<th class="text-right" style="background:#34495e;color:#fff;">Total</th></tr></thead>';
 

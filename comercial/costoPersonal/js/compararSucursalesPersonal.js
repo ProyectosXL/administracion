@@ -12,14 +12,27 @@ const CompararSucursalesPersonalModule = (() => {
 
     function init() {
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-            if ($(e.target).attr('href') === '#comparar' && !_initialized) {
-                _initialized = true;
-                _bindEvents();
+            if ($(e.target).attr('href') === '#comparar') {
+                if (!_initialized) {
+                    _initialized = true;
+                    _bindEvents();
+                }
+                if (_dtable) _dtable.columns.adjust().draw(false);
             }
         });
 
         $(document).on('cp:categorias-changed', function () {
             if (_data) _recalcularConCategorias();
+        });
+
+        $(document).on('cp:ajuste-inflacion-changed', function () {
+            if (_data) {
+                const desde = _data.fecha_desde;
+                const hasta = _data.fecha_hasta;
+                const suc1  = _data.suc1 && _data.suc1.id;
+                const suc2  = _data.suc2 && _data.suc2.id;
+                if (suc1 && suc2) _fetchComparacion(suc1, suc2, desde, hasta);
+            }
         });
     }
 
@@ -47,6 +60,10 @@ const CompararSucursalesPersonalModule = (() => {
             return;
         }
 
+        _fetchComparacion(suc1, suc2, desde, hasta);
+    }
+
+    function _fetchComparacion(suc1, suc2, desde, hasta) {
         Swal.fire({
             title: 'Comparando sucursales…',
             allowOutsideClick: false,
@@ -60,10 +77,11 @@ const CompararSucursalesPersonalModule = (() => {
             method:   'POST',
             cache:    false,
             data: {
-                idSucursal1: suc1,
-                idSucursal2: suc2,
-                fechaDesde:  desde,
-                fechaHasta:  hasta,
+                idSucursal1:        suc1,
+                idSucursal2:        suc2,
+                fechaDesde:         desde,
+                fechaHasta:         hasta,
+                conAjusteInflacion: CostoPersonalGlobal.getAjusteInflacionActivo(),
             },
             dataType: 'json',
             success(response) {
@@ -71,11 +89,7 @@ const CompararSucursalesPersonalModule = (() => {
                 if (response.success) {
                     _data = response.data;
                     _render();
-                    CostoPersonalGlobal.renderBannerMesesSinDatos(
-                        response.data.meses_sin_datos           || [],
-                        response.data.meses_totales_periodo     || 0,
-                        response.data.meses_con_datos_completos || 0
-                    );
+                    CostoPersonalGlobal.actualizarPanelAvisos(response.data);
                 } else {
                     _showError(response.message || 'No se pudo realizar la comparación.');
                 }
@@ -217,16 +231,18 @@ const CompararSucursalesPersonalModule = (() => {
         $('#cpTablaComparacion').html(thead + tbody);
 
         _dtable = $('#cpTablaComparacion').DataTable({
-            responsive:    false,
-            scrollX:       true,
+            responsive:     false,
+            scrollX:        true,
             scrollCollapse: true,
-            paging:        false,
-            searching:     false,
-            info:          false,
-            ordering:      false,
-            fixedColumns:  { leftColumns: 1 },
+            autoWidth:      false,
+            paging:         false,
+            searching:      false,
+            info:           false,
+            ordering:       false,
+            fixedColumns:   { leftColumns: 1 },
             language: { emptyTable: 'Sin datos' },
         });
+        _dtable.columns.adjust().draw(false);
     }
 
     function _limpiar() {

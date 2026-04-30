@@ -6,7 +6,8 @@
 
 $(document).ready(function () {
 
-    const AJAX = CP_CONFIG.ajaxBase + 'adminPersonalController.php';
+    const AJAX        = CP_CONFIG.ajaxBase + 'adminPersonalController.php';
+    const AJAX_AJUSTE = CP_CONFIG.ajaxBase + 'ajusteInflacionStatusController.php';
 
     /* ── Helpers UI ──────────────────────────────────────────────────── */
 
@@ -27,7 +28,9 @@ $(document).ready(function () {
     $('#cpAdminTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
         const target = $(e.target).attr('href');
         $('#cpBtnGuardarParam').toggle(target === '#cpAdminTabParam');
-        if (target === '#cpAdminTabCat') _loadCategorias();
+        if (target === '#cpAdminTabCat')        _loadCategorias();
+        if (target === '#cpAdminTabAjuste')     _loadEstadoAjuste();
+        // ValidacionRRHHModule handles its own tab event in validacionRRHH.js
     });
 
     // Guardar parámetros
@@ -40,10 +43,12 @@ $(document).ready(function () {
             url:      AJAX,
             method:   'POST',
             data: {
-                accion:       'guardarParametros',
-                UMBRAL_VERDE: $('#cpParamUmbralVerde').val(),
-                UMBRAL_ROJO:  $('#cpParamUmbralRojo').val(),
-                OBJETIVO_PCT: $('#cpParamObjetivo').val(),
+                accion:          'guardarParametros',
+                UMBRAL_AZUL:     $('#cpParamUmbralAzul').val(),
+                UMBRAL_VERDE:    $('#cpParamUmbralVerde').val(),
+                UMBRAL_AMARILLO: $('#cpParamUmbralAmarillo').val(),
+                UMBRAL_NARANJA:  $('#cpParamUmbralNaranja').val(),
+                OBJETIVO_PCT:    $('#cpParamObjetivo').val(),
             },
             dataType: 'json',
             success(response) {
@@ -51,9 +56,11 @@ $(document).ready(function () {
                     showMsg($('#cpAdminParamMsg'), 'success', 'Parámetros guardados correctamente.');
                     // Actualizar CP_CONFIG en memoria para que el semáforo refleje los nuevos valores
                     if (response.data) {
-                        CP_CONFIG.umbralVerde  = response.data.UMBRAL_VERDE;
-                        CP_CONFIG.umbralRojo   = response.data.UMBRAL_ROJO;
-                        CP_CONFIG.objetivoPct  = response.data.OBJETIVO_PCT;
+                        CP_CONFIG.umbralAzul     = response.data.UMBRAL_AZUL;
+                        CP_CONFIG.umbralVerde    = response.data.UMBRAL_VERDE;
+                        CP_CONFIG.umbralAmarillo = response.data.UMBRAL_AMARILLO;
+                        CP_CONFIG.umbralNaranja  = response.data.UMBRAL_NARANJA;
+                        CP_CONFIG.objetivoPct    = response.data.OBJETIVO_PCT;
                         // Redibujar el tab activo si tiene datos
                         $(document).trigger('cp:categorias-changed', [{ activas: CostoPersonalGlobal.getActivas() }]);
                     }
@@ -145,7 +152,8 @@ $(document).ready(function () {
                 info:      false,
                 ordering:  true,
                 order:     [[2, 'asc'], [0, 'asc']],
-                language:  { search: 'Buscar:', emptyTable: 'Sin registros', zeroRecords: 'Sin resultados' },
+                autoWidth: false,
+                language:  { search: 'Buscar cuenta:', emptyTable: 'Sin registros', zeroRecords: 'Sin resultados' },
             });
         } else {
             $('#cpCatTbody').html('<tr><td colspan="7" class="text-center text-muted">Sin registros en la tabla.</td></tr>');
@@ -237,6 +245,40 @@ $(document).ready(function () {
         $('#cpCatForm').slideUp(150);
         hideMsg($('#cpCatFormMsg'));
     });
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PESTAÑA: ESTADO DE AJUSTE POR INFLACIÓN
+    ═══════════════════════════════════════════════════════════════════ */
+
+    function _loadEstadoAjuste() {
+        $('#cpAjusteStatusContent').hide();
+        $('#cpAjusteStatusError').hide();
+        $('#cpAjusteStatusLoading').show();
+
+        $.ajax({
+            url:      AJAX_AJUSTE,
+            method:   'POST',
+            data:     { accion: 'obtenerEstado' },
+            dataType: 'json',
+            success(response) {
+                $('#cpAjusteStatusLoading').hide();
+                if (response.success && response.data && response.data.disponible) {
+                    const d = response.data;
+                    $('#cpAjusteTotal').text(d.total.toLocaleString('es-AR'));
+                    $('#cpAjusteConAjuste').text(d.con_ajuste.toLocaleString('es-AR'));
+                    $('#cpAjusteSinAjuste').text(d.sin_ajuste.toLocaleString('es-AR'));
+                    $('#cpAjusteUltimaFecha').text(d.ultima_fecha_ajuste || 'Sin registro');
+                    $('#cpAjusteStatusContent').show();
+                } else {
+                    $('#cpAjusteStatusError').show();
+                }
+            },
+            error() {
+                $('#cpAjusteStatusLoading').hide();
+                $('#cpAjusteStatusError').show();
+            },
+        });
+    }
 
     // Guardar
     $('#cpBtnGuardarCat').on('click', function () {

@@ -82,32 +82,78 @@
                     <div class="ind-help-section">
                         <div class="ind-help-section-title"><i class="bi bi-traffic-light-fill"></i> Semáforo</div>
                         <div class="ind-help-sem-grid">
+                            <div class="ind-help-sem-item azul">
+                                <div class="ind-help-sem-badge"><span class="sem-dot azul" style="width:12px;height:12px"></span> Excelente</div>
+                                <div class="ind-help-sem-range">≤ <?= $parametros['UMBRAL_AZUL'] ?>%</div>
+                                <p>Estructura de costos de personal óptima.</p>
+                            </div>
                             <div class="ind-help-sem-item verde">
                                 <div class="ind-help-sem-badge"><span class="sem-dot verde" style="width:12px;height:12px"></span> Eficiente</div>
                                 <div class="ind-help-sem-range">≤ <?= $parametros['UMBRAL_VERDE'] ?>%</div>
                                 <p>Estructura de costos de personal saludable.</p>
                             </div>
                             <div class="ind-help-sem-item amarillo">
-                                <div class="ind-help-sem-badge"><span class="sem-dot amarillo" style="width:12px;height:12px"></span> En rango con mejora</div>
-                                <div class="ind-help-sem-range"><?= $parametros['UMBRAL_VERDE'] ?>% – <?= $parametros['UMBRAL_ROJO'] ?>%</div>
+                                <div class="ind-help-sem-badge"><span class="sem-dot amarillo" style="width:12px;height:12px"></span> Aceptable</div>
+                                <div class="ind-help-sem-range">≤ <?= $parametros['UMBRAL_AMARILLO'] ?>%</div>
                                 <p>Aceptable pero con margen de mejora. Monitorear evolución.</p>
                             </div>
+                            <div class="ind-help-sem-item naranja">
+                                <div class="ind-help-sem-badge"><span class="sem-dot naranja" style="width:12px;height:12px"></span> Riesgo</div>
+                                <div class="ind-help-sem-range">≤ <?= $parametros['UMBRAL_NARANJA'] ?>%</div>
+                                <p>Estructura costosa. Requiere atención y análisis.</p>
+                            </div>
                             <div class="ind-help-sem-item rojo">
-                                <div class="ind-help-sem-badge"><span class="sem-dot rojo" style="width:12px;height:12px"></span> Requiere acción</div>
-                                <div class="ind-help-sem-range">> <?= $parametros['UMBRAL_ROJO'] ?>%</div>
+                                <div class="ind-help-sem-badge"><span class="sem-dot rojo" style="width:12px;height:12px"></span> Crítico</div>
+                                <div class="ind-help-sem-range">> <?= $parametros['UMBRAL_NARANJA'] ?>%</div>
                                 <p>Costo de personal excede el límite aceptable. Acción prioritaria.</p>
                             </div>
                         </div>
+                    </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-graph-up-arrow"></i> Ajuste por inflación (DIFERIDO)</div>
+                        <p class="ind-help-text">
+                            Las cuotas de indemnizaciones (<strong>DIFERIDO</strong>) pueden verse afectadas por la inflación. Cuando el toggle
+                            <em>"Con ajuste inflación"</em> está activo, el módulo usa el campo <code>IMPORTE_PRORRATEADO_AJUSTADO</code>
+                            en lugar del importe nominal para las cuotas DIFERIDO.
+                        </p>
+                        <div class="row mt-2">
+                            <div class="col-md-6 mb-2">
+                                <strong><i class="bi bi-toggle-off" style="color:#7f8c8d"></i> Sin ajuste (default)</strong><br>
+                                <small class="text-muted">Usa <code>IMPORTE_PRORRATEADO</code> — el importe nominal prorrateado. Comparable históricamente.</small>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <strong><i class="bi bi-toggle-on" style="color:#f39c12"></i> Con ajuste inflación</strong><br>
+                                <small class="text-muted">Usa <code>IMPORTE_PRORRATEADO_AJUSTADO</code> — el importe actualizado por el factor de inflación del período.</small>
+                            </div>
+                        </div>
+                        <p class="ind-help-text" style="margin-top:8px">
+                            Si alguna cuota DIFERIDO no tiene ajuste aplicado (<code>AJUSTE_APLICADO = 0</code>), se muestra un banner informativo y esa cuota usa el importe nominal.
+                            El estado global de ajuste se consulta en <strong>Administrador → Estado de Ajuste</strong>.
+                        </p>
+                    </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-shield-check"></i> Validación de RRHH</div>
+                        <p class="ind-help-text">
+                            Cada mes puede marcarse como <strong>validado</strong> por RRHH una vez que se confirma que los costos
+                            de personal están correctamente registrados. Los meses sin validar aparecen con un ícono
+                            <i class="bi bi-shield-exclamation" style="color:#e67e22"></i> en las columnas de la tabla y
+                            se incluye un aviso en el panel de notificaciones.
+                        </p>
+                        <p class="ind-help-text">
+                            La validación es global (aplica a toda la red, no por sucursal). Para validar o invalidar un mes,
+                            accedé a <strong>Administrador → Validación RRHH</strong>.
+                        </p>
                     </div>
                     <div class="ind-help-section" style="border-bottom:none">
                         <div class="ind-help-section-title"><i class="bi bi-lightbulb-fill"></i> Flujo de análisis recomendado</div>
                         <ol class="ind-help-steps">
                             <li>Elegí el <strong>período</strong> con las píldoras o personalizá el rango.</li>
-                            <li>Revisá el <strong>% Costo Cadena</strong>: si supera el <?= $parametros['UMBRAL_ROJO'] ?>%, hay un problema estructural.</li>
+                            <li>Revisá el <strong>% Costo Cadena</strong>: si supera el <?= $parametros['UMBRAL_NARANJA'] ?>%, hay un problema estructural.</li>
                             <li>Identificá los <strong>rojos</strong> en el semáforo y hacé clic para filtrar.</li>
                             <li>Hacé clic en una barra del ranking o en una sucursal para ver el <strong>detalle</strong>.</li>
                             <li>Analizá el <strong>break-even</strong>: ¿el problema es de ventas bajas o estructura de personal alta?</li>
                             <li>Usá el <strong>toggle de categorías</strong> para ver el impacto de cada tipo de costo.</li>
+                            <li>Activá <strong>"Con ajuste inflación"</strong> (visible cuando DIFERIDO está activo) para ver los costos en valores actualizados.</li>
                         </ol>
                     </div>
                 </div>
@@ -189,24 +235,34 @@
                     <h3 class="ind-panel-title"><i class="bi bi-traffic-light"></i> Semáforo</h3>
                 </div>
                 <div class="sem-counters">
+                    <div class="sem-counter-item" id="cpSemFilterAzul">
+                        <div class="sem-counter-num azul" id="cpSemCountAzul">0</div>
+                        <div class="sem-counter-label">Excelente</div>
+                    </div>
                     <div class="sem-counter-item" id="cpSemFilterVerde">
                         <div class="sem-counter-num verde" id="cpSemCountVerde">0</div>
                         <div class="sem-counter-label">Eficiente</div>
                     </div>
                     <div class="sem-counter-item" id="cpSemFilterAmarillo">
                         <div class="sem-counter-num amarillo" id="cpSemCountAmarillo">0</div>
-                        <div class="sem-counter-label">En rango</div>
+                        <div class="sem-counter-label">Aceptable</div>
+                    </div>
+                    <div class="sem-counter-item" id="cpSemFilterNaranja">
+                        <div class="sem-counter-num naranja" id="cpSemCountNaranja">0</div>
+                        <div class="sem-counter-label">Riesgo</div>
                     </div>
                     <div class="sem-counter-item" id="cpSemFilterRojo">
                         <div class="sem-counter-num rojo" id="cpSemCountRojo">0</div>
-                        <div class="sem-counter-label">Req. acción</div>
+                        <div class="sem-counter-label">Crítico</div>
                     </div>
                 </div>
                 <div class="sem-list" id="cpSemList"></div>
                 <div class="sem-legend-bar">
+                    <div class="sem-legend-item"><div class="sem-dot azul"></div> ≤ <span id="cpLegendAzul"></span></div>
                     <div class="sem-legend-item"><div class="sem-dot verde"></div> ≤ <span id="cpLegendVerde"></span></div>
-                    <div class="sem-legend-item"><div class="sem-dot amarillo"></div> rango</div>
-                    <div class="sem-legend-item"><div class="sem-dot rojo"></div> > <span id="cpLegendRojo"></span></div>
+                    <div class="sem-legend-item"><div class="sem-dot amarillo"></div> ≤ <span id="cpLegendAmarillo"></span></div>
+                    <div class="sem-legend-item"><div class="sem-dot naranja"></div> ≤ <span id="cpLegendNaranja"></span></div>
+                    <div class="sem-legend-item"><div class="sem-dot rojo"></div> crítico</div>
                 </div>
             </div>
         </div>
@@ -261,9 +317,11 @@
                     <div class="be-gauge-wrap">
                         <div class="be-track">
                             <div class="be-zones">
-                                <div class="be-zone-g" id="cpBeZoneG" style="flex:10"></div>
-                                <div class="be-zone-a" style="flex:5"></div>
-                                <div class="be-zone-r" id="cpBeZoneR" style="flex:85"></div>
+                                <div class="be-zone-azul"     style="flex:15"></div>
+                                <div class="be-zone-verde"    style="flex:3"></div>
+                                <div class="be-zone-amarillo" style="flex:2"></div>
+                                <div class="be-zone-naranja"  style="flex:2"></div>
+                                <div class="be-zone-rojo"     style="flex:6"></div>
                             </div>
                             <div class="be-needle" id="cpBeNeedle" style="left:50%">
                                 <div class="be-needle-label warn" id="cpBeNeedleLabel">—</div>

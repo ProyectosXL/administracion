@@ -15,13 +15,15 @@ require_once __DIR__ . '/../config.php';
 try {
     require_once CP_BASE_PATH . '/Class/CostoPersonalService.php';
 
-    $idSucursal = $_POST['idSucursal'] ?? '';
-    $fechaDesde = $_POST['fechaDesde'] ?? '';
-    $fechaHasta = $_POST['fechaHasta'] ?? '';
+    $idSucursal         = $_POST['idSucursal']         ?? '';
+    $fechaDesde         = $_POST['fechaDesde']         ?? '';
+    $fechaHasta         = $_POST['fechaHasta']         ?? '';
+    $conAjusteInflacion = filter_var($_POST['conAjusteInflacion'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
     if (empty($idSucursal)) throw new Exception('Debe indicar idSucursal.');
 
     $service = new CostoPersonalService();
+    $service->setUsarAjusteInflacion($conAjusteInflacion);
 
     if (empty($fechaDesde) || empty($fechaHasta)) {
         $rango = $service->calcularRangoDefault();
@@ -45,12 +47,16 @@ try {
     $dataset['meses_con_datos_completos'] = count($mesesOk);
     $dataset['meses_totales_periodo']     = $deteccion['total_meses'];
 
-    $evolucion = $service->obtenerDatosEvolucion((int) $idSucursal, $dataset['meses']);
+    $evolucion        = $service->obtenerDatosEvolucion((int) $idSucursal, $dataset['meses']);
+    $ajusteInfo       = $service->detectarCuotasSinAjuste((int) $idSucursal, $fechaDesde, $fechaHasta);
+    $validacionMensual = $service->obtenerEstadoValidacionRango($fechaDesde, $fechaHasta);
 
     echo json_encode([
-        'success'   => true,
-        'data'      => $dataset,
-        'evolucion' => $evolucion,
+        'success'           => true,
+        'data'              => $dataset,
+        'evolucion'         => $evolucion,
+        'ajuste_inflacion'  => ['activo' => $conAjusteInflacion, 'cuotas' => $ajusteInfo],
+        'validacion_mensual'=> $validacionMensual,
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {

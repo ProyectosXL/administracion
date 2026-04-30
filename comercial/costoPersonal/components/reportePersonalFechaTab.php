@@ -50,6 +50,15 @@
                             <li>La fila <strong>% Costo de Personal</strong> (naranja) muestra el porcentaje por mes.</li>
                         </ul>
                     </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-shield-check"></i> Validación de RRHH</div>
+                        <p class="ind-help-text">
+                            Los encabezados de cada columna de mes incluyen un ícono de estado:
+                            <i class="bi bi-shield-check" style="color:#27ae60"></i> mes validado por RRHH,
+                            <i class="bi bi-shield-exclamation" style="color:#e67e22"></i> validación pendiente.
+                            Las celdas con fondo rayado (sin datos) tienen prioridad sobre el estado de validación.
+                        </p>
+                    </div>
                     <div class="ind-help-section" style="border-bottom:none">
                         <div class="ind-help-section-title"><i class="bi bi-lightbulb-fill"></i> Flujo sugerido</div>
                         <ol class="ind-help-steps">

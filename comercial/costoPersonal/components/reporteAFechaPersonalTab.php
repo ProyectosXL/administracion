@@ -48,6 +48,13 @@
                             <li><strong>Mejor / Peor</strong>: locales con menor y mayor % costo de personal.</li>
                         </ul>
                     </div>
+                    <div class="ind-help-section">
+                        <div class="ind-help-section-title"><i class="bi bi-shield-check"></i> Validación de RRHH</div>
+                        <p class="ind-help-text">
+                            Meses con validación RRHH pendiente se indican en el panel de avisos.
+                            Para gestionar las validaciones, accedé a <strong>Administrador → Validación RRHH</strong>.
+                        </p>
+                    </div>
                     <div class="ind-help-section" style="border-bottom:none">
                         <div class="ind-help-section-title"><i class="bi bi-lightbulb-fill"></i> Variación vs. año anterior</div>
                         <p class="ind-help-text">Cada columna de sucursal muestra un indicador ▲▼ con la diferencia en puntos porcentuales vs. el mismo período del año anterior. Verde = mejoró, rojo = empeoró.</p>

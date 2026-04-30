@@ -48,8 +48,10 @@ $(document).ready(function () {
     });
 
     // Filtros semáforo
+    $(document).on('click', '#cpSemFilterAzul',     () => _toggleSemFilter('azul'));
     $(document).on('click', '#cpSemFilterVerde',    () => _toggleSemFilter('verde'));
     $(document).on('click', '#cpSemFilterAmarillo', () => _toggleSemFilter('amarillo'));
+    $(document).on('click', '#cpSemFilterNaranja',  () => _toggleSemFilter('naranja'));
     $(document).on('click', '#cpSemFilterRojo',     () => _toggleSemFilter('rojo'));
 
     // Recalcular cuando cambian las categorías
@@ -61,6 +63,16 @@ $(document).ready(function () {
                     .find(s => s.id === IndicadoresPersonalModule.selectedId);
                 if (suc) _renderDetalle(suc);
             }
+        }
+    });
+
+    // Re-fetch cuando cambia el toggle de ajuste inflación
+    $(document).on('cp:ajuste-inflacion-changed', function () {
+        if (IndicadoresPersonalModule.data) {
+            fetchIndicadoresPersonal(
+                IndicadoresPersonalModule.fechaDesde,
+                IndicadoresPersonalModule.fechaHasta
+            );
         }
     });
 });
@@ -102,9 +114,10 @@ function fetchIndicadoresPersonal(fechaDesde, fechaHasta) {
         method:   'POST',
         cache:    false,
         data: {
-            accion:       'fetch',
-            fecha_desde:  fechaDesde,
-            fecha_hasta:  fechaHasta,
+            accion:             'fetch',
+            fecha_desde:        fechaDesde,
+            fecha_hasta:        fechaHasta,
+            conAjusteInflacion: CostoPersonalGlobal.getAjusteInflacionActivo(),
         },
         dataType: 'json',
         success(response) {
@@ -115,11 +128,7 @@ function fetchIndicadoresPersonal(fechaDesde, fechaHasta) {
                 IndicadoresPersonalModule.currentFilter = null;
                 _render(response.data);
                 $('#cpIndContent').fadeIn(250);
-                CostoPersonalGlobal.renderBannerMesesSinDatos(
-                    response.data.meses_sin_datos           || [],
-                    response.data.meses_totales_periodo     || 0,
-                    response.data.meses_con_datos_completos || 0
-                );
+                CostoPersonalGlobal.actualizarPanelAvisos(response.data);
             } else {
                 _showError(response.message || 'No se pudieron obtener los indicadores.');
             }
@@ -178,17 +187,19 @@ function _renderKPIs(kpis, fechaDesdeAnt, fechaHastaAnt, parametros, sucursales)
         });
         if (totalVentaR > 0) pctRecalc = (totalCostoR / totalVentaR) * 100;
     }
-    const semClR = CostoPersonalGlobal.semClass(pctRecalc);
+    const semClR      = CostoPersonalGlobal.semClass(pctRecalc);
+    const semValCls   = (semClR === 'azul' || semClR === 'verde') ? 'val-good' : semClR === 'amarillo' ? 'val-warn' : 'val-danger';
+    const semBadgeCls = { azul: 'azul', verde: 'good', amarillo: 'warn', naranja: 'naranja', rojo: 'danger', sin_datos: 'neutral' }[semClR] || 'neutral';
 
     $('#cpKpiCadenaVal')
         .text(pctRecalc !== null ? pctRecalc.toFixed(1) + '%' : '—')
         .removeClass('val-good val-warn val-danger')
-        .addClass(semClR === 'verde' ? 'val-good' : semClR === 'amarillo' ? 'val-warn' : 'val-danger');
+        .addClass(semValCls);
 
     $('#cpKpiCadenaBadge')
         .text(CostoPersonalGlobal.semLabel(pctRecalc))
-        .removeClass('good warn danger neutral')
-        .addClass(semClR === 'verde' ? 'good' : semClR === 'amarillo' ? 'warn' : 'danger');
+        .removeClass('good warn danger neutral azul naranja')
+        .addClass(semBadgeCls);
 
     const pp = kpis.variacion_pp;
     if (pp !== null) {
@@ -241,8 +252,10 @@ function _renderKPIs(kpis, fechaDesdeAnt, fechaHastaAnt, parametros, sucursales)
 
     // Leyenda dinámica umbrales
     if (parametros) {
-        $('#cpLegendVerde').text((parametros.umbral_verde ?? parametros.UMBRAL_VERDE) + '%');
-        $('#cpLegendRojo').text((parametros.umbral_rojo  ?? parametros.UMBRAL_ROJO)  + '%');
+        $('#cpLegendAzul').text(parametros.umbral_azul + '%');
+        $('#cpLegendVerde').text(parametros.umbral_verde + '%');
+        $('#cpLegendAmarillo').text(parametros.umbral_amarillo + '%');
+        $('#cpLegendNaranja').text(parametros.umbral_naranja + '%');
     }
 }
 
@@ -255,9 +268,11 @@ function _renderRanking(ranking) {
         IndicadoresPersonalModule.chart = null;
     }
 
-    const umbralVerde = CP_CONFIG.umbralVerde;
-    const umbralRojo  = CP_CONFIG.umbralRojo;
-    const objetivo    = CP_CONFIG.objetivoPct;
+    const umbralAzul     = CP_CONFIG.umbralAzul     ?? 15;
+    const umbralVerde    = CP_CONFIG.umbralVerde    ?? 18;
+    const umbralAmarillo = CP_CONFIG.umbralAmarillo ?? 20;
+    const umbralNaranja  = CP_CONFIG.umbralNaranja  ?? 22;
+    const objetivo       = CP_CONFIG.objetivoPct;
 
     // Recalcular pct con categorías activas y reordenar ranking
     const rankingRecalc = ranking.map(s => {
@@ -281,9 +296,12 @@ function _renderRanking(ranking) {
     });
     const valores = rankingRecalc.map(s => s.pct_recalc ?? 0);
     const colors  = valores.map(v =>
-        v <= umbralVerde ? '#27ae60' : v <= umbralRojo ? '#e67e22' : '#e74c3c'
+        v <= umbralAzul    ? '#3498db' :
+        v <= umbralVerde   ? '#27ae60' :
+        v <= umbralAmarillo ? '#f1c40f' :
+        v <= umbralNaranja ? '#e67e22' : '#e74c3c'
     );
-    const maxVal = Math.max(...valores, umbralRojo + 5);
+    const maxVal = Math.max(...valores, umbralNaranja + 5);
 
     IndicadoresPersonalModule.chart = new Chart(canvas, {
         type: 'bar',
@@ -350,8 +368,10 @@ function _renderRanking(ranking) {
                 afterDraw(chart) {
                     const { ctx, scales: { x, y } } = chart;
                     const refs = [
-                        { val: umbralVerde, color: '#27ae60', label: umbralVerde + '% eficiente' },
-                        { val: umbralRojo,  color: '#e74c3c', label: umbralRojo + '% límite'    },
+                        { val: umbralAzul,     color: '#3498db', label: umbralAzul     + '% excelente'  },
+                        { val: umbralVerde,    color: '#27ae60', label: umbralVerde    + '% eficiente'  },
+                        { val: umbralAmarillo, color: '#b7950b', label: umbralAmarillo + '% aceptable'  },
+                        { val: umbralNaranja,  color: '#e67e22', label: umbralNaranja  + '% riesgo'     },
                     ];
                     refs.forEach(({ val, color, label }) => {
                         const xPos = x.getPixelForValue(val);
@@ -383,7 +403,7 @@ function _renderRanking(ranking) {
 
 function _renderSemaforo(sucursales, counts) {
     // Recalcular conteos con categorías activas
-    const recalc = { verde: 0, amarillo: 0, rojo: 0, sin_datos: 0 };
+    const recalc = { azul: 0, verde: 0, amarillo: 0, naranja: 0, rojo: 0, sin_datos: 0 };
     sucursales.forEach(s => {
         let pct = null;
         if (s.costos_por_categoria && s.venta_neta > 0) {
@@ -392,8 +412,10 @@ function _renderSemaforo(sucursales, counts) {
         }
         recalc[CostoPersonalGlobal.semClass(pct)]++;
     });
+    $('#cpSemCountAzul').text(recalc.azul);
     $('#cpSemCountVerde').text(recalc.verde);
     $('#cpSemCountAmarillo').text(recalc.amarillo);
+    $('#cpSemCountNaranja').text(recalc.naranja);
     $('#cpSemCountRojo').text(recalc.rojo);
     _buildSemList(sucursales);
 }
@@ -403,7 +425,7 @@ function _buildSemList(sucursales) {
     const list   = $('#cpSemList').empty();
 
     const ordered = [...sucursales].sort((a, b) => {
-        const order = { rojo: 0, amarillo: 1, verde: 2, sin_datos: 3 };
+        const order = { rojo: 0, naranja: 1, amarillo: 2, verde: 3, azul: 4, sin_datos: 5 };
         const diff  = order[a.semaforo] - order[b.semaforo];
         if (diff !== 0) return diff;
         return (b.pct_actual ?? 0) - (a.pct_actual ?? 0);
@@ -439,7 +461,7 @@ function _toggleSemFilter(color) {
     IndicadoresPersonalModule.currentFilter =
         IndicadoresPersonalModule.currentFilter === color ? null : color;
 
-    ['Verde', 'Amarillo', 'Rojo'].forEach(c => {
+    ['Azul', 'Verde', 'Amarillo', 'Naranja', 'Rojo'].forEach(c => {
         const isActive = IndicadoresPersonalModule.currentFilter === c.toLowerCase();
         $(`#cpSemFilter${c}`).toggleClass('font-weight-bold', isActive);
         $(`#cpSemCount${c}`).css('opacity', isActive ? 1 : 0.5);
@@ -469,7 +491,8 @@ function _renderDetalle(suc) {
         pct   = (costo / suc.venta_neta) * 100;
     }
     const cl = CostoPersonalGlobal.semClass(pct);
-    const dotColor = cl === 'verde' ? '#27ae60' : cl === 'amarillo' ? '#e67e22' : '#e74c3c';
+    const DOT_COLORS = { azul: '#3498db', verde: '#27ae60', amarillo: '#f1c40f', naranja: '#e67e22', rojo: '#e74c3c' };
+    const dotColor = DOT_COLORS[cl] || '#95a5a6';
 
     $('#cpDetSucDot').css({ background: dotColor, boxShadow: `0 0 6px ${dotColor}` });
     $('#cpDetSucNombre').text(suc.nombre);
@@ -479,7 +502,7 @@ function _renderDetalle(suc) {
     );
 
     _setDetVal('#cpDetPctActual', pct !== null ? pct.toFixed(2) + '%' : '—',
-        cl === 'verde' ? 'good' : cl === 'amarillo' ? 'warn' : 'danger');
+        (cl === 'azul' || cl === 'verde') ? 'good' : cl === 'amarillo' ? 'warn' : 'danger');
 
     _setDetVal('#cpDetPctAnt', suc.pct_anterior !== null ? suc.pct_anterior.toFixed(2) + '%' : 'Sin datos');
 
@@ -494,7 +517,7 @@ function _renderDetalle(suc) {
     _setDetVal('#cpDetVenta', CostoPersonalGlobal.fmtPesos(suc.venta_neta), 'info');
     _setDetVal('#cpDetCosto', CostoPersonalGlobal.fmtPesos(costo));
 
-    const barW  = Math.min(100, Math.max(0, (pct / (CP_CONFIG.umbralRojo * 1.5)) * 100));
+    const barW  = Math.min(100, Math.max(0, (pct / ((CP_CONFIG.umbralNaranja ?? 22) * 1.5)) * 100));
     $('#cpDetBarFill').css({ width: barW + '%', background: dotColor });
 
     const gap  = pct !== null ? pct - objetivo : null;

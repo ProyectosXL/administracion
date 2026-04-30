@@ -18,6 +18,14 @@ class CostoPersonalService
     /** Categorías válidas y su orden de presentación */
     const CATEGORIAS = ['FIJO', 'VARIABLE', 'DIFERIDO', 'CONTINGENTE'];
 
+    /** Columna de importe a usar en obtenerCostosDesglosados(). Por defecto sin ajuste. */
+    protected string $colImporte = 'IMPORTE_PRORRATEADO';
+
+    public function setUsarAjusteInflacion(bool $usar): void
+    {
+        $this->colImporte = $usar ? 'IMPORTE_PRORRATEADO_AJUSTADO' : 'IMPORTE_PRORRATEADO';
+    }
+
     public function __construct()
     {
         require_once CP_CONEXION_PATH;
@@ -71,9 +79,11 @@ class CostoPersonalService
     public function obtenerParametros(): array
     {
         $defaults = [
-            'UMBRAL_VERDE' => 10.00,
-            'UMBRAL_ROJO'  => 15.00,
-            'OBJETIVO_PCT' => 10.00,
+            'UMBRAL_AZUL'    => 15.00,
+            'UMBRAL_VERDE'   => 18.00,
+            'UMBRAL_AMARILLO'=> 20.00,
+            'UMBRAL_NARANJA' => 22.00,
+            'OBJETIVO_PCT'   => 15.00,
         ];
 
         try {
@@ -104,7 +114,7 @@ class CostoPersonalService
     public function generarMeses(string $fechaDesde, string $fechaHasta): array
     {
         $meses  = [];
-        $inicio = new DateTime($fechaDesde . '-01');   // forzar día 1 para evitar overflow
+        $inicio = new DateTime(substr($fechaDesde, 0, 7) . '-01');   // forzar día 1 para evitar overflow
         $fin    = new DateTime($fechaHasta);
         $fin    = new DateTime($fin->format('Y-m-01'));
 
@@ -148,7 +158,7 @@ class CostoPersonalService
                 FORMAT(FECHA_PERIODO, 'yyyy-MM')  AS PERIODO,
                 CATEGORIA,
                 CONCEPTO,
-                SUM(IMPORTE_PRORRATEADO) AS IMPORTE_PRORR,
+                SUM({$this->colImporte}) AS IMPORTE_PRORR,
                 SUM(IMPORTE_REAL)        AS IMPORTE_REAL
             FROM RO_T_COSTO_PERSONAL_MENSUAL
             WHERE NRO_SUCURSAL = ?
@@ -520,7 +530,7 @@ class CostoPersonalService
      */
     public function guardarParametro(string $nombre, float $valor): bool
     {
-        $allowed = ['UMBRAL_VERDE', 'UMBRAL_ROJO', 'OBJETIVO_PCT'];
+        $allowed = ['UMBRAL_AZUL', 'UMBRAL_VERDE', 'UMBRAL_AMARILLO', 'UMBRAL_NARANJA', 'OBJETIVO_PCT'];
         if (!in_array($nombre, $allowed, true)) return false;
 
         try {
@@ -641,6 +651,282 @@ class CostoPersonalService
             return ['success' => true];
         } catch (Exception $e) {
             error_log('CostoPersonalService::eliminarCategoria — ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AJUSTE POR INFLACIÓN: DETECCIÓN Y ESTADO
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Cuotas DIFERIDO en el rango para una sucursal: cuántas tienen ajuste aplicado y cuántas no.
+     */
+    public function detectarCuotasSinAjuste(int $idSucursal, string $fechaDesde, string $fechaHasta): array
+    {
+        $sql = "
+            SELECT
+                COUNT(*) AS TOTAL_CUOTAS,
+                SUM(CASE WHEN AJUSTE_APLICADO = 1 THEN 1 ELSE 0 END) AS CON_AJUSTE,
+                SUM(CASE WHEN ISNULL(AJUSTE_APLICADO, 0) = 0 THEN 1 ELSE 0 END) AS SIN_AJUSTE
+            FROM RO_T_COSTO_PERSONAL_MENSUAL
+            WHERE NRO_SUCURSAL = ?
+              AND CATEGORIA = 'DIFERIDO'
+              AND FECHA_PERIODO >= DATEFROMPARTS(YEAR(CAST(? AS DATE)), MONTH(CAST(? AS DATE)), 1)
+              AND FECHA_PERIODO <= EOMONTH(CAST(? AS DATE))
+        ";
+        try {
+            $params = [$idSucursal, $fechaDesde, $fechaDesde, $fechaHasta];
+            $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+            if (!$stmt || !sqlsrv_execute($stmt)) return ['total' => 0, 'con_ajuste' => 0, 'sin_ajuste' => 0];
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            return [
+                'total'      => (int) ($row['TOTAL_CUOTAS'] ?? 0),
+                'con_ajuste' => (int) ($row['CON_AJUSTE']   ?? 0),
+                'sin_ajuste' => (int) ($row['SIN_AJUSTE']   ?? 0),
+            ];
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::detectarCuotasSinAjuste — ' . $e->getMessage());
+            return ['total' => 0, 'con_ajuste' => 0, 'sin_ajuste' => 0];
+        }
+    }
+
+    /**
+     * Igual que detectarCuotasSinAjuste pero para todas las sucursales del rango.
+     */
+    public function detectarCuotasSinAjusteGlobal(string $fechaDesde, string $fechaHasta): array
+    {
+        $sql = "
+            SELECT
+                COUNT(*) AS TOTAL_CUOTAS,
+                SUM(CASE WHEN AJUSTE_APLICADO = 1 THEN 1 ELSE 0 END) AS CON_AJUSTE,
+                SUM(CASE WHEN ISNULL(AJUSTE_APLICADO, 0) = 0 THEN 1 ELSE 0 END) AS SIN_AJUSTE
+            FROM RO_T_COSTO_PERSONAL_MENSUAL
+            WHERE CATEGORIA = 'DIFERIDO'
+              AND FECHA_PERIODO >= DATEFROMPARTS(YEAR(CAST(? AS DATE)), MONTH(CAST(? AS DATE)), 1)
+              AND FECHA_PERIODO <= EOMONTH(CAST(? AS DATE))
+        ";
+        try {
+            $params = [$fechaDesde, $fechaDesde, $fechaHasta];
+            $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+            if (!$stmt || !sqlsrv_execute($stmt)) return ['total' => 0, 'con_ajuste' => 0, 'sin_ajuste' => 0];
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            return [
+                'total'      => (int) ($row['TOTAL_CUOTAS'] ?? 0),
+                'con_ajuste' => (int) ($row['CON_AJUSTE']   ?? 0),
+                'sin_ajuste' => (int) ($row['SIN_AJUSTE']   ?? 0),
+            ];
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::detectarCuotasSinAjusteGlobal — ' . $e->getMessage());
+            return ['total' => 0, 'con_ajuste' => 0, 'sin_ajuste' => 0];
+        }
+    }
+
+    /**
+     * Estado global de ajuste por inflación (sin filtro de fechas).
+     * Usado por el tab Administrador para mostrar un resumen.
+     */
+    public function obtenerEstadoAjusteInflacion(): array
+    {
+        $sql = "
+            SELECT
+                COUNT(*) AS TOTAL_DIFERIDO,
+                SUM(CASE WHEN AJUSTE_APLICADO = 1 THEN 1 ELSE 0 END) AS CON_AJUSTE,
+                SUM(CASE WHEN ISNULL(AJUSTE_APLICADO, 0) = 0 THEN 1 ELSE 0 END) AS SIN_AJUSTE,
+                MAX(FECHA_AJUSTE) AS ULTIMA_FECHA_AJUSTE
+            FROM RO_T_COSTO_PERSONAL_MENSUAL
+            WHERE CATEGORIA = 'DIFERIDO'
+        ";
+        try {
+            $stmt = sqlsrv_query($this->conn, $sql);
+            if (!$stmt) return ['disponible' => false, 'total' => 0, 'con_ajuste' => 0, 'sin_ajuste' => 0, 'ultima_fecha_ajuste' => null];
+            $row         = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            $fechaAjuste = $row['ULTIMA_FECHA_AJUSTE'] ?? null;
+            if ($fechaAjuste instanceof DateTime) $fechaAjuste = $fechaAjuste->format('Y-m-d H:i:s');
+            return [
+                'disponible'          => true,
+                'total'               => (int) ($row['TOTAL_DIFERIDO'] ?? 0),
+                'con_ajuste'          => (int) ($row['CON_AJUSTE']     ?? 0),
+                'sin_ajuste'          => (int) ($row['SIN_AJUSTE']     ?? 0),
+                'ultima_fecha_ajuste' => $fechaAjuste,
+            ];
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::obtenerEstadoAjusteInflacion — ' . $e->getMessage());
+            return ['disponible' => false, 'total' => 0, 'con_ajuste' => 0, 'sin_ajuste' => 0, 'ultima_fecha_ajuste' => null];
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // VALIDACIÓN MENSUAL RRHH
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Estado de validación para cada mes del rango dado.
+     * Ejecuta RO_PPP_ADMIN_VALIDACION_COSTO_PERSONAL con ACCION='ESTADO_RANGO'.
+     *
+     * @return array [
+     *   'meses_validados'     => ['YYYY-MM', ...],
+     *   'meses_pendientes'    => ['YYYY-MM', ...],
+     *   'total_validados'     => int,
+     *   'total_pendientes'    => int,
+     *   'detalle_validaciones'=> [['mes'=>, 'usuario'=>, 'fecha'=>, 'observaciones'=>], ...],
+     * ]
+     */
+    public function obtenerEstadoValidacionRango(string $fechaDesde, string $fechaHasta): array
+    {
+        $mesesPeriodo = $this->generarMeses($fechaDesde, $fechaHasta);
+        $fallback     = [
+            'meses_validados'      => [],
+            'meses_pendientes'     => $mesesPeriodo,
+            'total_validados'      => 0,
+            'total_pendientes'     => count($mesesPeriodo),
+            'detalle_validaciones' => [],
+        ];
+
+        try {
+            $sql    = "EXEC dbo.RO_PPP_ADMIN_VALIDACION_COSTO_PERSONAL @ACCION=?, @FECHA_DESDE=?, @FECHA_HASTA=?";
+            $params = ['ESTADO_RANGO', $fechaDesde, $fechaHasta];
+            $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+            if (!$stmt || !sqlsrv_execute($stmt)) return $fallback;
+
+            $estadoPorMes = [];
+            $detalle      = [];
+
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $fp     = $row['FECHA_PERIODO'] ?? null;
+                if ($fp instanceof DateTime) {
+                    $mes = $fp->format('Y-m');
+                } else {
+                    $mes = substr((string) $fp, 0, 7);
+                }
+                $estado = $row['ESTADO'] ?? 'PENDIENTE';
+                $estadoPorMes[$mes] = $estado;
+
+                if ($estado === 'VALIDADO') {
+                    $fechaVal = $row['FECHA_VALIDACION'] ?? null;
+                    if ($fechaVal instanceof DateTime) $fechaVal = $fechaVal->format('Y-m-d');
+                    $detalle[] = [
+                        'mes'          => $mes,
+                        'usuario'      => $row['USUARIO_VALIDACION'] ?? '',
+                        'fecha'        => $fechaVal,
+                        'observaciones'=> $row['OBSERVACIONES'] ?? '',
+                    ];
+                }
+            }
+
+            $validados  = [];
+            $pendientes = [];
+            foreach ($mesesPeriodo as $mes) {
+                $st = $estadoPorMes[$mes] ?? 'PENDIENTE';
+                if ($st === 'VALIDADO') $validados[]  = $mes;
+                else                    $pendientes[] = $mes;
+            }
+
+            return [
+                'meses_validados'      => $validados,
+                'meses_pendientes'     => $pendientes,
+                'total_validados'      => count($validados),
+                'total_pendientes'     => count($pendientes),
+                'detalle_validaciones' => $detalle,
+            ];
+
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::obtenerEstadoValidacionRango — ' . $e->getMessage());
+            return $fallback;
+        }
+    }
+
+    /**
+     * Lista los últimos 12 meses cerrados con su estado de validación.
+     * @return array [['mes'=>, 'validado'=>bool, 'fecha_validacion'=>, 'usuario_validacion'=>, 'observaciones'=>], ...]
+     */
+    public function listarValidacionesUltimos12Meses(): array
+    {
+        $hoy   = new DateTime();
+        $hasta = (new DateTime($hoy->format('Y-m-01')))->modify('-1 day');
+        $desde = (new DateTime($hasta->format('Y-m-01')))->modify('-11 months');
+
+        $meses     = $this->generarMeses($desde->format('Y-m-d'), $hasta->format('Y-m-d'));
+        $estado    = $this->obtenerEstadoValidacionRango($desde->format('Y-m-d'), $hasta->format('Y-m-d'));
+        $validados = array_flip($estado['meses_validados']);
+        $detalleMap = [];
+        foreach ($estado['detalle_validaciones'] as $d) {
+            $detalleMap[$d['mes']] = $d;
+        }
+
+        // Meses que tienen al menos una fila no-DIFERIDO (= validables por RRHH)
+        $validablesSet = [];
+        try {
+            $sql = "
+                SELECT DISTINCT FORMAT(FECHA_PERIODO, 'yyyy-MM') AS mes
+                FROM dbo.RO_T_COSTO_PERSONAL_MENSUAL
+                WHERE FECHA_PERIODO >= DATEFROMPARTS(YEAR(CAST(? AS DATE)), MONTH(CAST(? AS DATE)), 1)
+                  AND FECHA_PERIODO <= EOMONTH(CAST(? AS DATE))
+                  AND CATEGORIA <> 'DIFERIDO'
+            ";
+            $params = [$desde->format('Y-m-d'), $desde->format('Y-m-d'), $hasta->format('Y-m-d')];
+            $stmt   = sqlsrv_query($this->conn, $sql, $params);
+            if ($stmt) {
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                    $validablesSet[$row['mes']] = true;
+                }
+                sqlsrv_free_stmt($stmt);
+            }
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::listarValidacionesUltimos12Meses — validables — ' . $e->getMessage());
+        }
+
+        $result = [];
+        foreach (array_reverse($meses) as $mes) {
+            $det      = $detalleMap[$mes] ?? null;
+            $result[] = [
+                'mes'               => $mes,
+                'validado'          => isset($validados[$mes]),
+                'fecha_validacion'  => $det['fecha']         ?? null,
+                'usuario_validacion'=> $det['usuario']       ?? null,
+                'observaciones'     => $det['observaciones'] ?? null,
+                'es_validable'      => isset($validablesSet[$mes]),
+            ];
+        }
+        return $result;
+    }
+
+    /**
+     * Marca un mes como validado.
+     * @param string $fechaPeriodo  Primer día del mes: 'YYYY-MM-01'
+     */
+    public function validarMes(string $fechaPeriodo, ?string $observaciones, string $usuario): array
+    {
+        try {
+            $sql    = "EXEC dbo.RO_PPP_ADMIN_VALIDACION_COSTO_PERSONAL @ACCION=?, @FECHA_PERIODO=?, @OBSERVACIONES=?, @USUARIO=?";
+            $params = ['VALIDAR', $fechaPeriodo, $observaciones, $usuario];
+            $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+            if (!$stmt || sqlsrv_execute($stmt) === false) {
+                return ['success' => false, 'message' => 'Error al ejecutar la validación.'];
+            }
+            return ['success' => true];
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::validarMes — ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Quita la validación de un mes.
+     * @param string $fechaPeriodo  Primer día del mes: 'YYYY-MM-01'
+     */
+    public function invalidarMes(string $fechaPeriodo): array
+    {
+        try {
+            $sql    = "EXEC dbo.RO_PPP_ADMIN_VALIDACION_COSTO_PERSONAL @ACCION=?, @FECHA_PERIODO=?";
+            $params = ['INVALIDAR', $fechaPeriodo];
+            $stmt   = sqlsrv_prepare($this->conn, $sql, $params);
+            if (!$stmt || sqlsrv_execute($stmt) === false) {
+                return ['success' => false, 'message' => 'Error al quitar la validación.'];
+            }
+            return ['success' => true];
+        } catch (Exception $e) {
+            error_log('CostoPersonalService::invalidarMes — ' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }

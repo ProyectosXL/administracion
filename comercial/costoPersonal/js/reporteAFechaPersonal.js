@@ -13,14 +13,21 @@ const ReporteAFechaPersonalModule = (() => {
 
     function init() {
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-            if ($(e.target).attr('href') === '#reporte-fecha' && !_initialized) {
-                _initialized = true;
-                _bindEvents();
+            if ($(e.target).attr('href') === '#reporte-fecha') {
+                if (!_initialized) {
+                    _initialized = true;
+                    _bindEvents();
+                }
+                if (_dtable) _dtable.columns.adjust().draw(false);
             }
         });
 
         $(document).on('cp:categorias-changed', function () {
             if (_data) _recalcularConCategorias();
+        });
+
+        $(document).on('cp:ajuste-inflacion-changed', function () {
+            if (_data) _fetch(_data.fecha_desde, _data.fecha_hasta);
         });
     }
 
@@ -50,18 +57,14 @@ const ReporteAFechaPersonalModule = (() => {
             url:      CP_CONFIG.ajaxBase + 'reporteAFechaPersonalController.php',
             method:   'POST',
             cache:    false,
-            data: { fechaDesde, fechaHasta },
+            data: { fechaDesde, fechaHasta, conAjusteInflacion: CostoPersonalGlobal.getAjusteInflacionActivo() },
             dataType: 'json',
             success(response) {
                 $('#cpRafLoading').hide();
                 if (response.success) {
                     _data = response.data;
                     _render();
-                    CostoPersonalGlobal.renderBannerMesesSinDatos(
-                        response.data.meses_sin_datos           || [],
-                        response.data.meses_totales_periodo     || 0,
-                        response.data.meses_con_datos_completos || 0
-                    );
+                    CostoPersonalGlobal.actualizarPanelAvisos(response.data);
                 } else {
                     _showError(response.message || 'No se encontraron datos.');
                 }
@@ -211,16 +214,18 @@ const ReporteAFechaPersonalModule = (() => {
 
         setTimeout(() => {
             _dtable = $('#cpTablaReporteFecha').DataTable({
-                responsive:    false,
-                scrollX:       true,
+                responsive:     false,
+                scrollX:        true,
                 scrollCollapse: true,
-                paging:        false,
-                searching:     false,
-                info:          false,
-                ordering:      false,
-                fixedColumns:  { leftColumns: 1 },
+                autoWidth:      false,
+                paging:         false,
+                searching:      false,
+                info:           false,
+                ordering:       false,
+                fixedColumns:   { leftColumns: 1 },
                 language: { emptyTable: 'Sin datos' },
             });
+            _dtable.columns.adjust().draw(false);
         }, 80);
     }
 

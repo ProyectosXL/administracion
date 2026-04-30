@@ -17,8 +17,9 @@ try {
     require_once CP_SUCURSAL_PATH;
     require_once CP_BASE_PATH . '/Class/CostoPersonalService.php';
 
-    $fechaDesde = $_POST['fechaDesde'] ?? '';
-    $fechaHasta = $_POST['fechaHasta'] ?? '';
+    $fechaDesde         = $_POST['fechaDesde']         ?? '';
+    $fechaHasta         = $_POST['fechaHasta']         ?? '';
+    $conAjusteInflacion = filter_var($_POST['conAjusteInflacion'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
     if (empty($fechaDesde) || empty($fechaHasta)) throw new Exception('Faltan parámetros obligatorios.');
 
@@ -32,6 +33,7 @@ try {
     $hastaAnt = (clone $dHasta)->modify('-12 months')->format('Y-m-d');
 
     $service     = new CostoPersonalService();
+    $service->setUsarAjusteInflacion($conAjusteInflacion);
     $sucursalObj = new Sucursal();
     $sucursales  = $sucursalObj->traerLocales(true);
 
@@ -131,6 +133,9 @@ try {
         ];
     }
 
+    $ajusteInfo        = $service->detectarCuotasSinAjusteGlobal($fechaDesde, $fechaHasta);
+    $validacionMensual = $service->obtenerEstadoValidacionRango($fechaDesde, $fechaHasta);
+
     echo json_encode([
         'success' => true,
         'data' => [
@@ -150,6 +155,8 @@ try {
             'meses_sin_datos'           => $deteccion['meses_sin_datos'],
             'meses_con_datos_completos' => count($mesesOk),
             'meses_totales_periodo'     => $deteccion['total_meses'],
+            'ajuste_inflacion'          => ['activo' => $conAjusteInflacion, 'cuotas' => $ajusteInfo],
+            'validacion_mensual'        => $validacionMensual,
         ],
     ], JSON_UNESCAPED_UNICODE);
 

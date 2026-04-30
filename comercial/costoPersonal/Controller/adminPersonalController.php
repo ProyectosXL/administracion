@@ -28,7 +28,7 @@ try {
 
         // ── Guardar uno o varios parámetros ──────────────────────────────
         case 'guardarParametros':
-            $nombres   = ['UMBRAL_VERDE', 'UMBRAL_ROJO', 'OBJETIVO_PCT'];
+            $nombres   = ['UMBRAL_AZUL', 'UMBRAL_VERDE', 'UMBRAL_AMARILLO', 'UMBRAL_NARANJA', 'OBJETIVO_PCT'];
             $errores   = [];
             foreach ($nombres as $n) {
                 if (isset($_POST[$n]) && $_POST[$n] !== '') {

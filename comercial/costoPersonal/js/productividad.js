@@ -23,6 +23,10 @@ const ProductividadModule = (() => {
         $(document).on('cp:categorias-changed', function () {
             if (_data) _recalcularConCategorias();
         });
+
+        $(document).on('cp:ajuste-inflacion-changed', function () {
+            if (_data) _fetch(_data.fecha_desde, _data.fecha_hasta);
+        });
     }
 
     function _bindPills() {
@@ -69,7 +73,7 @@ const ProductividadModule = (() => {
             url:      CP_CONFIG.ajaxBase + 'productividadController.php',
             method:   'POST',
             cache:    false,
-            data: { fechaDesde, fechaHasta },
+            data: { fechaDesde, fechaHasta, conAjusteInflacion: CostoPersonalGlobal.getAjusteInflacionActivo() },
             dataType: 'json',
             success(response) {
                 $('#cpProdLoading').hide();
@@ -77,11 +81,7 @@ const ProductividadModule = (() => {
                     _data = response.data;
                     _render();
                     $('#cpProdContent').fadeIn(250);
-                    CostoPersonalGlobal.renderBannerMesesSinDatos(
-                        response.data.meses_sin_datos           || [],
-                        response.data.meses_totales_periodo     || 0,
-                        response.data.meses_con_datos_completos || 0
-                    );
+                    CostoPersonalGlobal.actualizarPanelAvisos(response.data);
                 } else {
                     _showError(response.message || 'No se pudieron calcular los datos de productividad.');
                 }
@@ -253,8 +253,10 @@ const ProductividadModule = (() => {
     function _renderTabla(sucursales) {
         const $tbody = $('#cpProdTablaBody').empty();
 
-        const umbralVerde = CP_CONFIG.umbralVerde;
-        const umbralRojo  = CP_CONFIG.umbralRojo;
+        const umbralAzul     = CP_CONFIG.umbralAzul     ?? 15;
+        const umbralVerde    = CP_CONFIG.umbralVerde    ?? 18;
+        const umbralAmarillo = CP_CONFIG.umbralAmarillo ?? 20;
+        const umbralNaranja  = CP_CONFIG.umbralNaranja  ?? 22;
 
         sucursales.forEach((s, idx) => {
             const prod     = s.prod_recalc;
@@ -266,9 +268,11 @@ const ProductividadModule = (() => {
             const pct = s.pct_recalc;
             let eficBadge = '';
             if (pct !== null) {
-                if      (pct <= umbralVerde) eficBadge = '<span class="cp-efic-verde">Eficiente</span>';
-                else if (pct <= umbralRojo)  eficBadge = '<span class="cp-efic-amarillo">En rango</span>';
-                else                         eficBadge = '<span class="cp-efic-rojo">Requiere acción</span>';
+                if      (pct <= umbralAzul)     eficBadge = '<span class="cp-efic-azul">Excelente</span>';
+                else if (pct <= umbralVerde)    eficBadge = '<span class="cp-efic-verde">Eficiente</span>';
+                else if (pct <= umbralAmarillo) eficBadge = '<span class="cp-efic-amarillo">Aceptable</span>';
+                else if (pct <= umbralNaranja)  eficBadge = '<span class="cp-efic-naranja">Riesgo</span>';
+                else                            eficBadge = '<span class="cp-efic-rojo">Crítico</span>';
             }
 
             const varProdHtml = varProd !== null

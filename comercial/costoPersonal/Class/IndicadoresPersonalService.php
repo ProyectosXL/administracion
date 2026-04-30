@@ -11,8 +11,10 @@
 class IndicadoresPersonalService
 {
     private $costoService;
+    private float $umbralAzul;
     private float $umbralVerde;
-    private float $umbralRojo;
+    private float $umbralAmarillo;
+    private float $umbralNaranja;
     private float $objetivoPct;
 
     public function __construct()
@@ -21,9 +23,16 @@ class IndicadoresPersonalService
         $this->costoService = new CostoPersonalService();
 
         $params = $this->costoService->obtenerParametros();
-        $this->umbralVerde = $params['UMBRAL_VERDE'];
-        $this->umbralRojo  = $params['UMBRAL_ROJO'];
-        $this->objetivoPct = $params['OBJETIVO_PCT'];
+        $this->umbralAzul    = $params['UMBRAL_AZUL'];
+        $this->umbralVerde   = $params['UMBRAL_VERDE'];
+        $this->umbralAmarillo= $params['UMBRAL_AMARILLO'];
+        $this->umbralNaranja = $params['UMBRAL_NARANJA'];
+        $this->objetivoPct   = $params['OBJETIVO_PCT'];
+    }
+
+    public function setUsarAjusteInflacion(bool $usar): void
+    {
+        $this->costoService->setUsarAjusteInflacion($usar);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -33,8 +42,10 @@ class IndicadoresPersonalService
     public function clasificarSemaforo(?float $pct): string
     {
         if ($pct === null) return 'sin_datos';
-        if ($pct <= $this->umbralVerde) return 'verde';
-        if ($pct <= $this->umbralRojo)  return 'amarillo';
+        if ($pct <= $this->umbralAzul)    return 'azul';
+        if ($pct <= $this->umbralVerde)   return 'verde';
+        if ($pct <= $this->umbralAmarillo)return 'amarillo';
+        if ($pct <= $this->umbralNaranja) return 'naranja';
         return 'rojo';
     }
 
@@ -154,7 +165,7 @@ class IndicadoresPersonalService
         $varRelCadena = ($pctCadenaAnt && $pctCadenaAnt != 0 && $pctCadena !== null)
             ? round((($pctCadena - $pctCadenaAnt) / $pctCadenaAnt) * 100, 2) : null;
 
-        $sem = ['verde' => 0, 'amarillo' => 0, 'rojo' => 0, 'sin_datos' => 0];
+        $sem = ['azul' => 0, 'verde' => 0, 'amarillo' => 0, 'naranja' => 0, 'rojo' => 0, 'sin_datos' => 0];
         foreach ($datos as $d) $sem[$d['semaforo']] = ($sem[$d['semaforo']] ?? 0) + 1;
 
         $ranking = $conDatos;
@@ -174,9 +185,11 @@ class IndicadoresPersonalService
             'ranking'                  => $ranking,
             'sucursales'               => $datos,
             'parametros'               => [
-                'umbral_verde' => $this->umbralVerde,
-                'umbral_rojo'  => $this->umbralRojo,
-                'objetivo_pct' => $this->objetivoPct,
+                'umbral_azul'    => $this->umbralAzul,
+                'umbral_verde'   => $this->umbralVerde,
+                'umbral_amarillo'=> $this->umbralAmarillo,
+                'umbral_naranja' => $this->umbralNaranja,
+                'objetivo_pct'   => $this->objetivoPct,
             ],
             'fecha_desde'              => $fechaDesde,
             'fecha_hasta'              => $fechaHasta,

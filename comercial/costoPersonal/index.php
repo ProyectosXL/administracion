@@ -164,9 +164,27 @@ $entornoActivo = 'central';
 
     <div class="content-wrapper">
 
-        <!-- ── BANNER MESES SIN DATOS ────────────────────────── -->
+        <!-- ── PANEL CONSOLIDADO DE AVISOS ──────────────────── -->
         <div style="padding:18px 24px 0">
-            <div id="cp-banner-meses-sin-datos" style="display:none;"></div>
+            <div id="cp-avisos-panel" class="cp-avisos-panel" style="display:none;">
+                <!-- Barra superior siempre visible -->
+                <div class="cp-avisos-header" id="cpAvisosHeader">
+                    <div class="cp-avisos-header-left">
+                        <i class="bi bi-exclamation-circle-fill cp-avisos-header-icon"></i>
+                        <span id="cpAvisosResumen"></span>
+                    </div>
+                    <div class="cp-avisos-badges" id="cpAvisosBadges"></div>
+                    <div class="cp-avisos-chevron" id="cpAvisosChevron">
+                        <i class="bi bi-chevron-down" id="cpAvisosChevronIcon"></i>
+                    </div>
+                </div>
+                <!-- Contenido expandible -->
+                <div class="cp-avisos-body" id="cpAvisosBody" style="display:none;">
+                    <div id="cp-banner-meses-sin-datos"></div>
+                    <div id="cp-banner-cuotas-sin-ajuste"></div>
+                    <div id="cp-banner-validacion-rrhh"></div>
+                </div>
+            </div>
 
         <!-- ── TOGGLE GLOBAL DE CATEGORÍAS ──────────────────── -->
             <div class="cp-categorias-toggle" id="cpCategoriasToggle">
@@ -197,6 +215,19 @@ $entornoActivo = 'central';
                     <span class="cp-cat-dot contingente"></span>
                     Contingente <small>Reservado</small>
                 </label>
+            </div>
+
+            <!-- ── TOGGLE AJUSTE POR INFLACIÓN ────────────────── -->
+            <div class="cp-categorias-toggle" id="cpAjusteInflacionToggle" style="border-left-color:#f39c12;display:none;">
+                <span class="cp-toggle-label">
+                    <i class="bi bi-graph-up-arrow" style="color:#f39c12;"></i> Ajuste inflación:
+                </span>
+                <label class="cp-ajuste-pill" id="cpAjustePill" title="Activar para usar importes ajustados por inflación en cuotas DIFERIDO">
+                    <input type="checkbox" id="cpAjusteInflacionCheck" style="display:none;">
+                    <span class="cp-ajuste-dot-indicator"></span>
+                    <span id="cpAjusteLabel">Sin ajuste (nominal)</span>
+                </label>
+                <span class="cp-ajuste-info" id="cpAjusteInfoBadge" style="display:none;"></span>
             </div>
         </div>
 
@@ -272,20 +303,24 @@ $entornoActivo = 'central';
 
 <!-- ── MODAL ADMINISTRADOR ─────────────────────────────────────── -->
 <div class="modal fade" id="cpAdminModal" tabindex="-1" role="dialog" aria-labelledby="cpAdminModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header" style="background:#2c3e50;color:#fff;">
-                <h5 class="modal-title" id="cpAdminModalLabel">
-                    <i class="bi bi-gear-fill"></i> Administrador
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar" style="color:#fff;opacity:0.8;">
-                    <span aria-hidden="true">&times;</span>
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+        <div class="modal-content ind-help-modal">
+            <div class="modal-header ind-help-modal-header">
+                <div class="d-flex align-items-center" style="gap:12px">
+                    <div class="ind-help-icon-wrap"><i class="bi bi-gear-fill"></i></div>
+                    <div>
+                        <h5 class="modal-title" id="cpAdminModalLabel">Administrador</h5>
+                        <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.75)">Parámetros del semáforo y mapeo de categorías de cuenta</p>
+                    </div>
+                </div>
+                <button type="button" class="ind-help-close" data-dismiss="modal" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
                 </button>
             </div>
-            <div class="modal-body p-0">
+            <div class="modal-body ind-help-modal-body" style="padding:0;">
 
                 <!-- Tabs internos del modal -->
-                <ul class="nav nav-tabs px-3 pt-2" id="cpAdminTabs" role="tablist" style="border-bottom:2px solid #dee2e6;">
+                <ul class="nav nav-tabs cp-admin-tabs" id="cpAdminTabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" id="cpAdminTabParam-tab" data-toggle="tab" href="#cpAdminTabParam" role="tab">
                             <i class="bi bi-sliders"></i> Parámetros
@@ -293,7 +328,17 @@ $entornoActivo = 'central';
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" id="cpAdminTabCat-tab" data-toggle="tab" href="#cpAdminTabCat" role="tab">
-                            <i class="bi bi-tags-fill"></i> Categorías
+                            <i class="bi bi-tags-fill"></i> Categorías de Cuenta
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="cpAdminTabAjuste-tab" data-toggle="tab" href="#cpAdminTabAjuste" role="tab">
+                            <i class="bi bi-graph-up-arrow"></i> Estado de Ajuste
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="cpAdminTabValidacion-tab" data-toggle="tab" href="#cpAdminTabValidacion" role="tab">
+                            <i class="bi bi-shield-check"></i> Validación RRHH
                         </a>
                     </li>
                 </ul>
@@ -302,144 +347,314 @@ $entornoActivo = 'central';
 
                     <!-- ── Tab Parámetros ──────────────────────────────────── -->
                     <div class="tab-pane fade show active" id="cpAdminTabParam" role="tabpanel">
-                        <p class="text-muted small mb-3">
-                            Valores que determinan los umbrales del semáforo y el objetivo de costo de personal.
-                        </p>
-                        <form id="cpAdminFormParam">
-                            <table class="table table-sm table-bordered">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th>Parámetro</th>
-                                        <th style="width:160px;">Valor (%)</th>
-                                        <th>Descripción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><strong>Umbral Verde</strong></td>
-                                        <td>
-                                            <input type="number" class="form-control form-control-sm"
-                                                   name="UMBRAL_VERDE" id="cpParamUmbralVerde"
-                                                   min="0" max="100" step="0.5"
-                                                   value="<?= htmlspecialchars($parametros['UMBRAL_VERDE']) ?>">
-                                        </td>
-                                        <td class="text-muted small align-middle">Hasta este % → verde (eficiente)</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Umbral Rojo</strong></td>
-                                        <td>
-                                            <input type="number" class="form-control form-control-sm"
-                                                   name="UMBRAL_ROJO" id="cpParamUmbralRojo"
-                                                   min="0" max="100" step="0.5"
-                                                   value="<?= htmlspecialchars($parametros['UMBRAL_ROJO']) ?>">
-                                        </td>
-                                        <td class="text-muted small align-middle">Desde este % → rojo (requiere acción)</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Objetivo</strong></td>
-                                        <td>
-                                            <input type="number" class="form-control form-control-sm"
-                                                   name="OBJETIVO_PCT" id="cpParamObjetivo"
-                                                   min="0" max="100" step="0.5"
-                                                   value="<?= htmlspecialchars($parametros['OBJETIVO_PCT']) ?>">
-                                        </td>
-                                        <td class="text-muted small align-middle">Línea objetivo en gráficos de evolución</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div id="cpAdminParamMsg" class="mt-2" style="display:none;"></div>
-                        </form>
+                        <div class="ind-help-section" style="margin-bottom:0;">
+                            <div class="ind-help-section-title">
+                                <i class="bi bi-sliders"></i> Umbrales del semáforo y objetivo
+                            </div>
+                            <p class="ind-help-text" style="margin-bottom:16px">
+                                Estos valores determinan los 5 niveles del semáforo (azul/verde/amarillo/naranja/rojo) y la línea objetivo de los gráficos de break-even.
+                            </p>
+
+                            <form id="cpAdminFormParam">
+                                <div class="cp-param-grid">
+                                    <div class="cp-param-card">
+                                        <div class="cp-param-icon" style="background:rgba(52,152,219,0.12);color:#3498db;">
+                                            <i class="bi bi-stars"></i>
+                                        </div>
+                                        <div class="cp-param-content">
+                                            <label class="cp-param-label">Umbral Azul</label>
+                                            <div class="cp-param-input-wrap">
+                                                <input type="number" class="form-control" name="UMBRAL_AZUL" id="cpParamUmbralAzul"
+                                                       min="0" max="100" step="0.5" value="<?= htmlspecialchars($parametros['UMBRAL_AZUL']) ?>">
+                                                <span class="cp-param-suffix">%</span>
+                                            </div>
+                                            <small class="cp-param-hint">Hasta este valor → excelente</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="cp-param-card">
+                                        <div class="cp-param-icon" style="background:rgba(39,174,96,0.12);color:#27ae60;">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div class="cp-param-content">
+                                            <label class="cp-param-label">Umbral Verde</label>
+                                            <div class="cp-param-input-wrap">
+                                                <input type="number" class="form-control" name="UMBRAL_VERDE" id="cpParamUmbralVerde"
+                                                       min="0" max="100" step="0.5" value="<?= htmlspecialchars($parametros['UMBRAL_VERDE']) ?>">
+                                                <span class="cp-param-suffix">%</span>
+                                            </div>
+                                            <small class="cp-param-hint">Hasta este valor → eficiente</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="cp-param-card">
+                                        <div class="cp-param-icon" style="background:rgba(241,196,15,0.12);color:#b7950b;">
+                                            <i class="bi bi-dash-circle-fill"></i>
+                                        </div>
+                                        <div class="cp-param-content">
+                                            <label class="cp-param-label">Umbral Amarillo</label>
+                                            <div class="cp-param-input-wrap">
+                                                <input type="number" class="form-control" name="UMBRAL_AMARILLO" id="cpParamUmbralAmarillo"
+                                                       min="0" max="100" step="0.5" value="<?= htmlspecialchars($parametros['UMBRAL_AMARILLO']) ?>">
+                                                <span class="cp-param-suffix">%</span>
+                                            </div>
+                                            <small class="cp-param-hint">Hasta este valor → aceptable</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="cp-param-card">
+                                        <div class="cp-param-icon" style="background:rgba(230,126,34,0.12);color:#e67e22;">
+                                            <i class="bi bi-exclamation-triangle-fill"></i>
+                                        </div>
+                                        <div class="cp-param-content">
+                                            <label class="cp-param-label">Umbral Naranja</label>
+                                            <div class="cp-param-input-wrap">
+                                                <input type="number" class="form-control" name="UMBRAL_NARANJA" id="cpParamUmbralNaranja"
+                                                       min="0" max="100" step="0.5" value="<?= htmlspecialchars($parametros['UMBRAL_NARANJA']) ?>">
+                                                <span class="cp-param-suffix">%</span>
+                                            </div>
+                                            <small class="cp-param-hint">Hasta este valor → riesgo</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="cp-param-card">
+                                        <div class="cp-param-icon" style="background:rgba(52,152,219,0.12);color:#3498db;">
+                                            <i class="bi bi-bullseye"></i>
+                                        </div>
+                                        <div class="cp-param-content">
+                                            <label class="cp-param-label">Objetivo</label>
+                                            <div class="cp-param-input-wrap">
+                                                <input type="number" class="form-control" name="OBJETIVO_PCT" id="cpParamObjetivo"
+                                                       min="0" max="100" step="0.5" value="<?= htmlspecialchars($parametros['OBJETIVO_PCT']) ?>">
+                                                <span class="cp-param-suffix">%</span>
+                                            </div>
+                                            <small class="cp-param-hint">Línea objetivo en gráficos de break-even</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="cpAdminParamMsg" class="mt-3" style="display:none;"></div>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- ── Tab Categorías ──────────────────────────────────── -->
                     <div class="tab-pane fade" id="cpAdminTabCat" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <p class="text-muted small mb-0">Mapeo de cuentas contables a categorías de costo de personal.</p>
-                            <button type="button" class="btn btn-sm btn-primary" id="cpBtnNuevaCat">
-                                <i class="bi bi-plus-lg"></i> Nueva cuenta
-                            </button>
-                        </div>
-                        <div style="overflow-x:auto;">
-                        <table id="cpTablaCategorias" class="table table-sm table-bordered table-hover" style="width:100%;font-size:12px;">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th style="min-width:90px;">Cód. Cuenta</th>
-                                    <th style="min-width:160px;">Descripción</th>
-                                    <th style="min-width:100px;">Categoría</th>
-                                    <th style="min-width:130px;">Concepto Agrupado</th>
-                                    <th class="text-center" style="width:75px;">Prorrateo</th>
-                                    <th class="text-center" style="width:65px;">Incluir</th>
-                                    <th class="text-center" style="width:90px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cpCatTbody">
-                                <tr><td colspan="7" class="text-center text-muted">Cargando…</td></tr>
-                            </tbody>
-                        </table>
-                        </div>
+                        <div class="ind-help-section" style="margin-bottom:0;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <div class="ind-help-section-title" style="margin-bottom:4px">
+                                        <i class="bi bi-tags-fill"></i> Mapeo de cuentas a categorías
+                                    </div>
+                                    <p class="ind-help-text" style="margin:0;font-size:12px">
+                                        Define qué cuentas contables se incluyen como costo de personal y a qué categoría pertenecen.
+                                    </p>
+                                </div>
+                                <button type="button" class="btn btn-primary" id="cpBtnNuevaCat" style="border-radius:8px;font-weight:600;font-size:13px;">
+                                    <i class="bi bi-plus-lg"></i> Nueva cuenta
+                                </button>
+                            </div>
 
-                        <!-- Formulario inline para agregar / editar -->
-                        <div id="cpCatForm" style="display:none;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:14px;margin-top:10px;">
-                            <h6 id="cpCatFormTitle" class="mb-3">Nueva cuenta</h6>
-                            <input type="hidden" id="cpCatId" value="0">
-                            <div class="form-row">
-                                <div class="form-group col-md-2">
-                                    <label class="small font-weight-bold">Cód. Cuenta <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm" id="cpCatCodCuenta" maxlength="20" placeholder="ej. 5101">
-                                </div>
-                                <div class="form-group col-md-4">
-                                    <label class="small font-weight-bold">Descripción <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm" id="cpCatDescCuenta" maxlength="100" placeholder="ej. Sueldos y Jornales">
-                                </div>
-                                <div class="form-group col-md-2">
-                                    <label class="small font-weight-bold">Categoría <span class="text-danger">*</span></label>
-                                    <select class="form-control form-control-sm" id="cpCatCategoria">
-                                        <option value="">Seleccionar…</option>
-                                        <option value="FIJO">FIJO</option>
-                                        <option value="VARIABLE">VARIABLE</option>
-                                        <option value="DIFERIDO">DIFERIDO</option>
-                                        <option value="CONTINGENTE">CONTINGENTE</option>
-                                    </select>
-                                </div>
-                                <div class="form-group col-md-3">
-                                    <label class="small font-weight-bold">Concepto Agrupado</label>
-                                    <input type="text" class="form-control form-control-sm" id="cpCatConceptoAgrupado" maxlength="60" placeholder="ej. SUELDOS">
-                                </div>
-                                <div class="form-group col-md-1">
-                                    <label class="small font-weight-bold">Prorrateo</label>
-                                    <input type="number" class="form-control form-control-sm" id="cpCatProrratearMeses" min="0" max="36" value="0">
-                                </div>
+                            <div class="cp-cat-table-wrap">
+                                <table id="cpTablaCategorias" class="table table-hover cp-cat-table" style="width:100%;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:110px;">Cód.</th>
+                                            <th style="min-width:200px;">Descripción</th>
+                                            <th style="width:130px;">Categoría</th>
+                                            <th style="min-width:150px;">Concepto Agrupado</th>
+                                            <th class="text-center" style="width:90px;">Prorrateo</th>
+                                            <th class="text-center" style="width:80px;">Incluir</th>
+                                            <th class="text-center" style="width:100px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cpCatTbody">
+                                        <tr><td colspan="7" class="text-center text-muted">Cargando…</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="form-row">
-                                <div class="form-group col-md-10">
-                                    <label class="small font-weight-bold">Observaciones</label>
-                                    <input type="text" class="form-control form-control-sm" id="cpCatObservaciones" maxlength="255">
+
+                            <!-- Form inline para alta/edición -->
+                            <div id="cpCatForm" style="display:none;" class="cp-cat-form">
+                                <h6 id="cpCatFormTitle" class="cp-cat-form-title">
+                                    <i class="bi bi-plus-circle-fill"></i> Nueva cuenta
+                                </h6>
+                                <input type="hidden" id="cpCatId" value="0">
+                                <div class="form-row">
+                                    <div class="form-group col-md-2">
+                                        <label class="cp-form-label">Cód. Cuenta <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="cpCatCodCuenta" maxlength="20" placeholder="ej. 520100">
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label class="cp-form-label">Descripción <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="cpCatDescCuenta" maxlength="100" placeholder="ej. COM-SUELDOS">
+                                    </div>
+                                    <div class="form-group col-md-2">
+                                        <label class="cp-form-label">Categoría <span class="text-danger">*</span></label>
+                                        <select class="form-control" id="cpCatCategoria">
+                                            <option value="">Seleccionar…</option>
+                                            <option value="FIJO">FIJO</option>
+                                            <option value="VARIABLE">VARIABLE</option>
+                                            <option value="DIFERIDO">DIFERIDO</option>
+                                            <option value="CONTINGENTE">CONTINGENTE</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label class="cp-form-label">Concepto Agrupado</label>
+                                        <input type="text" class="form-control" id="cpCatConceptoAgrupado" maxlength="60" placeholder="ej. SUELDOS">
+                                    </div>
+                                    <div class="form-group col-md-1">
+                                        <label class="cp-form-label">Meses</label>
+                                        <input type="number" class="form-control" id="cpCatProrratearMeses" min="0" max="36" value="0">
+                                    </div>
                                 </div>
-                                <div class="form-group col-md-2">
-                                    <label class="small font-weight-bold">Incluir</label>
-                                    <select class="form-control form-control-sm" id="cpCatIncluir">
-                                        <option value="1">Sí</option>
-                                        <option value="0">No</option>
-                                    </select>
+                                <div class="form-row">
+                                    <div class="form-group col-md-9">
+                                        <label class="cp-form-label">Observaciones</label>
+                                        <input type="text" class="form-control" id="cpCatObservaciones" maxlength="255">
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label class="cp-form-label">Incluir en cálculo</label>
+                                        <select class="form-control" id="cpCatIncluir">
+                                            <option value="1">Sí</option>
+                                            <option value="0">No</option>
+                                        </select>
+                                    </div>
                                 </div>
+                                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                    <button type="button" class="btn btn-secondary" id="cpBtnCancelarCat" style="border-radius:8px;font-weight:600;">
+                                        Cancelar
+                                    </button>
+                                    <button type="button" class="btn btn-success" id="cpBtnGuardarCat" style="border-radius:8px;font-weight:600;">
+                                        <i class="bi bi-check-lg"></i> Guardar
+                                    </button>
+                                </div>
+                                <div id="cpCatFormMsg" class="mt-2" style="display:none;"></div>
                             </div>
-                            <div>
-                                <button type="button" class="btn btn-sm btn-success" id="cpBtnGuardarCat">
-                                    <i class="bi bi-check-lg"></i> Guardar
-                                </button>
-                                <button type="button" class="btn btn-sm btn-secondary ml-2" id="cpBtnCancelarCat">
-                                    Cancelar
-                                </button>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab Estado de Ajuste ───────────────────────────── -->
+                    <div class="tab-pane fade" id="cpAdminTabAjuste" role="tabpanel">
+                        <div class="ind-help-section" style="margin-bottom:0;">
+                            <div class="ind-help-section-title">
+                                <i class="bi bi-graph-up-arrow"></i> Estado del ajuste por inflación
                             </div>
-                            <div id="cpCatFormMsg" class="mt-2" style="display:none;"></div>
+                            <p class="ind-help-text" style="margin-bottom:16px">
+                                Muestra cuántas cuotas DIFERIDO tienen el factor de ajuste por inflación aplicado. Los registros sin ajuste usan el importe nominal (<code>IMPORTE_PRORRATEADO</code>) aunque el toggle esté activo.
+                            </p>
+                            <div id="cpAjusteStatusLoading" class="text-center py-4" style="display:none;">
+                                <div class="spinner-border text-warning" role="status"></div>
+                                <p class="mt-2 text-muted">Consultando estado…</p>
+                            </div>
+                            <div id="cpAjusteStatusContent" style="display:none;">
+                                <div class="cp-param-grid" style="grid-template-columns:repeat(3,1fr);">
+                                    <div class="cp-param-card">
+                                        <div class="cp-param-icon" style="background:rgba(149,165,166,0.12);color:#7f8c8d;">
+                                            <i class="bi bi-collection-fill"></i>
+                                        </div>
+                                        <div class="cp-param-content">
+                                            <label class="cp-param-label">Total cuotas DIFERIDO</label>
+                                            <div style="font-size:22px;font-weight:700;color:#2c3e50;" id="cpAjusteTotal">—</div>
+                                        </div>
+                                    </div>
+                                    <div class="cp-param-card">
+                                        <div class="cp-param-icon" style="background:rgba(39,174,96,0.12);color:#27ae60;">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div class="cp-param-content">
+                                            <label class="cp-param-label">Con ajuste aplicado</label>
+                                            <div style="font-size:22px;font-weight:700;color:#27ae60;" id="cpAjusteConAjuste">—</div>
+                                        </div>
+                                    </div>
+                                    <div class="cp-param-card">
+                                        <div class="cp-param-icon" style="background:rgba(231,76,60,0.12);color:#e74c3c;">
+                                            <i class="bi bi-exclamation-circle-fill"></i>
+                                        </div>
+                                        <div class="cp-param-content">
+                                            <label class="cp-param-label">Sin ajuste (pendiente)</label>
+                                            <div style="font-size:22px;font-weight:700;color:#e74c3c;" id="cpAjusteSinAjuste">—</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-muted" style="font-size:12px;margin-top:8px;">
+                                    Último ajuste procesado: <span id="cpAjusteUltimaFecha">—</span>
+                                </p>
+                                <div id="cpAjusteStatusMsg" class="mt-2" style="display:none;"></div>
+                            </div>
+                            <div id="cpAjusteStatusError" class="alert alert-warning" style="display:none;">
+                                No se pudo obtener el estado del ajuste por inflación.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab Validación RRHH ───────────────────────────── -->
+                    <div class="tab-pane fade" id="cpAdminTabValidacion" role="tabpanel">
+                        <div class="ind-help-section" style="margin-bottom:0;">
+                            <div class="ind-help-section-title">
+                                <i class="bi bi-shield-check"></i> Cierre mensual de RRHH
+                            </div>
+                            <p class="ind-help-text" style="margin-bottom:16px">
+                                Marcá cada mes como validado una vez que hayas controlado los asientos contables.
+                                Esta información se muestra en el dashboard para que los usuarios sepan qué períodos están auditados.
+                                Los datos se calculan normalmente independientemente del estado de validación.
+                            </p>
+
+                            <div id="cpValidacionLoading" class="text-center py-4" style="display:none;">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Consultando estado…</p>
+                            </div>
+
+                            <div id="cpValidacionContent" style="display:none;">
+                                <!-- Modal inline para observaciones al validar -->
+                                <div id="cpValidarForm" class="cp-cat-form" style="display:none;margin-bottom:16px;">
+                                    <h6 class="cp-cat-form-title"><i class="bi bi-shield-plus"></i> Validar mes: <span id="cpValidarMesLabel"></span></h6>
+                                    <input type="hidden" id="cpValidarFecha">
+                                    <div class="form-group">
+                                        <label class="cp-form-label">Observaciones (opcional)</label>
+                                        <textarea class="form-control" id="cpValidarObs" rows="2" maxlength="500" placeholder="ej. Sin novedades, asientos verificados"></textarea>
+                                    </div>
+                                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                        <button type="button" class="btn btn-secondary btn-sm" id="cpBtnCancelarValidar" style="border-radius:8px;">Cancelar</button>
+                                        <button type="button" class="btn btn-success btn-sm" id="cpBtnConfirmarValidar" style="border-radius:8px;font-weight:600;">
+                                            <i class="bi bi-shield-check"></i> Confirmar validación
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="cpTablaValidacion" style="font-size:13px;">
+                                        <thead>
+                                            <tr style="background:#f8f9fa;">
+                                                <th>Mes</th>
+                                                <th class="text-center" style="width:120px">Estado</th>
+                                                <th style="width:130px">Fecha validación</th>
+                                                <th style="width:120px">Usuario</th>
+                                                <th>Observaciones</th>
+                                                <th class="text-center" style="width:100px">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cpValidacionTbody">
+                                            <tr><td colspan="6" class="text-center text-muted">Cargando…</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="cpValidacionMsg" class="mt-2" style="display:none;"></div>
+                            </div>
+
+                            <div id="cpValidacionError" class="alert alert-warning" style="display:none;">
+                                No se pudo obtener la información de validaciones.
+                            </div>
                         </div>
                     </div>
 
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cerrar</button>
-                <button type="button" class="btn btn-primary btn-sm" id="cpBtnGuardarParam">
+            <div class="modal-footer ind-help-modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" style="border-radius:8px;font-weight:600;">
+                    Cerrar
+                </button>
+                <button type="button" class="btn btn-primary" id="cpBtnGuardarParam" style="border-radius:8px;font-weight:600;">
                     <i class="bi bi-save"></i> Guardar parámetros
                 </button>
             </div>
@@ -468,11 +683,13 @@ $entornoActivo = 'central';
 <!-- Configuración global inyectada desde PHP -->
 <script>
 const CP_CONFIG = {
-    ajaxBase:   '<?= CP_AJAX_BASE ?>',
-    homeUrl:    '<?= CP_HOME_URL ?>',
-    umbralVerde: <?= $parametros['UMBRAL_VERDE'] ?>,
-    umbralRojo:  <?= $parametros['UMBRAL_ROJO'] ?>,
-    objetivoPct: <?= $parametros['OBJETIVO_PCT'] ?>,
+    ajaxBase:      '<?= CP_AJAX_BASE ?>',
+    homeUrl:       '<?= CP_HOME_URL ?>',
+    umbralAzul:    <?= $parametros['UMBRAL_AZUL'] ?>,
+    umbralVerde:   <?= $parametros['UMBRAL_VERDE'] ?>,
+    umbralAmarillo:<?= $parametros['UMBRAL_AMARILLO'] ?>,
+    umbralNaranja: <?= $parametros['UMBRAL_NARANJA'] ?>,
+    objetivoPct:   <?= $parametros['OBJETIVO_PCT'] ?>,
 };
 </script>
 
@@ -484,6 +701,7 @@ const CP_CONFIG = {
 <script src="js/productividad.js"></script>
 <script src="js/compararSucursalesPersonal.js"></script>
 <script src="js/pdfExport.js"></script>
+<script src="js/validacionRRHH.js"></script>
 <script src="js/adminPersonal.js"></script>
 
 </body>
