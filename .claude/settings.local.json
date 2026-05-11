@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"v:/administracion\" log --oneline -10 -- comercial/costoPersonal/)",
+      "Bash(git -C \"v:/administracion\" diff HEAD -- comercial/costoPersonal/Class/CostoPersonalService.php comercial/costoPersonal/Controller/costoPersonalController.php)"
+    ]
+  }
+}

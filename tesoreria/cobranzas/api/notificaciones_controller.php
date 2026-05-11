@@ -34,8 +34,6 @@ if (!function_exists('enviarNotificacion')) {
 
         file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] Enviando mail a: " . (is_array($destinatarios) ? implode(',', $destinatarios) : $destinatarios) . " | Asunto: $asunto\n", FILE_APPEND);
         
-        // Aseguramos que las variables de entorno (.env) estén cargadas
-        // Esto cargará $_ENV con los valores correctos (notificaciones@xl.com.ar / yvsuiewmcztagevs)
         require_once __DIR__ . '/../config/database.php';
         Database::getConnection('apps'); 
 
@@ -45,8 +43,8 @@ if (!function_exists('enviarNotificacion')) {
             $mail->isSMTP();
             $mail->Host = $_ENV['HOST_EMAIL_EGRESOS'] ?? 'smtp.gmail.com';
             $mail->SMTPAuth = true;
-            $mail->Username = $_ENV['USER_EMAIL_EGRESOS'] ?? 'notificaciones@xl.com.ar';
-            $mail->Password = $_ENV['PASS_EMAIL_EGRESOS'] ?? 'yvsuiewmcztagevs';
+            $mail->Username = $_ENV['USER_EMAIL_EGRESOS'];
+            $mail->Password = $_ENV['PASS_EMAIL_EGRESOS'];
             $mail->SMTPSecure = 'tls';
             $mail->Port = $_ENV['PORT_EMAIL_EGRESOS'] ?? 587;
 

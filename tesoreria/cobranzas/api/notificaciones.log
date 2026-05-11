@@ -809,5 +809,238 @@ sending limits go to
 [2026-04-23 16:45:29] Mail enviado con éxito!
 [2026-04-23 19:47:05] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2517)
 [2026-04-23 19:47:09] Mail enviado con éxito!
-[2026-05-06 21:09:36] ENVÍO SUPRIMIDO (MODO MANTENIMIENTO) | A: xlsantafe1@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2633)
-[2026-05-06 21:13:02] ENVÍO SUPRIMIDO (MODO MANTENIMIENTO) | A: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2633
+[2026-04-24 12:43:37] Preparando mail para Admin para propuesta #2495
+[2026-04-24 12:43:37] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2495
+[2026-04-24 12:43:39] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-04-24 12:43:45] Preparando mail para Admin para propuesta #2495
+[2026-04-24 12:43:45] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2495
+[2026-04-24 12:43:48] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-04-24 13:50:00] Enviando mail a: ilerot17@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2536)
+[2026-04-24 13:50:02] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-04-24 14:29:50] Enviando mail a: bantonova@hotmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2537)
+[2026-04-24 14:29:53] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-04-24 15:23:59] Enviando mail a: gabrielortega37@hotmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2538)
+[2026-04-24 15:24:03] Mail enviado con éxito!
+[2026-04-24 15:25:13] Enviando mail a: gabrielortega37@hotmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2539)
+[2026-04-24 15:25:17] Mail enviado con éxito!
+[2026-04-24 15:59:48] Preparando mail para Admin para propuesta #2489
+[2026-04-24 15:59:48] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2489
+[2026-04-24 15:59:52] Mail enviado con éxito!
+[2026-04-24 16:00:01] Preparando mail para Admin para propuesta #2489
+[2026-04-24 16:00:02] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2489
+[2026-04-24 16:00:06] Mail enviado con éxito!
+[2026-04-24 17:31:30] Enviando mail a: xllomas@hotmail.com;fabilanati@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2540)
+[2026-04-24 17:31:35] Mail enviado con éxito!
+[2026-04-27 16:18:57] Enviando mail a: huifersrl@gmail.com | Asunto: Propuesta de Pago Vencida (#2523)
+[2026-04-27 16:19:01] Mail enviado con éxito!
+[2026-04-27 16:19:08] Enviando mail a: huifersrl@gmail.com | Asunto: Propuesta de Pago Vencida (#2522)
+[2026-04-27 16:19:12] Mail enviado con éxito!
+[2026-04-27 16:40:57] Enviando mail a: huifersrl@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2551)
+[2026-04-27 16:41:01] Mail enviado con éxito!
+[2026-04-27 16:41:46] Enviando mail a: huifersrl@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2552)
+[2026-04-27 16:41:51] Mail enviado con éxito!
+[2026-04-27 16:55:58] Enviando mail a: huifersrl@gmail.com | Asunto: Propuesta de Pago Vencida (#2521)
+[2026-04-27 16:56:02] Mail enviado con éxito!
+[2026-04-27 17:00:41] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2552
+[2026-04-27 17:00:46] Mail enviado con éxito!
+[2026-04-27 17:15:32] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2551
+[2026-04-27 17:15:36] Mail enviado con éxito!
+[2026-04-27 17:16:41] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2546
+[2026-04-27 17:16:45] Mail enviado con éxito!
+[2026-04-27 17:21:06] Enviando mail a: huifersrl@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2553)
+[2026-04-27 17:21:10] Mail enviado con éxito!
+[2026-04-27 17:26:30] Preparando mail para Admin para propuesta #2546
+[2026-04-27 17:26:30] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2546
+[2026-04-27 17:26:34] Mail enviado con éxito!
+[2026-04-27 17:27:17] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2553
+[2026-04-27 17:27:21] Mail enviado con éxito!
+[2026-04-27 20:10:42] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2515)
+[2026-04-27 20:10:46] Mail enviado con éxito!
+[2026-04-27 20:11:20] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2512)
+[2026-04-27 20:11:25] Mail enviado con éxito!
+[2026-04-27 20:12:02] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2508)
+[2026-04-27 20:12:06] Mail enviado con éxito!
+[2026-04-27 20:12:35] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2507)
+[2026-04-27 20:12:39] Mail enviado con éxito!
+[2026-04-27 20:12:51] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2506)
+[2026-04-27 20:12:55] Mail enviado con éxito!
+[2026-04-27 20:13:10] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2520)
+[2026-04-27 20:13:13] Mail enviado con éxito!
+[2026-04-27 20:13:32] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2518)
+[2026-04-27 20:13:35] Mail enviado con éxito!
+[2026-04-27 20:13:49] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2516)
+[2026-04-27 20:13:53] Mail enviado con éxito!
+[2026-04-27 20:14:06] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2513)
+[2026-04-27 20:14:09] Mail enviado con éxito!
+[2026-04-27 20:14:24] Enviando mail a: Ajfripoll@gmail.com;yamilaruiz.extralarge@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2509)
+[2026-04-27 20:14:28] Mail enviado con éxito!
+[2026-04-27 20:14:47] Enviando mail a: huifersrl@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2553)
+[2026-04-27 20:14:50] Mail enviado con éxito!
+[2026-04-27 20:15:03] Enviando mail a: huifersrl@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2552)
+[2026-04-27 20:15:06] Mail enviado con éxito!
+[2026-04-27 20:15:18] Enviando mail a: huifersrl@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2551)
+[2026-04-27 20:15:22] Mail enviado con éxito!
+[2026-04-27 21:34:32] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2536
+[2026-04-27 21:34:36] Mail enviado con éxito!
+[2026-04-28 14:25:31] Enviando mail a: sveritier@gmail.com | Asunto: Propuesta de Pago Vencida (#2535)
+[2026-04-28 14:25:36] Mail enviado con éxito!
+[2026-04-28 14:29:12] Enviando mail a: huifersrl@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2554)
+[2026-04-28 14:29:16] Mail enviado con éxito!
+[2026-04-28 14:47:06] Enviando mail a: huifersrl@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2555)
+[2026-04-28 14:47:11] Mail enviado con éxito!
+[2026-04-28 14:49:37] Enviando mail a: huifersrl@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2556)
+[2026-04-28 14:49:41] Mail enviado con éxito!
+[2026-04-28 15:49:20] Enviando mail a: sveritier@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2557)
+[2026-04-28 15:49:23] Mail enviado con éxito!
+[2026-04-28 16:14:20] Preparando mail para Admin para propuesta #2534
+[2026-04-28 16:14:20] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2534
+[2026-04-28 16:14:24] Mail enviado con éxito!
+[2026-04-28 16:14:34] Preparando mail para Admin para propuesta #2534
+[2026-04-28 16:14:34] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2534
+[2026-04-28 16:14:38] Mail enviado con éxito!
+[2026-04-28 16:20:52] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2557
+[2026-04-28 16:20:56] Mail enviado con éxito!
+[2026-04-28 16:40:58] Preparando mail para Admin para propuesta #2516
+[2026-04-28 16:40:58] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2516
+[2026-04-28 16:41:02] Mail enviado con éxito!
+[2026-04-28 16:41:10] Preparando mail para Admin para propuesta #2516
+[2026-04-28 16:41:10] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2516
+[2026-04-28 16:41:14] Mail enviado con éxito!
+[2026-04-28 16:42:57] Preparando mail para Admin para propuesta #2516
+[2026-04-28 16:42:57] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2516
+[2026-04-28 16:43:01] Mail enviado con éxito!
+[2026-04-28 16:44:00] Preparando mail para Admin para propuesta #2515
+[2026-04-28 16:44:00] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2515
+[2026-04-28 16:44:05] Mail enviado con éxito!
+[2026-04-28 16:44:48] Preparando mail para Admin para propuesta #2514
+[2026-04-28 16:44:48] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2514
+[2026-04-28 16:44:52] Mail enviado con éxito!
+[2026-04-28 16:47:02] Preparando mail para Admin para propuesta #2513
+[2026-04-28 16:47:02] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2513
+[2026-04-28 16:47:06] Mail enviado con éxito!
+[2026-04-28 16:47:44] Preparando mail para Admin para propuesta #2513
+[2026-04-28 16:47:44] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2513
+[2026-04-28 16:47:48] Mail enviado con éxito!
+[2026-04-28 16:48:43] Preparando mail para Admin para propuesta #2512
+[2026-04-28 16:48:43] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2512
+[2026-04-28 16:48:47] Mail enviado con éxito!
+[2026-04-28 16:49:47] Preparando mail para Admin para propuesta #2509
+[2026-04-28 16:49:47] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2509
+[2026-04-28 16:49:51] Mail enviado con éxito!
+[2026-04-28 16:50:38] Preparando mail para Admin para propuesta #2509
+[2026-04-28 16:50:39] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2509
+[2026-04-28 16:50:42] Mail enviado con éxito!
+[2026-04-28 16:51:59] Preparando mail para Admin para propuesta #2508
+[2026-04-28 16:51:59] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2508
+[2026-04-28 16:52:03] Mail enviado con éxito!
+[2026-04-28 16:53:27] Preparando mail para Admin para propuesta #2507
+[2026-04-28 16:53:27] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2507
+[2026-04-28 16:53:31] Mail enviado con éxito!
+[2026-04-28 16:54:21] Preparando mail para Admin para propuesta #2507
+[2026-04-28 16:54:21] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2507
+[2026-04-28 16:54:25] Mail enviado con éxito!
+[2026-04-28 16:55:41] Preparando mail para Admin para propuesta #2506
+[2026-04-28 16:55:41] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2506
+[2026-04-28 16:55:46] Mail enviado con éxito!
+[2026-04-28 18:41:58] Preparando mail para Admin para propuesta #2518
+[2026-04-28 18:41:58] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2518
+[2026-04-28 18:42:02] Mail enviado con éxito!
+[2026-04-28 18:43:39] Preparando mail para Admin para propuesta #2517
+[2026-04-28 18:43:39] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2517
+[2026-04-28 18:43:43] Mail enviado con éxito!
+[2026-04-28 18:44:48] Preparando mail para Admin para propuesta #2520
+[2026-04-28 18:44:48] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2520
+[2026-04-28 18:44:51] Mail enviado con éxito!
+[2026-04-28 18:45:16] Preparando mail para Admin para propuesta #2519
+[2026-04-28 18:45:16] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2519
+[2026-04-28 18:45:21] Mail enviado con éxito!
+[2026-04-28 18:45:24] Preparando mail para Admin para propuesta #2519
+[2026-04-28 18:45:24] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2519
+[2026-04-28 18:45:28] Mail enviado con éxito!
+[2026-04-28 18:46:50] Preparando mail para Admin para propuesta #2519
+[2026-04-28 18:46:50] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2519
+[2026-04-28 18:46:54] Mail enviado con éxito!
+[2026-04-28 19:31:49] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2555
+[2026-04-28 19:31:53] Mail enviado con éxito!
+[2026-04-28 19:32:04] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2556
+[2026-04-28 19:32:07] Mail enviado con éxito!
+[2026-04-28 19:32:25] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2554
+[2026-04-28 19:32:28] Mail enviado con éxito!
+[2026-04-28 20:23:19] Enviando mail a: xllomas@hotmail.com;fabilanati@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2558)
+[2026-04-28 20:23:23] Mail enviado con éxito!
+[2026-04-28 20:46:52] Enviando mail a: eugezurvera@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2559)
+[2026-04-28 20:46:56] Mail enviado con éxito!
+[2026-04-28 21:34:41] Preparando mail para Admin para propuesta #2506
+[2026-04-28 21:34:41] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2506
+[2026-04-28 21:34:44] Mail enviado con éxito!
+[2026-04-28 21:34:47] Preparando mail para Admin para propuesta #2506
+[2026-04-28 21:34:47] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2506
+[2026-04-28 21:34:51] Mail enviado con éxito!
+[2026-04-28 21:34:59] Preparando mail para Admin para propuesta #2508
+[2026-04-28 21:34:59] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2508
+[2026-04-28 21:35:03] Mail enviado con éxito!
+[2026-04-28 21:35:05] Preparando mail para Admin para propuesta #2508
+[2026-04-28 21:35:05] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2508
+[2026-04-28 21:35:10] Mail enviado con éxito!
+[2026-04-28 21:35:22] Preparando mail para Admin para propuesta #2512
+[2026-04-28 21:35:22] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2512
+[2026-04-28 21:35:27] Mail enviado con éxito!
+[2026-04-28 21:35:32] Preparando mail para Admin para propuesta #2512
+[2026-04-28 21:35:32] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2512
+[2026-04-28 21:35:36] Mail enviado con éxito!
+[2026-04-28 21:35:41] Preparando mail para Admin para propuesta #2515
+[2026-04-28 21:35:41] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2515
+[2026-04-28 21:35:45] Mail enviado con éxito!
+[2026-04-28 21:35:49] Preparando mail para Admin para propuesta #2515
+[2026-04-28 21:35:49] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2515
+[2026-04-28 21:35:53] Mail enviado con éxito!
+[2026-04-28 21:36:08] Preparando mail para Admin para propuesta #2516
+[2026-04-28 21:36:08] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2516
+[2026-04-28 21:36:12] Mail enviado con éxito!
+[2026-04-28 21:36:30] Preparando mail para Admin para propuesta #2517
+[2026-04-28 21:36:30] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2517
+[2026-04-28 21:36:33] Mail enviado con éxito!
+[2026-04-28 21:36:35] Preparando mail para Admin para propuesta #2517
+[2026-04-28 21:36:35] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2517
+[2026-04-28 21:36:39] Mail enviado con éxito!
+[2026-04-28 21:36:47] Preparando mail para Admin para propuesta #2518
+[2026-04-28 21:36:47] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2518
+[2026-04-28 21:36:51] Mail enviado con éxito!
+[2026-04-28 21:36:52] Preparando mail para Admin para propuesta #2518
+[2026-04-28 21:36:53] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2518
+[2026-04-28 21:36:56] Mail enviado con éxito!
+[2026-04-28 21:37:06] Preparando mail para Admin para propuesta #2520
+[2026-04-28 21:37:07] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2520
+[2026-04-28 21:37:10] Mail enviado con éxito!
+[2026-04-28 21:37:15] Preparando mail para Admin para propuesta #2520
+[2026-04-28 21:37:15] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2520
+[2026-04-28 21:37:19] Mail enviado con éxito!
+[2026-04-29 12:56:09] Enviando mail a: Olmosluis6094@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2560)
+[2026-04-29 12:56:13] Mail enviado con éxito!
+[2026-04-29 16:09:17] Enviando mail a: ilerot17@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2536)
+[2026-04-29 16:09:21] Mail enviado con éxito!
+[2026-04-29 16:11:26] Enviando mail a: sveritier@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2557)
+[2026-04-29 16:11:30] Mail enviado con éxito!
+[2026-04-29 19:08:16] Enviando mail a: gimenez.raul@asesoresrg.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2561)
+[2026-04-29 19:08:20] Mail enviado con éxito!
+[2026-04-29 19:11:57] Enviando mail a: gimenez.raul@asesoresrg.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2562)
+[2026-04-29 19:12:00] Mail enviado con éxito!
+[2026-04-30 14:16:30] Preparando mail para Admin para propuesta #2555
+[2026-04-30 14:16:30] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2555
+[2026-04-30 14:16:34] Mail enviado con éxito!
+[2026-04-30 14:17:20] Preparando mail para Admin para propuesta #2556
+[2026-04-30 14:17:20] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2556
+[2026-04-30 14:17:23] Mail enviado con éxito!
+[2026-04-30 14:17:36] Preparando mail para Admin para propuesta #2556
+[2026-04-30 14:17:36] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2556
+[2026-04-30 14:17:40] Mail enviado con éxito!
+[2026-04-30 14:18:02] Preparando mail para Admin para propuesta #2554
+[2026-04-30 14:18:02] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2554
+[2026-04-30 14:18:06] Mail enviado con éxito!
+[2026-04-30 14:18:21] Preparando mail para Admin para propuesta #2554
+[2026-04-30 14:18:21] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Nueva Documentación Adjunta: Propuesta #2554
+[2026-04-30 14:18:24] Mail enviado con éxito!
+[2026-04-30 15:57:01] Enviando mail a: sspinacci@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2563)
+[2026-04-30 15:57:05] Mail enviado con éxito!
+[2026-04-30 15:59:50] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2563
+[2026-04-30 15:59:54] Mail enviado con éxito!

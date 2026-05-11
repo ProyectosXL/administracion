@@ -727,12 +727,12 @@ class EmailNotificacion {
         try {
             // Configuración del servidor SMTP (credenciales hardcodeadas que funcionan)
             $mail->isSMTP();
-            $mail->Host = 'smtp.gmail.com';
+            $mail->Host = getenv('HOST_EMAIL_EGRESOS');
             $mail->SMTPAuth = true;
-            $mail->Username = 'notificaciones@xl.com.ar';
-            $mail->Password = 'yvsuiewmcztagevs'; // Contraseña de aplicación (16 caracteres sin espacios)
-            $mail->SMTPSecure = 'ssl'; // SSL
-            $mail->Port = 465; // Puerto SSL
+            $mail->Username = getenv('USER_EMAIL_EGRESOS');
+            $mail->Password = getenv('PASS_EMAIL_EGRESOS');
+            $mail->SMTPSecure = (getenv('PORT_EMAIL_EGRESOS') == '465') ? 'ssl' : 'tls';
+            $mail->Port = getenv('PORT_EMAIL_EGRESOS') ?: 587;
             $mail->SMTPOptions = array(
                 'ssl' => array(
                     'verify_peer' => false,
@@ -749,7 +749,7 @@ class EmailNotificacion {
             $mail->SMTPDebug = 0; // 0 = sin debug, 2 = debug completo
             
             // Remitente
-            $mail->setFrom('notificaciones@xl.com.ar', 'XL Extralarge');
+            $mail->setFrom(getenv('USER_EMAIL_EGRESOS'), 'XL Extralarge');
             
             // APLICAR MODO DESARROLLO: redirigir todos los emails
             if (self::DEVELOP) {
