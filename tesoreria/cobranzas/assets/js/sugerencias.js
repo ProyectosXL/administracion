@@ -16,10 +16,21 @@ const reglasDescuentoGlobal = {
 
 function calcularPorcentajeDescuentoAuto(medioPago, fechaPropuesta) {
     if (!reglasDescuentoGlobal[medioPago] || !fechaPropuesta) return 0;
+    
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); 
-    const fechaPago = new Date(fechaPropuesta + 'T00:00:00');
-    const diffDays = Math.ceil((fechaPago - hoy) / (1000 * 60 * 60 * 24));
+    const fecha = new Date(fechaPropuesta + 'T00:00:00');
+    
+    // REGLA: El beneficio solo aplica para el mes actual y el siguiente.
+    // Si la fecha es para 2 meses en adelante o más, el descuento es 0%.
+    const mesesHoy = hoy.getFullYear() * 12 + hoy.getMonth();
+    const mesesFecha = fecha.getFullYear() * 12 + fecha.getMonth();
+    
+    if (mesesFecha > mesesHoy + 1) {
+        return 0;
+    }
+
+    const diaMes = fecha.getDate();
+    const diffDays = diaMes - 1; 
 
     if (diffDays <= 15) return reglasDescuentoGlobal[medioPago][15];
     if (diffDays <= 22) return reglasDescuentoGlobal[medioPago][22];
@@ -66,7 +77,25 @@ function initializeSugerenciasDataTable() {
 }
 
 $(document).ready(function() {
-    $(document).on('click', '#btn-generar-sugerencias', () => initializeSugerenciasDataTable());
+    $(document).on('click', '#btn-generar-sugerencias', function() {
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.html('<i class="fa-solid fa-sync fa-spin me-1"></i> Recalculando...').prop('disabled', true);
+        
+        if ($.fn.DataTable.isDataTable('#tabla-sugerencias')) {
+            $('#tabla-sugerencias').DataTable().ajax.reload(function() {
+                btn.html(originalHtml).prop('disabled', false);
+            }, false); // false para mantener la paginación actual si la hubiera
+        } else {
+            initializeSugerenciasDataTable();
+            setTimeout(() => { btn.html(originalHtml).prop('disabled', false); }, 1500);
+        }
+    });
+
+    // RECALCULO AUTOMÁTICO AL ENTRAR A LA PESTAÑA
+    $(document).on('shown.bs.tab', '#sugerencias-tab', function () {
+        initializeSugerenciasDataTable();
+    });
 
     $('body').on('click', '.btn-revisar-sugerencia', function() {
         const row = tablaSugerencias.row($(this).closest('tr')).data();
@@ -101,7 +130,7 @@ $(document).ready(function() {
         data.COMPROBANTES.forEach(item => {
             const bruto = parseFloat(item.importe_bruto);
             itemsHtml += `
-                <tr class="small" data-bruto="${bruto}" data-tcomp="${item.t_comp}" data-ncomp="${item.n_comp}">
+                <tr class="small" data-bruto="${bruto}" data-tcomp="${item.t_comp}" data-ncomp="${item.n_comp}" data-dcto-original="${item.porcentaje_descuento}">
                     <td class="text-center"><button class="btn btn-xs btn-outline-danger btn-quitar-item-sug border-0" title="Quitar de la propuesta"><i class="fa-solid fa-trash-can"></i></button></td>
                     <td class="text-center">${item.fecha_prob_cobro || '-'}</td>
                     <td class="text-center">${item.t_comp}</td>
@@ -122,9 +151,7 @@ $(document).ready(function() {
 
         $('#sugerencia-detalle-body').html(headerHtml + resumenKpiHtml + itemsHtml + infoHtml);
         
-        setTimeout(() => {
-            $('#fecha-propuesta-sug-modal').trigger('change');
-        }, 100);
+        // Eliminamos el trigger('change') automático que sobreescribía los descuentos del backend
     }
 
     // ELIMINAR ITEM
@@ -144,14 +171,27 @@ $(document).ready(function() {
         });
     });
 
-    // RECALCULO POR FECHA O MEDIO
+    // Se deshabilita el recalculo automático masivo para mantener consistencia con el detalle de Franquicias
+    // El usuario podrá editar los descuentos manualmente si lo desea.
     $('#modalSugerenciaDetalle').on('change', '#fecha-propuesta-sug-modal, #medio-pago-sug-modal', function() {
         const pct = calcularPorcentajeDescuentoAuto($('#medio-pago-sug-modal').val(), $('#fecha-propuesta-sug-modal').val());
         $('#tabla-items-sugerencia tbody tr').each(function() {
             const tr = $(this);
             const nComp = (tr.data('ncomp') || '').trim();
             const tComp = (tr.data('tcomp') || '').trim();
-            let pctAplicar = (nComp.startsWith('A00115') && tComp === 'FAC') ? 0 : pct;
+            const dctoOriginal = parseFloat(tr.data('dcto-original')); // Usamos el valor numérico
+            
+            let pctAplicar = pct;
+
+            // REGLA: Si la factura ya venía con 0% (ej: vencida), no se le otorga descuento nuevo jamás
+            if (dctoOriginal === 0) {
+                pctAplicar = 0;
+            } else if (['NCR', 'NCP', 'NDP'].includes(tComp)) {
+                pctAplicar = 0;
+            } else if (nComp.startsWith('A00115') && tComp === 'FAC') {
+                pctAplicar = 0;
+            }
+            
             tr.find('.sug-dcto-input').val(pctAplicar.toFixed(2)).trigger('input');
         });
     });

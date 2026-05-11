@@ -13,12 +13,12 @@
                         <form id="form-parametros">
                             <input type="hidden" id="param-id" name="id">
                             <div class="row g-3 align-items-end">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label for="param-cod-client" class="form-label">Cód. Cliente</label>
                                     <input type="text" class="form-control form-control-sm" id="param-cod-client" name="cod_client" required>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="param-medio-pago" class="form-label">Medio de Pago Default</label>
+                                <div class="col-md-2">
+                                    <label for="param-medio-pago" class="form-label">Medio Pago Def.</label>
                                     <select class="form-select form-select-sm" id="param-medio-pago" name="medio_pago">
                                         <option value="ECHECK">ECHECK</option>
                                         <option value="TRANSFERENCIA">TRANSFERENCIA</option>
@@ -33,10 +33,18 @@
                                     <input type="number" step="0.01" class="form-control form-control-sm" id="param-desc-pp" name="desc_pp_max" placeholder="8.00">
                                 </div>
                                 <div class="col-md-2">
-                                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <label for="param-cant-sug" class="form-label">Cant. Comprob. Sug.</label>
+                                    <input type="number" class="form-control form-control-sm" id="param-cant-sug" name="cant_comprobantes_sug" placeholder="10">
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="param-porc-sug" class="form-label">% Monto Sug.</label>
+                                    <input type="number" step="0.01" class="form-control form-control-sm" id="param-porc-sug" name="porc_monto_sug" placeholder="100.00">
+                                </div>
+                                <div class="col-12 text-end">
+                                    <button type="button" class="btn btn-secondary btn-sm me-1" id="btn-cancelar-edicion" style="display: none;">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary btn-sm px-4">
                                         <i class="fa-solid fa-save me-1"></i><span class="btn-text">Guardar</span>
                                     </button>
-                                    <button type="button" class="btn btn-secondary btn-sm w-100 mt-1" id="btn-cancelar-edicion" style="display: none;">Cancelar</button>
                                 </div>
                             </div>
                         </form>

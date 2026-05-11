@@ -290,14 +290,14 @@ $(document).ready(function () {
                     if (calcu > initialDiscount) initialDiscount = calcu;
                 }
 
-                // REGLAS ESPECIALES REQUERIDAS PARA SUCURSAL A00115
-                if (nComp.startsWith('A00115')) {
+                // --- REGLA GLOBAL: NCR, NCP, NDP SIEMPRE 0% DESCUENTO ---
+                if (['NCR', 'NCP', 'NDP'].includes(tComp)) {
+                    initialDiscount = 0;
+                } else if (nComp.startsWith('A00115')) {
                     if (tComp === 'FAC') {
                         initialDiscount = 0; // FAC de la 115: Fuerza 0%
-                    } else if (tComp === 'NCP') {
-                        // NCP de la 115: Mantiene el descuento (ya asignado arriba)
                     } else {
-                        initialDiscount = 0; // Otras NC (NCR, etc) de la 115: Fuerza 0%
+                        // El resto de comprobantes en la 115 (excepto NCR/NCP/NDP ya filtrados arriba)
                     }
                 }
                 // (Para el resto de sucursales, tanto FAC como NC/NCR conservan el descuento)
@@ -315,24 +315,45 @@ $(document).ready(function () {
                 const nComp = (row.N_COMP || '').trim();
                 const bruto = parseFloat(row.IMPORTE) || 0;
                 const netoOriginal = parseFloat(row.IMPORTE_NETO) || 0;
+                let initialDiscount = 0;
 
-                let initialDiscount = (parseFloat(row.DESC_PP_MAX) || 0) * 100;
+                // Lógica de descuento por defecto (según parámetros del cliente)
+                initialDiscount = (parseFloat(row.DESC_PP_MAX) || 0) * 100;
+
+                // --- VALIDACIÓN DE ANTIGÜEDAD PARA DESCUENTO PRONTO PAGO ---
+                const maxDiasPP = parseInt(row.DIAS_PP_MAX) || 0;
+                if (maxDiasPP > 0) {
+                    const fEmis = new Date(row.FECHA_EMIS + 'T00:00:00');
+                    const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
+                    const diff = hoy - fEmis;
+                    const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    
+                    if (dias > maxDiasPP) {
+                        initialDiscount = 0;
+                    }
+                }
+
+                // Si el medio por defecto es Transferencia, solemos bajar 2 puntos (del 8 al 6)
+                const medioDef = (row.MEDIO_PAGO_DEFAULT || '').toString().trim().toUpperCase();
+                if ((medioDef === 'TRANSFERENCIA' || medioDef === 'TRANSFERERENCIA') && Math.abs(initialDiscount - 8) < 0.05) {
+                    initialDiscount = 6;
+                }
+
+                // Si el ERP ya calculó un descuento (común en FAC de sucursales normales), lo respetamos
                 if (bruto > 0 && bruto > netoOriginal) {
                     const calcu = ((bruto - netoOriginal) / bruto) * 100;
                     if (calcu > initialDiscount) initialDiscount = calcu;
                 }
 
-                // REGLAS ESPECIALES REQUERIDAS PARA SUCURSAL A00115
-                if (nComp.startsWith('A00115')) {
+                // --- REGLA GLOBAL: NCR, NCP, NDP SIEMPRE 0% DESCUENTO ---
+                if (['NCR', 'NCP', 'NDP'].includes(tComp)) {
+                    initialDiscount = 0;
+                } else if (nComp.startsWith('A00115')) {
                     if (tComp === 'FAC') {
-                        initialDiscount = 0;
-                    } else if (tComp === 'NCP') {
-                        // Mantiene el descuento
-                    } else {
                         initialDiscount = 0;
                     }
                 }
-                // (Para el resto de sucursales, tanto FAC como NC/NCR conservan el descuento)
 
                 // Forzamos el importe neto basado en el descuento calculado arriba
                 let valor = bruto * (1 - (initialDiscount / 100));
@@ -546,16 +567,18 @@ $(document).ready(function () {
         const tipoComp = rowData.T_COMP.trim();
         const nComp = (rowData.N_COMP || '').trim();
 
-        // Lógica especial para la sucursal A00115
-        if (nComp.startsWith('A00115')) {
+        // Lógica especial de bloqueo (NCR, NCP, NDP o sucursal A00115)
+        if (['NCR', 'NCP', 'NDP'].includes(tipoComp)) {
+            descuento = 0;
+            input.val('0.00').prop('disabled', true);
+        } else if (nComp.startsWith('A00115')) {
             if (tipoComp === 'FAC') {
                 descuento = 0;
                 input.val('0.00').prop('disabled', true);
-            } else if (tipoComp === 'NCP') {
+            } else {
                 input.prop('disabled', false);
             }
         } else {
-            // El resto de NC/NCR y FAC de otras sucursales siguen siendo editables
             input.prop('disabled', false);
         }
         // ======================== FIN DE LA MODIFICACIÓN A00115 =========================
@@ -707,6 +730,32 @@ $(document).ready(function () {
                 const $cuotasList = $('#cuotas-list');
                 const $cantCuotas = $('#swal-cantidad-cuotas');
 
+                const reglasDescuentoManual = {
+                    'ECHECK': { 15: 8, 22: 6, 29: 4 },
+                    'TRANSFERENCIA': { 15: 6, 22: 4, 29: 2 }
+                };
+
+                function calcularDctoManual(medio, fechaStr) {
+                    if (!reglasDescuentoManual[medio] || !fechaStr) return 0;
+                    
+                    const hoy = new Date();
+                    const fecha = new Date(fechaStr + 'T00:00:00');
+
+                    // REGLA XL: Solo mes actual y el siguiente
+                    const mesesHoy = hoy.getFullYear() * 12 + hoy.getMonth();
+                    const mesesFecha = fecha.getFullYear() * 12 + fecha.getMonth();
+
+                    if (mesesFecha > mesesHoy + 1) {
+                        return 0;
+                    }
+
+                    const diffDays = fecha.getDate() - 1;
+                    if (diffDays <= 15) return reglasDescuentoManual[medio][15];
+                    if (diffDays <= 22) return reglasDescuentoManual[medio][22];
+                    if (diffDays <= 29) return reglasDescuentoManual[medio][29];
+                    return 0;
+                }
+
                 $datepicker.datepicker({
                     dateFormat: "yy-mm-dd",
                     minDate: 0,
@@ -731,45 +780,39 @@ $(document).ready(function () {
 
                 const $medioPagoSelect = $('#swal-medio-pago');
 
-                // --- Lógica para ajustar descuentos según Medio de Pago ---
-                $('#swal-medio-pago').on('change', function () {
-                    const medio = $(this).val();
-                    let cambioRelativo = false;
+                // --- Lógica para ajustar descuentos según Medio de Pago y Fecha ---
+                $('#swal-medio-pago, #fecha-propuesta-swal-input').on('change', function () {
+                    const medio = $('#swal-medio-pago').val();
+                    const fecha = $('#fecha-propuesta-swal-input').val();
+                    const nuevoPct = calcularDctoManual(medio, fecha);
 
                     $('#tabla-detalle-cliente .invoice-checkbox:checked').each(function () {
                         const tr = $(this).closest('tr');
                         const input = tr.find('.descuento-input');
+                        const tComp = (tr.find('td:eq(2)').text() || '').trim(); // Tipo
+                        const nComp = (tr.find('td:eq(3)').text() || '').trim(); // Comprobante
+                        
+                        // Obtenemos el valor original que tenía al cargar la tabla para saber si era 0
+                        // (Podemos usar el valor actual si confiamos en que 0 significa 'no elegible')
                         let currentDesc = parseFloat(input.val());
 
-                        // Regla: 8% para ECHECK, 6% para TRANSFERENCIA (usamos redondeo para evitar decimales flotantes)
-                        let simplifiedDesc = Math.round(currentDesc * 100) / 100;
+                        // REGLA: Si es 0% (vencida o restringida), no le damos descuento nuevo
+                        if (currentDesc === 0) return;
+                        if (['NCR', 'NCP', 'NDP'].includes(tComp)) return;
+                        if (nComp.startsWith('A00115') && tComp === 'FAC') return;
 
-                        // Solo automatizamos si el descuento es el 'estándar'. Si el usuario puso 0 o un valor manual, lo respetamos.
-                        // Cambio 8 -> 6 al pasar a Transferencia
-                        if (medio === 'TRANSFERENCIA' && simplifiedDesc > 7.5 && simplifiedDesc < 8.5) {
-                            input.val(6).trigger('input');
-                            cambioRelativo = true;
-                        }
-                        // Cambio 6 -> 8 al pasar a Echeck
-                        else if (medio === 'ECHECK' && simplifiedDesc > 5.5 && simplifiedDesc < 6.5) {
-                            input.val(8).trigger('input');
-                            cambioRelativo = true;
-                        }
+                        input.val(nuevoPct).trigger('input');
                     });
 
-                    if (cambioRelativo) {
-                        // Recalculamos el total capturando el valor del footer que ya se actualizó por el trigger('input')
-                        const nuevoTotalTexto = $('#total-neto-container span').text();
-                        $('#swal-total-display').text(nuevoTotalTexto);
+                    // Recalculamos el total capturando el valor del footer
+                    const nuevoTotalTexto = $('#total-neto-container span').text();
+                    $('#swal-total-display').text(nuevoTotalTexto);
+                    totalNetoSeleccionado = parseFloat(nuevoTotalTexto.replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
 
-                        // Actualizamos la variable local de referencia para el preConfirm y cuotas
-                        totalNetoSeleccionado = parseFloat(nuevoTotalTexto.replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.')) || 0;
-
-                        // Si hay cuotas, refrescamos el desglose
-                        const cant = parseInt($cantCuotas.val());
-                        if (cant > 1) {
-                            generarCamposCuotas(cant, totalNetoSeleccionado, $inputFecha.val());
-                        }
+                    // Si hay cuotas, refrescamos el desglose
+                    const cant = parseInt($cantCuotas.val());
+                    if (cant > 1) {
+                        generarCamposCuotas(cant, totalNetoSeleccionado, fecha);
                     }
                 });
 
@@ -993,6 +1036,15 @@ $(document).ready(function () {
                             return (parseFloat(data) * 100).toFixed(2) + ' %';
                         }
                     },
+                    { data: 'CANT_COMPROBANTES_SUG', title: 'Cant. Sug.', className: 'text-center' },
+                    {
+                        data: 'PORC_MONTO_SUG',
+                        title: '% Monto Sug.',
+                        className: 'text-end',
+                        render: function (data) {
+                            return (parseFloat(data) || 100).toFixed(2) + ' %';
+                        }
+                    },
                     {
                         data: null, title: 'Acciones', orderable: false, className: 'text-center',
                         render: function (data, type, row) {
@@ -1023,7 +1075,9 @@ $(document).ready(function () {
             cod_client: $('#param-cod-client').val(),
             medio_pago: $('#param-medio-pago').val(),
             dias_pp_max: $('#param-dias-pp').val(),
-            desc_pp_max: $('#param-desc-pp').val()
+            desc_pp_max: $('#param-desc-pp').val(),
+            cant_comprobantes_sug: $('#param-cant-sug').val(),
+            porc_monto_sug: $('#param-porc-sug').val()
         };
 
         $.ajax({
@@ -1054,6 +1108,8 @@ $(document).ready(function () {
         $('#param-dias-pp').val(data.DIAS_PP_MAX);
         // Convertimos de 0.08 a 8.00 para el input
         $('#param-desc-pp').val((parseFloat(data.DESC_PP_MAX) * 100).toFixed(2));
+        $('#param-cant-sug').val(data.CANT_COMPROBANTES_SUG);
+        $('#param-porc-sug').val(data.PORC_MONTO_SUG);
         $('#btn-cancelar-edicion').show();
         $('.btn-text').text('Actualizar');
     });
@@ -1159,7 +1215,6 @@ $(document).ready(function () {
                     render: function (data) {
                         let badgeClass = 'secondary';
                         if (data === 'PAGADO') badgeClass = 'success';
-                        if (data === 'DOCUMENTACION_ADJUNTADA') badgeClass = 'dark';
                         if (data === 'CONTRAPROPUESTA_CLIENTE') badgeClass = 'primary';
                         if (data === 'PENDIENTE_APROBACION_CLIENTE') badgeClass = 'warning text-dark';
                         if (data === 'PENDIENTE_APROBACION_FINAL') badgeClass = 'info';
@@ -1192,7 +1247,7 @@ $(document).ready(function () {
                 let count = 0;
 
                 // Definimos los estados que consideramos "Aceptados en adelante"
-                const estadosValidos = ['ACEPTADA', 'DOCUMENTACION_ADJUNTADA', 'PAGADO'];
+                const estadosValidos = ['ACEPTADA', 'PAGADO'];
 
                 filteredData.forEach(row => {
                     if (row.dias_plazo !== null && row.dias_plazo !== undefined && estadosValidos.includes(row.estado)) {

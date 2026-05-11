@@ -230,7 +230,6 @@ include 'templates/layout/header.php';
                                         <option value="CONTRAPROPUESTA_CLIENTE">Contrapropuesta</option>
                                         <option value="ACEPTADA">Aceptada</option>
                                         <option value="PENDIENTE_APROBACION_FINAL">Pendiente Final</option>
-                                        <option value="DOCUMENTACION_ADJUNTADA">Con Documentos</option>
                                         <option value="PAGADO">Pagado</option>
                                         <option value="VENCIDA">Vencida</option>
                                     </select>

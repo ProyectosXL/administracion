@@ -10,12 +10,19 @@ $(document).ready(function () {
         if (!reglasDescuento[medioPago] || !fechaPropuesta) return 0;
 
         const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0); // Normalizamos la fecha de hoy
-        const fechaPago = new Date(fechaPropuesta + 'T00:00:00');
+        const fecha = new Date(fechaPropuesta + 'T00:00:00');
 
-        // Calculamos la diferencia en días
-        const diffTime = fechaPago - hoy;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // REGLA XL: El beneficio de pronto pago solo aplica para el mes actual y el siguiente.
+        // Si la fecha es para el mes subsiguiente (hoy + 2 meses) o más, el descuento es 0%.
+        const mesesHoy = hoy.getFullYear() * 12 + hoy.getMonth();
+        const mesesFecha = fecha.getFullYear() * 12 + fecha.getMonth();
+
+        if (mesesFecha > mesesHoy + 1) {
+            return 0;
+        }
+
+        const diaMes = fecha.getDate();
+        const diffDays = diaMes - 1; 
 
         if (diffDays <= 15) return reglasDescuento[medioPago][15];
         if (diffDays <= 22) return reglasDescuento[medioPago][22];
@@ -91,24 +98,26 @@ $(document).ready(function () {
 
             const nComp = (tr.data('ncomp') || '').trim();
 
-            // ======================= REGLAS DE NEGOCIO A00115 SINCRONIZADAS =======================
+            // ======================= REGLAS DE NEGOCIO SINCRONIZADAS =======================
             let porcentajeAplicar = 0;
 
-            // Si es de la sucursal 115, tiene reglas especiales
-            if (nComp.startsWith('A00115')) {
-                if (tipoComp === 'FAC') {
-                    porcentajeAplicar = 0; // FAC de la 115 nunca llevan descuento
-                } else if (tipoComp === 'NCP') {
-                    porcentajeAplicar = nuevoPorcentajeGeneral; // NCP de la 115 SI llevan descuento
-                } else {
-                    porcentajeAplicar = 0; // Otras NC de la 115 no llevan
-                }
+            // 1. NCR, NCP, NDP siempre 0%
+            if (['NCR', 'NCP', 'NDP'].includes(tipoComp)) {
+                porcentajeAplicar = 0;
+            } 
+            // 2. Sucursal A00115 (FAC) siempre 0%
+            else if (nComp.startsWith('A00115') && tipoComp === 'FAC') {
+                porcentajeAplicar = 0;
             }
-            // Regla general para el resto de sucursales
-            else if (descuentoOriginal > 0) {
+            // 3. Si el descuento original era 0 (ej: vencida), se mantiene en 0
+            else if (descuentoOriginal === 0) {
+                porcentajeAplicar = 0;
+            }
+            // 4. En cualquier otro caso, aplicamos el descuento dinámico calculado
+            else {
                 porcentajeAplicar = nuevoPorcentajeGeneral;
             }
-            // =======================================================================================
+            // ==============================================================================
 
             // Calculamos el nuevo importe neto
             // (El atributo data-importe-bruto ya almacena los valores NC con signo negativo,
@@ -484,7 +493,7 @@ $(document).ready(function () {
                     adjuntosCuotaHtml += '</div>';
                 }
 
-                const puedeAdjuntar = propuesta.estado === 'ACEPTADA' || propuesta.estado === 'DOCUMENTACION_ADJUNTADA';
+                const puedeAdjuntar = false; // Se elimina la carga de documentación por parte del cliente
                 const tieneAdjuntos = adjuntosCuota.length > 0;
                 const checkVerde = tieneAdjuntos ? '<i class="fa-solid fa-circle-check text-success me-2" title="Documentación cargada"></i>' : '';
                 const btnAdjuntarCuota = puedeAdjuntar ? `<button class="btn btn-xs btn-outline-info btn-adjuntar-interne mt-2" data-id="${propuesta.id}" data-id-cuota="${c.id}" title="Adjuntar Documento"><i class="fa-solid fa-cloud-arrow-up me-1"></i>Adjuntar</button>` : '';
@@ -503,45 +512,14 @@ $(document).ready(function () {
                 </div>`;
             });
             cuotasHtml += `</div>`;
-        } else if (propuesta.estado === 'ACEPTADA' || propuesta.estado === 'DOCUMENTACION_ADJUNTADA') {
-            // Si no hay cuotas pero la propuesta está aceptada, mostramos la sección de adjuntar comprobante de pago único
-            const adjuntosGeneralesPago = (adjuntos || []).filter(a => !a.id_cuota);
-            const tieneAdjuntosPago = adjuntosGeneralesPago.length > 0;
-
-            let adjuntosListHtml = '';
-            if (tieneAdjuntosPago) {
-                adjuntosListHtml = '<div class="mt-2 border-top pt-2">';
-                adjuntosGeneralesPago.forEach(a => {
-                    adjuntosListHtml += `<div class="small d-flex justify-content-between align-items-center mb-1 bg-white p-1 rounded border">
-                        <span class="text-truncate text-muted" style="max-width: 200px;" title="${a.nombre_archivo}"><i class="fa-solid fa-file-invoice me-1"></i>${a.nombre_archivo}</span>
-                        <div class="btn-group">
-                            <a href="${a.ruta_archivo}" target="_blank" class="btn btn-xs btn-outline-primary" title="Ver archivo"><i class="fa-solid fa-eye"></i></a>
-                            <button class="btn btn-xs btn-danger btn-eliminar-adjunto" data-id-adjunto="${a.id}" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>`;
-                });
-                adjuntosListHtml += '</div>';
-            }
-
-            const checkVerde = tieneAdjuntosPago ? '<i class="fa-solid fa-circle-check text-success me-2" title="Documentación cargada"></i>' : '';
-            const fechaFmt = propuesta.fecha_propuesta_pago ? new Date(propuesta.fecha_propuesta_pago + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Fecha no definida';
-
+        } else if (propuesta.estado === 'ACEPTADA') {
+            // Sección informativa para propuestas aceptadas en lugar de la carga de archivos
             cuotasHtml = `
-            <h5 class="mt-4"><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i>Comprobante de Pago</h5>
-            <div class="card border-0 bg-light shadow-sm mb-4">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            ${checkVerde}
-                            <span class="badge bg-success me-2">Pago Único</span>
-                            <strong class="text-dark">${parseFloat(propuesta.total_propuesto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong>
-                            <span class="small text-muted ms-3"><i class="fa-solid fa-calendar-check me-1"></i>${fechaFmt}</span>
-                        </div>
-                        <button class="btn btn-sm btn-outline-info btn-adjuntar-interne" data-id="${propuesta.id}" data-id-cuota="" title="Adjuntar Comprobante">
-                            <i class="fa-solid fa-cloud-arrow-up me-1"></i>Adjuntar Comprobante
-                        </button>
-                    </div>
-                    ${adjuntosListHtml}
+            <div class="alert alert-success mt-4 d-flex align-items-center shadow-sm border-0">
+                <i class="fa-solid fa-circle-check fs-2 me-3"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold mb-1">Propuesta Aceptada</h6>
+                    <p class="mb-0 small">Estamos procesando el pago. Una vez que el sistema detecte la cancelación de las facturas en el ERP, la propuesta pasará a estado <strong>PAGADO</strong> automáticamente. No es necesario adjuntar comprobantes.</p>
                 </div>
             </div>`;
         }

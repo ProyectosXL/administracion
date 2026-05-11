@@ -18,8 +18,19 @@ require_once __DIR__ . '/../../egresosDirectores/PHPMailer/Exception.php';
 if (!function_exists('enviarNotificacion')) {
     function enviarNotificacion($destinatarios, $asunto, $cuerpo_html)
     {
+        // ========================================================================
+        // INTERRUPTOR GLOBAL DE NOTIFICACIONES
+        // Cambiar a 'true' para habilitar los envíos reales de correo.
+        // ========================================================================
+        $notificaciones_habilitadas = true; 
+
         if (empty($destinatarios))
             return false;
+
+        if (!$notificaciones_habilitadas) {
+            file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] ENVÍO SUPRIMIDO (MODO MANTENIMIENTO) | A: " . (is_array($destinatarios) ? implode(',', $destinatarios) : $destinatarios) . " | Asunto: $asunto\n", FILE_APPEND);
+            return true; // Retornamos true para que el flujo de la app continúe sin errores
+        }
 
         file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] Enviando mail a: " . (is_array($destinatarios) ? implode(',', $destinatarios) : $destinatarios) . " | Asunto: $asunto\n", FILE_APPEND);
         

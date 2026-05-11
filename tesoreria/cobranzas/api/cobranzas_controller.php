@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     $fecha_propuesta_pago = $_POST['fecha_propuesta_pago'] ?? null;
     $medio_de_pago = $_POST['medio_de_pago'] ?? null;
     $id_usuario_admin = $_SESSION['usuario_id'] ?? null;
-    $cod_cliente = $_POST['cod_cliente'] ?? null; // <-- AÑADE ESTA LÍNEA
+    $cod_cliente = $_POST['cod_cliente'] ?? null;
 
     // La validación correcta
     if (empty($cod_cliente) || empty($comprobantes) || !isset($total_propuesto) || empty($fecha_propuesta_pago) || empty($medio_de_pago) || empty($id_usuario_admin)) {
@@ -166,7 +166,7 @@ try {
 
     if ($stmt_prop !== false) {
         while ($r = sqlsrv_fetch_array($stmt_prop, SQLSRV_FETCH_ASSOC)) {
-            $facturas_en_propuestas[trim($r['n_comp_factura'])] = true;
+            $facturas_en_propuestas[strtoupper(trim($r['n_comp_factura']))] = true;
         }
     }
 
@@ -194,7 +194,7 @@ try {
         }
 
         while ($row = sqlsrv_fetch_array($stmt_facturas, SQLSRV_FETCH_ASSOC)) {
-            if (!isset($facturas_en_propuestas[trim($row['N_COMP'])])) {
+            if (!isset($facturas_en_propuestas[strtoupper(trim($row['N_COMP']))])) {
                 $tableData[] = $row;
             }
         }
@@ -202,12 +202,30 @@ try {
     } else {
         // --- VISTA DE RESUMEN ---
         // Obtenemos todos los registros pendientes y agrupamos en PHP para evitar errores de conexión cruzada
-        $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.ESTADO, v.IMPORTE, v.IMPORTE_NETO,
-                       ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX
-                FROM $vista v
-                LEFT JOIN SJ_SALDOS_CC_DETALLE s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
-                LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                WHERE v.ESTADO <> 'IMP' AND v.T_COMP <> 'REC' AND v.T_COMP NOT LIKE 'NCR%' AND v.T_COMP NOT LIKE 'NCP%'";
+         $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.ESTADO, 
+                        CAST(ISNULL(s.SALDO_REAL, v.IMPORTE) AS FLOAT) as IMPORTE, 
+                        CAST(ISNULL(s.SALDO_REAL * (v.IMPORTE_NETO / NULLIF(v.IMPORTE, 0)), v.IMPORTE_NETO) AS FLOAT) as IMPORTE_NETO, 
+                        v.FECHA_EMIS, v.FECHA_PROB_COBRO,
+                        ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX, ISNULL(p.DIAS_PP_MAX, 0) as DIAS_PP_MAX, p.MEDIO_PAGO_DEFAULT,
+                        p.CANT_COMPROBANTES_SUG, p.PORC_MONTO_SUG
+                 FROM $vista v
+                LEFT JOIN (
+                    SELECT T_COMP, N_COMP, SUM(IMPORTE_VT - IMPORT_CAN) as SALDO_REAL, 
+                           MAX(IMPORTE_VT) as IMPORTE_VT_MAX 
+                    FROM SJ_SALDOS_CC_DETALLE 
+                    GROUP BY T_COMP, N_COMP
+                ) s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
+                LEFT JOIN (
+                    SELECT COD_CLIENT, 
+                           MAX(DESC_PP_MAX) as DESC_PP_MAX, 
+                           MAX(DIAS_PP_MAX) as DIAS_PP_MAX, 
+                           MAX(MEDIO_PAGO_DEFAULT) as MEDIO_PAGO_DEFAULT,
+                           MAX(CANT_COMPROBANTES_SUG) as CANT_COMPROBANTES_SUG, 
+                           MAX(PORC_MONTO_SUG) as PORC_MONTO_SUG
+                    FROM RO_T_PARAMETROS_DESC_CLIENTES
+                    GROUP BY COD_CLIENT
+                ) p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
+                WHERE v.ESTADO <> 'IMP'";
 
         $stmt = sqlsrv_query($conn_central, $sql);
         if ($stmt === false) {
@@ -215,12 +233,18 @@ try {
         }
 
         $resumenClientes = [];
+        $procesados_lote = []; // Para evitar duplicados dentro del mismo resultado de consulta
         while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            $nComp = trim($v['N_COMP']);
-            if (isset($facturas_en_propuestas[$nComp]))
+            $nComp = strtoupper(trim($v['N_COMP']));
+            $tComp = strtoupper(trim($v['T_COMP']));
+            $cod = strtoupper(trim($v['COD_CLIENT']));
+            $llaveComp = $cod . '|' . $tComp . '|' . $nComp;
+
+            if (isset($facturas_en_propuestas[$nComp]) || isset($procesados_lote[$llaveComp]))
                 continue;
 
-            $cod = $v['COD_CLIENT'];
+            $procesados_lote[$llaveComp] = true;
+
             if (!isset($resumenClientes[$cod])) {
                 $resumenClientes[$cod] = [
                     'COD_CLIENT' => $cod,
@@ -228,7 +252,8 @@ try {
                     'CANT_FACTURAS' => 0,
                     'TOTAL_BRUTO' => 0,
                     'TOTAL_NETO' => 0,
-                    'COMPROBANTES' => [],
+                    'CANT_COMPROBANTES_SUG' => $v['CANT_COMPROBANTES_SUG'],
+                    'PORC_MONTO_SUG' => $v['PORC_MONTO_SUG'],
                     'FECHA_MIN' => null,
                     'FECHA_MAX' => null
                 ];
@@ -238,32 +263,44 @@ try {
             $importe = (float) $v['IMPORTE'];
             $descPP = (float) $v['DESC_PP_MAX'];
             $porcDesc = 0;
+            $tComp = trim($v['T_COMP']);
 
-            if (strpos($nComp, 'A00115') === 0) {
-                if ($v['T_COMP'] === 'FAC')
+            // --- REGLA GLOBAL: NCR, NCP, NDP SIEMPRE 0% DESCUENTO ---
+            if (in_array($tComp, ['NCR', 'NCP', 'NDP'])) {
+                $porcDesc = 0;
+            } else if (strpos($nComp, 'A00115') === 0) {
+                if ($tComp === 'FAC')
                     $porcDesc = 0;
-                else if ($v['T_COMP'] === 'NCP')
+                else
                     $porcDesc = $descPP;
             } else {
-                $diff = $v['IMPORTE'] - $v['IMPORTE_NETO'];
-                if ($v['IMPORTE'] > 0 && $diff > ($v['IMPORTE'] * $descPP)) {
-                    $porcDesc = $diff / $v['IMPORTE'];
-                } else {
-                    $porcDesc = $descPP;
-                }
-
-                // --- VALIDACIÓN DE ANTIGÜEDAD PARA DESCUENTO PRONTO PAGO ---
+                $porcDesc = $descPP;
+                
+                // 1. Validación de antigüedad
                 if ($v['FECHA_EMIS'] && $v['DIAS_PP_MAX'] > 0) {
                     $f_emis = $v['FECHA_EMIS'];
                     $fecha_base = ($f_emis instanceof DateTime) ? $f_emis : new DateTime($f_emis);
                     $hoy = new DateTime();
                     $intervalo = $hoy->diff($fecha_base);
-                    $antiguedad = $intervalo->days;
-
-                    // Si la antigüedad supera el límite y el descuento no viene "puesto" de Tango
-                    // (consideramos que viene puesto si diff es mayor que un margen de error mínimo)
-                    if ($antiguedad > $v['DIAS_PP_MAX'] && $diff < 0.01) {
+                    
+                    if ($intervalo->days > $v['DIAS_PP_MAX']) {
                         $porcDesc = 0;
+                    }
+                }
+                
+                // 2. Medio de pago
+                $medioDef = strtoupper(trim($v['MEDIO_PAGO_DEFAULT'] ?? ''));
+                if (($medioDef === 'TRANSFERENCIA' || $medioDef === 'TRANSFERERENCIA') && abs($porcDesc - 0.08) < 0.0005) {
+                    $porcDesc = 0.06;
+                }
+                
+                // 3. Descuento previo en ERP
+                $bruto = $importe;
+                $netoOriginal = (float)$v['IMPORTE_NETO'];
+                if ($bruto > 0 && $bruto > $netoOriginal) {
+                    $calcu = ($bruto - $netoOriginal) / $bruto;
+                    if ($calcu > $porcDesc) {
+                        $porcDesc = $calcu;
                     }
                 }
             }
@@ -297,64 +334,201 @@ try {
         foreach ($resumenClientes as $cod => $cliente) {
             if (round($cliente['TOTAL_BRUTO'], 2) != 0) {
                 if ($tipo === 'sugerencias') {
-                    // Ordenamos TODOS los comprobantes por fecha (vieja a nueva)
-                    usort($resumenClientes[$cod]['COMPROBANTES_ALL'], function($a, $b) {
+                    $allComps = $resumenClientes[$cod]['COMPROBANTES_ALL'];
+                    
+                    // Separamos por tipo para la regla de los negativos
+                    $negativos = [];
+                    $positivos = [];
+                    foreach($allComps as $c) {
+                        if ($c['importe_bruto'] < 0) $negativos[] = $c;
+                        else $positivos[] = $c;
+                    }
+
+                    // Ordenamos los positivos por fecha (vieja a nueva)
+                    usort($positivos, function($a, $b) {
                         return strcmp($a['fecha_prob_cobro'] ?? '', $b['fecha_prob_cobro'] ?? '');
                     });
 
-                    // SEGMENTACIÓN: Tomamos solo los primeros 10 comprobantes (más viejos)
-                    $maxSugeridos = 10;
-                    $sugeridos = array_slice($resumenClientes[$cod]['COMPROBANTES_ALL'], 0, $maxSugeridos);
+                    // Parámetros de segmentación
+                    $maxCantBase = intval($cliente['CANT_COMPROBANTES_SUG'] ?? 0);
+                    $porcMontoBase = floatval($cliente['PORC_MONTO_SUG'] ?? 0);
+                    $balanceOriginal = $cliente['TOTAL_BRUTO'];
+                    $targetMonto = ($porcMontoBase > 0) ? ($balanceOriginal * ($porcMontoBase / 100)) : 0;
                     
-                    // Recalculamos totales de la SUGERENCIA específica
-                    $totalBrutoSug = 0;
-                    $totalNetoSug = 0;
-                    foreach($sugeridos as $s) {
-                        $totalBrutoSug += $s['importe_bruto'];
-                        $totalNetoSug += $s['importe_neto'];
+                    if ($maxCantBase <= 0 && ($porcMontoBase <= 0 || $porcMontoBase >= 100)) {
+                        $maxCantBase = 10;
                     }
 
-                    // Si la sugerencia da un saldo negativo o cero, no es una "propuesta de pago"
-                    if ($totalNetoSug <= 0) {
-                        unset($resumenClientes[$cod]);
-                        continue;
-                    }
+                    $numSugerencia = 1;
 
-                    $resumenClientes[$cod]['COMPROBANTES'] = $sugeridos;
-                    $resumenClientes[$cod]['TOTAL_BRUTO_SUG'] = $totalBrutoSug;
-                    $resumenClientes[$cod]['TOTAL_NETO_SUG'] = $totalNetoSug;
-                    $resumenClientes[$cod]['TOTAL_PENDIENTE_CLIENTE'] = $cliente['TOTAL_BRUTO'];
-                    $resumenClientes[$cod]['CANT_TOTAL_PENDIENTE'] = count($cliente['COMPROBANTES_ALL']);
-                    
-                    // --- CÁLCULO DE FECHA LÍMITE SUGERIDA: Factura más nueva + 15 días hábiles ---
-                    $ultimaFechaStr = null;
-                    foreach($sugeridos as $s) {
-                        if (!$ultimaFechaStr || $s['fecha_prob_cobro'] > $ultimaFechaStr) $ultimaFechaStr = $s['fecha_prob_cobro'];
+                    // Bucle para generar TODAS las sugerencias posibles
+                    while (!empty($positivos)) {
+                        $seleccionados = [];
+                        $montoBrutoAcumulado = 0;
+
+                        // 1. En la PRIMERA sugerencia, metemos TODOS los negativos
+                        if ($numSugerencia === 1 && !empty($negativos)) {
+                            foreach($negativos as $neg) {
+                                $seleccionados[] = $neg;
+                                $montoBrutoAcumulado += $neg['importe_bruto'];
+                            }
+                            $negativos = []; // Vaciamos para que no entren en la segunda
+                        }
+
+                        // 2. Llenamos con positivos respetando el límite inicial (Smart Selection)
+                        $batchPositivos = [];
+                        foreach($positivos as $idx => $pos) {
+                            if ($maxCantBase > 0 && count($seleccionados) >= $maxCantBase) break;
+                            if ($targetMonto > 0 && $montoBrutoAcumulado >= $targetMonto) break;
+                            
+                            $batchPositivos[] = $pos;
+                            $montoBrutoAcumulado += $pos['importe_bruto'];
+                            unset($positivos[$idx]); // Quitamos del pool global
+                        }
+                        $seleccionados = array_merge($seleccionados, $batchPositivos);
+                        $positivos = array_values($positivos); // Reindexar
+
+                        // 3. REGLA DE ORO: Si el total es <= 0, DEBEMOS seguir agregando positivos 
+                        // ignorando los límites hasta que sea positivo.
+                        while ($montoBrutoAcumulado <= 0 && !empty($positivos)) {
+                            $extra = array_shift($positivos);
+                            $seleccionados[] = $extra;
+                            $montoBrutoAcumulado += $extra['importe_bruto'];
+                        }
+
+                        // 4. OPTIMIZACIÓN (Swap) para este batch:
+                        if ($targetMonto > 0 && $maxCantBase > 0 && count($seleccionados) == $maxCantBase && $montoBrutoAcumulado < $targetMonto) {
+                            $indexSiguiente = 0;
+                            $maxIntentos = 30;
+                            while ($indexSiguiente < count($positivos) && $indexSiguiente < $maxIntentos && $montoBrutoAcumulado < $targetMonto) {
+                                $nuevo = $positivos[$indexSiguiente];
+                                $mejorSwapIdx = -1;
+                                $mejorMejora = 0;
+                                foreach($seleccionados as $idx => $actual) {
+                                    if ($actual['importe_bruto'] < 0) continue; // No swapeamos negativos
+                                    $mejoraPotencial = $nuevo['importe_bruto'] - $actual['importe_bruto'];
+                                    if ($mejoraPotencial > 0) {
+                                        $nuevoTotal = $montoBrutoAcumulado + $mejoraPotencial;
+                                        if (abs($targetMonto - $nuevoTotal) < abs($targetMonto - $montoBrutoAcumulado)) {
+                                            if ($mejoraPotencial > $mejorMejora) {
+                                                $mejorMejora = $mejoraPotencial;
+                                                $mejorSwapIdx = $idx;
+                                            }
+                                        }
+                                    }
+                                }
+                                if ($mejorSwapIdx !== -1) {
+                                    $montoBrutoAcumulado += $mejorMejora;
+                                    $old = $seleccionados[$mejorSwapIdx];
+                                    $seleccionados[$mejorSwapIdx] = $nuevo;
+                                    $positivos[$indexSiguiente] = $old; // Devolvemos el chico al pool
+                                    usort($positivos, function($a, $b) { return strcmp($a['fecha_prob_cobro'] ?? '', $b['fecha_prob_cobro'] ?? ''); });
+                                }
+                                $indexSiguiente++;
+                            }
+                        }
+
+                        // --- VINCULACIÓN DE CHEQUES (NUEVA REGLA) ---
+                        // Obtenemos las fechas de cheques que ya tiene el cliente para no pisarlas
+                        $fechasCheques = [];
+                        $sqlCheques = "SELECT CAST(FECHA_CHEQ AS DATE) AS FECHA_CHEQ 
+                                       FROM LAKER_SA.dbo.SBA14 
+                                       WHERE FECHA_CHEQ >= GETDATE() 
+                                       AND ESTADO NOT IN ('X', 'R') 
+                                       AND CLIENTE = ?
+                                       ORDER BY FECHA_CHEQ";
+                        $stmtCheques = sqlsrv_query($conn_central, $sqlCheques, [$cod]);
+                        if ($stmtCheques !== false) {
+                            while($rc = sqlsrv_fetch_array($stmtCheques, SQLSRV_FETCH_ASSOC)) {
+                                $fechasCheques[] = $rc['FECHA_CHEQ'];
+                            }
+                        }
+
+                        // 5. Cálculos de la sugerencia (Fecha promedio + 15 días hábiles)
+                        $sumTimestamps = 0;
+                        $countDocs = 0;
+                        foreach($seleccionados as $s) {
+                            if (!empty($s['fecha_prob_cobro'])) {
+                                $sumTimestamps += strtotime($s['fecha_prob_cobro']);
+                                $countDocs++;
+                            }
+                        }
+                        
+                        $hoy = new DateTime();
+                        $hoy->setTime(0, 0, 0);
+                        
+                        if ($countDocs > 0) {
+                             $avgTimestamp = $sumTimestamps / $countDocs;
+                             $fechaBase = new DateTime();
+                             $fechaBase->setTimestamp($avgTimestamp);
+                             
+                             $fechaSugerida = sumarDiasHabilesCobranzas($fechaBase, 15);
+                             
+                             // Si la fecha sugerida (promedio + 15) es menor a hoy, usamos hoy
+                             if ($fechaSugerida < $hoy) $fechaSugerida = $hoy;
+
+                             // --- APLICACIÓN DE REGLA DE CHEQUES ---
+                             // Si la fecha coincide con un cheque, la movemos al siguiente día hábil disponible
+                             $intentosEvitarCheque = 0;
+                             while (in_array($fechaSugerida->format('Y-m-d'), $fechasCheques) && $intentosEvitarCheque < 20) {
+                                 $fechaSugerida = sumarDiasHabilesCobranzas($fechaSugerida, 1);
+                                 $intentosEvitarCheque++;
+                             }
+
+                             $fechaSugStr = $fechaSugerida->format('Y-m-d');
+                        } else {
+                             $fechaSugStr = $hoy->format('Y-m-d');
+                             $fechaSugerida = clone $hoy;
+                        }
+
+                        $totalBrutoSug = 0; $totalNetoSug = 0;
+                        foreach($seleccionados as &$s) {
+                            $totalBrutoSug += $s['importe_bruto'];
+                            $totalNetoSug += $s['importe_neto'];
+                        }
+
+                        // Guardamos esta sugerencia
+                        $copy = $cliente;
+                        $copy['COMPROBANTES'] = $seleccionados;
+                        $copy['TOTAL_BRUTO_SUG'] = $totalBrutoSug;
+                        $copy['TOTAL_NETO_SUG'] = $totalNetoSug;
+                        $copy['FECHA_SUGERIDA'] = $fechaSugStr;
+                        $copy['TOTAL_PENDIENTE_CLIENTE'] = $balanceOriginal;
+                        $copy['CANT_TOTAL_PENDIENTE'] = count($allComps);
+                        
+                        // Determinamos la FECHA_MIN de este lote para el ordenamiento
+                        $fMinLote = null;
+                        foreach($seleccionados as $s) {
+                            if (!$fMinLote || ($s['fecha_prob_cobro'] ?? '') < $fMinLote) $fMinLote = $s['fecha_prob_cobro'] ?? null;
+                        }
+                        $copy['FECHA_MIN'] = $fMinLote;
+
+                        // Si es la segunda sugerencia en adelante, agregamos un sufijo a la razón social para distinguirlas
+                        if ($numSugerencia > 1) {
+                            $copy['RAZON_SOCI'] .= " (Parte $numSugerencia)";
+                        }
+
+                        // REGLA FINAL: Si la sugerencia da un saldo negativo o cero, NO se agrega
+                        if ($totalNetoSug > 0) {
+                            $tableData[] = $copy;
+                            $numSugerencia++;
+
+                            // Actualizamos totales del summary con esta sugerencia específica
+                            $summary['totalNeto'] += $totalNetoSug;
+                            $summary['totalComprobantes'] += count($seleccionados);
+                        }
+
+                        // Seguridad para evitar bucles infinitos en errores de lógica
+                        if ($numSugerencia > 50) break; 
                     }
-                    
-                    if ($ultimaFechaStr) {
-                         $fechaBase = new DateTime($ultimaFechaStr);
-                         $fechaSugerida = sumarDiasHabilesCobranzas($fechaBase, 15);
-                         $hoy = new DateTime();
-                         $hoy->setTime(0, 0, 0); // Solo comparar fechas sin horas
-                         
-                         if ($fechaSugerida < $hoy) $fechaSugerida = $hoy;
-                         
-                         $resumenClientes[$cod]['FECHA_SUGERIDA'] = $fechaSugerida->format('Y-m-d');
-                    } else {
-                         $resumenClientes[$cod]['FECHA_SUGERIDA'] = (new DateTime())->format('Y-m-d');
-                    }
-                    
-                    unset($resumenClientes[$cod]['COMPROBANTES_ALL']); // Limpiamos para no enviar peso extra innecesario
-                    $tableData[] = $resumenClientes[$cod];
                 } else {
                     unset($cliente['COMPROBANTES']);
                     unset($cliente['FECHA_MIN']);
                     unset($cliente['FECHA_MAX']);
                     $tableData[] = $cliente;
+                    $summary['totalNeto'] += $cliente['TOTAL_NETO'];
+                    $summary['totalComprobantes'] += $cliente['CANT_FACTURAS'];
                 }
-                $summary['totalNeto'] += $cliente['TOTAL_NETO'];
-                $summary['totalComprobantes'] += $cliente['CANT_FACTURAS'];
             }
         }
         $summary['totalClientes'] = count($tableData);
