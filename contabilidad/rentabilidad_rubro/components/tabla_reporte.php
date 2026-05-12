@@ -4,7 +4,7 @@
  * Contenedor de la tabla del reporte (el contenido se renderiza vía JS)
  */
 ?>
-<!-- KPI Cards -->
+<!-- KPI Cards — montos principales -->
 <section id="kpiSection" class="kpi-section" style="display:none;">
     <div class="kpi-grid">
         <div class="kpi-card" id="kpiVenta">
@@ -36,6 +36,38 @@
                 <div class="kpi-label">Resultado Explotación</div>
                 <div class="kpi-value" id="kpiREVal">—</div>
                 <div class="kpi-sub" id="kpiREPct">—</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- KPI Cards — estructura de gastos (% sobre venta) -->
+<section id="kpiPctSection" class="kpi-section kpi-pct-section" style="display:none;">
+    <div class="kpi-pct-header">
+        <i class="bi bi-pie-chart"></i>
+        Estructura de gastos sobre venta
+    </div>
+    <div class="kpi-grid kpi-grid-3">
+        <div class="kpi-card kpi-pct" id="kpiGastosCom">
+            <div class="kpi-icon kpi-icon-pct"><i class="bi bi-cart-check"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Gastos Comercialización</div>
+                <div class="kpi-value kpi-value-pct" id="kpiGastosComVal">—</div>
+            </div>
+        </div>
+        <div class="kpi-card kpi-pct" id="kpiGastosOp">
+            <div class="kpi-icon kpi-icon-pct"><i class="bi bi-gear"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Gastos Operativos</div>
+                <div class="kpi-value kpi-value-pct" id="kpiGastosOpVal">—</div>
+                <div class="kpi-sub kpi-sub-mini" id="kpiGastosOpSub">—</div>
+            </div>
+        </div>
+        <div class="kpi-card kpi-pct" id="kpiGastosEst">
+            <div class="kpi-icon kpi-icon-pct"><i class="bi bi-building"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Gastos Estructura</div>
+                <div class="kpi-value kpi-value-pct" id="kpiGastosEstVal">—</div>
             </div>
         </div>
     </div>

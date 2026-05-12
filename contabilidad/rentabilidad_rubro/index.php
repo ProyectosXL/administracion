@@ -56,10 +56,17 @@ if (session_status() === PHP_SESSION_NONE) {
                 <span>Informe Económico — Contabilidad</span>
             </div>
         </div>
+
+        <button id="btnInfoReporte" class="rr-info-btn" type="button" title="Acerca del informe">
+            <i class="bi bi-info-circle"></i>
+        </button>
     </header>
 
     <!-- ── Filtros ── -->
     <?php include 'components/filtros.php'; ?>
+
+    <!-- ── Tabs de navegación ── -->
+    <?php include 'components/tabs.php'; ?>
 
     <!-- ── Contenido principal ── -->
     <main class="rr-content">
@@ -70,6 +77,9 @@ if (session_status() === PHP_SESSION_NONE) {
 
 <!-- Modal procesamiento de períodos -->
 <?php include 'components/modal_procesamiento.php'; ?>
+
+<!-- Modal de información del informe -->
+<?php include 'components/modal_info.php'; ?>
 
 <!-- JS propio -->
 <script src="js/rentabilidad_rubro.js"></script>

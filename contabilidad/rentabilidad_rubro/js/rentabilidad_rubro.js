@@ -8,58 +8,56 @@
 /* ── Constantes ─────────────────────────────────────────────────────────────── */
 const CTRL_URL = 'controller/rentabilidad_rubro_controller.php';
 
+/**
+ * 6 filas de la tabla + separadores.
+ * participacion_venta se muestra como null ('—') en la columna TOTAL.
+ */
 const FILAS_CONFIG = [
-    // [clave, etiqueta, tipo, esResultado, colorearSegunSigno]
-    { clave: 'venta',                      label: 'VENTA',                          tipo: 'moneda',   clase: '',             colorear: false },
-    { clave: 'costo',                      label: 'COSTO',                          tipo: 'moneda',   clase: '',             colorear: false },
-    { clave: 'markup',                     label: 'Markup (Venta / Costo)',          tipo: 'decimal2', clase: 'tr-ratio',     colorear: false },
+    { clave: 'venta',               label: 'VENTA',                  tipo: 'moneda',   clase: '',             colorear: false },
+    { clave: 'costo',               label: 'COSTO',                  tipo: 'moneda',   clase: '',             colorear: false },
     { separator: true },
-    { clave: 'resultado_bruto',            label: 'RESULTADO BRUTO',                tipo: 'moneda',   clase: 'tr-resultado', colorear: true  },
-    { clave: 'rel_costo_venta',            label: 'Relación costo s/ ventas',        tipo: 'pct',      clase: 'tr-ratio',     colorear: false },
+    { clave: 'resultado_bruto',     label: 'RESULTADO BRUTO',        tipo: 'moneda',   clase: 'tr-resultado', colorear: true  },
+    { clave: 'margen_bruto',        label: 'Margen Bruto',           tipo: 'pct',      clase: 'tr-ratio',     colorear: false },
     { separator: true },
-    { section: 'Gastos Comerciales' },
-    { clave: 'gastos_comercializacion',    label: 'Total Gastos Comercialización',   tipo: 'moneda',   clase: 'tr-gasto',     colorear: false },
-    { separator: true },
-    { clave: 'resultado_comercial',        label: 'RESULTADO COMERCIAL',             tipo: 'moneda',   clase: 'tr-resultado', colorear: true  },
-    { clave: 'rel_resultado_comercial',    label: 'Relación s/ ventas',              tipo: 'pct',      clase: 'tr-ratio',     colorear: false },
-    { separator: true },
-    { section: 'Gastos Operativos' },
-    { clave: 'gastos_personal',            label: 'Total Gastos de Personal',        tipo: 'moneda',   clase: 'tr-gasto',     colorear: false },
-    { clave: 'gastos_ocupacion',           label: 'Total Gastos Ocupación',          tipo: 'moneda',   clase: 'tr-gasto',     colorear: false },
-    { clave: 'otros_gastos_operativos',    label: 'Total Otros Gastos Operativos',   tipo: 'moneda',   clase: 'tr-gasto',     colorear: false },
-    { clave: 'total_gastos_operativos',    label: 'Total Gastos Operativos',         tipo: 'moneda',   clase: 'tr-total-cat', colorear: false },
-    { separator: true },
-    { clave: 'resultado_operativo',        label: 'RESULTADO OPERATIVO',             tipo: 'moneda',   clase: 'tr-resultado', colorear: true  },
-    { clave: 'rel_resultado_operativo',    label: 'Relación s/ ventas',              tipo: 'pct',      clase: 'tr-ratio',     colorear: false },
-    { separator: true },
-    { clave: 'bienes_de_uso',             label: 'Bienes de uso',                   tipo: 'moneda',   clase: 'tr-gasto',     colorear: false },
-    { clave: 'contribucion_marginal_neta', label: 'CONTRIBUCIÓN MARGINAL NETA',      tipo: 'moneda',   clase: 'tr-contribucion', colorear: true },
-    { separator: true },
-    { section: 'Gastos de Estructura' },
-    { clave: 'gastos_estructura',          label: 'Total Gastos de Estructura',      tipo: 'moneda',   clase: 'tr-gasto',     colorear: false },
-    { clave: 'rel_costo_total',            label: 'Relación costo total s/ ventas',  tipo: 'pct',      clase: 'tr-ratio',     colorear: false },
-    { separator: true },
-    { clave: 'resultado_explotacion',      label: 'RESULTADO EXPLOTACIÓN',           tipo: 'moneda',   clase: 'tr-resultado', colorear: true  },
-    { clave: 'rel_resultado_explotacion',  label: 'Relación s/ ventas',              tipo: 'pct',      clase: 'tr-ratio',     colorear: false },
+    { clave: 'markup',              label: 'Markup (Venta/Costo)',    tipo: 'decimal2', clase: 'tr-ratio',     colorear: false },
+    { clave: 'participacion_venta', label: '% Participación venta',  tipo: 'pct',      clase: 'tr-ratio',     colorear: false },
 ];
 
 const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-/** Convierte '1-2025' → 'Enero 2025' */
+const TAB_TITULOS = {
+    1: 'Informe Económico por Rubro',
+    2: 'Informe Económico por Origen de Producción',
+    3: 'Informe Económico por Categoría',
+};
+
 function periodoLabel(p) {
     const [m, a] = p.split('-');
     return `${MESES_ES[parseInt(m, 10) - 1]} ${a}`;
 }
 
 /* ── Estado ─────────────────────────────────────────────────────────────────── */
-let ultimoReporte  = null;
-let monedaActual   = 'ARS';
-let _modalContext  = { desde: '', hasta: '', canal: '', faltantes: [] };
 
-/* ── Utilidades de formato ──────────────────────────────────────────────────── */
+/**
+ * Caché de reportes y filtros propios por solapa.
+ * Los filtros comunes (desde, hasta, canal, moneda) viven en el DOM y son
+ * compartidos; cada solapa solo guarda sus filtros específicos y su resultado.
+ */
+const estadoPorTab = {
+    1: { reporte: null, desde: '', hasta: '', canal: '' },
+    2: { reporte: null, desde: '', hasta: '', canal: '', rubro: '' },
+    3: { reporte: null, desde: '', hasta: '', canal: '', rubro: '', color: '' },
+};
 
-/** Formatea número en estilo argentino sin decimales: $ 1.234.567 */
+let monedaActual  = 'ARS';
+let tabActual     = 1;
+let _modalContext = { desde: '', hasta: '', canal: '', faltantes: [] };
+
+
+
+/* ── Formato de números ─────────────────────────────────────────────────────── */
+
 function fmtMoneda(val) {
     if (val === null || val === undefined) return '<span class="val-null">—</span>';
     const num    = parseFloat(val);
@@ -71,6 +69,12 @@ function fmtMoneda(val) {
 
 function fmtPct(val) {
     if (val === null || val === undefined) return '<span class="val-null">—</span>';
+    return (parseFloat(val) * 100).toFixed(1).replace('.', ',') + ' %';
+}
+
+/** Porcentaje como texto plano (sin HTML), para sub-stats y KPI pct */
+function fmtPctTexto(val) {
+    if (val === null || val === undefined) return '—';
     return (parseFloat(val) * 100).toFixed(1).replace('.', ',') + ' %';
 }
 
@@ -88,7 +92,6 @@ function formatear(val, tipo) {
     }
 }
 
-/** Determina clase CSS para colorear según signo */
 function clasePorSigno(val, colorear, esResultado) {
     if (!colorear || val === null) return '';
     const n = parseFloat(val);
@@ -106,25 +109,22 @@ function validarPeriodo(str) {
 }
 
 function periodoMayor(a, b) {
-    // Devuelve true si a > b
     const [mA, aA] = a.split('-').map(Number);
     const [mB, aB] = b.split('-').map(Number);
     return aA > aB || (aA === aB && mA > mB);
 }
 
-/* ── Carga de canales ───────────────────────────────────────────────────────── */
+/* ── Carga de datos maestros ────────────────────────────────────────────────── */
 
 async function cargarCanales() {
     try {
         const r    = await fetch(`${CTRL_URL}?action=get_canales`);
         const json = await r.json();
         if (!json.success) return;
-
         const sel = document.getElementById('selectCanal');
         json.canales.forEach(c => {
             const opt = document.createElement('option');
-            opt.value       = c;
-            opt.textContent = c;
+            opt.value = opt.textContent = c;
             sel.appendChild(opt);
         });
     } catch (e) {
@@ -132,79 +132,230 @@ async function cargarCanales() {
     }
 }
 
+async function cargarRubros() {
+    try {
+        const r    = await fetch(`${CTRL_URL}?action=get_rubros`);
+        const json = await r.json();
+        if (!json.success) return;
+        const sel = document.getElementById('selectRubro');
+        sel.innerHTML = '<option value="">— Todos los rubros —</option>';
+        json.rubros.forEach(rb => {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = rb;
+            sel.appendChild(opt);
+        });
+    } catch (e) {
+        console.warn('No se pudieron cargar los rubros:', e);
+    }
+}
+
+async function cargarColoresPorRubro(rubro) {
+    const sel = document.getElementById('selectColor');
+    sel.innerHTML = '<option value="">— Todos los colores —</option>';
+    if (!rubro) return;
+    try {
+        const fd = new FormData();
+        fd.append('rubro', rubro);
+        const r    = await fetch(`${CTRL_URL}?action=get_colores`, { method: 'POST', body: fd });
+        const json = await r.json();
+        if (!json.success) return;
+        json.colores.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = c;
+            sel.appendChild(opt);
+        });
+    } catch (e) {
+        console.warn('No se pudieron cargar los colores:', e);
+    }
+}
+
+/* ── Lógica de tabs ──────────────────────────────────────────────────────────── */
+
+/** Guarda filtros específicos de la solapa antes de salir de ella */
+function _guardarFiltrosTab(tab) {
+    if (tab >= 2) estadoPorTab[tab].rubro = document.getElementById('selectRubro').value;
+    if (tab === 3) estadoPorTab[tab].color = document.getElementById('selectColor').value;
+}
+
+/** Restaura filtros específicos y el reporte cacheado al entrar a una solapa */
+async function cambiarTab(tab) {
+    if (tab === tabActual) return;
+
+    // Guardar estado de la solapa que dejamos
+    _guardarFiltrosTab(tabActual);
+
+    tabActual = tab;
+
+    // Botones de tabs
+    document.querySelectorAll('.rr-tab').forEach(btn => {
+        const t = parseInt(btn.dataset.tab, 10);
+        btn.classList.toggle('active', t === tab);
+        btn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+    });
+
+    // Filtros condicionales visibles según solapa
+    document.getElementById('filtroRubroGroup').style.display = tab >= 2 ? '' : 'none';
+    document.getElementById('filtroColorGroup').style.display = tab === 3 ? '' : 'none';
+
+    // Restaurar filtros propios de la solapa destino
+    const est = estadoPorTab[tab];
+    if (tab >= 2) {
+        document.getElementById('selectRubro').value = est.rubro || '';
+    }
+    if (tab === 3) {
+        // Recargar opciones de color si había un rubro guardado y restaurar selección
+        if (est.rubro) {
+            await cargarColoresPorRubro(est.rubro);
+            document.getElementById('selectColor').value = est.color || '';
+        } else {
+            document.getElementById('selectColor').innerHTML =
+                '<option value="">— Todos los colores —</option>';
+        }
+    }
+
+    // Restaurar reporte cacheado, o auto-aplicar si los filtros comunes son válidos
+    if (est.reporte) {
+        _renderReporteCacheado(tab);
+    } else {
+        const desde = document.getElementById('inputDesde').value.trim();
+        const hasta  = document.getElementById('inputHasta').value.trim();
+        const canal  = document.getElementById('selectCanal').value;
+        if (validarPeriodo(desde) && validarPeriodo(hasta) && !periodoMayor(desde, hasta)) {
+            await cargarReporte(desde, hasta, canal);
+        } else {
+            setEstado('inicial');
+            document.getElementById('btnExportar').disabled = true;
+        }
+    }
+}
+
+/**
+ * Re-renderiza la UI a partir del reporte cacheado en estadoPorTab[tab].
+ * Útil al volver a una solapa ya cargada o al cambiar moneda.
+ */
+function _renderReporteCacheado(tab) {
+    const est  = estadoPorTab[tab];
+    const json = est.reporte;
+    if (!json) return;
+
+    actualizarKPIs(json.kpis);
+
+    // Meta info reconstruida desde los valores guardados
+    const canalLabel  = est.canal ? ` · Canal: ${est.canal}` : '';
+    const monedaLabel = monedaActual === 'USD'
+        ? ` · USD (TCC: ${json.tcc_promedio ? parseFloat(json.tcc_promedio).toFixed(2) : '—'})`
+        : '';
+    const metaPeriodo = est.desde === est.hasta
+        ? periodoLabel(est.desde)
+        : `${periodoLabel(est.desde)} — ${periodoLabel(est.hasta)}`;
+
+    document.getElementById('tablaTitulo').textContent = TAB_TITULOS[tab];
+    document.getElementById('tablaMeta').textContent   =
+        `Período: ${metaPeriodo}${canalLabel}${monedaLabel}`;
+
+    // Chip de base de prorrateo
+    const bc   = json.base_calculo;
+    const chip = document.getElementById('baseCalculoChip');
+    if (bc && bc.monto) {
+        document.getElementById('baseCalculoMonto').textContent  = fmtMoneda(bc.monto);
+        document.getElementById('baseCalculoFuente').textContent =
+            bc.fuente === 'sinIVA' ? '(Ventas sin IVA)' : '(Venta total — fallback)';
+        const vtotal = json.kpis?.venta_total ?? 0;
+        const diff   = bc.monto - vtotal;
+        document.getElementById('bcTooltipBase').innerHTML  = fmtMoneda(bc.monto);
+        document.getElementById('bcTooltipDiff').innerHTML  = fmtMoneda(diff);
+        document.getElementById('bcTooltipVenta').innerHTML = fmtMoneda(vtotal);
+        chip.style.display = 'flex';
+    } else {
+        chip.style.display = 'none';
+    }
+
+    renderTabla(json.dimensiones, json.data);
+    setEstado('tabla');
+    document.getElementById('btnExportar').disabled = false;
+}
+
 /* ── KPI Cards ──────────────────────────────────────────────────────────────── */
 
 function actualizarKPIs(kpis) {
+    // Cards principales
     const sec = document.getElementById('kpiSection');
     sec.style.display = 'block';
 
     document.getElementById('kpiVentaVal').innerHTML = fmtMoneda(kpis.venta_total);
 
-    document.getElementById('kpiRBVal').innerHTML  = fmtMoneda(kpis.resultado_bruto);
-    document.getElementById('kpiRBPct').innerHTML  = kpis.rel_resultado_bruto !== null
-        ? fmtPct(kpis.rel_resultado_bruto) + ' s/vta'
-        : '—';
+    document.getElementById('kpiRBVal').innerHTML = fmtMoneda(kpis.resultado_bruto);
+    document.getElementById('kpiRBPct').textContent = kpis.rel_resultado_bruto !== null
+        ? fmtPctTexto(kpis.rel_resultado_bruto) + ' s/vta' : '—';
 
-    document.getElementById('kpiROVal').innerHTML  = fmtMoneda(kpis.resultado_operativo);
-    document.getElementById('kpiROPct').innerHTML  = kpis.rel_resultado_operativo !== null
-        ? fmtPct(kpis.rel_resultado_operativo) + ' s/vta'
-        : '—';
+    document.getElementById('kpiROVal').innerHTML = fmtMoneda(kpis.resultado_operativo);
+    document.getElementById('kpiROPct').textContent = kpis.rel_resultado_operativo !== null
+        ? fmtPctTexto(kpis.rel_resultado_operativo) + ' s/vta' : '—';
 
-    document.getElementById('kpiREVal').innerHTML  = fmtMoneda(kpis.resultado_explotacion);
-    document.getElementById('kpiREPct').innerHTML  = kpis.rel_resultado_explotacion !== null
-        ? fmtPct(kpis.rel_resultado_explotacion) + ' s/vta'
-        : '—';
+    document.getElementById('kpiREVal').innerHTML = fmtMoneda(kpis.resultado_explotacion);
+    document.getElementById('kpiREPct').textContent = kpis.rel_resultado_explotacion !== null
+        ? fmtPctTexto(kpis.rel_resultado_explotacion) + ' s/vta' : '—';
 
-    // Colorear KPI según signo
+    // Colorear KPIs de resultado según signo
     ['kpiRBVal','kpiROVal','kpiREVal'].forEach(id => {
         const el  = document.getElementById(id);
-        const num = parseFloat(el.textContent.replace(/[$.]/g,'').replace(',','.'));
+        const num = parseFloat(el.textContent.replace(/[$.U]/g, '').replace(/\./g, '').replace(',', '.'));
         el.classList.toggle('val-positive', num > 0);
         el.classList.toggle('val-negative', num < 0);
     });
+
+    // Cards de % gastos
+    const pctSec = document.getElementById('kpiPctSection');
+    pctSec.style.display = 'block';
+
+    document.getElementById('kpiGastosComVal').textContent = fmtPctTexto(kpis.pct_gastos_comercializacion);
+    document.getElementById('kpiGastosOpVal').textContent  = fmtPctTexto(kpis.pct_gastos_operativos);
+    document.getElementById('kpiGastosEstVal').textContent = fmtPctTexto(kpis.pct_gastos_estructura);
+
+    const personal  = fmtPctTexto(kpis.pct_gastos_personal);
+    const ocupacion = fmtPctTexto(kpis.pct_gastos_ocupacion);
+    const otros     = fmtPctTexto(kpis.pct_otros_gastos_operativos);
+    document.getElementById('kpiGastosOpSub').textContent =
+        `Personal: ${personal} · Ocupación: ${ocupacion} · Otros: ${otros}`;
 }
 
 /* ── Render de tabla ────────────────────────────────────────────────────────── */
 
-function renderTabla(rubros, data) {
-    const allCols = [...rubros, 'TOTAL'];
+function renderTabla(dimensiones, data) {
+    const allCols = [...dimensiones, 'TOTAL'];
 
-    /* ── THEAD ── */
+    /* THEAD */
     const head = document.getElementById('tablaHead');
     head.innerHTML = '';
     const trH = document.createElement('tr');
 
-    // Columna concepto
     const thC = document.createElement('th');
     thC.textContent = 'Concepto';
     trH.appendChild(thC);
 
-    // Columnas de rubros
-    allCols.forEach(rubro => {
+    allCols.forEach(col => {
         const th = document.createElement('th');
-        th.className = `th-rubro${rubro === 'TOTAL' ? ' col-total' : ''}`;
+        th.className = `th-rubro${col === 'TOTAL' ? ' col-total' : ''}`;
 
-        const inner = document.createElement('div');
+        const inner  = document.createElement('div');
         inner.className = 'th-rubro-inner';
 
         const nombre = document.createElement('span');
-        nombre.className    = 'th-rubro-nombre';
-        nombre.textContent  = rubro;
+        nombre.className   = 'th-rubro-nombre';
+        nombre.textContent = col;
 
         inner.appendChild(nombre);
         th.appendChild(inner);
         trH.appendChild(th);
     });
-
     head.appendChild(trH);
 
-    /* ── TBODY ── */
+    /* TBODY */
     const body = document.getElementById('tablaBody');
     body.innerHTML = '';
 
     FILAS_CONFIG.forEach(fila => {
 
-        // Separador
         if (fila.separator) {
             const tr = document.createElement('tr');
             tr.className = 'tr-separator';
@@ -215,63 +366,59 @@ function renderTabla(rubros, data) {
             return;
         }
 
-        // Header de sección
         if (fila.section) {
             const tr = document.createElement('tr');
             tr.className = 'tr-section-header';
-            const tdLabel = document.createElement('td');
-            tdLabel.className   = 'td-concepto';
-            tdLabel.textContent = fila.section;
-            tr.appendChild(tdLabel);
-            const tdFill = document.createElement('td');
-            tdFill.colSpan = allCols.length;
-            tr.appendChild(tdFill);
+            const tdL = document.createElement('td');
+            tdL.className   = 'td-concepto';
+            tdL.textContent = fila.section;
+            tr.appendChild(tdL);
+            const tdF = document.createElement('td');
+            tdF.colSpan = allCols.length;
+            tr.appendChild(tdF);
             body.appendChild(tr);
             return;
         }
 
-        // Fila de dato
         const tr = document.createElement('tr');
         if (fila.clase) tr.className = fila.clase;
 
-        // Celda concepto — con badge de coeficiente para filas de gasto
+        // Celda concepto
         const tdC = document.createElement('td');
         tdC.className = 'td-concepto';
 
+        // Badge de coeficiente para filas de gasto
         const mostrarCoef = fila.clase === 'tr-gasto' || fila.clase === 'tr-total-cat';
         const totalRow    = data['TOTAL'];
         if (mostrarCoef && totalRow && totalRow.venta && totalRow[fila.clave] != null) {
-            const pct    = Math.abs(totalRow[fila.clave]) / totalRow.venta * 100;
-            const pctFmt = pct.toFixed(1).replace('.', ',');
+            const pct = Math.abs(totalRow[fila.clave]) / totalRow.venta * 100;
             tdC.classList.add('td-concepto--coef');
             tdC.innerHTML =
                 `<span class="concepto-nombre">${fila.label}</span>` +
-                `<span class="coef-pct">${pctFmt} %</span>`;
+                `<span class="coef-pct">${pct.toFixed(1).replace('.', ',')} %</span>`;
         } else {
             tdC.textContent = fila.label;
         }
         tr.appendChild(tdC);
 
         // Celdas de datos
-        allCols.forEach(rubro => {
+        allCols.forEach(col => {
             const td  = document.createElement('td');
-            const val = data[rubro]?.[fila.clave];
+            const val = data[col]?.[fila.clave];
             const esResultado = fila.clase?.includes('resultado') || fila.clase?.includes('contribucion');
 
-            td.className = `td-num${rubro === 'TOTAL' ? ' col-total' : ''}`;
+            td.className = `td-num${col === 'TOTAL' ? ' col-total' : ''}`;
 
             const signClass = clasePorSigno(val, fila.colorear, esResultado);
             const fmtVal    = formatear(val, fila.tipo);
 
-            // Si el formateo ya devuelve HTML (val-null), usarlo directamente
-            if (fmtVal.startsWith('<')) {
+            if (typeof fmtVal === 'string' && fmtVal.startsWith('<')) {
                 td.innerHTML = fmtVal;
             } else {
                 td.innerHTML = signClass
                     ? `<span class="${signClass}">${fmtVal}</span>`
                     : fmtVal;
             }
-
             tr.appendChild(td);
         });
 
@@ -279,7 +426,7 @@ function renderTabla(rubros, data) {
     });
 }
 
-/* ── Alerta de errores de filtro ─────────────────────────────────────────────── */
+/* ── Alertas ────────────────────────────────────────────────────────────────── */
 
 function mostrarAlerta(msg) {
     const el = document.getElementById('alertaFiltros');
@@ -291,15 +438,15 @@ function ocultarAlerta() {
     document.getElementById('alertaFiltros').style.display = 'none';
 }
 
-/* ── Mostrar/ocultar secciones ──────────────────────────────────────────────── */
+/* ── Estado de la vista ─────────────────────────────────────────────────────── */
 
 function setEstado(estado) {
-    // estados: 'inicial' | 'loading' | 'tabla'
-    document.getElementById('estadoInicial').style.display   = estado === 'inicial'  ? '' : 'none';
-    document.getElementById('loadingSection').style.display  = estado === 'loading'  ? '' : 'none';
-    document.getElementById('tablaSection').style.display    = estado === 'tabla'    ? '' : 'none';
+    document.getElementById('estadoInicial').style.display  = estado === 'inicial'  ? '' : 'none';
+    document.getElementById('loadingSection').style.display = estado === 'loading'  ? '' : 'none';
+    document.getElementById('tablaSection').style.display   = estado === 'tabla'    ? '' : 'none';
     if (estado !== 'tabla') {
-        document.getElementById('kpiSection').style.display  = 'none';
+        document.getElementById('kpiSection').style.display    = 'none';
+        document.getElementById('kpiPctSection').style.display = 'none';
     }
 }
 
@@ -357,7 +504,6 @@ async function procesarPeriodos() {
             fd.append('fecha_hasta', f.fecha_hasta);
             const r    = await fetch(`${CTRL_URL}?action=procesar_periodo`, { method: 'POST', body: fd });
             const json = await r.json();
-
             if (li) {
                 if (json.success) {
                     li.className = 'mp-ok';
@@ -380,18 +526,17 @@ async function procesarPeriodos() {
         }
 
         procesados++;
-        document.getElementById('mpProgressBar').style.width = `${Math.round(procesados / total * 100)}%`;
+        document.getElementById('mpProgressBar').style.width =
+            `${Math.round(procesados / total * 100)}%`;
     }
 
     if (hayError) {
-        // Reactivar botón cerrar para que el usuario vea los errores
-        document.getElementById('mpBtnCancelar').disabled = false;
-        document.getElementById('mpBtnLabel').textContent = 'Reintentar';
-        document.getElementById('mpBtnProcesar').disabled = false;
+        document.getElementById('mpBtnCancelar').disabled  = false;
+        document.getElementById('mpBtnLabel').textContent  = 'Reintentar';
+        document.getElementById('mpBtnProcesar').disabled  = false;
         return;
     }
 
-    // Todo OK → cerrar modal y cargar el reporte
     document.getElementById('mpBtnLabel').textContent = 'Cargando reporte…';
     cerrarModal();
     await cargarReporte(desde, hasta, canal);
@@ -414,10 +559,21 @@ async function cargarReporte(desde, hasta, canal) {
         fd.append('canal',  canal);
         fd.append('moneda', monedaActual);
 
-        const r    = await fetch(`${CTRL_URL}?action=get_reporte`, { method: 'POST', body: fd });
+        let actionUrl;
+        if (tabActual === 1) {
+            actionUrl = `${CTRL_URL}?action=get_reporte`;
+        } else if (tabActual === 2) {
+            fd.append('rubro', document.getElementById('selectRubro').value);
+            actionUrl = `${CTRL_URL}?action=get_reporte_origen`;
+        } else {
+            fd.append('rubro', document.getElementById('selectRubro').value);
+            fd.append('color', document.getElementById('selectColor').value);
+            actionUrl = `${CTRL_URL}?action=get_reporte_categoria`;
+        }
+
+        const r    = await fetch(actionUrl, { method: 'POST', body: fd });
         const json = await r.json();
 
-        // Períodos faltantes → abrir modal de procesamiento
         if (!json.success && json.code === 'PERIODOS_FALTANTES') {
             setEstado('inicial');
             abrirModal(json.periodos_faltantes, desde, hasta, canal);
@@ -430,7 +586,19 @@ async function cargarReporte(desde, hasta, canal) {
             return;
         }
 
-        ultimoReporte = json;
+        if (!json.dimensiones || json.dimensiones.length === 0) {
+            setEstado('inicial');
+            mostrarAlerta('No se encontraron datos para los filtros seleccionados.');
+            return;
+        }
+
+        // Guardar en caché de la solapa activa
+        estadoPorTab[tabActual].reporte = json;
+        estadoPorTab[tabActual].desde   = desde;
+        estadoPorTab[tabActual].hasta   = hasta;
+        estadoPorTab[tabActual].canal   = canal;
+        if (tabActual >= 2) estadoPorTab[tabActual].rubro = document.getElementById('selectRubro').value;
+        if (tabActual === 3) estadoPorTab[tabActual].color = document.getElementById('selectColor').value;
 
         // KPIs
         actualizarKPIs(json.kpis);
@@ -443,19 +611,19 @@ async function cargarReporte(desde, hasta, canal) {
         const metaPeriodo = desde === hasta
             ? periodoLabel(desde)
             : `${periodoLabel(desde)} — ${periodoLabel(hasta)}`;
-        document.getElementById('tablaTitulo').textContent = 'Informe Económico por Rubro';
+
+        document.getElementById('tablaTitulo').textContent = TAB_TITULOS[tabActual];
         document.getElementById('tablaMeta').textContent   =
             `Período: ${metaPeriodo}${canalLabel}${monedaLabel}`;
 
         // Base de prorrateo
-        const bc    = json.base_calculo;
-        const chip  = document.getElementById('baseCalculoChip');
+        const bc   = json.base_calculo;
+        const chip = document.getElementById('baseCalculoChip');
         if (bc && bc.monto) {
             document.getElementById('baseCalculoMonto').textContent  = fmtMoneda(bc.monto);
             document.getElementById('baseCalculoFuente').textContent =
                 bc.fuente === 'sinIVA' ? '(Ventas sin IVA)' : '(Venta total — fallback)';
 
-            // Recupero de promociones = base prorrateo − venta total (Rubro 1.8.)
             const ventaTotal = json.kpis?.venta_total ?? 0;
             const diferencia = bc.monto - ventaTotal;
             document.getElementById('bcTooltipBase').innerHTML  = fmtMoneda(bc.monto);
@@ -467,10 +635,9 @@ async function cargarReporte(desde, hasta, canal) {
             chip.style.display = 'none';
         }
 
-        // Tabla
-        renderTabla(json.rubros, json.data);
+        // Tabla — usa 'dimensiones' como lista de columnas
+        renderTabla(json.dimensiones, json.data);
         setEstado('tabla');
-
         btnExportar.disabled = false;
 
     } catch (e) {
@@ -487,7 +654,6 @@ async function aplicarFiltros() {
     const hasta = document.getElementById('inputHasta').value.trim();
     const canal = document.getElementById('selectCanal').value;
 
-    // Validaciones
     ocultarAlerta();
     document.getElementById('inputDesde').classList.remove('error');
     document.getElementById('inputHasta').classList.remove('error');
@@ -515,40 +681,34 @@ async function aplicarFiltros() {
 /* ── Exportar a Excel ──────────────────────────────────────────────────────── */
 
 function exportarExcel() {
-    if (!ultimoReporte) return;
+    if (!estadoPorTab[tabActual].reporte) return;
 
     const tabla = document.getElementById('tablaReporte');
     if (!tabla) return;
 
-    // Clonar tabla para limpiar HTML de formato
     const clone = tabla.cloneNode(true);
-
-    // Reemplazar innerHTML de cada td por su textContent
     clone.querySelectorAll('td, th').forEach(cell => {
         cell.innerHTML = cell.textContent.trim();
     });
 
-    // Crear workbook con SheetJS si está disponible
     if (typeof XLSX !== 'undefined') {
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.table_to_sheet(clone);
-        XLSX.utils.book_append_sheet(wb, ws, 'Rentabilidad por Rubro');
+        const tabNombre = ['PorRubro', 'PorOrigen', 'PorCategoria'][tabActual - 1];
+        XLSX.utils.book_append_sheet(wb, ws, `Rentabilidad_${tabNombre}`);
 
         const desde = document.getElementById('inputDesde').value;
         const hasta = document.getElementById('inputHasta').value;
-        XLSX.writeFile(wb, `Rentabilidad_Rubro_${desde}_${hasta}.xlsx`);
+        XLSX.writeFile(wb, `Rentabilidad_${tabNombre}_${desde}_${hasta}.xlsx`);
     } else {
-        // Fallback: exportar como HTML descargable
-        const htmlContent = `
-            <html><head><meta charset="utf-8">
+        const htmlContent = `<html><head><meta charset="utf-8">
             <style>table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:6px 10px;font-size:12px}</style>
-            </head><body>${clone.outerHTML}</body></html>
-        `;
+            </head><body>${clone.outerHTML}</body></html>`;
         const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        a.href     = url;
-        a.download = `Rentabilidad_Rubro_${document.getElementById('inputDesde').value}.xls`;
+        a.href = url;
+        a.download = `Rentabilidad_${document.getElementById('inputDesde').value}.xls`;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -559,7 +719,6 @@ function exportarExcel() {
 function setupPeriodoInput(id) {
     const inp = document.getElementById(id);
     inp.addEventListener('input', () => {
-        // Solo dígitos y guión
         inp.value = inp.value.replace(/[^\d-]/g, '');
         inp.classList.remove('error');
         ocultarAlerta();
@@ -569,13 +728,86 @@ function setupPeriodoInput(id) {
     });
 }
 
+/* ── Modal de información ────────────────────────────────────────────────── */
+
+function abrirModalInfo() {
+    const modal = document.getElementById('modalInfo');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    _inicializarAcordeon();
+}
+
+function cerrarModalInfo() {
+    document.getElementById('modalInfo').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+/** Fija el max-height inicial de cada item del acordeón según su estado */
+function _inicializarAcordeon() {
+    document.querySelectorAll('.mi-item').forEach(item => {
+        const body = item.querySelector('.mi-item-body');
+        if (!body) return;
+        if (item.classList.contains('mi-open')) {
+            body.style.maxHeight = body.scrollHeight + 'px';
+        } else {
+            body.style.maxHeight = '0';
+        }
+    });
+}
+
+function setupModalInfo() {
+    const modal   = document.getElementById('modalInfo');
+    const overlay = modal;
+
+    // Abrir
+    document.getElementById('btnInfoReporte').addEventListener('click', abrirModalInfo);
+
+    // Cerrar con botones
+    document.getElementById('miBtnCerrar').addEventListener('click',    cerrarModalInfo);
+    document.getElementById('miBtnEntendido').addEventListener('click', cerrarModalInfo);
+
+    // Cerrar al hacer clic en el overlay (fuera de la card)
+    overlay.addEventListener('click', e => {
+        if (e.target === overlay) cerrarModalInfo();
+    });
+
+    // Cerrar con Escape
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && modal.style.display === 'flex') cerrarModalInfo();
+    });
+
+    // ── Acordeón ────────────────────────────────────────────────────────────
+    document.querySelectorAll('.mi-item-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const item      = header.closest('.mi-item');
+            const estaAbierto = item.classList.contains('mi-open');
+
+            // Cerrar todos
+            document.querySelectorAll('.mi-item').forEach(i => {
+                i.classList.remove('mi-open');
+                i.querySelector('.mi-item-header').setAttribute('aria-expanded', 'false');
+                const b = i.querySelector('.mi-item-body');
+                if (b) b.style.maxHeight = '0';
+            });
+
+            // Abrir el clickeado si estaba cerrado
+            if (!estaAbierto) {
+                item.classList.add('mi-open');
+                header.setAttribute('aria-expanded', 'true');
+                const body = item.querySelector('.mi-item-body');
+                if (body) body.style.maxHeight = body.scrollHeight + 'px';
+            }
+        });
+    });
+}
+
 /* ── Init ──────────────────────────────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Precargar período actual (mes actual - 1)
-    const hoy   = new Date();
-    const mesD  = hoy.getMonth() === 0 ? 12 : hoy.getMonth(); // mes anterior
+    // Precargar período anterior
+    const hoy  = new Date();
+    const mesD = hoy.getMonth() === 0 ? 12 : hoy.getMonth();
     const anioD = hoy.getMonth() === 0 ? hoy.getFullYear() - 1 : hoy.getFullYear();
     document.getElementById('inputDesde').value = `${mesD}-${anioD}`;
     document.getElementById('inputHasta').value = `${mesD}-${anioD}`;
@@ -583,27 +815,74 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPeriodoInput('inputDesde');
     setupPeriodoInput('inputHasta');
 
+    // Botones principales
     document.getElementById('btnAplicar').addEventListener('click', aplicarFiltros);
     document.getElementById('btnExportar').addEventListener('click', exportarExcel);
+
+    // Tabs
+    document.querySelectorAll('.rr-tab').forEach(btn => {
+        btn.addEventListener('click', () => cambiarTab(parseInt(btn.dataset.tab, 10)));
+    });
+
+    // Filtro cascada: Rubro → Color
+    document.getElementById('selectRubro').addEventListener('change', async () => {
+        if (tabActual === 3) {
+            await cargarColoresPorRubro(document.getElementById('selectRubro').value);
+        }
+    });
 
     // Modal de procesamiento
     document.getElementById('mpBtnCerrar').addEventListener('click', cerrarModal);
     document.getElementById('mpBtnCancelar').addEventListener('click', cerrarModal);
     document.getElementById('mpBtnProcesar').addEventListener('click', procesarPeriodos);
 
-    // Toggle de moneda: re-carga el reporte si ya hay datos
+    // Toggle de moneda — invalida cachés de todas las solapas y recarga la activa
     document.querySelectorAll('input[name="moneda"]').forEach(radio => {
         radio.addEventListener('change', async () => {
             monedaActual = radio.value;
-            if (ultimoReporte !== null) {
-                const desde = document.getElementById('inputDesde').value.trim();
-                const hasta = document.getElementById('inputHasta').value.trim();
-                const canal = document.getElementById('selectCanal').value;
-                await cargarReporte(desde, hasta, canal);
+            // Borrar reportes cacheados (son en la moneda anterior)
+            [1, 2, 3].forEach(t => { estadoPorTab[t].reporte = null; });
+            // Recargar la solapa activa si tenía un reporte
+            const est = estadoPorTab[tabActual];
+            if (est.desde) {
+                await cargarReporte(est.desde, est.hasta, est.canal);
             }
         });
     });
 
+    // Carga inicial de datos maestros
     cargarCanales();
+    cargarRubros();
     setEstado('inicial');
+
+    // ── Modal de información ─────────────────────────────────────────────────
+    setupModalInfo();
+
+    // ── Popover de base de cálculo ──────────────────────────────────────────
+    const bcIcon    = document.querySelector('.bc-info-icon');
+    const bcPopover = document.getElementById('bcTooltip');
+
+    if (bcIcon && bcPopover) {
+        bcIcon.addEventListener('click', e => {
+            e.stopPropagation();
+            const abierto = bcPopover.classList.toggle('bc-open');
+            bcIcon.classList.toggle('active', abierto);
+        });
+
+        // Cerrar al hacer clic fuera
+        document.addEventListener('click', e => {
+            if (!bcPopover.contains(e.target) && e.target !== bcIcon) {
+                bcPopover.classList.remove('bc-open');
+                bcIcon.classList.remove('active');
+            }
+        });
+
+        // Cerrar con Escape
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && bcPopover.classList.contains('bc-open')) {
+                bcPopover.classList.remove('bc-open');
+                bcIcon.classList.remove('active');
+            }
+        });
+    }
 });

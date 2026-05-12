@@ -47,6 +47,28 @@
             </select>
         </div>
 
+        <!-- Rubro (visible en solapas 2 y 3) -->
+        <div class="filtro-group" id="filtroRubroGroup" style="display:none;">
+            <label class="filtro-label" for="selectRubro">
+                <i class="bi bi-tag"></i>
+                Rubro
+            </label>
+            <select id="selectRubro" class="filtro-select">
+                <option value="">— Todos los rubros —</option>
+            </select>
+        </div>
+
+        <!-- Color (visible solo en solapa 3, en cascada con Rubro) -->
+        <div class="filtro-group" id="filtroColorGroup" style="display:none;">
+            <label class="filtro-label" for="selectColor">
+                <i class="bi bi-palette"></i>
+                Color
+            </label>
+            <select id="selectColor" class="filtro-select">
+                <option value="">— Todos los colores —</option>
+            </select>
+        </div>
+
         <div class="filtro-group">
             <label class="filtro-label">
                 <i class="bi bi-currency-exchange"></i>
