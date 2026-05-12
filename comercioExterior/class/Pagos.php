@@ -1,25 +1,30 @@
 <?php
 class Pagos {
     private $cid_central;
+    private $encabezado;
 
     function __construct() {
         require_once __DIR__ . '/../../class/conexion.php';
+        require_once __DIR__ . '/encabezado.php';
         $cid = new Conexion();
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
         $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
         $this->cid_central = $cid->conectar($db);
+        $this->encabezado  = new Encabezado();
     }
 
     /**
-     * Obtiene todos los pagos de un encabezado
+     * Obtiene todos los pagos de un encabezado.
+     * Si el ID es de una hija, resuelve al principal antes de consultar.
      */
     public function obtenerPagosPorEncabezado($idEncabezado) {
+        $idEncabezado = $this->encabezado->resolverIdPrincipal($idEncabezado);
         try {
-            $sql = "SELECT ID, ID_ENCABEZADO, FECHA_PAGO, FORMA_PAGO, MEDIO_PAGO, MONTO, FECHA_CREACION 
-                    FROM RO_T_IMPORTACIONES_ENCABEZADO_PAGOS 
-                    WHERE ID_ENCABEZADO = ? 
+            $sql = "SELECT ID, ID_ENCABEZADO, FECHA_PAGO, FORMA_PAGO, MEDIO_PAGO, MONTO, FECHA_CREACION
+                    FROM RO_T_IMPORTACIONES_ENCABEZADO_PAGOS
+                    WHERE ID_ENCABEZADO = ?
                     ORDER BY FECHA_PAGO ASC";
             
             $stmt = sqlsrv_prepare($this->cid_central, $sql, array(&$idEncabezado));
@@ -47,12 +52,14 @@ class Pagos {
     }
 
     /**
-     * Inserta un nuevo pago
+     * Inserta un nuevo pago.
+     * Si el ID es de una hija, resuelve al principal antes de insertar.
      */
     public function insertarPago($idEncabezado, $fechaPago, $formaPago, $medioPago, $monto) {
+        $idEncabezado = $this->encabezado->resolverIdPrincipal($idEncabezado);
         try {
-            $sql = "INSERT INTO RO_T_IMPORTACIONES_ENCABEZADO_PAGOS 
-                    (ID_ENCABEZADO, FECHA_PAGO, FORMA_PAGO, MEDIO_PAGO, MONTO) 
+            $sql = "INSERT INTO RO_T_IMPORTACIONES_ENCABEZADO_PAGOS
+                    (ID_ENCABEZADO, FECHA_PAGO, FORMA_PAGO, MEDIO_PAGO, MONTO)
                     VALUES (?, ?, ?, ?, ?)";
             
             $params = array(&$idEncabezado, &$fechaPago, &$formaPago, &$medioPago, &$monto);
@@ -130,9 +137,11 @@ class Pagos {
     }
 
     /**
-     * Elimina todos los pagos de un encabezado
+     * Elimina todos los pagos de un encabezado.
+     * Si el ID es de una hija, resuelve al principal antes de eliminar.
      */
     public function eliminarPagosPorEncabezado($idEncabezado) {
+        $idEncabezado = $this->encabezado->resolverIdPrincipal($idEncabezado);
         try {
             $sql = "DELETE FROM RO_T_IMPORTACIONES_ENCABEZADO_PAGOS WHERE ID_ENCABEZADO = ?";
             $stmt = sqlsrv_prepare($this->cid_central, $sql, array(&$idEncabezado));

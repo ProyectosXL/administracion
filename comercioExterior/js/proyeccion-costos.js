@@ -48,9 +48,26 @@ function mostrarDespachos(despachos) {
     despachos.forEach(function(despacho) {
         const estadoClass = getEstadoClass(despacho.ESTADO);
         const estadoBadge = `<span class="badge ${estadoClass}">${despacho.ESTADO}</span>`;
-        
+
         const botonesAccion = generarBotonesAccion(despacho);
-        
+
+        // Badge "+N OCs" cuando hay hijas vinculadas
+        const ocsVinculadas = despacho.OCS_VINCULADAS || '';
+        const cantOcs = parseInt(despacho.CANT_OCS) || 1;
+        let ocDisplay = despacho.ORDEN_COMPRA || '-';
+        if (cantOcs > 1 && ocsVinculadas) {
+            ocDisplay = `
+                <div class="d-flex align-items-center gap-2">
+                    <span>${despacho.ORDEN_COMPRA}</span>
+                    <span class="badge bg-info text-white"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="OCs vinculadas: ${ocsVinculadas}">
+                        <i class="bi bi-link-45deg"></i> +${cantOcs - 1}
+                    </span>
+                </div>`;
+        }
+
         const row = `
             <tr>
                 <td><strong>#${despacho.ID}</strong></td>
@@ -58,7 +75,7 @@ function mostrarDespachos(despachos) {
                 <td>${despacho.PROVEEDOR || '-'}</td>
                 <td>${despacho.CONTENEDOR || '-'}</td>
                 <td>${despacho.MATERIAL || '-'}</td>
-                <td>${despacho.ORDEN_COMPRA || '-'}</td>
+                <td>${ocDisplay}</td>
                 <td>${estadoBadge}</td>
                 <td>${botonesAccion}</td>
             </tr>
@@ -66,11 +83,18 @@ function mostrarDespachos(despachos) {
         tbody.append(row);
     });
     
+    // Inicializar tooltips de Bootstrap para los badges de OCs vinculadas
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        const t = bootstrap.Tooltip.getInstance(el);
+        if (t) t.dispose();
+        new bootstrap.Tooltip(el);
+    });
+
     // Destruir DataTable existente si existe
     if ($.fn.DataTable.isDataTable('#tablaDespachos')) {
         $('#tablaDespachos').DataTable().destroy();
     }
-    
+
     // Inicializar DataTable
     tablaDespachos = $('#tablaDespachos').DataTable({
         language: {

@@ -131,7 +131,14 @@ function mostrarInformacionDespacho() {
     $('#infoMaterial').text(datosDespacho.MATERIAL);
     $('#infoOrdenCompra').text(datosDespacho.ORDEN_COMPRA);
     $('#valorFOB').val(datosDespacho.VALOR_FOB_DOLAR);
-    
+
+    // Mostrar OCs vinculadas si hay hijas en el mismo contenedor
+    const cantOcs = parseInt(datosDespacho.CANT_OCS) || 1;
+    if (cantOcs > 1 && datosDespacho.OCS_VINCULADAS) {
+        $('#infoOcsVinculadas').text(datosDespacho.OCS_VINCULADAS);
+        $('#infoOcsVinculadasContainer').show();
+    }
+
     if (estaConfirmada) {
         $('#estadoBadge').html('<i class="bi bi-check-circle-fill"></i> Confirmado')
             .removeClass('badge-warning').addClass('badge-success');

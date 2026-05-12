@@ -262,6 +262,153 @@ class Encabezado
         }
     }
 
+    /**
+     * Marca una OC como hija de otra (vinculación por contenedor compartido).
+     * Solo actualiza si la fila todavía no tiene padre (idempotente).
+     */
+    public function vincularComoPadre($idHijo, $idPadre) {
+        $idHijo  = intval($idHijo);
+        $idPadre = intval($idPadre);
+
+        if ($idHijo <= 0 || $idPadre <= 0 || $idHijo === $idPadre) {
+            return false;
+        }
+
+        $sql = "UPDATE RO_T_IMPORTACIONES_ENCABEZADO
+                SET ID_PADRE = ?
+                WHERE ID = ? AND ID_PADRE IS NULL";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql, array($idPadre, $idHijo));
+
+        if ($stmt === false) {
+            error_log('[vincularComoPadre] Error: ' . print_r(sqlsrv_errors(), true));
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Devuelve el ID de la OC principal del grupo.
+     * Si el ID dado ya es principal (ID_PADRE IS NULL), retorna el mismo.
+     * Si es hijo, retorna el padre.
+     */
+    public function resolverIdPrincipal($idMg) {
+        $idMg = intval($idMg);
+        $sql = "SELECT COALESCE(ID_PADRE, ID) AS ID_PRINCIPAL
+                FROM RO_T_IMPORTACIONES_ENCABEZADO
+                WHERE ID = ?";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql, array($idMg));
+        if ($stmt === false) return $idMg;
+
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        return $row ? intval($row['ID_PRINCIPAL']) : $idMg;
+    }
+
+    /**
+     * Devuelve array con todos los IDs del grupo (principal + hijas).
+     * Si el ID dado es hijo, primero resuelve al padre.
+     */
+    public function obtenerIdsDelGrupo($idMg) {
+        $idPrincipal = $this->resolverIdPrincipal($idMg);
+
+        $ids = [$idPrincipal];
+
+        $sql = "SELECT ID FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ID_PADRE = ?";
+        $stmt = sqlsrv_query($this->cid_central, $sql, array($idPrincipal));
+
+        if ($stmt !== false) {
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $ids[] = intval($row['ID']);
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Devuelve array con los datos de todas las OCs del grupo.
+     * Cada elemento: ['ID' => int, 'ORDEN_COMPRA' => string, 'ID_PADRE' => int|null]
+     * El principal aparece primero.
+     */
+    public function obtenerOrdenesDelGrupo($idMg) {
+        $idPrincipal = $this->resolverIdPrincipal($idMg);
+
+        $sql = "SELECT ID, ORDEN_COMPRA, ID_PADRE
+                FROM RO_T_IMPORTACIONES_ENCABEZADO
+                WHERE ID = ? OR ID_PADRE = ?
+                ORDER BY (CASE WHEN ID_PADRE IS NULL THEN 0 ELSE 1 END), ID";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql, array($idPrincipal, $idPrincipal));
+        if ($stmt === false) return [];
+
+        $resultado = [];
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $resultado[] = $row;
+        }
+        return $resultado;
+    }
+
+    /**
+     * Actualiza campos comunes de embarque/despacho en TODAS las OCs del grupo.
+     * No toca ORDEN_COMPRA, OCM ni ID.
+     *
+     * @param int   $idEncabezado  ID de cualquier OC del grupo
+     * @param array $datos         ['COLUMNA' => valor, ...]
+     * @return bool
+     */
+    public function actualizarEncabezadoGrupo($idEncabezado, $datos) {
+        $idPrincipal = $this->resolverIdPrincipal($idEncabezado);
+        if (!$idPrincipal) return false;
+
+        $idsGrupo = $this->obtenerIdsDelGrupo($idPrincipal);
+        if (empty($idsGrupo)) return false;
+
+        $columnasPermitidas = [
+            'FECHA_MOV', 'FECHA_EMB', 'FECHA_OC',
+            'FACTURA', 'NUMERO_BL',
+            'TIPO_CAMBIO', 'VALOR_FOB_DOLAR', 'VALOR_FOB_PESO',
+            'FECHA_ARR', 'FECHA_DESP_ADU',
+            'FECHA_EST_PAGO', 'FECHA_EST_EMB',
+            'DESPACHANTE', 'PUERTO_ORIGEN', 'TERMINAL', 'ETA_CONFIRMADA',
+            'CONTENEDOR', 'DESPACHO', 'MATERIAL', 'ORIGEN', 'FORMA_PAGO',
+            'COD_PROVEE', 'PROVEEDOR',
+        ];
+
+        $campos     = [];
+        $parametros = [];
+
+        foreach ($datos as $col => $valor) {
+            if (in_array($col, $columnasPermitidas, true)) {
+                $campos[]     = "$col = ?";
+                $parametros[] = ($valor === '' ? null : $valor);
+            }
+        }
+
+        if (empty($campos)) return false;
+
+        $placeholders = implode(',', array_fill(0, count($idsGrupo), '?'));
+        $sql = "UPDATE RO_T_IMPORTACIONES_ENCABEZADO
+                SET "    . implode(', ', $campos) . "
+                WHERE ID IN ($placeholders)";
+
+        $parametros = array_merge($parametros, $idsGrupo);
+
+        $stmt = sqlsrv_query($this->cid_central, $sql, $parametros);
+        if ($stmt === false) {
+            error_log('actualizarEncabezadoGrupo: ' . print_r(sqlsrv_errors(), true));
+            return false;
+        }
+
+        $afectados = sqlsrv_rows_affected($stmt);
+        error_log("actualizarEncabezadoGrupo: idRecibido=$idEncabezado, " .
+                  "idPrincipal=$idPrincipal, ocsGrupo=" . count($idsGrupo) .
+                  ", filasAfectadas=$afectados");
+
+        return true;
+    }
+
     public function actualizarEncabezado($id, $datosDeCabezera)
     {
         $id = intval($id);

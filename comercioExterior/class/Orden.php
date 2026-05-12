@@ -71,9 +71,24 @@ class Orden{
     }
     public function traerOrdenPorFecha($desde, $hasta) {
 
-        $sql = "SELECT ID, FECHA_MOV, A.FECHA_DESP_ADU,  CONTENEDOR, COD_PROVEE, PROVEEDOR, DESPACHO, A.ORDEN_COMPRA, VALOR_FOB_PESO, (COSTO_NAC*100) COSTO_NAC FROM RO_T_IMPORTACIONES_ENCABEZADO A
+        $sql = "SELECT
+                    A.ID,
+                    A.FECHA_MOV,
+                    A.FECHA_DESP_ADU,
+                    A.CONTENEDOR,
+                    A.COD_PROVEE,
+                    A.PROVEEDOR,
+                    A.DESPACHO,
+                    A.ORDEN_COMPRA,
+                    A.VALOR_FOB_PESO,
+                    (COSTO_NAC * 100) AS COSTO_NAC,
+                    A.ID_PADRE,
+                    (SELECT P.ORDEN_COMPRA
+                     FROM RO_T_IMPORTACIONES_ENCABEZADO P
+                     WHERE P.ID = A.ID_PADRE) AS ORDEN_COMPRA_PADRE
+                FROM RO_T_IMPORTACIONES_ENCABEZADO A
                 LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
-                WHERE A.FECHA_DESP_ADU BETWEEN '$desde' AND '$hasta' 
+                WHERE A.FECHA_DESP_ADU BETWEEN '$desde' AND '$hasta'
                 ORDER BY A.FECHA_DESP_ADU DESC;";
         
         try{
@@ -95,63 +110,63 @@ class Orden{
     }
 
     /**
-     * Inserta/actualiza RO_COSTOS_NACIONALIZACION directamente,
-     * sin depender de la vista RO_W_COSTO_NACIONALIZACION ni del SP.
-     * Obtiene FECHA_DESP_ADU desde el encabezado usando idEncabezado.
+     * Inserta/actualiza RO_COSTOS_NACIONALIZACION para TODAS las OCs del grupo.
+     * Si el encabezado recibido es una OC hija, primero resuelve al principal
+     * y luego replica el mismo COSTO_NAC a cada OC del grupo.
      */
     public function insertarCostoNacionalizacion($nroOrden, $idEncabezado, $costoNac) {
 
-        $nroOrden = trim($nroOrden);
-        if (strlen($nroOrden) == 13) {
-            $nroOrden = ' ' . $nroOrden;
-        }
+        require_once __DIR__ . '/encabezado.php';
+        $encabezadoClass = new Encabezado();
 
-        // Paso 1: Obtener FECHA_DESP_ADU y ORDEN_COMPRA del encabezado
-        $sqlEnc = "SELECT ORDEN_COMPRA, FECHA_DESP_ADU FROM RO_T_IMPORTACIONES_ENCABEZADO WHERE ID = " . intval($idEncabezado);
-        $stmtEnc = sqlsrv_query($this->cid_central, $sqlEnc);
-        if ($stmtEnc === false) {
-            $errors = sqlsrv_errors();
-            error_log('[insertarCostoNacionalizacion] Error buscando encabezado ID=' . $idEncabezado . ': ' . print_r($errors, true));
-            return ['success' => false, 'message' => 'Error al buscar el encabezado ID=' . $idEncabezado];
-        }
-        $enc = sqlsrv_fetch_array($stmtEnc, SQLSRV_FETCH_ASSOC);
-        if (!$enc) {
-            error_log('[insertarCostoNacionalizacion] No se encontró encabezado ID=' . $idEncabezado);
+        $idPrincipal  = $encabezadoClass->resolverIdPrincipal($idEncabezado);
+        $ordenesGrupo = $encabezadoClass->obtenerOrdenesDelGrupo($idEncabezado);
+
+        if (empty($ordenesGrupo)) {
+            error_log('[insertarCostoNacionalizacion] No se encontraron OCs para idEncabezado=' . $idEncabezado);
             return ['success' => false, 'message' => 'No se encontró el encabezado ID=' . $idEncabezado];
         }
 
-        $ordenCompraReal = $enc['ORDEN_COMPRA']; // Usar el valor exacto de la BD
-        $fechaDesp       = $enc['FECHA_DESP_ADU']; // DateTime o null
+        $costoNacVal = floatval($costoNac);
 
-        error_log('[insertarCostoNacionalizacion] Encabezado encontrado. ORDEN_COMPRA="' . $ordenCompraReal . '" FECHA_DESP_ADU=' . ($fechaDesp ? $fechaDesp->format('Y-m-d') : 'NULL'));
+        foreach ($ordenesGrupo as $ocReal) {
+            $ocStr = is_array($ocReal) ? $ocReal['ORDEN_COMPRA'] : $ocReal;
+            $ocEsc = str_replace("'", "''", $ocStr);
 
-        // Paso 2: DELETE del registro previo usando el valor exacto de la BD
-        $sqlDelete = "DELETE FROM RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO = '" . str_replace("'", "''", $ordenCompraReal) . "'";
-        $stmtDelete = sqlsrv_query($this->cid_central, $sqlDelete);
-        if ($stmtDelete === false) {
-            $errors = sqlsrv_errors();
-            error_log('[insertarCostoNacionalizacion] Error DELETE: ' . print_r($errors, true));
-            return ['success' => false, 'message' => 'Error al eliminar registro previo'];
+            // DELETE previo para esta OC
+            $sqlDelete = "DELETE FROM RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO = '$ocEsc'";
+            $stmtDelete = sqlsrv_query($this->cid_central, $sqlDelete);
+            if ($stmtDelete === false) {
+                $errors = sqlsrv_errors();
+                error_log('[insertarCostoNacionalizacion] Error DELETE OC=' . $ocStr . ': ' . print_r($errors, true));
+                return ['success' => false, 'message' => 'Error al eliminar registro previo para OC: ' . $ocStr];
+            }
+
+            // Obtener FECHA_DESP_ADU del encabezado que corresponda a esta OC
+            $sqlFecha = "SELECT FECHA_DESP_ADU FROM RO_T_IMPORTACIONES_ENCABEZADO
+                         WHERE ORDEN_COMPRA = '$ocEsc'";
+            $stmtFecha = sqlsrv_query($this->cid_central, $sqlFecha);
+            $rowFecha = ($stmtFecha !== false) ? sqlsrv_fetch_array($stmtFecha, SQLSRV_FETCH_ASSOC) : null;
+
+            $fechaDespStr = ($rowFecha && $rowFecha['FECHA_DESP_ADU'])
+                ? "'" . $rowFecha['FECHA_DESP_ADU']->format('Y-m-d') . "'"
+                : 'NULL';
+
+            $sqlInsert = "INSERT INTO RO_COSTOS_NACIONALIZACION (FECHA_DESP, N_ORDEN_CO, COSTO_NAC, FECHA_MODIF)
+                          VALUES ($fechaDespStr, '$ocEsc', $costoNacVal, GETDATE())";
+
+            $stmtInsert = sqlsrv_query($this->cid_central, $sqlInsert);
+            if ($stmtInsert === false) {
+                $errors = sqlsrv_errors();
+                error_log('[insertarCostoNacionalizacion] Error INSERT OC=' . $ocReal . ': ' . print_r($errors, true));
+                return ['success' => false, 'message' => 'Error al insertar costo para OC: ' . $ocReal];
+            }
         }
 
-        // Paso 3: INSERT directo con valores concretos
-        $fechaDespStr = $fechaDesp ? "'" . $fechaDesp->format('Y-m-d') . "'" : 'NULL';
-        $costoNacVal  = floatval($costoNac);
-        $ordenEsc     = str_replace("'", "''", $ordenCompraReal);
-
-        $sqlInsert = "INSERT INTO RO_COSTOS_NACIONALIZACION (FECHA_DESP, N_ORDEN_CO, COSTO_NAC, FECHA_MODIF)
-                      VALUES ($fechaDespStr, '$ordenEsc', $costoNacVal, GETDATE())";
-
-        error_log('[insertarCostoNacionalizacion] SQL INSERT: ' . $sqlInsert);
-
-        $stmtInsert = sqlsrv_query($this->cid_central, $sqlInsert);
-        if ($stmtInsert === false) {
-            $errors = sqlsrv_errors();
-            error_log('[insertarCostoNacionalizacion] Error INSERT: ' . print_r($errors, true));
-            return ['success' => false, 'message' => 'Error al insertar: ' . print_r($errors, true)];
-        }
-
-        return ['success' => true, 'message' => 'Costo de nacionalización actualizado correctamente'];
+        return [
+            'success' => true,
+            'message' => 'Costo de nacionalización actualizado en ' . count($ordenesGrupo) . ' OC(s)'
+        ];
     }
 
     public function updateCostoNacionalizacion($nroOrden){

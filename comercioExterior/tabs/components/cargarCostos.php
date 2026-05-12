@@ -15,7 +15,29 @@ require_once '../../Class/encabezado.php';
 require_once '../../Class/maestroGastos.php';
 
 $encabezadoClass = new Encabezado();
-$gastosClass = new Gastos();
+$gastosClass     = new Gastos();
+
+// Guardia: si el ID pertenece a una OC hija, redirigir al principal con aviso
+$idPrincipal = $encabezadoClass->resolverIdPrincipal($idDespacho);
+if ($idPrincipal !== $idDespacho) {
+    echo '<!DOCTYPE html><html><head>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    </head><body>
+    <script>
+    Swal.fire({
+        title: "OC vinculada a contenedor",
+        text: "Esta OC es hija de otra. Te redirigimos a la OC principal para gestionar los costos.",
+        icon: "info",
+        confirmButtonText: "Continuar",
+        confirmButtonColor: "#7066e0",
+        allowOutsideClick: false
+    }).then(function() {
+        window.location.href = "cargarCostos.php?id=' . $idPrincipal . '";
+    });
+    </script></body></html>';
+    exit;
+}
 
 $despacho = $encabezadoClass->obtenerDespachoPorId($idDespacho);
 $todosLosGastos = $gastosClass->traerGastos();
