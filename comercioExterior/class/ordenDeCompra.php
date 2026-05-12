@@ -142,6 +142,40 @@ class OrdenDeCompra
         }
     }
 
+    /**
+     * Borra el detalle de TODAS las OCs del grupo (principal + hijas).
+     */
+    public function deleteDetalleGrupo($idsGrupo) {
+        if (empty($idsGrupo) || !is_array($idsGrupo)) {
+            return false;
+        }
+
+        $idsStr = implode(',', array_map('intval', $idsGrupo));
+        $sql = "DELETE FROM RO_T_IMPORTACIONES_DETALLE WHERE ID_MG IN ($idsStr)";
+
+        try {
+            sqlsrv_query($this->cid_central, $sql);
+            return true;
+        } catch (Exception $e) {
+            error_log('[deleteDetalleGrupo] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Inserta el mismo array de detalles para TODAS las OCs del grupo.
+     */
+    public function insertDetalleReplicado($datosDetalle, $idsGrupo) {
+        if (empty($idsGrupo) || !is_array($idsGrupo)) {
+            return false;
+        }
+
+        foreach ($idsGrupo as $idCabezera) {
+            $this->insertDetalle($datosDetalle, intval($idCabezera));
+        }
+        return true;
+    }
+
     public function insertDetalle($datosDetalle, $idCabezera)
     {
         foreach ($datosDetalle as $dato) {

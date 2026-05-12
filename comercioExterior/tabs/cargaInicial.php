@@ -19,27 +19,50 @@ include '../class/encabezado.php';
 include '../class/terminal.php';
 include '../class/puerto.php';
 
-$proveedor = new Proveedor();
+$proveedor     = new Proveedor();
 $terminalClass = new Terminal();
-$puertoClass = new Puerto();
+$puertoClass   = new Puerto();
 $todosLosProveedores = [];
 
-// Detectar modo edición
-$modoEdicion = isset($_GET['modo']) && $_GET['modo'] === 'edicion';
-$idDespacho = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$despacho = null;
+// ── Detección padre/hija ──────────────────────────────────────────────────────
+$idRecibido  = intval($_GET['id']   ?? 0);
+$modoParam   = trim($_GET['modo']   ?? '');
+$modoLectura = ($modoParam === 'lectura');
 
-if ($modoEdicion && $idDespacho > 0) {
-    $encabezadoClass = new Encabezado();
-    // Cargar datos del despacho (implementaremos este método)
-    $despacho = $encabezadoClass->obtenerDespachoPorId($idDespacho);
+$encabezadoClass      = new Encabezado();
+$mostrarAvisoRedirect = false;
+$idTrabajo            = $idRecibido;
+$idPrincipal          = $idRecibido;
+$esLectura            = $modoLectura;
+$esVinculada          = false;
+$ocsGrupo             = [];
+$despacho             = null;
+
+if ($idRecibido > 0) {
+    $idPrincipal = $encabezadoClass->resolverIdPrincipal($idRecibido);
+    $esVinculada = ($idPrincipal !== $idRecibido);
+
+    if ($esVinculada && !$modoLectura) {
+        // Hija en modo edición → cargar al principal con aviso
+        $idTrabajo            = $idPrincipal;
+        $mostrarAvisoRedirect = true;
+    } else {
+        $idTrabajo = $idRecibido;
+    }
+
+    $despacho  = $encabezadoClass->obtenerDespachoPorId($idTrabajo);
+    $ocsGrupo  = $encabezadoClass->obtenerOrdenesDelGrupo($idPrincipal);
 }
+
+// modo edición = cualquier acceso con id (incluyendo lectura — se renderiza todo)
+$modoEdicion = ($idTrabajo > 0);
+$idDespacho  = $idTrabajo; // alias para compatibilidad con el resto del archivo
+// ─────────────────────────────────────────────────────────────────────────────
 
 try {
     $proveedoresJson = $proveedor->traerProveedores();
     $todosLosProveedores = json_decode($proveedoresJson);
-    
-    // Si la decodificación falla o está vacía, usar array vacío
+
     if (!is_array($todosLosProveedores)) {
         $todosLosProveedores = [];
     }
@@ -111,14 +134,92 @@ try {
         
         <div class="carga-inicial-content">
                     <div id="entorno" hidden><?= (isset($_SESSION['entorno'])) ? $_SESSION['entorno'] : 'central' ?></div>
-                    <input type="hidden" id="modoEdicion" value="<?= $modoEdicion ? 'true' : 'false' ?>">
-                    <input type="hidden" id="idDespacho" value="<?= $idDespacho ?>">
-                    
+                    <input type="hidden" id="modoEdicion"       value="<?= $modoEdicion ? 'true' : 'false' ?>">
+                    <input type="hidden" id="idDespacho"        value="<?= htmlspecialchars($idTrabajo) ?>">
+                    <input type="hidden" id="idPrincipalGrupo"  value="<?= htmlspecialchars($idPrincipal) ?>">
+                    <input type="hidden" id="esLectura"         value="<?= $esLectura   ? '1' : '0' ?>">
+                    <input type="hidden" id="esVinculada"       value="<?= $esVinculada ? '1' : '0' ?>">
+
                     <?php if ($modoEdicion && $despacho): ?>
                     <script>
-                        // Datos del despacho a cargar
                         var datosDespacho = <?= json_encode($despacho) ?>;
+                        <?php if ($mostrarAvisoRedirect): ?>
+                        var mostrarAvisoRedirect = true;
+                        <?php endif; ?>
                     </script>
+                    <?php endif; ?>
+
+                    <?php if ($esLectura): ?>
+                    <?php
+                        $ocPrincipalData = array_values(array_filter($ocsGrupo, fn($oc) => $oc['ID_PADRE'] === null));
+                        $ocPrincipalOC   = $ocPrincipalData ? trim($ocPrincipalData[0]['ORDEN_COMPRA']) : '';
+                    ?>
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="bi bi-lock-fill me-2 fs-4"></i>
+                        <div class="flex-grow-1">
+                            <strong>Modo solo lectura</strong> — Esta OC está vinculada a la OC principal
+                            <strong style="font-family:monospace;"><?= htmlspecialchars($ocPrincipalOC) ?></strong>.
+                            Las modificaciones se hacen desde la principal.
+                        </div>
+                        <a href="cargaInicial.php?id=<?= intval($idPrincipal) ?>&modo=edicion"
+                           class="btn btn-primary btn-sm ms-3">
+                            <i class="bi bi-arrow-left-circle"></i> Ir a la principal
+                        </a>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (count($ocsGrupo) > 1): ?>
+                    <div class="ocs-vinculadas-container mb-3 p-3"
+                         style="background:#f8f9fa; border-radius:8px; border:1px solid #dee2e6;">
+                        <div class="text-muted small mb-2">
+                            <i class="bi bi-link-45deg"></i> OCs vinculadas (mismo contenedor)
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <?php foreach ($ocsGrupo as $oc):
+                                $esPrincipalChip = ($oc['ID_PADRE'] === null);
+                                $esActualChip    = ($oc['ID'] == $idTrabajo);
+                                $idChip          = intval($oc['ID']);
+                            ?>
+                            <div class="oc-chip <?= $esActualChip ? 'oc-chip-actual' : '' ?>"
+                                 data-id-oc="<?= $idChip ?>"
+                                 data-es-principal="<?= $esPrincipalChip ? '1' : '0' ?>"
+                                 data-es-actual="<?= $esActualChip ? '1' : '0' ?>"
+                                 style="background:#fff; border-radius:6px; padding:10px 14px; min-width:220px;
+                                        cursor:<?= $esActualChip ? 'default' : 'pointer' ?>;
+                                        border:<?= $esActualChip ? '2px solid #0d6efd' : '1px solid #dee2e6' ?>;">
+
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <?php if ($esPrincipalChip): ?>
+                                        <i class="bi bi-star-fill text-warning small"></i>
+                                        <span class="badge bg-warning text-dark" style="font-size:10px;">PRINCIPAL</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary" style="font-size:10px;">VINCULADA</span>
+                                    <?php endif; ?>
+
+                                    <?php if ($esActualChip && !$esLectura): ?>
+                                        <span class="badge bg-primary ms-auto" style="font-size:10px;">EDITANDO</span>
+                                    <?php elseif ($esActualChip && $esLectura): ?>
+                                        <span class="badge bg-warning text-dark ms-auto" style="font-size:10px;">
+                                            <i class="bi bi-lock-fill"></i> SOLO LECTURA
+                                        </span>
+                                    <?php elseif (!$esActualChip && $esPrincipalChip): ?>
+                                        <span class="ms-auto small text-primary fw-semibold">
+                                            Editar acá <i class="bi bi-arrow-right"></i>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="ms-auto small text-muted">
+                                            Ver <i class="bi bi-box-arrow-up-right"></i>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="fw-semibold" style="font-family:monospace; font-size:14px;">
+                                    <?= htmlspecialchars(trim($oc['ORDEN_COMPRA'])) ?>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
                     <?php endif; ?>
 
                     <!-- ========== SECCIÓN 1: DATOS INICIALES ========== -->
@@ -351,7 +452,7 @@ try {
                             <div class="col-md-12">
                                 <h5 class="mb-3">Registro de Pagos</h5>
                                 <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-                                    <label class="label-campo" style="margin-bottom: 0;"><strong id="saldoPendiente" style="color: #d9534f; font-size: 16px;">$ 0</strong></label>
+                                    <label class="label-campo" style="margin-bottom: 0;"><span id="saldoPendiente" class="badge bg-warning" style="font-size: 14px; padding: 6px 12px; border-radius: 4px; color: #856404;"><i class="bi bi-hourglass-split"></i> Saldo pendiente: $ 0,00</span></label>
                                     <button type="button" id="btnAgregarPago" class="btn btn-sm btn-primary">
                                         <i class="bi bi-plus-circle"></i> Agregar Pago
                                     </button>
@@ -435,6 +536,24 @@ try {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <!-- Header informativo -->
+                    <div class="alert alert-light border mb-3" style="background-color: #f8f9fa;">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <small class="text-muted d-block">FOB Total</small>
+                                <strong id="modalFobTotal">$ 0,00</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Saldo Actual</small>
+                                <strong id="modalSaldoActual">$ 0,00</strong>
+                            </div>
+                            <div class="col-4" id="modalNuevoSaldoContainer">
+                                <small class="text-muted d-block">Nuevo Saldo</small>
+                                <strong id="modalNuevoSaldo">$ 0,00</strong>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Fecha de Pago</label>
                         <input type="text" class="form-control js-datepicker-nuevo-pago" id="fechaPagoNuevo" readonly>
@@ -459,12 +578,12 @@ try {
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Monto</label>
-                        <input type="number" class="form-control" id="montoNuevo" placeholder="0.00" step="0.01">
+                        <input type="number" class="form-control" id="montoNuevo" placeholder="0.00" step="0.01" min="0">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="guardarNuevoPago()">Guardar Pago</button>
+                    <button type="button" class="btn btn-primary" id="guardarNuevoPagoBtn" onclick="guardarNuevoPago()">Guardar Pago</button>
                 </div>
             </div>
         </div>

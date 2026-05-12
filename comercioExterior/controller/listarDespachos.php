@@ -10,15 +10,24 @@ header("Pragma: no-cache");
 
 try {
     require_once '../class/estimacionCostos.php';
-    
+
     $estimacion = new EstimacionCostos();
-    $despachos = $estimacion->listarDespachosConEstado();
-    
+
+    // tipo=pci  → solo OCs principales, con ESTADO para PCI (default)
+    // tipo=gestion → todas las OCs, con ID_PADRE / OCS_VINCULADAS / ORDEN_COMPRA_PADRE
+    $tipo = isset($_GET['tipo']) ? $_GET['tipo'] : 'pci';
+
+    if ($tipo === 'gestion') {
+        $despachos = $estimacion->listarDespachosTodosConPadre();
+    } else {
+        $despachos = $estimacion->listarDespachosConEstado();
+    }
+
     echo json_encode([
         'success' => true,
-        'data' => $despachos
+        'data'    => $despachos
     ]);
-    
+
 } catch (Exception $e) {
     error_log('Error en listarDespachos.php: ' . $e->getMessage());
     http_response_code(500);

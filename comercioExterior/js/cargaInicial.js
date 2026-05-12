@@ -460,24 +460,28 @@ function cargarDatosDespacho(datos) {
  * Carga los pagos del despacho desde BD
  */
 function cargarPagos(idDespacho) {
-    console.log('Cargando pagos del despacho:', idDespacho);
-    
+    const id = parseInt(idDespacho);
+    if (!id || id <= 0) {
+        $('#tbodyPagos').html('');
+        $('#sinPagos').show();
+        actualizarSaldoPendiente(obtenerFOBPesos());
+        return;
+    }
+
+    console.log('Cargando pagos del despacho:', id);
+
     $.ajax({
         url: '../controller/traerPagosController.php',
         method: 'POST',
-        data: { id_despacho: idDespacho },
+        data: { id_despacho: id },
         dataType: 'json',
         success: function(response) {
             console.log('Pagos cargados:', response);
-            if (response && response.pagos && response.pagos.length > 0) {
+            if (response && response.pagos) {
                 renderizarTablaPagos(response.pagos);
-                // Actualizar saldo pendiente
                 if (response.saldoPendiente !== undefined) {
                     actualizarSaldoPendiente(response.saldoPendiente);
                 }
-            } else {
-                console.log('No hay pagos para este despacho');
-                $('#tbodyPagos').html('');
             }
         },
         error: function(err) {
@@ -513,7 +517,7 @@ function renderizarTablaPagos(pagos) {
                 </td>
                 <td>${pago.FORMA_PAGO || '-'}</td>
                 <td>${pago.MEDIO_PAGO || '-'}</td>
-                <td class="text-end">$${parseFloat(pago.MONTO || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                <td class="text-end">$ ${parseFloat(pago.MONTO || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
                 <td style="text-align: center;"><button class="btn btn-sm btn-danger" onclick="eliminarPago(${pago.ID})"><i class="bi bi-trash"></i></button></td>
             </tr>
         `;
@@ -536,6 +540,8 @@ function abrirModalEditarFecha(idPago, fechaActual) {
             showDropdowns: true,
             autoApply: true,
             locale: {format: 'DD/MM/YYYY'}
+        }).on('apply.daterangepicker', function() {
+            setTimeout(() => validarCampoFechaHabil($(this)), 100);
         });
     }
     
@@ -572,11 +578,23 @@ function guardarFechaPago() {
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                Swal.fire('Éxito', 'Fecha actualizada correctamente', 'success');
-                $('#modalEditarFechaPago').modal('hide');
-                // Recargar pagos
+                const editModalEl = document.getElementById('modalEditarFechaPago');
                 const idDespacho = $('#idDespacho').val();
-                cargarPagos(idDespacho);
+
+                $(editModalEl).one('hidden.bs.modal', function() {
+                    cargarPagos(idDespacho);
+                });
+
+                bootstrap.Modal.getOrCreateInstance(editModalEl).hide();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Fecha actualizada',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } else {
                 Swal.fire('Error', response.error || 'Error al actualizar', 'error');
             }
@@ -587,11 +605,93 @@ function guardarFechaPago() {
     });
 }
 
+// ========== HELPERS DE PAGOS ==========
+
+function formatearMonedaUI(valor) {
+    if (isNaN(valor) || valor === null) return '0,00';
+    return parseFloat(valor).toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function obtenerFOBPesos() {
+    let valor = $('#valorFobPeso').val();
+    if (!valor) return 0;
+    valor = valor.toString().replace(/\$|\s/g, '');
+    if (valor.includes(',')) {
+        valor = valor.replace(/\./g, '').replace(',', '.');
+    }
+    return parseFloat(valor) || 0;
+}
+
+function obtenerTotalPagado() {
+    let total = 0;
+    $('#tbodyPagos tr').each(function() {
+        const $monto = $(this).find('td:eq(3)');
+        if ($monto.length) {
+            const txt = $monto.text().replace(/\$|\s/g, '').replace(/\./g, '').replace(',', '.');
+            const num = parseFloat(txt);
+            if (!isNaN(num)) total += num;
+        }
+    });
+    return total;
+}
+
+function obtenerSaldoPendiente() {
+    return obtenerFOBPesos() - obtenerTotalPagado();
+}
+
 /**
- * Actualiza el saldo pendiente
+ * Habilita/deshabilita el botón Agregar Pago según FOB y saldo
+ */
+function actualizarEstadoBotonPago() {
+    const $btn = $('#btnAgregarPago');
+    const fob = obtenerFOBPesos();
+    const saldo = obtenerSaldoPendiente();
+    const TOLERANCIA = 0.01;
+
+    if (fob <= 0) {
+        $btn.prop('disabled', true)
+            .attr('title', 'Cargá primero el Tipo de Cambio para calcular el FOB en pesos')
+            .attr('data-bs-toggle', 'tooltip');
+    } else if (saldo <= TOLERANCIA) {
+        $btn.prop('disabled', true)
+            .attr('title', 'El pago ya está completo, no se pueden agregar más pagos')
+            .attr('data-bs-toggle', 'tooltip');
+    } else {
+        $btn.prop('disabled', false)
+            .removeAttr('title')
+            .removeAttr('data-bs-toggle');
+    }
+
+    const tt = bootstrap.Tooltip.getInstance($btn[0]);
+    if (tt) tt.dispose();
+    if ($btn.attr('data-bs-toggle') === 'tooltip') {
+        new bootstrap.Tooltip($btn[0]);
+    }
+}
+
+/**
+ * Actualiza el badge de saldo pendiente con color según estado
  */
 function actualizarSaldoPendiente(saldo) {
-    $('#saldoPendiente').text('$ ' + parseFloat(saldo).toLocaleString('es-AR', {minimumFractionDigits: 2}));
+    const $badge = $('#saldoPendiente');
+    $badge.removeClass('bg-success bg-warning bg-danger text-white');
+    const TOLERANCIA = 0.01;
+
+    if (Math.abs(saldo) < TOLERANCIA) {
+        $badge.html('<i class="bi bi-check-circle-fill"></i> Pagado completo')
+              .addClass('bg-success text-white')
+              .css('color', '');
+    } else if (saldo < 0) {
+        $badge.html('<i class="bi bi-exclamation-triangle"></i> Sobrepago: $ ' + formatearMonedaUI(Math.abs(saldo)))
+              .addClass('bg-danger text-white')
+              .css('color', '');
+    } else {
+        $badge.html('<i class="bi bi-hourglass-split"></i> Saldo pendiente: $ ' + formatearMonedaUI(saldo))
+              .addClass('bg-warning')
+              .css('color', '#856404');
+    }
+
+    actualizarEstadoBotonPago();
 }
 
 /**
@@ -777,13 +877,15 @@ function recalcularFobPesos() {
             const valorFobPeso = valorFobDolar * tipoCambio;
             // Formatear para mostrar en pantalla (siempre muestra con coma decimal)
             const valorFormateado = '$ ' + valorFobPeso.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            
+
             $('#valorFobPeso').val(valorFormateado);
             marcarCampoCalculado('#valorFobPeso');
         } else {
             $('#valorFobPeso').val('');
         }
     }
+
+    actualizarEstadoBotonPago();
 }
 
 // ========== FUNCIONES DE MANUAL OVERRIDE ==========
@@ -975,13 +1077,13 @@ function agregarOrdenAlContenedor(orden) {
     // En modo edición, no mostrar botón de eliminar
     if (modoEdicion) {
         div.innerHTML = `
-            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
-                  id="nroOrdenSpan">${ordenLimpia}</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  class="nroOrdenSpan">${ordenLimpia}</span>
         `;
     } else {
         div.innerHTML = `
-            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
-                  id="nroOrdenSpan">${ordenLimpia}</span> 
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  class="nroOrdenSpan">${ordenLimpia}</span>
             <button class="btn-delete" data-orden="${ordenLimpia}">
                 <i class="bi bi-x-circle" style="color:white;"></i>
             </button>
@@ -1057,7 +1159,7 @@ const traerOrden = () => {
                 
                 const div = document.createElement('div');
                 div.id = 'ordenDeCompra';
-                div.innerHTML = `<span>${orden}</span>`;
+                div.innerHTML = `<span class="nroOrdenSpan">${orden}</span>`;
                 
                 // Añadir el elemento con animación
                 div.style.opacity = '0';
@@ -1155,6 +1257,16 @@ function inicializarDatepickers() {
         autoApply: true,
         locale: {format: 'DD/MM/YYYY'}
     });
+
+    // Fecha de pago nuevo (modal agregar pago)
+    $('.js-datepicker-nuevo-pago').daterangepicker({
+        singleDatePicker: true,
+        showDropdowns: true,
+        autoApply: true,
+        locale: {format: 'DD/MM/YYYY'}
+    }).on('apply.daterangepicker', function() {
+        setTimeout(() => validarCampoFechaHabil($(this)), 100);
+    });
     
     // Fecha de Nacionalización (Despacho)
     $('.js-datepicker-despacho').daterangepicker({
@@ -1225,25 +1337,77 @@ function inicializarDatepickers() {
         });
     }
     
-    // Datepicker para modal de Agregar Pago
-    $('.js-datepicker-nuevo-pago').daterangepicker({
-        singleDatePicker: true,
-        showDropdowns: true,
-        autoApply: true,
-        locale: {format: 'DD/MM/YYYY'}
-    });
-    
     console.log('=== Datepickers Inicializados ===');
 }
 
 
+// ========== OC CHIPS: NAVEGACIÓN ENTRE VINCULADAS ==========
+
+$(document).on('click', '.oc-chip:not(.oc-chip-actual)', function() {
+    const idOC        = $(this).data('id-oc');
+    const esPrincipal = $(this).data('es-principal') == 1;
+
+    if (esPrincipal) {
+        window.location.href = 'cargaInicial.php?id=' + idOC + '&modo=edicion';
+    } else {
+        Swal.fire({
+            title: 'OC vinculada',
+            html: 'Esta OC está vinculada a la principal. ' +
+                  '<strong>Las modificaciones se hacen desde la OC principal.</strong><br><br>' +
+                  '¿Cómo querés abrirla?',
+            icon: 'info',
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonText: '<i class="bi bi-arrow-left-circle"></i> Pasar a la principal',
+            denyButtonText:    '<i class="bi bi-eye"></i> Ver en solo lectura',
+            cancelButtonText:  'Cancelar',
+            confirmButtonColor: '#0d6efd',
+            denyButtonColor:    '#6c757d'
+        }).then(result => {
+            if (result.isConfirmed) {
+                const idPrincipal = $('#idPrincipalGrupo').val();
+                window.location.href = 'cargaInicial.php?id=' + idPrincipal + '&modo=edicion';
+            } else if (result.isDenied) {
+                window.location.href = 'cargaInicial.php?id=' + idOC + '&modo=lectura';
+            }
+        });
+    }
+});
+
 $(document).ready(function() {
     // Verificar si estamos en modo edición
     const modoEdicion = $('#modoEdicion').val() === 'true';
-    
+
+    // ── Modo solo lectura (hija en modo=lectura) ──────────────────────────────
+    if ($('#esLectura').val() === '1') {
+        $('input, select, textarea').not('[type="hidden"]').prop('disabled', true);
+        $('#btnSave, #btnAgregarPago, #btnAgregarOrden, #btnAddOrdenCompra, ' +
+          '#guardarNuevoPagoBtn, #btnSaveDetalle').hide();
+        $('#tbodyPagos').on('click', 'a.link-primary', function(e) {
+            e.preventDefault();
+        });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // PRIMERO: Inicializar todos los datepickers ANTES de cargar datos
     inicializarDatepickers();
     
+    // ── Aviso: redirigido de hija a principal ────────────────────────────────
+    // La variable mostrarAvisoRedirect la inyecta PHP cuando detecta que el
+    // id recibido era de una OC hija y cargamos el principal en su lugar.
+    if (typeof mostrarAvisoRedirect !== 'undefined' && mostrarAvisoRedirect) {
+        Swal.fire({
+            title: 'Te llevamos a la OC principal',
+            html: 'La OC que ingresaste está vinculada a otra del mismo contenedor. ' +
+                  'Te abrimos la <strong>OC principal</strong> para que puedas editar los datos comunes.<br><br>' +
+                  'Las modificaciones se replican automáticamente a las OCs vinculadas.',
+            icon: 'info',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#0d6efd'
+        });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Detectar parámetros URL o sessionStorage para preselección desde OC Pendientes
     const urlParams = new URLSearchParams(window.location.search);
     let proveedorParam = urlParams.get('proveedor');
@@ -1325,10 +1489,37 @@ $(document).ready(function() {
         $('#formaPagoNuevo').val('');
         $('#medioPagoNuevo').val('');
         $('#montoNuevo').val('');
-        
+
+        // Inicializar header informativo del modal
+        const fobTotal = obtenerFOBPesos();
+        const saldoActual = obtenerSaldoPendiente();
+        $('#modalFobTotal').text('$ ' + formatearMonedaUI(fobTotal));
+        $('#modalSaldoActual').text('$ ' + formatearMonedaUI(saldoActual));
+        $('#modalNuevoSaldo').text('$ ' + formatearMonedaUI(saldoActual));
+        $('#modalNuevoSaldoContainer').removeClass('text-danger');
+        $('#guardarNuevoPagoBtn').prop('disabled', false);
+
         // Mostrar modal
         const modal = new bootstrap.Modal(document.getElementById('modalAgregarPago'));
         modal.show();
+    });
+
+    // Cálculo en vivo del nuevo saldo mientras el usuario tipea el monto
+    $(document).on('input', '#montoNuevo', function() {
+        const monto = parseFloat($(this).val()) || 0;
+        const saldoActual = obtenerSaldoPendiente();
+        const nuevoSaldo = saldoActual - monto;
+        const TOLERANCIA = 0.01;
+
+        $('#modalNuevoSaldo').text('$ ' + formatearMonedaUI(nuevoSaldo));
+
+        if (nuevoSaldo < -TOLERANCIA) {
+            $('#modalNuevoSaldoContainer').addClass('text-danger');
+            $('#guardarNuevoPagoBtn').prop('disabled', true);
+        } else {
+            $('#modalNuevoSaldoContainer').removeClass('text-danger');
+            $('#guardarNuevoPagoBtn').prop('disabled', false);
+        }
     });
     
     $('#tipoCambio').on('input change', function() {
@@ -1437,7 +1628,7 @@ $('#btnAddOrdenCompra').on('click', function() {
     // Obtener órdenes ya seleccionadas
     let ordenesSeleccionadas = document.querySelectorAll("#ordenDeCompra");
     let ordenesSeleccionadasArray = Array.from(ordenesSeleccionadas).map(el => {
-        const span = el.querySelector('#nroOrdenSpan');
+        const span = el.querySelector('.nroOrdenSpan');
         return span ? span.textContent.trim() : el.textContent.trim().replace('×', '').trim();
     });
     
@@ -1531,6 +1722,7 @@ $('#btnAddOrdenCompra').on('click', function() {
     `;
 
     // Mostrar modal mejorado
+    let selectedOptions = [];
     Swal.fire({
         title: 'Añadir Orden de Compra',
         html: modalHTML,
@@ -1569,8 +1761,8 @@ $('#btnAddOrdenCompra').on('click', function() {
             });
         },
         preConfirm: () => {
-            const selectedOptions = Array.from(
-                Swal.getPopup().querySelectorAll('.swal2-select option:checked'), 
+            selectedOptions = Array.from(
+                Swal.getPopup().querySelectorAll('.swal2-select option:checked'),
                 option => option.value
             );
             
@@ -1667,9 +1859,10 @@ function guardarCabecera() {
         // Órdenes de compra
         let ocm = $('#ordenManual').is(':checked') ? 1 : 0;
         let ordenCompra = [];
-        $('#nroOrdenSpan').each(function() {
+        $('.nroOrdenSpan').each(function() {
             ordenCompra.push($(this).text().trim().split(" ")[0]);
         });
+        console.log('[guardarCabecera] ordenCompra recolectadas:', ordenCompra);
         
         // Sección 2 - Datos de Embarque
         const fechaEmb = $('#fechaEmb').val();
@@ -1915,7 +2108,7 @@ function agregarOrdenPrecarga(nOrdenCo) {
     
     // Verificar que no esté ya agregada
     const yaExiste = Array.from(ordenesSeleccionadas.querySelectorAll('#ordenDeCompra')).some(el => {
-        const span = el.querySelector('#nroOrdenSpan');
+        const span = el.querySelector('.nroOrdenSpan');
         const texto = span ? span.textContent.trim() : el.textContent.trim().replace('×', '').trim();
         return texto === nOrdenCo.trim();
     });
@@ -1933,7 +2126,7 @@ function agregarOrdenPrecarga(nOrdenCo) {
     div.style.padding = '0.5rem 0.75rem';
     
     const span = document.createElement('span');
-    span.id = 'nroOrdenSpan';
+    span.className = 'nroOrdenSpan';
     span.textContent = nOrdenCo.trim();
     
     const closeBtn = document.createElement('button');
@@ -1970,55 +2163,62 @@ function agregarOrdenPrecarga(nOrdenCo) {
  * Guarda un nuevo pago
  */
 function guardarNuevoPago() {
-    // Obtener valores del modal
-    const fechaPago = $('#fechaPagoNuevo').val();
-    const formaPago = $('#formaPagoNuevo').val();
-    const medioPago = $('#medioPagoNuevo').val();
-    const monto = $('#montoNuevo').val();
+    const fechaPago  = $('#fechaPagoNuevo').val();
+    const formaPago  = $('#formaPagoNuevo').val();
+    const medioPago  = $('#medioPagoNuevo').val();
+    const monto      = parseFloat($('#montoNuevo').val()) || 0;
     const idDespacho = $('#idDespacho').val();
-    
-    // Validaciones
-    if (!fechaPago) {
-        Swal.fire('Error', 'La fecha de pago es requerida', 'error');
+
+    if (!fechaPago) { Swal.fire('Error', 'La fecha de pago es requerida', 'error'); return; }
+    if (!formaPago) { Swal.fire('Error', 'Debe seleccionar una forma de pago', 'error'); return; }
+    if (!medioPago) { Swal.fire('Error', 'Debe seleccionar un medio de pago', 'error'); return; }
+    if (monto <= 0)  { Swal.fire('Error', 'El monto debe ser mayor a cero', 'error'); return; }
+
+    // Validar que no supere el saldo pendiente
+    const saldoActual = obtenerSaldoPendiente();
+    const TOLERANCIA  = 0.01;
+    if (monto > saldoActual + TOLERANCIA) {
+        Swal.fire({
+            title: 'Monto excede el saldo',
+            html: `El monto ingresado <strong>$ ${formatearMonedaUI(monto)}</strong> ` +
+                  `supera el saldo pendiente de <strong>$ ${formatearMonedaUI(saldoActual)}</strong>. ` +
+                  `Ajustá el monto antes de guardar.`,
+            icon: 'error',
+            confirmButtonColor: '#dc3545'
+        });
         return;
     }
-    
-    if (!formaPago) {
-        Swal.fire('Error', 'Debe seleccionar una forma de pago', 'error');
-        return;
-    }
-    
-    if (!medioPago) {
-        Swal.fire('Error', 'Debe seleccionar un medio de pago', 'error');
-        return;
-    }
-    
-    if (!monto || parseFloat(monto) <= 0) {
-        Swal.fire('Error', 'El monto debe ser mayor a cero', 'error');
-        return;
-    }
-    
-    // Enviar datos al servidor
+
     $.ajax({
         url: '../controller/insertarPago.php',
         method: 'POST',
         data: {
             id_despacho: idDespacho,
-            fecha_pago: fechaPago,
-            forma_pago: formaPago,
-            medio_pago: medioPago,
-            monto: monto
+            fecha_pago:  fechaPago,
+            forma_pago:  formaPago,
+            medio_pago:  medioPago,
+            monto:       monto
         },
         dataType: 'json',
         success: function(response) {
             if (response.success) {
-                Swal.fire('Éxito', 'Pago agregado correctamente', 'success');
-                
-                // Cerrar modal
-                bootstrap.Modal.getInstance(document.getElementById('modalAgregarPago')).hide();
-                
-                // Recargar pagos
-                cargarPagos(idDespacho);
+                const modalEl = document.getElementById('modalAgregarPago');
+
+                // Recargar tabla una vez que el modal termina su animación de cierre
+                $(modalEl).one('hidden.bs.modal', function() {
+                    cargarPagos(idDespacho);
+                });
+
+                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pago agregado',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } else {
                 Swal.fire('Error', response.message || 'No se pudo agregar el pago', 'error');
             }

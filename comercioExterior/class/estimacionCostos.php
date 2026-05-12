@@ -4,21 +4,27 @@ class EstimacionCostos
 {
     private $cid_central;
 
+    private $encabezado;
+
     function __construct() {
         require_once __DIR__.'/../../class/conexion.php';
+        require_once __DIR__.'/encabezado.php';
         $cid = new Conexion();
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
         $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
         $this->cid_central = $cid->conectar($db);
+        $this->encabezado  = new Encabezado();
     }
 
     /**
-     * Obtener lista de despachos con su estado de estimación
+     * Listado de despachos para PCI (Proyección de Costos de Importación).
+     * Solo retorna OCs PRINCIPALES (ID_PADRE IS NULL). Las hijas se ocultan.
+     * Incluye OCS_VINCULADAS y CANT_OCS para el badge "+N OCs".
      */
     public function listarDespachosConEstado() {
-        $sql = "SELECT 
+        $sql = "SELECT
                     E.ID,
                     E.FECHA_MOV,
                     E.PROVEEDOR,
@@ -26,23 +32,30 @@ class EstimacionCostos
                     E.MATERIAL,
                     E.ORDEN_COMPRA,
                     E.VALOR_FOB_DOLAR,
-                    CASE 
+                    STUFF((
+                        SELECT ', ' + LTRIM(RTRIM(H.ORDEN_COMPRA))
+                        FROM RO_T_IMPORTACIONES_ENCABEZADO H
+                        WHERE H.ID_PADRE = E.ID
+                        FOR XML PATH(''), TYPE
+                    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS OCS_VINCULADAS,
+                    1 + (SELECT COUNT(*) FROM RO_T_IMPORTACIONES_ENCABEZADO H WHERE H.ID_PADRE = E.ID) AS CANT_OCS,
+                    CASE
                         WHEN EXISTS (
-                            SELECT 1 FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE D 
+                            SELECT 1 FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE D
                             WHERE D.ID_MG = E.ID AND D.CONFIRMADO = 1
                         ) THEN 'CONFIRMADO'
                         WHEN EXISTS (
-                            SELECT 1 FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE D 
+                            SELECT 1 FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE D
                             WHERE D.ID_MG = E.ID
                         ) THEN 'BORRADOR'
                         ELSE 'PENDIENTE'
-                    END as ESTADO
+                    END AS ESTADO
                 FROM RO_T_IMPORTACIONES_ENCABEZADO E
-                LEFT JOIN RO_T_IMPORTACIONES_DETALLE F
-                ON E.ID = F.ID_MG
-                WHERE E.FECHA_MOV >= DATEADD(MONTH, -6, GETDATE()) AND F.ID_MG IS NULL
-                ORDER BY E.FECHA_MOV DESC
-                ";
+                LEFT JOIN RO_T_IMPORTACIONES_DETALLE F ON E.ID = F.ID_MG
+                WHERE E.FECHA_MOV >= DATEADD(MONTH, -6, GETDATE())
+                  AND F.ID_MG IS NULL
+                  AND E.ID_PADRE IS NULL
+                ORDER BY E.FECHA_MOV DESC";
         
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -65,6 +78,62 @@ class EstimacionCostos
             
         } catch (Exception $e) {
             error_log('Error en listarDespachosConEstado: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Listado de despachos para Gestión de Despachos.
+     * Retorna TODAS las OCs (principales e hijas). Las hijas incluyen
+     * ID_PADRE, OCS_VINCULADAS (para principales) y ORDEN_COMPRA_PADRE.
+     */
+    public function listarDespachosTodosConPadre() {
+        $sql = "SELECT
+                    E.ID,
+                    E.FECHA_MOV,
+                    E.PROVEEDOR,
+                    E.CONTENEDOR,
+                    E.MATERIAL,
+                    E.ORDEN_COMPRA,
+                    E.VALOR_FOB_DOLAR,
+                    E.ID_PADRE,
+                    CASE WHEN E.ID_PADRE IS NULL THEN
+                        STUFF((
+                            SELECT ', ' + LTRIM(RTRIM(H.ORDEN_COMPRA))
+                            FROM RO_T_IMPORTACIONES_ENCABEZADO H
+                            WHERE H.ID_PADRE = E.ID
+                            FOR XML PATH(''), TYPE
+                        ).value('.', 'NVARCHAR(MAX)'), 1, 2, '')
+                    END AS OCS_VINCULADAS,
+                    (SELECT P.ORDEN_COMPRA
+                     FROM RO_T_IMPORTACIONES_ENCABEZADO P
+                     WHERE P.ID = E.ID_PADRE) AS ORDEN_COMPRA_PADRE
+                FROM RO_T_IMPORTACIONES_ENCABEZADO E
+                LEFT JOIN RO_T_IMPORTACIONES_DETALLE F ON E.ID = F.ID_MG
+                WHERE E.FECHA_MOV >= DATEADD(MONTH, -6, GETDATE())
+                  AND F.ID_MG IS NULL
+                ORDER BY E.FECHA_MOV DESC";
+
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            if ($stmt === false) {
+                error_log("Error en listarDespachosTodosConPadre: " . print_r(sqlsrv_errors(), true));
+                return [];
+            }
+
+            $despachos = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                if (isset($row['FECHA_MOV']) && is_object($row['FECHA_MOV'])) {
+                    $row['FECHA_MOV'] = $row['FECHA_MOV']->format('Y-m-d');
+                }
+                $despachos[] = $row;
+            }
+
+            return $despachos;
+
+        } catch (Exception $e) {
+            error_log('Error en listarDespachosTodosConPadre: ' . $e->getMessage());
             return [];
         }
     }
@@ -107,7 +176,8 @@ class EstimacionCostos
      * Obtener estimación existente para un despacho
      */
     public function obtenerEstimacion($idMg) {
-        $sql = "SELECT 
+        $idMg = $this->encabezado->resolverIdPrincipal($idMg);
+        $sql = "SELECT
                     D.ID,
                     D.ID_MG,
                     D.ID_CE,
@@ -150,22 +220,32 @@ class EstimacionCostos
     }
 
     /**
-     * Obtener datos del despacho (encabezado)
+     * Obtener datos del despacho (encabezado).
+     * Si el ID es de una OC hija, resuelve al principal y devuelve sus datos
+     * junto con OCS_VINCULADAS y CANT_OCS para el header del editor PCI.
      */
     public function obtenerDespacho($idMg) {
-        $sql = "SELECT 
-                    ID,
-                    FECHA_MOV,
-                    COD_PROVEE,
-                    PROVEEDOR,
-                    CONTENEDOR,
-                    MATERIAL,
-                    ORIGEN,
-                    VALOR_FOB_DOLAR,
-                    ORDEN_COMPRA,
-                    DESPACHANTE
-                FROM RO_T_IMPORTACIONES_ENCABEZADO
-                WHERE ID = ?";
+        $idMg = $this->encabezado->resolverIdPrincipal($idMg);
+        $sql = "SELECT
+                    E.ID,
+                    E.FECHA_MOV,
+                    E.COD_PROVEE,
+                    E.PROVEEDOR,
+                    E.CONTENEDOR,
+                    E.MATERIAL,
+                    E.ORIGEN,
+                    E.VALOR_FOB_DOLAR,
+                    E.ORDEN_COMPRA,
+                    E.DESPACHANTE,
+                    STUFF((
+                        SELECT ', ' + LTRIM(RTRIM(H.ORDEN_COMPRA))
+                        FROM RO_T_IMPORTACIONES_ENCABEZADO H
+                        WHERE H.ID_PADRE = E.ID
+                        FOR XML PATH(''), TYPE
+                    ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS OCS_VINCULADAS,
+                    1 + (SELECT COUNT(*) FROM RO_T_IMPORTACIONES_ENCABEZADO H WHERE H.ID_PADRE = E.ID) AS CANT_OCS
+                FROM RO_T_IMPORTACIONES_ENCABEZADO E
+                WHERE E.ID = ?";
         
         try {
             $params = array($idMg);
@@ -198,6 +278,7 @@ class EstimacionCostos
      * Guardar o actualizar estimación completa
      */
     public function guardarEstimacion($idMg, $conceptos) {
+        $idMg = $this->encabezado->resolverIdPrincipal($idMg);
         try {
             // Verificar si ya existe estimación
             $existente = $this->obtenerEstimacion($idMg);
@@ -362,7 +443,8 @@ class EstimacionCostos
      * Confirmar estimación (marcar como confirmada)
      */
     public function confirmarEstimacion($idMg) {
-        $sql = "UPDATE RO_T_IMPORTACIONES_ESTIMACION_DETALLE 
+        $idMg = $this->encabezado->resolverIdPrincipal($idMg);
+        $sql = "UPDATE RO_T_IMPORTACIONES_ESTIMACION_DETALLE
                 SET CONFIRMADO = 1,
                     FECHA_MOD = GETDATE()
                 WHERE ID_MG = ?";
@@ -388,8 +470,9 @@ class EstimacionCostos
      * Verificar si una estimación está confirmada
      */
     public function estaConfirmada($idMg) {
-        $sql = "SELECT TOP 1 CONFIRMADO 
-                FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE 
+        $idMg = $this->encabezado->resolverIdPrincipal($idMg);
+        $sql = "SELECT TOP 1 CONFIRMADO
+                FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE
                 WHERE ID_MG = ?";
         
         try {

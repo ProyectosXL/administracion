@@ -74,6 +74,17 @@
                     </div>
                 </div>
             </div>
+            <div class="row mt-2">
+                <div class="col-md-12">
+                    <div class="info-item" id="infoOcsVinculadasContainer" style="display:none;">
+                        <label class="info-label">
+                            <i class="bi bi-link-45deg text-info"></i>
+                            OCs vinculadas:
+                        </label>
+                        <span class="info-value" id="infoOcsVinculadas">-</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Formulario de Estimación -->

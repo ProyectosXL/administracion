@@ -26,7 +26,7 @@ $(document).ready(function() {
 
 function cargarDespachos() {
     $.ajax({
-        url: '../controller/listarDespachos.php',
+        url: '../controller/listarDespachos.php?tipo=gestion',
         method: 'GET',
         dataType: 'json',
         success: function(response) {
@@ -60,6 +60,59 @@ function mostrarDespachos(despachos) {
     });
     
     despachos.forEach(function(despacho) {
+        const esHija = despacho.ID_PADRE !== null && despacho.ID_PADRE !== undefined;
+        const ocsVinculadas = despacho.OCS_VINCULADAS || '';
+        const ordenPadre    = despacho.ORDEN_COMPRA_PADRE || '';
+
+        // Celda de OC: badge "+N" para principales con hijas, badge "Vinculada" para hijas
+        let ocDisplay = despacho.ORDEN_COMPRA || '-';
+        if (!esHija && ocsVinculadas) {
+            const cantHijas = ocsVinculadas.split(',').length;
+            ocDisplay = `
+                <div class="d-flex align-items-center gap-2">
+                    <span>${despacho.ORDEN_COMPRA}</span>
+                    <span class="badge bg-info text-white"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          data-bs-title="OCs vinculadas: ${ocsVinculadas}">
+                        <i class="bi bi-link-45deg"></i> +${cantHijas}
+                    </span>
+                </div>`;
+        } else if (esHija) {
+            ocDisplay = `
+                <div class="d-flex align-items-center gap-2">
+                    <span>${despacho.ORDEN_COMPRA}</span>
+                    <span class="badge bg-secondary text-white"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          data-bs-title="Vinculada al contenedor de ${ordenPadre}">
+                        <i class="bi bi-link-45deg"></i> Vinculada
+                    </span>
+                </div>`;
+        }
+
+        // Botón "Gestionar costos": en hijas muestra SweetAlert antes de redirigir
+        let btnCostos;
+        if (esHija) {
+            btnCostos = `
+                <button onclick="gestionarCostosVinculada(${despacho.ID}, '${ordenPadre}', ${despacho.ID_PADRE})"
+                        class="btn-action btn-costos"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        data-bs-title="Gestionar costos (OC principal)">
+                    <i class="bi bi-calculator"></i>
+                </button>`;
+        } else {
+            btnCostos = `
+                <a href="components/cargarCostos.php?id=${despacho.ID}"
+                   class="btn-action btn-costos"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="top"
+                   data-bs-title="Gestionar costos">
+                    <i class="bi bi-calculator"></i>
+                </a>`;
+        }
+
         const row = `
             <tr>
                 <td><strong>#${despacho.ID}</strong></td>
@@ -67,27 +120,21 @@ function mostrarDespachos(despachos) {
                 <td>${despacho.PROVEEDOR || '-'}</td>
                 <td>${despacho.CONTENEDOR || '-'}</td>
                 <td>${despacho.MATERIAL || '-'}</td>
-                <td>${despacho.ORDEN_COMPRA || '-'}</td>
+                <td>${ocDisplay}</td>
                 <td>
                     <div class="d-flex gap-1" style="flex-wrap: nowrap;">
-                        <a href="components/editarDespacho.php?id=${despacho.ID}" 
-                           class="btn-action btn-editar" 
-                           data-bs-toggle="tooltip" 
-                           data-bs-placement="top" 
+                        <a href="components/editarDespacho.php?id=${despacho.ID}"
+                           class="btn-action btn-editar"
+                           data-bs-toggle="tooltip"
+                           data-bs-placement="top"
                            data-bs-title="Completar despacho">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <a href="components/cargarCostos.php?id=${despacho.ID}" 
-                           class="btn-action btn-costos" 
-                           data-bs-toggle="tooltip" 
-                           data-bs-placement="top" 
-                           data-bs-title="Gestionar costos">
-                            <i class="bi bi-calculator"></i>
-                        </a>
-                        <button onclick="eliminarDespacho(${despacho.ID}, '${despacho.CONTENEDOR}')" 
-                                class="btn-action btn-eliminar" 
-                                data-bs-toggle="tooltip" 
-                                data-bs-placement="top" 
+                        ${btnCostos}
+                        <button onclick="eliminarDespacho(${despacho.ID}, '${despacho.CONTENEDOR}')"
+                                class="btn-action btn-eliminar"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
                                 data-bs-title="Eliminar despacho">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -340,6 +387,27 @@ function mostrarOcPendientesVacio() {
             </td>
         </tr>
     `);
+}
+
+/**
+ * Intercepta el click en "Gestionar costos" de una OC hija.
+ * Muestra un SweetAlert informativo y redirige a la principal si confirman.
+ */
+function gestionarCostosVinculada(idHija, ordenPadre, idPadre) {
+    Swal.fire({
+        title: 'OC vinculada a contenedor',
+        html: `Esta OC está vinculada a la OC <strong>${ordenPadre}</strong>. ` +
+              `Los costos de nacionalización se gestionan desde la OC principal. ¿Vamos allí?`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, ir a la principal',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#7066e0'
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            window.location.href = 'components/cargarCostos.php?id=' + idPadre;
+        }
+    });
 }
 
 /**

@@ -568,3 +568,20 @@
     }
 }
 
+/* ===========================
+   OC CHIPS VINCULADAS
+   =========================== */
+.oc-chip:not(.oc-chip-actual):hover {
+    background-color: #e9ecef !important;
+    border-color: #adb5bd !important;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.oc-chip-actual {
+    box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.15);
+}
+
+.oc-chip {
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+

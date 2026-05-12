@@ -154,6 +154,7 @@ try {
     }
 
     $arrayResult = [];
+    $idPrincipal = null;
 
     if ($modoEdicion) {
         // === UPDATE ===
@@ -167,6 +168,35 @@ try {
         $result = $cid->actualizarEncabezado($idDespacho, $datosDeCabezera);
 
         if ($result) {
+            // Replicar campos comunes a todas las OCs del grupo (excluye ORDEN_COMPRA, OCM)
+            $datosGrupo = array_filter([
+                'FECHA_EMB'       => $datosDeCabezera['fechaEmb']         ?? null,
+                'FACTURA'         => $datosDeCabezera['facturaProveedor']  ?? null,
+                'NUMERO_BL'       => $datosDeCabezera['numeroBl']          ?? null,
+                'TIPO_CAMBIO'     => $datosDeCabezera['tipoCambio']        ?? null,
+                'VALOR_FOB_DOLAR' => $datosDeCabezera['valorFobDolar']     ?? null,
+                'VALOR_FOB_PESO'  => $datosDeCabezera['valorFobPeso']      ?? null,
+                'FECHA_ARR'       => $datosDeCabezera['fechaArr']          ?? null,
+                'FECHA_DESP_ADU'  => $datosDeCabezera['fechaDespAdu']      ?? null,
+                'FECHA_EST_PAGO'  => $datosDeCabezera['fechaEstPago']      ?? null,
+                'FECHA_EST_EMB'   => $datosDeCabezera['fechaEstEmb']       ?? null,
+                'DESPACHANTE'     => $datosDeCabezera['despachante']       ?? null,
+                'PUERTO_ORIGEN'   => $datosDeCabezera['puertoOrigen']      ?? null,
+                'TERMINAL'        => $datosDeCabezera['terminal']          ?? null,
+                'ETA_CONFIRMADA'  => $datosDeCabezera['etaConfirmada']     ?? null,
+                'CONTENEDOR'      => $datosDeCabezera['contenedor']        ?? null,
+                'DESPACHO'        => $datosDeCabezera['despacho']          ?? null,
+                'MATERIAL'        => $datosDeCabezera['material']          ?? null,
+                'ORIGEN'          => $datosDeCabezera['origen']            ?? null,
+                'FORMA_PAGO'      => $datosDeCabezera['formaPago']         ?? null,
+                'COD_PROVEE'      => $datosDeCabezera['cod_proveedor']     ?? null,
+                'PROVEEDOR'       => $datosDeCabezera['proveedor']         ?? null,
+            ], fn($v) => $v !== null && $v !== '');
+
+            if (!empty($datosGrupo)) {
+                $cid->actualizarEncabezadoGrupo($idDespacho, $datosGrupo);
+            }
+
             echo json_encode([
                 'success' => true,
                 'ids' => [$result],
@@ -183,17 +213,33 @@ try {
 
     } else {
         // === INSERT ===
+        // La primera OC del lote queda como principal (ID_PADRE IS NULL).
+        // Las siguientes se vinculan a ella vía vincularComoPadre().
+        error_log("[insertarEncabezado] Iniciando INSERT. Total OCs recibidas: " . count($ordenes) . " | Órdenes: " . implode(', ', $ordenes));
         foreach ($ordenes as $orden) {
             if (strlen(trim($orden)) == 13) {
                 $orden = ' ' . trim($orden);
             }
             $datosDeCabezera['ordenCompra'] = $orden;
 
+            error_log("[insertarEncabezado] Insertando OC: '{$orden}'");
             $result = $cid->insertarEncabezado($datosDeCabezera);
             if ($result) {
                 $arrayResult[] = $result;
+                error_log("[insertarEncabezado] OC '{$orden}' insertada con ID: {$result}");
+
+                if ($idPrincipal === null) {
+                    $idPrincipal = $result; // primera OC del lote → principal
+                    error_log("[insertarEncabezado] OC principal establecida: ID {$idPrincipal}");
+                } else {
+                    $cid->vincularComoPadre($result, $idPrincipal);
+                    error_log("[insertarEncabezado] OC '{$orden}' (ID {$result}) vinculada como hija de ID {$idPrincipal}");
+                }
+            } else {
+                error_log("[insertarEncabezado] FALLO al insertar OC '{$orden}'");
             }
         }
+        error_log("[insertarEncabezado] INSERT completo. IDs generados: " . implode(', ', $arrayResult));
 
         echo json_encode([
             'success' => true,

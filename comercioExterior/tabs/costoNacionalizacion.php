@@ -196,17 +196,25 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
                                 </td>
                                 <td>
                                     <div class="d-flex justify-content-center">
-                                        <button class="action-btn btn-edit" 
-                                                title="Editar despacho"
-                                                onclick="verDetalle('<?= $orden['ID'] ?>','<?= addslashes($orden['PROVEEDOR']) ?>','<?= $orden['ORDEN_COMPRA'] ?>','<?= $orden['COD_PROVEE'] ?>','<?= $orden['VALOR_FOB_PESO'] ?>')">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-                                        <button class="action-btn btn-download" 
+                                        <?php if (!empty($orden['ID_PADRE'])): ?>
+                                            <button class="action-btn btn-edit"
+                                                    title="OC vinculada — gestionar desde la principal"
+                                                    onclick="verDetalleVinculada('<?= htmlspecialchars($orden['ORDEN_COMPRA_PADRE'] ?? '') ?>','<?= $orden['ID_PADRE'] ?>','<?= addslashes($orden['PROVEEDOR']) ?>','<?= $orden['ORDEN_COMPRA'] ?>','<?= $orden['COD_PROVEE'] ?>','<?= $orden['VALOR_FOB_PESO'] ?>')">
+                                                <i class="bi bi-link-45deg"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <button class="action-btn btn-edit"
+                                                    title="Editar despacho"
+                                                    onclick="verDetalle('<?= $orden['ID'] ?>','<?= addslashes($orden['PROVEEDOR']) ?>','<?= $orden['ORDEN_COMPRA'] ?>','<?= $orden['COD_PROVEE'] ?>','<?= $orden['VALOR_FOB_PESO'] ?>')">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                        <button class="action-btn btn-download"
                                                 title="Descargar PDF"
                                                 onclick="imprimir('<?= $orden['ID'] ?>')">
                                             <i class="bi bi-download"></i>
                                         </button>
-                                        <button class="action-btn btn-delete" 
+                                        <button class="action-btn btn-delete"
                                                 title="Eliminar despacho"
                                                 onclick="eliminarDespacho('<?= $orden['ID'] ?>', '<?= addslashes($orden['DESPACHO']) ?>')">
                                             <i class="bi bi-trash"></i>
@@ -232,9 +240,27 @@ $debug_info['total_registros'] = count($listaDeOrdenes);
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // Funciones de navegación
+        // Navega al editor de costos de una OC principal
         const verDetalle = (id, prov, orden, codProv, valorFobPeso) => {
             window.location = `components/editarOrden.php?idEncabezado=${id}&proveedor=${encodeURIComponent(prov)}&ordenDeCompra=${encodeURIComponent(orden)}&codProveedor=${codProv}&valorFobPeso=${valorFobPeso}`;
+        }
+
+        // Para OCs hijas: muestra SweetAlert informativo y redirige al principal
+        const verDetalleVinculada = (ordenPadre, idPadre, proveedor, ordenHija, codProv, valorFob) => {
+            Swal.fire({
+                title: 'OC vinculada a contenedor',
+                html: `La OC <strong>${ordenHija}</strong> está vinculada a la OC <strong>${ordenPadre}</strong>. ` +
+                      `Los costos de nacionalización se gestionan desde la principal. ¿Te llevamos allí?`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, ir a la principal',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#7066e0'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `components/editarOrden.php?idEncabezado=${idPadre}&proveedor=${encodeURIComponent(proveedor)}&ordenDeCompra=${encodeURIComponent(ordenPadre)}&codProveedor=${codProv}&valorFobPeso=${valorFob}`;
+                }
+            });
         }
 
         const imprimir = (id) => {
