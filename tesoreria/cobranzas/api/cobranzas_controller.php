@@ -1,7 +1,7 @@
 <?php
+session_start();
 // PRIMERO: Verificamos si la acción es crear una propuesta.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['action'] === 'crear_propuesta') {
-    session_start();
     header('Content-Type: application/json');
     require_once '../config/database.php';
     require_once __DIR__ . '/notificaciones_controller.php';
@@ -73,6 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
         if ($stmt_historial === false)
             throw new Exception("Error al registrar historial.");
         
+        // --- NUEVO: Eliminar de la tabla de caché si existe ---
+        $idx_sugerencia = $_POST['idx_sugerencia'] ?? null;
+        if ($idx_sugerencia) {
+            $sql_del_cache = "DELETE FROM FP_SUGERENCIAS_COBRANZAS WHERE COD_CLIENT = ? AND IDX = ? AND USUARIO = ?";
+            sqlsrv_query($conn_apps, $sql_del_cache, [$cod_cliente, $idx_sugerencia, $id_usuario_admin]);
+        }
+
         sqlsrv_commit($conn_apps);
 
         // --- RESPUESTA INMEDIATA Y CIERRE DE CONEXIÓN ---
@@ -132,7 +139,7 @@ if ($tipo === 'franquicias') {
 } elseif ($tipo === 'mayoristas') {
     $vista = 'RO_V_COBRANZA_PEND_MAYORISTAS';
 } elseif ($tipo === 'sugerencias') {
-    $vista = 'RO_V_COBRANZA_PEND_FRANQUICIAS'; // Las sugerencias por ahora son para franquicias
+    $vista = 'RO_V_COBRANZA_PEND_FRANQUICIAS'; 
 } else {
     echo json_encode(['error' => 'Tipo no válido']);
     exit;
@@ -143,6 +150,7 @@ try {
     $conn_apps = Database::getConnection('apps');
 
     $tableData = [];
+    $resumenClientes = []; // Limpiar explícitamente
     $summary = [
         'totalNeto' => 0,
         'totalComprobantes' => 0,
@@ -151,22 +159,17 @@ try {
 
     // 1. Obtener todos los comprobantes que ya están en propuestas activas (para filtrar)
     $facturas_en_propuestas = [];
-    $sql_prop = "SELECT items.n_comp_factura, propuestas.cod_cliente 
+    $sql_prop = "SELECT items.t_comp_factura, items.n_comp_factura, propuestas.cod_cliente 
                  FROM FP_propuestas_pago_items items 
                  JOIN FP_propuestas_pago propuestas ON items.id_propuesta = propuestas.id 
                  WHERE propuestas.estado NOT IN ('RECHAZADA', 'CANCELADA', 'PAGADO', 'VENCIDA')";
 
-    // Si estamos en detalle, filtramos solo para ese cliente para mayor eficiencia
-    if ($cod_cliente) {
-        $sql_prop .= " AND propuestas.cod_cliente = ?";
-        $stmt_prop = sqlsrv_query($conn_apps, $sql_prop, [$cod_cliente]);
-    } else {
-        $stmt_prop = sqlsrv_query($conn_apps, $sql_prop);
-    }
+    $stmt_prop = sqlsrv_query($conn_apps, $sql_prop);
 
     if ($stmt_prop !== false) {
         while ($r = sqlsrv_fetch_array($stmt_prop, SQLSRV_FETCH_ASSOC)) {
-            $facturas_en_propuestas[strtoupper(trim($r['n_comp_factura']))] = true;
+            $key = strtoupper(trim($r['t_comp_factura'])) . '|' . strtoupper(trim($r['n_comp_factura']));
+            $facturas_en_propuestas[$key] = true;
         }
     }
 
@@ -193,10 +196,12 @@ try {
             throw new Exception("Error en la consulta de detalle de facturas: " . print_r(sqlsrv_errors(), true));
         }
 
+        $procesados_detalle = [];
         while ($row = sqlsrv_fetch_array($stmt_facturas, SQLSRV_FETCH_ASSOC)) {
-            if (!isset($facturas_en_propuestas[strtoupper(trim($row['N_COMP']))])) {
-                $tableData[] = $row;
-            }
+            $key = strtoupper(trim($row['T_COMP'])) . '|' . strtoupper(trim($row['N_COMP']));
+            if (isset($procesados_detalle[$key])) continue;
+            $procesados_detalle[$key] = true;
+            $tableData[] = $row;
         }
 
     } else {
@@ -232,6 +237,58 @@ try {
             throw new Exception("Error en la consulta de resumen: " . print_r(sqlsrv_errors(), true));
         }
 
+        $id_usuario = $_SESSION['usuario_id'] ?? 'SISTEMA';
+        $recalcular = ($_GET['recalcular'] ?? 'false') === 'true';
+
+        if ($tipo === 'sugerencias' && !$recalcular) {
+            $conn_apps = Database::getConnection('apps');
+            $sql_cache = "SELECT COD_CLIENT, RAZON_SOCI, IDX, TOTAL_BRUTO_SUG, TOTAL_NETO_SUG, FECHA_SUGERIDA, COMPROBANTES_JSON, TOTAL_PENDIENTE_CLIENTE, CANT_TOTAL_PENDIENTE 
+                          FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = ? ORDER BY COD_CLIENT, IDX";
+            $stmt_cache = sqlsrv_query($conn_apps, $sql_cache, [$id_usuario]);
+            
+            $cache_rows = [];
+            $conn_central = Database::getConnection('central');
+            while ($row = sqlsrv_fetch_array($stmt_cache, SQLSRV_FETCH_ASSOC)) {
+                $cod_c = $row['COD_CLIENT'];
+                
+                // --- NUEVO: Consulta en vivo del saldo total (IDÉNTICA a la de Franquicias) ---
+                $sql_live = "SELECT SUM(CAST(ISNULL(s.SALDO_REAL, v.IMPORTE) AS FLOAT)) as TOTAL_VIVO, COUNT(*) as CANT_VIVO 
+                             FROM RO_V_COBRANZA_PEND_FRANQUICIAS v
+                             LEFT JOIN (
+                                SELECT T_COMP, N_COMP, SUM(IMPORTE_VT - IMPORT_CAN) as SALDO_REAL 
+                                FROM SJ_SALDOS_CC_DETALLE 
+                                GROUP BY T_COMP, N_COMP
+                             ) s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
+                             WHERE v.COD_CLIENT = ? 
+                             AND v.ESTADO <> 'IMP'
+                             AND (v.T_COMP IN ('FAC','NCR','NCP','NDP') OR (v.T_COMP = 'REC' AND v.IMPORTE < 0))";
+                
+                $stmt_live = sqlsrv_query($conn_central, $sql_live, [$cod_c]);
+                if ($stmt_live === false) {
+                    $live_data = ['TOTAL_VIVO' => 0, 'CANT_VIVO' => 0];
+                } else {
+                    $live_data = sqlsrv_fetch_array($stmt_live, SQLSRV_FETCH_ASSOC);
+                }
+
+                $cache_rows[] = [
+                    'COD_CLIENT' => $row['COD_CLIENT'],
+                    'RAZON_SOCI' => $row['RAZON_SOCI'],
+                    'IDX' => $row['IDX'],
+                    'TOTAL_BRUTO_SUG' => (float)$row['TOTAL_BRUTO_SUG'],
+                    'TOTAL_NETO_SUG' => (float)$row['TOTAL_NETO_SUG'],
+                    'FECHA_SUGERIDA' => $row['FECHA_SUGERIDA'] instanceof DateTime ? $row['FECHA_SUGERIDA']->format('Y-m-d') : $row['FECHA_SUGERIDA'],
+                    'COMPROBANTES' => json_decode($row['COMPROBANTES_JSON'], true),
+                    'TOTAL_PENDIENTE_CLIENTE' => (float)($live_data['TOTAL_VIVO'] ?? 0),
+                    'CANT_TOTAL_PENDIENTE' => (int)($live_data['CANT_VIVO'] ?? 0)
+                ];
+            }
+
+            if (!empty($cache_rows)) {
+                echo json_encode(['success' => true, 'data' => $cache_rows]);
+                exit;
+            }
+        }
+
         $resumenClientes = [];
         $procesados_lote = []; // Para evitar duplicados dentro del mismo resultado de consulta
         while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
@@ -239,8 +296,9 @@ try {
             $tComp = strtoupper(trim($v['T_COMP']));
             $cod = strtoupper(trim($v['COD_CLIENT']));
             $llaveComp = $cod . '|' . $tComp . '|' . $nComp;
+            $filterKey = $tComp . '|' . $nComp;
 
-            if (isset($facturas_en_propuestas[$nComp]) || isset($procesados_lote[$llaveComp]))
+            if (isset($facturas_en_propuestas[$filterKey]) || isset($procesados_lote[$llaveComp]))
                 continue;
 
             $procesados_lote[$llaveComp] = true;
@@ -259,7 +317,7 @@ try {
                 ];
             }
 
-            $esNegativo = (strpos($v['T_COMP'], 'NC') === 0 || trim($v['T_COMP']) === 'REC');
+            $esNegativo = (strpos(trim($v['T_COMP']), 'NC') !== false || trim($v['T_COMP']) === 'REC');
             $importe = (float) $v['IMPORTE'];
             $descPP = (float) $v['DESC_PP_MAX'];
             $porcDesc = 0;
@@ -306,27 +364,29 @@ try {
             }
 
             $netoItem = $importe * (1 - $porcDesc);
-            $valNeto = ($esNegativo ? -$netoItem : $netoItem);
+            $valNeto = ($esNegativo ? -abs($netoItem) : abs($netoItem));
             
             $resumenClientes[$cod]['CANT_FACTURAS']++;
-            $resumenClientes[$cod]['TOTAL_BRUTO'] += ($esNegativo ? -$importe : $importe);
+            $resumenClientes[$cod]['TOTAL_BRUTO'] += ($esNegativo ? -abs($importe) : abs($importe));
             $resumenClientes[$cod]['TOTAL_NETO'] += $valNeto;
             
             // Para sugerencias, guardamos el detalle
             if ($tipo === 'sugerencias') {
                 $fProbCobro = $v['FECHA_PROB_COBRO'] instanceof DateTime ? $v['FECHA_PROB_COBRO']->format('Y-m-d') : $v['FECHA_PROB_COBRO'];
+                $fEmis = $v['FECHA_EMIS'] instanceof DateTime ? $v['FECHA_EMIS']->format('Y-m-d') : $v['FECHA_EMIS'];
                 
                 $resumenClientes[$cod]['COMPROBANTES_ALL'][] = [
                     't_comp' => trim($v['T_COMP']),
                     'n_comp' => trim($v['N_COMP']),
-                    'importe_bruto' => ($esNegativo ? -$importe : $importe),
+                    'importe_bruto' => ($esNegativo ? -abs($importe) : abs($importe)),
                     'importe_neto' => $valNeto,
                     'porcentaje_descuento' => $porcDesc * 100,
-                    'fecha_prob_cobro' => $fProbCobro
+                    'fecha_prob_cobro' => $fProbCobro,
+                    'fecha_emision' => $fEmis
                 ];
                 
-                if ($fProbCobro) {
-                    if (!$resumenClientes[$cod]['FECHA_MIN'] || $fProbCobro < $resumenClientes[$cod]['FECHA_MIN']) $resumenClientes[$cod]['FECHA_MIN'] = $fProbCobro;
+                if ($fEmis) {
+                    if (!$resumenClientes[$cod]['FECHA_MIN'] || $fEmis < $resumenClientes[$cod]['FECHA_MIN']) $resumenClientes[$cod]['FECHA_MIN'] = $fEmis;
                 }
             }
         }
@@ -346,7 +406,9 @@ try {
 
                     // Ordenamos los positivos por fecha (vieja a nueva)
                     usort($positivos, function($a, $b) {
-                        return strcmp($a['fecha_prob_cobro'] ?? '', $b['fecha_prob_cobro'] ?? '');
+                        $res = strcmp($a['fecha_emision'] ?? '', $b['fecha_emision'] ?? '');
+                        if ($res === 0) return strcmp($a['n_comp'] ?? '', $b['n_comp'] ?? '');
+                        return $res;
                     });
 
                     // Parámetros de segmentación
@@ -422,7 +484,11 @@ try {
                                     $old = $seleccionados[$mejorSwapIdx];
                                     $seleccionados[$mejorSwapIdx] = $nuevo;
                                     $positivos[$indexSiguiente] = $old; // Devolvemos el chico al pool
-                                    usort($positivos, function($a, $b) { return strcmp($a['fecha_prob_cobro'] ?? '', $b['fecha_prob_cobro'] ?? ''); });
+                                    usort($positivos, function($a, $b) { 
+                                        $res = strcmp($a['fecha_emision'] ?? '', $b['fecha_emision'] ?? '');
+                                        if ($res === 0) return strcmp($a['n_comp'] ?? '', $b['n_comp'] ?? '');
+                                        return $res;
+                                    });
                                 }
                                 $indexSiguiente++;
                             }
@@ -448,8 +514,8 @@ try {
                         $sumTimestamps = 0;
                         $countDocs = 0;
                         foreach($seleccionados as $s) {
-                            if (!empty($s['fecha_prob_cobro'])) {
-                                $sumTimestamps += strtotime($s['fecha_prob_cobro']);
+                            if (!empty($s['fecha_emision'])) {
+                                $sumTimestamps += strtotime($s['fecha_emision']);
                                 $countDocs++;
                             }
                         }
@@ -482,9 +548,9 @@ try {
                         }
 
                         $totalBrutoSug = 0; $totalNetoSug = 0;
-                        foreach($seleccionados as &$s) {
-                            $totalBrutoSug += $s['importe_bruto'];
-                            $totalNetoSug += $s['importe_neto'];
+                        foreach($seleccionados as $s_item) {
+                            $totalBrutoSug += $s_item['importe_bruto'];
+                            $totalNetoSug += $s_item['importe_neto'];
                         }
 
                         // Guardamos esta sugerencia
@@ -493,13 +559,14 @@ try {
                         $copy['TOTAL_BRUTO_SUG'] = $totalBrutoSug;
                         $copy['TOTAL_NETO_SUG'] = $totalNetoSug;
                         $copy['FECHA_SUGERIDA'] = $fechaSugStr;
-                        $copy['TOTAL_PENDIENTE_CLIENTE'] = $balanceOriginal;
+                        $copy['IDX'] = $numSugerencia;
+                        $copy['TOTAL_PENDIENTE_CLIENTE'] = (float)$balanceOriginal;
                         $copy['CANT_TOTAL_PENDIENTE'] = count($allComps);
                         
                         // Determinamos la FECHA_MIN de este lote para el ordenamiento
                         $fMinLote = null;
                         foreach($seleccionados as $s) {
-                            if (!$fMinLote || ($s['fecha_prob_cobro'] ?? '') < $fMinLote) $fMinLote = $s['fecha_prob_cobro'] ?? null;
+                            if (!$fMinLote || ($s['fecha_emision'] ?? '') < $fMinLote) $fMinLote = $s['fecha_emision'] ?? null;
                         }
                         $copy['FECHA_MIN'] = $fMinLote;
 
@@ -508,18 +575,12 @@ try {
                             $copy['RAZON_SOCI'] .= " (Parte $numSugerencia)";
                         }
 
-                        // REGLA FINAL: Si la sugerencia da un saldo negativo o cero, NO se agrega
                         if ($totalNetoSug > 0) {
                             $tableData[] = $copy;
                             $numSugerencia++;
-
-                            // Actualizamos totales del summary con esta sugerencia específica
-                            $summary['totalNeto'] += $totalNetoSug;
-                            $summary['totalComprobantes'] += count($seleccionados);
                         }
-
-                        // Seguridad para evitar bucles infinitos en errores de lógica
-                        if ($numSugerencia > 50) break; 
+                        
+                        if ($numSugerencia > 50) break;
                     }
                 } else {
                     unset($cliente['COMPROBANTES']);
@@ -536,7 +597,9 @@ try {
         if ($tipo === 'sugerencias') {
             // Ordenamos el listado general por la fecha mas vieja de cada cliente
             usort($tableData, function ($a, $b) {
-                return strcmp($a['FECHA_MIN'] ?? '', $b['FECHA_MIN'] ?? '');
+                $res = strcmp($a['FECHA_MIN'] ?? '', $b['FECHA_MIN'] ?? '');
+                if ($res === 0) return strcmp($a['COD_CLIENT'] ?? '', $b['COD_CLIENT'] ?? '');
+                return $res;
             });
         } else {
             usort($tableData, function ($a, $b) {
@@ -545,9 +608,54 @@ try {
         }
     }
 
+    // --- FILTRADO FINAL DE DUPLICADOS (Seguridad Extra solo para Sugerencias) ---
+    if ($tipo === 'sugerencias') {
+        $finalData = [];
+        $vistos = [];
+        foreach ($tableData as $item) {
+            // Generamos una huella digital de la sugerencia/cliente
+            $fingerprint = ($item['COD_CLIENT'] ?? '') . '|' . ($item['RAZON_SOCI'] ?? '') . '|' . ($item['TOTAL_NETO_SUG'] ?? $item['TOTAL_NETO'] ?? 0) . '|' . count($item['COMPROBANTES'] ?? []);
+            if (!isset($vistos[$fingerprint])) {
+                $vistos[$fingerprint] = true;
+                $finalData[] = $item;
+            }
+        }
+        $tableData = $finalData;
+    }
+
     // Unificamos la respuesta final
+    // --- NUEVO: Si generamos nuevas sugerencias (o recalcular), las guardamos en el caché ---
+    if ($tipo === 'sugerencias' && !empty($tableData)) {
+        $conn_apps = Database::getConnection('apps');
+        
+        // Si estamos recalculando o si no había nada, guardamos la "foto" nueva
+        $res_check = sqlsrv_query($conn_apps, "SELECT COUNT(*) as cuenta FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = ?", [$id_usuario]);
+        $row_check = sqlsrv_fetch_array($res_check, SQLSRV_FETCH_ASSOC);
+        
+        if ($recalcular || $row_check['cuenta'] == 0) {
+            sqlsrv_query($conn_apps, "DELETE FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = ?", [$id_usuario]);
+            $sql_ins = "INSERT INTO FP_SUGERENCIAS_COBRANZAS (COD_CLIENT, RAZON_SOCI, IDX, TOTAL_BRUTO_SUG, TOTAL_NETO_SUG, FECHA_SUGERIDA, COMPROBANTES_JSON, USUARIO, TOTAL_PENDIENTE_CLIENTE, CANT_TOTAL_PENDIENTE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            foreach ($tableData as $row) {
+                $params = [
+                    $row['COD_CLIENT'],
+                    $row['RAZON_SOCI'],
+                    $row['IDX'],
+                    $row['TOTAL_BRUTO_SUG'],
+                    $row['TOTAL_NETO_SUG'],
+                    $row['FECHA_SUGERIDA'],
+                    json_encode($row['COMPROBANTES']),
+                    $id_usuario,
+                    $row['TOTAL_PENDIENTE_CLIENTE'],
+                    $row['CANT_TOTAL_PENDIENTE']
+                ];
+                sqlsrv_query($conn_apps, $sql_ins, $params);
+            }
+        }
+    }
+
     $response = ['summary' => $summary, 'data' => $tableData];
     echo json_encode($response);
+    exit;
 
 } catch (Exception $e) {
     http_response_code(500);

@@ -262,7 +262,7 @@ function cargarAlquieres($fecha, $periodo)
 
             }
 
-            if (in_array($value['ID_CA'], ["4", "5", "18"])) {
+            if (in_array($value['ID_CA'], ["5", "18"])) {
 
                 foreach ($contratoAlquiler as $contrato) {
 
@@ -337,6 +337,26 @@ function cargarAlquieres($fecha, $periodo)
                 }
 
                 break; // Ya procesamos el concepto 14, salir del bucle de conceptos
+            }
+        }
+    }
+
+    // Calcular ID_CA 4: 25% de (1+2+8) si existe valor en RO_V_CONTRATOS_VALOR_LLAVE
+    $nombresPorId = [];
+    foreach ($conceptos as $c) {
+        $nombresPorId[$c['ID_CA']] = $c['CONCEPTO'];
+    }
+    if (isset($nombresPorId[4])) {
+        foreach ($todosLosLocales as $k => $v) {
+            $nroSuc = $v['NRO_SUCURSAL'];
+            $tieneValorLlave = $alquiler->verificarValorLlaveNegocio($nroSuc, $fecha);
+            if ($tieneValorLlave) {
+                $suma = ($newArray[$nroSuc][$nombresPorId[1]] ?? 0)
+                      + ($newArray[$nroSuc][$nombresPorId[2]] ?? 0)
+                      + ($newArray[$nroSuc][$nombresPorId[8]] ?? 0);
+                $newArray[$nroSuc][$nombresPorId[4]] = $suma * 0.25;
+            } else {
+                $newArray[$nroSuc][$nombresPorId[4]] = 0;
             }
         }
     }
@@ -474,6 +494,12 @@ function traerDetalleAlquiler($fecha, $periodo)
                 continue;
             }
 
+            // Para concepto 4, si el período está ABIERTO, NO procesar aquí
+            // Se calculará en el segundo bucle (25% de 1+2+8 con verificación de llave)
+            if ($estado == 0 && $value['ID_CA'] == "4") {
+                continue;
+            }
+
             // Para concepto 14, si el período está ABIERTO, NO procesar aquí
             // Se calculará en un segundo bucle después de que concepto 7 esté listo
             if ($estado == 0 && $value['ID_CA'] == "14") {
@@ -502,8 +528,29 @@ function traerDetalleAlquiler($fecha, $periodo)
         }
     }
 
-    // SEGUNDO BUCLE: Si el período está ABIERTO, calcular concepto 14 que depende del concepto 7
+    // SEGUNDO BUCLE: Si el período está ABIERTO, calcular conceptos dependientes (4 y 14)
     if ($estado == 0) {
+        $nombresPorId = [];
+        foreach ($conceptos as $c) {
+            $nombresPorId[$c['ID_CA']] = $c['CONCEPTO'];
+        }
+
+        // Calcular ID_CA 4: 25% de (1+2+8) si existe valor en RO_V_CONTRATOS_VALOR_LLAVE
+        if (isset($nombresPorId[4])) {
+            foreach ($todosLosLocales as $k => $v) {
+                $nroSuc = $v['NRO_SUCURSAL'];
+                $tieneValorLlave = $alquiler->verificarValorLlaveNegocio($nroSuc, $fecha);
+                if ($tieneValorLlave) {
+                    $suma = ($newArray[$nroSuc][$nombresPorId[1]] ?? 0)
+                          + ($newArray[$nroSuc][$nombresPorId[2]] ?? 0)
+                          + ($newArray[$nroSuc][$nombresPorId[8]] ?? 0);
+                    $newArray[$nroSuc][$nombresPorId[4]] = $suma * 0.25;
+                } else {
+                    $newArray[$nroSuc][$nombresPorId[4]] = 0;
+                }
+            }
+        }
+
         foreach ($todosLosLocales as $k => $v) {
             foreach ($conceptos as $key => $value) {
                 if ($value['ID_CA'] == "14") {

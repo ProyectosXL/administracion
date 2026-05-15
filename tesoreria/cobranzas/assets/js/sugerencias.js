@@ -6,7 +6,7 @@
  * - DESCUENTOS AUTOMÁTICOS SEGÚN FECHA Y MEDIO DE PAGO
  * - FECHA LÍMITE SUGERIDA: Newest Invoice + 15 business days
  */
-let tablaSugerencias = null;
+window.tablaSugerencias = null;
 let sugerenciaSeleccionada = null;
 
 const reglasDescuentoGlobal = {
@@ -14,42 +14,43 @@ const reglasDescuentoGlobal = {
     'TRANSFERENCIA': { 15: 6, 22: 4, 29: 2 }
 };
 
-function calcularPorcentajeDescuentoAuto(medioPago, fechaPropuesta) {
-    if (!reglasDescuentoGlobal[medioPago] || !fechaPropuesta) return 0;
+function calcularPorcentajeDescuentoAuto(medioPago, fechaPropuesta, fechaOriginal) {
+    if (!reglasDescuentoGlobal[medioPago] || !fechaPropuesta || !fechaOriginal) return 0;
     
-    const hoy = new Date();
-    const fecha = new Date(fechaPropuesta + 'T00:00:00');
+    const fSel = new Date(fechaPropuesta + 'T00:00:00');
+    const fOrig = new Date(fechaOriginal + 'T00:00:00');
     
-    // REGLA: El beneficio solo aplica para el mes actual y el siguiente.
-    // Si la fecha es para 2 meses en adelante o más, el descuento es 0%.
-    const mesesHoy = hoy.getFullYear() * 12 + hoy.getMonth();
-    const mesesFecha = fecha.getFullYear() * 12 + fecha.getMonth();
+    // Diferencia en días entre la fecha seleccionada y la original sugerida por el sistema
+    const diffTime = fSel.getTime() - fOrig.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
-    if (mesesFecha > mesesHoy + 1) {
-        return 0;
-    }
-
-    const diaMes = fecha.getDate();
-    const diffDays = diaMes - 1; 
-
-    if (diffDays <= 15) return reglasDescuentoGlobal[medioPago][15];
-    if (diffDays <= 22) return reglasDescuentoGlobal[medioPago][22];
-    if (diffDays <= 29) return reglasDescuentoGlobal[medioPago][29];
-    return 0; 
+    if (diffDays < 0) return reglasDescuentoGlobal[medioPago][15]; // No debería ocurrir por el 'min' del input
+    
+    if (diffDays < 7) return reglasDescuentoGlobal[medioPago][15];  // Semana 1 (0-6 días de retraso): 8%
+    if (diffDays < 14) return reglasDescuentoGlobal[medioPago][22]; // Semana 2 (7-13 días de retraso): 6%
+    if (diffDays < 21) return reglasDescuentoGlobal[medioPago][29]; // Semana 3 (14-20 días de retraso): 4%
+    
+    return 0; // Semana 4 en adelante: 0%
 }
 
+let isSugerenciasLoading = false;
 function initializeSugerenciasDataTable() {
-    const url = 'api/cobranzas_controller.php?tipo=sugerencias';
-    if (typeof $ !== 'undefined') {
+    if (typeof $ === 'undefined' || isSugerenciasLoading) return;
+    isSugerenciasLoading = true;
+    const url = 'api/cobranzas_controller.php?tipo=sugerencias&recalcular=true';
         $('#summary-cards').hide();
         $('#gestion-dashboard').hide();
         $('#btn-abrir-parametros').hide();
         
         if ($.fn.DataTable.isDataTable('#tabla-sugerencias')) {
-            $('#tabla-sugerencias').DataTable().ajax.url(url).load();
+            window.tablaSugerencias.ajax.url(url).load(() => { isSugerenciasLoading = false; });
         } else {
-            tablaSugerencias = $('#tabla-sugerencias').DataTable({
-                ajax: { url: url, dataSrc: 'data' },
+            window.tablaSugerencias = $('#tabla-sugerencias').DataTable({
+                ajax: { 
+                    url: 'api/cobranzas_controller.php?action=get_resumen_cobranzas&tipo=sugerencias' + (window.forzarRecalculoSugerencias ? '&recalcular=true' : ''), 
+                    dataSrc: 'data',
+                    complete: () => { isSugerenciasLoading = false; window.forzarRecalculoSugerencias = false; }
+                },
                 columns: [
                     { data: 'COD_CLIENT', title: 'Código', className: 'font-weight-bold text-gray-800' },
                     { data: 'RAZON_SOCI', title: 'Razón Social' },
@@ -67,13 +68,13 @@ function initializeSugerenciasDataTable() {
                         }, 
                         className: 'text-center' 
                     },
-                    { data: null, title: 'Acciones', orderable: false, className: 'text-center', render: () => `<button class="btn btn-outline-info btn-sm btn-revisar-sugerencia"><i class="fa-solid fa-eye me-1"></i> Revisar Sugerencia</button>` }
+                    { data: null, title: 'Acciones', orderable: false, className: 'text-center', render: (d) => `<button class="btn btn-outline-info btn-sm btn-revisar-sugerencia" data-cod="${d.COD_CLIENT}" data-idx="${d.IDX}"><i class="fa-solid fa-eye me-1"></i> Revisar Sugerencia</button>` }
                 ],
                 language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-                responsive: true, order: [[5, 'asc']], scrollY: '55vh', scrollCollapse: true, paging: true
+                responsive: true, order: [[5, 'asc']], scrollY: '55vh', scrollCollapse: true, paging: true,
+                destroy: true
             });
         }
-    }
 }
 
 $(document).ready(function() {
@@ -82,10 +83,11 @@ $(document).ready(function() {
         const originalHtml = btn.html();
         btn.html('<i class="fa-solid fa-sync fa-spin me-1"></i> Recalculando...').prop('disabled', true);
         
+        window.forzarRecalculoSugerencias = true;
         if ($.fn.DataTable.isDataTable('#tabla-sugerencias')) {
-            $('#tabla-sugerencias').DataTable().ajax.reload(function() {
+            window.tablaSugerencias.ajax.reload(function() {
                 btn.html(originalHtml).prop('disabled', false);
-            }, false); // false para mantener la paginación actual si la hubiera
+            }, false);
         } else {
             initializeSugerenciasDataTable();
             setTimeout(() => { btn.html(originalHtml).prop('disabled', false); }, 1500);
@@ -114,7 +116,7 @@ $(document).ready(function() {
         let resumenKpiHtml = `
             <div class="row mb-4">
                 <div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center"><h6 class="card-title text-muted text-uppercase small">TOTAL PROPUESTO</h6><p class="card-text h4 font-weight-bold text-primary mb-0" id="total-sug-kpi">${parseFloat(data.TOTAL_NETO_SUG).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p></div></div></div>
-                <div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center shadow-none"><h6 class="card-title text-muted text-uppercase small">FECHA LÍMITE PAGO</h6><input type="date" id="fecha-propuesta-sug-modal" class="form-control form-control-sm text-center font-weight-bold border-0 bg-transparent h5 mb-0" value="${fechaSug}" min="${fechaSug}"></div></div></div>
+                <div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center shadow-none"><h6 class="card-title text-muted text-uppercase small">FECHA LÍMITE PAGO</h6><input type="date" id="fecha-propuesta-sug-modal" class="form-control form-control-sm text-center font-weight-bold border-0 bg-transparent h5 mb-0" value="${fechaSug}" min="${fechaSug}" data-fecha-original="${fechaSug}"></div></div></div>
                 <div class="col-md-4"><div class="card bg-light shadow-sm h-100"><div class="card-body text-center shadow-none"><h6 class="card-title text-muted text-uppercase small">MEDIO DE PAGO</h6><select id="medio-pago-sug-modal" class="form-select form-select-sm text-center font-weight-bold border-0 bg-transparent h5 mb-0 shadow-none"><option value="ECHECK" selected>ECHECK</option><option value="TRANSFERENCIA">TRANSFERENCIA</option></select></div></div></div>
             </div>`;
 
@@ -132,7 +134,7 @@ $(document).ready(function() {
             itemsHtml += `
                 <tr class="small" data-bruto="${bruto}" data-tcomp="${item.t_comp}" data-ncomp="${item.n_comp}" data-dcto-original="${item.porcentaje_descuento}">
                     <td class="text-center"><button class="btn btn-xs btn-outline-danger btn-quitar-item-sug border-0" title="Quitar de la propuesta"><i class="fa-solid fa-trash-can"></i></button></td>
-                    <td class="text-center">${item.fecha_prob_cobro || '-'}</td>
+                    <td class="text-center">${item.fecha_emision || '-'}</td>
                     <td class="text-center">${item.t_comp}</td>
                     <td>${item.n_comp}</td>
                     <td class="text-end ${bruto < 0 ? 'text-danger' : ''}">${bruto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>
@@ -147,11 +149,10 @@ $(document).ready(function() {
                     </tfoot></table>
             </div>`;
 
-        let infoHtml = `<div class="alert alert-info border-left-info shadow-sm mt-3 py-2 small d-flex justify-content-between"><span><i class="fa-solid fa-circle-info me-2"></i> Balance Total Pendiente: <strong>${parseFloat(data.TOTAL_PENDIENTE_CLIENTE).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</strong></span><span>${data.CANT_TOTAL_PENDIENTE} ítems</span></div>`;
-
-        $('#sugerencia-detalle-body').html(headerHtml + resumenKpiHtml + itemsHtml + infoHtml);
+        $('#sugerencia-detalle-body').html(headerHtml + resumenKpiHtml + itemsHtml);
         
-        // Eliminamos el trigger('change') automático que sobreescribía los descuentos del backend
+        // Forzamos el recálculo inmediato para asegurar que los totales coincidan con los ítems
+        recalcularTotalesSugerencia();
     }
 
     // ELIMINAR ITEM
@@ -174,7 +175,8 @@ $(document).ready(function() {
     // Se deshabilita el recalculo automático masivo para mantener consistencia con el detalle de Franquicias
     // El usuario podrá editar los descuentos manualmente si lo desea.
     $('#modalSugerenciaDetalle').on('change', '#fecha-propuesta-sug-modal, #medio-pago-sug-modal', function() {
-        const pct = calcularPorcentajeDescuentoAuto($('#medio-pago-sug-modal').val(), $('#fecha-propuesta-sug-modal').val());
+        const inputFecha = $('#fecha-propuesta-sug-modal');
+        const pct = calcularPorcentajeDescuentoAuto($('#medio-pago-sug-modal').val(), inputFecha.val(), inputFecha.data('fecha-original'));
         $('#tabla-items-sugerencia tbody tr').each(function() {
             const tr = $(this);
             const nComp = (tr.data('ncomp') || '').trim();
@@ -242,12 +244,24 @@ $(document).ready(function() {
         $.ajax({
             url: 'api/cobranzas_controller.php?action=crear_propuesta',
             type: 'POST',
-            data: { cod_cliente: sugerenciaSeleccionada.COD_CLIENT, comprobantes: comps, total_propuesto: totalFinal, fecha_propuesta_pago: fecha, medio_de_pago: $('#medio-pago-sug-modal').val(), cuotas: [] },
+            data: { 
+                cod_cliente: sugerenciaSeleccionada.COD_CLIENT, 
+                idx_sugerencia: sugerenciaSeleccionada.IDX, // Para limpiar el caché
+                comprobantes: comps, 
+                total_propuesto: totalFinal, 
+                fecha_propuesta_pago: fecha, 
+                medio_de_pago: $('#medio-pago-sug-modal').val(), 
+                cuotas: [] 
+            },
             dataType: 'json',
             success: (res) => {
                 if (res.success) {
-                    Swal.fire({ title: 'Éxito', text: 'Propuesta generada. Recargando...', icon: 'success', timer: 2000, showConfirmButton: false }).then(() => {
-                        location.reload();
+                    Swal.fire({ title: 'Éxito', text: 'Propuesta generada correctamente.', icon: 'success', timer: 2000, showConfirmButton: false }).then(() => {
+                        $('#modalSugerenciaDetalle').modal('hide');
+                        // Eliminamos la fila de la tabla sin recargar todo el listado
+                        if (window.tablaSugerencias) {
+                            window.tablaSugerencias.row($(`.btn-revisar-sugerencia[data-cod="${sugerenciaSeleccionada.COD_CLIENT}"][data-idx="${sugerenciaSeleccionada.IDX}"]`).closest('tr')).remove().draw();
+                        }
                     });
                 } else Swal.fire('Error', res.message, 'error');
             },

@@ -330,7 +330,7 @@ include 'templates/layout/header.php';
                         <div class="card-body p-3 d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-lightbulb me-2"></i>Propuestas Sugeridas Automáticamente</h6>
-                                <p class="small text-muted mb-0">Basado en comprobantes pendientes ordenados por Fecha Probable de Cobro.</p>
+                                <p class="small text-muted mb-0">Basado en comprobantes pendientes ordenados por Fecha de Emisión.</p>
                             </div>
                             <button class="btn btn-primary btn-sm shadow-sm" id="btn-generar-sugerencias">
                                 <i class="fa-solid fa-sync me-1"></i> Recalcular Sugerencias

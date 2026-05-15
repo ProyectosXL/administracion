@@ -985,6 +985,31 @@ class Alquiler
         }
     }
 
+    public function verificarValorLlaveNegocio($nroSucursal, $fecha)
+    {
+        // $fecha en formato Y-m (ej: "2025-04")
+        list($anio, $mes) = explode('-', $fecha);
+        $periodoFormateado = (int)$mes . '-' . $anio; // Ej: "4-2025"
+
+        $sql = "SELECT TOP 1 CAST(IMPORTE AS FLOAT) as IMPORTE
+                FROM RO_V_CONTRATOS_VALOR_LLAVE
+                WHERE NRO_SUCURS = ?
+                AND LTRIM(RTRIM(PERIODO)) = ?
+                AND CAST(IMPORTE AS FLOAT) > 0";
+
+        $params = [$nroSucursal, $periodoFormateado];
+        $stmt = sqlsrv_prepare($this->cid_central, $sql, $params);
+
+        if (!$stmt) {
+            error_log("Error al preparar consulta de verificación de llave de negocio");
+            return false;
+        }
+
+        sqlsrv_execute($stmt);
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        return ($row && isset($row['IMPORTE']) && $row['IMPORTE'] > 0);
+    }
+
 }
 
 
