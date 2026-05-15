@@ -76,16 +76,20 @@ class Egreso
     public function crear($datos)
     {
         try {
+            $moneda = $datos['moneda'] ?? 'ARS';
+            $importe = $moneda === 'USD' ? 0 : (float)($datos['importe'] ?? 0);
+            $importeDolares = $moneda === 'USD' ? (float)($datos['importe'] ?? 0) : 0;
+
             $sql = "INSERT INTO egresos (
-                        es_factura, COD_COMP, N_COMP, fecha, motivo, 
-                        nombre_director, importe, observaciones, 
+                        es_factura, COD_COMP, N_COMP, fecha, motivo,
+                        nombre_director, importe, importe_dolares, observaciones,
                         recibido, fecha_carga, foto, centro_costo,
-                        proveedor, tipo_gasto
+                        proveedor, tipo_gasto, moneda
                     ) VALUES (
                         NULL, ?, ?, ?, ?,
-                        ?, ?, ?, 
+                        ?, ?, ?, ?,
                         1, GETDATE(), ?, ?,
-                        ?, ?
+                        ?, ?, ?
                     )";
 
             $nComp = $this->generarNumeroComprobante();
@@ -156,12 +160,14 @@ class Egreso
                 $datos['fecha'],
                 $datos['motivo'],
                 $nombreDirector,
-                $datos['importe'],
+                $importe,
+                $importeDolares,
                 $datos['observaciones'] ?? '',
                 $fotoComprimida,
                 $centroCosto,
                 $proveedor,
-                $tipoGasto
+                $tipoGasto,
+                $moneda
             ];
 
             // Combinar el INSERT con el SELECT SCOPE_IDENTITY() en el mismo lote (batch)
@@ -276,6 +282,11 @@ class Egreso
                 $params[] = $filtros['proveedor'];
             }
 
+            if (!empty($filtros['moneda'])) {
+                $sql .= " AND e.moneda = ?";
+                $params[] = $filtros['moneda'];
+            }
+
             // Ordenamiento consistente
             $sql .= " ORDER BY e.fecha_carga DESC, e.id DESC";
 
@@ -345,6 +356,38 @@ class Egreso
             return (float) $result['total'];
         } catch (Exception $e) {
             error_log("Error al obtener total: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Obtiene el total de egresos en dólares desde la fecha de inicio de la app
+     */
+    public function obtenerTotalDolares(): float
+    {
+        try {
+            $fechaInicioApp = Config::getFechaInicioApp();
+
+            $sql = "SELECT COALESCE(SUM(importe_dolares), 0) as total
+                    FROM egresos
+                    WHERE moneda = 'USD'
+                      AND COD_COMP != 'GAS'
+                      AND motivo != 'COMPENSACION_IVA'
+                      AND motivo != 'GASTOS_DIRECTORES'
+                      AND (tipo_gasto IS NULL OR tipo_gasto != 'Servicios')
+                      AND fecha >= ?";
+            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
+
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+
+            return (float) $result['total'];
+        } catch (Exception $e) {
+            error_log("Error al obtener total egresos dólares: " . $e->getMessage());
             return 0.0;
         }
     }

@@ -22,13 +22,21 @@ try {
             break;
             
         case 'saldo':
+            $moneda = $_GET['moneda'] ?? 'ARS';
             $ingreso = new Ingreso();
-            $egreso = new Egreso();
-            
-            $totalIngresos = $ingreso->obtenerTotalRecibido() + $ingreso->obtenerTotal599();
-            $totalEgresos = $egreso->obtenerTotal();
-            $saldo = $totalIngresos - $totalEgresos;
-            
+
+            if ($moneda === 'USD') {
+                $egreso = new Egreso();
+                $totalIngresos = $ingreso->obtenerTotal599Dolares() + $ingreso->obtenerTotalRecibidoDolares();
+                $totalEgresos = $egreso->obtenerTotalDolares();
+                $saldo = $totalIngresos - $totalEgresos;
+            } else {
+                $egreso = new Egreso();
+                $totalIngresos = $ingreso->obtenerTotalRecibido() + $ingreso->obtenerTotal599();
+                $totalEgresos = $egreso->obtenerTotal();
+                $saldo = $totalIngresos - $totalEgresos;
+            }
+
             echo json_encode([
                 'success' => true,
                 'data' => [
@@ -40,38 +48,141 @@ try {
             break;
             
         case 'movimientos':
+            $moneda = $_GET['moneda'] ?? 'ARS';
+
+            $filtros = [];
+
+            if (!empty($_GET['fecha_desde'])) {
+                $filtros['fecha_desde'] = $_GET['fecha_desde'];
+            }
+
+            if (!empty($_GET['fecha_hasta'])) {
+                $filtros['fecha_hasta'] = $_GET['fecha_hasta'];
+            }
+
+            if (empty($filtros['fecha_desde']) || empty($filtros['fecha_hasta'])) {
+                throw new Exception('Fechas desde y hasta son requeridas');
+            }
+
+            // Aplicar filtro de fecha de inicio de la app
+            $fechaInicioApp = Config::getFechaInicioApp();
+            if (strtotime($filtros['fecha_desde']) < strtotime($fechaInicioApp)) {
+                $filtros['fecha_desde'] = $fechaInicioApp;
+            }
+
+            // Modo USD: ingresos manuales USD + cobros 599 USD + egresos manuales USD
+            if ($moneda === 'USD') {
+                try {
+                    $ingreso = new Ingreso();
+                } catch (Exception $e) {
+                    error_log("Error creando instancia de Ingreso: " . $e->getMessage());
+                    throw new Exception("Error al inicializar módulo de ingresos: " . $e->getMessage());
+                }
+
+                try {
+                    $egreso = new Egreso();
+                } catch (Exception $e) {
+                    error_log("Error creando instancia de Egreso: " . $e->getMessage());
+                    throw new Exception("Error al inicializar módulo de egresos: " . $e->getMessage());
+                }
+
+                $ingresosUSD = $ingreso->obtenerIngresosCombinados($filtros['fecha_desde'], $filtros['fecha_hasta'], 'USD');
+                $filtrosEgrUSD = [
+                    'fecha_desde' => $filtros['fecha_desde'],
+                    'fecha_hasta' => $filtros['fecha_hasta'],
+                    'moneda' => 'USD'
+                ];
+                $egresosUSD = $egreso->obtenerTodos($filtrosEgrUSD);
+
+                $movimientos = [];
+
+                foreach ($ingresosUSD as $ing) {
+                    $fecha = is_object($ing['fecha']) ? $ing['fecha']->format('Y-m-d') : $ing['fecha'];
+                    $fechaCarga = '';
+                    if (isset($ing['fecha_carga'])) {
+                        $fechaCarga = is_object($ing['fecha_carga']) ? $ing['fecha_carga']->format('Y-m-d H:i:s') : $ing['fecha_carga'];
+                    }
+                    $movimientos[] = [
+                        'tipo' => 'INGRESO',
+                        'fecha' => $fecha,
+                        'fecha_carga' => $fechaCarga,
+                        'cod_comp' => $ing['COD_COMP'] ?? '',
+                        'n_comp' => $ing['N_COMP'] ?? '',
+                        'concepto' => $ing['observaciones'] ?? 'Ingreso en dólares',
+                        'importe' => $ing['importe'],
+                        'cotizacion_dolar' => $ing['cotizacion_dolar'] ?? null,
+                        'recibido' => $ing['recibido'],
+                        'id' => $ing['id'],
+                        'origen' => $ing['origen'] ?? 'MANUAL',
+                        'moneda' => 'USD',
+                        'tiene_foto' => 0
+                    ];
+                }
+
+                foreach ($egresosUSD as $egr) {
+                    $fechaCarga = '';
+                    if (isset($egr['fecha_carga'])) {
+                        $fechaCarga = is_object($egr['fecha_carga']) ? $egr['fecha_carga']->format('Y-m-d H:i:s') : $egr['fecha_carga'];
+                    }
+                    $fecha = is_object($egr['fecha']) ? $egr['fecha']->format('Y-m-d') : $egr['fecha'];
+
+                    $concepto = $egr['motivo'];
+
+                    if ($egr['motivo'] === 'RETIROS' && !empty($egr['nombre_director'])) {
+                        $concepto .= ' - ' . $egr['nombre_director'];
+                    }
+                    if ($egr['motivo'] === 'SUELDOS' && !empty($egr['centro_costo_nombre'])) {
+                        $concepto .= ' - ' . $egr['centro_costo_nombre'];
+                    }
+                    if ($egr['motivo'] === 'PROVEEDORES' && !empty($egr['proveedor_nombre'])) {
+                        $concepto .= ' - ' . $egr['proveedor_nombre'];
+                        if (!empty($egr['tipo_gasto'])) {
+                            $concepto .= ' - ' . $egr['tipo_gasto'];
+                        }
+                    }
+                    if (!empty($egr['observaciones'])) {
+                        $concepto .= ' (' . $egr['observaciones'] . ')';
+                    }
+
+                    $movimientos[] = [
+                        'tipo' => 'EGRESO',
+                        'fecha' => $fecha,
+                        'fecha_carga' => $fechaCarga,
+                        'cod_comp' => $egr['COD_COMP'],
+                        'n_comp' => $egr['N_COMP'],
+                        'concepto' => $concepto,
+                        'importe' => $egr['importe_dolares'],
+                        'cotizacion_dolar' => null,
+                        'recibido' => 1,
+                        'id' => $egr['id'],
+                        'origen' => 'MANUAL',
+                        'moneda' => 'USD',
+                        'tiene_foto' => $egr['tiene_foto'] ?? 0
+                    ];
+                }
+
+                usort($movimientos, function($a, $b) {
+                    $fechaA = !empty($a['fecha_carga']) ? $a['fecha_carga'] : $a['fecha'] . ' 00:00:00';
+                    $fechaB = !empty($b['fecha_carga']) ? $b['fecha_carga'] : $b['fecha'] . ' 00:00:00';
+                    return strtotime($fechaB) - strtotime($fechaA);
+                });
+
+                echo json_encode(['success' => true, 'data' => $movimientos]);
+                break;
+            }
+
             try {
                 $ingreso = new Ingreso();
             } catch (Exception $e) {
                 error_log("Error creando instancia de Ingreso: " . $e->getMessage());
                 throw new Exception("Error al inicializar módulo de ingresos: " . $e->getMessage());
             }
-            
+
             try {
                 $egreso = new Egreso();
             } catch (Exception $e) {
                 error_log("Error creando instancia de Egreso: " . $e->getMessage());
                 throw new Exception("Error al inicializar módulo de egresos: " . $e->getMessage());
-            }
-            
-            $filtros = [];
-            
-            if (!empty($_GET['fecha_desde'])) {
-                $filtros['fecha_desde'] = $_GET['fecha_desde'];
-            }
-            
-            if (!empty($_GET['fecha_hasta'])) {
-                $filtros['fecha_hasta'] = $_GET['fecha_hasta'];
-            }
-            
-            if (empty($filtros['fecha_desde']) || empty($filtros['fecha_hasta'])) {
-                throw new Exception('Fechas desde y hasta son requeridas');
-            }
-            
-            // Aplicar filtro de fecha de inicio de la app
-            $fechaInicioApp = Config::getFechaInicioApp();
-            if (strtotime($filtros['fecha_desde']) < strtotime($fechaInicioApp)) {
-                $filtros['fecha_desde'] = $fechaInicioApp;
             }
             
             // Obtener ingresos combinados de todas las fuentes

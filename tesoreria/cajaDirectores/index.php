@@ -171,10 +171,19 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                                    value="<?php echo date('Y-m-d'); ?>" required>
                                         </div>
                                         <div class="mb-3">
+                                            <label class="form-label">Moneda</label>
+                                            <div class="btn-group d-block" role="group" aria-label="Moneda ingreso">
+                                                <input type="radio" class="btn-check" name="monedaIngreso" id="monedaIngresoPesos" value="ARS" checked>
+                                                <label class="btn btn-outline-success" for="monedaIngresoPesos">$ Pesos</label>
+                                                <input type="radio" class="btn-check" name="monedaIngreso" id="monedaIngresoDolares" value="USD">
+                                                <label class="btn btn-outline-success" for="monedaIngresoDolares">U$S Dólares</label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
                                             <label for="importeIngreso" class="form-label">Importe</label>
                                             <div class="input-group">
-                                                <span class="input-group-text">$</span>
-                                                <input type="text" class="form-control importe-input" 
+                                                <span class="input-group-text" id="simboloMonedaIngreso">$</span>
+                                                <input type="text" class="form-control importe-input"
                                                        id="importeIngreso" placeholder="0" required>
                                             </div>
                                         </div>
@@ -251,10 +260,19 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                             </select>
                                         </div>
                                         <div class="mb-3">
+                                            <label class="form-label">Moneda</label>
+                                            <div class="btn-group d-block" role="group" aria-label="Moneda egreso">
+                                                <input type="radio" class="btn-check" name="monedaEgreso" id="monedaEgresoPesos" value="ARS" checked>
+                                                <label class="btn btn-outline-danger" for="monedaEgresoPesos">$ Pesos</label>
+                                                <input type="radio" class="btn-check" name="monedaEgreso" id="monedaEgresoDolares" value="USD">
+                                                <label class="btn btn-outline-danger" for="monedaEgresoDolares">U$S Dólares</label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
                                             <label for="importeEgreso" class="form-label">Importe</label>
                                             <div class="input-group">
-                                                <span class="input-group-text">$</span>
-                                                <input type="text" class="form-control importe-input" 
+                                                <span class="input-group-text" id="simboloMonedaEgreso">$</span>
+                                                <input type="text" class="form-control importe-input"
                                                        id="importeEgreso" placeholder="0" required>
                                             </div>
                                         </div>
@@ -334,7 +352,16 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                     <i class="bi bi-file-earmark-excel"></i> Exportar Reporte
                                 </button>
                             </div>
-                            
+
+                            <!-- Toggle de moneda -->
+                            <div class="btn-group mb-3" role="group" aria-label="Moneda">
+                                <input type="radio" class="btn-check" name="monedaReporte" id="monedaPesos" value="ARS" checked>
+                                <label class="btn btn-outline-primary" for="monedaPesos">$ Pesos</label>
+
+                                <input type="radio" class="btn-check" name="monedaReporte" id="monedaDolares" value="USD">
+                                <label class="btn btn-outline-primary" for="monedaDolares">U$S Dólares</label>
+                            </div>
+
                             <!-- Filtros de fecha -->
                             <div class="card mb-4">
                                 <div class="card-body">

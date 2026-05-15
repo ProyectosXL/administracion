@@ -65,25 +65,31 @@ class Ingreso {
      */
     public function crear($datos) {
         try {
+            $moneda = $datos['moneda'] ?? 'ARS';
+            $importe = $moneda === 'USD' ? 0 : (float)($datos['importe'] ?? 0);
+            $importeDolares = $moneda === 'USD' ? (float)($datos['importe'] ?? 0) : 0;
+
             $sql = "INSERT INTO ingresos (
-                        ID_SBA05, COD_COMP, N_COMP, fecha, importe, 
-                        observaciones, recibido, fecha_carga, origen
+                        ID_SBA05, COD_COMP, N_COMP, fecha, importe, importe_dolares,
+                        observaciones, recibido, fecha_carga, origen, moneda
                     ) VALUES (
-                        ?, ?, ?, ?, ?,
-                        ?, ?, GETDATE(), ?
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, GETDATE(), ?, ?
                     )";
-            
+
             $nComp = $this->generarNumeroComprobante();
-            
+
             $params = [
                 $datos['id_sba05'] ?? null,
                 'ING',
                 $nComp,
                 $datos['fecha'],
-                $datos['importe'],
+                $importe,
+                $importeDolares,
                 $datos['observaciones'] ?? '',
                 $datos['recibido'] ?? 0,
-                $datos['origen'] ?? 'MANUAL'
+                $datos['origen'] ?? 'MANUAL',
+                $moneda
             ];
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
@@ -122,7 +128,12 @@ class Ingreso {
                 $sql .= " AND recibido = ?";
                 $params[] = $filtros['recibido'];
             }
-            
+
+            if (!empty($filtros['moneda'])) {
+                $sql .= " AND moneda = ?";
+                $params[] = $filtros['moneda'];
+            }
+
             $sql .= " ORDER BY fecha DESC, id DESC";
             
             $stmt = sqlsrv_query($this->db, $sql, $params);
@@ -215,45 +226,104 @@ class Ingreso {
             if (strtotime($desde) < strtotime($fechaInicioApp)) {
                 $desde = $fechaInicioApp;
             }
-            
-            $sql = "SELECT 
-                        CAST(fecha_cobro AS DATE) FECHA, 
-                        ID, 
-                        (UPPER(user_rinde) + ' - ' + nombre_cliente) OBSERVACIONES, 
-                        CAST(importe_efectivo AS FLOAT) MONTO 
-                    FROM sj_administracion_cobros 
+
+            $sql = "SELECT
+                        CAST(fecha_cobro AS DATE) FECHA,
+                        ID,
+                        (UPPER(user_rinde) + ' - ' + nombre_cliente) OBSERVACIONES,
+                        CAST(importe_efectivo AS FLOAT) MONTO,
+                        CAST(importe_dolares AS FLOAT) IMPORTE_DOLARES,
+                        CAST(cotizacion_dolar AS FLOAT) COTIZACION_DOLAR
+                    FROM sj_administracion_cobros
                     WHERE importe_efectivo > 0
                       AND CAST(fecha_cobro AS DATE) BETWEEN ? AND ?
                       AND rendido = 1
                     ORDER BY fecha_cobro DESC";
-            
+
             $params = [$desde, $hasta];
             $stmt = sqlsrv_query($this->dbCentral, $sql, $params);
-            
+
             if ($stmt === false) {
                 throw new Exception("Error en consulta TESORERIA: " . print_r(sqlsrv_errors(), true));
             }
-            
+
             $resultados = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $resultados[] = [
-                    'id' => 'EXT_599_' . $row['ID'], // ID único para identificar
-                    'ID_SBA05' => null, // No aplica para 599
+                    'id' => 'EXT_599_' . $row['ID'],
+                    'ID_SBA05' => null,
                     'fecha' => $row['FECHA'],
-                    'fecha_carga' => $row['FECHA'], // Usar la fecha como fecha_carga para ordenamiento
-                    'COD_COMP' => '', // Vacío para 599
-                    'N_COMP' => '', // Vacío para 599
+                    'fecha_carga' => $row['FECHA'],
+                    'COD_COMP' => '',
+                    'N_COMP' => '',
                     'observaciones' => $row['OBSERVACIONES'],
                     'importe' => $row['MONTO'],
-                    'recibido' => 1, // Siempre recibido para 599
+                    'importe_dolares' => $row['IMPORTE_DOLARES'] ?? 0,
+                    'cotizacion_dolar' => $row['COTIZACION_DOLAR'] ?? 0,
+                    'recibido' => 1,
                     'origen' => '599'
                 ];
             }
-            
+
             sqlsrv_free_stmt($stmt);
             return $resultados;
         } catch (Exception $e) {
             error_log("Error en obtenerIngresosTesoreria: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtiene ingresos desde 599 con componente en dólares (importe_dolares > 0)
+     */
+    public function obtenerIngresos599Dolares($desde, $hasta) {
+        try {
+            $fechaInicioApp = Config::getFechaInicioApp();
+            if (strtotime($desde) < strtotime($fechaInicioApp)) {
+                $desde = $fechaInicioApp;
+            }
+
+            $sql = "SELECT
+                        CAST(fecha_cobro AS DATE) FECHA,
+                        ID,
+                        (UPPER(user_rinde) + ' - ' + nombre_cliente) OBSERVACIONES,
+                        CAST(importe_dolares AS FLOAT) MONTO_USD,
+                        CAST(cotizacion_dolar AS FLOAT) COTIZACION
+                    FROM sj_administracion_cobros
+                    WHERE importe_dolares > 0
+                      AND CAST(fecha_cobro AS DATE) BETWEEN ? AND ?
+                      AND rendido = 1
+                    ORDER BY fecha_cobro DESC";
+
+            $params = [$desde, $hasta];
+            $stmt = sqlsrv_query($this->dbCentral, $sql, $params);
+
+            if ($stmt === false) {
+                throw new Exception("Error en consulta 599 dólares: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $resultados = [];
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $resultados[] = [
+                    'id' => 'EXT_599_' . $row['ID'],
+                    'ID_SBA05' => null,
+                    'fecha' => $row['FECHA'],
+                    'fecha_carga' => $row['FECHA'],
+                    'COD_COMP' => '',
+                    'N_COMP' => '',
+                    'observaciones' => $row['OBSERVACIONES'],
+                    'importe' => $row['MONTO_USD'],
+                    'cotizacion_dolar' => $row['COTIZACION'] ?? 0,
+                    'recibido' => 1,
+                    'origen' => '599',
+                    'moneda' => 'USD'
+                ];
+            }
+
+            sqlsrv_free_stmt($stmt);
+            return $resultados;
+        } catch (Exception $e) {
+            error_log("Error en obtenerIngresos599Dolares: " . $e->getMessage());
             return [];
         }
     }
@@ -287,57 +357,87 @@ class Ingreso {
     /**
      * Obtiene ingresos combinados de todas las fuentes
      */
-    public function obtenerIngresosCombinados($desde, $hasta) {
+    public function obtenerIngresosCombinados($desde, $hasta, $moneda = 'ARS') {
         // Aplicar filtro de fecha de inicio de la app
         $fechaInicioApp = Config::getFechaInicioApp();
         if (strtotime($desde) < strtotime($fechaInicioApp)) {
             $desde = $fechaInicioApp;
         }
-        
+
         $resultados = [];
-        
-        // 1. Ingresos MANUALES (desde tabla ingresos local)
-        $filtros = [
-            'fecha_desde' => $desde,
-            'fecha_hasta' => $hasta
-        ];
-        $manuales = $this->obtenerTodos($filtros);
-        
-        foreach ($manuales as $manual) {
-            $resultados[] = [
-                'id' => 'MAN_' . $manual['id'],
-                'ID_SBA05' => $manual['ID_SBA05'],
-                'fecha' => $manual['fecha'],
-                'COD_COMP' => $manual['COD_COMP'],
-                'N_COMP' => $manual['N_COMP'],
-                'observaciones' => $manual['observaciones'],
-                'importe' => $manual['importe'],
-                'recibido' => $manual['recibido'],
-                'origen' => $manual['origen'] ?? 'MANUAL',
-                'fecha_carga' => $manual['fecha_carga'] ?? null
+
+        if ($moneda === 'USD') {
+            // Ingresos manuales en dólares
+            $filtros = [
+                'fecha_desde' => $desde,
+                'fecha_hasta' => $hasta,
+                'moneda' => 'USD'
             ];
+            $manuales = $this->obtenerTodos($filtros);
+
+            foreach ($manuales as $manual) {
+                $resultados[] = [
+                    'id' => 'MAN_' . $manual['id'],
+                    'ID_SBA05' => $manual['ID_SBA05'],
+                    'fecha' => $manual['fecha'],
+                    'COD_COMP' => $manual['COD_COMP'],
+                    'N_COMP' => $manual['N_COMP'],
+                    'observaciones' => $manual['observaciones'],
+                    'importe' => $manual['importe_dolares'], // exponer dólares como importe
+                    'recibido' => $manual['recibido'],
+                    'origen' => $manual['origen'] ?? 'MANUAL',
+                    'fecha_carga' => $manual['fecha_carga'] ?? null,
+                    'moneda' => 'USD'
+                ];
+            }
+
+            // Cobros 599 en dólares
+            $ingresos599 = $this->obtenerIngresos599Dolares($desde, $hasta);
+            $resultados = array_merge($resultados, $ingresos599);
+        } else {
+            // 1. Ingresos MANUALES (desde tabla ingresos local) - solo ARS
+            $filtros = [
+                'fecha_desde' => $desde,
+                'fecha_hasta' => $hasta,
+                'moneda' => 'ARS'
+            ];
+            $manuales = $this->obtenerTodos($filtros);
+
+            foreach ($manuales as $manual) {
+                $resultados[] = [
+                    'id' => 'MAN_' . $manual['id'],
+                    'ID_SBA05' => $manual['ID_SBA05'],
+                    'fecha' => $manual['fecha'],
+                    'COD_COMP' => $manual['COD_COMP'],
+                    'N_COMP' => $manual['N_COMP'],
+                    'observaciones' => $manual['observaciones'],
+                    'importe' => $manual['importe'],
+                    'recibido' => $manual['recibido'],
+                    'origen' => $manual['origen'] ?? 'MANUAL',
+                    'fecha_carga' => $manual['fecha_carga'] ?? null
+                ];
+            }
+
+            // 2. Ingresos desde TESORERÍA (SBA05)
+            $ingresosTesoreria = $this->obtenerIngresosTesoreria($desde, $hasta);
+            $resultados = array_merge($resultados, $ingresosTesoreria);
+
+            // 3. Ingresos desde 599 (sj_administracion_cobros)
+            $ingresos599 = $this->obtenerIngresos599($desde, $hasta);
+            $resultados = array_merge($resultados, $ingresos599);
         }
-        
-        // 2. Ingresos desde TESORERÍA (SBA05)
-        $ingresosTesoreria = $this->obtenerIngresosTesoreria($desde, $hasta);
-        $resultados = array_merge($resultados, $ingresosTesoreria);
-        
-        // 3. Ingresos desde 599 (sj_administracion_cobros)
-        $ingresos599 = $this->obtenerIngresos599($desde, $hasta);
-        $resultados = array_merge($resultados, $ingresos599);
-        
+
         // Ordenar por fecha_carga descendente (más reciente primero)
         usort($resultados, function($a, $b) {
             $fechaA = !empty($a['fecha_carga']) ? $a['fecha_carga'] : $a['fecha'];
             $fechaB = !empty($b['fecha_carga']) ? $b['fecha_carga'] : $b['fecha'];
-            
-            // Convertir a timestamp para comparación
+
             $timestampA = is_object($fechaA) ? strtotime($fechaA->format('Y-m-d H:i:s')) : strtotime($fechaA);
             $timestampB = is_object($fechaB) ? strtotime($fechaB->format('Y-m-d H:i:s')) : strtotime($fechaB);
-            
+
             return $timestampB - $timestampA;
         });
-        
+
         return $resultados;
     }
     
@@ -475,6 +575,35 @@ class Ingreso {
     }
     
     /**
+     * Obtiene el total de ingresos manuales recibidos en dólares desde la fecha de inicio de la app
+     */
+    public function obtenerTotalRecibidoDolares(): float {
+        try {
+            $fechaInicioApp = Config::getFechaInicioApp();
+
+            $sql = "SELECT COALESCE(SUM(importe_dolares), 0) as total
+                    FROM ingresos
+                    WHERE recibido = 1
+                      AND moneda = 'USD'
+                      AND importe_dolares > 0
+                      AND fecha >= ?";
+            $stmt = sqlsrv_query($this->db, $sql, [$fechaInicioApp]);
+
+            if ($stmt === false) {
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+
+            return (float)$result['total'];
+        } catch (Exception $e) {
+            error_log("Error al obtener total ingresos dólares: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
      * Obtiene gastos (ingresos con COD_COMP='GAS') para Reporte Alberto
      */
     public function obtenerGastos($desde, $hasta) {
@@ -534,24 +663,52 @@ class Ingreso {
     public function obtenerTotal599(): float {
         try {
             $fechaInicioApp = Config::getFechaInicioApp();
-            $sql = "SELECT COALESCE(SUM(CAST(importe_efectivo AS FLOAT)), 0) as total 
-                    FROM sj_administracion_cobros 
+            $sql = "SELECT COALESCE(SUM(CAST(importe_efectivo AS FLOAT)), 0) as total
+                    FROM sj_administracion_cobros
                     WHERE importe_efectivo > 0
                       AND rendido = 1
                       AND CAST(fecha_cobro AS DATE) >= ?";
-            
+
             $stmt = sqlsrv_query($this->dbCentral, $sql, [$fechaInicioApp]);
-            
+
             if ($stmt === false) {
                 throw new Exception("Error en consulta 599 total: " . print_r(sqlsrv_errors(), true));
             }
-            
+
             $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
             sqlsrv_free_stmt($stmt);
-            
+
             return (float)$result['total'];
         } catch (Exception $e) {
             error_log("Error al obtener total 599: " . $e->getMessage());
+            return 0.0;
+        }
+    }
+
+    /**
+     * Obtiene el total histórico en dólares desde 599 (importe_dolares)
+     */
+    public function obtenerTotal599Dolares(): float {
+        try {
+            $fechaInicioApp = Config::getFechaInicioApp();
+            $sql = "SELECT COALESCE(SUM(CAST(importe_dolares AS FLOAT)), 0) as total
+                    FROM sj_administracion_cobros
+                    WHERE importe_dolares > 0
+                      AND rendido = 1
+                      AND CAST(fecha_cobro AS DATE) >= ?";
+
+            $stmt = sqlsrv_query($this->dbCentral, $sql, [$fechaInicioApp]);
+
+            if ($stmt === false) {
+                throw new Exception("Error en consulta 599 dólares total: " . print_r(sqlsrv_errors(), true));
+            }
+
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+
+            return (float)$result['total'];
+        } catch (Exception $e) {
+            error_log("Error al obtener total 599 dólares: " . $e->getMessage());
             return 0.0;
         }
     }

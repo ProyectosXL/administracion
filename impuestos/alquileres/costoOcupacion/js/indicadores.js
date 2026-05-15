@@ -166,7 +166,11 @@ function _render(data) {
     $('#indDetailSection').hide();
     $('#indInsightBox').hide();
     $('#indM2Panel').hide();
+
+    // Actualizar panel de avisos de período incompleto
+    _actualizarPanelAvisos(data);
 }
+
 
 /* ─── Destacado automático (sucursal con mayor costo) ───────── */
 function _renderDestacado(ranking) {
@@ -759,3 +763,146 @@ function _showError(msg) {
         confirmButtonColor:'#e74c3c',
     });
 }
+
+/* ─── Banner: panel de avisos "Período incompleto" ──────────── */
+
+const _MESES_NOMBRE = [
+    'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
+];
+
+const _VERBO_CO = {
+    SIN_COSTOS: { sing: 'no tiene alquileres cargados',      plur: 'no tienen alquileres cargados' },
+    SIN_VENTAS: { sing: 'no tiene ventas cargadas',          plur: 'no tienen ventas cargadas' },
+    AMBOS:      { sing: 'no tiene alquileres ni ventas cargados', plur: 'no tienen alquileres ni ventas cargados' },
+};
+
+function _parseMes(mesStr) {
+    const [y, m] = mesStr.split('-');
+    return { nombre: _MESES_NOMBRE[parseInt(m) - 1], anio: parseInt(y) };
+}
+
+function _formatGrupoCO(fechas, estado) {
+    const parsed = fechas.map(_parseMes);
+    const n      = parsed.length;
+    const v      = (_VERBO_CO[estado] || _VERBO_CO.AMBOS);
+    const verbo  = n === 1 ? v.sing : v.plur;
+
+    if (n === 1) return `${parsed[0].nombre} ${parsed[0].anio} ${verbo}`;
+
+    const anyos = [...new Set(parsed.map(p => p.anio))];
+
+    if (n === 2) {
+        return `${parsed[0].nombre} ${parsed[0].anio} y ${parsed[1].nombre} ${parsed[1].anio} ${verbo}`;
+    }
+
+    if (anyos.length === 1) {
+        const head = parsed.slice(0, -1).map(p => p.nombre).join(', ');
+        return `${head} y ${parsed[n - 1].nombre} ${anyos[0]} ${verbo}`;
+    }
+
+    const head = parsed.slice(0, -1).map(p => `${p.nombre} ${p.anio}`).join(', ');
+    return `${head} y ${parsed[n - 1].nombre} ${parsed[n - 1].anio} ${verbo}`;
+}
+
+function _buildBannerMsgCO(mesesSinDatos) {
+    const grupos = {};
+    for (const mes of mesesSinDatos) {
+        if (!grupos[mes.estado]) grupos[mes.estado] = [];
+        grupos[mes.estado].push(mes.mes);
+    }
+    const partes = Object.entries(grupos).map(([est, fechas]) => _formatGrupoCO(fechas, est));
+    return partes.join('. ') + '.';
+}
+
+/**
+ * Actualiza el banner de "Período incompleto" con los datos de meses sin datos.
+ * @param {Array}  mesesSinDatos           [{mes:'YYYY-MM', estado:'SIN_COSTOS'|...}, ...]
+ * @param {number} mesesTotalesPeriodo     Total de meses en el período
+ * @param {number} mesesConDatosCompletos  Meses que tienen datos OK
+ */
+function _renderBannerMesesSinDatos(mesesSinDatos, mesesTotalesPeriodo, mesesConDatosCompletos) {
+    const $banner = $('#co-banner-meses-sin-datos');
+    if (!$banner.length) return;
+
+    if (!mesesSinDatos || mesesSinDatos.length === 0) {
+        $banner.hide().empty();
+        return;
+    }
+
+    const msg = _buildBannerMsgCO(mesesSinDatos);
+    const sub = mesesConDatosCompletos < mesesTotalesPeriodo
+        ? `Se calculó con ${mesesConDatosCompletos} de ${mesesTotalesPeriodo} meses disponibles. `
+        : '';
+
+    $banner.html(
+        `<div class="co-banner-warning">` +
+            `<span class="co-banner-icon"><i class="bi bi-exclamation-triangle-fill"></i></span>` +
+            `<div class="co-banner-content">` +
+                `<strong>Período incompleto</strong>` +
+                `<small>${sub}${_esc(msg)}</small>` +
+            `</div>` +
+        `</div>`
+    ).show();
+}
+
+/**
+ * Actualiza el panel completo de avisos con los datos del response.
+ * @param {Object} data  response.data de fetchIndicadores
+ */
+function _actualizarPanelAvisos(data) {
+    if (!data) return;
+
+    _renderBannerMesesSinDatos(
+        data.meses_sin_datos           || [],
+        data.meses_totales_periodo     || 0,
+        data.meses_con_datos_completos || 0
+    );
+
+    _actualizarCabeceraPanel();
+}
+
+function _actualizarCabeceraPanel() {
+    const $panel  = $('#co-avisos-panel');
+    if (!$panel.length) return;
+
+    const $banner = $('#co-banner-meses-sin-datos');
+    const visible = $banner.length && $banner[0].style.display !== 'none' && $banner.html().trim() !== '';
+
+    if (!visible) {
+        $panel.hide();
+        return;
+    }
+
+    $panel.show();
+    $('#coAvisosResumen').text('1 aviso activo');
+
+    const $badges = $('#coAvisosBadges').empty();
+    $badges.append(`<span class="co-aviso-mini-badge badge-sinDatos">Período incompleto</span>`);
+
+    // Restaurar estado del chevron desde sessionStorage
+    const abierto = sessionStorage.getItem('co:avisos_panel_abierto') === 'true';
+    _setPanelCOExpanded(abierto, false);
+}
+
+function _setPanelCOExpanded(abierto, animate) {
+    const $body    = $('#coAvisosBody');
+    const $chevron = $('#coAvisosChevron');
+
+    if (abierto) {
+        animate ? $body.slideDown(200) : $body.show();
+        $chevron.addClass('open');
+    } else {
+        animate ? $body.slideUp(200) : $body.hide();
+        $chevron.removeClass('open');
+    }
+}
+
+// Binding del toggle collapse del panel
+$(document).on('click', '#coAvisosHeader', function () {
+    const abierto    = $('#coAvisosBody').is(':visible');
+    const nuevoEstado = !abierto;
+    try { sessionStorage.setItem('co:avisos_panel_abierto', String(nuevoEstado)); } catch (_) {}
+    _setPanelCOExpanded(nuevoEstado, true);
+});
+

@@ -448,22 +448,39 @@ class CostoOcupacionService
             }
         }
 
-        // Calcular totales
-        $totalSubtotal = array_sum($subtotalGastos);
-        $totalVentaBruta = array_sum($ventaBruta);
-        $totalVentaNeta = array_sum($ventaNeta);
+        // Calcular totales — solo meses COMPLETOS (con costos > 0 Y ventas > 0)
+        // Los meses incompletos se muestran en la tabla pero no distorsionan el acumulado
+        $totalSubtotal   = 0;
+        $totalVentaBruta = 0;
+        $totalVentaNeta  = 0;
+        $mesesExcluidosTotal = [];
+
+        foreach ($meses as $mes) {
+            $tieneGastos  = isset($subtotalGastos[$mes]) && $subtotalGastos[$mes] > 0;
+            $tieneVentas  = isset($ventaNeta[$mes])      && $ventaNeta[$mes]      > 0;
+
+            if ($tieneGastos && $tieneVentas) {
+                // Mes completo: acumular en el total
+                $totalSubtotal   += $subtotalGastos[$mes];
+                $totalVentaBruta += $ventaBruta[$mes] ?? 0;
+                $totalVentaNeta  += $ventaNeta[$mes];
+            } else {
+                // Mes incompleto: registrar pero NO acumular en el total
+                $mesesExcluidosTotal[] = $mes;
+            }
+        }
 
         // Calcular % Costo de Ocupación por mes
         $porcentajeCosto = [];
         foreach ($meses as $mes) {
-            if ($ventaNeta[$mes] > 0) {
+            if (isset($ventaNeta[$mes]) && $ventaNeta[$mes] > 0) {
                 $porcentajeCosto[$mes] = ($subtotalGastos[$mes] / $ventaNeta[$mes]) * 100;
             } else {
                 $porcentajeCosto[$mes] = null;
             }
         }
 
-        // Calcular % total (acumulado 12 meses)
+        // Calcular % total (solo sobre meses completos)
         $porcentajeCostoTotal = $totalVentaNeta > 0 ? ($totalSubtotal / $totalVentaNeta) * 100 : null;
 
         // Calcular totales por concepto
@@ -475,37 +492,32 @@ class CostoOcupacionService
         $filas = $gastos;
 
         // Agregar fila Subtotal
+        // El total ya solo incluye meses completos; para la fila de subtotal mostramos
+        // la suma bruta de todos los meses (informativo por fila) y el total corregido.
+        $subtotalBruto = array_sum($subtotalGastos);
         $filaSubtotal = [
-            'concepto' => 'Subtotal gastos de alquiler',
-            'meses' => $subtotalGastos,
-            'total' => $totalSubtotal,
+            'concepto'    => 'Subtotal gastos de alquiler',
+            'meses'       => $subtotalGastos,
+            'total'       => $totalSubtotal,     // solo meses completos
+            'total_bruto' => $subtotalBruto,     // suma de todos (para referencia interna)
             'is_subtotal' => true
         ];
         $filas[] = $filaSubtotal;
 
-        // Venta Bruta comentada - no es necesaria para el cálculo de costo de ocupación
-        // $filaVentaBruta = [
-        //     'concepto' => 'Venta bruta',
-        //     'meses' => $ventaBruta,
-        //     'total' => $totalVentaBruta,
-        //     'is_metric' => true
-        // ];
-        // $filas[] = $filaVentaBruta;
-
         // Agregar fila Venta Neta
         $filaVentaNeta = [
             'concepto' => 'Venta neta',
-            'meses' => $ventaNeta,
-            'total' => $totalVentaNeta,
-            'is_metric' => true
+            'meses'    => $ventaNeta,
+            'total'    => $totalVentaNeta,  // solo meses completos
+            'is_metric'=> true
         ];
         $filas[] = $filaVentaNeta;
 
         // Agregar fila % Costo de Ocupación
         $filaPorcentaje = [
-            'concepto' => '% Costo de ocupación',
-            'meses' => $porcentajeCosto,
-            'total' => $porcentajeCostoTotal,
+            'concepto'      => '% Costo de ocupación',
+            'meses'         => $porcentajeCosto,
+            'total'         => $porcentajeCostoTotal,
             'is_percentage' => true
         ];
         $filas[] = $filaPorcentaje;
@@ -514,11 +526,12 @@ class CostoOcupacionService
         $kpis = $this->calcularKPIs($porcentajeCosto, $porcentajeCostoTotal, $meses, $idSucursal, $fechaDesde, $fechaHasta);
 
         return [
-            'meses' => $meses,
-            'filas' => $filas,
-            'kpis' => $kpis,
-            'fecha_desde' => $fechaDesde,
-            'fecha_hasta' => $fechaHasta
+            'meses'                  => $meses,
+            'filas'                  => $filas,
+            'kpis'                   => $kpis,
+            'fecha_desde'            => $fechaDesde,
+            'fecha_hasta'            => $fechaHasta,
+            'meses_excluidos_total'  => $mesesExcluidosTotal,  // para el frontend si necesita avisar
         ];
     }
 
@@ -626,15 +639,31 @@ class CostoOcupacionService
     {
         $meses = $this->generarMeses($fechaDesde, $fechaHasta);
 
-        $gastos = $this->obtenerGastosPorMes($idSucursal, $fechaDesde, $fechaHasta);
+        $gastos    = $this->obtenerGastosPorMes($idSucursal, $fechaDesde, $fechaHasta);
         $ventaNeta = $this->obtenerVentaNetaPorMes($idSucursal, $fechaDesde, $fechaHasta);
 
-        $totalGastos = 0;
-        foreach ($gastos as $gasto) {
-            $totalGastos += array_sum($gasto['meses']);
+        // Calcular gastos por mes
+        $gastosPorMes = [];
+        foreach ($meses as $mes) {
+            $gastosPorMes[$mes] = 0;
+            foreach ($gastos as $gasto) {
+                $gastosPorMes[$mes] += $gasto['meses'][$mes] ?? 0;
+            }
         }
 
-        $totalVentaNeta = array_sum($ventaNeta);
+        // Solo acumular meses COMPLETOS (costos > 0 Y ventas > 0)
+        // Evitar distorsionar el indicador con meses parciales
+        $totalGastos    = 0;
+        $totalVentaNeta = 0;
+
+        foreach ($meses as $mes) {
+            $g = $gastosPorMes[$mes] ?? 0;
+            $v = $ventaNeta[$mes]    ?? 0;
+            if ($g > 0 && $v > 0) {
+                $totalGastos    += $g;
+                $totalVentaNeta += $v;
+            }
+        }
 
         $costoOcupacion = null;
         if ($totalVentaNeta > 0) {
@@ -642,10 +671,10 @@ class CostoOcupacionService
         }
 
         return [
-            'costo_ocupacion_total' => $costoOcupacion,
+            'costo_ocupacion_total'      => $costoOcupacion,
             'porcentaje_costo_ocupacion' => $costoOcupacion, // Alias para compatibilidad
-            'total_gastos' => $totalGastos,
-            'total_venta_neta' => $totalVentaNeta
+            'total_gastos'               => $totalGastos,
+            'total_venta_neta'           => $totalVentaNeta,
         ];
     }
 
@@ -849,6 +878,90 @@ class CostoOcupacionService
      * @param string $periodo Período en formato Y-m (ej: "2025-02")
      * @return bool True si hay un valor mayor a 0, False en caso contrario
      */
+    /**
+     * Detecta qué meses del período no tienen datos completos de alquileres y/o ventas
+     * a nivel global (todas las sucursales con contrato activo).
+     *
+     * Estado posibles por mes:
+     *   OK          → hay costos de alquiler Y ventas cargadas
+     *   SIN_COSTOS  → no hay ningún registro en RO_T_DETALLE_ALQUILERES para ese mes
+     *   SIN_VENTAS  → no hay ventas en RO_T_RENTABILIDAD_BRUTA para ese mes
+     *   AMBOS       → no hay ni costos ni ventas
+     *
+     * @param string $fechaDesde  Y-m-d
+     * @param string $fechaHasta  Y-m-d
+     * @return array [
+     *   'meses_ok'        => ['YYYY-MM', ...],
+     *   'meses_sin_datos' => [['mes' => 'YYYY-MM', 'estado' => 'SIN_COSTOS'|...], ...],
+     *   'total_meses'     => int,
+     * ]
+     */
+    public function detectarMesesSinDatos($fechaDesde, $fechaHasta)
+    {
+        $mesesPeriodo = $this->generarMeses($fechaDesde, $fechaHasta);
+        $totalMeses   = count($mesesPeriodo);
+        $fallback     = ['meses_ok' => $mesesPeriodo, 'meses_sin_datos' => [], 'total_meses' => $totalMeses];
+
+        try {
+            $mesesOk       = [];
+            $mesesSinDatos = [];
+
+            foreach ($mesesPeriodo as $mes) {
+                // Construir los dos formatos de período que usa la base de datos: M-YYYY y MM-YYYY
+                list($anio, $mesNum) = explode('-', $mes);
+                $p1 = (int) $mesNum . '-' . $anio;   // ej: "5-2025"
+                $p2 = $mesNum . '-' . $anio;          // ej: "05-2025"
+
+                // ── Verificar si hay registros de alquileres para este mes (cualquier sucursal)
+                $sqlCostos = "
+                    SELECT TOP 1 1 AS tiene
+                    FROM RO_T_DETALLE_ALQUILERES
+                    WHERE LTRIM(RTRIM(PERIODO)) IN (?, ?)
+                ";
+                $stmtCostos = sqlsrv_prepare($this->cid_central, $sqlCostos, [$p1, $p2]);
+                $tieneCostos = false;
+                if ($stmtCostos && sqlsrv_execute($stmtCostos)) {
+                    $row = sqlsrv_fetch_array($stmtCostos, SQLSRV_FETCH_ASSOC);
+                    $tieneCostos = ($row && isset($row['tiene']));
+                }
+
+                // ── Verificar si hay ventas para este mes (FECHA LIKE 'YYYY-MM%')
+                $sqlVentas = "
+                    SELECT TOP 1 1 AS tiene
+                    FROM RO_T_RENTABILIDAD_BRUTA
+                    WHERE FECHA LIKE ?
+                ";
+                $stmtVentas = sqlsrv_prepare($this->cid_central, $sqlVentas, [$mes . '%']);
+                $tieneVentas = false;
+                if ($stmtVentas && sqlsrv_execute($stmtVentas)) {
+                    $row = sqlsrv_fetch_array($stmtVentas, SQLSRV_FETCH_ASSOC);
+                    $tieneVentas = ($row && isset($row['tiene']));
+                }
+
+                // ── Clasificar el estado del mes
+                if ($tieneCostos && $tieneVentas) {
+                    $mesesOk[] = $mes;
+                } elseif (!$tieneCostos && !$tieneVentas) {
+                    $mesesSinDatos[] = ['mes' => $mes, 'estado' => 'AMBOS'];
+                } elseif (!$tieneCostos) {
+                    $mesesSinDatos[] = ['mes' => $mes, 'estado' => 'SIN_COSTOS'];
+                } else {
+                    $mesesSinDatos[] = ['mes' => $mes, 'estado' => 'SIN_VENTAS'];
+                }
+            }
+
+            return [
+                'meses_ok'        => $mesesOk,
+                'meses_sin_datos' => $mesesSinDatos,
+                'total_meses'     => $totalMeses,
+            ];
+
+        } catch (Exception $e) {
+            error_log('CostoOcupacionService::detectarMesesSinDatos — ' . $e->getMessage());
+            return $fallback;
+        }
+    }
+
     private function verificarValorLlaveNegocio($sucursalId, $periodo)
     {
         try {

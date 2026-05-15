@@ -56,7 +56,8 @@ try {
                 'importe' => $importe,
                 'observaciones' => $_POST['observaciones'] ?? '',
                 'recibido' => 0,
-                'origen' => 'MANUAL'
+                'origen' => 'MANUAL',
+                'moneda' => $_POST['moneda'] ?? 'ARS'
             ];
 
             $resultado = $ingreso->crear($datos);

@@ -48,7 +48,8 @@ try {
                 'motivo' => $_POST['motivo'],
                 'importe' => $importe,
                 'observaciones' => $_POST['observaciones'] ?? '',
-                'foto' => $_POST['foto'] ?? null
+                'foto' => $_POST['foto'] ?? null,
+                'moneda' => $_POST['moneda'] ?? 'ARS'
             ];
 
             // Si es retiro de socio, agregar director

@@ -3,9 +3,10 @@
  */
 
 // ===========================================
-// VARIABLE GLOBAL PARA FECHA DE INICIO
+// VARIABLES GLOBALES
 // ===========================================
 let FECHA_INICIO_APP = null;
+let monedaActual = sessionStorage.getItem('monedaReporteCaja') || 'ARS';
 
 // ===========================================
 // CONTROL DE PETICIONES CONCURRENTES
@@ -153,48 +154,74 @@ async function actualizarResumen(filtrosActivos = null) {
         let urlRango = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
         urlRango += `&fecha_desde=${fechaDesde}`;
         urlRango += `&fecha_hasta=${fechaHasta}`;
+        urlRango += `&moneda=${monedaActual}`;
 
         const [resRango, resSaldo] = await Promise.all([
             fetch(urlRango).then(r => r.json()),
-            fetch(`controller/caja_reporte_controller.php?accion=saldo&_=${Date.now()}`).then(r => r.json())
+            fetch(`controller/caja_reporte_controller.php?accion=saldo&moneda=${monedaActual}&_=${Date.now()}`).then(r => r.json())
         ]);
 
-        const formatoMoneda = new Intl.NumberFormat('es-AR', { 
-            style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0
-        });
+        if (monedaActual === 'USD') {
+            const fmtUSD = n => 'U$S ' + Math.round(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-        // Procesar Período
-        if (resRango.success) {
-            let totalIngresos = 0;
-            let totalEgresos = 0;
+            if (resRango.success) {
+                let totalIngresos = 0;
+                let totalEgresos = 0;
+                resRango.data.forEach(mov => {
+                    if (mov.tipo === 'INGRESO' && mov.recibido == 1) totalIngresos += parseFloat(mov.importe);
+                    else if (mov.tipo === 'EGRESO') totalEgresos += parseFloat(mov.importe);
+                });
+                document.getElementById('totalIngresos').textContent = fmtUSD(totalIngresos);
+                document.getElementById('totalEgresos').textContent = fmtUSD(totalEgresos);
+            }
 
-            resRango.data.forEach(mov => {
-                if (mov.tipo === 'INGRESO' && mov.recibido == 1) {
-                    totalIngresos += parseFloat(mov.importe);
-                } else if (mov.tipo === 'EGRESO') {
-                    totalEgresos += parseFloat(mov.importe);
-                }
-            });
-
-            document.getElementById('totalIngresos').textContent = formatoMoneda.format(totalIngresos);
-            document.getElementById('totalEgresos').textContent = formatoMoneda.format(totalEgresos);
-        }
-
-        // Procesar Saldo Histórico (REAL)
-        if (resSaldo.success) {
-            const saldoReal = resSaldo.data.saldo;
-            const elementoSaldo = document.getElementById('saldoActual');
-            elementoSaldo.textContent = formatoMoneda.format(saldoReal);
-            
-            const cardSaldo = elementoSaldo.closest('.card');
-            if (saldoReal < 0) {
-                cardSaldo.classList.remove('bg-primary');
-                cardSaldo.classList.add('bg-warning');
-                document.getElementById('saldoActualText').textContent = 'Déficit Total';
-            } else {
+            if (resSaldo.success) {
+                const saldoReal = resSaldo.data.saldo;
+                const elementoSaldo = document.getElementById('saldoActual');
+                elementoSaldo.textContent = fmtUSD(saldoReal);
+                const cardSaldo = elementoSaldo.closest('.card');
                 cardSaldo.classList.remove('bg-warning');
                 cardSaldo.classList.add('bg-primary');
                 document.getElementById('saldoActualText').textContent = 'Histórico Acumulado';
+            }
+        } else {
+            const formatoMoneda = new Intl.NumberFormat('es-AR', {
+                style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0
+            });
+
+            // Procesar Período
+            if (resRango.success) {
+                let totalIngresos = 0;
+                let totalEgresos = 0;
+
+                resRango.data.forEach(mov => {
+                    if (mov.tipo === 'INGRESO' && mov.recibido == 1) {
+                        totalIngresos += parseFloat(mov.importe);
+                    } else if (mov.tipo === 'EGRESO') {
+                        totalEgresos += parseFloat(mov.importe);
+                    }
+                });
+
+                document.getElementById('totalIngresos').textContent = formatoMoneda.format(totalIngresos);
+                document.getElementById('totalEgresos').textContent = formatoMoneda.format(totalEgresos);
+            }
+
+            // Procesar Saldo Histórico (REAL)
+            if (resSaldo.success) {
+                const saldoReal = resSaldo.data.saldo;
+                const elementoSaldo = document.getElementById('saldoActual');
+                elementoSaldo.textContent = formatoMoneda.format(saldoReal);
+
+                const cardSaldo = elementoSaldo.closest('.card');
+                if (saldoReal < 0) {
+                    cardSaldo.classList.remove('bg-primary');
+                    cardSaldo.classList.add('bg-warning');
+                    document.getElementById('saldoActualText').textContent = 'Déficit Total';
+                } else {
+                    cardSaldo.classList.remove('bg-warning');
+                    cardSaldo.classList.add('bg-primary');
+                    document.getElementById('saldoActualText').textContent = 'Histórico Acumulado';
+                }
             }
         }
         
@@ -221,7 +248,8 @@ async function cargarReporte(filtros = {}) {
         let url = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
         url += `&fecha_desde=${filtros.fecha_desde}`;
         url += `&fecha_hasta=${filtros.fecha_hasta}`;
-        
+        url += `&moneda=${monedaActual}`;
+
         console.log('Cargando reporte desde URL:', url);
         
         const response = await fetch(url, {
@@ -275,12 +303,10 @@ function mostrarReporte(movimientos, filtros = {}) {
     console.log('Mostrando reporte con movimientos:', movimientos);
     
     if (!movimientos || movimientos.length === 0) {
-        contenedor.innerHTML = `
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> No hay movimientos registrados para mostrar en el reporte.
-                <br><small>Asegúrese de haber registrado ingresos y/o egresos.</small>
-            </div>
-        `;
+        const msgVacio = monedaActual === 'USD'
+            ? 'No hay cobros en U$S registrados en el período seleccionado.'
+            : 'No hay movimientos registrados para mostrar en el reporte.<br><small>Asegúrese de haber registrado ingresos y/o egresos.</small>';
+        contenedor.innerHTML = `<div class="alert alert-info"><i class="bi bi-info-circle"></i> ${msgVacio}</div>`;
         return;
     }
     
@@ -301,8 +327,8 @@ function mostrarReporte(movimientos, filtros = {}) {
     if (filtros && filtros.fecha_desde && filtros.fecha_hasta) {
         actualizarResumen(filtros);
     }
-    
-    let html = `
+
+    const selectorPaginacion = `
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="d-flex align-items-center gap-2">
                 <span class="text-muted">Mostrar</span>
@@ -315,11 +341,105 @@ function mostrarReporte(movimientos, filtros = {}) {
                 </select>
                 <span class="text-muted">movimientos</span>
             </div>
-            <small class="text-muted">
-                Mostrando ${movimientosPaginados.length} de ${movimientos.length} movimientos
-                ${movimientos.length > cantidadSeleccionada ? '' : ''}
-            </small>
-        </div>
+            <small class="text-muted">Mostrando ${movimientosPaginados.length} de ${movimientos.length} movimientos</small>
+        </div>`;
+
+    // ── MODO U$S ────────────────────────────────────────────────────────────────
+    if (monedaActual === 'USD') {
+        const fmtUSD = n => 'U$S ' + Math.round(parseFloat(n)).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        const fmtPesos = n => '$' + parseFloat(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+        let totalIngUSD = 0, totalEgrUSD = 0;
+        movimientos.forEach(mov => {
+            if (mov.tipo === 'INGRESO' && mov.recibido == 1) totalIngUSD += parseFloat(mov.importe);
+            else if (mov.tipo === 'EGRESO') totalEgrUSD += parseFloat(mov.importe);
+        });
+        const saldoUSD = totalIngUSD - totalEgrUSD;
+
+        let html = selectorPaginacion + `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center align-middle">Fecha</th>
+                        <th class="text-center align-middle">Tipo</th>
+                        <th class="text-center align-middle">COMP.</th>
+                        <th class="align-middle">Concepto</th>
+                        <th class="text-end align-middle">Importe (U$S)</th>
+                        <th class="text-end align-middle">Cotización</th>
+                        <th class="text-center align-middle">Origen</th>
+                        <th class="text-center align-middle">Estado</th>
+                        <th class="text-center align-middle">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        movimientosPaginados.forEach(mov => {
+            const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+            const cotizacion = mov.cotizacion_dolar && parseFloat(mov.cotizacion_dolar) > 0
+                ? fmtPesos(mov.cotizacion_dolar) : '-';
+            const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
+            const tipoClass = mov.tipo === 'INGRESO' ? 'text-success' : 'text-danger';
+            const tipoIcon = mov.tipo === 'INGRESO' ? 'arrow-down-circle' : 'arrow-up-circle';
+
+            let origenBadge, estadoBadge = '', accionBoton = '';
+
+            if (mov.tipo === 'EGRESO') {
+                origenBadge = '<span class="badge bg-primary">Manual</span>';
+                estadoBadge = '<span class="badge bg-success">Pagado</span>';
+                accionBoton = '<span class="text-muted">-</span>';
+            } else if (mov.origen === '599') {
+                origenBadge = '<span class="badge bg-info">599</span>';
+                estadoBadge = '<span class="badge bg-success">Recibido</span>';
+                accionBoton = '<span class="text-muted">-</span>';
+            } else {
+                origenBadge = '<span class="badge bg-primary">Manual</span>';
+                if (mov.recibido == 1) {
+                    estadoBadge = '<span class="badge bg-success">Recibido</span>';
+                    accionBoton = '<span class="text-muted">-</span>';
+                } else {
+                    estadoBadge = '<span class="badge bg-warning">Pendiente</span>';
+                    accionBoton = `
+<button type="button" class="btn btn-outline-success checkbox-style"
+        onclick="return marcarRecibidoDesdeReporte(this, event)"
+        data-ingreso-id="${mov.id}"
+        style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
+        title="Marcar como recibido">☐</button>`;
+                }
+            }
+
+            html += `
+                <tr>
+                    <td class="text-center align-middle">${fecha}</td>
+                    <td class="text-center align-middle"><i class="bi bi-${tipoIcon} ${tipoClass}"></i> ${mov.tipo}</td>
+                    <td class="text-center align-middle"><small>${compDisplay}</small></td>
+                    <td class="align-middle">${mov.concepto}</td>
+                    <td class="text-end align-middle ${tipoClass}"><strong>${fmtUSD(mov.importe)}</strong></td>
+                    <td class="text-end align-middle text-muted"><small>${cotizacion}</small></td>
+                    <td class="text-center align-middle">${origenBadge}</td>
+                    <td class="text-center align-middle">${estadoBadge}</td>
+                    <td class="text-center align-middle">${accionBoton}</td>
+                </tr>`;
+        });
+
+        html += `
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="4" class="text-end"><strong>Saldo U$S (Rango Seleccionado):</strong></td>
+                        <td class="text-end"><strong>${fmtUSD(saldoUSD)}</strong></td>
+                        <td colspan="4"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>`;
+
+        contenedor.innerHTML = html;
+        return;
+    }
+
+    // ── MODO $ PESOS (comportamiento original) ──────────────────────────────────
+    let html = selectorPaginacion + `
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle">
                 <thead class="table-dark">
@@ -337,9 +457,9 @@ function mostrarReporte(movimientos, filtros = {}) {
                 </thead>
                 <tbody>
     `;
-    
+
     let saldoAcumulado = 0;
-    
+
     // El saldo acumulado en el footer debe ser de TODOS los movimientos filtrados, no solo los paginados
     movimientos.forEach(mov => {
         if (mov.tipo === 'INGRESO' && mov.recibido == 1) {
@@ -353,14 +473,14 @@ function mostrarReporte(movimientos, filtros = {}) {
         // Usar directamente el campo fecha del movimiento
         const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
         const importe = formatoMoneda.format(mov.importe);
-        
+
         const tipoClass = mov.tipo === 'INGRESO' ? 'text-success' : 'text-danger';
         const tipoIcon = mov.tipo === 'INGRESO' ? 'arrow-down-circle' : 'arrow-up-circle';
-        
+
         let estadoBadge = '';
         let accionBoton = '';
         let origenBadge = '';
-        
+
         // Configurar badge de origen
         switch(mov.origen) {
             case 'MANUAL':
@@ -375,22 +495,22 @@ function mostrarReporte(movimientos, filtros = {}) {
             default:
                 origenBadge = '<span class="badge bg-light text-dark">Manual</span>';
         }
-        
+
         if (mov.tipo === 'INGRESO') {
             if (mov.recibido == 1) {
                 estadoBadge = '<span class="badge bg-success">Recibido</span>';
             } else {
                 estadoBadge = '<span class="badge bg-warning">Pendiente</span>';
-                
+
                 // *** LÓGICA CORREGIDA PARA EL BOTÓN DE ACCIÓN ***
                 // Primero, decidimos si el botón debe "Importar" (crear) o "Actualizar" un registro.
                 // El truco es mirar el ID: si empieza con "EXT_", es un ingreso de fuera que hay que importar.
                 if (mov.id && String(mov.id).startsWith('EXT_TES_')) {
-                    
+
                     // Es un ingreso de Tesorería que todavía no hemos importado.
                     // Usamos el BOTÓN "IMPORTADOR" (llama a marcarRecibidoTesoreria para CREAR el registro).
                     accionBoton = `
-    <button type="button" class="btn btn-outline-success checkbox-style" 
+    <button type="button" class="btn btn-outline-success checkbox-style"
             onclick="return marcarRecibidoTesoreria(this, event)"
             data-id-sba05="${mov.ID_SBA05}"
             data-fecha="${mov.fecha.split('T')[0]}"
@@ -408,14 +528,14 @@ function mostrarReporte(movimientos, filtros = {}) {
                 } else if (mov.origen === '599') {
                     // Los 599 no tienen acciones, ya vienen recibidos.
                     accionBoton = '<span class="text-muted">-</span>';
-                
+
                 } else {
-                    
+
                     // Si el ID no empieza con "EXT_", significa que ya existe en nuestra base de datos.
                     // Puede ser un ingreso Manual o uno de Tesorería que ya importamos.
                     // Usamos el BOTÓN "ACTUALIZADOR" (llama a marcarRecibidoDesdeReporte para ACTUALIZAR el registro).
                     accionBoton = `
-    <button type="button" class="btn btn-outline-success checkbox-style" 
+    <button type="button" class="btn btn-outline-success checkbox-style"
             onclick="return marcarRecibidoDesdeReporte(this, event)"
             data-ingreso-id="${mov.id}"
             style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
@@ -429,10 +549,10 @@ function mostrarReporte(movimientos, filtros = {}) {
             estadoBadge = '<span class="badge bg-success">Pagado</span>';
             origenBadge = '<span class="badge bg-primary">Manual</span>'; // Egresos siempre manuales
         }
-        
+
         // Mostrar COMP solo si no está vacío
         const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
-        
+
         // Formatear concepto: si tiene datos de proveedor extendidos, mostrarlos
         let conceptoDisplay = mov.concepto;
         if (mov.tipo === 'EGRESO' && mov.proveedor_nom) {
@@ -446,13 +566,13 @@ function mostrarReporte(movimientos, filtros = {}) {
             }
             conceptoDisplay += `</small>`;
         }
-        
+
         // Columna de foto (solo para egresos)
         let fotoBoton = '';
         if (mov.tipo === 'EGRESO' && mov.tiene_foto == 1) {
             fotoBoton = `
                 <div class="d-flex justify-content-center">
-                    <button class="btn btn-outline-primary btn-sm" 
+                    <button class="btn btn-outline-primary btn-sm"
                             onclick="verFotoEgreso(${mov.id})"
                             title="Ver foto del comprobante"
                             style="width: 32px; height: 32px; padding: 0;">
@@ -463,7 +583,7 @@ function mostrarReporte(movimientos, filtros = {}) {
         } else {
             fotoBoton = '<div class="d-flex justify-content-center"><span class="text-muted">-</span></div>';
         }
-        
+
         html += `
             <tr>
                 <td class="text-center align-middle">${fecha}</td>
@@ -478,7 +598,7 @@ function mostrarReporte(movimientos, filtros = {}) {
             </tr>
         `;
     });
-    
+
     html += `
                 </tbody>
                 <tfoot class="table-light">
@@ -491,7 +611,7 @@ function mostrarReporte(movimientos, filtros = {}) {
             </table>
         </div>
     `;
-    
+
     contenedor.innerHTML = html;
 }
 
@@ -758,6 +878,7 @@ async function exportarReporteExcel() {
         let url = `controller/caja_reporte_controller.php?accion=movimientos&_=${Date.now()}`;
         url += `&fecha_desde=${fechaDesde}`;
         url += `&fecha_hasta=${fechaHasta}`;
+        url += `&moneda=${monedaActual}`;
         
         const response = await fetch(url, {
             method: 'GET',
@@ -780,95 +901,94 @@ async function exportarReporteExcel() {
         
         const movimientos = result.data;
         const movimientosAExportar = (cantidadSeleccionada >= 999999) ? movimientos : movimientos.slice(0, cantidadSeleccionada);
-        
-        // Preparar datos para Excel
+
         const datosExcel = [];
-        
-        // Agregar encabezado
-        datosExcel.push([
-            'Fecha',
-            'Tipo',
-            'COMP.',
-            'Concepto',
-            'Importe',
-            'Origen',
-            'Estado'
-        ]);
-        
+        const esUSD = monedaActual === 'USD';
+
+        if (esUSD) {
+            datosExcel.push(['Fecha', 'Tipo', 'COMP.', 'Concepto', 'Importe (U$S)', 'Cotización', 'Origen', 'Estado']);
+
+            let totalIngUSD = 0, totalEgrUSD = 0;
+            movimientosAExportar.forEach(mov => {
+                const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
+                const importe = parseFloat(mov.importe);
+                const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
+                const cotizacion = mov.cotizacion_dolar && parseFloat(mov.cotizacion_dolar) > 0
+                    ? parseFloat(mov.cotizacion_dolar) : '';
+
+                let origen, estado;
+                if (mov.tipo === 'EGRESO') {
+                    origen = 'Manual';
+                    estado = 'Pagado';
+                    totalEgrUSD += importe;
+                } else if (mov.origen === '599') {
+                    origen = '599';
+                    estado = 'Recibido';
+                    if (mov.recibido == 1) totalIngUSD += importe;
+                } else {
+                    origen = 'Manual';
+                    estado = mov.recibido == 1 ? 'Recibido' : 'Pendiente';
+                    if (mov.recibido == 1) totalIngUSD += importe;
+                }
+
+                datosExcel.push([fecha, mov.tipo, compDisplay, mov.concepto, importe, cotizacion, origen, estado]);
+            });
+
+            datosExcel.push([]);
+            datosExcel.push(['', '', '', 'Saldo U$S (Rango Seleccionado):', totalIngUSD - totalEgrUSD, '', '', '']);
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(datosExcel);
+            ws['!cols'] = [
+                { wch: 12 }, { wch: 10 }, { wch: 8 }, { wch: 40 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }
+            ];
+            XLSX.utils.book_append_sheet(wb, ws, 'Reporte Saldo USD');
+
+            const nombreArchivo = `Reporte_Saldo_USD_${fechaDesde}_${fechaHasta}.xlsx`;
+            XLSX.writeFile(wb, nombreArchivo);
+            mostrarAlerta('Éxito', `Reporte exportado como: ${nombreArchivo}`);
+            return;
+        }
+
+        // Modo ARS — igual que antes
+        datosExcel.push(['Fecha', 'Tipo', 'COMP.', 'Concepto', 'Importe', 'Origen', 'Estado']);
+
         let saldoAcumulado = 0;
-        
-        // Agregar filas de datos
+
         movimientosAExportar.forEach(mov => {
             const fecha = new Date(mov.fecha + 'T00:00:00').toLocaleDateString('es-AR');
             const compDisplay = (mov.cod_comp && mov.n_comp) ? `${mov.cod_comp}${mov.n_comp}` : '-';
-            
+
             let origen = '';
             switch(mov.origen) {
-                case 'MANUAL':
-                    origen = 'Manual';
-                    break;
-                case '599':
-                    origen = '599';
-                    break;
-                case 'TESORERIA':
-                    origen = 'Tesorería';
-                    break;
-                default:
-                    origen = 'Manual';
+                case 'MANUAL': origen = 'Manual'; break;
+                case '599': origen = '599'; break;
+                case 'TESORERIA': origen = 'Tesorería'; break;
+                default: origen = 'Manual';
             }
-            
+
             let estado = '';
             if (mov.tipo === 'INGRESO') {
                 estado = mov.recibido == 1 ? 'Recibido' : 'Pendiente';
-                if (mov.recibido == 1) {
-                    saldoAcumulado += parseFloat(mov.importe);
-                }
+                if (mov.recibido == 1) saldoAcumulado += parseFloat(mov.importe);
             } else {
                 estado = 'Pagado';
                 saldoAcumulado -= parseFloat(mov.importe);
             }
-            
-            datosExcel.push([
-                fecha,
-                mov.tipo,
-                compDisplay,
-                mov.concepto,
-                parseFloat(mov.importe),
-                origen,
-                estado
-            ]);
+
+            datosExcel.push([fecha, mov.tipo, compDisplay, mov.concepto, parseFloat(mov.importe), origen, estado]);
         });
-        
-        // Agregar fila en blanco
+
         datosExcel.push([]);
-        
-        // Agregar fila de total
-        datosExcel.push([
-            '',
-            '',
-            '',
-            'Saldo (Rango Seleccionado):',
-            saldoAcumulado,
-            '',
-            ''
-        ]);
-        
-        // Crear libro de Excel
+        datosExcel.push(['', '', '', 'Saldo (Rango Seleccionado):', saldoAcumulado, '', '']);
+
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(datosExcel);
-        
-        // Configurar ancho de columnas
+
         ws['!cols'] = [
-            { wch: 12 }, // Fecha
-            { wch: 10 }, // Tipo
-            { wch: 10 }, // COMP.
-            { wch: 40 }, // Concepto
-            { wch: 15 }, // Importe
-            { wch: 12 }, // Origen
-            { wch: 12 }  // Estado
+            { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 40 }, { wch: 15 }, { wch: 12 }, { wch: 12 }
         ];
-        
-        // Estilo para el encabezado (primera fila)
+
         const range = XLSX.utils.decode_range(ws['!ref']);
         for (let C = range.s.c; C <= range.e.c; ++C) {
             const address = XLSX.utils.encode_col(C) + "1";
@@ -879,23 +999,17 @@ async function exportarReporteExcel() {
                 alignment: { horizontal: "center" }
             };
         }
-        
-        // Formato de moneda para la columna de Importe
+
         for (let R = 1; R <= range.e.r; ++R) {
-            const cell_address = XLSX.utils.encode_cell({ r: R, c: 4 }); // Columna E (Importe)
+            const cell_address = XLSX.utils.encode_cell({ r: R, c: 4 });
             if (!ws[cell_address]) continue;
             ws[cell_address].z = '"$"#,##0';
         }
-        
-        // Agregar hoja al libro
+
         XLSX.utils.book_append_sheet(wb, ws, 'Reporte de Saldo');
-        
-        // Generar nombre de archivo con fechas
+
         const nombreArchivo = `Reporte_Saldo_${fechaDesde}_${fechaHasta}.xlsx`;
-        
-        // Descargar archivo
         XLSX.writeFile(wb, nombreArchivo);
-        
         mostrarAlerta('Éxito', `Reporte de Saldo exportado correctamente como: ${nombreArchivo}`);
         
     } catch (error) {
@@ -969,11 +1083,33 @@ function limpiarFiltrosReporte() {
 document.addEventListener('DOMContentLoaded', function() {
     // Cargar la fecha de inicio de la app
     cargarFechaInicioApp();
-    
+
+    // Restaurar selección de moneda desde sessionStorage
+    const radioGuardado = document.getElementById(monedaActual === 'USD' ? 'monedaDolares' : 'monedaPesos');
+    if (radioGuardado) radioGuardado.checked = true;
+
+    // Listener del toggle de moneda
+    document.querySelectorAll('input[name="monedaReporte"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            monedaActual = this.value;
+            sessionStorage.setItem('monedaReporteCaja', monedaActual);
+            const fechaDesde = document.getElementById('fechaReporteDesde')?.value;
+            const fechaHasta = document.getElementById('fechaReporteHasta')?.value;
+            if (fechaDesde && fechaHasta) {
+                const filtros = { fecha_desde: fechaDesde, fecha_hasta: fechaHasta };
+                actualizarResumen(filtros);
+                cargarReporte(filtros);
+            } else {
+                actualizarResumen();
+                cargarReporte();
+            }
+        });
+    });
+
     // Las tarjetas ahora están solo en la pestaña de reporte
     // Se cargarán cuando el usuario vaya a esa pestaña
     console.log('Página cargada - las tarjetas se actualizarán al ir a la pestaña Reporte');
-    
+
     // Agregar evento para cuando se cambie a la pestaña de reporte
     const reporteTab = document.getElementById('reporte-tab');
     if (reporteTab) {

@@ -40,52 +40,58 @@ async function cargarIngresos() {
 // Mostrar lista de ingresos
 function mostrarListaIngresos(ingresos) {
     const contenedor = document.getElementById('listaIngresos');
-    
+
     if (!ingresos || ingresos.length === 0) {
         contenedor.innerHTML = '<p class="text-muted">No hay ingresos registrados</p>';
         return;
     }
-    
+
     // Filtrar solo los ingresos con COD_COMP = 'ING'
     const ingresosING = ingresos.filter(ingreso => ingreso.COD_COMP === 'ING');
-    
+
     if (ingresosING.length === 0) {
         contenedor.innerHTML = '<p class="text-muted">No hay ingresos manuales registrados</p>';
         return;
     }
-    
+
     let html = '<div class="list-group">';
-    
+
     // Mostrar solo los últimos 5 ingresos con COD_COMP = 'ING'
     ingresosING.slice(0, 5).forEach(ingreso => {
         // Usar fecha_solo si está disponible, sino fecha
         const fechaMostrar = ingreso.fecha_solo || ingreso.fecha;
         let fecha;
-        
+
         if (fechaMostrar && fechaMostrar !== '0000-00-00') {
             fecha = new Date(fechaMostrar + 'T00:00:00').toLocaleDateString('es-AR');
         } else {
             fecha = 'Fecha no disponible';
         }
-        
-        const importe = new Intl.NumberFormat('es-AR', { 
-            style: 'currency', 
-            currency: 'ARS',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(ingreso.importe);
-        
-        const recibidoBadge = ingreso.recibido == 1 
-            ? '<span class="badge bg-success">Recibido</span>' 
+
+        let importeFormateado;
+        if (ingreso.moneda === 'USD') {
+            const val = Math.round(parseFloat(ingreso.importe_dolares ?? ingreso.importe) || 0);
+            importeFormateado = 'U$S ' + val.toLocaleString('es-AR');
+        } else {
+            importeFormateado = new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(ingreso.importe);
+        }
+
+        const recibidoBadge = ingreso.recibido == 1
+            ? '<span class="badge bg-success">Recibido</span>'
             : `<button class="btn btn-sm btn-outline-success" onclick="marcarRecibido(${ingreso.id})">Marcar recibido</button>`;
-        
+
         // Obtener fecha del movimiento (campo fecha)
         const fechaMovimiento = ingreso.fecha ? new Date(ingreso.fecha + 'T00:00:00').toLocaleDateString('es-AR') : 'N/A';
-        
+
         html += `
             <div class="list-group-item">
                 <div class="d-flex w-100 justify-content-between">
-                    <h6 class="mb-1">${importe}</h6>
+                    <h6 class="mb-1">${importeFormateado}</h6>
                     <small class="text-muted">Fecha de Carga: ${fecha}</small>
                 </div>
                 <div class="mb-1">
@@ -96,7 +102,7 @@ function mostrarListaIngresos(ingresos) {
             </div>
         `;
     });
-    
+
     html += '</div>';
     contenedor.innerHTML = html;
 }
@@ -131,25 +137,33 @@ async function marcarRecibido(id) {
 // Procesar formulario de ingreso
 document.getElementById('formIngreso')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
+    const monedaIngreso = document.querySelector('[name="monedaIngreso"]:checked')?.value || 'ARS';
+
     const formData = new FormData();
     formData.append('accion', 'crear');
     formData.append('fecha', document.getElementById('fechaIngreso').value);
     formData.append('importe', document.getElementById('importeIngreso').value);
     formData.append('observaciones', document.getElementById('observacionesIngreso').value);
-    
+    formData.append('moneda', monedaIngreso);
+
     try {
         const response = await fetch('controller/caja_ingresos_controller.php', {
             method: 'POST',
             body: formData
         });
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             mostrarAlerta('Éxito', result.message);
             this.reset();
             document.getElementById('fechaIngreso').value = new Date().toISOString().split('T')[0];
+            // Restaurar moneda a ARS
+            const radioARS = document.getElementById('monedaIngresoPesos');
+            if (radioARS) radioARS.checked = true;
+            const simbolo = document.getElementById('simboloMonedaIngreso');
+            if (simbolo) simbolo.textContent = '$';
             cargarIngresos();
             actualizarResumen();
         } else {
@@ -217,6 +231,14 @@ document.getElementById('ingresos-tab')?.addEventListener('shown.bs.tab', functi
 
 // Cargar al inicio ya que ingresos es la pestaña por defecto
 document.addEventListener('DOMContentLoaded', function() {
+    // Actualizar símbolo de moneda al cambiar el radio
+    document.querySelectorAll('[name="monedaIngreso"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const span = document.getElementById('simboloMonedaIngreso');
+            if (span) span.textContent = this.value === 'USD' ? 'U$S' : '$';
+        });
+    });
+
     // Cargar ingresos ya que es la vista por defecto
     cargarIngresos();
 });

@@ -122,14 +122,15 @@ function obtenerDatosCostoOcupacion()
         echo json_encode([
             'success' => true,
             'data' => [
-                'meses' => $dataset['meses'],
-                'filas' => $dataset['filas'],
-                'kpis' => $dataset['kpis'],
-                'fecha_desde' => $dataset['fecha_desde'],
-                'fecha_hasta' => $dataset['fecha_hasta'],
-                'porcentaje_anterior_yoy' => $porcentajeAnterior,
-                'fecha_desde_anterior' => $fechaDesdeAnterior,
-                'fecha_hasta_anterior' => $fechaHastaAnterior
+                'meses'                  => $dataset['meses'],
+                'filas'                  => $dataset['filas'],
+                'kpis'                   => $dataset['kpis'],
+                'fecha_desde'            => $dataset['fecha_desde'],
+                'fecha_hasta'            => $dataset['fecha_hasta'],
+                'meses_excluidos_total'  => $dataset['meses_excluidos_total'] ?? [],
+                'porcentaje_anterior_yoy'=> $porcentajeAnterior,
+                'fecha_desde_anterior'   => $fechaDesdeAnterior,
+                'fecha_hasta_anterior'   => $fechaHastaAnterior
             ]
         ]);
 

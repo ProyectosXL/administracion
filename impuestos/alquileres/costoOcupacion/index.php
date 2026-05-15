@@ -363,6 +363,26 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
 
         <!-- Content -->
         <div class="content-wrapper">
+            <!-- ── PANEL CONSOLIDADO DE AVISOS (PERÍODO INCOMPLETO) ──── -->
+            <div id="co-avisos-panel" class="co-avisos-panel" style="display:none;">
+                <!-- Barra superior siempre visible (click para expandir/colapsar) -->
+                <div class="co-avisos-header" id="coAvisosHeader">
+                    <div class="co-avisos-header-left">
+                        <i class="bi bi-exclamation-circle-fill co-avisos-header-icon"></i>
+                        <span id="coAvisosResumen"></span>
+                    </div>
+                    <div class="co-avisos-badges" id="coAvisosBadges"></div>
+                    <div class="co-avisos-chevron" id="coAvisosChevron">
+                        <i class="bi bi-chevron-down" id="coAvisosChevronIcon"></i>
+                    </div>
+                </div>
+                <!-- Contenido expandible -->
+                <div class="co-avisos-body" id="coAvisosBody" style="display:none;">
+                    <div id="co-banner-meses-sin-datos"></div>
+                </div>
+            </div>
+            <!-- /PANEL AVISOS -->
+
             <!-- Tabs Navigation -->
             <div class="tabs-container">
                 <nav class="nav-tabs-custom">

@@ -391,13 +391,19 @@ function mostrarListaEgresos(egresos) {
             fecha = 'Fecha no disponible';
         }
         
-        const importe = new Intl.NumberFormat('es-AR', { 
-            style: 'currency', 
-            currency: 'ARS',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(egreso.importe);
-        
+        let importe;
+        if (egreso.moneda === 'USD') {
+            const val = Math.round(parseFloat(egreso.importe_dolares ?? egreso.importe) || 0);
+            importe = 'U$S ' + val.toLocaleString('es-AR');
+        } else {
+            importe = new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(egreso.importe);
+        }
+
         const motivo = egreso.motivo.charAt(0) + egreso.motivo.slice(1).toLowerCase();
         let concepto = motivo;
         
@@ -466,13 +472,16 @@ function mostrarListaEgresos(egresos) {
 // Procesar formulario de egreso
 document.getElementById('formEgreso')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
+    const monedaEgreso = document.querySelector('[name="monedaEgreso"]:checked')?.value || 'ARS';
+
     const formData = new FormData();
     formData.append('accion', 'crear');
     formData.append('fecha', document.getElementById('fechaEgreso').value);
     formData.append('motivo', document.getElementById('motivoEgreso').value);
     formData.append('importe', document.getElementById('importeEgreso').value);
     formData.append('observaciones', document.getElementById('observacionesEgreso').value);
+    formData.append('moneda', monedaEgreso);
     
     // Agregar foto si existe
     if (imagenEgresoBase64) {
@@ -560,7 +569,12 @@ document.getElementById('formEgreso')?.addEventListener('submit', async function
             document.getElementById('divCentroCosto').classList.add('d-none');
             document.getElementById('divProveedor').classList.add('d-none');
             document.getElementById('divTipoGasto').classList.add('d-none');
-            
+            // Restaurar moneda a ARS
+            const radioARS = document.getElementById('monedaEgresoPesos');
+            if (radioARS) radioARS.checked = true;
+            const simboloEgr = document.getElementById('simboloMonedaEgreso');
+            if (simboloEgr) simboloEgr.textContent = '$';
+
             // Limpiar foto
             eliminarPreviewFoto();
             
@@ -592,6 +606,14 @@ document.getElementById('egresos-tab')?.addEventListener('shown.bs.tab', functio
 
 // También cargar cuando el documento esté listo (por si la pestaña ya está activa)
 document.addEventListener('DOMContentLoaded', function() {
+    // Actualizar símbolo de moneda al cambiar el radio
+    document.querySelectorAll('[name="monedaEgreso"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const span = document.getElementById('simboloMonedaEgreso');
+            if (span) span.textContent = this.value === 'USD' ? 'U$S' : '$';
+        });
+    });
+
     // Verificar si estamos en la pestaña de egresos al cargar la página
     const egresosTab = document.getElementById('egresos-tab');
     const egresosPane = document.getElementById('egresos');

@@ -45,6 +45,7 @@ function fetchIndicadores(): void
     try {
         require_once __DIR__ . '/../../Class/Sucursal.php';
         require_once __DIR__ . '/../Class/IndicadoresService.php';
+        require_once __DIR__ . '/../Class/costoOcupacionService.php';
 
         // Validar fechas
         $fechaDesde = $_POST['fecha_desde'] ?? '';
@@ -52,7 +53,6 @@ function fetchIndicadores(): void
 
         if (empty($fechaDesde) || empty($fechaHasta)) {
             // Calcular rango default (últimos 12 meses completos)
-            require_once __DIR__ . '/../Class/costoOcupacionService.php';
             $tmp   = new CostoOcupacionService();
             $rango = $tmp->calcularRangoDefault();
             $fechaDesde = $rango['desde'];
@@ -79,6 +79,13 @@ function fetchIndicadores(): void
 
         $service = new IndicadoresService();
         $data    = $service->buildIndicadores($sucursales, $fechaDesde, $fechaHasta);
+
+        // Detectar meses sin datos (alquileres y/o ventas) — igual que costoPersonal
+        $costoSvc  = new CostoOcupacionService();
+        $deteccion = $costoSvc->detectarMesesSinDatos($fechaDesde, $fechaHasta);
+        $data['meses_sin_datos']           = $deteccion['meses_sin_datos'];
+        $data['meses_con_datos_completos'] = count($deteccion['meses_ok']);
+        $data['meses_totales_periodo']     = $deteccion['total_meses'];
 
         echo json_encode([
             'success' => true,
