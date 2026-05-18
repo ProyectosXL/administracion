@@ -402,7 +402,12 @@ $(document).ready(function () {
         $('#summary-total-clientes').text(summary.totalClientes.toLocaleString('es-AR'));
     }
 
-    initializeDataTable('#tabla-franquicias', 'api/cobranzas_controller.php?tipo=franquicias');
+    const isWholesaler = (typeof globalUsuarioNombre !== 'undefined' && globalUsuarioNombre.trim().toLowerCase() === 'vvillarreal');
+    if (isWholesaler) {
+        initializeDataTable('#tabla-mayoristas', 'api/cobranzas_controller.php?tipo=mayoristas');
+    } else {
+        initializeDataTable('#tabla-franquicias', 'api/cobranzas_controller.php?tipo=franquicias');
+    }
 
     $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
         const targetId = $(e.target).attr("id");
@@ -426,11 +431,16 @@ $(document).ready(function () {
         } else if (targetId === 'sugerencias-tab') {
             // --- VISTA SUGERENCIAS ---
             initializeSugerenciasDataTable();
-        } else {
+        } else if (targetId === 'franquicias-tab') {
             // --- VISTA PENDIENTES (FRANQUICIAS) ---
             $('#summary-cards').show(); // Mostramos los KPIs de deuda total
             $('#btn-abrir-parametros').show(); // Mostramos el botón de parámetros
             initializeDataTable('#tabla-franquicias', 'api/cobranzas_controller.php?tipo=franquicias');
+        } else {
+            // --- VISTA PENDIENTES (MAYORISTAS) ---
+            $('#summary-cards').show(); // Mostramos los KPIs de deuda total
+            $('#btn-abrir-parametros').show(); // Mostramos el botón de parámetros
+            initializeDataTable('#tabla-mayoristas', 'api/cobranzas_controller.php?tipo=mayoristas');
         }
     });
 

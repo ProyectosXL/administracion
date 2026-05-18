@@ -145,6 +145,13 @@ if ($tipo === 'franquicias') {
     exit;
 }
 
+if (isset($_SESSION['usuario_nombre']) && trim(strtolower($_SESSION['usuario_nombre'])) === 'vvillarreal') {
+    if ($tipo !== 'mayoristas') {
+        echo json_encode(['error' => 'Acceso denegado']);
+        exit;
+    }
+}
+
 try {
     $conn_central = Database::getConnection('central');
     $conn_apps = Database::getConnection('apps');
@@ -175,10 +182,13 @@ try {
 
     if ($cod_cliente) {
         // --- VISTA DE DETALLE (INDIVIDUAL) ---
+        $estado_col = ($tipo === 'mayoristas') ? "'PEN' as ESTADO" : "v.ESTADO";
+        $estado_cond = ($tipo === 'mayoristas') ? "" : "AND v.ESTADO <> 'IMP'";
+        
         $sql_facturas = "
             SELECT 
                 v.COD_CLIENT, v.RAZON_SOCI, v.FECHA_EMIS, v.T_COMP, v.N_COMP, 
-                v.ESTADO, 
+                $estado_col, 
                 CAST(ISNULL(s.IMPORTE_VT - s.IMPORT_CAN, v.IMPORTE) AS FLOAT) as IMPORTE,
                 v.FECHA_PROB_COBRO, v.PPP, 
                 CAST(ISNULL((s.IMPORTE_VT - s.IMPORT_CAN) * (v.IMPORTE_NETO / NULLIF(v.IMPORTE, 0)), v.IMPORTE_NETO) AS FLOAT) as IMPORTE_NETO,
@@ -187,7 +197,7 @@ try {
             LEFT JOIN SJ_SALDOS_CC_DETALLE s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
             LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
             WHERE v.COD_CLIENT = ? 
-              AND v.ESTADO <> 'IMP'
+              $estado_cond
             ORDER BY v.FECHA_EMIS DESC
         ";
 
@@ -207,7 +217,10 @@ try {
     } else {
         // --- VISTA DE RESUMEN ---
         // Obtenemos todos los registros pendientes y agrupamos en PHP para evitar errores de conexión cruzada
-         $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.ESTADO, 
+        $estado_col = ($tipo === 'mayoristas') ? "'PEN' as ESTADO" : "v.ESTADO";
+        $estado_cond = ($tipo === 'mayoristas') ? "" : "WHERE v.ESTADO <> 'IMP'";
+
+         $sql = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, $estado_col, 
                         CAST(ISNULL(s.SALDO_REAL, v.IMPORTE) AS FLOAT) as IMPORTE, 
                         CAST(ISNULL(s.SALDO_REAL * (v.IMPORTE_NETO / NULLIF(v.IMPORTE, 0)), v.IMPORTE_NETO) AS FLOAT) as IMPORTE_NETO, 
                         v.FECHA_EMIS, v.FECHA_PROB_COBRO,
@@ -230,7 +243,7 @@ try {
                     FROM RO_T_PARAMETROS_DESC_CLIENTES
                     GROUP BY COD_CLIENT
                 ) p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                WHERE v.ESTADO <> 'IMP'";
+                $estado_cond";
 
         $stmt = sqlsrv_query($conn_central, $sql);
         if ($stmt === false) {

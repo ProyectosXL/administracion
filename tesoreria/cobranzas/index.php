@@ -157,12 +157,22 @@ include 'templates/layout/header.php';
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white pb-0">
             <ul class="nav nav-tabs card-header-tabs" id="cobranzasTab" role="tablist">
+                <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) === 'vvillarreal'): ?>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="mayoristas-tab" data-bs-toggle="tab"
+                        data-bs-target="#mayoristas" type="button" role="tab">
+                        <i class="fa-solid fa-building me-1"></i> Mayoristas
+                    </button>
+                </li>
+                <?php endif; ?>
+                <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) !== 'vvillarreal'): ?>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="franquicias-tab" data-bs-toggle="tab"
                         data-bs-target="#franquicias" type="button" role="tab">
                         <i class="fa-solid fa-store me-1"></i> Franquicias
                     </button>
                 </li>
+                <?php endif; ?>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="gestion-tab" data-bs-toggle="tab" data-bs-target="#gestion"
                         type="button" role="tab">
@@ -187,12 +197,14 @@ include 'templates/layout/header.php';
                         <i class="fa-solid fa-chart-line me-1"></i> Reportes
                     </button>
                 </li>
+                <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) !== 'vvillarreal'): ?>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="sugerencias-tab" data-bs-toggle="tab" data-bs-target="#sugerencias"
                         type="button" role="tab">
                         <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Sugerencias
                     </button>
                 </li>
+                <?php endif; ?>
             </ul>
         </div>
         <div class="card-body">
@@ -318,6 +330,16 @@ include 'templates/layout/header.php';
                     <!-- ======================== FIN DEL NUEVO LAYOUT DE 2 COLUMNAS ========================= -->
                 </div>
                 <!-- ==================================================================================== -->
+                <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) === 'vvillarreal'): ?>
+                <div class="tab-pane fade show active" id="mayoristas" role="tabpanel"
+                    aria-labelledby="mayoristas-tab">
+                    <div class="table-responsive">
+                        <table id="tabla-mayoristas" class="table table-striped table-hover" style="width:100%">
+                        </table>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) !== 'vvillarreal'): ?>
                 <div class="tab-pane fade show active" id="franquicias" role="tabpanel"
                     aria-labelledby="franquicias-tab">
                     <div class="table-responsive">
@@ -325,11 +347,13 @@ include 'templates/layout/header.php';
                         </table>
                     </div>
                 </div>
+                <?php endif; ?>
+                <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) !== 'vvillarreal'): ?>
                 <div class="tab-pane fade" id="sugerencias" role="tabpanel" aria-labelledby="sugerencias-tab">
                     <div class="card bg-light mb-3 shadow-sm border-left-primary">
                         <div class="card-body p-3 d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-lightbulb me-2"></i>Propuestas Sugeridas Automáticamente</h6>
+                                <h6 class="m-0 font-weight-bold text-primary"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Propuestas Sugeridas Automáticamente</h6>
                                 <p class="small text-muted mb-0">Basado en comprobantes pendientes ordenados por Fecha de Emisión.</p>
                             </div>
                             <button class="btn btn-primary btn-sm shadow-sm" id="btn-generar-sugerencias">
@@ -342,6 +366,7 @@ include 'templates/layout/header.php';
                         </table>
                     </div>
                 </div>
+                <?php endif; ?>
                 <div class="tab-pane fade" id="indicadores" role="tabpanel">
                     <div class="row" id="container-indicadores">
                         <div class="col-12 text-center p-5">
@@ -354,7 +379,7 @@ include 'templates/layout/header.php';
                     <div class="p-4">
                         <div class="row mb-5">
                             <div class="col-12">
-                                <h5 class="mb-4 text-primary fw-bold"><i class="fa-solid fa-store me-2"></i> Reporte Promedio Plazos Fin de Mes por Franquicia</h5>
+                                <h5 class="mb-4 text-primary fw-bold"><i class="fa-solid fa-store me-2"></i> Reporte Promedio Plazos Fin de Mes por <?php echo (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) === 'vvillarreal') ? 'Mayorista' : 'Franquicia'; ?></h5>
                                 <div class="table-responsive">
                                     <table id="tabla-reporte-franquicias" class="table table-striped table-hover align-middle border shadow-sm" style="width:100%">
                                     </table>

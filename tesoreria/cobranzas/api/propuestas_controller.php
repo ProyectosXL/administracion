@@ -13,6 +13,44 @@ if (!isset($_SESSION['usuario_id'])) {
 
 $action = $_GET['action'] ?? '';
 
+function getWholesalerClientCodes($conn_central) {
+    static $codes = null;
+    if ($codes !== null) return $codes;
+    $codes = [];
+    if (!$conn_central) return $codes;
+    $sql = "SELECT DISTINCT COD_CLIENT FROM RO_V_COBRANZA_PEND_MAYORISTAS";
+    $stmt = sqlsrv_query($conn_central, $sql);
+    if ($stmt) {
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $codes[] = trim($row['COD_CLIENT']);
+        }
+    }
+    return $codes;
+}
+
+function getFranchiseClientCodes($conn_central) {
+    static $codes = null;
+    if ($codes !== null) return $codes;
+    $codes = [];
+    if (!$conn_central) return $codes;
+    $sql = "SELECT DISTINCT COD_CLIENT FROM RO_V_COBRANZA_PEND_FRANQUICIAS";
+    $stmt = sqlsrv_query($conn_central, $sql);
+    if ($stmt) {
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $codes[] = trim($row['COD_CLIENT']);
+        }
+    }
+    return $codes;
+}
+
+function getFiltroClientesPermitidos($conn_central) {
+    if (isset($_SESSION['usuario_nombre']) && trim(strtolower($_SESSION['usuario_nombre'])) === 'vvillarreal') {
+        return getWholesalerClientCodes($conn_central);
+    } else {
+        return getFranchiseClientCodes($conn_central);
+    }
+}
+
 try {
     $es_admin = (isset($_SESSION['usuario_rol']) && $_SESSION['usuario_rol'] === 'admin');
 
@@ -124,11 +162,23 @@ try {
                 exit;
             }
             $conn_apps = Database::getConnection('apps');
+            $conn_central = Database::getConnection('central');
 
             // --- AUTO-VENCIMIENTO GLOBAL ---
             // Revisamos vencimientos de todos los clientes antes de mostrar los KPIs
             require_once __DIR__ . '/vencimientos_controller.php';
             verificarYActualizarVencimientosCliente($conn_apps, null);
+
+            $clientes_permitidos = getFiltroClientesPermitidos($conn_central);
+            if (empty($clientes_permitidos)) {
+                echo json_encode(['success' => true, 'data' => [
+                    'kpis' => ['totalActivas' => 0, 'montoEnNegociacion' => 0, 'contrapropuestas' => 0, 'aceptadasMes' => 0, 'montoVencido' => 0],
+                    'graficoEstados' => [],
+                    'graficoActividad' => []
+                ]]);
+                exit;
+            }
+            $placeholders = implode(',', array_fill(0, count($clientes_permitidos), '?'));
 
             $response = [];
             $sql_kpis = "SELECT 
@@ -140,6 +190,7 @@ try {
                  JOIN FP_propuestas_pago p2 ON h.id_propuesta = p2.id
                  WHERE CAST(h.descripcion AS varchar(max)) LIKE 'Propuesta aceptada por el cliente%'
                    AND h.fecha_evento >= DATEADD(day, -30, GETDATE())
+                   AND p2.cod_cliente IN ($placeholders)
                    AND NOT EXISTS (
                        SELECT 1 FROM FP_propuestas_pago_historial h2 
                        WHERE h2.id_propuesta = p2.id 
@@ -148,34 +199,41 @@ try {
                    )
                 ) AS aceptadasMes, 
                 SUM(CASE WHEN p.estado = 'VENCIDA' THEN p.total_propuesto ELSE 0 END) AS montoVencido 
-            FROM FP_propuestas_pago p";
-            $stmt_kpis = sqlsrv_query($conn_apps, $sql_kpis);
+            FROM FP_propuestas_pago p
+            WHERE p.cod_cliente IN ($placeholders)";
+            $params_kpis = array_merge($clientes_permitidos, $clientes_permitidos);
+            $stmt_kpis = sqlsrv_query($conn_apps, $sql_kpis, $params_kpis);
             $response['kpis'] = sqlsrv_fetch_array($stmt_kpis, SQLSRV_FETCH_ASSOC);
 
-            $sql_estados = "SELECT estado, COUNT(*) as cantidad FROM FP_propuestas_pago GROUP BY estado";
-            $stmt_estados = sqlsrv_query($conn_apps, $sql_estados);
+            $sql_estados = "SELECT estado, COUNT(*) as cantidad FROM FP_propuestas_pago WHERE cod_cliente IN ($placeholders) GROUP BY estado";
+            $stmt_estados = sqlsrv_query($conn_apps, $sql_estados, $clientes_permitidos);
             $grafico_estados = [];
-            while ($row = sqlsrv_fetch_array($stmt_estados, SQLSRV_FETCH_ASSOC))
-                $grafico_estados[] = $row;
+            if ($stmt_estados) {
+                while ($row = sqlsrv_fetch_array($stmt_estados, SQLSRV_FETCH_ASSOC))
+                    $grafico_estados[] = $row;
+            }
             $response['graficoEstados'] = $grafico_estados;
 
             $sql_actividad = "SELECT CAST(h.fecha_evento AS DATE) AS dia, COUNT(DISTINCT h.id_propuesta) as cantidad 
-                             FROM FP_propuestas_pago_historial h
-                             JOIN FP_propuestas_pago p ON h.id_propuesta = p.id
-                             WHERE CAST(h.descripcion AS varchar(max)) LIKE 'Propuesta aceptada por el cliente%'
-                               AND h.fecha_evento >= DATEADD(day, -7, GETDATE())
-                               AND NOT EXISTS (
-                                   SELECT 1 FROM FP_propuestas_pago_historial h2 
-                                   WHERE h2.id_propuesta = p.id 
-                                     AND (CAST(h2.descripcion AS varchar(max)) LIKE '%Contrapropuesta%' 
-                                          OR CAST(h2.descripcion AS varchar(max)) LIKE '%actualizada por administración%')
-                               )
-                             GROUP BY CAST(h.fecha_evento AS DATE) 
-                             ORDER BY dia ASC";
-            $stmt_actividad = sqlsrv_query($conn_apps, $sql_actividad);
+                              FROM FP_propuestas_pago_historial h
+                              JOIN FP_propuestas_pago p ON h.id_propuesta = p.id
+                              WHERE CAST(h.descripcion AS varchar(max)) LIKE 'Propuesta aceptada por el cliente%'
+                                AND h.fecha_evento >= DATEADD(day, -7, GETDATE())
+                                AND p.cod_cliente IN ($placeholders)
+                                AND NOT EXISTS (
+                                    SELECT 1 FROM FP_propuestas_pago_historial h2 
+                                    WHERE h2.id_propuesta = p.id 
+                                      AND (CAST(h2.descripcion AS varchar(max)) LIKE '%Contrapropuesta%' 
+                                           OR CAST(h2.descripcion AS varchar(max)) LIKE '%actualizada por administración%')
+                                )
+                              GROUP BY CAST(h.fecha_evento AS DATE) 
+                              ORDER BY dia ASC";
+            $stmt_actividad = sqlsrv_query($conn_apps, $sql_actividad, $clientes_permitidos);
             $grafico_actividad = [];
-            while ($row = sqlsrv_fetch_array($stmt_actividad, SQLSRV_FETCH_ASSOC))
-                $grafico_actividad[] = $row;
+            if ($stmt_actividad) {
+                while ($row = sqlsrv_fetch_array($stmt_actividad, SQLSRV_FETCH_ASSOC))
+                    $grafico_actividad[] = $row;
+            }
             $response['graficoActividad'] = $grafico_actividad;
 
             echo json_encode(['success' => true, 'data' => $response]);
@@ -190,6 +248,13 @@ try {
             $conn_central = Database::getConnection('central');
             $indicadores = [];
 
+            $clientes_permitidos = getFiltroClientesPermitidos($conn_central);
+            if (empty($clientes_permitidos)) {
+                echo json_encode(['success' => true, 'data' => []]);
+                exit;
+            }
+            $placeholders = implode(',', array_fill(0, count($clientes_permitidos), '?'));
+
             $sql_ciclo = "WITH PrimerasRespuestas AS (
                 SELECT id_propuesta, MIN(fecha_evento) as fecha_respuesta
                 FROM FP_propuestas_pago_historial
@@ -201,13 +266,19 @@ try {
             SELECT AVG(CAST(DATEDIFF(hour, p.fecha_creacion, pr.fecha_respuesta) AS FLOAT)) as avg_horas 
             FROM FP_propuestas_pago p 
             JOIN PrimerasRespuestas pr ON p.id = pr.id_propuesta 
-            WHERE p.estado NOT IN ('RECHAZADA')";
-            $stmt_ciclo = sqlsrv_query($conn_apps, $sql_ciclo);
+            WHERE p.estado NOT IN ('RECHAZADA')
+              AND p.cod_cliente IN ($placeholders)";
+            $stmt_ciclo = sqlsrv_query($conn_apps, $sql_ciclo, $clientes_permitidos);
             $row_ciclo = sqlsrv_fetch_array($stmt_ciclo, SQLSRV_FETCH_ASSOC);
             $indicadores['tiempo_promedio_horas'] = round($row_ciclo['avg_horas'] ?? 0, 1);
 
-            $sql_beneficio = "SELECT COUNT(DISTINCT i.n_comp_factura) as cant_comps, SUM(i.importe_bruto - i.importe_neto) as total_ahorro FROM FP_propuestas_pago_items i JOIN FP_propuestas_pago p ON i.id_propuesta = p.id WHERE p.estado IN ('ACEPTADA', 'DOCUMENTACION_ADJUNTADA', 'PAGADO') AND (i.importe_bruto - i.importe_neto) > 0";
-            $stmt_ben = sqlsrv_query($conn_apps, $sql_beneficio);
+            $sql_beneficio = "SELECT COUNT(DISTINCT i.n_comp_factura) as cant_comps, SUM(i.importe_bruto - i.importe_neto) as total_ahorro 
+                              FROM FP_propuestas_pago_items i 
+                              JOIN FP_propuestas_pago p ON i.id_propuesta = p.id 
+                              WHERE p.estado IN ('ACEPTADA', 'DOCUMENTACION_ADJUNTADA', 'PAGADO') 
+                                AND (i.importe_bruto - i.importe_neto) > 0
+                                AND p.cod_cliente IN ($placeholders)";
+            $stmt_ben = sqlsrv_query($conn_apps, $sql_beneficio, $clientes_permitidos);
             $row_ben = sqlsrv_fetch_array($stmt_ben, SQLSRV_FETCH_ASSOC);
             $total_ahorro = round($row_ben['total_ahorro'] ?? 0, 2);
             $cant_comps_ben = intval($row_ben['cant_comps'] ?? 0);
@@ -216,8 +287,10 @@ try {
             $indicadores['conteo_comprobantes_beneficio'] = $cant_comps_ben;
             $indicadores['promedio_beneficio_pesos'] = $cant_comps_ben > 0 ? round($total_ahorro / $cant_comps_ben, 2) : 0;
 
-            $sql_conversion = "SELECT COUNT(*) as total, SUM(CASE WHEN estado IN ('ACEPTADA', 'PAGADO') THEN 1 ELSE 0 END) as concretadas FROM FP_propuestas_pago";
-            $stmt_conv = sqlsrv_query($conn_apps, $sql_conversion);
+            $sql_conversion = "SELECT COUNT(*) as total, SUM(CASE WHEN estado IN ('ACEPTADA', 'PAGADO') THEN 1 ELSE 0 END) as concretadas 
+                               FROM FP_propuestas_pago 
+                               WHERE cod_cliente IN ($placeholders)";
+            $stmt_conv = sqlsrv_query($conn_apps, $sql_conversion, $clientes_permitidos);
             $row_conv = sqlsrv_fetch_array($stmt_conv, SQLSRV_FETCH_ASSOC);
             $tot_prop = intval($row_conv['total'] ?: 1);
             $cant_conc = intval($row_conv['concretadas'] ?? 0);
@@ -237,9 +310,10 @@ try {
             SELECT TOP 5 p.cod_cliente, AVG(CAST(DATEDIFF(hour, p.fecha_creacion, pr.fecha_respuesta) AS FLOAT)) as promedio 
             FROM FP_propuestas_pago p 
             JOIN PrimerasRespuestas pr ON p.id = pr.id_propuesta 
+            WHERE p.cod_cliente IN ($placeholders)
             GROUP BY p.cod_cliente 
             ORDER BY promedio DESC";
-            $stmt_demora = sqlsrv_query($conn_apps, $sql_demora);
+            $stmt_demora = sqlsrv_query($conn_apps, $sql_demora, $clientes_permitidos);
             $codigos_demora = [];
             $ranking_demora_tmp = [];
             if ($stmt_demora) {
@@ -249,8 +323,13 @@ try {
                 }
             }
 
-            $sql_top = "SELECT TOP 5 cod_cliente, SUM(total_propuesto) as total FROM FP_propuestas_pago WHERE estado NOT IN ('RECHAZADA', 'PAGADO', 'VENCIDA') GROUP BY cod_cliente ORDER BY total DESC";
-            $stmt_top = sqlsrv_query($conn_apps, $sql_top);
+            $sql_top = "SELECT TOP 5 cod_cliente, SUM(total_propuesto) as total 
+                        FROM FP_propuestas_pago 
+                        WHERE estado NOT IN ('RECHAZADA', 'PAGADO', 'VENCIDA')
+                          AND cod_cliente IN ($placeholders)
+                        GROUP BY cod_cliente 
+                        ORDER BY total DESC";
+            $stmt_top = sqlsrv_query($conn_apps, $sql_top, $clientes_permitidos);
             $codigos_deuda = [];
             $top_deudores_tmp = [];
             if ($stmt_top) {
@@ -263,8 +342,10 @@ try {
             $todos_codigos = array_unique(array_merge($codigos_demora, $codigos_deuda));
             $nombres_map = [];
             if (!empty($todos_codigos) && $conn_central) {
-                $placeholders = implode(',', array_fill(0, count($todos_codigos), '?'));
-                $sql_n = "SELECT COD_CLIENT, RAZON_SOCI FROM RO_V_COBRANZA_PEND_FRANQUICIAS WHERE COD_CLIENT IN ($placeholders) UNION SELECT COD_CLIENT, RAZON_SOCI FROM RO_V_COBRANZA_PEND_MAYORISTAS WHERE COD_CLIENT IN ($placeholders)";
+                $n_placeholders = implode(',', array_fill(0, count($todos_codigos), '?'));
+                $sql_n = "SELECT COD_CLIENT, RAZON_SOCI FROM RO_V_COBRANZA_PEND_FRANQUICIAS WHERE COD_CLIENT IN ($n_placeholders) 
+                          UNION 
+                          SELECT COD_CLIENT, RAZON_SOCI FROM RO_V_COBRANZA_PEND_MAYORISTAS WHERE COD_CLIENT IN ($n_placeholders)";
                 $stmt_n = sqlsrv_query($conn_central, $sql_n, array_merge($todos_codigos, $todos_codigos));
                 if ($stmt_n) {
                     while ($rn = sqlsrv_fetch_array($stmt_n, SQLSRV_FETCH_ASSOC)) {
@@ -280,8 +361,13 @@ try {
                 return ['cliente' => $nombres_map[$d['cod_cliente']] ?? "Cliente " . $d['cod_cliente'], 'horas' => round($d['promedio'], 1), 'codigo' => $d['cod_cliente']];
             }, $ranking_demora_tmp);
 
-            $sql_medios = "SELECT medio_de_pago, COUNT(*) as cantidad FROM FP_propuestas_pago WHERE medio_de_pago IS NOT NULL GROUP BY medio_de_pago ORDER BY cantidad DESC";
-            $stmt_medios = sqlsrv_query($conn_apps, $sql_medios);
+            $sql_medios = "SELECT medio_de_pago, COUNT(*) as cantidad 
+                           FROM FP_propuestas_pago 
+                           WHERE medio_de_pago IS NOT NULL 
+                             AND cod_cliente IN ($placeholders)
+                           GROUP BY medio_de_pago 
+                           ORDER BY cantidad DESC";
+            $stmt_medios = sqlsrv_query($conn_apps, $sql_medios, $clientes_permitidos);
             $medios = [];
             if ($stmt_medios) {
                 while ($rm = sqlsrv_fetch_array($stmt_medios, SQLSRV_FETCH_ASSOC))
@@ -294,8 +380,11 @@ try {
             ] : ['medio' => 'N/A', 'cantidad' => 0];
 
             // Métricas adicionales para visualizaciones avanzadas
-            $sql_estados = "SELECT estado, COUNT(*) as cantidad, SUM(total_propuesto) as monto_total FROM FP_propuestas_pago GROUP BY estado";
-            $stmt_estados = sqlsrv_query($conn_apps, $sql_estados);
+            $sql_estados = "SELECT estado, COUNT(*) as cantidad, SUM(total_propuesto) as monto_total 
+                            FROM FP_propuestas_pago 
+                            WHERE cod_cliente IN ($placeholders)
+                            GROUP BY estado";
+            $stmt_estados = sqlsrv_query($conn_apps, $sql_estados, $clientes_permitidos);
             $estados_dist = [];
             if ($stmt_estados) {
                 while ($re = sqlsrv_fetch_array($stmt_estados, SQLSRV_FETCH_ASSOC))
@@ -304,8 +393,13 @@ try {
             $indicadores['distribucion_estados'] = $estados_dist;
 
             // Tendencia últimos 30 días
-            $sql_tendencia = "SELECT CAST(fecha_creacion AS DATE) as fecha, COUNT(*) as cantidad, SUM(total_propuesto) as monto FROM FP_propuestas_pago WHERE fecha_creacion >= DATEADD(day, -30, GETDATE()) GROUP BY CAST(fecha_creacion AS DATE) ORDER BY fecha ASC";
-            $stmt_tend = sqlsrv_query($conn_apps, $sql_tendencia);
+            $sql_tendencia = "SELECT CAST(fecha_creacion AS DATE) as fecha, COUNT(*) as cantidad, SUM(total_propuesto) as monto 
+                              FROM FP_propuestas_pago 
+                              WHERE fecha_creacion >= DATEADD(day, -30, GETDATE()) 
+                                AND cod_cliente IN ($placeholders)
+                              GROUP BY CAST(fecha_creacion AS DATE) 
+                              ORDER BY fecha ASC";
+            $stmt_tend = sqlsrv_query($conn_apps, $sql_tendencia, $clientes_permitidos);
             $tendencia = [];
             if ($stmt_tend) {
                 while ($rt = sqlsrv_fetch_array($stmt_tend, SQLSRV_FETCH_ASSOC)) {
@@ -319,8 +413,12 @@ try {
             $indicadores['tendencia_30dias'] = $tendencia;
 
             // Promedio de descuento otorgado
-            $sql_desc_prom = "SELECT AVG(porcentaje_descuento) as promedio FROM FP_propuestas_pago_items WHERE porcentaje_descuento > 0";
-            $stmt_desc = sqlsrv_query($conn_apps, $sql_desc_prom);
+            $sql_desc_prom = "SELECT AVG(porcentaje_descuento) as promedio 
+                              FROM FP_propuestas_pago_items i 
+                              JOIN FP_propuestas_pago p ON i.id_propuesta = p.id 
+                              WHERE porcentaje_descuento > 0
+                                AND p.cod_cliente IN ($placeholders)";
+            $stmt_desc = sqlsrv_query($conn_apps, $sql_desc_prom, $clientes_permitidos);
             $row_desc = sqlsrv_fetch_array($stmt_desc, SQLSRV_FETCH_ASSOC);
             $indicadores['descuento_promedio'] = round($row_desc['promedio'] ?? 0, 1);
 
@@ -332,8 +430,12 @@ try {
             if ($conn_central) {
                 // 1. Obtener facturas en propuestas activas para excluirlas del cálculo de "Neto Central"
                 $facturas_activas = [];
-                $sql_f_activas = "SELECT items.n_comp_factura FROM FP_propuestas_pago_items items JOIN FP_propuestas_pago p ON items.id_propuesta = p.id WHERE p.estado NOT IN ('RECHAZADA', 'CANCELADA', 'PAGADO', 'VENCIDA')";
-                $stmt_f_activas = sqlsrv_query($conn_apps, $sql_f_activas);
+                $sql_f_activas = "SELECT items.n_comp_factura 
+                                  FROM FP_propuestas_pago_items items 
+                                  JOIN FP_propuestas_pago p ON items.id_propuesta = p.id 
+                                  WHERE p.estado NOT IN ('RECHAZADA', 'CANCELADA', 'PAGADO', 'VENCIDA')
+                                    AND p.cod_cliente IN ($placeholders)";
+                $stmt_f_activas = sqlsrv_query($conn_apps, $sql_f_activas, $clientes_permitidos);
                 if ($stmt_f_activas) {
                     while ($rfa = sqlsrv_fetch_array($stmt_f_activas, SQLSRV_FETCH_ASSOC)) {
                         $facturas_activas[trim($rfa['n_comp_factura'])] = true;
@@ -341,15 +443,18 @@ try {
                 }
 
                 $deudas_acumuladas = [];
-                $vistas = ['RO_V_COBRANZA_PEND_FRANQUICIAS', 'RO_V_COBRANZA_PEND_MAYORISTAS'];
+                $vistas = (isset($_SESSION['usuario_nombre']) && trim(strtolower($_SESSION['usuario_nombre'])) === 'vvillarreal')
+                    ? ['RO_V_COBRANZA_PEND_MAYORISTAS']
+                    : ['RO_V_COBRANZA_PEND_FRANQUICIAS'];
 
                 foreach ($vistas as $v) {
+                    $where_clause = ($v === 'RO_V_COBRANZA_PEND_MAYORISTAS') ? "WHERE 1=1" : "WHERE v.ESTADO <> 'IMP'";
                     $sql_v = "SELECT v.COD_CLIENT, v.RAZON_SOCI, v.T_COMP, v.N_COMP, v.IMPORTE, v.IMPORTE_NETO, ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX
                               FROM $v v
                               LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                              WHERE v.ESTADO <> 'IMP'";
+                              $where_clause AND v.COD_CLIENT IN ($placeholders)";
 
-                    $stmt_v = sqlsrv_query($conn_central, $sql_v);
+                    $stmt_v = sqlsrv_query($conn_central, $sql_v, $clientes_permitidos);
                     if ($stmt_v) {
                         while ($row = sqlsrv_fetch_array($stmt_v, SQLSRV_FETCH_ASSOC)) {
                             $nComp = trim($row['N_COMP']);
@@ -397,8 +502,8 @@ try {
             $indicadores['ranking_deuda_total'] = $ranking_deuda_total;
 
             // Obtener Monto en Negociación (Activas)
-            $sql_neg = "SELECT SUM(total_propuesto) as total FROM FP_propuestas_pago WHERE estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE')";
-            $stmt_neg = sqlsrv_query($conn_apps, $sql_neg);
+            $sql_neg = "SELECT SUM(total_propuesto) as total FROM FP_propuestas_pago WHERE estado IN ('PENDIENTE_APROBACION_CLIENTE', 'PENDIENTE_APROBACION_FINAL', 'CONTRAPROPUESTA_CLIENTE') AND cod_cliente IN ($placeholders)";
+            $stmt_neg = sqlsrv_query($conn_apps, $sql_neg, $clientes_permitidos);
             $row_neg = sqlsrv_fetch_array($stmt_neg, SQLSRV_FETCH_ASSOC);
             $monto_negociacion = floatval($row_neg['total'] ?? 0);
 
@@ -407,8 +512,8 @@ try {
             $indicadores['ranking_deuda_total'] = $ranking_deuda_total;
 
             // Calcular Eficiencia de Cobranza (Cobrado REAL vs Deuda Total)
-            $sql_cobrado = "SELECT SUM(total_propuesto) as total_cobrado FROM FP_propuestas_pago WHERE estado = 'PAGADO'";
-            $stmt_cobrado = sqlsrv_query($conn_apps, $sql_cobrado);
+            $sql_cobrado = "SELECT SUM(total_propuesto) as total_cobrado FROM FP_propuestas_pago WHERE estado = 'PAGADO' AND cod_cliente IN ($placeholders)";
+            $stmt_cobrado = sqlsrv_query($conn_apps, $sql_cobrado, $clientes_permitidos);
             $row_cobrado = sqlsrv_fetch_array($stmt_cobrado, SQLSRV_FETCH_ASSOC);
             $total_cobrado = floatval($row_cobrado['total_cobrado'] ?? 0);
 
@@ -549,15 +654,29 @@ try {
             }
             $conn_apps = Database::getConnection('apps');
             $conn_central = Database::getConnection('central');
-            $sql = "SELECT id, fecha_propuesta_pago, total_propuesto, cod_cliente, medio_de_pago FROM FP_propuestas_pago WHERE estado = 'ACEPTADA' AND fecha_propuesta_pago IS NOT NULL";
-            $stmt = sqlsrv_query($conn_apps, $sql);
+
+            $clientes_permitidos = getFiltroClientesPermitidos($conn_central);
+            if (empty($clientes_permitidos)) {
+                echo json_encode(['success' => true, 'data' => []]);
+                exit;
+            }
+            $placeholders = implode(',', array_fill(0, count($clientes_permitidos), '?'));
+
+            $sql = "SELECT id, fecha_propuesta_pago, total_propuesto, cod_cliente, medio_de_pago 
+                    FROM FP_propuestas_pago 
+                    WHERE estado = 'ACEPTADA' 
+                      AND fecha_propuesta_pago IS NOT NULL 
+                      AND cod_cliente IN ($placeholders)";
+            $stmt = sqlsrv_query($conn_apps, $sql, $clientes_permitidos);
             $eventos = [];
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                $eventos[] = [
-                    'title' => '$' . number_format($row['total_propuesto'], 2) . ' - ' . $row['cod_cliente'],
-                    'start' => ($row['fecha_propuesta_pago'] instanceof DateTime) ? $row['fecha_propuesta_pago']->format('Y-m-d') : $row['fecha_propuesta_pago'],
-                    'extendedProps' => ['id' => $row['id'], 'monto' => $row['total_propuesto'], 'cliente' => $row['cod_cliente'], 'medio_de_pago' => $row['medio_de_pago']]
-                ];
+            if ($stmt) {
+                while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                    $eventos[] = [
+                        'title' => '$' . number_format($row['total_propuesto'], 2) . ' - ' . $row['cod_cliente'],
+                        'start' => ($row['fecha_propuesta_pago'] instanceof DateTime) ? $row['fecha_propuesta_pago']->format('Y-m-d') : $row['fecha_propuesta_pago'],
+                        'extendedProps' => ['id' => $row['id'], 'monto' => $row['total_propuesto'], 'cliente' => $row['cod_cliente'], 'medio_de_pago' => $row['medio_de_pago']]
+                    ];
+                }
             }
             echo json_encode(['success' => true, 'data' => $eventos]);
             break;
@@ -581,6 +700,12 @@ try {
             $codigo = $_GET['codigo'] ?? '';
             $razon = $_GET['razon'] ?? '';
             $estado = $_GET['estado'] ?? '';
+
+            $clientes_permitidos = getFiltroClientesPermitidos($conn_central);
+            if (empty($clientes_permitidos)) {
+                echo json_encode(['data' => []]);
+                exit;
+            }
 
             $where = " WHERE 1=1";
             $params = [];
@@ -620,6 +745,11 @@ try {
                     $where .= " AND 1=0";
                 }
             }
+
+            // Aplicar whitelist de clientes permitidos
+            $placeholders = implode(',', array_fill(0, count($clientes_permitidos), '?'));
+            $where .= " AND cod_cliente IN ($placeholders)";
+            $params = array_merge($params, $clientes_permitidos);
 
             $sql = "SELECT id, cod_cliente, fecha_creacion, fecha_propuesta_pago, fecha_ultima_modificacion, total_propuesto, estado, 
                            DATEDIFF(day, fecha_creacion, fecha_propuesta_pago) as dias_plazo 
@@ -762,6 +892,7 @@ try {
                     }
 
                     foreach ($vistas as $vista) {
+                        $estado_cond = ($vista === 'RO_V_COBRANZA_PEND_MAYORISTAS') ? "" : "AND v.ESTADO <> 'IMP'";
                         // Replicamos la lógica aritmética exacta de Mariela pero directamente en SQL
                         $sql_v = "SELECT SUM(
                                     CASE WHEN v.T_COMP LIKE 'NC%' THEN -1.0 ELSE 1.0 END * 
@@ -784,7 +915,7 @@ try {
                                 ) as total_neto
                                 FROM $vista v
                                 LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                                WHERE v.COD_CLIENT IN ($placeholders) AND v.ESTADO <> 'IMP' AND v.T_COMP <> 'REC' AND v.T_COMP NOT LIKE 'NCR%' AND v.T_COMP NOT LIKE 'NCP%' $where_exclude";
+                                WHERE v.COD_CLIENT IN ($placeholders) $estado_cond AND v.T_COMP <> 'REC' AND v.T_COMP NOT LIKE 'NCR%' AND v.T_COMP NOT LIKE 'NCP%' $where_exclude";
 
                         $stmt_v = sqlsrv_query($conn_central, $sql_v, $sql_params);
                         if ($stmt_v) {
@@ -854,16 +985,24 @@ try {
                 exit;
             }
 
+            $clientes_permitidos = getFiltroClientesPermitidos($conn_central);
+            if (empty($clientes_permitidos)) {
+                echo json_encode(['success' => true, 'reporte_franquicias' => [], 'reporte_razon_social' => []]);
+                exit;
+            }
+            $placeholders = implode(',', array_fill(0, count($clientes_permitidos), '?'));
+
             // 1. Obtener propuestas desde ACEPTADA en adelante (incluye DOCUMENTACION ADJUNTADA y PAGADO)
             $sql = "SELECT id, cod_cliente, fecha_creacion, fecha_propuesta_pago, fecha_ultima_modificacion, estado,
                            DATEDIFF(day, fecha_creacion, fecha_propuesta_pago) as diff_prop,
                            DATEDIFF(day, fecha_creacion, fecha_ultima_modificacion) as diff_fallback
                     FROM FP_propuestas_pago 
-                    WHERE estado LIKE '%ACEPTADA%' 
+                    WHERE (estado LIKE '%ACEPTADA%' 
                        OR estado LIKE '%REVISADA%' 
                        OR estado LIKE '%DOCUMENTACION%' 
-                       OR estado LIKE '%PAGADO%'";
-            $stmt = sqlsrv_query($conn_apps, $sql);
+                       OR estado LIKE '%PAGADO%')
+                      AND cod_cliente IN ($placeholders)";
+            $stmt = sqlsrv_query($conn_apps, $sql, $clientes_permitidos);
             
             $datos_crudos = [];
             $codigos = [];
