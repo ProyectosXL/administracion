@@ -170,6 +170,49 @@ try {
             $response = ['success' => true, 'data' => $data_final, 'debug_info' => $debug_info];
             break;
 
+        case 'obtener_detalle_ventas':
+            $desde      = $_POST['desde']      ?? '';
+            $hasta      = $_POST['hasta']      ?? '';
+            $nro_sucurs = $_POST['nro_sucurs'] ?? '';
+            if (empty($desde) || empty($hasta) || empty($nro_sucurs))
+                throw new Exception('Todos los parámetros son obligatorios.');
+
+            $db_alias = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') ? 'suc_uy' : 'locales';
+            $conexion = $conn->conectar($db_alias);
+            if (!$conexion) throw new Exception('No se pudo conectar a la base de datos.');
+
+            $sql_detalle   = "EXEC dbo.RO_SP_DETALLE_VENTAS_SUCURSAL @NRO_SUCURSAL = ?, @DESDE = ?, @HASTA = ?";
+            $params_detalle = [$nro_sucurs, $desde, $hasta];
+            $stmt_detalle   = sqlsrv_query($conexion, $sql_detalle, $params_detalle);
+            if ($stmt_detalle === false) {
+                $err = sqlsrv_errors();
+                throw new Exception('Error al ejecutar el SP de detalle: ' . ($err[0]['message'] ?? 'desconocido'));
+            }
+
+            $detalle = [];
+            while ($row = sqlsrv_fetch_array($stmt_detalle, SQLSRV_FETCH_ASSOC)) {
+                $fecha = $row['FECHA_EMIS'];
+                if ($fecha instanceof DateTime) {
+                    $fecha = $fecha->format('Y-m-d');
+                } elseif (is_array($fecha) && isset($fecha['date'])) {
+                    $fecha = (new DateTime($fecha['date']))->format('Y-m-d');
+                }
+                $detalle[] = [
+                    'T_COMP'          => $row['T_COMP'],
+                    'FECHA_EMIS'      => $fecha,
+                    'CANT_CENTRAL'    => (int)$row['CANT_CENTRAL'],
+                    'IMPORTE_CENTRAL' => (float)$row['IMPORTE_CENTRAL'],
+                    'CANT_LOCAL'      => (int)$row['CANT_LOCAL'],
+                    'IMPORTE_LOCAL'   => (float)$row['IMPORTE_LOCAL'],
+                    'DIFERENCIA'      => (float)$row['DIFERENCIA'],
+                    'ESTADO'          => $row['ESTADO'],
+                ];
+            }
+            sqlsrv_close($conexion);
+
+            $response = ['success' => true, 'data' => $detalle];
+            break;
+
         default:
             $response['message'] = 'Acción no válida.';
             break;

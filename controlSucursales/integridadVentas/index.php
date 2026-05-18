@@ -126,6 +126,7 @@ $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
     
     <!-- Modales -->
     <?php include 'modals/modalDetalleIVA.php'; ?>
+    <?php include 'modals/modalDetalleVentas.php'; ?>
     
     <!-- jQuery (necesario para DataTables y algunas funcionalidades) -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
