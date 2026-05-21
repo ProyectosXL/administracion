@@ -27,12 +27,39 @@ if (!function_exists('enviarNotificacion')) {
         if (empty($destinatarios))
             return false;
 
+        // Normalizamos los destinatarios a un array, soportando separación por punto y coma (;)
+        $destinatarios_array = is_array($destinatarios) ? $destinatarios : explode(';', (string)$destinatarios);
+
+        $destinatarios_filtrados = [];
+        $excluidos = [];
+        foreach ($destinatarios_array as $email) {
+            $email = trim($email);
+            if (empty($email)) {
+                continue;
+            }
+            if (strcasecmp($email, 'yamilaruiz.extralarge@gmail.com') === 0) {
+                $excluidos[] = $email;
+                continue;
+            }
+            $destinatarios_filtrados[] = $email;
+        }
+
+        // Si se excluyeron destinatarios, registrarlo en el log
+        if (!empty($excluidos)) {
+            file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] EXCLUSIÓN: Se omitió el envío a los siguientes destinatarios: " . implode(',', $excluidos) . "\n", FILE_APPEND);
+        }
+
+        if (empty($destinatarios_filtrados)) {
+            file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] ENVÍO ANULADO: No quedan destinatarios válidos tras aplicar la exclusión.\n", FILE_APPEND);
+            return true; // Retornamos true para evitar reintentos infinitos en crons de recordatorios/avisos
+        }
+
         if (!$notificaciones_habilitadas) {
-            file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] ENVÍO SUPRIMIDO (MODO MANTENIMIENTO) | A: " . (is_array($destinatarios) ? implode(',', $destinatarios) : $destinatarios) . " | Asunto: $asunto\n", FILE_APPEND);
+            file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] ENVÍO SUPRIMIDO (MODO MANTENIMIENTO) | A: " . implode(',', $destinatarios_filtrados) . " | Asunto: $asunto\n", FILE_APPEND);
             return true; // Retornamos true para que el flujo de la app continúe sin errores
         }
 
-        file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] Enviando mail a: " . (is_array($destinatarios) ? implode(',', $destinatarios) : $destinatarios) . " | Asunto: $asunto\n", FILE_APPEND);
+        file_put_contents(__DIR__ . '/notificaciones.log', "[" . date('Y-m-d H:i:s') . "] Enviando mail a: " . implode(',', $destinatarios_filtrados) . " | Asunto: $asunto\n", FILE_APPEND);
         
         require_once __DIR__ . '/../config/database.php';
         Database::getConnection('apps'); 
@@ -50,11 +77,7 @@ if (!function_exists('enviarNotificacion')) {
 
             $mail->setFrom($mail->Username, 'XL Extra Large');
 
-            // Normalizamos los destinatarios a un array, soportando separación por punto y coma (;)
-            $destinatarios_array = is_array($destinatarios) ? $destinatarios : explode(';', (string)$destinatarios);
-
-            foreach ($destinatarios_array as $email) {
-                $email = trim($email);
+            foreach ($destinatarios_filtrados as $email) {
                 if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     $mail->addAddress($email);
                 }

@@ -218,10 +218,11 @@ const vincularRecibo = (btn) => {
     const row = btn.closest('tr');
     const cells = row.querySelectorAll('td');
     currentRowData = {
+        row: row,
         fecha: cells[0].textContent.trim(),
         nroSucursal: cells[1].textContent.trim(),
         codComp: cells[3].textContent.trim(),
-        nComp: cells[4].textContent, // No usar trim() aquí
+        nComp: cells[4].dataset.ncomp,
         monto: parseFloat(cells[5].textContent.replace(/[$.]/g, '').replace(',', '.')),
         codCta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
         montoFormateado: cells[5].textContent.trim()
@@ -301,7 +302,7 @@ const buscarRecibos = async (searchTerm = '') => {
 
 const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculado) => {
     // Validar el flujo antes de proceder
-    if (!validarFlujo(document.querySelector(`td[data-ncomp='${currentRowData.nComp}']`).closest('tr'), 'cargado')) {
+    if (!validarFlujo(currentRowData.row, 'cargado')) {
         return;
     }
 
@@ -353,7 +354,7 @@ const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculad
                     });
 
                     // Actualizar UI
-                    const rowElement = document.querySelector(`td[data-ncomp='${currentRowData.nComp}']`).closest('tr');
+                    const rowElement = currentRowData.row;
                     if (rowElement) {
                         const vincularBtn = rowElement.querySelector('.btn-info');
                         if(vincularBtn) vincularBtn.style.display = 'none';

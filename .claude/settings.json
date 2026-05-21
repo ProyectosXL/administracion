@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read(//tmp/claude/v--administracion/cd35c852-ac93-417a-9b57-e427f594c230/tasks/**)"
-    ]
-  }
-}

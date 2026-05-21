@@ -66,6 +66,7 @@ $locales = $sucursal->traerLocales();
                                 <option value="pendiente_recibir" <?= ($estado == "pendiente_recibir") ? "selected" : "" ?>>Pendiente Recibir</option>
                                 <option value="pendiente_control" <?= ($estado == "pendiente_control") ? "selected" : "" ?>>Pendiente Control</option>
                                 <option value="pendiente_cargar" <?= ($estado == "pendiente_cargar") ? "selected" : "" ?>>Pendiente Cargar</option>
+                                <option value="anulados" <?= ($estado == "anulados") ? "selected" : "" ?>>Anulados</option>
                             </select>
                         </div>
                         <div class="col-md-3">
@@ -77,6 +78,12 @@ $locales = $sucursal->traerLocales();
                 </div>
 
                 <div class="table-container mt-4">
+                    <?php if($estado == 'anulados'): ?>
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Mostrando movimientos anulados en Tango (CTA28.SITUACION='A'). Estos comprobantes están neteados contablemente con su REV correspondiente.
+                    </div>
+                    <?php endif; ?>
                     <table class="table table-striped table-hover" id="tablaControlRecepcion">
                         <thead>
                             <tr>
@@ -113,7 +120,12 @@ $locales = $sucursal->traerLocales();
                                         <td><?= $gasto['NRO_SUCURS'] ?></td>
                                         <td><?= $sucursal ?></td>
                                         <td><?= $gasto['COD_COMP'] ?></td>
-                                        <td data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" data-ncomp="<?= $gasto['N_COMP'] ?>" data-ncomp-original="<?= htmlspecialchars($gasto['N_COMP']) ?>"><?= $gasto['N_COMP'] ?></td>
+                                        <td data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" data-ncomp="<?= $gasto['N_COMP'] ?>" data-ncomp-original="<?= htmlspecialchars($gasto['N_COMP']) ?>">
+                                            <?= $gasto['N_COMP'] ?>
+                                            <?php if($estado == 'anulados'): ?>
+                                                <span class="badge bg-danger ms-2">Anulado</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
                                         <td><?= $gasto['DESPACHADO'] == 1 ? ($gasto['FECHA_DESP'])->format("d/m/Y H:i") : '' ?></td>
                                         <td><?= $gasto['PRECINTO'] > 1 ? $gasto['PRECINTO'] : '' ?></td>
@@ -140,6 +152,7 @@ $locales = $sucursal->traerLocales();
                                             <textarea class="form-control" rows="1" <?= $gasto['OBSERVACIONES'] ? 'disabled' : '' ?>><?= $gasto['OBSERVACIONES'] ?></textarea>
                                         </td>
                                         <td>
+                                            <?php if($estado != 'anulados'): ?>
                                             <div class="btn-group" role="group" aria-label="Acciones">
                                                 <?php if($gasto['OBSERVACIONES'] == NULL): ?>
                                                     <button class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" onclick="guardarObservaciones(this)" title="Guardar Observaciones">
@@ -152,6 +165,7 @@ $locales = $sucursal->traerLocales();
                                                 </button>
                                                 <?php endif; ?>
                                             </div>
+                                            <?php endif; ?>
                                         </td>
                                         <td hidden data-cod-cuenta="<?= htmlspecialchars($gasto['COD_CTA']) ?>"><?= $gasto['COD_CTA'] ?></td>
                                         <td hidden data-desc-cuenta="<?= htmlspecialchars($gasto['DESC_CUENTA']) ?>"><?= $gasto['DESC_CUENTA'] ?></td>

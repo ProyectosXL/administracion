@@ -417,9 +417,10 @@ const actualizarCargaAutomatica = (cerrado = 0) => {
 
         if (['6', '7', '9', '13', '14', '15', '16', '17'].includes(idConcepto)) {
 
-            if (valor > 0) {
-                actualizarDetalle(e);
-            }
+            // Siempre guardar, incluso si el valor es 0.
+            // Si el BRUTO < mínimo, el NETO es 0 y debe quedar 0 en BD.
+            // La condición anterior (valor > 0) dejaba el BRUTO en BD cuando el resultado era negativo.
+            actualizarDetalle(e);
 
         }
 

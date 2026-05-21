@@ -535,6 +535,19 @@
     </html>
 <script>
 
+// Guardar valores BRUTOS originales ANTES de que totalizar() los modifique
+// Si esto se hace dentro de $(document).ready, ya es demasiado tarde porque
+// comprobarEstado() → totalizar() ya habrá cambiado attr-realvalue de BRUTO a NETO
+document.querySelectorAll('#tablaAlquileres input[type="text"]').forEach(function(input) {
+    var inputId = input.getAttribute('id');
+    if (inputId) {
+        var concepto = inputId.split('-')[1];
+        if (['6', '7', '15', '16', '17'].includes(concepto)) {
+            input.setAttribute('attr-realvalue-original', input.getAttribute('attr-realvalue'));
+        }
+    }
+});
+
 document.ready = comprobarEstado(<?= $estado ?>);
 
 $(document).ready(function() {
@@ -542,21 +555,6 @@ $(document).ready(function() {
     $(function() {
         $('[data-toggle="tooltip"]').tooltip()
     })
-    
-    // IMPORTANTE: Guardar valores BRUTOS originales para conceptos que necesitan restar algo
-    // Esto permite recalcular siempre desde el valor original sin acumular restas
-    $('#tablaAlquileres input[type="text"]').each(function() {
-        const inputId = $(this).attr('id');
-        if(inputId) {
-            const concepto = inputId.split('-')[1];
-            // Para conceptos 6, 7, 15, 16, 17: guardar el valor bruto original
-            if(['6', '7', '15', '16', '17'].includes(concepto)) {
-                const valorBruto = $(this).attr('attr-realvalue');
-                $(this).attr('attr-realvalue-original', valorBruto);
-                console.log(`💾 Guardando valor bruto original para ${inputId}: ${valorBruto}`);
-            }
-        }
-    });
 
     if(<?= $result['CONTEO'] ?> == 0){
         console.log("📝 No hay registros previos - Insertando detalle inicial");

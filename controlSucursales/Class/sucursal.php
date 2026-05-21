@@ -68,22 +68,6 @@ class Sucursal
         }
     }
 
-    public function traerImportesTotales($nroSucursal, $fecha)
-    {
-        $sql = "SELECT * FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES where nro_sucursal = '$nroSucursal' and FECHA = '$fecha';";
-        $stmt = sqlsrv_query($this->cid_locales, $sql);
-
-        try{
-            $rows = array();
-            while ($v = sqlsrv_fetch_array($stmt)) {
-                $rows[] = $v;
-            }
-            return $rows;
-        } catch (\Throwable $th){
-            print_r($th);
-        }
-    }
-
     public function traerImportesTotalesPorPeriodo ($nroSucursal, $desde, $hasta, $medioDePago  )
     {
         $tabla = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? "RO_T_VENTA_DIARIA_SUCURSALES_UY" : "RO_T_VENTA_DIARIA_SUCURSALES";
@@ -186,41 +170,6 @@ class Sucursal
         } catch (\Throwable $th){
             error_log("Exception en autorizarEgreso: " . $th->getMessage());
             throw $th;
-        }
-    }
-
-    public function traerVerificados ($fecha)
-    {
-        $sql = "SELECT nro_sucursal ,MIN(VERIFICADO) AS STATUS
-        FROM  ".$this->cid->prefix."RO_T_VENTA_DIARIA_SUCURSALES
-        WHERE FECHA = '$fecha' GROUP BY NRO_SUCURSAL ";
-   
-        $stmt = sqlsrv_query($this->cid_locales, $sql);
-        
-        try{
-            $rows = array();
-            while ($v = sqlsrv_fetch_array($stmt)) {
-                $rows[] = $v;
-            }
-            return $rows;
-        } catch (\Throwable $th){
-            print_r($th);
-        }
-    }
-
-    public function traerControlMensual ($desde, $hasta)
-    {
-        try {
-            $sql = "EXEC ".$this->cid->prefix."RO_SP_CONTROL_MENSUAL_VENTA_SUCURSALES '$desde', '$hasta' ;";
-            $stmt = sqlsrv_query($this->cid_locales, $sql);
-
-            $v = [];
-            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
-                $v[] = $row;
-            }
-            return $v;
-        } catch (Exception $e) {
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
     }
 
@@ -572,7 +521,9 @@ class Sucursal
             ON A.COD_COMP = V.original_cod_comp COLLATE Latin1_General_BIN
             AND RTRIM(LTRIM(A.N_COMP)) = RTRIM(LTRIM(V.original_n_comp)) COLLATE Latin1_General_BIN
             AND  A.NRO_SUCURS = V.NRO_SUCURS
-        WHERE A.COD_CTA = '100100' AND A.COD_COMP IN ('RAF','REV')
+        WHERE A.COD_CTA = '100100'
+            AND A.COD_COMP = 'RAF'
+            AND ISNULL(A.SITUACION, '') " . ($estado == 'anulados' ? "= 'A'" : "<> 'A'") . "
             AND A.FECHA BETWEEN '$desde' AND '$hasta'
         ORDER BY A.FECHA DESC";
 
@@ -590,7 +541,7 @@ class Sucursal
             }
             
             // Aplicar filtro después de obtener los datos
-            if($estado != "todos" && !empty($v)){
+            if($estado != "todos" && $estado != "anulados" && !empty($v)){
                 $dataFiltrada = [];
                 foreach($v as $gasto){
                     $incluir = false;

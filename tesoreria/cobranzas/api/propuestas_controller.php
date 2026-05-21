@@ -861,9 +861,9 @@ try {
                 $conn_apps = Database::getConnection('apps');
                 $conn_central = Database::getConnection('central');
 
-                // 1. Obtener todos los comprobantes que ya están en propuestas activas (para excluir en SQL)
+                // 1. Obtener todos los comprobantes que ya están en propuestas activas (para excluir)
                 $facturas_en_propuestas = [];
-                $sql_prop = "SELECT items.n_comp_factura 
+                $sql_prop = "SELECT items.t_comp_factura, items.n_comp_factura 
                              FROM FP_propuestas_pago_items items 
                              JOIN FP_propuestas_pago propuestas ON items.id_propuesta = propuestas.id 
                              WHERE propuestas.cod_cliente IN ($placeholders) 
@@ -872,55 +872,106 @@ try {
                 $stmt_prop = sqlsrv_query($conn_apps, $sql_prop, $params);
                 if ($stmt_prop !== false) {
                     while ($r = sqlsrv_fetch_array($stmt_prop, SQLSRV_FETCH_ASSOC)) {
-                        $facturas_en_propuestas[] = trim($r['n_comp_factura']);
+                        $key = strtoupper(trim($r['t_comp_factura'])) . '|' . strtoupper(trim($r['n_comp_factura']));
+                        $facturas_en_propuestas[$key] = true;
                     }
                 }
 
-                // 2. Obtener Deuda Total Fuera de Propuesta (Calculado en SQL para máxima velocidad)
+                // 2. Obtener Deuda Total Fuera de Propuesta (Calculado en PHP para máxima exactitud con la lógica de Cobranzas)
                 $deuda_fuera_propuesta = 0;
                 if ($conn_central) {
                     $vistas = ['RO_V_COBRANZA_PEND_FRANQUICIAS', 'RO_V_COBRANZA_PEND_MAYORISTAS'];
-
-                    // Preparamos el filtro de exclusión si hay facturas en propuestas
-                    $where_exclude = "";
-                    $sql_params = $params; // Empezamos con los códigos de cliente
-
-                    if (!empty($facturas_en_propuestas)) {
-                        $placeholders_excl = implode(',', array_fill(0, count($facturas_en_propuestas), '?'));
-                        $where_exclude = " AND v.N_COMP NOT IN ($placeholders_excl)";
-                        $sql_params = array_merge($sql_params, $facturas_en_propuestas);
-                    }
+                    $procesados_lote = [];
 
                     foreach ($vistas as $vista) {
                         $estado_cond = ($vista === 'RO_V_COBRANZA_PEND_MAYORISTAS') ? "" : "AND v.ESTADO <> 'IMP'";
-                        // Replicamos la lógica aritmética exacta de Mariela pero directamente en SQL
-                        $sql_v = "SELECT SUM(
-                                    CASE WHEN v.T_COMP LIKE 'NC%' THEN -1.0 ELSE 1.0 END * 
-                                    (v.IMPORTE * (1.0 - 
-                                        CASE 
-                                            WHEN v.N_COMP LIKE 'A00115%' THEN 
-                                                CASE 
-                                                    WHEN v.T_COMP = 'FAC' THEN 0.0 
-                                                    WHEN v.T_COMP = 'NCP' THEN ISNULL(p.DESC_PP_MAX, 0.0)
-                                                    ELSE 0.0
-                                                END
-                                            ELSE 
-                                                CASE 
-                                                    WHEN v.IMPORTE > 0 AND (v.IMPORTE - ISNULL(v.IMPORTE_NETO, v.IMPORTE)) > (v.IMPORTE * ISNULL(p.DESC_PP_MAX, 0.0))
-                                                    THEN (v.IMPORTE - ISNULL(v.IMPORTE_NETO, v.IMPORTE)) / v.IMPORTE
-                                                    ELSE ISNULL(p.DESC_PP_MAX, 0.0)
-                                                END
-                                        END
-                                    ))
-                                ) as total_neto
-                                FROM $vista v
-                                LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                                WHERE v.COD_CLIENT IN ($placeholders) $estado_cond AND v.T_COMP <> 'REC' AND v.T_COMP NOT LIKE 'NCR%' AND v.T_COMP NOT LIKE 'NCP%' $where_exclude";
+                        
+                        $sql_v = "SELECT v.COD_CLIENT, v.T_COMP, v.N_COMP, 
+                                         CAST(ISNULL(s.SALDO_REAL, v.IMPORTE) AS FLOAT) as IMPORTE, 
+                                         CAST(ISNULL(s.SALDO_REAL * (v.IMPORTE_NETO / NULLIF(v.IMPORTE, 0)), v.IMPORTE_NETO) AS FLOAT) as IMPORTE_NETO, 
+                                         v.FECHA_EMIS,
+                                         ISNULL(p.DESC_PP_MAX, 0) as DESC_PP_MAX, ISNULL(p.DIAS_PP_MAX, 0) as DIAS_PP_MAX, p.MEDIO_PAGO_DEFAULT
+                                  FROM $vista v
+                                  LEFT JOIN (
+                                      SELECT T_COMP, N_COMP, SUM(IMPORTE_VT - IMPORT_CAN) as SALDO_REAL 
+                                      FROM SJ_SALDOS_CC_DETALLE 
+                                      GROUP BY T_COMP, N_COMP
+                                  ) s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
+                                  LEFT JOIN (
+                                      SELECT COD_CLIENT, 
+                                             MAX(DESC_PP_MAX) as DESC_PP_MAX, 
+                                             MAX(DIAS_PP_MAX) as DIAS_PP_MAX, 
+                                             MAX(MEDIO_PAGO_DEFAULT) as MEDIO_PAGO_DEFAULT
+                                      FROM RO_T_PARAMETROS_DESC_CLIENTES
+                                      GROUP BY COD_CLIENT
+                                  ) p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
+                                  WHERE v.COD_CLIENT IN ($placeholders) $estado_cond";
 
-                        $stmt_v = sqlsrv_query($conn_central, $sql_v, $sql_params);
+                        $stmt_v = sqlsrv_query($conn_central, $sql_v, $params);
                         if ($stmt_v) {
-                            $row_v = sqlsrv_fetch_array($stmt_v, SQLSRV_FETCH_ASSOC);
-                            $deuda_fuera_propuesta += floatval($row_v['total_neto'] ?? 0);
+                            while ($v = sqlsrv_fetch_array($stmt_v, SQLSRV_FETCH_ASSOC)) {
+                                $nComp = strtoupper(trim($v['N_COMP']));
+                                $tComp = strtoupper(trim($v['T_COMP']));
+                                $cod = strtoupper(trim($v['COD_CLIENT']));
+                                $llaveComp = $cod . '|' . $tComp . '|' . $nComp;
+                                $filterKey = $tComp . '|' . $nComp;
+
+                                if (isset($facturas_en_propuestas[$filterKey]) || isset($procesados_lote[$llaveComp])) {
+                                    continue;
+                                }
+
+                                $procesados_lote[$llaveComp] = true;
+
+                                $esNegativo = (strpos(trim($v['T_COMP']), 'NC') !== false || trim($v['T_COMP']) === 'REC');
+                                $importe = (float) $v['IMPORTE'];
+                                $descPP = (float) $v['DESC_PP_MAX'];
+                                $porcDesc = 0;
+                                $tComp = trim($v['T_COMP']);
+
+                                // --- REGLA GLOBAL: NCR, NCP, NDP SIEMPRE 0% DESCUENTO ---
+                                if (in_array($tComp, ['NCR', 'NCP', 'NDP'])) {
+                                    $porcDesc = 0;
+                                } else if (strpos($nComp, 'A00115') === 0) {
+                                    if ($tComp === 'FAC')
+                                        $porcDesc = 0;
+                                    else
+                                        $porcDesc = $descPP;
+                                } else {
+                                    $porcDesc = $descPP;
+                                    
+                                    // 1. Validación de antigüedad
+                                    if ($v['FECHA_EMIS'] && $v['DIAS_PP_MAX'] > 0) {
+                                        $f_emis = $v['FECHA_EMIS'];
+                                        $fecha_base = ($f_emis instanceof DateTime) ? $f_emis : new DateTime($f_emis);
+                                        $hoy = new DateTime();
+                                        $intervalo = $hoy->diff($fecha_base);
+                                        
+                                        if ($intervalo->days > $v['DIAS_PP_MAX']) {
+                                            $porcDesc = 0;
+                                        }
+                                    }
+                                    
+                                    // 2. Medio de pago
+                                    $medioDef = strtoupper(trim($v['MEDIO_PAGO_DEFAULT'] ?? ''));
+                                    if (($medioDef === 'TRANSFERENCIA' || $medioDef === 'TRANSFERERENCIA') && abs($porcDesc - 0.08) < 0.0005) {
+                                        $porcDesc = 0.06;
+                                    }
+                                    
+                                    // 3. Descuento previo en ERP
+                                    $bruto = $importe;
+                                    $netoOriginal = (float)$v['IMPORTE_NETO'];
+                                    if ($bruto > 0 && $bruto > $netoOriginal) {
+                                        $calcu = ($bruto - $netoOriginal) / $bruto;
+                                        if ($calcu > $porcDesc) {
+                                            $porcDesc = $calcu;
+                                        }
+                                    }
+                                }
+
+                                $netoItem = $importe * (1 - $porcDesc);
+                                $valNeto = ($esNegativo ? -abs($netoItem) : abs($netoItem));
+                                $deuda_fuera_propuesta += $valNeto;
+                            }
                         }
                     }
                 }
