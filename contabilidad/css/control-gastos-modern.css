@@ -1,0 +1,660 @@
+/* ============================================================
+   control-gastos-modern.css
+   Capa visual moderna sobre Bootstrap 4.6.2 para controlGastos.php
+   NO altera JS, PHP, ni dependencias. Solo sobrescritura de estilos.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+/* ── Variables de diseño ── */
+:root {
+    --cgm-accent:        #1a6fd4;
+    --cgm-accent-hover:  #1560b8;
+    --cgm-accent-dim:    rgba(26, 111, 212, .09);
+    --cgm-accent-ring:   rgba(26, 111, 212, .22);
+    --cgm-bg:            #f0f2f5;
+    --cgm-card:          #ffffff;
+    --cgm-section:       #f5f7fa;
+    --cgm-border:        #e2e8f0;
+    --cgm-border-light:  #cbd5e1;
+    --cgm-text:          #1a1e2e;
+    --cgm-muted:         #64748b;
+    --cgm-dim:           #94a3b8;
+    --cgm-positive:      #1a7c42;
+    --cgm-warning-bg:    #fef3c7;
+    --cgm-warning-bdr:   #f59e0b;
+    --cgm-warning-text:  #92400e;
+    --cgm-radius:        10px;
+    --cgm-radius-sm:     6px;
+    --cgm-shadow:        0 4px 16px rgba(0, 0, 0, .08);
+    --cgm-shadow-sm:     0 1px 4px rgba(0, 0, 0, .06);
+    --cgm-transition:    .18s ease;
+    --cgm-sans:          'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ── Base ── */
+body {
+    font-family: var(--cgm-sans);
+    background: var(--cgm-bg);
+    color: var(--cgm-text);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* ── Panel de cabecera (alert-secondary envuelve todo el header) ── */
+.alert.alert-secondary {
+    background: var(--cgm-card);
+    border: 1px solid var(--cgm-border);
+    border-radius: var(--cgm-radius);
+    box-shadow: var(--cgm-shadow-sm);
+    padding: 16px 20px 14px;
+    margin-bottom: 14px;
+    color: var(--cgm-text);
+}
+
+/* ── Alert info (indicador de entorno) ── */
+.alert.alert-info {
+    background: rgba(26, 111, 212, .06);
+    border: 1px solid rgba(26, 111, 212, .22);
+    border-radius: var(--cgm-radius-sm);
+    color: #1a4e8c;
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+/* ── Labels del formulario de filtros ── */
+.alert.alert-secondary label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--cgm-muted);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+/* ── Inputs y selects del filtro ── */
+.alert.alert-secondary .form-control,
+.alert.alert-secondary .form-control-sm {
+    border-color: var(--cgm-border-light);
+    border-radius: var(--cgm-radius-sm) !important;
+    font-family: var(--cgm-sans);
+    color: var(--cgm-text);
+    background: var(--cgm-card);
+    font-size: 13px;
+    transition: border-color var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+.alert.alert-secondary .form-control:focus,
+.alert.alert-secondary .form-control-sm:focus {
+    border-color: var(--cgm-accent);
+    box-shadow: 0 0 0 3px var(--cgm-accent-dim);
+    outline: none;
+}
+
+/* ── Botón Home/Menú ── */
+.btn-home {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--cgm-border);
+    border-radius: 8px;
+    padding: 0.4rem;
+    background: var(--cgm-card);
+    margin-right: 0.75rem;
+    margin-left: 0.5rem;
+    text-decoration: none;
+    transition: transform var(--cgm-transition), box-shadow var(--cgm-transition),
+                border-color var(--cgm-transition);
+}
+
+.btn-home:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .14);
+    border-color: var(--cgm-border-light);
+    text-decoration: none;
+}
+
+.btn-home img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    display: block;
+}
+
+/* ── Toggle de entorno (ARG/UY) ── */
+.custom-toggle-container {
+    display: inline-flex;
+    border: 2px solid var(--cgm-border);
+    border-radius: 50px;
+    overflow: hidden;
+    cursor: pointer;
+    vertical-align: middle;
+    margin-top: 0.4rem;
+    margin-left: 0.5rem;
+    transition: border-color var(--cgm-transition), box-shadow var(--cgm-transition);
+    user-select: none;
+}
+
+.custom-toggle-container:hover {
+    border-color: var(--cgm-accent);
+    box-shadow: 0 2px 8px var(--cgm-accent-ring);
+}
+
+.toggle-flag {
+    display: flex;
+    align-items: center;
+    padding: 6px 14px;
+    opacity: 0.45;
+    transition: opacity var(--cgm-transition), background var(--cgm-transition);
+}
+
+.toggle-flag img {
+    width: 30px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 2px;
+    display: block;
+}
+
+.toggle-flag.active {
+    opacity: 1;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+/* ── Botón Filtrar (#search) ── */
+#search.btn.btn-primary {
+    border-radius: var(--cgm-radius-sm) !important;
+    font-family: var(--cgm-sans);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 6px 16px;
+    letter-spacing: .01em;
+    background-color: var(--cgm-accent);
+    border-color: var(--cgm-accent);
+    transition: all var(--cgm-transition);
+}
+
+#search.btn.btn-primary:hover {
+    background-color: var(--cgm-accent-hover);
+    border-color: var(--cgm-accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 111, 212, .3);
+}
+
+/* ── Botón Ejecutar ── */
+#btnEjecutar.btn.btn-primary {
+    border-radius: var(--cgm-radius-sm) !important;
+    font-family: var(--cgm-sans);
+    font-weight: 600;
+    font-size: 13px;
+    transition: all var(--cgm-transition);
+}
+
+#btnEjecutar.btn.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26, 111, 212, .3);
+}
+
+/* ── Botón Gestión ── */
+#btnGestionModulos.btn.btn-warning {
+    border-radius: var(--cgm-radius-sm) !important;
+    font-family: var(--cgm-sans);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--cgm-warning-text);
+    background-color: var(--cgm-warning-bg);
+    border-color: var(--cgm-warning-bdr);
+    transition: all var(--cgm-transition);
+}
+
+#btnGestionModulos.btn.btn-warning:hover {
+    background-color: #fde68a;
+    border-color: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, .3);
+}
+
+/* ── Botones de acción (dropdowns) ── */
+.accion-dropdown .btn-ejecutar,
+.accion-dropdown .btn-revertir {
+    border-radius: var(--cgm-radius-sm) !important;
+    font-family: var(--cgm-sans);
+    font-size: 13px;
+    font-weight: 600;
+    transition: transform var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+.accion-dropdown .btn-ejecutar:hover,
+.accion-dropdown .btn-revertir:hover {
+    transform: translateY(-1px);
+}
+
+.accion-dropdown .dropdown-menu {
+    border-radius: var(--cgm-radius-sm);
+    border-color: var(--cgm-border);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+    padding: 6px;
+}
+
+.accion-dropdown .dropdown-item {
+    border-radius: 5px;
+    margin: 1px 0;
+    font-family: var(--cgm-sans);
+    font-size: 12.5px;
+    transition: all var(--cgm-transition);
+}
+
+/* ── Barra de progreso de pasos ── */
+.progressbar-wrapper {
+    padding: 10px 0 6px;
+    overflow-x: auto;
+}
+
+.progressbar {
+    display: flex;
+    list-style: none;
+    padding: 0 12px;
+    margin: 0 0 2px;
+    counter-reset: cgm-step;
+    position: relative;
+    align-items: flex-start;
+    min-width: max-content;
+}
+
+/* Línea de fondo que conecta todos los pasos */
+.progressbar::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: calc(12px + 15px);
+    right: calc(12px + 15px);
+    height: 2px;
+    background: var(--cgm-border);
+    z-index: 0;
+    border-radius: 2px;
+}
+
+.progressbar li {
+    flex: 1;
+    text-align: center;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--cgm-dim);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    counter-increment: cgm-step;
+    position: relative;
+    z-index: 1;
+    min-width: 58px;
+    cursor: default;
+    transition: color var(--cgm-transition);
+}
+
+/* Círculo numerado de cada paso */
+.progressbar li::before {
+    content: counter(cgm-step);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--cgm-card);
+    border: 2px solid var(--cgm-border);
+    display: block;
+    text-align: center;
+    line-height: 26px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cgm-dim);
+    margin: 0 auto 6px;
+    pointer-events: none;
+    transition: background var(--cgm-transition), border-color var(--cgm-transition),
+                color var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+/* Suprimir las líneas conector por-paso de style.css (top:20px incorrecto para círculos de 30px)
+   La línea de fondo se gestiona con .progressbar::before */
+.progressbar li::after {
+    content: none !important;
+}
+
+/* Paso activo / completado */
+.progressbar li.active {
+    color: var(--cgm-accent);
+}
+
+.progressbar li.active::before {
+    content: "✓";
+    background: var(--cgm-accent);
+    border-color: var(--cgm-accent);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(26, 111, 212, .35);
+    font-size: 13px;
+    line-height: 26px;
+}
+
+/* ── Tabla principal #myTable (DataTables) ── */
+#myTable.table {
+    font-family: var(--cgm-sans);
+    font-size: 12.5px;
+    border-collapse: collapse;
+}
+
+#myTable.table thead.thead-dark th {
+    background: #2d3748;
+    color: #e2e8f0;
+    border-color: #374151;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 10px 8px;
+    white-space: nowrap;
+}
+
+#myTable.table tbody td {
+    font-size: 12.5px;
+    padding: 6px 8px;
+    border-color: var(--cgm-border);
+    vertical-align: middle;
+}
+
+#myTable.table tbody tr:hover td {
+    background: #f0f5ff;
+}
+
+/* Inputs y selects dentro de las celdas de la tabla */
+#myTable.table tbody td input[type="text"],
+#myTable.table tbody td input[type="number"] {
+    border-radius: 4px !important;
+    border: 1px solid var(--cgm-border-light);
+    padding: 3px 6px;
+    font-size: 12px;
+    font-family: var(--cgm-sans);
+    transition: border-color var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+#myTable.table tbody td input[type="text"]:focus,
+#myTable.table tbody td input[type="number"]:focus {
+    border-color: var(--cgm-accent);
+    box-shadow: 0 0 0 2px var(--cgm-accent-dim);
+    outline: none;
+}
+
+/* Checkboxes en la tabla */
+#myTable.table tbody td input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--cgm-accent);
+}
+
+/* ── Wrapper DataTables (search, length, pagination) ── */
+.dataTables_wrapper .dataTables_filter input {
+    border-radius: var(--cgm-radius-sm) !important;
+    border-color: var(--cgm-border-light);
+    font-family: var(--cgm-sans);
+    font-size: 13px;
+    padding: 4px 10px;
+    transition: border-color var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    border-color: var(--cgm-accent);
+    box-shadow: 0 0 0 3px var(--cgm-accent-dim);
+    outline: none;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border-radius: var(--cgm-radius-sm) !important;
+    border-color: var(--cgm-border-light);
+    font-family: var(--cgm-sans);
+    font-size: 13px;
+    padding: 2px 8px;
+}
+
+.dataTables_wrapper .dataTables_info {
+    font-family: var(--cgm-sans);
+    font-size: 12px;
+    color: var(--cgm-muted);
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: var(--cgm-radius-sm) !important;
+    font-family: var(--cgm-sans);
+    font-size: 12px;
+    transition: all var(--cgm-transition);
+}
+
+/* ── Modal de Gestión (#modalModulos) ── */
+#modalModulos .modal-content {
+    border: none;
+    border-radius: var(--cgm-radius);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .18);
+    overflow: hidden;
+}
+
+#modalModulos .modal-header.bg-warning {
+    background: var(--cgm-warning-bg) !important;
+    border-bottom: 2px solid var(--cgm-warning-bdr) !important;
+    padding: 14px 20px;
+}
+
+#modalModulos .modal-header .modal-title {
+    font-family: var(--cgm-sans);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--cgm-warning-text);
+}
+
+#modalModulos .modal-header .close {
+    color: var(--cgm-warning-text);
+    opacity: .7;
+    transition: opacity var(--cgm-transition);
+}
+
+#modalModulos .modal-header .close:hover {
+    opacity: 1;
+}
+
+#modalModulos .modal-body {
+    padding: 16px 20px 12px;
+    background: var(--cgm-card);
+}
+
+#modalModulos .modal-footer {
+    background: var(--cgm-section);
+    border-top: 1px solid var(--cgm-border);
+    padding: 12px 20px;
+}
+
+/* Tabs Bootstrap 4 dentro del modal */
+#modalModulos .nav-tabs {
+    border-bottom: 2px solid var(--cgm-border);
+    gap: 4px;
+    margin-bottom: 0;
+}
+
+#modalModulos .nav-tabs .nav-item {
+    margin-bottom: 0;
+}
+
+#modalModulos .nav-tabs .nav-link {
+    color: var(--cgm-muted);
+    border: none;
+    border-radius: var(--cgm-radius-sm) var(--cgm-radius-sm) 0 0;
+    padding: 9px 18px;
+    font-family: var(--cgm-sans);
+    font-weight: 500;
+    font-size: 13.5px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color var(--cgm-transition), background var(--cgm-transition),
+                border-color var(--cgm-transition);
+    background: transparent;
+}
+
+#modalModulos .nav-tabs .nav-link:hover {
+    color: var(--cgm-accent);
+    background: var(--cgm-accent-dim);
+    border-bottom-color: transparent;
+}
+
+#modalModulos .nav-tabs .nav-link.active {
+    color: var(--cgm-accent);
+    background: transparent;
+    border-bottom: 2px solid var(--cgm-accent);
+    font-weight: 600;
+}
+
+#modalModulos .tab-content {
+    padding-top: 4px;
+}
+
+/* Alert info dentro del modal */
+#modalModulos .alert-info {
+    font-size: 12.5px;
+    padding: 8px 14px;
+    border-radius: var(--cgm-radius-sm);
+}
+
+/* Cabecera de tablas dentro del modal */
+#modalModulos .table thead.thead-dark th {
+    background: #2d3748;
+    color: #e2e8f0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 9px 10px;
+}
+
+#modalModulos .table tbody td {
+    font-family: var(--cgm-sans);
+    font-size: 12.5px;
+    padding: 7px 10px;
+    vertical-align: middle;
+    border-color: var(--cgm-border);
+}
+
+#modalModulos .table tbody tr:hover td {
+    background: #f7f9fd;
+}
+
+/* Fila de alta en tab Centros de Costo */
+#paneCentros .form-row label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cgm-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 3px;
+}
+
+#paneCentros .form-control {
+    border-radius: var(--cgm-radius-sm) !important;
+    border-color: var(--cgm-border-light);
+    font-family: var(--cgm-sans);
+    font-size: 13px;
+    transition: border-color var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+#paneCentros .form-control:focus {
+    border-color: var(--cgm-accent);
+    box-shadow: 0 0 0 3px var(--cgm-accent-dim);
+    outline: none;
+}
+
+#paneCentros .btn-success {
+    border-radius: var(--cgm-radius-sm) !important;
+    font-family: var(--cgm-sans);
+    font-weight: 600;
+    font-size: 13px;
+    transition: all var(--cgm-transition);
+}
+
+#paneCentros .btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(40, 167, 69, .3);
+}
+
+/* ── Log de operaciones ── */
+#logOperaciones {
+    border-radius: var(--cgm-radius-sm);
+    overflow: hidden;
+}
+
+#logOperaciones h6 {
+    font-family: var(--cgm-sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--cgm-muted);
+    margin-bottom: 6px;
+}
+
+#logOperaciones .border.p-2.bg-light {
+    border-color: var(--cgm-border) !important;
+    border-radius: var(--cgm-radius-sm);
+    background: var(--cgm-section) !important;
+    font-size: 12px;
+    font-family: var(--cgm-sans);
+    color: var(--cgm-muted);
+}
+
+/* ── Acciones masivas ── */
+#contCheck {
+    font-family: var(--cgm-sans);
+    margin-top: 8px;
+}
+
+#titleCheck {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--cgm-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+    .acciones-container {
+        margin-left: 8px !important;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+}
+
+@media (max-width: 992px) {
+    .progressbar-wrapper { overflow-x: auto; }
+    .progressbar { min-width: 440px; }
+    .alert.alert-secondary { padding: 12px 14px; }
+}
+
+@media (max-width: 768px) {
+    body { font-size: 13px; }
+
+    .alert.alert-secondary .form-row {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .acciones-container {
+        margin-left: 0 !important;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .accion-dropdown .dropdown-toggle {
+        min-width: 100px;
+        font-size: 12px;
+    }
+
+    #modalModulos .modal-dialog {
+        margin: 10px;
+    }
+
+    #paneCentros .form-row {
+        flex-direction: column;
+    }
+}

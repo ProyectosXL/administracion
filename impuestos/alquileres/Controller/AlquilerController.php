@@ -1004,12 +1004,45 @@ function aplicarAjuste()
                 'message' => 'Algunos conceptos ya tienen ajuste aplicado. Verifique los datos.'
             ]);
         } else {
-            // Hay valores pero no fueron enviados desde el frontend
-            // Esto puede pasar si los campos están deshabilitados en el frontend pero no marcados como ajustados en BD
+            // El frontend no envió datos (inputs muestran $0 o no pudieron leerse),
+            // pero la BD tiene registros con IMPORTE > 0 y AJUSTADO = NULL/0.
+            // El coeficiente ya fue guardado por guardarCoeficiente() antes de llegar aquí.
+            // Aplicar el ajuste directamente sobre los valores actuales de la BD.
+            $coeficiente = $alquiler->traerCoeficiente($periodo);
+            if (!$coeficiente || floatval($coeficiente) == 0) {
+                echo json_encode([
+                    'status' => 'error',
+                    'code' => 0,
+                    'message' => 'El coeficiente correspondiente al período no se encuentra cargado'
+                ]);
+                die();
+            }
+
+            $registrosActualizados = 0;
+            $registrosOmitidos    = 0;
+            foreach ($detalle as $det) {
+                if (in_array($det['ID_CA'], ['4', '5', '18'])) {
+                    $importe  = floatval($det['IMPORTE_PARSE']);
+                    $ajustado = intval($det['AJUSTADO']);
+                    if ($importe > 0 && $ajustado == 0) {
+                        $importeAjustado = $importe * floatval($coeficiente);
+                        $resultado = $alquiler->aplicarAjuste($det['NRO_SUCURS'], $det['ID_CA'], $importeAjustado, $periodo);
+                        if ($resultado) {
+                            $registrosActualizados++;
+                        } else {
+                            $registrosOmitidos++;
+                        }
+                    }
+                }
+            }
+
             echo json_encode([
-                'status' => 'error',
-                'code' => 5,
-                'message' => 'Error de sincronización. Los campos parecen estar bloqueados pero no hay registro de ajuste en la base de datos. Intente abrir el período y volver a cargar.'
+                'status'               => 'success',
+                'code'                 => 1,
+                'message'              => 'Ajuste aplicado correctamente',
+                'registros_actualizados' => $registrosActualizados,
+                'registros_omitidos'   => $registrosOmitidos,
+                'coeficiente'          => $coeficiente
             ]);
         }
         die();
