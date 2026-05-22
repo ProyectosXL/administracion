@@ -92,32 +92,17 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
     ?>
     <link rel="stylesheet" href="css/control-gastos-actions.css">
-    <style>
-            .toggle-on {
-            background-image: url('<?= $imageOn ?>');
-            background-size: contain;
-            background-repeat: no-repeat;
-            height: 60px;
-            width: 60px;
-            }
-
-            .toggle-off {
-                background-image: url('<?= $imageOff ?>');
-                background-size: contain;
-                background-repeat: no-repeat;
-                height: 60px;
-                width: 60px;
-            }
-    </style>
+    <link rel="stylesheet" href="css/control-gastos-modern.css">
 
 </head>
 
 <body>  
 
-    <a href="http://192.168.0.13:8000/" style="display:inline-block;">
-        <img src="../image/home-button.png" style="width:50px;height:45px;margin-right:1rem; margin-top:0.5rem;transition: transform 0.3s;" title="Menú" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-    </a>
-    <div class="row">
+    <div class="row align-items-center">
+
+        <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
+            <img src="../image/home-button.png" alt="Menú">
+        </a>
 
         <div class="progressbar-wrapper">
             <div hidden id="periodo" attr-periodo= "<?= $periodo ?>" style="margin-top:-2rem;"></div>
@@ -135,17 +120,17 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         <div>
             <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:10">Ejecutar <i class="bi bi-check2-square"></i></button>
             <button class="btn btn-warning mt-3" id="btnGestionModulos" onclick="abrirGestionModulos()">
-                <i class="bi bi-gear-fill"></i> Gestión Módulos
+                <i class="bi bi-gear-fill"></i> Gestión
             </button>
 
-            <div style="display: inline-block; vertical-align: middle; margin-left: 20px;" class="mt-3">
-                <div class="alert alert-info" role="alert" style="margin: 0; padding: 8px 15px; display: inline-block;">
-                    <i class="bi bi-info-circle-fill me-2"></i>
-                    <span id="environment-info">Entorno actual: <strong><?php echo ($checkedValue === 'central') ? 'Argentina (ARG)' : 'Uruguay (UY)'; ?></strong></span>
+            <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)" title="Cambiar entorno ARG / UY">
+                <div class="toggle-flag <?= $checkedValue === 'central' ? 'active' : '' ?>" data-entorno="central">
+                    <img src="images/bandera_con_sol__55757_std.jpg" alt="ARG">
+                </div>
+                <div class="toggle-flag <?= $checkedValue === 'uy' ? 'active' : '' ?>" data-entorno="uy">
+                    <img src="images/UY.png" alt="UY">
                 </div>
             </div>
-
-            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px;margin-left:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
 
             <!-- spinner -->
             <div id="boxLoading"></div>
@@ -292,15 +277,20 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                     </div>
                 </div>
 
-                <!-- Botón Resumen IE (sin cambios) -->
-                <button class="btn btn-resumen-ie" id="btnResumen" onclick="resumen()">
-                    <i class="bi bi-file-earmark-excel"></i> Resumen IE
-                </button>
-
-                <!-- Botón Exportar Excluidos -->
-                <button class="btn btn-success" id="btnExportarExcluidos" onclick="exportarGastosExcluidos()">
-                    <i class="bi bi-file-earmark-excel"></i> Exportar Excluidos
-                </button>
+                <!-- Dropdown Exportar -->
+                <div class="accion-dropdown exportar dropdown">
+                    <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnExportarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="bi bi-file-earmark-excel"></i> Exportar
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="btnExportarDropdown" id="menuExportar">
+                        <a class="dropdown-item ejecutar-item" href="#" onclick="resumen(); return false;">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Resumen IE
+                        </a>
+                        <a class="dropdown-item ejecutar-item" href="#" onclick="exportarGastosExcluidos(); return false;">
+                            <i class="bi bi-file-earmark-excel"></i> Exportar Excluidos
+                        </a>
+                    </div>
+                </div>
             </div>
             <div id="contCheck">
                 <label id="titleCheck">Acciones masivas</label>
@@ -476,8 +466,6 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
     <script src="../comercioExterior/assets/select2/select2.min.js"></script>
     <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script> -->
     <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
 
 
@@ -495,12 +483,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         });
 
         $('.codRubro').select2();
-        document.querySelector(".toggle").style.width="40px"
-    document.querySelector(".toggle-on").style.fontSize="0"
-    document.querySelector(".toggle-off").style.fontSize="0"
-    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
-    document.querySelector('.toggle.btn.btn-primary').style.marginTop = 'px'
-    
+
     // Validar módulos al cargar la página
     validarModulos();
 
@@ -532,7 +515,9 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
     }
 
     $(function() {
-        $('[data-toggle="tooltip"]').tooltip()
+        $('[data-toggle="tooltip"]').tooltip({
+            container: 'body'
+        })
     })
 
     $('#myModal').modal('toggle')

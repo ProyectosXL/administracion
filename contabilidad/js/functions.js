@@ -1674,6 +1674,32 @@ const resumen = () => {
 
 
 
+function cambiarEntornoCustom(container) {
+    const flags = container.querySelectorAll('.toggle-flag');
+    let inactiveFlag = null;
+
+    flags.forEach(function(f) {
+        if (!f.classList.contains('active')) inactiveFlag = f;
+    });
+
+    if (!inactiveFlag) return;
+
+    const nuevoEntorno = inactiveFlag.getAttribute('data-entorno');
+
+    $.ajax({
+        url: "Controller/controlGastosController.php?accion=cambiarEntorno",
+        method: "POST",
+        data: { entorno: nuevoEntorno },
+        success: function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            window.location.href = window.location.pathname + '?' + urlParams.toString();
+        },
+        error: function (xhr, status, error) {
+            console.error('Error al cambiar entorno:', error);
+        }
+    });
+}
+
 const cambiarEntorno = (t) => {
     let entorno = 'central';
 
@@ -1762,12 +1788,21 @@ const abrirGestionModulos = () => {
     const desde = document.getElementById('desde').value;
     const hasta = document.getElementById('hasta').value;
     const periodo = document.getElementById('periodo').getAttribute('attr-periodo');
-    
+
     document.getElementById('periodoModulo').textContent = periodo;
-    
-    // Cargar módulos
+
     cargarModulos(desde, hasta);
-    
+    cargarCentrosCosto();
+    cargarAuxiliaresDisponibles();
+
+    if (!$('#selectAuxiliarNuevo').hasClass('select2-hidden-accessible')) {
+        $('#selectAuxiliarNuevo').select2({
+            dropdownParent: $('#modalModulos'),
+            placeholder: '-- Seleccione auxiliar --',
+            width: '100%'
+        });
+    }
+
     $('#modalModulos').modal('show');
 };
 
@@ -1957,6 +1992,164 @@ const agregarLog = (mensaje) => {
  * Versión asíncrona de prorratearGastos
  * Ejecuta el proceso en background y monitorea el progreso
  */
+// ==================== GESTIÓN DE CENTROS DE COSTO ====================
+
+const cargarCentrosCosto = () => {
+    const estado = $('#filtroEstadoCC').val() || 'activos';
+    const tbody = document.getElementById('bodyCentrosCosto');
+    if (!tbody) { return; }
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>';
+
+    $.ajax({
+        url: 'Controller/centroCostoController.php?accion=listarCentros',
+        method: 'POST',
+        data: { estado: estado },
+        dataType: 'json',
+        success: function(centros) {
+            tbody.innerHTML = '';
+            if (!centros || centros.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Sin registros</td></tr>';
+                return;
+            }
+            centros.forEach(function(c) {
+                const badge = c.ACTIVO == 1
+                    ? '<span class="badge badge-success">Activo</span>'
+                    : '<span class="badge badge-secondary">Inactivo</span>';
+                const btnAccion = c.ACTIVO == 1
+                    ? `<button class="btn btn-sm btn-warning" onclick="cambiarEstadoCentroCosto('${c.COD_AUXILIAR}', 0)">Inhabilitar</button>`
+                    : `<button class="btn btn-sm btn-success" onclick="cambiarEstadoCentroCosto('${c.COD_AUXILIAR}', 1)">Habilitar</button>`;
+                tbody.innerHTML += `<tr>
+                    <td>${c.COD_AUXILIAR}</td>
+                    <td>${c.DESC_AUXILIAR}</td>
+                    <td>${c.CENTRO_COSTO}</td>
+                    <td>${c.SECTOR}</td>
+                    <td>${c.NUM_SUCURSAL}</td>
+                    <td>${badge}</td>
+                    <td>${btnAccion}</td>
+                </tr>`;
+            });
+        },
+        error: function() {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al cargar centros de costo</td></tr>';
+        }
+    });
+};
+
+const cargarAuxiliaresDisponibles = () => {
+    $.ajax({
+        url: 'Controller/centroCostoController.php?accion=auxiliaresDisponibles',
+        method: 'GET',
+        dataType: 'json',
+        success: function(auxiliares) {
+            const $select = $('#selectAuxiliarNuevo');
+            $select.empty().append('<option value="">-- Seleccione auxiliar --</option>');
+            if (auxiliares && auxiliares.length > 0) {
+                auxiliares.forEach(function(a) {
+                    $select.append(
+                        $('<option>')
+                            .val(a.COD_AUXILIAR)
+                            .text(a.DESC_AUXILIAR)
+                            .attr('attr-desc-auxiliar', a.DESC_AUXILIAR)
+                    );
+                });
+            }
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.trigger('change.select2');
+            }
+        },
+        error: function() {
+            Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudieron cargar los auxiliares disponibles' });
+        }
+    });
+};
+
+const agregarCentroCosto = () => {
+    const codAuxiliar  = $('#selectAuxiliarNuevo').val();
+    const descAuxiliar = $('#selectAuxiliarNuevo option:selected').attr('attr-desc-auxiliar') || '';
+    const centroCosto  = $('#inputCentroCosto').val().trim();
+    const sector       = $('#inputSectorCC').val().trim();
+    const numSucursal  = $('#inputNumSucCC').val().trim();
+
+    if (!codAuxiliar) {
+        Swal.fire({ icon: 'warning', title: 'Atención', text: 'Debe seleccionar un auxiliar' });
+        return;
+    }
+    if (!centroCosto) {
+        Swal.fire({ icon: 'warning', title: 'Atención', text: 'El campo Centro de costo es obligatorio' });
+        return;
+    }
+    if (!sector) {
+        Swal.fire({ icon: 'warning', title: 'Atención', text: 'El campo Sector es obligatorio' });
+        return;
+    }
+    if (!numSucursal || !/^\d+$/.test(numSucursal)) {
+        Swal.fire({ icon: 'warning', title: 'Atención', text: 'El número de sucursal debe ser un entero válido' });
+        return;
+    }
+
+    $.ajax({
+        url: 'Controller/centroCostoController.php?accion=agregarCentro',
+        method: 'POST',
+        data: { codAuxiliar, descAuxiliar, centroCosto, sector, numSucursal },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) {
+                Swal.fire({ icon: 'success', title: 'Agregado', text: res.message, timer: 1800, showConfirmButton: false });
+                cargarCentrosCosto();
+                cargarAuxiliaresDisponibles();
+                if ($('#selectAuxiliarNuevo').hasClass('select2-hidden-accessible')) {
+                    $('#selectAuxiliarNuevo').val('').trigger('change');
+                } else {
+                    $('#selectAuxiliarNuevo').val('');
+                }
+                $('#inputCentroCosto').val('');
+                $('#inputSectorCC').val('');
+                $('#inputNumSucCC').val('');
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+            }
+        },
+        error: function() {
+            Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor' });
+        }
+    });
+};
+
+const cambiarEstadoCentroCosto = (codAuxiliar, activo) => {
+    const accionTexto = activo == 1 ? 'habilitar' : 'inhabilitar';
+    const accionLabel = accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1);
+
+    Swal.fire({
+        title: `${accionLabel} centro de costo`,
+        text: `Se va a ${accionTexto} el auxiliar: ${codAuxiliar}`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: 'Controller/centroCostoController.php?accion=cambiarEstado',
+                method: 'POST',
+                data: { codAuxiliar, activo },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({ icon: 'success', title: 'Listo', text: res.message, timer: 1500, showConfirmButton: false });
+                        cargarCentrosCosto();
+                        cargarAuxiliaresDisponibles();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                    }
+                },
+                error: function() {
+                    Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor' });
+                }
+            });
+        }
+    });
+};
+
 function prorratearGastosAsync() {
     let spinner = document.getElementById("boxLoading");
     spinner.className += " loading";

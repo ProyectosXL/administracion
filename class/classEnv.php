@@ -49,23 +49,28 @@ class DotEnv
     public function listVars(){
         (new DotEnv(__DIR__ . '/../../.env'))->load();
 
+        // $_ENV es asignado directamente por load() y es confiable incluso cuando
+        // putenv()/getenv() no reflejan el cambio (comportamiento conocido en Apache/Windows).
+        $get = function(string $key) {
+            return $_ENV[$key] ?? (getenv($key) !== false ? getenv($key) : null);
+        };
+
         $vars = array(
 
-            'HOST_CENTRAL' => getenv('HOST_CENTRAL'),
-            'HOST_LOCALES' => getenv('HOST_LOCALES'),
-            'HOST_APPS' => getenv('HOST_APPS'),
-            'DATABASE_CENTRAL' => getenv('DATABASE_CENTRAL'),
-            'DATABASE_LOCALES' => getenv('DATABASE_LOCALES'),
-            'DATABASE_TANGOBIS' => getenv('DATABASE_TANGOBIS'),
-            'DATABASE_UY' => getenv('DATABASE_UY'),
-            'DATABASE_SUC_UY' => getenv('DATABASE_SUC_UY'),
-            'DATABASE_APPS' => getenv('DATABASE_APPS'),
-            'USER' => getenv('USER'),
-            'PASS' => getenv('PASS'),
-            'PASS_LOCALES' => getenv('PASS_LOCALES'),
-            'CHARACTER' => getenv('CHARACTER'),
-
-            'ENV' => getenv('ENV'),
+            'HOST_CENTRAL'     => $get('HOST_CENTRAL'),
+            'HOST_LOCALES'     => $get('HOST_LOCALES'),
+            'HOST_APPS'        => $get('HOST_APPS'),
+            'DATABASE_CENTRAL' => $get('DATABASE_CENTRAL'),
+            'DATABASE_LOCALES' => $get('DATABASE_LOCALES'),
+            'DATABASE_TANGOBIS'=> $get('DATABASE_TANGOBIS'),
+            'DATABASE_UY'      => $get('DATABASE_UY'),
+            'DATABASE_SUC_UY'  => $get('DATABASE_SUC_UY'),
+            'DATABASE_APPS'    => $get('DATABASE_APPS'),
+            'USER'             => $get('USER'),
+            'PASS'             => $get('PASS'),
+            'PASS_LOCALES'     => $get('PASS_LOCALES'),
+            'CHARACTER'        => $get('CHARACTER'),
+            'ENV'              => $get('ENV'),
 
         );
 

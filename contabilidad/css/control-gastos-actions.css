@@ -76,6 +76,20 @@
     border-color: #545b62;
 }
 
+/* Exportar — verde coherente con la paleta */
+.accion-dropdown.exportar .btn-ejecutar {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.accion-dropdown.exportar .btn-ejecutar:hover,
+.accion-dropdown.exportar .btn-ejecutar:focus {
+    background-color: #218838;
+    border-color: #1e7e34;
+    color: white;
+}
+
 /* Dropdown menu */
 .accion-dropdown .dropdown-menu {
     min-width: 100%;
@@ -119,12 +133,14 @@
     cursor: not-allowed;
 }
 
-/* Indicador de estado en el botón */
+/* Indicador de estado en el botón — agrandado para mayor legibilidad */
 .accion-dropdown .estado-indicador {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 10px;
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 12px;
     margin-left: 5px;
+    font-weight: 600;
+    letter-spacing: .01em;
 }
 
 .accion-dropdown .estado-pendiente {
@@ -172,36 +188,37 @@
 }
 
 @keyframes button-loading-spinner {
-    from {
-        transform: rotate(0turn);
-    }
-    to {
-        transform: rotate(1turn);
-    }
+    from { transform: rotate(0turn); }
+    to   { transform: rotate(1turn); }
 }
 
-/* Estilos para el modal de módulos */
-#tablaModulos .badge {
-    font-size: 11px;
-    padding: 5px 10px;
+/* Badges en el modal de módulos y centros de costo */
+#tablaModulos .badge,
+#tablaCentrosCosto .badge {
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: .02em;
 }
 
-#tablaModulos .btn-sm {
+#tablaModulos .btn-sm,
+#tablaCentrosCosto .btn-sm {
     padding: 3px 8px;
     font-size: 12px;
 }
 
-#row-COMPRAS { border-left: 4px solid #28a745; }
-#row-VENTAS { border-left: 4px solid #17a2b8; }
+#row-COMPRAS      { border-left: 4px solid #28a745; }
+#row-VENTAS       { border-left: 4px solid #17a2b8; }
 #row-CONTABILIDAD { border-left: 4px solid #ffc107; }
-#row-TESORERIA { border-left: 4px solid #dc3545; }
+#row-TESORERIA    { border-left: 4px solid #dc3545; }
 
 .table-warning {
     animation: pulse 1s infinite;
 }
 
 @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%   { opacity: 1; }
+    50%  { opacity: 0.5; }
     100% { opacity: 1; }
 }
