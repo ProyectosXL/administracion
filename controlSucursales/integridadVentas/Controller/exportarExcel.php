@@ -2,7 +2,7 @@
 session_start();
 
 // Ajustar ruta para apuntar a la clase conexion desde integridadVentas/Controller/
-require_once '../../class/conexion.php';
+require_once '../../../class/conexion.php';
 
 try {
     // Obtener parámetros

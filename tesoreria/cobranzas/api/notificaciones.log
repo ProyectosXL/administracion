@@ -1911,3 +1911,51 @@ sending limits go to
 [2026-05-21 20:56:49] ERROR PHPMailer: SMTP Error: Could not authenticate.
 [2026-05-21 20:56:54] Enviando mail a: roxananadales@hotmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2788)
 [2026-05-21 20:56:56] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-22 21:23:06] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2765
+[2026-05-22 21:23:09] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-22 21:24:02] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2766
+[2026-05-22 21:24:05] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-22 21:24:20] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2767
+[2026-05-22 21:24:22] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-22 21:33:04] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2768
+[2026-05-22 21:33:06] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-22 21:35:56] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2769
+[2026-05-22 21:35:59] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-22 21:37:25] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2770
+[2026-05-22 21:37:28] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-22 21:38:04] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2771
+[2026-05-22 21:38:07] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-22 23:48:05] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2799
+[2026-05-22 23:48:07] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-23 16:21:04] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2785
+[2026-05-23 16:21:08] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-23 16:36:45] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2786
+[2026-05-23 16:36:47] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-23 16:38:44] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2787
+[2026-05-23 16:38:48] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-23 16:48:02] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2788
+[2026-05-23 16:48:05] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-24 21:54:43] Enviando mail a: roxananadales@hotmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2800)
+[2026-05-24 21:54:46] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-24 23:48:40] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2800
+[2026-05-24 23:48:43] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 00:26:21] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2795
+[2026-05-26 00:26:25] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 00:27:17] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2796
+[2026-05-26 00:27:20] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 00:29:10] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2797
+[2026-05-26 00:29:12] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 00:29:56] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2798
+[2026-05-26 00:29:59] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 04:14:11] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2754
+[2026-05-26 04:14:14] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 04:14:22] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2755
+[2026-05-26 04:14:24] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 04:14:33] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2756
+[2026-05-26 04:14:36] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 04:14:43] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2749
+[2026-05-26 04:14:46] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 04:14:51] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2750
+[2026-05-26 04:14:54] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 04:15:00] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2751
+[2026-05-26 04:15:03] ERROR PHPMailer: SMTP Error: Could not authenticate.
