@@ -93,6 +93,7 @@ $locales = $sucursal->traerLocales();
                                 <th>TIPO COMP.</th>
                                 <th>COMPROBANTE</th>
                                 <th>MONTO</th>
+                                <th>MONEDA</th>
                                 <th>DESPACHADO</th>
                                 <th>PRECINTO</th>
                                 <th data-toggle="tooltip" data-placement="top" title="Recibido"><i class="bi bi-box-arrow-in-down icon"></i></th>
@@ -127,6 +128,18 @@ $locales = $sucursal->traerLocales();
                                             <?php endif; ?>
                                         </td>
                                         <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
+                                        <td>
+                                            <?php
+                                            $moneda = $gasto['MONEDA'] ?? '';
+                                            if ($moneda === 'ARS') {
+                                                echo '<span class="badge bg-secondary">ARS</span>';
+                                            } elseif ($moneda === 'USD') {
+                                                echo '<span class="badge bg-success">USD</span>';
+                                            } else {
+                                                echo '<span class="badge bg-light text-dark border">' . htmlspecialchars($moneda) . '</span>';
+                                            }
+                                            ?>
+                                        </td>
                                         <td><?= $gasto['DESPACHADO'] == 1 ? ($gasto['FECHA_DESP'])->format("d/m/Y H:i") : '' ?></td>
                                         <td><?= $gasto['PRECINTO'] > 1 ? $gasto['PRECINTO'] : '' ?></td>
                                         <td class="text-center">

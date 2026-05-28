@@ -1,9 +1,9 @@
 
 const validarFlujo = (row, accion) => {
     const cells = row.querySelectorAll('td');
-    const recibidoCell = cells[8];
-    const controladoCell = cells[9];
-    const cargadoCell = cells[10];
+    const recibidoCell = cells[9];
+    const controladoCell = cells[10];
+    const cargadoCell = cells[11];
 
     const estaRecibido = recibidoCell.querySelector('.bi-check-circle-fill') !== null;
     const estaControlado = controladoCell.querySelector('.bi-check-circle-fill') !== null;
@@ -61,7 +61,7 @@ const marcarRecibido = async (e) => {
             monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
             codCuenta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
             descripcionCuenta: row.querySelector('[data-desc-cuenta]').getAttribute('data-desc-cuenta'),
-            observaciones: cells[11].querySelector('textarea')?.value || ''
+            observaciones: cells[12].querySelector('textarea')?.value || ''
         };
 
         console.log('Datos enviados para marcar como recibido:', data);
@@ -72,7 +72,7 @@ const marcarRecibido = async (e) => {
             data: data,
             success: function(response) {
                 console.log('Respuesta del servidor:', response);
-                cells[8].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
+                cells[9].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
                 Swal.fire({
                     toast: true,
                     position: 'top-end',
@@ -122,7 +122,7 @@ const marcarControlado = (e) => {
         codCuenta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
         descripcionCuenta: row.querySelector('[data-desc-cuenta]').getAttribute('data-desc-cuenta'),
         monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
-        observaciones: cells[11].querySelector('textarea')?.value || ''
+        observaciones: cells[12].querySelector('textarea')?.value || ''
     };
 
     console.log('Datos enviados:', data);
@@ -133,9 +133,9 @@ const marcarControlado = (e) => {
         data: data,
         success: function(response) {
             console.log('Respuesta completa del servidor:', response);
-            
+
             if(response.success) {
-                cells[9].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
+                cells[10].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
                 Swal.fire({ icon: 'success', title: 'Éxito', text: 'Marcado como controlado correctamente' });
             } else {
                 Swal.fire({ 
@@ -157,7 +157,7 @@ const guardarObservaciones = async (btn) => {
     try {
         const row = btn.closest('tr');
         const cells = row.querySelectorAll('td');
-        const textarea = cells[10].querySelector('textarea');
+        const textarea = cells[12].querySelector('textarea');
         
         if (!textarea.value.trim()) {
             Swal.fire({
@@ -359,7 +359,7 @@ const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculad
                         const vincularBtn = rowElement.querySelector('.btn-info');
                         if(vincularBtn) vincularBtn.style.display = 'none';
 
-                        const cargadoCell = rowElement.children[10]; // Asumiendo que es la 11a columna
+                        const cargadoCell = rowElement.children[11]; // columna CARGADO (pos 11 tras agregar MONEDA)
                         cargadoCell.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
                     }
                 } else {
