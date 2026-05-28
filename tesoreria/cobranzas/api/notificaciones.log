@@ -1959,3 +1959,105 @@ sending limits go to
 [2026-05-26 04:14:54] ERROR PHPMailer: SMTP Error: Could not authenticate.
 [2026-05-26 04:15:00] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2751
 [2026-05-26 04:15:03] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 18:26:42] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2784
+[2026-05-26 18:26:45] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 18:26:54] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2783
+[2026-05-26 18:26:57] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 18:27:45] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2782
+[2026-05-26 18:27:47] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 18:28:20] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2781
+[2026-05-26 18:28:22] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 18:37:28] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2780
+[2026-05-26 18:37:31] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 18:38:37] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2779
+[2026-05-26 18:38:40] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 18:39:15] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2778
+[2026-05-26 18:39:18] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-26 18:40:59] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #2777
+[2026-05-26 18:41:02] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:05:33] Enviando mail a: juliocinalli@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2801)
+[2026-05-27 14:05:35] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:12:05] Enviando mail a: solekeil@hotmail.com,valesherrera@hotmail.com,nazamajo@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2776)
+[2026-05-27 14:12:07] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:12:20] Enviando mail a: solekeil@hotmail.com,valesherrera@hotmail.com,nazamajo@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2775)
+[2026-05-27 14:12:24] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:12:34] Enviando mail a: solekeil@hotmail.com,valesherrera@hotmail.com,nazamajo@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2774)
+[2026-05-27 14:12:37] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:13:12] Enviando mail a: solekeil@hotmail.com,valesherrera@hotmail.com,nazamajo@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2773)
+[2026-05-27 14:13:15] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:13:30] Enviando mail a: solekeil@hotmail.com,valesherrera@hotmail.com,nazamajo@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2772)
+[2026-05-27 14:13:32] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:14:05] Enviando mail a: ilerot17@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2799)
+[2026-05-27 14:14:08] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:14:40] Enviando mail a: loli.manasanch@hotmail.com | Asunto: Contrapropuesta Aceptada (ID: #2771)
+[2026-05-27 14:14:43] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:14:57] Enviando mail a: loli.manasanch@hotmail.com | Asunto: Contrapropuesta Aceptada (ID: #2769)
+[2026-05-27 14:14:59] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:16:44] Enviando mail a: alemierze1965@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2797)
+[2026-05-27 14:16:47] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:16:57] Enviando mail a: alemierze1965@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2798)
+[2026-05-27 14:17:00] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:17:18] Enviando mail a: loli.manasanch@hotmail.com | Asunto: Contrapropuesta Aceptada (ID: #2765)
+[2026-05-27 14:17:20] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:17:47] Enviando mail a: alemierze1965@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2796)
+[2026-05-27 14:17:49] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:18:34] Enviando mail a: fjandreoli@gmail.com,miramonroxana@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2736)
+[2026-05-27 14:18:37] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:18:51] Enviando mail a: fjandreoli@gmail.com,miramonroxana@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2730)
+[2026-05-27 14:18:53] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:19:10] Enviando mail a: alemierze1965@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2795)
+[2026-05-27 14:19:13] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:19:28] Enviando mail a: fjandreoli@gmail.com,miramonroxana@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2733)
+[2026-05-27 14:19:30] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:19:48] Enviando mail a: fjandreoli@gmail.com,miramonroxana@gmail.com | Asunto: Contrapropuesta Aceptada (ID: #2739)
+[2026-05-27 14:19:50] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:55:32] Enviando mail a: juliocinalli@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2802)
+[2026-05-27 14:55:35] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:56:17] Enviando mail a: juliocinalli@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2803)
+[2026-05-27 14:56:19] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:56:26] Enviando mail a: juliocinalli@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2804)
+[2026-05-27 14:56:28] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 14:56:32] Enviando mail a: juliocinalli@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2805)
+[2026-05-27 14:56:35] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:39:04] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2806)
+[2026-05-27 19:39:07] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:39:50] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2807)
+[2026-05-27 19:39:52] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:40:13] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2808)
+[2026-05-27 19:40:15] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:41:03] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2809)
+[2026-05-27 19:41:06] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:41:30] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2810)
+[2026-05-27 19:41:33] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:41:49] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2811)
+[2026-05-27 19:41:52] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:42:08] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2812)
+[2026-05-27 19:42:11] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:42:16] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2813)
+[2026-05-27 19:42:19] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:43:41] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2814)
+[2026-05-27 19:43:44] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:44:05] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2815)
+[2026-05-27 19:44:07] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:44:34] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2816)
+[2026-05-27 19:44:36] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:44:58] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2817)
+[2026-05-27 19:45:01] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 19:45:16] Enviando mail a: sivierolorena@yahoo.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2818)
+[2026-05-27 19:45:18] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 20:55:17] Enviando mail a: Jcirnigliaro@ottogarde.com.ar,mcastellini@ottogarde.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2819)
+[2026-05-27 20:55:19] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 20:55:27] Enviando mail a: Jcirnigliaro@ottogarde.com.ar,mcastellini@ottogarde.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2820)
+[2026-05-27 20:55:30] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-27 20:55:35] Enviando mail a: Jcirnigliaro@ottogarde.com.ar,mcastellini@ottogarde.com.ar | Asunto: Nueva Propuesta de Pago Recibida (ID: #2821)
+[2026-05-27 20:55:38] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-28 13:22:44] Enviando mail a: xllomas@hotmail.com,fabilanati@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2822)
+[2026-05-28 13:22:46] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-28 13:23:14] Enviando mail a: xllomas@hotmail.com,fabilanati@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2823)
+[2026-05-28 13:23:17] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-28 13:23:48] Enviando mail a: xllomas@hotmail.com,fabilanati@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2824)
+[2026-05-28 13:23:51] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-28 13:24:10] Enviando mail a: xllomas@hotmail.com,fabilanati@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2825)
+[2026-05-28 13:24:12] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-05-28 13:24:24] Enviando mail a: xllomas@hotmail.com,fabilanati@gmail.com | Asunto: Nueva Propuesta de Pago Recibida (ID: #2826)
+[2026-05-28 13:24:27] ERROR PHPMailer: SMTP Error: Could not authenticate.
