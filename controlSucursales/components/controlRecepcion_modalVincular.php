@@ -25,6 +25,7 @@
                                     <th>Tipo Comp.</th>
                                     <th>Comprobante</th>
                                     <th>Monto</th>
+                                    <th>Moneda</th>
                                     <th>Leyenda</th>
                                     <th>Acción</th>
                                 </tr>

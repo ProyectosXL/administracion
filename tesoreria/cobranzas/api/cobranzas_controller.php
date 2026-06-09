@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
         // --- NUEVO: Eliminar de la tabla de caché si existe ---
         $idx_sugerencia = $_POST['idx_sugerencia'] ?? null;
         if ($idx_sugerencia) {
-            $sql_del_cache = "DELETE FROM FP_SUGERENCIAS_COBRANZAS WHERE COD_CLIENT = ? AND IDX = ? AND USUARIO = ?";
+            $sql_del_cache = "DELETE FROM FP_SUGERENCIAS_COBRANZAS WHERE COD_CLIENT = ? AND IDX = ? AND USUARIO = CAST(? AS VARCHAR(50))";
             sqlsrv_query($conn_apps, $sql_del_cache, [$cod_cliente, $idx_sugerencia, $id_usuario_admin]);
         }
 
@@ -256,8 +256,11 @@ try {
         if ($tipo === 'sugerencias' && !$recalcular) {
             $conn_apps = Database::getConnection('apps');
             $sql_cache = "SELECT COD_CLIENT, RAZON_SOCI, IDX, TOTAL_BRUTO_SUG, TOTAL_NETO_SUG, FECHA_SUGERIDA, COMPROBANTES_JSON, TOTAL_PENDIENTE_CLIENTE, CANT_TOTAL_PENDIENTE 
-                          FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = ? ORDER BY COD_CLIENT, IDX";
+                          FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = CAST(? AS VARCHAR(50)) ORDER BY COD_CLIENT, IDX";
             $stmt_cache = sqlsrv_query($conn_apps, $sql_cache, [$id_usuario]);
+            if ($stmt_cache === false) {
+                throw new Exception("Error al ejecutar consulta de cache de sugerencias: " . print_r(sqlsrv_errors(), true));
+            }
             
             $cache_rows = [];
             $conn_central = Database::getConnection('central');
@@ -296,10 +299,9 @@ try {
                 ];
             }
 
-            if (!empty($cache_rows)) {
-                echo json_encode(['success' => true, 'data' => $cache_rows]);
-                exit;
-            }
+            // Retornar siempre la respuesta de la caché (incluso si está vacía) para evitar recálculos automáticos no deseados.
+            echo json_encode(['success' => true, 'data' => $cache_rows]);
+            exit;
         }
 
         $resumenClientes = [];
@@ -642,11 +644,14 @@ try {
         $conn_apps = Database::getConnection('apps');
         
         // Si estamos recalculando o si no había nada, guardamos la "foto" nueva
-        $res_check = sqlsrv_query($conn_apps, "SELECT COUNT(*) as cuenta FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = ?", [$id_usuario]);
+        $res_check = sqlsrv_query($conn_apps, "SELECT COUNT(*) as cuenta FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = CAST(? AS VARCHAR(50))", [$id_usuario]);
+        if ($res_check === false) {
+            throw new Exception("Error al verificar existencia en cache de sugerencias: " . print_r(sqlsrv_errors(), true));
+        }
         $row_check = sqlsrv_fetch_array($res_check, SQLSRV_FETCH_ASSOC);
         
         if ($recalcular || $row_check['cuenta'] == 0) {
-            sqlsrv_query($conn_apps, "DELETE FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = ?", [$id_usuario]);
+            sqlsrv_query($conn_apps, "DELETE FROM FP_SUGERENCIAS_COBRANZAS WHERE USUARIO = CAST(? AS VARCHAR(50))", [$id_usuario]);
             $sql_ins = "INSERT INTO FP_SUGERENCIAS_COBRANZAS (COD_CLIENT, RAZON_SOCI, IDX, TOTAL_BRUTO_SUG, TOTAL_NETO_SUG, FECHA_SUGERIDA, COMPROBANTES_JSON, USUARIO, TOTAL_PENDIENTE_CLIENTE, CANT_TOTAL_PENDIENTE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             foreach ($tableData as $row) {
                 $params = [

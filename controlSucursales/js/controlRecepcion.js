@@ -266,7 +266,7 @@ const buscarRecibos = async (searchTerm = '') => {
         tablaBody.innerHTML = ''; // Limpiar tabla
 
         if (recibos.length === 0) {
-            tablaBody.innerHTML = '<tr><td colspan="6" class="text-center">No se encontraron recibos.</td></tr>';
+            tablaBody.innerHTML = '<tr><td colspan="7" class="text-center">No se encontraron recibos.</td></tr>';
             return;
         }
 
@@ -278,11 +278,21 @@ const buscarRecibos = async (searchTerm = '') => {
 
             const formattedAmount = recibo.CANT_MONE.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
 
+            let monedaBadge;
+            if (recibo.COD_CTA === '100901') {
+                monedaBadge = '<span class="badge bg-success">USD</span>';
+            } else if (recibo.COD_CTA === '100101') {
+                monedaBadge = '<span class="badge bg-secondary">ARS</span>';
+            } else {
+                monedaBadge = `<span class="badge bg-light text-dark border">${recibo.COD_CTA}</span>`;
+            }
+
             tr.innerHTML = `
                 <td>${formattedDate}</td>
                 <td>${recibo.COD_COMP}</td>
                 <td>${recibo.N_COMP}</td>
                 <td>${formattedAmount}</td>
+                <td>${monedaBadge}</td>
                 <td>${recibo.LEYENDA}</td>
                 <td>
                     <button class="btn btn-success btn-sm" onclick="seleccionarRecibo('${recibo.COD_COMP}', '${recibo.N_COMP}', ${recibo.CANT_MONE})">

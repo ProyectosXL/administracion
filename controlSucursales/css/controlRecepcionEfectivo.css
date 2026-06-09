@@ -313,6 +313,33 @@
     }
 }
 
+        #tablaControlRecepcion {
+            table-layout: fixed;
+            width: 100% !important;
+        }
+
+        #tablaControlRecepcion th,
+        #tablaControlRecepcion td {
+            padding-left: 0.45rem;
+            padding-right: 0.45rem;
+            vertical-align: middle;
+        }
+
+        #tablaControlRecepcion .columna-compacta,
+        #tablaControlRecepcion .columna-estado,
+        #tablaControlRecepcion .columna-acciones {
+            white-space: nowrap;
+        }
+
+        #tablaControlRecepcion .columna-media {
+            word-break: break-word;
+        }
+
+        #tablaControlRecepcion textarea {
+            min-width: 120px;
+            resize: vertical;
+        }
+
         .icon{
             font-size:1.2rem;
         }

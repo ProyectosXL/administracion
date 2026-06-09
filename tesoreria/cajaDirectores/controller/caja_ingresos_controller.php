@@ -198,6 +198,7 @@ try {
             $n_comp = $_POST['n_comp'] ?? $_REQUEST['n_comp'] ?? '';
             $observaciones = $_POST['observaciones'] ?? $_REQUEST['observaciones'] ?? '';
             $importe = $_POST['importe'] ?? $_REQUEST['importe'] ?? 0;
+            $moneda = $_POST['moneda'] ?? $_REQUEST['moneda'] ?? 'ARS';
 
             // Log EXTREMO de cada campo con análisis profundo
             error_log('[ULTRA DEBUG] ANÁLISIS DE CAMPOS:');
@@ -207,6 +208,7 @@ try {
             error_log('  n_comp: "' . $n_comp . '" (tipo: ' . gettype($n_comp) . ')');
             error_log('  observaciones: "' . $observaciones . '" (tipo: ' . gettype($observaciones) . ')');
             error_log('  importe: "' . $importe . '" (tipo: ' . gettype($importe) . ')');
+            error_log('  moneda: "' . $moneda . '" (tipo: ' . gettype($moneda) . ')');
 
             // Análisis de caracteres ocultos en campos críticos
             if (!empty($id_sba05)) {
@@ -266,7 +268,8 @@ try {
                 $cod_comp,
                 $n_comp,
                 $observaciones,
-                (float) $importe
+                (float) $importe,
+                $moneda
             );
 
             if ($resultado) {

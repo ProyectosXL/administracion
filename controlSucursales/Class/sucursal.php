@@ -829,9 +829,10 @@ class Sucursal
                 CAST(s.FECHA AS DATE) AS FECHA,
                 s.COD_COMP,
                 s.N_COMP,
-				CASE WHEN s.COD_CTA = '100901' THEN CAST(s.CANT_MONE * S.COTIZ_MONE AS FLOAT)
+				CASE WHEN s.COD_CTA = '100901' THEN CAST(s.CANT_MONE AS FLOAT)
 				     ELSE CAST(s.CANT_MONE AS FLOAT) END AS CANT_MONE,
-                s.LEYENDA
+                s.LEYENDA,
+                s.COD_CTA
             FROM SBA05 s
             LEFT JOIN RO_T_RECIBOS_VINCULADOS v
                 ON s.COD_COMP = v.vinculado_cod_comp collate Latin1_General_BIN

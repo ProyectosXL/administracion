@@ -238,7 +238,7 @@ function _renderReporteCacheado(tab) {
     const json = est.reporte;
     if (!json) return;
 
-    actualizarKPIs(json.kpis);
+    actualizarKPIs(json.kpis, json.base_calculo);
 
     // Meta info reconstruida desde los valores guardados
     const canalLabel  = est.canal ? ` · Canal: ${est.canal}` : '';
@@ -260,11 +260,9 @@ function _renderReporteCacheado(tab) {
         document.getElementById('baseCalculoMonto').textContent  = fmtMoneda(bc.monto);
         document.getElementById('baseCalculoFuente').textContent =
             bc.fuente === 'sinIVA' ? '(Ventas sin IVA)' : '(Venta total — fallback)';
-        const vtotal = json.kpis?.venta_total ?? 0;
-        const diff   = bc.monto - vtotal;
-        document.getElementById('bcTooltipBase').innerHTML  = fmtMoneda(bc.monto);
-        document.getElementById('bcTooltipDiff').innerHTML  = fmtMoneda(diff);
-        document.getElementById('bcTooltipVenta').innerHTML = fmtMoneda(vtotal);
+        document.getElementById('bcTooltipBase').innerHTML  = fmtMoneda(bc.ventas_brutas ?? 0);
+        document.getElementById('bcTooltipDiff').innerHTML  = fmtMoneda(Math.abs(bc.recupero_18 ?? 0));
+        document.getElementById('bcTooltipVenta').innerHTML = fmtMoneda(bc.monto);
         chip.style.display = 'flex';
     } else {
         chip.style.display = 'none';
@@ -277,12 +275,24 @@ function _renderReporteCacheado(tab) {
 
 /* ── KPI Cards ──────────────────────────────────────────────────────────────── */
 
-function actualizarKPIs(kpis) {
+function actualizarKPIs(kpis, bc) {
     // Cards principales
     const sec = document.getElementById('kpiSection');
     sec.style.display = 'block';
 
-    document.getElementById('kpiVentaVal').innerHTML = fmtMoneda(kpis.venta_total);
+    const ventaReal = bc?.venta_total_real ?? kpis.venta_total;
+    document.getElementById('kpiVentaVal').innerHTML = fmtMoneda(ventaReal);
+
+    // Tooltip de composición de venta total
+    const wrap = document.getElementById('kpiVentaDesgloseWrap');
+    if (wrap && bc?.venta_total_real != null) {
+        document.getElementById('kpiVentaNorm').innerHTML         = fmtMoneda(bc.venta_normales ?? 0);
+        document.getElementById('kpiVentaRecuperos').innerHTML    = fmtMoneda(bc.recuperos ?? 0);
+        document.getElementById('kpiVentaProrrateables').innerHTML = fmtMoneda(bc.prorrateables ?? 0);
+        document.getElementById('kpiVentaSinRubro').innerHTML     = fmtMoneda(bc.sin_rubro ?? 0);
+        document.getElementById('kpiVentaTotalVal').innerHTML     = fmtMoneda(bc.venta_total_real);
+        wrap.style.display = 'inline-flex';
+    }
 
     document.getElementById('kpiRBVal').innerHTML = fmtMoneda(kpis.resultado_bruto);
     document.getElementById('kpiRBPct').textContent = kpis.rel_resultado_bruto !== null
@@ -601,7 +611,7 @@ async function cargarReporte(desde, hasta, canal) {
         if (tabActual === 3) estadoPorTab[tabActual].color = document.getElementById('selectColor').value;
 
         // KPIs
-        actualizarKPIs(json.kpis);
+        actualizarKPIs(json.kpis, json.base_calculo);
 
         // Meta info
         const canalLabel  = canal ? ` · Canal: ${canal}` : '';
@@ -624,11 +634,9 @@ async function cargarReporte(desde, hasta, canal) {
             document.getElementById('baseCalculoFuente').textContent =
                 bc.fuente === 'sinIVA' ? '(Ventas sin IVA)' : '(Venta total — fallback)';
 
-            const ventaTotal = json.kpis?.venta_total ?? 0;
-            const diferencia = bc.monto - ventaTotal;
-            document.getElementById('bcTooltipBase').innerHTML  = fmtMoneda(bc.monto);
-            document.getElementById('bcTooltipDiff').innerHTML  = fmtMoneda(diferencia);
-            document.getElementById('bcTooltipVenta').innerHTML = fmtMoneda(ventaTotal);
+            document.getElementById('bcTooltipBase').innerHTML  = fmtMoneda(bc.ventas_brutas ?? 0);
+            document.getElementById('bcTooltipDiff').innerHTML  = fmtMoneda(Math.abs(bc.recupero_18 ?? 0));
+            document.getElementById('bcTooltipVenta').innerHTML = fmtMoneda(bc.monto);
 
             chip.style.display = 'flex';
         } else {
@@ -882,6 +890,42 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Escape' && bcPopover.classList.contains('bc-open')) {
                 bcPopover.classList.remove('bc-open');
                 bcIcon.classList.remove('active');
+            }
+        });
+    }
+
+    // ── Popover de composición de venta total ───────────────────────────────
+    const ventaIcon    = document.getElementById('kpiVentaDesgloseIcon');
+    const ventaPopover = document.getElementById('kpiVentaDesglosePop');
+
+    // Mover al body para que position:fixed no se vea afectado por el
+    // transform:translateY de .kpi-card:hover
+    if (ventaPopover) document.body.appendChild(ventaPopover);
+
+    if (ventaIcon && ventaPopover) {
+        ventaIcon.addEventListener('click', e => {
+            e.stopPropagation();
+            const abierto = !ventaPopover.classList.contains('kpi-desglose-open');
+            if (abierto) {
+                const rect = ventaIcon.getBoundingClientRect();
+                ventaPopover.style.top  = (rect.bottom + 8) + 'px';
+                ventaPopover.style.left = rect.left + 'px';
+            }
+            ventaPopover.classList.toggle('kpi-desglose-open', abierto);
+            ventaIcon.classList.toggle('active', abierto);
+        });
+
+        document.addEventListener('click', e => {
+            if (!ventaPopover.contains(e.target) && e.target !== ventaIcon) {
+                ventaPopover.classList.remove('kpi-desglose-open');
+                ventaIcon.classList.remove('active');
+            }
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && ventaPopover.classList.contains('kpi-desglose-open')) {
+                ventaPopover.classList.remove('kpi-desglose-open');
+                ventaIcon.classList.remove('active');
             }
         });
     }

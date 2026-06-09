@@ -538,6 +538,40 @@ body {
 .bc-calc-result .bc-calc-label { font-weight: 600; color: var(--text); }
 .bc-calc-result .bc-calc-val   { color: var(--accent); font-weight: 600; }
 
+/* ── Popover de desglose en card Venta Total ── */
+.kpi-desglose-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+.kpi-desglose-icon {
+    font-size: 11px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color .15s;
+}
+
+.kpi-desglose-icon:hover,
+.kpi-desglose-icon.active { color: var(--accent); }
+
+.kpi-desglose-pop {
+    display: none;
+    position: fixed;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-width: 230px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    z-index: 9999;
+    animation: bcFadeIn .15s ease;
+}
+
+.kpi-desglose-pop.kpi-desglose-open { display: block; }
+
 /* ── Tabla de datos ── */
 .tabla-scroll-wrapper {
     overflow-x: auto;

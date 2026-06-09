@@ -1794,6 +1794,7 @@ const abrirGestionModulos = () => {
     cargarModulos(desde, hasta);
     cargarCentrosCosto();
     cargarAuxiliaresDisponibles();
+    cargarMetodosProrrateo();
 
     if (!$('#selectAuxiliarNuevo').hasClass('select2-hidden-accessible')) {
         $('#selectAuxiliarNuevo').select2({
@@ -2138,6 +2139,80 @@ const cambiarEstadoCentroCosto = (codAuxiliar, activo) => {
                         Swal.fire({ icon: 'success', title: 'Listo', text: res.message, timer: 1500, showConfirmButton: false });
                         cargarCentrosCosto();
                         cargarAuxiliaresDisponibles();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: res.message });
+                    }
+                },
+                error: function() {
+                    Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor' });
+                }
+            });
+        }
+    });
+};
+
+// ==================== GESTIÓN DE MÉTODOS DE PRORRATEO ====================
+
+const cargarMetodosProrrateo = () => {
+    const estado = $('#filtroEstadoProrrateo').val() || 'todos';
+    const tbody = document.getElementById('bodyMetodosProrrateo');
+    if (!tbody) { return; }
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center"><i class="bi bi-hourglass-split"></i> Cargando...</td></tr>';
+
+    $.ajax({
+        url: 'Controller/prorrateoMetodosController.php?accion=listarMetodos',
+        method: 'POST',
+        data: { estado: estado },
+        dataType: 'json',
+        success: function(metodos) {
+            tbody.innerHTML = '';
+            if (!metodos || metodos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin registros</td></tr>';
+                return;
+            }
+            metodos.forEach(function(m) {
+                const badge = m.ACTIVO == 1
+                    ? '<span class="badge badge-success">Activo</span>'
+                    : '<span class="badge badge-secondary">Inactivo</span>';
+                const btnAccion = m.ACTIVO == 1
+                    ? `<button class="btn btn-sm btn-warning" onclick="cambiarEstadoProrrateo('${m.COD_PRORRATEO}', 0)">Inhabilitar</button>`
+                    : `<button class="btn btn-sm btn-success" onclick="cambiarEstadoProrrateo('${m.COD_PRORRATEO}', 1)">Habilitar</button>`;
+                tbody.innerHTML += `<tr>
+                    <td>${m.COD_PRORRATEO}</td>
+                    <td>${m.DESC_PRORRATEO}</td>
+                    <td>${badge}</td>
+                    <td>${btnAccion}</td>
+                </tr>`;
+            });
+        },
+        error: function() {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar</td></tr>';
+        }
+    });
+};
+
+const cambiarEstadoProrrateo = (cod, activo) => {
+    const accionTexto = activo == 1 ? 'habilitar' : 'inhabilitar';
+    const accionLabel = accionTexto.charAt(0).toUpperCase() + accionTexto.slice(1);
+
+    Swal.fire({
+        title: `${accionLabel} método de prorrateo`,
+        text: `¿Desea ${accionTexto} el método "${cod}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: 'Controller/prorrateoMetodosController.php?accion=cambiarEstado',
+                method: 'POST',
+                data: { cod, activo },
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({ icon: 'success', title: 'Listo', text: res.message, timer: 1500, showConfirmButton: false });
+                        cargarMetodosProrrateo();
                     } else {
                         Swal.fire({ icon: 'error', title: 'Error', text: res.message });
                     }

@@ -158,7 +158,7 @@ class Ingreso {
     /**
      * Obtiene ingresos desde TESORERÍA (Base Central - SBA05)
      */
-    public function obtenerIngresosTesoreria($desde, $hasta) {
+    public function obtenerIngresosTesoreria($desde, $hasta, $moneda = 'ARS') {
         try {
             // Aplicar filtro de fecha de inicio de la app
             $fechaInicioApp = Config::getFechaInicioApp();
@@ -166,18 +166,33 @@ class Ingreso {
                 $desde = $fechaInicioApp;
             }
             
-            $sql = "SELECT    
-                        ID_SBA05,    
-                        CAST(FECHA AS DATE) FECHA,    
-                        COD_COMP,    
-                        N_COMP,      
-                        LEYENDA OBSERVACIONES,    
-                        CAST(MONTO AS FLOAT) MONTO
-                    FROM SBA05    
-                    WHERE COD_CTA = '100130'    
-                      AND FECHA BETWEEN ? AND ?
-                      AND D_H = 'D'
-                    ORDER BY FECHA DESC";
+            if ($moneda === 'USD') {
+                $sql = "SELECT    
+                            ID_SBA05,    
+                            CAST(FECHA AS DATE) FECHA,    
+                            COD_COMP,    
+                            N_COMP,      
+                            LEYENDA OBSERVACIONES,    
+                            CAST(CANT_MONE AS FLOAT) MONTO
+                        FROM SBA05    
+                        WHERE COD_CTA = '100901'    
+                          AND FECHA BETWEEN ? AND ?
+                          AND D_H = 'D'
+                        ORDER BY FECHA DESC";
+            } else {
+                $sql = "SELECT    
+                            ID_SBA05,    
+                            CAST(FECHA AS DATE) FECHA,    
+                            COD_COMP,    
+                            N_COMP,      
+                            LEYENDA OBSERVACIONES,    
+                            CAST(MONTO AS FLOAT) MONTO
+                        FROM SBA05    
+                        WHERE COD_CTA = '100130'    
+                          AND FECHA BETWEEN ? AND ?
+                          AND D_H = 'D'
+                        ORDER BY FECHA DESC";
+            }
             
             $params = [$desde, $hasta];
             $stmt = sqlsrv_query($this->dbCentral, $sql, $params);
@@ -203,7 +218,8 @@ class Ingreso {
                         'observaciones' => $row['OBSERVACIONES'],
                         'importe' => $row['MONTO'],
                         'recibido' => 0, // Siempre pendiente hasta marcar
-                        'origen' => 'TESORERIA'
+                        'origen' => 'TESORERIA',
+                        'moneda' => $moneda
                     ];
                 }
             }
@@ -394,6 +410,10 @@ class Ingreso {
             // Cobros 599 en dólares
             $ingresos599 = $this->obtenerIngresos599Dolares($desde, $hasta);
             $resultados = array_merge($resultados, $ingresos599);
+
+            // Ingresos de Tesorería en dólares (SBA05)
+            $ingresosTesoreriaUSD = $this->obtenerIngresosTesoreria($desde, $hasta, 'USD');
+            $resultados = array_merge($resultados, $ingresosTesoreriaUSD);
         } else {
             // 1. Ingresos MANUALES (desde tabla ingresos local) - solo ARS
             $filtros = [
@@ -444,7 +464,7 @@ class Ingreso {
     /**
      * Marca un ingreso TESORERÍA como recibido (lo inserta en tabla ingresos)
      */
-    public function marcarRecibidoTesoreria($idSba05, $fecha, $codComp, $nComp, $observaciones, $importe) {
+    public function marcarRecibidoTesoreria($idSba05, $fecha, $codComp, $nComp, $observaciones, $importe, $moneda = 'ARS') {
         try {
             // CRÍTICO: Convertir ID_SBA05 a entero (la columna en la BD es INT)
             // Para ingresos de tesorería, ID_SBA05 debe ser un número válido
@@ -470,12 +490,15 @@ class Ingreso {
             error_log("[DEBUG marcarRecibidoTesoreria] ID_SBA05 original: '$idSba05', convertido a INT: $idSba05Int");
             error_log("[DEBUG marcarRecibidoTesoreria] COD_COMP: '$codCompAjustado', N_COMP: '$nCompAjustado'");
             
+            $importeARS = $moneda === 'USD' ? 0 : (float)$importe;
+            $importeUSD = $moneda === 'USD' ? (float)$importe : 0;
+            
             $sql = "INSERT INTO ingresos (
-                        ID_SBA05, COD_COMP, N_COMP, fecha, importe, 
-                        observaciones, recibido, fecha_carga, origen
+                        ID_SBA05, COD_COMP, N_COMP, fecha, importe, importe_dolares,
+                        observaciones, recibido, fecha_carga, origen, moneda
                     ) VALUES (
-                        ?, ?, ?, ?, ?,
-                        ?, 1, GETDATE(), 'TESORERIA'
+                        ?, ?, ?, ?, ?, ?,
+                        ?, 1, GETDATE(), 'TESORERIA', ?
                     )";
             
             $params = [
@@ -483,8 +506,10 @@ class Ingreso {
                 $codCompAjustado,
                 $nCompAjustado,
                 $fecha,
-                (float)$importe, // Asegurar que importe es float
-                $observaciones
+                $importeARS,
+                $importeUSD,
+                $observaciones,
+                $moneda
             ];
             
             error_log("[DEBUG marcarRecibidoTesoreria] SQL: " . $sql);

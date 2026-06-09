@@ -10,7 +10,37 @@
         <div class="kpi-card" id="kpiVenta">
             <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
             <div class="kpi-body">
-                <div class="kpi-label">Venta Total</div>
+                <div class="kpi-label">
+                    Venta Total
+                    <span class="kpi-desglose-wrap" id="kpiVentaDesgloseWrap" style="display:none;">
+                        <i class="bi bi-info-circle kpi-desglose-icon" id="kpiVentaDesgloseIcon"></i>
+                        <div class="kpi-desglose-pop" id="kpiVentaDesglosePop">
+                            <span class="bc-tooltip-title">Composición de venta total</span>
+                            <div class="bc-calc">
+                                <div class="bc-calc-row bc-calc-minus">
+                                    <span class="bc-calc-label">Venta (rubros)</span>
+                                    <strong class="bc-calc-val" id="kpiVentaNorm">—</strong>
+                                </div>
+                                <div class="bc-calc-row bc-calc-minus">
+                                    <span class="bc-calc-label"><span class="bc-calc-op">+</span> Recuperos</span>
+                                    <strong class="bc-calc-val" id="kpiVentaRecuperos">—</strong>
+                                </div>
+                                <div class="bc-calc-row bc-calc-minus">
+                                    <span class="bc-calc-label"><span class="bc-calc-op">+</span> Prorrateables</span>
+                                    <strong class="bc-calc-val" id="kpiVentaProrrateables">—</strong>
+                                </div>
+                                <div class="bc-calc-row bc-calc-minus">
+                                    <span class="bc-calc-label"><span class="bc-calc-op">+</span> Sin rubro</span>
+                                    <strong class="bc-calc-val" id="kpiVentaSinRubro">—</strong>
+                                </div>
+                                <div class="bc-calc-row bc-calc-result">
+                                    <span class="bc-calc-label"><span class="bc-calc-op">=</span> Total</span>
+                                    <strong class="bc-calc-val" id="kpiVentaTotalVal">—</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </span>
+                </div>
                 <div class="kpi-value" id="kpiVentaVal">—</div>
             </div>
         </div>
@@ -103,15 +133,15 @@
                         <span class="bc-tooltip-title">Composición de la base de prorrateo</span>
                         <div class="bc-calc">
                             <div class="bc-calc-row">
-                                <span class="bc-calc-label">Base prorrateo</span>
+                                <span class="bc-calc-label">Ventas <em>(1.5 + 1.6 + 1.7)</em></span>
                                 <strong class="bc-calc-val" id="bcTooltipBase">—</strong>
                             </div>
                             <div class="bc-calc-row bc-calc-minus">
-                                <span class="bc-calc-label"><span class="bc-calc-op">−</span> Recupero de promociones <em>(Rubro 1.8.)</em></span>
+                                <span class="bc-calc-label"><span class="bc-calc-op">−</span> Recupero de promociones <em>(1.8.)</em></span>
                                 <strong class="bc-calc-val" id="bcTooltipDiff">—</strong>
                             </div>
                             <div class="bc-calc-row bc-calc-result">
-                                <span class="bc-calc-label"><span class="bc-calc-op">=</span> Venta total</span>
+                                <span class="bc-calc-label"><span class="bc-calc-op">=</span> Base prorrateo</span>
                                 <strong class="bc-calc-val" id="bcTooltipVenta">—</strong>
                             </div>
                         </div>

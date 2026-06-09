@@ -220,10 +220,47 @@ $locales = $sucursal->traerLocales();
                 },
                 dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
                 order: [],
-                columnDefs: [{
-                    targets: '_all',
-                    className: 'text-center'
-                }]
+                autoWidth: false,
+                columnDefs: [
+                    {
+                        targets: '_all',
+                        className: 'text-center'
+                    },
+                    {
+                        targets: [0, 1, 3, 6, 8],
+                        className: 'text-center columna-compacta'
+                    },
+                    {
+                        targets: [9, 10, 11],
+                        className: 'text-center columna-estado'
+                    },
+                    {
+                        targets: [13],
+                        className: 'text-center columna-acciones'
+                    },
+                    {
+                        targets: [2, 4, 7, 12],
+                        className: 'text-center columna-media'
+                    }
+                ],
+                columns: [
+                    { width: '7%' },
+                    { width: '5%' },
+                    { width: '13%' },
+                    { width: '6%' },
+                    { width: '12%' },
+                    { width: '8%' },
+                    { width: '5%' },
+                    { width: '10%' },
+                    { width: '6%' },
+                    { width: '4%' },
+                    { width: '4%' },
+                    { width: '4%' },
+                    { width: '12%' },
+                    { width: '4%' },
+                    null,
+                    null
+                ]
             });
 
             // Initialize tooltips

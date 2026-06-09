@@ -114,6 +114,7 @@ try {
                         'recibido' => $ing['recibido'],
                         'id' => $ing['id'],
                         'origen' => $ing['origen'] ?? 'MANUAL',
+                        'ID_SBA05' => $ing['ID_SBA05'] ?? null,
                         'moneda' => 'USD',
                         'tiene_foto' => 0
                     ];

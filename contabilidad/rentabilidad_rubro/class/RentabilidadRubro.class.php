@@ -7,6 +7,8 @@
 class RentabilidadRubro
 {
     private $conn;
+    private float $_ventasBrutas = 0.0;
+    private float $_recupero18   = 0.0;
 
     public function __construct($conn)
     {
@@ -166,7 +168,10 @@ class RentabilidadRubro
         $filtroCanal = $this->canalSqlFilter($canal);
 
         $sql = "
-            SELECT SUM(IMPORTE) AS VENTA_SIN_IVA
+            SELECT
+                SUM(IMPORTE) AS VENTA_SIN_IVA,
+                SUM(CASE WHEN COD_RUBRO IN ('1.5.', '1.6.', '1.7.') THEN IMPORTE ELSE 0 END) AS VENTAS_BRUTAS,
+                SUM(CASE WHEN COD_RUBRO = '1.8.' THEN IMPORTE ELSE 0 END) AS RECUPERO_18
             FROM RO_T_RESUMEN_FINAL_IE
             WHERE PERIODO IN ($placeholders)
               AND COD_RUBRO IN ('1.5.', '1.6.', '1.7.', '1.8.')
@@ -178,7 +183,44 @@ class RentabilidadRubro
         }
         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
         sqlsrv_free_stmt($stmt);
+        $this->_ventasBrutas = (float)($row['VENTAS_BRUTAS'] ?? 0);
+        $this->_recupero18   = (float)($row['RECUPERO_18']   ?? 0);
         return (float)($row['VENTA_SIN_IVA'] ?? 0);
+    }
+
+    // ── Venta bruta desglosada (para tooltip de base prorrateo) ─────────────
+
+    private function getVentaBrutaDesglosada(string $fechaDesde, string $fechaHasta, string $canal = ''): array
+    {
+        [$canalClause, $canalParams] = $this->buildCanalFilterRubro($canal);
+        $params = array_merge(
+            [[$fechaDesde, SQLSRV_PARAM_IN], [$fechaHasta, SQLSRV_PARAM_IN]],
+            $canalParams
+        );
+        $sql = "
+            SELECT
+                SUM(CASE WHEN RUBRO NOT IN ('RECUPEROS','PRORRATEABLES','SIN RUBRO') THEN VENTA ELSE 0 END) AS venta_normales,
+                SUM(CASE WHEN RUBRO = 'RECUPEROS'     THEN VENTA ELSE 0 END) AS recuperos,
+                SUM(CASE WHEN RUBRO = 'PRORRATEABLES' THEN VENTA ELSE 0 END) AS prorrateables,
+                SUM(CASE WHEN RUBRO = 'SIN RUBRO'     THEN VENTA ELSE 0 END) AS sin_rubro,
+                SUM(VENTA) AS total
+            FROM RO_T_RENT_BRUTA_RUBRO
+            WHERE FECHA BETWEEN ? AND ?
+              $canalClause
+        ";
+        $stmt = sqlsrv_query($this->conn, $sql, $params);
+        if ($stmt === false) {
+            throw new RuntimeException('Error en getVentaBrutaDesglosada: ' . (sqlsrv_errors()[0]['message'] ?? 'Error desconocido'));
+        }
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        sqlsrv_free_stmt($stmt);
+        return [
+            'venta_normales'  => (float)($row['venta_normales'] ?? 0),
+            'recuperos'       => (float)($row['recuperos'] ?? 0),
+            'prorrateables'   => (float)($row['prorrateables'] ?? 0),
+            'sin_rubro'       => (float)($row['sin_rubro'] ?? 0),
+            'total'           => (float)($row['total'] ?? 0),
+        ];
     }
 
     // ── Gastos por categoría ──────────────────────────────────────────────────
@@ -550,9 +592,10 @@ class RentabilidadRubro
         }
 
         // Base de prorrateo de gastos
-        $ventasSinIVA = $this->getVentasSinIVA($periodos, $canal);
+        $ventasSinIVA    = $this->getVentasSinIVA($periodos, $canal);
         $ventaTotalBruta = array_sum(array_column($ventaCosto, 'venta'));
-        $baseCoef = ($ventasSinIVA != 0) ? $ventasSinIVA : $ventaTotalBruta;
+        $baseCoef        = ($ventasSinIVA != 0) ? $ventasSinIVA : $ventaTotalBruta;
+        $ventaBruta      = $this->getVentaBrutaDesglosada($fechaDesde, $fechaHasta, $canal);
 
         // Gastos por categoría
         $gastosBD  = $this->getGastosPorCategoria($periodos, $canal);
@@ -650,8 +693,15 @@ class RentabilidadRubro
             'data'         => $data,
             'kpis'         => $kpis,
             'base_calculo' => [
-                'monto'  => $baseCoef,
-                'fuente' => ($ventasSinIVA != 0) ? 'sinIVA' : 'total',
+                'monto'            => $baseCoef,
+                'fuente'           => ($ventasSinIVA != 0) ? 'sinIVA' : 'total',
+                'ventas_brutas'    => $this->_ventasBrutas,
+                'recupero_18'      => $this->_recupero18,
+                'venta_normales'   => $ventaBruta['venta_normales'],
+                'recuperos'        => $ventaBruta['recuperos'],
+                'prorrateables'    => $ventaBruta['prorrateables'],
+                'sin_rubro'        => $ventaBruta['sin_rubro'],
+                'venta_total_real' => $ventaBruta['total'],
             ],
         ];
     }

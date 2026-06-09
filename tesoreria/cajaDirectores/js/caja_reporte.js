@@ -382,29 +382,54 @@ function mostrarReporte(movimientos, filtros = {}) {
             const tipoClass = mov.tipo === 'INGRESO' ? 'text-success' : 'text-danger';
             const tipoIcon = mov.tipo === 'INGRESO' ? 'arrow-down-circle' : 'arrow-up-circle';
 
-            let origenBadge, estadoBadge = '', accionBoton = '';
+            let origenBadge = '', estadoBadge = '', accionBoton = '';
 
             if (mov.tipo === 'EGRESO') {
                 origenBadge = '<span class="badge bg-primary">Manual</span>';
                 estadoBadge = '<span class="badge bg-success">Pagado</span>';
                 accionBoton = '<span class="text-muted">-</span>';
-            } else if (mov.origen === '599') {
-                origenBadge = '<span class="badge bg-info">599</span>';
-                estadoBadge = '<span class="badge bg-success">Recibido</span>';
-                accionBoton = '<span class="text-muted">-</span>';
             } else {
-                origenBadge = '<span class="badge bg-primary">Manual</span>';
+                // Configurar badge de origen
+                switch(mov.origen) {
+                    case 'MANUAL':
+                        origenBadge = '<span class="badge bg-primary">Manual</span>';
+                        break;
+                    case '599':
+                        origenBadge = '<span class="badge bg-info">599</span>';
+                        break;
+                    case 'TESORERIA':
+                        origenBadge = '<span class="badge bg-secondary">Tesorería</span>';
+                        break;
+                    default:
+                        origenBadge = '<span class="badge bg-light text-dark">Manual</span>';
+                }
+
                 if (mov.recibido == 1) {
                     estadoBadge = '<span class="badge bg-success">Recibido</span>';
                     accionBoton = '<span class="text-muted">-</span>';
                 } else {
                     estadoBadge = '<span class="badge bg-warning">Pendiente</span>';
-                    accionBoton = `
+                    if (mov.id && String(mov.id).startsWith('EXT_TES_')) {
+                        accionBoton = `
+<button type="button" class="btn btn-outline-success checkbox-style"
+        onclick="return marcarRecibidoTesoreria(this, event)"
+        data-id-sba05="${mov.ID_SBA05}"
+        data-fecha="${mov.fecha.split('T')[0]}"
+        data-cod-comp="${mov.cod_comp || mov.COD_COMP || ''}"
+        data-n-comp="${mov.n_comp || mov.N_COMP || ''}"
+        data-concepto="${(mov.observaciones || mov.concepto || '').replace(/"/g, '&quot;')}"
+        data-id-original="${mov.id}"
+        data-importe="${mov.importe}"
+        style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
+        title="Importar de Tesorería">☐</button>`;
+                    } else {
+                        accionBoton = `
 <button type="button" class="btn btn-outline-success checkbox-style"
         onclick="return marcarRecibidoDesdeReporte(this, event)"
         data-ingreso-id="${mov.id}"
         style="width: 32px; height: 32px; padding: 0; border-radius: 4px; border-width: 2px; font-size: 18px;"
         title="Marcar como recibido">☐</button>`;
+                    }
                 }
             }
 
@@ -795,6 +820,7 @@ async function marcarRecibidoTesoreria(botonElemento, event) {
         formData.append('n_comp', String(nComp || ''));
         formData.append('observaciones', String(concepto || ''));
         formData.append('importe', String(importe || 0));
+        formData.append('moneda', String(monedaActual || 'ARS'));
         
         const response = await fetch('controller/caja_ingresos_controller.php?' + new Date().getTime(), {
             method: 'POST',

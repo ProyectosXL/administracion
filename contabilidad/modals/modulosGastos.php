@@ -20,6 +20,9 @@
                     <li class="nav-item">
                         <a class="nav-link" id="tab-centros-link" data-toggle="tab" href="#paneCentros" role="tab" aria-controls="paneCentros" aria-selected="false">Centros de Costo</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-prorrateo-link" data-toggle="tab" href="#paneProrrateo" role="tab" aria-controls="paneProrrateo" aria-selected="false">Métodos de Prorrateo</a>
+                    </li>
                 </ul>
 
                 <div class="tab-content mt-3" id="tabsGestionContent">
@@ -119,6 +122,43 @@
                         </div>
 
                     </div>
+
+                    <!-- Tab Métodos de Prorrateo -->
+                    <div class="tab-pane fade" id="paneProrrateo" role="tabpanel" aria-labelledby="tab-prorrateo-link">
+
+                        <!-- Filtro de estado -->
+                        <div class="form-row mb-2 align-items-center">
+                            <div class="col-auto">
+                                <label class="mb-0">Estado:</label>
+                            </div>
+                            <div class="col-auto">
+                                <select id="filtroEstadoProrrateo" class="form-control form-control-sm" onchange="cargarMetodosProrrateo()">
+                                    <option value="activos">Activos</option>
+                                    <option value="inactivos">Inactivos</option>
+                                    <option value="todos">Todos</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Tabla métodos de prorrateo -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover table-sm" id="tablaMetodosProrrateo">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>COD_PRORRATEO</th>
+                                        <th>DESC_PRORRATEO</th>
+                                        <th>ESTADO</th>
+                                        <th>ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyMetodosProrrateo">
+                                    <!-- Se llena dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+
                 </div>
 
             </div>
