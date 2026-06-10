@@ -22,16 +22,8 @@
                                     <strong class="bc-calc-val" id="kpiVentaNorm">—</strong>
                                 </div>
                                 <div class="bc-calc-row bc-calc-minus">
-                                    <span class="bc-calc-label"><span class="bc-calc-op">+</span> Recuperos</span>
-                                    <strong class="bc-calc-val" id="kpiVentaRecuperos">—</strong>
-                                </div>
-                                <div class="bc-calc-row bc-calc-minus">
-                                    <span class="bc-calc-label"><span class="bc-calc-op">+</span> Prorrateables</span>
-                                    <strong class="bc-calc-val" id="kpiVentaProrrateables">—</strong>
-                                </div>
-                                <div class="bc-calc-row bc-calc-minus">
-                                    <span class="bc-calc-label"><span class="bc-calc-op">+</span> Sin rubro</span>
-                                    <strong class="bc-calc-val" id="kpiVentaSinRubro">—</strong>
+                                    <span class="bc-calc-label"><span class="bc-calc-op">+</span> Recupero de promociones (1.8.)</span>
+                                    <strong class="bc-calc-val" id="kpiVentaRecupero18">—</strong>
                                 </div>
                                 <div class="bc-calc-row bc-calc-result">
                                     <span class="bc-calc-label"><span class="bc-calc-op">=</span> Total</span>
@@ -132,13 +124,17 @@
                     <div class="bc-tooltip" id="bcTooltip">
                         <span class="bc-tooltip-title">Composición de la base de prorrateo</span>
                         <div class="bc-calc">
-                            <div class="bc-calc-row">
-                                <span class="bc-calc-label">Ventas <em>(1.5 + 1.6 + 1.7)</em></span>
-                                <strong class="bc-calc-val" id="bcTooltipBase">—</strong>
+                            <div class="bc-calc-row bc-calc-minus">
+                                <span class="bc-calc-label">Venta normales</span>
+                                <strong class="bc-calc-val" id="bcTooltipNormales">—</strong>
                             </div>
                             <div class="bc-calc-row bc-calc-minus">
-                                <span class="bc-calc-label"><span class="bc-calc-op">−</span> Recupero de promociones <em>(1.8.)</em></span>
-                                <strong class="bc-calc-val" id="bcTooltipDiff">—</strong>
+                                <span class="bc-calc-label"><span class="bc-calc-op">+</span> Recuperos</span>
+                                <strong class="bc-calc-val" id="bcTooltipRecuperos">—</strong>
+                            </div>
+                            <div class="bc-calc-row bc-calc-minus">
+                                <span class="bc-calc-label"><span class="bc-calc-op">+</span> Prorrateables</span>
+                                <strong class="bc-calc-val" id="bcTooltipProrrateables">—</strong>
                             </div>
                             <div class="bc-calc-row bc-calc-result">
                                 <span class="bc-calc-label"><span class="bc-calc-op">=</span> Base prorrateo</span>

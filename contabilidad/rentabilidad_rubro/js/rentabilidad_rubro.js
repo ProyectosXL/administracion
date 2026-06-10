@@ -258,11 +258,11 @@ function _renderReporteCacheado(tab) {
     const chip = document.getElementById('baseCalculoChip');
     if (bc && bc.monto) {
         document.getElementById('baseCalculoMonto').textContent  = fmtMoneda(bc.monto);
-        document.getElementById('baseCalculoFuente').textContent =
-            bc.fuente === 'sinIVA' ? '(Ventas sin IVA)' : '(Venta total — fallback)';
-        document.getElementById('bcTooltipBase').innerHTML  = fmtMoneda(bc.ventas_brutas ?? 0);
-        document.getElementById('bcTooltipDiff').innerHTML  = fmtMoneda(Math.abs(bc.recupero_18 ?? 0));
-        document.getElementById('bcTooltipVenta').innerHTML = fmtMoneda(bc.monto);
+        document.getElementById('baseCalculoFuente').textContent    = '(Venta total)';
+        document.getElementById('bcTooltipNormales').innerHTML      = fmtMoneda(bc.venta_normales ?? 0);
+        document.getElementById('bcTooltipRecuperos').innerHTML     = fmtMoneda(bc.recuperos ?? 0);
+        document.getElementById('bcTooltipProrrateables').innerHTML = fmtMoneda(bc.prorrateables ?? 0);
+        document.getElementById('bcTooltipVenta').innerHTML         = fmtMoneda(bc.monto);
         chip.style.display = 'flex';
     } else {
         chip.style.display = 'none';
@@ -280,17 +280,19 @@ function actualizarKPIs(kpis, bc) {
     const sec = document.getElementById('kpiSection');
     sec.style.display = 'block';
 
-    const ventaReal = bc?.venta_total_real ?? kpis.venta_total;
-    document.getElementById('kpiVentaVal').innerHTML = fmtMoneda(ventaReal);
+    // Venta Total = importe actual (tabla rubros) + |Recupero de promociones (1.8.)| (IE).
+    // Son orígenes distintos (RO_T_RENT_BRUTA_RUBRO + RO_T_RESUMEN_FINAL_IE), por eso se suman.
+    const recupero18     = Math.abs(bc?.recupero_18 ?? 0);
+    const ventaRubros    = bc?.venta_total_real ?? kpis.venta_total;
+    const ventaTotalCard = ventaRubros + recupero18;
+    document.getElementById('kpiVentaVal').innerHTML = fmtMoneda(ventaTotalCard);
 
     // Tooltip de composición de venta total
     const wrap = document.getElementById('kpiVentaDesgloseWrap');
     if (wrap && bc?.venta_total_real != null) {
-        document.getElementById('kpiVentaNorm').innerHTML         = fmtMoneda(bc.venta_normales ?? 0);
-        document.getElementById('kpiVentaRecuperos').innerHTML    = fmtMoneda(bc.recuperos ?? 0);
-        document.getElementById('kpiVentaProrrateables').innerHTML = fmtMoneda(bc.prorrateables ?? 0);
-        document.getElementById('kpiVentaSinRubro').innerHTML     = fmtMoneda(bc.sin_rubro ?? 0);
-        document.getElementById('kpiVentaTotalVal').innerHTML     = fmtMoneda(bc.venta_total_real);
+        document.getElementById('kpiVentaNorm').innerHTML       = fmtMoneda(ventaRubros);
+        document.getElementById('kpiVentaRecupero18').innerHTML = fmtMoneda(recupero18);
+        document.getElementById('kpiVentaTotalVal').innerHTML   = fmtMoneda(ventaTotalCard);
         wrap.style.display = 'inline-flex';
     }
 
@@ -631,12 +633,11 @@ async function cargarReporte(desde, hasta, canal) {
         const chip = document.getElementById('baseCalculoChip');
         if (bc && bc.monto) {
             document.getElementById('baseCalculoMonto').textContent  = fmtMoneda(bc.monto);
-            document.getElementById('baseCalculoFuente').textContent =
-                bc.fuente === 'sinIVA' ? '(Ventas sin IVA)' : '(Venta total — fallback)';
-
-            document.getElementById('bcTooltipBase').innerHTML  = fmtMoneda(bc.ventas_brutas ?? 0);
-            document.getElementById('bcTooltipDiff').innerHTML  = fmtMoneda(Math.abs(bc.recupero_18 ?? 0));
-            document.getElementById('bcTooltipVenta').innerHTML = fmtMoneda(bc.monto);
+            document.getElementById('baseCalculoFuente').textContent    = '(Venta total)';
+            document.getElementById('bcTooltipNormales').innerHTML      = fmtMoneda(bc.venta_normales ?? 0);
+            document.getElementById('bcTooltipRecuperos').innerHTML     = fmtMoneda(bc.recuperos ?? 0);
+            document.getElementById('bcTooltipProrrateables').innerHTML = fmtMoneda(bc.prorrateables ?? 0);
+            document.getElementById('bcTooltipVenta').innerHTML         = fmtMoneda(bc.monto);
 
             chip.style.display = 'flex';
         } else {

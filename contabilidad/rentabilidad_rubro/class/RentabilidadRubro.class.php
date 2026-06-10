@@ -591,10 +591,14 @@ class RentabilidadRubro
             ];
         }
 
-        // Base de prorrateo de gastos
-        $ventasSinIVA    = $this->getVentasSinIVA($periodos, $canal);
+        // Base de prorrateo de gastos.
+        // Ahora la base es la VENTA total de la tabla (fila VENTA del reporte) =
+        // normales + recuperos + prorrateables. Es el divisor real de los % de gastos.
+        // Se sigue invocando getVentasSinIVA() porque setea $this->_recupero18 (rubro 1.8),
+        // usado por la card de Venta Total.
+        $this->getVentasSinIVA($periodos, $canal);
         $ventaTotalBruta = array_sum(array_column($ventaCosto, 'venta'));
-        $baseCoef        = ($ventasSinIVA != 0) ? $ventasSinIVA : $ventaTotalBruta;
+        $baseCoef        = $ventaTotalBruta;   // == data['TOTAL']['venta']
         $ventaBruta      = $this->getVentaBrutaDesglosada($fechaDesde, $fechaHasta, $canal);
 
         // Gastos por categoría
@@ -694,7 +698,7 @@ class RentabilidadRubro
             'kpis'         => $kpis,
             'base_calculo' => [
                 'monto'            => $baseCoef,
-                'fuente'           => ($ventasSinIVA != 0) ? 'sinIVA' : 'total',
+                'fuente'           => 'venta_total',
                 'ventas_brutas'    => $this->_ventasBrutas,
                 'recupero_18'      => $this->_recupero18,
                 'venta_normales'   => $ventaBruta['venta_normales'],
