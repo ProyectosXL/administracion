@@ -794,6 +794,7 @@ function ejecutarPasos() {
                 text: `Paso ${pasoActual} realizado! No se encontraron diferencias.`,
               });
               paso.className += "active";
+              actualizarRevertBar();
               return;
             }
 
@@ -833,7 +834,8 @@ function ejecutarPasos() {
                 text: `Paso ${pasoActual} realizado!`,
               });
               paso.className += "active";
-              
+              actualizarRevertBar();
+
             }else{
               
               console.log("Entrando al switch para mostrar modal"); // Agrega este log
@@ -891,20 +893,37 @@ const pintarPasos = (periodo) => {
       for (let i = 0; i < 8; i++) {
         pasos[i] = data[0]['PASO_'+(i+1)];
       }
-      pasos.forEach((element,x) => {
-        
-        if(element != null && element != 0){
 
-        let paso = document.getElementById("paso"+(x+1));
-
-        pasoActual = x+1;
-
-        paso.className = "active";
-
+      pasos.forEach((element, x) => {
+        if (element != null && element != 0) {
+          let paso = document.getElementById("paso" + (x + 1));
+          pasoActual = x + 1;
+          paso.className = "active";
         }
       });
+
+      actualizarRevertBar();
     });
 };
+
+function actualizarRevertBar() {
+  const revertBar = document.getElementById('revertir-pasos-bar');
+  if (!revertBar) return;
+  revertBar.innerHTML = '';
+  for (let i = 1; i <= 8; i++) {
+    const li = document.getElementById('paso' + i);
+    if (li && li.classList.contains('active')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-revert-paso';
+      btn.dataset.paso = i;
+      btn.innerHTML = `<span class="btn-revert-icon">↩</span> Paso ${i}`;
+      btn.title = `Revertir Paso ${i}`;
+      btn.addEventListener('click', () => revertirPaso(i));
+      revertBar.appendChild(btn);
+    }
+  }
+  revertBar.style.display = revertBar.children.length > 0 ? 'flex' : 'none';
+}
 
 const rellenarModal3 = (obj)=>{
   let tableModal = document.querySelector("#tableCn");
@@ -1355,6 +1374,7 @@ const marcarControlado = ()=>{
               text: `Rentabilidad controlada!`,
             });
             document.querySelector("#paso1").className = 'active';
+            actualizarRevertBar();
           }
       })
   
@@ -2368,3 +2388,57 @@ function prorratearGastosAsync() {
         }
     });
 }
+
+function revertirPaso(nroPaso) {
+    const swalWithBootstrapButtons = Swal.mixin({
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-secondary',
+        },
+        buttonsStyling: false,
+    });
+
+    swalWithBootstrapButtons.fire({
+        title: `¿Revertir Paso ${nroPaso}?`,
+        text: 'Se desharán los datos de este paso. Deberá volver a ejecutarlo.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, revertir',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        let spinner = document.getElementById('boxLoading');
+        spinner.className += ' loading';
+
+        fetch(`./Controller/revertirPaso.php?paso=${nroPaso}`, {
+            method: 'POST',
+            body: JSON.stringify(payloads),
+        })
+        .then((r) => r.json())
+        .then((data) => {
+            spinner.classList.remove('loading');
+            if (data.success) {
+                let periodo = document.querySelector('#periodo').getAttribute('attr-periodo');
+                pintarPasos(periodo);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Revertido',
+                    text: `Paso ${nroPaso} revertido correctamente.`,
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo revertir el paso.',
+                });
+            }
+        })
+        .catch(() => {
+            spinner.classList.remove('loading');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error de comunicación.' });
+        });
+    });
+}
+

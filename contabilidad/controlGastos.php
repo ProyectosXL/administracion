@@ -87,10 +87,9 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Gastos</title>
+    <link rel="icon" href="../image/icono.jpg?v=2">
 
-    <?php
-        require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
-    ?>
+
     <link rel="stylesheet" href="css/control-gastos-actions.css">
     <link rel="stylesheet" href="css/control-gastos-modern.css">
 
@@ -107,15 +106,16 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         <div class="progressbar-wrapper">
             <div hidden id="periodo" attr-periodo= "<?= $periodo ?>" style="margin-top:-2rem;"></div>
             <ul class="progressbar" >
-                <li class="" id="paso1" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar las ventas sin IVA">Paso</li>
-                <li class="" id="paso2"  data-toggle="tooltip" data-placement="bottom" title="Verificar que la venta coincida con la cobranza (sucursales)">Paso</li>
-                <li class="" id="paso3"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin costo de nacionalización">Paso</li>
-                <li class="" id="paso4"  data-toggle="tooltip" data-placement="bottom" title="Verificar artículos sin precio de costo">Paso</li>
-                <li class="" id="paso5" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar el costo de mercadería vendida">Paso</li>
-                <li class="" id="paso6" data-toggle="tooltip" data-placement="bottom" title="Calcular y grabar los métodos de prorrateo">Paso</li>
-                <li class="" id="paso7" data-toggle="tooltip" data-placement="bottom" title="Traer los registros para control integral">Paso</li>
-                <li class="" id="paso8" data-toggle="tooltip" data-placement="bottom" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
+                <li class="" id="paso1" data-toggle="tooltip" data-placement="top" title="Calcular y grabar las ventas sin IVA">Paso</li>
+                <li class="" id="paso2"  data-toggle="tooltip" data-placement="top" title="Verificar que la venta coincida con la cobranza (sucursales)">Paso</li>
+                <li class="" id="paso3"  data-toggle="tooltip" data-placement="top" title="Verificar artículos sin costo de nacionalización">Paso</li>
+                <li class="" id="paso4"  data-toggle="tooltip" data-placement="top" title="Verificar artículos sin precio de costo">Paso</li>
+                <li class="" id="paso5" data-toggle="tooltip" data-placement="top" title="Calcular y grabar el costo de mercadería vendida">Paso</li>
+                <li class="" id="paso6" data-toggle="tooltip" data-placement="top" title="Calcular y grabar los métodos de prorrateo">Paso</li>
+                <li class="" id="paso7" data-toggle="tooltip" data-placement="top" title="Traer los registros para control integral">Paso</li>
+                <li class="" id="paso8" data-toggle="tooltip" data-placement="top" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
             </ul>
+            <div id="revertir-pasos-bar"></div>
         </div>
         <div>
             <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:10">Ejecutar <i class="bi bi-check2-square"></i></button>
@@ -347,9 +347,9 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                     <th style="position: sticky; top: 0; z-index: 10;">COD. PRORRATEO</th>
                     <th style="position: sticky; top: 0; z-index: 10;">DESC. PRORRATEO</th>
                     <th style="position: sticky; top: 0; z-index: 10;" title="Colocar plazo de amortización">AMORT.</th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-x-square biHeader" data-toggle="tooltip" data-placement="bottom" title="Excluir gasto"></i></th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-check2-square biHeader" data-toggle="tooltip" data-placement="bottom" title="Gasto controlado"></i></th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-graph-up biHeader" data-toggle="tooltip" data-placement="bottom" title="Gasto amortizado"></i></th>
+                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-x-square biHeader" data-toggle="tooltip" data-placement="top" title="Excluir gasto"></i></th>
+                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-check2-square biHeader" data-toggle="tooltip" data-placement="top" title="Gasto controlado"></i></th>
+                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-graph-up biHeader" data-toggle="tooltip" data-placement="top" title="Gasto amortizado"></i></th>
                     <th style="position: sticky; top: 0; z-index: 10;">MODULO</th>
                     <th style="position: sticky; top: 0; z-index: 10;">NRO. SUC.</th>
                     <th style="position: sticky; top: 0; z-index: 10;">ID</th>

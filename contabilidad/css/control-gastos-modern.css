@@ -306,7 +306,6 @@ body {
     font-weight: 700;
     color: var(--cgm-dim);
     margin: 0 auto 6px;
-    pointer-events: none;
     transition: background var(--cgm-transition), border-color var(--cgm-transition),
                 color var(--cgm-transition), box-shadow var(--cgm-transition);
 }
@@ -330,6 +329,43 @@ body {
     box-shadow: 0 2px 10px rgba(26, 111, 212, .35);
     font-size: 13px;
     line-height: 26px;
+}
+
+/* ── Barra de revert de pasos ── */
+#revertir-pasos-bar {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 0 12px;
+}
+
+.btn-revert-paso {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px 2px 7px;
+    font-size: 11px;
+    font-family: var(--cgm-sans, inherit);
+    font-weight: 500;
+    color: #b91c1c;
+    background: #fff1f1;
+    border: 1px solid #fca5a5;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+    white-space: nowrap;
+}
+
+.btn-revert-paso:hover {
+    background: #fecaca;
+    border-color: #ef4444;
+    color: #7f1d1d;
+}
+
+.btn-revert-icon {
+    font-size: 13px;
+    line-height: 1;
 }
 
 /* ── Tabla principal #myTable (DataTables) ── */
