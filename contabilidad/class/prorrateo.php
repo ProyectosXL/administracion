@@ -27,20 +27,24 @@ class Prorrateo
 
         $stmt = sqlsrv_query( $this->cid_central, $sql );
 
+        if ($stmt === false) {
+            return json_encode([]);
+        }
+
         try{
 
             $rows = array();
-    
+
             while( $v = sqlsrv_fetch_array( $stmt) ) {
                 $rows[] = $v;
             }
-    
+
             $myJSON = json_encode($rows);
-    
+
             return $myJSON;
 
         } catch (\Throwable $th){
-            print_r($th);
+            return json_encode([]);
         }
     }
 

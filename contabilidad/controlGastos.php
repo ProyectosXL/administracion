@@ -106,16 +106,16 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         <div class="progressbar-wrapper">
             <div hidden id="periodo" attr-periodo= "<?= $periodo ?>" style="margin-top:-2rem;"></div>
             <ul class="progressbar" >
-                <li class="" id="paso1" data-toggle="tooltip" data-placement="top" title="Calcular y grabar las ventas sin IVA">Paso</li>
-                <li class="" id="paso2"  data-toggle="tooltip" data-placement="top" title="Verificar que la venta coincida con la cobranza (sucursales)">Paso</li>
-                <li class="" id="paso3"  data-toggle="tooltip" data-placement="top" title="Verificar artículos sin costo de nacionalización">Paso</li>
-                <li class="" id="paso4"  data-toggle="tooltip" data-placement="top" title="Verificar artículos sin precio de costo">Paso</li>
-                <li class="" id="paso5" data-toggle="tooltip" data-placement="top" title="Calcular y grabar el costo de mercadería vendida">Paso</li>
-                <li class="" id="paso6" data-toggle="tooltip" data-placement="top" title="Calcular y grabar los métodos de prorrateo">Paso</li>
-                <li class="" id="paso7" data-toggle="tooltip" data-placement="top" title="Traer los registros para control integral">Paso</li>
-                <li class="" id="paso8" data-toggle="tooltip" data-placement="top" title="Aplicar coeficiente de ajuste por inflación">Paso</li>
+                <li class="" id="paso1"><span class="paso-label" data-tooltip="Calcular y grabar las ventas sin IVA">Paso 1</span></li>
+                <li class="" id="paso2"><span class="paso-label" data-tooltip="Verificar que la venta coincida con la cobranza (sucursales)">Paso 2</span></li>
+                <li class="" id="paso3"><span class="paso-label" data-tooltip="Verificar artículos sin costo de nacionalización">Paso 3</span></li>
+                <li class="" id="paso4"><span class="paso-label" data-tooltip="Verificar artículos sin precio de costo">Paso 4</span></li>
+                <li class="" id="paso5"><span class="paso-label" data-tooltip="Calcular y grabar el costo de mercadería vendida">Paso 5</span></li>
+                <li class="" id="paso6"><span class="paso-label" data-tooltip="Calcular y grabar los métodos de prorrateo">Paso 6</span></li>
+                <li class="" id="paso7"><span class="paso-label" data-tooltip="Traer los registros para control integral">Paso 7</span></li>
+                <li class="" id="paso8"><span class="paso-label" data-tooltip="Aplicar coeficiente de ajuste por inflación">Paso 8</span></li>
             </ul>
-            <div id="revertir-pasos-bar"></div>
+            <div id="pasoTooltipBox" class="paso-tooltip-box" role="tooltip"></div>
         </div>
         <div>
             <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:10">Ejecutar <i class="bi bi-check2-square"></i></button>
@@ -327,7 +327,12 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
 
     ?>
 
-
+    <script>
+    var todosLosRubros       = <?= json_encode($todosLosRubros) ?>;
+    var todosLosMetodos      = <?= json_encode($todosLosMetodos) ?>;
+    var todosLosCentrosCosto = <?= $centroCostos ?>;
+    var gastosData           = <?= $todosLosGastos ?>;
+    </script>
 
         <table class="table table-striped table-bordered" id="myTable" style="width: 99%;" cellspacing="0" data-page-length="100">
             <thead class="thead-dark">
@@ -355,93 +360,8 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                     <th style="position: sticky; top: 0; z-index: 10;">ID</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php
-                $todosLosGastos = json_decode($todosLosGastos);
-
-                foreach($todosLosGastos as $valor => $key){
-            ?>
-            <tr>
-                <td><?=  substr($key->FECHA->date, 0, 10); ?></td>
-
-                <td><select class="auxiliar" id="selectCentroCosto" onchange="cambiarCentroCosto(this)">
-                    <?php 
-
-                     if($key->COD_AUXILIAR == 'SinAsignar'){
-                        
-                        echo '<option value="" attr-sector = "" attr-numSucursal = "" attr-codAuxiliar="" selected>Sin Asignar</option>';
-
-                    }
-
-                    foreach ($todosLosCentrosCosto as  $y => $centro) {              
-               
-                    ?>
-                            <option value="" attr-sector = "<?= $centro->SECTOR ?>" attr-numSucursal = "<?= $centro->NUM_SUCURSAL ?>" attr-codAuxiliar="<?= $centro->COD_AUXILIAR?>" <?= ($key->COD_AUXILIAR == $centro->COD_AUXILIAR) ? 'selected' : '' ?>>
-                                <?php
-                                    echo($centro->DESC_AUXILIAR);
-                                ?>
-                            </option>
-                    <?php
-                    }
-                        
-                    ?>
-                    </select>
-                </td>
-
-                <td><?=  $key->SECTOR ?></td>
-                <td><?=  $key->COD_CUENTA ?></td>
-                <td style="width: 20rem;"><?= $key->DESC_CUENTA ?></td>
-                <td><input type="text" value="<?=  number_format($key->SALDO, 2) ?>" onchange= "actualizarSaldo(this)" ></td>
-                <td><?=  $key->DESC_LEYENDA ?></td>
-                <td><?=  $key->T_COMP ?></td>
-                <td><?=  $key->RAZON_SOCIAL ?></td>
-                <td><?=  $key->N_COMP ?></td>
-                <td>
-                    <select class="codRubro" style="width: 8rem;" onchange="completarCampoRubro(this)">
-                        <option selected disabled><?=  $key->COD_RUBRO ?></option>
-                        <?php           
-                        foreach($todosLosRubros as $valor => $value){
-                        ?>
-                        <option value="<?= $value->COD_RUBRO; ?>"><?= $value->COD_RUBRO.'-'.$value->RUBRO_CONTABLE; ?></option>
-                        <?php   
-                         }
-                        ?>
-                    </select>
-                </td>
-                <td><?=  $key->RUBRO_CONTABLE ?></td>
-                <td>
-                    <select class="codProrrateo" style="width: 2.2rem;">
-                        <option selected disabled><?=  $key->COD_PRORRATEO ?></option>
-                        <?php           
-                        foreach($todosLosMetodos as $valor => $value){
-                        ?>
-                        <option value="<?= $value->COD_PRORRATEO; ?>"><?= $value->COD_PRORRATEO.'-'.$value->DESC_PRORRATEO; ?></option>
-                        <?php   
-                         }
-                        ?>
-                    </select>
-                </td>
-                <td><?=  $key->DESC_PRORRATEO ?></td>
-                <td><?php if ($key->AMORTIZADO == 1){?>
-                    <input class="amortiza" type="number" id="amortiza" min="0" name="inputNum" value="<?=  $key->AMORTIZAR ?>" disabled>
-                <?php } else { ?> 
-                    <input class="amortiza" type="number" id="amortiza" min="1" name="inputNum" value="<?=  $key->AMORTIZAR ?>">
-                <?php } ?> 
-                </td>
-                <td><input class="checkExcluir" type="checkbox" <?php if ($key->EXCLUIR == 1) {echo 'checked';} ?>></td>
-                <td><input class="checkControlado" type="checkbox" <?php if ($key->CONTROLADO == 1) {echo 'checked';} ?>></td>
-                <td><input class="checkAmortizado" type="checkbox" <?php if ($key->AMORTIZADO == 1) {echo 'checked';} ?> disabled></td>
-                <td><?=  $key->MODULO ?></td>
-                <td><?=  $key->NUM_SUCURSAL ?></td>
-                <td><?=$key->ID?></td>
-            </tr>
-            <?php
-                }   
-            ?>
-
-            </tbody>
+            <tbody id="gastos-tbody"></tbody>
         </table>
-
 
     <?php
     }
@@ -478,28 +398,29 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
 <script>
 
     $(document).ready(function() {
-        $('#myTable').DataTable({
-            responsive: true,
+        // La tabla se pinta vía AJAX en renderizarTablaGastos() (llamada desde functions.js)
+        // DataTable y select2 de .codRubro se inicializan dentro de esa función
+
+        $('.codCuenta').select2();
+
+        // Validar módulos al cargar la página
+        validarModulos();
+
+        // Actualizar campos desde/hasta cuando cambian mes o año
+        $('#mes, #selectAño').on('change', function() {
+            actualizarFechas();
         });
 
-        $('.codRubro').select2();
+        // Actualizar fechas antes de enviar el formulario
+        $('form').on('submit', function(e) {
+            actualizarFechas();
+        });
 
-    // Validar módulos al cargar la página
-    validarModulos();
-
-    // Actualizar campos desde/hasta cuando cambian mes o año
-    $('#mes, #selectAño').on('change', function() {
-        actualizarFechas();
+        // Pintar tabla si hay filtros activos
+        if (document.getElementById('gastos-tbody')) {
+            renderizarTablaGastos();
+        }
     });
-
-    // Actualizar fechas antes de enviar el formulario
-    $('form').on('submit', function(e) {
-        actualizarFechas();
-    });
-        
-    });
-    
-    $('.codCuenta').select2();
 
     function actualizarFechas() {
         var mes = $('#mes').val();
@@ -515,10 +436,46 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
     }
 
     $(function() {
-        $('[data-toggle="tooltip"]').tooltip({
-            container: 'body'
-        })
+        $('[data-toggle="tooltip"]').tooltip({ container: 'body' })
     })
+
+    // Tooltip custom para etiquetas de pasos
+    ;(function() {
+        var box   = document.getElementById('pasoTooltipBox');
+        var open  = null;
+
+        document.querySelectorAll('.paso-label[data-tooltip]').forEach(function(span) {
+            span.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (open === span && box.classList.contains('visible')) {
+                    box.classList.remove('visible');
+                    open = null;
+                    return;
+                }
+                box.textContent = span.getAttribute('data-tooltip');
+                // Posicionar encima del span
+                var r = span.getBoundingClientRect();
+                box.style.left = '0';
+                box.style.top  = '0';
+                box.classList.add('visible');
+                var bw = box.offsetWidth;
+                var bh = box.offsetHeight;
+                var left = r.left + r.width / 2 - bw / 2;
+                var top  = r.top - bh - 8;
+                // Evitar salir de la pantalla por los bordes
+                left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
+                if (top < 8) top = r.bottom + 8;
+                box.style.left = left + 'px';
+                box.style.top  = top  + 'px';
+                open = span;
+            });
+        });
+
+        document.addEventListener('click', function() {
+            box.classList.remove('visible');
+            open = null;
+        });
+    }());
 
     $('#myModal').modal('toggle')
 

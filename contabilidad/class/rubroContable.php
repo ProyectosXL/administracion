@@ -28,20 +28,24 @@ class RubroContable
 
         $stmt = sqlsrv_query($this->cid_central, $sql);
 
+        if ($stmt === false) {
+            return json_encode([]);
+        }
+
         try{
-            
+
             $rows = array();
-    
+
             while ($v = sqlsrv_fetch_array($stmt)) {
                 $rows[] = $v;
             }
-    
+
             $myJSON = json_encode($rows);
-    
+
             return $myJSON;
-        
+
         } catch (\Throwable $th){
-            print_r($th);
+            return json_encode([]);
         }
 
     }
@@ -52,15 +56,19 @@ class RubroContable
         $sql = "SELECT TOP 1 RUBRO_CONTABLE FROM RO_T_RUBROS_CONTABLES WHERE COD_RUBRO =   '$codigo'";
         $stmt = sqlsrv_query($this->cid_central, $sql);
 
+        if ($stmt === false) {
+            return;
+        }
+
         try{
 
             $dato = sqlsrv_fetch_array($stmt);
-                
+
             echo $dato['RUBRO_CONTABLE'];
 
         } catch (\Throwable $th){
-            print_r($th);
-        } 
+            // tabla no disponible en este entorno
+        }
 
     }
 }

@@ -286,7 +286,7 @@ body {
     counter-increment: cgm-step;
     position: relative;
     z-index: 1;
-    min-width: 58px;
+    min-width: 68px;
     cursor: default;
     transition: color var(--cgm-transition);
 }
@@ -331,21 +331,41 @@ body {
     line-height: 26px;
 }
 
-/* ── Barra de revert de pasos ── */
-#revertir-pasos-bar {
-    display: none;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-    padding: 0 12px;
+/* ── Label de paso (texto clickeable para tooltip) ── */
+.paso-label {
+    cursor: pointer;
+    user-select: none;
 }
 
-.btn-revert-paso {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 10px 2px 7px;
-    font-size: 11px;
+/* ── Tooltip custom de pasos ── */
+.paso-tooltip-box {
+    position: fixed;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 11.5px;
+    line-height: 1.4;
+    padding: 5px 10px;
+    border-radius: 6px;
+    max-width: 220px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 9999;
+    white-space: normal;
+}
+.paso-tooltip-box.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ── Botón "Deshacer" debajo de cada paso activo ── */
+.btn-paso-action {
+    display: block;
+    margin: 5px auto 0;
+    padding: 2px 8px;
+    font-size: 10px;
     font-family: var(--cgm-sans, inherit);
     font-weight: 500;
     color: #b91c1c;
@@ -353,19 +373,27 @@ body {
     border: 1px solid #fca5a5;
     border-radius: 20px;
     cursor: pointer;
-    transition: background .15s, border-color .15s, color .15s;
     white-space: nowrap;
+    line-height: 1.5;
+    transition: background .15s, border-color .15s, color .15s;
 }
 
-.btn-revert-paso:hover {
+.btn-paso-action:hover {
     background: #fecaca;
     border-color: #ef4444;
     color: #7f1d1d;
 }
 
-.btn-revert-icon {
-    font-size: 13px;
-    line-height: 1;
+.btn-paso-action.btn-paso-ejecutar {
+    color: #166534;
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+
+.btn-paso-action.btn-paso-ejecutar:hover {
+    background: #dcfce7;
+    border-color: #4ade80;
+    color: #14532d;
 }
 
 /* ── Tabla principal #myTable (DataTables) ── */

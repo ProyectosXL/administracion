@@ -788,13 +788,16 @@ function ejecutarPasos() {
             // El SP ya marca el paso y ejecuta el resumen automáticamente
             if (pasoActual == 2 && perfil.length == 1 && perfil[0].RESULTADO === 0) {
               spinner.classList.remove('loading');
+              paso.className += "active";
+              actualizarRevertBar();
               Swal.fire({
                 icon: "success",
                 title: "Control exitoso",
                 text: `Paso ${pasoActual} realizado! No se encontraron diferencias.`,
+              }).then(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                window.location.href = window.location.pathname + '?' + urlParams.toString();
               });
-              paso.className += "active";
-              actualizarRevertBar();
               return;
             }
 
@@ -828,13 +831,16 @@ function ejecutarPasos() {
                 return 1
               }
 
+              paso.className += "active";
+              actualizarRevertBar();
               Swal.fire({
                 icon: "success",
                 title: "Control exitoso",
                 text: `Paso ${pasoActual} realizado!`,
+              }).then(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                window.location.href = window.location.pathname + '?' + urlParams.toString();
               });
-              paso.className += "active";
-              actualizarRevertBar();
 
             }else{
               
@@ -907,22 +913,40 @@ const pintarPasos = (periodo) => {
 };
 
 function actualizarRevertBar() {
-  const revertBar = document.getElementById('revertir-pasos-bar');
-  if (!revertBar) return;
-  revertBar.innerHTML = '';
+  var hayActivos = false;
+  for (var k = 1; k <= 8; k++) {
+    var lik = document.getElementById('paso' + k);
+    if (lik && lik.classList.contains('active')) { hayActivos = true; break; }
+  }
+
   for (let i = 1; i <= 8; i++) {
     const li = document.getElementById('paso' + i);
-    if (li && li.classList.contains('active')) {
+    if (!li) continue;
+
+    const prev = li.querySelector('.btn-paso-action');
+    if (prev) prev.remove();
+
+    if (li.classList.contains('active')) {
       const btn = document.createElement('button');
-      btn.className = 'btn-revert-paso';
-      btn.dataset.paso = i;
-      btn.innerHTML = `<span class="btn-revert-icon">↩</span> Paso ${i}`;
-      btn.title = `Revertir Paso ${i}`;
-      btn.addEventListener('click', () => revertirPaso(i));
-      revertBar.appendChild(btn);
+      btn.className = 'btn-paso-action';
+      btn.textContent = '↩ Deshacer';
+      btn.title = 'Revertir Paso ' + i;
+      btn.addEventListener('click', (function(n) { return function() { revertirPaso(n); }; })(i));
+      li.appendChild(btn);
+    } else if (hayActivos) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-paso-action btn-paso-ejecutar';
+      btn.textContent = '▶ Ejecutar';
+      btn.title = 'Ejecutar Paso ' + i;
+      btn.addEventListener('click', (function(n) { return function() { ejecutarPasoDesde(n); }; })(i));
+      li.appendChild(btn);
     }
   }
-  revertBar.style.display = revertBar.children.length > 0 ? 'flex' : 'none';
+}
+
+function ejecutarPasoDesde(n) {
+  pasoActual = n - 1;
+  ejecutarPasos();
 }
 
 const rellenarModal3 = (obj)=>{
@@ -1093,9 +1117,9 @@ const cambiarCentroCosto = (e) => {
   let numSucursal = e[e.selectedIndex].getAttribute("attr-numSucursal");
   let codAuxiliar = e[e.selectedIndex].getAttribute("attr-codAuxiliar");
   let descAuxiliar = e[e.selectedIndex].text;
-  let id = e.parentElement.parentElement.childNodes[41].textContent;
-  e.parentElement.parentElement.childNodes[5].textContent = sector;
-  e.parentElement.parentElement.childNodes[39].textContent = numSucursal;
+  let id = e.parentElement.parentElement.children[20].textContent;
+  e.parentElement.parentElement.children[2].textContent = sector;
+  e.parentElement.parentElement.children[19].textContent = numSucursal;
 
   $.ajax({
     url: "Controller/updateGasto.php",
@@ -1115,7 +1139,7 @@ const actualizarSaldo = (saldo) => {
   let saldoParseado = parseNumber(parseFloat(saldo.value));
   let nuevoSaldo = convertToNumber(saldoParseado);
 
-  let id = saldo.parentElement.parentElement.childNodes[41].textContent;
+  let id = saldo.parentElement.parentElement.children[20].textContent;
 
   saldo.value = saldoParseado;
 
@@ -1368,13 +1392,16 @@ const marcarControlado = ()=>{
               periodo:periodo
           },
           success : function(data) {
+            document.querySelector("#paso1").className = 'active';
+            actualizarRevertBar();
             Swal.fire({
               icon: "success",
               title: "Control exitoso",
               text: `Rentabilidad controlada!`,
+            }).then(function() {
+              const urlParams = new URLSearchParams(window.location.search);
+              window.location.href = window.location.pathname + '?' + urlParams.toString();
             });
-            document.querySelector("#paso1").className = 'active';
-            actualizarRevertBar();
           }
       })
   
@@ -1571,15 +1598,18 @@ function marcarPasoControladoConDiferencias(paso) {
     success: function(data) {
       let pasos = JSON.parse(data);
       
+      const recargarConFiltros = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        window.location.href = window.location.pathname + '?' + urlParams.toString();
+      };
+
       // Si el paso ya está marcado, solo mostrar mensaje de éxito sin ejecutar nuevamente
       if (pasos.length > 0 && pasos[0]['PASO_' + paso] == 1) {
         Swal.fire({
           icon: "success",
           title: "Paso ya ejecutado",
           text: `El paso ${paso} ya fue marcado como completado.`,
-        }).then(function() {
-          pintarPasos(periodo);
-        });
+        }).then(recargarConFiltros);
       } else {
         // Si no está marcado, proceder con la marca y ejecución
         $.ajax({
@@ -1596,9 +1626,7 @@ function marcarPasoControladoConDiferencias(paso) {
               icon: "success",
               title: "Se guardo correctamente",
               text: `Paso Ejecutado!`,
-            }).then(function() {
-              pintarPasos(periodo);
-            });
+            }).then(recargarConFiltros);
           }
         });
       }
@@ -2389,7 +2417,17 @@ function prorratearGastosAsync() {
     });
 }
 
+// Ejecuta la reversión de un paso sin confirmación. Devuelve Promise<{success}>
+function revertirPasoSilencioso(nroPaso) {
+    return fetch('./Controller/revertirPaso.php?paso=' + nroPaso, {
+        method: 'POST',
+        body: JSON.stringify(payloads),
+    }).then(function(r) { return r.json(); });
+}
+
 function revertirPaso(nroPaso) {
+    const esPaso2 = (nroPaso == 2);
+
     const swalWithBootstrapButtons = Swal.mixin({
         customClass: {
             confirmButton: 'btn btn-danger',
@@ -2399,33 +2437,44 @@ function revertirPaso(nroPaso) {
     });
 
     swalWithBootstrapButtons.fire({
-        title: `¿Revertir Paso ${nroPaso}?`,
-        text: 'Se desharán los datos de este paso. Deberá volver a ejecutarlo.',
+        title: '¿Revertir Paso ' + nroPaso + '?',
+        text: esPaso2
+            ? 'Se revertirán también los pasos 5 y 6 (dependientes de este paso).'
+            : 'Se desharán los datos de este paso. Deberá volver a ejecutarlo.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sí, revertir',
         cancelButtonText: 'Cancelar',
         reverseButtons: true,
-    }).then((result) => {
+    }).then(function(result) {
         if (!result.isConfirmed) return;
 
         let spinner = document.getElementById('boxLoading');
         spinner.className += ' loading';
 
-        fetch(`./Controller/revertirPaso.php?paso=${nroPaso}`, {
-            method: 'POST',
-            body: JSON.stringify(payloads),
-        })
-        .then((r) => r.json())
-        .then((data) => {
+        let promise;
+        if (esPaso2) {
+            // Cascada: revertir 5 y 6 primero (ignorar resultado individual), luego 2
+            promise = revertirPasoSilencioso(5)
+                .then(function() { return revertirPasoSilencioso(6); })
+                .then(function() { return revertirPasoSilencioso(nroPaso); });
+        } else {
+            promise = revertirPasoSilencioso(nroPaso);
+        }
+
+        promise.then(function(data) {
             spinner.classList.remove('loading');
             if (data.success) {
-                let periodo = document.querySelector('#periodo').getAttribute('attr-periodo');
-                pintarPasos(periodo);
+                const msgTexto = esPaso2
+                    ? 'Pasos 5, 6 y 2 revertidos correctamente.'
+                    : 'Paso ' + nroPaso + ' revertido correctamente.';
                 Swal.fire({
                     icon: 'success',
                     title: 'Revertido',
-                    text: `Paso ${nroPaso} revertido correctamente.`,
+                    text: msgTexto,
+                }).then(function() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    window.location.href = window.location.pathname + '?' + urlParams.toString();
                 });
             } else {
                 Swal.fire({
@@ -2434,11 +2483,234 @@ function revertirPaso(nroPaso) {
                     text: 'No se pudo revertir el paso.',
                 });
             }
-        })
-        .catch(() => {
+        }).catch(function() {
             spinner.classList.remove('loading');
             Swal.fire({ icon: 'error', title: 'Error', text: 'Error de comunicación.' });
         });
     });
+}
+
+// ==================== RENDER TABLA VÍA AJAX ====================
+
+function formatearSaldo(valor) {
+    if (valor === null || valor === undefined) return '0.00';
+    return parseFloat(valor).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function renderizarTablaGastos() {
+    const tbody = document.getElementById('gastos-tbody');
+    if (!tbody || !window.gastosData) return;
+
+    // Usa los datos inyectados por PHP directamente (sin llamada AJAX adicional)
+    const gastos = window.gastosData;
+    tbody.innerHTML = '';
+
+    gastos.forEach(function(g) {
+                const tr = document.createElement('tr');
+
+                // Col 0: FECHA
+                const tdFecha = document.createElement('td');
+                tdFecha.textContent = (g.FECHA && g.FECHA.date) ? g.FECHA.date.substring(0, 10) : '';
+                tr.appendChild(tdFecha);
+
+                // Col 1: AUXILIAR (select centro de costo)
+                const tdAux = document.createElement('td');
+                const selAux = document.createElement('select');
+                selAux.className = 'auxiliar';
+                selAux.id = 'selectCentroCosto';
+
+                if (g.COD_AUXILIAR === 'SinAsignar') {
+                    const optSin = document.createElement('option');
+                    optSin.value = '';
+                    optSin.setAttribute('attr-sector', '');
+                    optSin.setAttribute('attr-numSucursal', '');
+                    optSin.setAttribute('attr-codAuxiliar', '');
+                    optSin.selected = true;
+                    optSin.textContent = 'Sin Asignar';
+                    selAux.appendChild(optSin);
+                }
+                (window.todosLosCentrosCosto || []).forEach(function(centro) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.setAttribute('attr-sector', centro.SECTOR);
+                    opt.setAttribute('attr-numSucursal', centro.NUM_SUCURSAL);
+                    opt.setAttribute('attr-codAuxiliar', centro.COD_AUXILIAR);
+                    opt.selected = (g.COD_AUXILIAR === centro.COD_AUXILIAR);
+                    opt.textContent = centro.DESC_AUXILIAR;
+                    selAux.appendChild(opt);
+                });
+                selAux.addEventListener('change', function() { cambiarCentroCosto(this); });
+                tdAux.appendChild(selAux);
+                tr.appendChild(tdAux);
+
+                // Col 2: SECTOR
+                const tdSector = document.createElement('td');
+                tdSector.textContent = g.SECTOR || '';
+                tr.appendChild(tdSector);
+
+                // Col 3: COD_CUENTA
+                const tdCodCuenta = document.createElement('td');
+                tdCodCuenta.textContent = g.COD_CUENTA || '';
+                tr.appendChild(tdCodCuenta);
+
+                // Col 4: DESC_CUENTA
+                const tdDescCuenta = document.createElement('td');
+                tdDescCuenta.style.width = '20rem';
+                tdDescCuenta.textContent = g.DESC_CUENTA || '';
+                tr.appendChild(tdDescCuenta);
+
+                // Col 5: SALDO
+                const tdSaldo = document.createElement('td');
+                const inputSaldo = document.createElement('input');
+                inputSaldo.type = 'text';
+                inputSaldo.value = formatearSaldo(g.SALDO);
+                inputSaldo.addEventListener('change', function() { actualizarSaldo(this); });
+                tdSaldo.appendChild(inputSaldo);
+                tr.appendChild(tdSaldo);
+
+                // Col 6: LEYENDA
+                const tdLeyenda = document.createElement('td');
+                tdLeyenda.textContent = g.DESC_LEYENDA || '';
+                tr.appendChild(tdLeyenda);
+
+                // Col 7: TIPO COMP
+                const tdTComp = document.createElement('td');
+                tdTComp.textContent = g.T_COMP || '';
+                tr.appendChild(tdTComp);
+
+                // Col 8: RAZON SOCIAL
+                const tdRS = document.createElement('td');
+                tdRS.textContent = g.RAZON_SOCIAL || '';
+                tr.appendChild(tdRS);
+
+                // Col 9: NRO COMP
+                const tdNComp = document.createElement('td');
+                tdNComp.textContent = g.N_COMP || '';
+                tr.appendChild(tdNComp);
+
+                // Col 10: COD_RUBRO (select)
+                const tdCodRubro = document.createElement('td');
+                const selRubro = document.createElement('select');
+                selRubro.className = 'codRubro';
+                selRubro.style.width = '8rem';
+                const optRubroDefault = document.createElement('option');
+                optRubroDefault.selected = true;
+                optRubroDefault.disabled = true;
+                optRubroDefault.textContent = g.COD_RUBRO || '';
+                selRubro.appendChild(optRubroDefault);
+                (window.todosLosRubros || []).forEach(function(r) {
+                    const opt = document.createElement('option');
+                    opt.value = r.COD_RUBRO;
+                    opt.textContent = r.COD_RUBRO + '-' + r.RUBRO_CONTABLE;
+                    selRubro.appendChild(opt);
+                });
+                selRubro.addEventListener('change', function() { completarCampoRubro(this); });
+                tdCodRubro.appendChild(selRubro);
+                tr.appendChild(tdCodRubro);
+
+                // Col 11: RUBRO_CONTABLE
+                const tdRubroContable = document.createElement('td');
+                tdRubroContable.textContent = g.RUBRO_CONTABLE || '';
+                tr.appendChild(tdRubroContable);
+
+                // Col 12: COD_PRORRATEO (select)
+                const tdCodProrrateo = document.createElement('td');
+                const selProrrateo = document.createElement('select');
+                selProrrateo.className = 'codProrrateo';
+                selProrrateo.style.width = '2.2rem';
+                const optProrDefault = document.createElement('option');
+                optProrDefault.selected = true;
+                optProrDefault.disabled = true;
+                optProrDefault.textContent = g.COD_PRORRATEO || '';
+                selProrrateo.appendChild(optProrDefault);
+                (window.todosLosMetodos || []).forEach(function(m) {
+                    const opt = document.createElement('option');
+                    opt.value = m.COD_PRORRATEO;
+                    opt.textContent = m.COD_PRORRATEO + '-' + m.DESC_PRORRATEO;
+                    selProrrateo.appendChild(opt);
+                });
+                selProrrateo.addEventListener('change', completarCampoProrrateo);
+                tdCodProrrateo.appendChild(selProrrateo);
+                tr.appendChild(tdCodProrrateo);
+
+                // Col 13: DESC_PRORRATEO
+                const tdDescProrrateo = document.createElement('td');
+                tdDescProrrateo.textContent = g.DESC_PRORRATEO || '';
+                tr.appendChild(tdDescProrrateo);
+
+                // Col 14: AMORT
+                const tdAmort = document.createElement('td');
+                const inputAmort = document.createElement('input');
+                inputAmort.className = 'amortiza';
+                inputAmort.type = 'number';
+                inputAmort.id = 'amortiza';
+                inputAmort.name = 'inputNum';
+                inputAmort.value = (g.AMORTIZAR !== null && g.AMORTIZAR !== undefined) ? g.AMORTIZAR : '';
+                if (g.AMORTIZADO == 1) {
+                    inputAmort.min = '0';
+                    inputAmort.disabled = true;
+                } else {
+                    inputAmort.min = '1';
+                }
+                inputAmort.addEventListener('change', guardarAmortizar);
+                tdAmort.appendChild(inputAmort);
+                tr.appendChild(tdAmort);
+
+                // Col 15: EXCLUIR
+                const tdExcluir = document.createElement('td');
+                const chkExcluir = document.createElement('input');
+                chkExcluir.className = 'checkExcluir';
+                chkExcluir.type = 'checkbox';
+                chkExcluir.checked = (g.EXCLUIR == 1);
+                chkExcluir.addEventListener('change', function(e) { guardarExcluir(0, e); });
+                tdExcluir.appendChild(chkExcluir);
+                tr.appendChild(tdExcluir);
+
+                // Col 16: CONTROLADO
+                const tdControlado = document.createElement('td');
+                const chkControlado = document.createElement('input');
+                chkControlado.className = 'checkControlado';
+                chkControlado.type = 'checkbox';
+                chkControlado.checked = (g.CONTROLADO == 1);
+                chkControlado.addEventListener('change', function(e) { guardarControlado(0, e); });
+                tdControlado.appendChild(chkControlado);
+                tr.appendChild(tdControlado);
+
+                // Col 17: AMORTIZADO (disabled)
+                const tdAmortizado = document.createElement('td');
+                const chkAmortizado = document.createElement('input');
+                chkAmortizado.className = 'checkAmortizado';
+                chkAmortizado.type = 'checkbox';
+                chkAmortizado.checked = (g.AMORTIZADO == 1);
+                chkAmortizado.disabled = true;
+                tdAmortizado.appendChild(chkAmortizado);
+                tr.appendChild(tdAmortizado);
+
+                // Col 18: MODULO
+                const tdModulo = document.createElement('td');
+                tdModulo.textContent = g.MODULO || '';
+                tr.appendChild(tdModulo);
+
+                // Col 19: NUM_SUCURSAL
+                const tdNumSuc = document.createElement('td');
+                tdNumSuc.textContent = (g.NUM_SUCURSAL !== null && g.NUM_SUCURSAL !== undefined) ? g.NUM_SUCURSAL : '';
+                tr.appendChild(tdNumSuc);
+
+                // Col 20: ID
+                const tdId = document.createElement('td');
+                tdId.textContent = (g.ID !== null && g.ID !== undefined) ? g.ID : '';
+                tr.appendChild(tdId);
+
+                tbody.appendChild(tr);
+            });
+
+    // Inicializar DataTables
+    $('#myTable').DataTable({ responsive: true });
+
+    // Inicializar select2 en COD_RUBRO
+    $('.codRubro').select2();
 }
 
