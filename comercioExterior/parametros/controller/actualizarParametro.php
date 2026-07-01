@@ -36,6 +36,7 @@ try {
     $valorDefault1 = $data['valor_default_1'] !== '' ? floatval($data['valor_default_1']) : null;
     $valorDefault2 = isset($data['valor_default_2']) && $data['valor_default_2'] !== '' ? 
                      floatval($data['valor_default_2']) : null;
+    $tipoValor = isset($data['tipo_valor']) ? trim($data['tipo_valor']) : null;
     
     // Validar que el concepto existe
     $sqlCheck = "SELECT ID_CE FROM RO_T_CONCEPTOS_ESTIMACION_COMEX WHERE ID_CE = ?";
@@ -45,14 +46,39 @@ try {
         throw new Exception('Concepto no encontrado');
     }
     
+    $idRefConcepto = isset($data['id_ref_concepto']) && $data['id_ref_concepto'] !== '' && $data['id_ref_concepto'] !== null ? intval($data['id_ref_concepto']) : null;
+
     // Actualizar parámetros
-    $sql = "UPDATE RO_T_CONCEPTOS_ESTIMACION_COMEX 
-            SET VALOR_DEFAULT_1 = ?,
-                VALOR_DEFAULT_2 = ?,
-                ULT_ACTUA = GETDATE()
-            WHERE ID_CE = ?";
+    if ($db === 'uy') {
+        $moneda = isset($data['moneda']) ? trim($data['moneda']) : 'USD';
+        $tipoCambio = isset($data['tipo_cambio']) ? floatval($data['tipo_cambio']) : 1.0;
+        $v1Uyu = isset($data['valor_default_1_uyu']) && $data['valor_default_1_uyu'] !== null ? floatval($data['valor_default_1_uyu']) : null;
+        $v2Uyu = isset($data['valor_default_2_uyu']) && $data['valor_default_2_uyu'] !== null ? floatval($data['valor_default_2_uyu']) : null;
+
+        $sql = "UPDATE RO_T_CONCEPTOS_ESTIMACION_COMEX 
+                SET VALOR_DEFAULT_1 = ?,
+                    VALOR_DEFAULT_2 = ?,
+                    TIPO_VALOR = COALESCE(?, TIPO_VALOR),
+                    MONEDA = ?,
+                    TIPO_CAMBIO = ?,
+                    VALOR_DEFAULT_1_UYU = ?,
+                    VALOR_DEFAULT_2_UYU = ?,
+                    ID_REF_CONCEPTO = ?,
+                    ULT_ACTUA = GETDATE()
+                WHERE ID_CE = ?";
+        
+        $params = array($valorDefault1, $valorDefault2, $tipoValor, $moneda, $tipoCambio, $v1Uyu, $v2Uyu, $idRefConcepto, $idCe);
+    } else {
+        $sql = "UPDATE RO_T_CONCEPTOS_ESTIMACION_COMEX 
+                SET VALOR_DEFAULT_1 = ?,
+                    VALOR_DEFAULT_2 = ?,
+                    TIPO_VALOR = COALESCE(?, TIPO_VALOR),
+                    ULT_ACTUA = GETDATE()
+                WHERE ID_CE = ?";
+        
+        $params = array($valorDefault1, $valorDefault2, $tipoValor, $idCe);
+    }
     
-    $params = array($valorDefault1, $valorDefault2, $idCe);
     $stmt = sqlsrv_query($conn, $sql, $params);
     
     if ($stmt === false) {

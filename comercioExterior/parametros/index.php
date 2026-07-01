@@ -67,12 +67,17 @@
             <!-- TAB: Conceptos de Costo -->
             <div class="tab-pane fade show active" id="conceptos" role="tabpanel">
                 <div class="content-card">
-                    <div class="card-header-custom">
-                        <h3 class="card-title-custom">
-                            <i class="bi bi-list-ul"></i>
-                            Conceptos Configurables
-                        </h3>
-                        <p class="card-subtitle-custom">Gestione los parámetros utilizados en los cálculos de importación</p>
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title-custom">
+                                <i class="bi bi-list-ul"></i>
+                                Conceptos Configurables
+                            </h3>
+                            <p class="card-subtitle-custom">Gestione los parámetros utilizados en los cálculos de importación</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="abrirModalNuevoConcepto()">
+                            <i class="bi bi-plus-circle"></i> Nuevo Concepto
+                        </button>
                     </div>
                     
                     <div class="table-responsive">
@@ -335,10 +340,44 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Tipo de Valor</label>
-                            <div class="tipo-valor-display" id="editTipoValorContainer">
-                                <i class="bi bi-tag-fill"></i>
-                                <span id="editTipoValor"></span>
+                            <label for="editTipoValor" class="form-label fw-bold">Tipo de Valor</label>
+                            <select class="form-select" id="editTipoValor" name="tipo_valor">
+                                <option value="P">Porcentaje (P)</option>
+                                <option value="I">Importe Fijo (I)</option>
+                            </select>
+                        </div>
+
+                        <!-- Opción Calcular sobre (solo visible si es Porcentaje P) -->
+                        <div class="mb-3" id="divEditRefConcepto" style="display: none;">
+                            <label for="editRefConcepto" class="form-label fw-bold">Calcular sobre</label>
+                            <select class="form-select" id="editRefConcepto" name="id_ref_concepto">
+                                <option value="">(Base por defecto, ej: CIF/FOB)</option>
+                                <!-- Se llena dinámicamente con los otros conceptos -->
+                            </select>
+                        </div>
+
+                        <!-- Opciones de Moneda y Tipo de Cambio para Uruguay -->
+                        <div class="row mb-3" id="divMonedaTc" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="editMoneda" class="form-label fw-bold">Moneda</label>
+                                <select class="form-select" id="editMoneda" name="moneda">
+                                    <option value="USD">Dólares (U$D)</option>
+                                    <option value="UYU">Pesos Uruguayos ($UYU)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editTipoCambio" class="form-label fw-bold">Tipo de Cambio (TC)</label>
+                                <input type="number" class="form-control" id="editTipoCambio" name="tipo_cambio" step="0.0001" value="1.0000">
+                            </div>
+                        </div>
+
+                        <!-- Vista previa de equivalencia cambiaria -->
+                        <div class="mb-3" id="divValorConvertido" style="display: none;">
+                            <div class="alert alert-info py-2 mb-0">
+                                <i class="bi bi-arrow-left-right me-2"></i>
+                                <span class="fw-bold">Equivalencia calculada:</span>
+                                <div id="spanValorConvertido1"></div>
+                                <div id="spanValorConvertido2" style="display: none;"></div>
                             </div>
                         </div>
 
@@ -386,6 +425,99 @@
                     </button>
                     <button type="button" class="btn btn-primary" onclick="guardarParametro()">
                         <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Nuevo Concepto -->
+    <div class="modal fade" id="modalNuevoConcepto" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        Nuevo Concepto de Costo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formNuevoConcepto">
+                        <div class="mb-3">
+                            <label for="nuevoConceptoNombre" class="form-label fw-bold">Nombre del Concepto <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nuevoConceptoNombre" name="concepto" required placeholder="Ej: Tasas Municipales, Sellos">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nuevoTipoValor" class="form-label fw-bold">Tipo de Valor <span class="text-danger">*</span></label>
+                            <select class="form-select" id="nuevoTipoValor" name="tipo_valor" required>
+                                <option value="P">Porcentaje (P)</option>
+                                <option value="I" selected>Importe Fijo (I)</option>
+                            </select>
+                        </div>
+
+                        <!-- Opción Calcular sobre (solo visible si es Porcentaje P) -->
+                        <div class="mb-3" id="divNuevoRefConcepto" style="display: none;">
+                            <label for="nuevoRefConcepto" class="form-label fw-bold">Calcular sobre</label>
+                            <select class="form-select" id="nuevoRefConcepto" name="id_ref_concepto">
+                                <option value="">(Base por defecto, ej: CIF/FOB)</option>
+                                <!-- Se llena dinámicamente con los otros conceptos -->
+                            </select>
+                        </div>
+
+                        <!-- Opciones de Moneda y Tipo de Cambio para Uruguay (solo visibles si es UY e Importe Fijo) -->
+                        <div class="row mb-3" id="divNuevoMonedaTc" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="nuevoMoneda" class="form-label fw-bold">Moneda</label>
+                                <select class="form-select" id="nuevoMoneda" name="moneda">
+                                    <option value="USD" selected>Dólares (U$D)</option>
+                                    <option value="UYU">Pesos Uruguayos ($UYU)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="nuevoTipoCambio" class="form-label fw-bold">Tipo de Cambio (TC)</label>
+                                <input type="number" class="form-control" id="nuevoTipoCambio" name="tipo_cambio" step="0.0001" value="1.0000">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nuevoValorDefault1" class="form-label fw-bold">
+                                Parámetro 1 <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="nuevoValorDefault1" name="valor_default_1" step="0.0001" required value="0">
+                                <span class="input-group-text" id="nuevoParam1Unidad">USD</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="divNuevoParam2" style="display: none;">
+                            <label for="nuevoValorDefault2" class="form-label fw-bold">
+                                Parámetro 2
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="nuevoValorDefault2" name="valor_default_2" step="0.0001">
+                                <span class="input-group-text" id="nuevoParam2Unidad">USD</span>
+                            </div>
+                        </div>
+
+                        <!-- Equivalencia cambiaria en tiempo real -->
+                        <div class="mb-3" id="divNuevoValorConvertido" style="display: none;">
+                            <div class="alert alert-info py-2 mb-0">
+                                <i class="bi bi-arrow-left-right me-2"></i>
+                                <span class="fw-bold">Equivalencia calculada:</span>
+                                <div id="spanNuevoValorConvertido1"></div>
+                                <div id="spanNuevoValorConvertido2" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="guardarNuevoConcepto()">
+                        <i class="bi bi-plus-circle"></i> Crear Concepto
                     </button>
                 </div>
             </div>

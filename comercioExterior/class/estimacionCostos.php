@@ -142,14 +142,28 @@ class EstimacionCostos
      * Obtener todos los conceptos de estimación configurados
      */
     public function obtenerConceptos() {
-        $sql = "SELECT 
-                    ID_CE,
-                    CONCEPTO,
-                    TIPO_VALOR,
-                    VALOR_DEFAULT_1,
-                    VALOR_DEFAULT_2
-                FROM RO_T_CONCEPTOS_ESTIMACION_COMEX
-                ORDER BY ID_CE";
+        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        if ($db === 'uy') {
+            $sql = "SELECT 
+                        ID_CE,
+                        CONCEPTO,
+                        TIPO_VALOR,
+                        VALOR_DEFAULT_1,
+                        VALOR_DEFAULT_2,
+                        ID_REF_CONCEPTO
+                    FROM RO_T_CONCEPTOS_ESTIMACION_COMEX
+                    ORDER BY ID_CE";
+        } else {
+            $sql = "SELECT 
+                        ID_CE,
+                        CONCEPTO,
+                        TIPO_VALOR,
+                        VALOR_DEFAULT_1,
+                        VALOR_DEFAULT_2,
+                        NULL AS ID_REF_CONCEPTO
+                    FROM RO_T_CONCEPTOS_ESTIMACION_COMEX
+                    ORDER BY ID_CE";
+        }
         
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -177,21 +191,43 @@ class EstimacionCostos
      */
     public function obtenerEstimacion($idMg) {
         $idMg = $this->encabezado->resolverIdPrincipal($idMg);
-        $sql = "SELECT
-                    D.ID,
-                    D.ID_MG,
-                    D.ID_CE,
-                    D.VALOR_DEFAULT_1,
-                    D.VALOR_DEFAULT_2,
-                    D.IMPORTE,
-                    D.CONFIRMADO,
-                    D.FECHA_MOD,
-                    C.CONCEPTO,
-                    C.TIPO_VALOR
-                FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE D
-                INNER JOIN RO_T_CONCEPTOS_ESTIMACION_COMEX C ON D.ID_CE = C.ID_CE
-                WHERE D.ID_MG = ?
-                ORDER BY C.ID_CE";
+        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        
+        if ($db === 'uy') {
+            $sql = "SELECT
+                        D.ID,
+                        D.ID_MG,
+                        D.ID_CE,
+                        D.VALOR_DEFAULT_1,
+                        D.VALOR_DEFAULT_2,
+                        D.IMPORTE,
+                        D.CONFIRMADO,
+                        D.FECHA_MOD,
+                        C.CONCEPTO,
+                        C.TIPO_VALOR,
+                        C.ID_REF_CONCEPTO
+                    FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE D
+                    INNER JOIN RO_T_CONCEPTOS_ESTIMACION_COMEX C ON D.ID_CE = C.ID_CE
+                    WHERE D.ID_MG = ?
+                    ORDER BY C.ID_CE";
+        } else {
+            $sql = "SELECT
+                        D.ID,
+                        D.ID_MG,
+                        D.ID_CE,
+                        D.VALOR_DEFAULT_1,
+                        D.VALOR_DEFAULT_2,
+                        D.IMPORTE,
+                        D.CONFIRMADO,
+                        D.FECHA_MOD,
+                        C.CONCEPTO,
+                        C.TIPO_VALOR,
+                        NULL AS ID_REF_CONCEPTO
+                    FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE D
+                    INNER JOIN RO_T_CONCEPTOS_ESTIMACION_COMEX C ON D.ID_CE = C.ID_CE
+                    WHERE D.ID_MG = ?
+                    ORDER BY C.ID_CE";
+        }
         
         try {
             $params = array($idMg);

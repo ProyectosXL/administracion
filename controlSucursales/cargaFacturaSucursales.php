@@ -52,12 +52,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Carga Factura Sucursales</title>
 
-        <!-- INCLUDE CSS FILES -->
         <?php
             require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
         ?>
-        
-        </link>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
 
         <style>
                     .toggle-on {
@@ -225,6 +223,7 @@
 
 <link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
 
+<script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
 <script src="js/cargaFacturaSucursales.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>

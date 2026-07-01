@@ -15,15 +15,15 @@ class Dashboard {
     getBaseUrl() {
         const currentPath = window.location.pathname;
         const pathSegments = currentPath.split('/');
-        const baseIndex = pathSegments.indexOf('comercioExterior');
+        const baseIndex = pathSegments.findIndex(segment => segment.toLowerCase() === 'comercioexterior');
         
         if (baseIndex !== -1) {
             const basePath = pathSegments.slice(0, baseIndex + 1).join('/');
             return window.location.origin + basePath + '/';
         }
         
-        // Fallback - asumir que estamos en la raíz del proyecto
-        return window.location.origin + window.location.pathname.replace('dashboard.php', '');
+        // Fallback
+        return window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
     }
 
     // Configurar fechas por defecto (últimos 6 meses)

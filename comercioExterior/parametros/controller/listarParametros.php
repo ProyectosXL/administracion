@@ -32,15 +32,37 @@ try {
         throw new Exception('No se pudo establecer conexión a la base de datos');
     }
     
-    $sql = "SELECT 
-                ID_CE,
-                CONCEPTO,
-                TIPO_VALOR,
-                VALOR_DEFAULT_1,
-                VALOR_DEFAULT_2,
-                ULT_ACTUA
-            FROM RO_T_CONCEPTOS_ESTIMACION_COMEX
-            ORDER BY ID_CE";
+    if ($db === 'uy') {
+        $sql = "SELECT 
+                    ID_CE,
+                    CONCEPTO,
+                    TIPO_VALOR,
+                    VALOR_DEFAULT_1,
+                    VALOR_DEFAULT_2,
+                    MONEDA,
+                    TIPO_CAMBIO,
+                    VALOR_DEFAULT_1_UYU,
+                    VALOR_DEFAULT_2_UYU,
+                    ID_REF_CONCEPTO,
+                    ULT_ACTUA
+                FROM RO_T_CONCEPTOS_ESTIMACION_COMEX
+                ORDER BY ID_CE";
+    } else {
+        $sql = "SELECT 
+                    ID_CE,
+                    CONCEPTO,
+                    TIPO_VALOR,
+                    VALOR_DEFAULT_1,
+                    VALOR_DEFAULT_2,
+                    NULL AS MONEDA,
+                    NULL AS TIPO_CAMBIO,
+                    NULL AS VALOR_DEFAULT_1_UYU,
+                    NULL AS VALOR_DEFAULT_2_UYU,
+                    NULL AS ID_REF_CONCEPTO,
+                    ULT_ACTUA
+                FROM RO_T_CONCEPTOS_ESTIMACION_COMEX
+                ORDER BY ID_CE";
+    }
     
     $stmt = sqlsrv_query($conn, $sql);
     
@@ -59,6 +81,7 @@ try {
     
     echo json_encode([
         'success' => true,
+        'entorno' => $db,
         'data' => $parametros
     ], JSON_UNESCAPED_UNICODE);
     

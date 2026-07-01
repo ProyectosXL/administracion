@@ -99,26 +99,33 @@ btnUpdateDetalle.addEventListener("click",()=> {
 
 btnAgregarDetalle.addEventListener("click",()=>{
   let rows = document.querySelectorAll("#id");
-  let original = rows[rows.length - 1].parentElement;
-  let lastId =  Number(original.childNodes[1].textContent) + 1 
+  let original = rows.length > 0 ? rows[rows.length - 1].parentElement : null;
+  let lastId = original ? Number(original.childNodes[1].textContent) + 1 : 1;
   
   let text = `
     <tr>
-    <td id ="id">${lastId}</td>
-    <td><input type="text" style ="text-align:center"></td>
-    <td><input class="decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "" onblur="window.formatearInput(this)"></input></td>
-    <td><input class="decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0,00" onblur="window.formatearInput(this)"></input></td>
-    <td><input class="decimales currencyInput importe" style="text-align:center" type="text" id="valorFobPeso" name="inputNum[]" readonly value="0,00"></input></td>
-    <td><input style="text-align:center" value="0,00%" readonly></input></td>
-    <td><input></input></td>
-    <td><button type="button" class="btn btn-danger" onclick="borrarGasto(this)">X</button></td>
+    <td id ="id" class="cell-id"><span class="badge-info">${lastId}</span></td>
+    <td><input type="text" class="input-field" style ="text-align:center"></td>
+    <td><input class="input-field decimales currencyInput" style="text-align:center" type="text" id="valorFobDolar" onkeyup="iniciarCalculo(this)" value = "" onblur="window.formatearInput(this)"></input></td>
+    <td><input class="input-field decimales currencyInput tipoCambio" style="text-align:center" type="text"  onkeyup="iniciarCalculo(this)" id="tipoCambio" value="0,00" onblur="window.formatearInput(this)"></input></td>
+    <td><input class="input-field decimales currencyInput importe" style="text-align:center" type="text" id="valorFobPeso" name="inputNum[]" readonly value="0,00"></input></td>
+    <td><input class="input-field" style="text-align:center" value="0,00%" readonly></input></td>
+    <td><input class="input-field"></input></td>
+    <td class="action-cell"><button type="button" class="btn-delete" onclick="borrarGasto(this)"><i class="bi bi-trash"></i></button></td>
     </tr>
   `;
 
-  original.insertAdjacentHTML("afterend",text);
+  let newRow;
+  if (original) {
+    original.insertAdjacentHTML("afterend",text);
+    newRow = original.nextElementSibling;
+  } else {
+    let tbody = document.querySelector("#table");
+    tbody.insertAdjacentHTML("afterbegin",text);
+    newRow = tbody.firstElementChild;
+  }
   
   // Agregar event listeners a los nuevos inputs
-  let newRow = original.nextElementSibling;
   let newInputs = newRow.querySelectorAll('.currencyInput');
   newInputs.forEach(input => {
     input.addEventListener('blur', function() {

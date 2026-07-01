@@ -10,7 +10,7 @@ let estimacionExistente = null;
 let estaConfirmada = false;
 
 // Mapeo de IDs de conceptos según BD real
-const CONCEPTOS_ID = {
+let CONCEPTOS_ID = {
     FLETE: 1,
     SEGURO: 2,
     DERECHOS: 3,
@@ -27,7 +27,7 @@ const CONCEPTOS_ID = {
 };
 
 // Orden de visualización (incluye conceptos calculados no guardados en BD)
-const ORDEN_VISUALIZACION = [
+let ORDEN_VISUALIZACION = [
     { tipo: 'calculado', nombre: 'FOB', esEditable: false },
     { tipo: 'concepto', id_ce: 1, nombre: 'Flete' },
     { tipo: 'concepto', id_ce: 2, nombre: 'Seguro' },
@@ -78,6 +78,60 @@ function cargarDatosEstimacion(idDespacho) {
                 conceptos = response.data.conceptos;
                 estimacionExistente = response.data.estimacion;
                 estaConfirmada = response.data.confirmada;
+                
+                // Map names case-insensitively
+                const mapName = (name) => {
+                    const n = name.toLowerCase().trim();
+                    if (n === 'flete') return 'FLETE';
+                    if (n === 'seguro') return 'SEGURO';
+                    if (n === 'derechos') return 'DERECHOS';
+                    if (n === 'tasa estadistica' || n === 'tasa estadística') return 'TASA_ESTADISTICA';
+                    if (n === 'iva general') return 'IVA_GENERAL';
+                    if (n === 'iva adicional') return 'IVA_ADICIONAL';
+                    if (n === 'iigg') return 'IIGG';
+                    if (n === 'iibb') return 'IIBB';
+                    if (n === 'sim') return 'SIM';
+                    if (n === 'antidumping') return 'ANTIDUMPING';
+                    if (n === 'despachante') return 'DESPACHANTE';
+                    if (n === 'terminal') return 'TERMINAL';
+                    if (n === 'suma asegurada') return 'SUMA_ASEGURADA';
+                    return null;
+                };
+
+                // Si hay conceptos cargados y el primer concepto cargado no tiene ID del 1 al 13,
+                // significa que estamos en Uruguay y debemos remapear dinámicamente CONCEPTOS_ID y ORDEN_VISUALIZACION
+                const esUruguay = conceptos.length > 0 && conceptos.some(c => c.ID_CE > 13);
+                
+                if (esUruguay) {
+                    conceptos.forEach(c => {
+                        const key = mapName(c.CONCEPTO);
+                        if (key) {
+                            CONCEPTOS_ID[key] = c.ID_CE;
+                            
+                            // Actualizar id_ce en ORDEN_VISUALIZACION
+                            const item = ORDEN_VISUALIZACION.find(o => o.tipo === 'concepto' && mapName(o.nombre) === key);
+                            if (item) {
+                                item.id_ce = c.ID_CE;
+                            }
+                        }
+                    });
+                }
+
+                // Buscar nuevos conceptos no mapeados en ORDEN_VISUALIZACION e insertarlos antes de Total Cashflow
+                const idsFijos = ORDEN_VISUALIZACION.filter(item => item.tipo === 'concepto').map(item => item.id_ce);
+                let idxTotalCashflow = ORDEN_VISUALIZACION.findIndex(item => item.tipo === 'calculado' && item.nombre === 'Total Cashflow');
+                
+                conceptos.forEach(c => {
+                    if (!idsFijos.includes(c.ID_CE)) {
+                        const nuevoItem = { tipo: 'concepto', id_ce: c.ID_CE, nombre: c.CONCEPTO };
+                        if (idxTotalCashflow !== -1) {
+                            ORDEN_VISUALIZACION.splice(idxTotalCashflow, 0, nuevoItem);
+                            idxTotalCashflow++; // Incrementar índice para mantener orden correcto
+                        } else {
+                            ORDEN_VISUALIZACION.push(nuevoItem);
+                        }
+                    }
+                });
                 
                 // DEBUG: Ver valores del concepto DESPACHANTE
                 console.log('=== DEBUG DESPACHANTE ===');
@@ -181,8 +235,8 @@ function generarFormularioConceptos() {
                 // Usar IMPORTE guardado en BD (borrador o confirmado)
                 const importeGuardado = parseFloat(valorExistente.IMPORTE);
                 importe = !isNaN(importeGuardado) ? importeGuardado : 0;
-                // Para tipo P: marcar override para que no se recalcule automáticamente
-                tieneOverride = (concepto.TIPO_VALOR === 'P') || (confirmado === 1);
+                // Para tipo P: marcar override solo si el importe guardado es mayor a cero
+                tieneOverride = (concepto.TIPO_VALOR === 'P' && importe > 0.01) || (confirmado === 1);
             } else {
                 // Sin estimación previa: usar parámetro como valor inicial
                 if (param1 !== null && param1 !== undefined) {
@@ -342,7 +396,101 @@ function resetearOverride(btn) {
  */
 function calcularTodosLosConceptos() {
     const fob = parseFloat($('#valorFOB').val()) || 0;
+    const esUruguay = conceptos.length > 0 && conceptos.some(c => c.ID_CE > 13);
 
+    if (esUruguay) {
+        // --- CÁLCULO URUGUAY ---
+        // 1. FOB (valor fijo del despacho)
+        setValorCalculado('FOB', fob);
+
+        // 2. Flete (ID_CE de Flete en UY)
+        const flete = getConceptoValorEditable(CONCEPTOS_ID.FLETE);
+
+        // 3. Seguro (ID_CE de Seguro en UY)
+        let seguro;
+        const seguroOverride = getInputOverride(CONCEPTOS_ID.SEGURO);
+        if (seguroOverride !== null) {
+            seguro = seguroOverride;
+        } else {
+            const seguroParam = getConceptoParam1(CONCEPTOS_ID.SEGURO);
+            const conceptoSeguroObj = conceptos.find(c => c.ID_CE === CONCEPTOS_ID.SEGURO);
+            if (conceptoSeguroObj && conceptoSeguroObj.TIPO_VALOR === 'P') {
+                seguro = (fob + flete) * seguroParam;
+            } else {
+                seguro = seguroParam; // Importe Fijo (ej: 40.00 en UY)
+            }
+            setConceptoValorCalculado(CONCEPTOS_ID.SEGURO, seguro);
+        }
+
+        // 4. CIF = FOB + Flete + Seguro
+        const cif = fob + flete + seguro;
+        setValorCalculado('CIF', cif);
+
+        // En Uruguay, los porcentajes por defecto se calculan sobre el CIF.
+        // Recorremos todos los conceptos (excepto Flete y Seguro que ya están calculados)
+        let totalNac = 0;
+        let despachante = 0;
+        let terminal = 0;
+
+        conceptos.forEach(c => {
+            if (c.ID_CE === CONCEPTOS_ID.FLETE || c.ID_CE === CONCEPTOS_ID.SEGURO) {
+                return;
+            }
+
+            const idCe = c.ID_CE;
+            const override = getInputOverride(idCe);
+            let valor = 0;
+
+            if (override !== null) {
+                valor = override;
+            } else {
+                const param1 = getConceptoParam1(idCe);
+                if (c.TIPO_VALOR === 'P') {
+                    // Porcentual: base es CIF (o el id_ref_concepto si se especificó)
+                    const idRef = c.ID_REF_CONCEPTO;
+                    let baseCalculo = cif;
+                    if (idRef) {
+                        baseCalculo = getConceptoValorActual(idRef);
+                    }
+                    valor = baseCalculo * param1;
+                } else {
+                    // Importe Fijo
+                    valor = param1;
+                }
+                setConceptoValorCalculado(idCe, valor);
+            }
+
+            // Acumular
+            if (idCe === CONCEPTOS_ID.DESPACHANTE) {
+                despachante = valor;
+            } else if (idCe === CONCEPTOS_ID.TERMINAL) {
+                terminal = valor;
+            } else if (idCe === CONCEPTOS_ID.SUMA_ASEGURADA) {
+                // Suma asegurada no suma al total de nacionalización o cashflow en la estructura estándar
+            } else {
+                totalNac += valor;
+            }
+        });
+
+        // Setear los totales calculados
+        setValorCalculado('Base imponible', cif);
+        setValorCalculado('Total nacionalización', totalNac);
+
+        const totalCashflow = totalNac + despachante + terminal;
+        setValorCalculado('Total Cashflow', totalCashflow);
+
+        // Suma Asegurada (si corresponde)
+        const sumaAseguradaOverride = getInputOverride(CONCEPTOS_ID.SUMA_ASEGURADA);
+        if (sumaAseguradaOverride === null && CONCEPTOS_ID.SUMA_ASEGURADA) {
+            const sumaParam1 = getConceptoParam1(CONCEPTOS_ID.SUMA_ASEGURADA);
+            const sumaParam2 = getConceptoParam2(CONCEPTOS_ID.SUMA_ASEGURADA);
+            const sumaAsegurada = ((fob + flete) * (1 + sumaParam1)) * (1 + sumaParam2);
+            setConceptoValorCalculado(CONCEPTOS_ID.SUMA_ASEGURADA, sumaAsegurada);
+        }
+        return;
+    }
+
+    // --- CÁLCULO ARGENTINA ---
     // 1. FOB (valor fijo del despacho)
     setValorCalculado('FOB', fob);
 
@@ -459,8 +607,47 @@ function calcularTodosLosConceptos() {
     // 16. Terminal (ID_CE=12): Importe fijo editable
     const terminal = getConceptoValorEditable(CONCEPTOS_ID.TERMINAL);
 
-    // 17. Total Cashflow (calculado): Total Nac + Despachante + Terminal
-    const totalCashflow = totalNac + despachante + terminal;
+    // Calcular conceptos nuevos y acumularlos en totalCashflow
+    let acumuladoConceptosNuevos = 0;
+    const idsFijos = Object.values(CONCEPTOS_ID);
+    
+    conceptos.forEach(c => {
+        if (!idsFijos.includes(c.ID_CE)) {
+            const idCe = c.ID_CE;
+            
+            // Verificar si el usuario ingresó un override manual
+            const override = getInputOverride(idCe);
+            let valor = 0;
+            
+            if (override !== null) {
+                valor = override;
+            } else {
+                // Calcular valor automático
+                const param1 = getConceptoParam1(idCe);
+                
+                if (c.TIPO_VALOR === 'P') {
+                    // Es un porcentaje. Verificar si tiene ID_REF_CONCEPTO
+                    const idRef = c.ID_REF_CONCEPTO;
+                    let baseCalculo = cif; // Base por defecto es CIF
+                    
+                    if (idRef) {
+                        baseCalculo = getConceptoValorActual(idRef);
+                    }
+                    valor = baseCalculo * param1;
+                } else {
+                    // Importe Fijo
+                    valor = param1;
+                }
+                
+                setConceptoValorCalculado(idCe, valor);
+            }
+            
+            acumuladoConceptosNuevos += valor;
+        }
+    });
+
+    // 17. Total Cashflow (calculado): Total Nac + Despachante + Terminal + Conceptos Nuevos
+    const totalCashflow = totalNac + despachante + terminal + acumuladoConceptosNuevos;
     setValorCalculado('Total Cashflow', totalCashflow);
 
     // 18. Suma Asegurada (ID_CE=13): ((FOB + Flete) * (1 + Param1)) * (1 + Param2)  [override posible]
@@ -471,6 +658,27 @@ function calcularTodosLosConceptos() {
         const sumaAsegurada = ((fob + flete) * (1 + sumaParam1)) * (1 + sumaParam2);
         setConceptoValorCalculado(CONCEPTOS_ID.SUMA_ASEGURADA, sumaAsegurada);
     }
+}
+
+/**
+ * Obtener el valor numérico actual de un concepto
+ */
+function getConceptoValorActual(idCe) {
+    const $row = $(`tr[data-concepto-id="${idCe}"]`);
+    if ($row.length > 0) {
+        const $input = $row.find('.importe-editable');
+        return parseFloat($input.data('valor')) || 0;
+    }
+    
+    // Si se hace referencia por concepto o texto
+    if (idCe == 'FOB') return parseFloat($('#valorFOB').val()) || 0;
+    if (idCe == 'CIF') {
+        const fob = parseFloat($('#valorFOB').val()) || 0;
+        const flete = getConceptoValorEditable(CONCEPTOS_ID.FLETE);
+        const seguro = getConceptoValorEditable(CONCEPTOS_ID.SEGURO);
+        return fob + flete + seguro;
+    }
+    return 0;
 }
 
 /**
