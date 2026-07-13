@@ -98,40 +98,61 @@ function cargarDatosEstimacion(idDespacho) {
                     return null;
                 };
 
-                // Si hay conceptos cargados y el primer concepto cargado no tiene ID del 1 al 13,
-                // significa que estamos en Uruguay y debemos remapear dinámicamente CONCEPTOS_ID y ORDEN_VISUALIZACION
-                const esUruguay = conceptos.length > 0 && conceptos.some(c => c.ID_CE > 13);
+                // Si estamos en Uruguay, debemos remapear dinámicamente CONCEPTOS_ID y ORDEN_VISUALIZACION
+                const esUruguay = $('#entorno').val() === 'uy' || (conceptos.length > 0 && conceptos.some(c => c.ID_CE > 13));
                 
                 if (esUruguay) {
                     conceptos.forEach(c => {
                         const key = mapName(c.CONCEPTO);
                         if (key) {
                             CONCEPTOS_ID[key] = c.ID_CE;
-                            
-                            // Actualizar id_ce en ORDEN_VISUALIZACION
-                            const item = ORDEN_VISUALIZACION.find(o => o.tipo === 'concepto' && mapName(o.nombre) === key);
-                            if (item) {
-                                item.id_ce = c.ID_CE;
+                        }
+                    });
+
+                    // Construir ORDEN_VISUALIZACION específico para UY
+                    const ordenUY = [
+                        { tipo: 'calculado', nombre: 'FOB', esEditable: false },
+                        { tipo: 'concepto', id_ce: CONCEPTOS_ID.FLETE, nombre: 'Flete' },
+                        { tipo: 'concepto', id_ce: CONCEPTOS_ID.SEGURO, nombre: 'Seguro' },
+                        { tipo: 'calculado', nombre: 'CIF', esEditable: false },
+                        { tipo: 'calculado', nombre: 'Base imponible', esEditable: false }
+                    ];
+
+                    // Agregar todos los conceptos que no sean Flete, Seguro, Despachante, Terminal ni Suma Asegurada
+                    conceptos.forEach(c => {
+                        const key = mapName(c.CONCEPTO);
+                        if (key !== 'FLETE' && key !== 'SEGURO' && key !== 'DESPACHANTE' && key !== 'TERMINAL' && key !== 'SUMA_ASEGURADA') {
+                            ordenUY.push({ tipo: 'concepto', id_ce: c.ID_CE, nombre: c.CONCEPTO });
+                        }
+                    });
+
+                    // Agregar los campos calculados y conceptos restantes en el orden solicitado por el usuario
+                    ordenUY.push({ tipo: 'calculado', nombre: 'Total nacionalización', esEditable: false });
+                    ordenUY.push({ tipo: 'concepto', id_ce: CONCEPTOS_ID.DESPACHANTE, nombre: 'Despachante' });
+                    ordenUY.push({ tipo: 'concepto', id_ce: CONCEPTOS_ID.TERMINAL, nombre: 'Terminal' });
+                    ordenUY.push({ tipo: 'calculado', nombre: 'Total Cashflow', esEditable: false });
+                    if (CONCEPTOS_ID.SUMA_ASEGURADA) {
+                        ordenUY.push({ tipo: 'concepto', id_ce: CONCEPTOS_ID.SUMA_ASEGURADA, nombre: 'Suma asegurada' });
+                    }
+
+                    ORDEN_VISUALIZACION = ordenUY;
+                } else {
+                    // Buscar nuevos conceptos no mapeados en ORDEN_VISUALIZACION e insertarlos antes de Total Cashflow
+                    const idsFijos = ORDEN_VISUALIZACION.filter(item => item.tipo === 'concepto').map(item => item.id_ce);
+                    let idxTotalCashflow = ORDEN_VISUALIZACION.findIndex(item => item.tipo === 'calculado' && item.nombre === 'Total Cashflow');
+                    
+                    conceptos.forEach(c => {
+                        if (!idsFijos.includes(c.ID_CE)) {
+                            const nuevoItem = { tipo: 'concepto', id_ce: c.ID_CE, nombre: c.CONCEPTO };
+                            if (idxTotalCashflow !== -1) {
+                                ORDEN_VISUALIZACION.splice(idxTotalCashflow, 0, nuevoItem);
+                                idxTotalCashflow++; // Incrementar índice para mantener orden correcto
+                            } else {
+                                ORDEN_VISUALIZACION.push(nuevoItem);
                             }
                         }
                     });
                 }
-
-                // Buscar nuevos conceptos no mapeados en ORDEN_VISUALIZACION e insertarlos antes de Total Cashflow
-                const idsFijos = ORDEN_VISUALIZACION.filter(item => item.tipo === 'concepto').map(item => item.id_ce);
-                let idxTotalCashflow = ORDEN_VISUALIZACION.findIndex(item => item.tipo === 'calculado' && item.nombre === 'Total Cashflow');
-                
-                conceptos.forEach(c => {
-                    if (!idsFijos.includes(c.ID_CE)) {
-                        const nuevoItem = { tipo: 'concepto', id_ce: c.ID_CE, nombre: c.CONCEPTO };
-                        if (idxTotalCashflow !== -1) {
-                            ORDEN_VISUALIZACION.splice(idxTotalCashflow, 0, nuevoItem);
-                            idxTotalCashflow++; // Incrementar índice para mantener orden correcto
-                        } else {
-                            ORDEN_VISUALIZACION.push(nuevoItem);
-                        }
-                    }
-                });
                 
                 // DEBUG: Ver valores del concepto DESPACHANTE
                 console.log('=== DEBUG DESPACHANTE ===');
@@ -396,7 +417,7 @@ function resetearOverride(btn) {
  */
 function calcularTodosLosConceptos() {
     const fob = parseFloat($('#valorFOB').val()) || 0;
-    const esUruguay = conceptos.length > 0 && conceptos.some(c => c.ID_CE > 13);
+    const esUruguay = $('#entorno').val() === 'uy' || (conceptos.length > 0 && conceptos.some(c => c.ID_CE > 13));
 
     if (esUruguay) {
         // --- CÁLCULO URUGUAY ---

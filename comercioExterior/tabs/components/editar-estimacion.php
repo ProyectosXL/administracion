@@ -1,3 +1,8 @@
+<?php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -135,6 +140,7 @@
         <input type="hidden" id="idDespacho" value="">
         <input type="hidden" id="valorFOB" value="0">
         <input type="hidden" id="estaConfirmada" value="0">
+        <input type="hidden" id="entorno" value="<?php echo isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central'; ?>">
     </div>
 
     <!-- jQuery -->
@@ -147,6 +153,6 @@
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Custom JS -->
-    <script src="../../js/editar-estimacion.js"></script>
+    <script src="../../js/editar-estimacion.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

@@ -298,6 +298,9 @@ try {
                                     <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-estimada"></i>
                                 </div>
                             </div>
+                            <?php if (isset($_SESSION['entorno']) && $_SESSION['entorno'] === 'uy'): ?>
+                                <input type="hidden" id="despachante" value="Laffitte">
+                            <?php else: ?>
                             <div class="col-md-5">
                                 <label class="label-campo">Despachante</label>
                                 <div class="input-group">
@@ -311,6 +314,7 @@ try {
                                     </div>
                                 </div>
                             </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="row row-space">
@@ -615,9 +619,9 @@ try {
     </div>
 
     <!-- Main JS-->
-    <script src="../js/global.js"></script>
+    <script src="../js/global.js?v=<?php echo time(); ?>"></script>
     <!-- Carga Inicial JS - Contiene toda la lógica del formulario -->
-    <script src="../js/cargaInicial.js"></script>
+    <script src="../js/cargaInicial.js?v=<?php echo time(); ?>"></script>
     
     <script>
     // Inicializar select de proveedor para cargar órdenes de compra

@@ -100,7 +100,7 @@ try {
 
             $response = ['success' => true, 'message' => 'Proceso IVA para sucursal ' . $nro_sucurs . ' ejecutado.'];
             break;
-
+            
         case 'obtener_datos':
             $desde = $_POST['desde'] ?? '';
             $hasta = $_POST['hasta'] ?? '';
