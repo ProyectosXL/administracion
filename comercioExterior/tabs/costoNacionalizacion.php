@@ -42,6 +42,7 @@ $debug_info['fechas_usadas'] = [
 
 // Siempre llamar a la función con las fechas (filtradas o por defecto)
 $listaDeOrdenes = listarPorFecha($desde, $hasta);
+$listaDeOrdenes = is_array($listaDeOrdenes) ? $listaDeOrdenes : [];
 
 // Debug - mostrar cantidad de resultados
 $debug_info['total_registros'] = count($listaDeOrdenes);

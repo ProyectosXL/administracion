@@ -83,10 +83,20 @@ btnUpdateDetalle.addEventListener("click",()=> {
             });
         }
     }).fail(function(xhr, status, error) {
-        console.error('Error al guardar costos:', error, xhr.responseText);
+        // Intentar extraer el mensaje real del servidor
+        let serverMsg = 'No se pudo conectar con el servidor. Por favor, intente nuevamente.';
+        try {
+            let resp = JSON.parse(xhr.responseText);
+            if (resp && resp.message) serverMsg = resp.message;
+        } catch(e) {
+            if (xhr.responseText && xhr.responseText.length < 300) {
+                serverMsg = xhr.responseText;
+            }
+        }
+        console.error('Error al guardar costos:', status, error, xhr.responseText);
         Swal.fire({
             title: 'Error',
-            text: 'No se pudo conectar con el servidor. Por favor, intente nuevamente.',
+            text: serverMsg,
             icon: 'error',
             confirmButtonText: 'Volver a Costos de Nacionalización',
             allowOutsideClick: false,

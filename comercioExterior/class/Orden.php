@@ -71,6 +71,7 @@ class Orden{
     }
     public function traerOrdenPorFecha($desde, $hasta) {
 
+        // COLLATE resuelve conflicto entre collations de distintas BDs (ej: Modern_Spanish_CI_AI vs Latin1_General_BIN)
         $sql = "SELECT
                     A.ID,
                     A.FECHA_MOV,
@@ -81,32 +82,36 @@ class Orden{
                     A.DESPACHO,
                     A.ORDEN_COMPRA,
                     A.VALOR_FOB_PESO,
-                    (COSTO_NAC * 100) AS COSTO_NAC,
+                    ISNULL(B.COSTO_NAC, 0) * 100 AS COSTO_NAC,
                     A.ID_PADRE,
                     (SELECT P.ORDEN_COMPRA
                      FROM RO_T_IMPORTACIONES_ENCABEZADO P
                      WHERE P.ID = A.ID_PADRE) AS ORDEN_COMPRA_PADRE
                 FROM RO_T_IMPORTACIONES_ENCABEZADO A
-                LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
+                LEFT JOIN RO_W_COSTO_NACIONALIZACION B
+                    ON A.ORDEN_COMPRA COLLATE Latin1_General_BIN = B.ORDEN_COMPRA COLLATE Latin1_General_BIN
                 WHERE A.FECHA_DESP_ADU BETWEEN '$desde' AND '$hasta'
                 ORDER BY A.FECHA_DESP_ADU DESC;";
         
-        try{
-            $stmt = sqlsrv_query( $this->cid_central, $sql );
-    
+        try {
+            $stmt = sqlsrv_query($this->cid_central, $sql);
+
+            if ($stmt === false) {
+                $errors = sqlsrv_errors();
+                error_log('[traerOrdenPorFecha] Error SQL: ' . print_r($errors, true));
+                return [];
+            }
+
             $rows = array();
-    
-            while( $v = sqlsrv_fetch_array( $stmt) ) {
+            while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $rows[] = $v;
             }
-            return ($rows);
-            
-    
-            } catch (\Throwable $th) {
-    
-            print_r($th);
-    
-            }
+            return $rows;
+
+        } catch (\Throwable $th) {
+            error_log('[traerOrdenPorFecha] Excepción: ' . $th->getMessage());
+            return [];
+        }
     }
 
     /**
@@ -115,6 +120,12 @@ class Orden{
      * y luego replica el mismo COSTO_NAC a cada OC del grupo.
      */
     public function insertarCostoNacionalizacion($nroOrden, $idEncabezado, $costoNac) {
+
+        // Validar conexión antes de operar
+        if ($this->cid_central === false || $this->cid_central === null) {
+            error_log('[insertarCostoNacionalizacion] Sin conexión a la base de datos.');
+            return ['success' => false, 'message' => 'Sin conexión a la base de datos. Verificar configuración del entorno.'];
+        }
 
         require_once __DIR__ . '/encabezado.php';
         $encabezadoClass = new Encabezado();
@@ -137,16 +148,21 @@ class Orden{
             $sqlDelete = "DELETE FROM RO_COSTOS_NACIONALIZACION WHERE N_ORDEN_CO = '$ocEsc'";
             $stmtDelete = sqlsrv_query($this->cid_central, $sqlDelete);
             if ($stmtDelete === false) {
-                $errors = sqlsrv_errors();
+                $errors   = sqlsrv_errors();
+                $sqlMsg   = isset($errors[0]['message']) ? $errors[0]['message'] : 'Error SQL desconocido';
+                $sqlCode  = isset($errors[0]['code'])    ? $errors[0]['code']    : '?';
                 error_log('[insertarCostoNacionalizacion] Error DELETE OC=' . $ocStr . ': ' . print_r($errors, true));
-                return ['success' => false, 'message' => 'Error al eliminar registro previo para OC: ' . $ocStr];
+                return [
+                    'success' => false,
+                    'message' => "Error al eliminar registro previo (OC: $ocStr) — [Código $sqlCode] $sqlMsg"
+                ];
             }
 
             // Obtener FECHA_DESP_ADU del encabezado que corresponda a esta OC
             $sqlFecha = "SELECT FECHA_DESP_ADU FROM RO_T_IMPORTACIONES_ENCABEZADO
                          WHERE ORDEN_COMPRA = '$ocEsc'";
             $stmtFecha = sqlsrv_query($this->cid_central, $sqlFecha);
-            $rowFecha = ($stmtFecha !== false) ? sqlsrv_fetch_array($stmtFecha, SQLSRV_FETCH_ASSOC) : null;
+            $rowFecha  = ($stmtFecha !== false) ? sqlsrv_fetch_array($stmtFecha, SQLSRV_FETCH_ASSOC) : null;
 
             $fechaDespStr = ($rowFecha && $rowFecha['FECHA_DESP_ADU'])
                 ? "'" . $rowFecha['FECHA_DESP_ADU']->format('Y-m-d') . "'"
@@ -157,9 +173,14 @@ class Orden{
 
             $stmtInsert = sqlsrv_query($this->cid_central, $sqlInsert);
             if ($stmtInsert === false) {
-                $errors = sqlsrv_errors();
-                error_log('[insertarCostoNacionalizacion] Error INSERT OC=' . $ocReal . ': ' . print_r($errors, true));
-                return ['success' => false, 'message' => 'Error al insertar costo para OC: ' . $ocReal];
+                $errors   = sqlsrv_errors();
+                $sqlMsg   = isset($errors[0]['message']) ? $errors[0]['message'] : 'Error SQL desconocido';
+                $sqlCode  = isset($errors[0]['code'])    ? $errors[0]['code']    : '?';
+                error_log('[insertarCostoNacionalizacion] Error INSERT OC=' . $ocStr . ': ' . print_r($errors, true));
+                return [
+                    'success' => false,
+                    'message' => "Error al insertar costo (OC: $ocStr) — [Código $sqlCode] $sqlMsg"
+                ];
             }
         }
 

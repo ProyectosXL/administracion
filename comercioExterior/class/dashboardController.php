@@ -74,7 +74,8 @@ class DashboardController {
                         AVG(CAST(B.COSTO_NAC AS FLOAT) * 100) as promedio_costo_nac,
                         COUNT(*) as total_despachos
                     FROM RO_T_IMPORTACIONES_ENCABEZADO A
-                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
+                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B
+                        ON A.ORDEN_COMPRA COLLATE Latin1_General_BIN = B.ORDEN_COMPRA COLLATE Latin1_General_BIN
                     WHERE YEAR(A.FECHA_DESP_ADU) >= $anioInicio
                         AND YEAR(A.FECHA_DESP_ADU) <= $anioActual
                         AND B.COSTO_NAC IS NOT NULL
@@ -124,7 +125,8 @@ class DashboardController {
                         COUNT(*) as total_despachos,
                         SUM(CAST(A.VALOR_FOB_PESO AS FLOAT)) as valor_total_fob
                     FROM RO_T_IMPORTACIONES_ENCABEZADO A
-                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
+                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B
+                        ON A.ORDEN_COMPRA COLLATE Latin1_General_BIN = B.ORDEN_COMPRA COLLATE Latin1_General_BIN
                     $whereClause
                     GROUP BY A.COD_PROVEE, A.PROVEEDOR
                     HAVING COUNT(*) >= 1
@@ -170,7 +172,8 @@ class DashboardController {
                         COUNT(DISTINCT A.COD_PROVEE) as total_proveedores,
                         AVG(CAST(A.VALOR_FOB_PESO AS FLOAT)) as promedio_valor_fob
                     FROM RO_T_IMPORTACIONES_ENCABEZADO A
-                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
+                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B
+                        ON A.ORDEN_COMPRA COLLATE Latin1_General_BIN = B.ORDEN_COMPRA COLLATE Latin1_General_BIN
                     $whereClause";
             
             $result = $this->executeQuery($sql, 'single');
@@ -208,7 +211,8 @@ class DashboardController {
                         COUNT(*) as total_despachos,
                         SUM(CAST(A.VALOR_FOB_PESO AS FLOAT)) as valor_total_fob
                     FROM RO_T_IMPORTACIONES_ENCABEZADO A
-                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
+                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B
+                        ON A.ORDEN_COMPRA COLLATE Latin1_General_BIN = B.ORDEN_COMPRA COLLATE Latin1_General_BIN
                     $whereClause
                     GROUP BY A.COD_PROVEE, A.PROVEEDOR
                     ORDER BY promedio_costo_nac DESC";
@@ -240,7 +244,8 @@ class DashboardController {
         try {
             $sql = "SELECT DISTINCT A.COD_PROVEE, A.PROVEEDOR 
                     FROM RO_T_IMPORTACIONES_ENCABEZADO A
-                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
+                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B
+                        ON A.ORDEN_COMPRA COLLATE Latin1_General_BIN = B.ORDEN_COMPRA COLLATE Latin1_General_BIN
                     WHERE B.COSTO_NAC IS NOT NULL
                         AND A.PROVEEDOR IS NOT NULL
                         AND A.PROVEEDOR != ''
@@ -279,7 +284,8 @@ class DashboardController {
             $sql = "SELECT 
                         CAST(B.COSTO_NAC AS FLOAT) * 100 as costo_porcentaje
                     FROM RO_T_IMPORTACIONES_ENCABEZADO A
-                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B ON A.ORDEN_COMPRA = B.ORDEN_COMPRA
+                    LEFT JOIN RO_W_COSTO_NACIONALIZACION B
+                        ON A.ORDEN_COMPRA COLLATE Latin1_General_BIN = B.ORDEN_COMPRA COLLATE Latin1_General_BIN
                     $whereClause";
             
             $rows = $this->executeQuery($sql);

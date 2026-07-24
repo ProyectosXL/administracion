@@ -405,10 +405,20 @@ if(document.querySelector("#btnSaveDetalle") != null){
                 }
             },
             error: function(jqXHR, textStatus, errorThrown) {
-                console.error("Error AJAX:", textStatus, errorThrown);
+                // Intentar extraer el mensaje real del servidor
+                let serverMsg = 'No se pudo conectar con el servidor.';
+                try {
+                    let resp = JSON.parse(jqXHR.responseText);
+                    if (resp && resp.message) serverMsg = resp.message;
+                } catch(e) {
+                    if (jqXHR.responseText && jqXHR.responseText.length < 300) {
+                        serverMsg = jqXHR.responseText;
+                    }
+                }
+                console.error("Error AJAX:", textStatus, errorThrown, jqXHR.responseText);
                 Swal.fire({
                     title: 'Error',
-                    text: 'No se pudo conectar con el servidor.',
+                    text: serverMsg,
                     icon: 'error',
                     confirmButtonText: 'Volver a Costos de Nacionalización',
                     allowOutsideClick: false,
