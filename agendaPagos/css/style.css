@@ -1,0 +1,119 @@
+/* style.css - Diseño premium de la Agenda de Pagos */
+
+:root {
+    --gocuotas-pink: #ee2a7b;
+    --mercadopago-blue: #009ee3;
+    --getnet-purple: #ec0000; /* Santander / Getnet color */
+    --light-primary: rgba(13, 110, 253, 0.1);
+    --light-success: rgba(25, 135, 84, 0.1);
+    --light-danger: rgba(220, 53, 69, 0.1);
+    --light-warning: rgba(255, 193, 7, 0.1);
+    --light-info: rgba(13, 202, 240, 0.1);
+}
+
+body {
+    background-color: #f8fafc !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Metric Cards */
+.card-metric {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-metric:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+.metric-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 1.25rem;
+}
+
+/* Light Icon Backgrounds */
+.bg-light-primary { background-color: var(--light-primary); }
+.bg-light-success { background-color: var(--light-success); }
+.bg-light-danger { background-color: var(--light-danger); }
+.bg-light-warning { background-color: var(--light-warning); }
+.bg-light-info { background-color: var(--light-info); }
+.text-info { color: #0dcaf0 !important; }
+
+/* Custom Brand Colors */
+.bg-pink { background-color: var(--gocuotas-pink) !important; color: white; }
+.text-pink { color: var(--gocuotas-pink) !important; }
+
+.bg-sky { background-color: var(--mercadopago-blue) !important; color: white; }
+.text-sky { color: var(--mercadopago-blue) !important; }
+
+.bg-purple { background-color: #e60000 !important; color: white; } /* Getnet red/Santander */
+.text-purple { color: #e60000 !important; }
+
+/* Timeline and Badges */
+.badge-status {
+    padding: 0.35em 0.65em;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 50rem;
+}
+
+/* Timeline/Cashflow Forecast block */
+#acreditation-forecast .col > div {
+    transition: background-color 0.2s ease;
+}
+#acreditation-forecast .col > div:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* Table Design */
+.table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: #64748b;
+    padding: 12px 16px;
+}
+
+.table td {
+    padding: 14px 16px;
+    font-size: 0.875rem;
+}
+
+/* Details modal timeline */
+.settlement-timeline {
+    position: relative;
+    border-left: 2px dashed #e2e8f0;
+    padding-left: 20px;
+}
+.settlement-node {
+    position: relative;
+    padding-bottom: 15px;
+}
+.settlement-node::before {
+    content: '';
+    position: absolute;
+    left: -27px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #cbd5e1;
+    border: 2px solid white;
+}
+.settlement-node.node-acreditado::before {
+    background-color: #198754;
+}
+.settlement-node.node-pendiente::before {
+    background-color: #ffc107;
+}
+
+/* Custom styles for smaller fonts */
+.fs-8 { font-size: 0.8rem !important; }
+.fs-9 { font-size: 0.7rem !important; }
+.tracking-wider { letter-spacing: 0.05em !important; }
+.tracking-tight { letter-spacing: -0.025em !important; }
