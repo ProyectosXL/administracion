@@ -71,6 +71,9 @@ class DotEnv
             'PASS_LOCALES'     => $get('PASS_LOCALES'),
             'CHARACTER'        => $get('CHARACTER'),
             'ENV'              => $get('ENV'),
+            'GOCUOTAS_EMAIL'   => $get('GOCUOTAS_EMAIL'),
+            'GOCUOTAS_APIKEY'  => $get('GOCUOTAS_APIKEY'),
+            'GOCUOTAS_SANDBOX' => $get('GOCUOTAS_SANDBOX'),
 
         );
 

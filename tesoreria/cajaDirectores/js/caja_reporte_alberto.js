@@ -10,19 +10,26 @@ async function actualizarResumenAlberto(soloSaldo = false, filtrosActivos = null
     console.log('Actualizando resumen Alberto...');
     
     try {
-        // Para calcular SALDO: siempre usar todos los datos
         const hoy = new Date();
-        const hace2Anos = new Date(hoy);
-        hace2Anos.setFullYear(hoy.getFullYear() - 2);
+        let fechaDesde, fechaHasta;
         
-        const fechaDesdeSaldo = hace2Anos.toISOString().split('T')[0];
-        const fechaHastaSaldo = hoy.toISOString().split('T')[0];
+        if (filtrosActivos && filtrosActivos.fecha_desde && filtrosActivos.fecha_hasta) {
+            fechaDesde = filtrosActivos.fecha_desde;
+            fechaHasta = filtrosActivos.fecha_hasta;
+        } else {
+            // Primer día del mes actual
+            const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            // Último día del mes actual
+            const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+            fechaDesde = primerDiaMes.toISOString().split('T')[0];
+            fechaHasta = ultimoDiaMes.toISOString().split('T')[0];
+        }
         
-        let urlSaldo = `controller/caja_reporte_alberto_controller.php?accion=movimientos&_=${Date.now()}`;
-        urlSaldo += `&fecha_desde=${fechaDesdeSaldo}`;
-        urlSaldo += `&fecha_hasta=${fechaHastaSaldo}`;
+        let url = `controller/caja_reporte_alberto_controller.php?accion=movimientos&_=${Date.now()}`;
+        url += `&fecha_desde=${fechaDesde}`;
+        url += `&fecha_hasta=${fechaHasta}`;
         
-        const responseSaldo = await fetch(urlSaldo, {
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -30,13 +37,13 @@ async function actualizarResumenAlberto(soloSaldo = false, filtrosActivos = null
             }
         });
         
-        if (!responseSaldo.ok) {
-            throw new Error(`HTTP ${responseSaldo.status}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
         
-        const resultSaldo = await responseSaldo.json();
+        const result = await response.json();
         
-        if (resultSaldo.success) {
+        if (result.success) {
             const formatoMoneda = new Intl.NumberFormat('es-AR', { 
                 style: 'currency', 
                 currency: 'ARS',
@@ -44,88 +51,49 @@ async function actualizarResumenAlberto(soloSaldo = false, filtrosActivos = null
                 maximumFractionDigits: 0
             });
             
-            // Calcular saldo sobre TODOS los períodos
-            let totalEgresosParaSaldo = 0;
-            let totalGastosParaSaldo = 0;
+            let totalEgresos = 0;
+            let totalGastos = 0;
             
-            resultSaldo.data.forEach(mov => {
+            result.data.forEach(mov => {
                 if (mov.tipo === 'EGRESO') {
-                    totalEgresosParaSaldo += parseFloat(mov.importe);
+                    totalEgresos += parseFloat(mov.importe);
                 } else if (mov.tipo === 'GASTO') {
-                    totalGastosParaSaldo += parseFloat(mov.importe);
+                    totalGastos += parseFloat(mov.importe);
                 }
             });
             
-            // Saldo = Egresos - Gastos (inverso al reporte normal)
-            const saldo = totalEgresosParaSaldo - totalGastosParaSaldo;
+            // Saldo = Egresos - Gastos (para el rango seleccionado)
+            const saldo = totalEgresos - totalGastos;
             
             const elementoSaldo = document.getElementById('saldoAlberto');
-            elementoSaldo.textContent = formatoMoneda.format(saldo);
-            
-            // Cambiar color según saldo
-            const cardSaldo = elementoSaldo.closest('.card');
-            if (saldo < 0) {
-                cardSaldo.classList.remove('bg-primary');
-                cardSaldo.classList.add('bg-warning');
-                cardSaldo.querySelector('.card-text').textContent = 'Déficit';
-            } else {
-                cardSaldo.classList.remove('bg-warning');
-                cardSaldo.classList.add('bg-primary');
-                cardSaldo.querySelector('.card-text').textContent = 'Disponible';
+            if (elementoSaldo) {
+                elementoSaldo.textContent = formatoMoneda.format(saldo);
+                
+                // Cambiar color según saldo
+                const cardSaldo = elementoSaldo.closest('.card');
+                if (cardSaldo) {
+                    if (saldo < 0) {
+                        cardSaldo.classList.remove('bg-primary');
+                        cardSaldo.classList.add('bg-warning');
+                        const textEl = cardSaldo.querySelector('.card-text');
+                        if (textEl) textEl.textContent = 'Déficit';
+                    } else {
+                        cardSaldo.classList.remove('bg-warning');
+                        cardSaldo.classList.add('bg-primary');
+                        const textEl = cardSaldo.querySelector('.card-text');
+                        if (textEl) textEl.textContent = 'Disponible';
+                    }
+                }
             }
             
-            // Actualizar Egresos y Gastos según filtros
-            if (!soloSaldo) {
-                let fechaDesde, fechaHasta;
-                
-                if (filtrosActivos && filtrosActivos.fecha_desde && filtrosActivos.fecha_hasta) {
-                    fechaDesde = filtrosActivos.fecha_desde;
-                    fechaHasta = filtrosActivos.fecha_hasta;
-                } else {
-                    // Primer día del mes actual
-                    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-                    // Último día del mes actual
-                    const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
-                    fechaDesde = primerDiaMes.toISOString().split('T')[0];
-                    fechaHasta = ultimoDiaMes.toISOString().split('T')[0];
-                }
-                
-                let url = `controller/caja_reporte_alberto_controller.php?accion=movimientos&_=${Date.now()}`;
-                url += `&fecha_desde=${fechaDesde}`;
-                url += `&fecha_hasta=${fechaHasta}`;
-                
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    let totalEgresos = 0;
-                    let totalGastos = 0;
-                    
-                    result.data.forEach(mov => {
-                        if (mov.tipo === 'EGRESO') {
-                            totalEgresos += parseFloat(mov.importe);
-                        } else if (mov.tipo === 'GASTO') {
-                            totalGastos += parseFloat(mov.importe);
-                        }
-                    });
-                    
-                    document.getElementById('totalEgresosAlberto').textContent = 
-                        formatoMoneda.format(totalEgresos);
-                    
-                    document.getElementById('totalGastosAlberto').textContent = 
-                        formatoMoneda.format(totalGastos);
-                }
+            const elementoEgresos = document.getElementById('totalEgresosAlberto');
+            if (elementoEgresos) {
+                elementoEgresos.textContent = formatoMoneda.format(totalEgresos);
+            }
+            
+            const elementoGastos = document.getElementById('totalGastosAlberto');
+            if (elementoGastos) {
+                elementoGastos.textContent = formatoMoneda.format(totalGastos);
             }
         }
     } catch (error) {

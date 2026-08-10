@@ -12,87 +12,106 @@ class GoCuotasAdapter implements PaymentProvider
 
     public function __construct(array $envVars = [])
     {
-        // Leer credenciales de W:\.env a través de las variables pasadas
+        // Leer credenciales de W:\.env
         $this->email = $envVars['GOCUOTAS_EMAIL'] ?? '';
-        $this->password = $envVars['GOCUOTAS_PASSWORD'] ?? '';
-        $this->sandbox = filter_var($envVars['GOCUOTAS_SANDBOX'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        // Soporta GOCUOTAS_APIKEY y GOCUOTAS_PASSWORD como fallback
+        $this->password = $envVars['GOCUOTAS_APIKEY'] ?? ($envVars['GOCUOTAS_PASSWORD'] ?? '');
+        $this->sandbox = filter_var($envVars['GOCUOTAS_SANDBOX'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         if (!empty($this->email) && !empty($this->password)) {
             $this->isConfigured = true;
+            $this->token = $this->password;
         }
     }
 
     public function login(array $credentials = []): bool
     {
         if (!$this->isConfigured) {
-            // Modo Simulación autorizado si no hay credenciales
             return true;
         }
-
-        // Si hay credenciales reales, prepararíamos la petición HTTP POST a GoCuotas:
-        // Endpoint: POST https://sandbox.gocuotas.com/api_redirect/v1/auth/login o www.gocuotas.com
-        // Retornaría un JWT en $this->token
-        $this->token = 'mock_jwt_token_gocuotas_' . time();
+        // En GoCuotas, el API Key actúa directamente como Bearer Token, no requiere login dinámico
         return true;
     }
 
     public function getPayments(string $desde, string $hasta, string $status = 'todos'): array
     {
-        // Si no está configurada, devolvemos cobros mock realistas
-        // En producción se consultaría a la API Client V1 de GoCuotas
-        $payments = [];
+        if (!$this->isConfigured) {
+            throw new Exception("El proveedor GoCuotas no está configurado (falta API Key o email).");
+        }
 
-        // Generar un set de datos de prueba coherentes para GoCuotas
-        // GoCuotas es una procesadora Buy Now Pay Later (débito en cuotas)
-        $clientes = ['Agustina Fernandez', 'Gaston Rodriguez', 'Sofia Lopez', 'Nicolas Diaz', 'Clara Benitez'];
-        $conceptos = ['Zapatillas Urbanas', 'Remera XL Lakers', 'Jean Slim Fit', 'Campera Térmica', 'Accesorios de Cuero'];
+        $baseUrl = $this->sandbox ? 'https://sandbox.gocuotas.com/api_client/v1' : 'https://www.gocuotas.com/api_client/v1';
         
-        // Semilla basada en las fechas para mantener consistencia
-        $seed = strtotime($desde);
-        mt_srand($seed);
+        // El endpoint requiere 'from' y 'to' en formato YYYY-MM-DD
+        $url = "{$baseUrl}/expense_settlements?from={$desde}&to={$hasta}";
 
-        $numTx = mt_rand(4, 8);
-        for ($i = 0; $i < $numTx; $i++) {
-            $amount = mt_rand(150, 600) * 100; // montos entre 15.000 y 60.000
-            $installments = [3, 4, 6][mt_rand(0, 2)]; // 3, 4 o 6 cuotas
-            $txStatus = ['approved', 'approved', 'approved', 'pending', 'rejected'][mt_rand(0, 4)];
-            
-            if ($status !== 'todos' && $txStatus !== $status) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Authorization: Bearer {$this->token}",
+            "Accept: application/json"
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($response === false) {
+            throw new Exception("Error de red al consultar GoCuotas: " . $curlError);
+        }
+
+        if ($httpCode !== 200) {
+            $errDetail = json_decode($response, true);
+            $errMsg = $errDetail['message'] ?? ($errDetail['errors'] ?? 'Error desconocido');
+            throw new Exception("Error en API GoCuotas (HTTP {$httpCode}): " . $errMsg);
+        }
+
+        $settlements = json_decode($response, true);
+        if (!is_array($settlements)) {
+            throw new Exception("La API de GoCuotas no devolvió un formato JSON válido.");
+        }
+
+        $payments = [];
+        foreach ($settlements as $settlement) {
+            if ($status !== 'todos' && $status !== 'approved') {
+                // Las liquidaciones procesadas se consideran aprobadas
                 continue;
             }
 
-            // Generar una fecha aleatoria dentro del rango
-            $daysDiff = (strtotime($hasta) - strtotime($desde)) / (60 * 60 * 24);
-            $randomDays = ($daysDiff > 0) ? mt_rand(0, intval($daysDiff)) : 0;
-            $txDate = date('Y-m-d H:i:s', strtotime($desde . " +$randomDays days") + mt_rand(0, 86400));
+            $retained = floatval(($settlement['payment_expense_retained_amount_in_cents'] ?? 0) / 100);
+            $net = floatval(($settlement['payment_expense_amount_in_cents'] ?? 0) / 100);
+            $gross = $net + $retained;
 
-            $txId = 'GC-' . (270600000 + mt_rand(1000, 9999));
-            $cliente = $clientes[$i % count($clientes)];
-            $concepto = $conceptos[$i % count($conceptos)];
+            $method = $settlement['payment_expense_method'] ?? 'liquidacion';
+            $methodClean = ucwords(str_replace('_', ' ', $method));
 
-            $sucursales = ['Local 1 - Abasto', 'Local 2 - Palermo', 'Local 3 - Belgrano', 'Local 4 - Centro'];
-            $payment = [
-                'id' => $txId,
-                'date' => $txDate,
+            $payments[] = [
+                'id' => 'GC-SET-' . ($settlement['id'] ?? mt_rand(100000, 999999)),
+                'date' => ($settlement['payment_expense_at'] ?? $desde) . ' 12:00:00',
                 'provider' => 'gocuotas',
-                'client_name' => $cliente,
-                'description' => $concepto,
-                'installments' => $installments,
-                'gross_amount' => floatval($amount),
-                'status' => $txStatus,
-                'sucursal' => $sucursales[$i % count($sucursales)],
-                'reference' => 'REF-' . mt_rand(100000, 999999)
+                'client_name' => 'Liquidación GoCuotas',
+                'description' => 'Pago recibido via ' . $methodClean,
+                'installments' => 1,
+                'gross_amount' => $gross,
+                'fee_amount' => $retained,
+                'net_amount' => $net,
+                'status' => 'approved',
+                'sucursal' => 'Venta Online',
+                'reference' => 'SET-' . ($settlement['id'] ?? ''),
+                'acreditation_date' => $settlement['due_expense_at'] ?? ($settlement['payment_expense_at'] ?? $desde),
+                'acreditation_type' => 'Liquidación Programada (Expensas)',
+                'installments_detail' => [
+                    [
+                        'installment_number' => 1,
+                        'gross' => $gross,
+                        'fee' => $retained,
+                        'net' => $net,
+                        'acreditation_date' => $settlement['due_expense_at'] ?? ($settlement['payment_expense_at'] ?? $desde),
+                        'status' => 'acreditado'
+                    ]
+                ]
             ];
-
-            // Calcular comisiones y fechas de acreditación
-            $settlement = $this->calculateSettlement($payment);
-            $payment['fee_amount'] = $settlement['fee_amount'];
-            $payment['net_amount'] = $settlement['net_amount'];
-            $payment['acreditation_date'] = $settlement['acreditation_date'];
-            $payment['acreditation_type'] = $settlement['acreditation_type'];
-            $payment['installments_detail'] = $settlement['installments_detail'];
-
-            $payments[] = $payment;
         }
 
         return $payments;

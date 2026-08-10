@@ -609,6 +609,251 @@ $(document).ready(function () {
         filterAndRender();
     });
 
-    // Carga inicial
-    fetchPayments();
+    // Carga inicial (legacy - consola de transacciones vacía)
+    // fetchPayments(); // desactivado hasta tener fuente de datos de transacciones
 });
+
+// =============================================
+// MÓDULO: LIQUIDACIONES GOCUOTAS
+// =============================================
+$(document).ready(function () {
+
+    const $liqTbody   = $('#liq-tbody');
+    const $liqGross   = $('#liq-metric-gross');
+    const $liqRetained = $('#liq-metric-retained');
+    const $liqNet     = $('#liq-metric-net');
+    const $liqCount   = $('#liq-metric-count');
+    const $liqNextDate = $('#liq-metric-next-date');
+    const $liqNextAmt  = $('#liq-metric-next-amount');
+
+    let currentLiquidaciones = [];
+
+    function formatMoney(amount) {
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount);
+    }
+
+    function fetchLiquidaciones() {
+        $liqTbody.html(`
+            <tr>
+                <td colspan="9" class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
+                    Consultando liquidaciones en GoCuotas...
+                </td>
+            </tr>
+        `);
+
+        const desde = $('#desde').val();
+        const hasta = $('#hasta').val();
+
+        $.ajax({
+            url: 'Controller/PaymentController.php',
+            type: 'GET',
+            dataType: 'json',
+            data: {
+                action: 'get_payments',
+                desde: desde,
+                hasta: hasta,
+                procesador: 'gocuotas',
+                estado: 'todos'
+            },
+            success: function (res) {
+                if (res.success) {
+                    currentLiquidaciones = res.data.payments;
+                    renderLiquidaciones(currentLiquidaciones);
+                    updateLiquidacionesMetrics(currentLiquidaciones);
+                } else {
+                    $liqTbody.html(`
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-danger">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> ${res.message}
+                            </td>
+                        </tr>
+                    `);
+                }
+            },
+            error: function () {
+                $liqTbody.html(`
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-danger">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Error al conectar con el servidor.
+                        </td>
+                    </tr>
+                `);
+            }
+        });
+    }
+
+    function renderLiquidaciones(items) {
+        if (!items || items.length === 0) {
+            $liqTbody.html(`
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-inbox fa-2x mb-2 d-block opacity-50"></i>
+                        No se encontraron liquidaciones de GoCuotas para el período seleccionado.
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        let html = '';
+        items.forEach(p => {
+            const methodLabel = (p.description || '').replace('Pago recibido via ', '');
+
+            const payDate = p.date ? new Date(p.date.replace(' ', 'T')).toLocaleDateString('es-AR', {
+                day: '2-digit', month: '2-digit', year: 'numeric'
+            }) : '—';
+
+            const acredDate = p.acreditation_date ? new Date(p.acreditation_date + 'T00:00:00').toLocaleDateString('es-AR', {
+                day: '2-digit', month: '2-digit', year: 'numeric'
+            }) : '—';
+
+            const statusBadge = p.status === 'approved'
+                ? '<span class="badge bg-success-subtle text-success"><i class="fa-solid fa-check-circle me-1"></i>Acreditado</span>'
+                : '<span class="badge bg-warning-subtle text-warning"><i class="fa-solid fa-clock me-1"></i>Pendiente</span>';
+
+            html += `
+                <tr data-id="${p.id}">
+                    <td class="fw-semibold text-secondary small">${p.id}</td>
+                    <td>${payDate}</td>
+                    <td><span class="badge bg-warning text-dark"><i class="fa-solid fa-university me-1"></i>${methodLabel}</span></td>
+                    <td class="text-end fw-bold">${formatMoney(p.gross_amount)}</td>
+                    <td class="text-end text-danger">${formatMoney(p.fee_amount)}</td>
+                    <td class="text-end text-success fw-bold">${formatMoney(p.net_amount)}</td>
+                    <td>
+                        <span class="d-block fw-semibold text-secondary small">${acredDate}</span>
+                        <span class="d-block text-muted" style="font-size:0.75rem;">${p.acreditation_type || ''}</span>
+                    </td>
+                    <td class="text-center">${statusBadge}</td>
+                    <td class="text-center">
+                        <button class="btn btn-outline-warning btn-sm liq-detail-btn" data-id="${p.id}" style="padding:2px 8px;font-size:0.75rem;">
+                            <i class="fa-solid fa-eye"></i> Detalle
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        $liqTbody.html(html);
+    }
+
+    function updateLiquidacionesMetrics(items) {
+        let gross = 0, retained = 0, net = 0;
+        let nextDue = null;
+
+        items.forEach(p => {
+            gross    += p.gross_amount || 0;
+            retained += p.fee_amount   || 0;
+            net      += p.net_amount   || 0;
+
+            if (p.acreditation_date) {
+                const d = new Date(p.acreditation_date + 'T00:00:00');
+                if (!nextDue || d < nextDue) nextDue = d;
+            }
+        });
+
+        $liqGross.text(formatMoney(gross));
+        $liqRetained.text(formatMoney(retained));
+        $liqNet.text(formatMoney(net));
+        $liqCount.text(items.length);
+
+        if (nextDue) {
+            $liqNextDate.text(nextDue.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }));
+            $liqNextAmt.text('Vencimiento de expensa más próxima');
+        } else {
+            $liqNextDate.text('—');
+            $liqNextAmt.text('Sin vencimientos en el período');
+        }
+    }
+
+    // Búsqueda rápida dentro de la tabla de liquidaciones
+    $('#liq-quick-search').on('keyup', function () {
+        const val = $(this).val().toLowerCase();
+        $liqTbody.find('tr').filter(function () {
+            $(this).toggle($(this).text().toLowerCase().indexOf(val) > -1);
+        });
+    });
+
+    // Modal de detalle de liquidación
+    $liqTbody.on('click', '.liq-detail-btn', function () {
+        const id = $(this).data('id');
+        const p = currentLiquidaciones.find(x => x.id === id);
+        if (!p) return;
+
+        const payDate = p.date ? new Date(p.date.replace(' ', 'T')).toLocaleDateString('es-AR', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        }) : '—';
+        const acredDate = p.acreditation_date ? new Date(p.acreditation_date + 'T00:00:00').toLocaleDateString('es-AR', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        }) : '—';
+
+        const modalHtml = `
+            <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706); color:white;">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Detalle de Liquidación GoCuotas</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-secondary small fw-semibold">ID: <strong>${p.id}</strong></span>
+                    <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-check-circle me-1"></i>Acreditado</span>
+                </div>
+
+                <div class="row g-2 mb-3 bg-light p-3 rounded-3 border">
+                    <div class="col-6">
+                        <span class="text-muted d-block" style="font-size:0.72rem;text-transform:uppercase;">Fecha de Pago</span>
+                        <strong class="text-dark small">${payDate}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block" style="font-size:0.72rem;text-transform:uppercase;">Vencimiento / Acreditación</span>
+                        <strong class="text-dark small">${acredDate}</strong>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="text-muted d-block" style="font-size:0.72rem;text-transform:uppercase;">Método de Liquidación</span>
+                        <strong class="text-dark small">${(p.description || '').replace('Pago recibido via ', '')}</strong>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-4 border-end">
+                        <span class="text-muted d-block" style="font-size:0.72rem;text-transform:uppercase;">Bruto</span>
+                        <strong class="text-dark">${formatMoney(p.gross_amount)}</strong>
+                    </div>
+                    <div class="col-4 border-end">
+                        <span class="text-muted d-block" style="font-size:0.72rem;text-transform:uppercase;">Retención GoCuotas</span>
+                        <strong class="text-danger">${formatMoney(p.fee_amount)}</strong>
+                    </div>
+                    <div class="col-4">
+                        <span class="text-muted d-block" style="font-size:0.72rem;text-transform:uppercase;">Neto Acreditado</span>
+                        <strong class="text-success fs-5">${formatMoney(p.net_amount)}</strong>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-0 py-2 px-3 small mb-0">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    El importe neto es el dinero efectivamente depositado por GoCuotas en la cuenta bancaria del comercio.
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        `;
+
+        $('#details-modal-content').html(modalHtml);
+        $('#paymentDetailsModal').modal('show');
+    });
+
+    // Exportar liquidaciones
+    $('#liq-export-btn').on('click', function () {
+        alert('Exportando planilla de Liquidaciones GoCuotas...\n\nSe incluirán: ID, Fecha de Pago, Método, Bruto, Retención, Neto y Fecha de Vencimiento.');
+    });
+
+    // Disparar fetch al filtrar
+    $('#filter-form').on('submit', function (e) {
+        e.preventDefault();
+        fetchLiquidaciones();
+    });
+
+    // Carga inicial de liquidaciones
+    fetchLiquidaciones();
+});
+

@@ -23,57 +23,8 @@ class MercadoPagoAdapter implements PaymentProvider
 
     public function getPayments(string $desde, string $hasta, string $status = 'todos'): array
     {
-        $payments = [];
-
-        $clientes = ['Mariano Gomez', 'Laura Gimenez', 'Andres Perez', 'Facundo Castro', 'Estefania Ortiz'];
-        $conceptos = ['Gift Card $10000', 'Bota de Cuero Especial', 'Cinturon Clasico', 'Camisa Lino Blanca', 'Sweater de Lana'];
-        
-        $seed = strtotime($desde) + 12345;
-        mt_srand($seed);
-
-        $numTx = mt_rand(6, 12);
-        for ($i = 0; $i < $numTx; $i++) {
-            $amount = mt_rand(50, 400) * 100; // montos entre 5.000 y 40.000
-            $installments = [1, 1, 1, 3, 6][mt_rand(0, 4)];
-            $txStatus = ['approved', 'approved', 'approved', 'approved', 'pending', 'rejected'][mt_rand(0, 5)];
-            
-            if ($status !== 'todos' && $txStatus !== $status) {
-                continue;
-            }
-
-            $daysDiff = (strtotime($hasta) - strtotime($desde)) / (60 * 60 * 24);
-            $randomDays = ($daysDiff > 0) ? mt_rand(0, intval($daysDiff)) : 0;
-            $txDate = date('Y-m-d H:i:s', strtotime($desde . " +$randomDays days") + mt_rand(0, 86400));
-
-            $txId = 'MP-' . mt_rand(1000000000, 9999999999);
-            $cliente = $clientes[$i % count($clientes)];
-            $concepto = $conceptos[$i % count($conceptos)];
-
-            $sucursales = ['Local 1 - Abasto', 'Local 2 - Palermo', 'Local 3 - Belgrano', 'Local 4 - Centro'];
-            $payment = [
-                'id' => $txId,
-                'date' => $txDate,
-                'provider' => 'mercadopago',
-                'client_name' => $cliente,
-                'description' => $concepto,
-                'installments' => $installments,
-                'gross_amount' => floatval($amount),
-                'status' => $txStatus,
-                'sucursal' => $sucursales[$i % count($sucursales)],
-                'reference' => 'MP-REF-' . mt_rand(100000, 999999)
-            ];
-
-            $settlement = $this->calculateSettlement($payment);
-            $payment['fee_amount'] = $settlement['fee_amount'];
-            $payment['net_amount'] = $settlement['net_amount'];
-            $payment['acreditation_date'] = $settlement['acreditation_date'];
-            $payment['acreditation_type'] = $settlement['acreditation_type'];
-            $payment['installments_detail'] = $settlement['installments_detail'];
-
-            $payments[] = $payment;
-        }
-
-        return $payments;
+        // Al no tener credenciales de MercadoPago configuradas, retornamos vacío para que solo se muestren datos reales de las pasarelas activas
+        return [];
     }
 
     public function createPaymentLink(float $amount, string $description, int $installments = 1, array $extraDatos = []): array

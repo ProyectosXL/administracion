@@ -102,7 +102,7 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                 </div>
                                 <div class="col-md-4">
                                     <div class="card text-white bg-primary mb-3">
-                                        <div class="card-header"><i class="bi bi-cash-stack"></i> Saldo (Egresos - Gastos)</div>
+                                        <div class="card-header"><i class="bi bi-cash-stack"></i> Saldo</div>
                                         <div class="card-body">
                                             <h3 class="card-title" id="saldoAlberto">$0</h3>
                                             <p class="card-text">Disponible</p>
@@ -665,7 +665,7 @@ $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLoc
                                 <div class="col-md-4">
                                     <div class="card text-white bg-primary mb-3">
                                         <div class="card-header">
-                                            <i class="bi bi-cash-stack"></i> Saldo (Egresos - Gastos)
+                                            <i class="bi bi-cash-stack"></i> Saldo
                                         </div>
                                         <div class="card-body">
                                             <h3 class="card-title" id="saldoAlberto">$0</h3>
