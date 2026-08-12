@@ -759,11 +759,13 @@ $(document).ready(function () {
                         return 0;
                     }
 
-                    const diffDays = fecha.getDate() - 1;
+                    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                    const diffTime = fecha.getTime() - inicioMes.getTime();
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
                     if (diffDays <= 15) return reglasDescuentoManual[medio][15];
                     if (diffDays <= 22) return reglasDescuentoManual[medio][22];
-                    if (diffDays <= 29) return reglasDescuentoManual[medio][29];
-                    return 0;
+                    return reglasDescuentoManual[medio][29]; // Mantiene el descuento mínimo (4% / 2%) en lugar de bajar a 0%
                 }
 
                 $datepicker.datepicker({

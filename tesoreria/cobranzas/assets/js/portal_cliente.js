@@ -21,14 +21,13 @@ $(document).ready(function () {
             return 0;
         }
 
-        const diaMes = fecha.getDate();
-        const diffDays = diaMes - 1; 
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const diffTime = fecha.getTime() - inicioMes.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays <= 15) return reglasDescuento[medioPago][15];
         if (diffDays <= 22) return reglasDescuento[medioPago][22];
-        if (diffDays <= 29) return reglasDescuento[medioPago][29];
-
-        return 0; // Más de 29 días, 0% de descuento
+        return reglasDescuento[medioPago][29]; // Mantiene el descuento mínimo (4% / 2%) en lugar de bajar a 0%
     }
 
     // --- FUNCIONES PARA MANEJO DE CUOTAS EN CONTRAPROPUESTA (MOVIDAS A ÁMBITO GLOBAL) ---
