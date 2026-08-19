@@ -1458,7 +1458,10 @@ $(document).ready(function () {
         }
 
         let esEditable = propuesta.estado === 'CONTRAPROPUESTA_CLIENTE';
-        let puedeEditarDescuento = esEditable && (typeof globalUsuarioNombre !== 'undefined' && globalUsuarioNombre === 'SilviaF');
+        let puedeEditarDescuento = esEditable && (
+            typeof globalUsuarioNombre !== 'undefined' && 
+            ['silviaf', 'tesoreria'].includes(globalUsuarioNombre.trim().toLowerCase())
+        );
         
         let descuentoMasivoHtml = '';
         if (puedeEditarDescuento) {

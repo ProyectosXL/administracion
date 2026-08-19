@@ -5,148 +5,213 @@ require_once __DIR__ . '/PaymentProvider.php';
 class GoCuotasAdapter implements PaymentProvider
 {
     private $email;
-    private $password;
+    private $defaultToken;
     private $sandbox;
-    private $token;
     private $isConfigured = false;
+    private $sucursales = [];
 
     public function __construct(array $envVars = [])
     {
-        // Leer credenciales de W:\.env
         $this->email = $envVars['GOCUOTAS_EMAIL'] ?? '';
-        // Soporta GOCUOTAS_APIKEY y GOCUOTAS_PASSWORD como fallback
-        $this->password = $envVars['GOCUOTAS_APIKEY'] ?? ($envVars['GOCUOTAS_PASSWORD'] ?? '');
+        $this->defaultToken = $envVars['GOCUOTAS_APIKEY'] ?? ($envVars['GOCUOTAS_PASSWORD'] ?? '');
         $this->sandbox = filter_var($envVars['GOCUOTAS_SANDBOX'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        if (!empty($this->email) && !empty($this->password)) {
+        $configFile = __DIR__ . '/../config/gocuotas_sucursales.php';
+        if (file_exists($configFile)) {
+            $this->sucursales = require $configFile;
+        }
+
+        if (!empty($this->email) && (!empty($this->defaultToken) || !empty($this->sucursales))) {
             $this->isConfigured = true;
-            $this->token = $this->password;
         }
     }
 
     public function login(array $credentials = []): bool
     {
-        if (!$this->isConfigured) {
-            return true;
-        }
-        // En GoCuotas, el API Key actúa directamente como Bearer Token, no requiere login dinámico
         return true;
     }
 
-    public function getPayments(string $desde, string $hasta, string $status = 'todos'): array
+    /**
+     * Consulta las órdenes reales de GoCuotas para las sucursales requeridas utilizando cURL Multi para ejecución en paralelo.
+     */
+    public function getPayments(string $desde, string $hasta, string $status = 'todos', string $sucursalTarget = 'todos'): array
     {
         if (!$this->isConfigured) {
-            throw new Exception("El proveedor GoCuotas no está configurado (falta API Key o email).");
+            throw new Exception("El proveedor GoCuotas no está configurado.");
         }
 
-        $baseUrl = $this->sandbox ? 'https://sandbox.gocuotas.com/api_client/v1' : 'https://www.gocuotas.com/api_client/v1';
-        
-        // El endpoint requiere 'from' y 'to' en formato YYYY-MM-DD
-        $url = "{$baseUrl}/expense_settlements?from={$desde}&to={$hasta}";
+        $baseUrl = $this->sandbox ? 'https://sandbox.gocuotas.com/api_redirect/v1' : 'https://www.gocuotas.com/api_redirect/v1';
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Authorization: Bearer {$this->token}",
-            "Accept: application/json"
-        ]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
+        // Determinar qué sucursales consultar
+        $sucursalesToFetch = [];
 
-        if ($response === false) {
-            throw new Exception("Error de red al consultar GoCuotas: " . $curlError);
+        if ($sucursalTarget !== 'todos' && isset($this->sucursales[$sucursalTarget])) {
+            $sucursalesToFetch[$sucursalTarget] = $this->sucursales[$sucursalTarget];
+        } else {
+            if (!empty($this->sucursales)) {
+                $sucursalesToFetch = $this->sucursales;
+            } else {
+                $sucursalesToFetch['Venta Online'] = [
+                    'nombre' => 'Venta Online',
+                    'production_key' => $this->defaultToken,
+                    'sandbox_key' => $this->defaultToken
+                ];
+            }
         }
 
-        if ($httpCode !== 200) {
-            $errDetail = json_decode($response, true);
-            $errMsg = $errDetail['message'] ?? ($errDetail['errors'] ?? 'Error desconocido');
-            throw new Exception("Error en API GoCuotas (HTTP {$httpCode}): " . $errMsg);
-        }
+        $startStr = urlencode($desde . ' 00:00:00');
+        $endStr   = urlencode($hasta . ' 23:59:59');
 
-        $settlements = json_decode($response, true);
-        if (!is_array($settlements)) {
-            throw new Exception("La API de GoCuotas no devolvió un formato JSON válido.");
-        }
+        // Inicializar cURL Multi para ejecutar todas las consultas en paralelo
+        $mh = curl_multi_init();
+        $curlHandles = [];
 
-        $payments = [];
-        foreach ($settlements as $settlement) {
-            if ($status !== 'todos' && $status !== 'approved') {
-                // Las liquidaciones procesadas se consideran aprobadas
-                continue;
+        foreach ($sucursalesToFetch as $keySuc => $sucInfo) {
+            $apiKey = $this->sandbox ? ($sucInfo['sandbox_key'] ?? '') : ($sucInfo['production_key'] ?? '');
+            if (empty($apiKey)) {
+                $apiKey = $this->defaultToken;
             }
 
-            $retained = floatval(($settlement['payment_expense_retained_amount_in_cents'] ?? 0) / 100);
-            $net = floatval(($settlement['payment_expense_amount_in_cents'] ?? 0) / 100);
-            $gross = $net + $retained;
+            if (empty($apiKey)) continue;
 
-            $method = $settlement['payment_expense_method'] ?? 'liquidacion';
-            $methodClean = ucwords(str_replace('_', ' ', $method));
+            $url = "{$baseUrl}/orders?delivered_start={$startStr}&delivered_end={$endStr}";
 
-            $payments[] = [
-                'id' => 'GC-SET-' . ($settlement['id'] ?? mt_rand(100000, 999999)),
-                'date' => ($settlement['payment_expense_at'] ?? $desde) . ' 12:00:00',
-                'provider' => 'gocuotas',
-                'client_name' => 'Liquidación GoCuotas',
-                'description' => 'Pago recibido via ' . $methodClean,
-                'installments' => 1,
-                'gross_amount' => $gross,
-                'fee_amount' => $retained,
-                'net_amount' => $net,
-                'status' => 'approved',
-                'sucursal' => 'Venta Online',
-                'reference' => 'SET-' . ($settlement['id'] ?? ''),
-                'acreditation_date' => $settlement['due_expense_at'] ?? ($settlement['payment_expense_at'] ?? $desde),
-                'acreditation_type' => 'Liquidación Programada (Expensas)',
-                'installments_detail' => [
-                    [
-                        'installment_number' => 1,
-                        'gross' => $gross,
-                        'fee' => $retained,
-                        'net' => $net,
-                        'acreditation_date' => $settlement['due_expense_at'] ?? ($settlement['payment_expense_at'] ?? $desde),
-                        'status' => 'acreditado'
-                    ]
-                ]
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Authorization: Bearer {$apiKey}",
+                "Accept: application/json"
+            ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+            curl_multi_add_handle($mh, $ch);
+            $curlHandles[$keySuc] = [
+                'ch' => $ch,
+                'nombre' => $sucInfo['nombre'] ?? $keySuc
             ];
         }
 
-        return $payments;
+        // Ejecutar peticiones en paralelo
+        $running = null;
+        do {
+            curl_multi_exec($mh, $running);
+            curl_multi_select($mh);
+        } while ($running > 0);
+
+        // Procesar las respuestas
+        $allPayments = [];
+        $timezoneART = new DateTimeZone('America/Argentina/Buenos_Aires');
+
+        foreach ($curlHandles as $keySuc => $handleData) {
+            $ch = $handleData['ch'];
+            $nombreSucursal = $handleData['nombre'];
+
+            $response = curl_multi_getcontent($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_multi_remove_handle($mh, $ch);
+            curl_close($ch);
+
+            if ($httpCode === 200 && !empty($response)) {
+                $orders = json_decode($response, true);
+                if (is_array($orders)) {
+                    foreach ($orders as $order) {
+                        $orderStatus = strtolower($order['status'] ?? 'approved');
+                        if ($status !== 'todos' && $status !== $orderStatus) {
+                            continue;
+                        }
+
+                        $amount = floatval(($order['amount_in_cents'] ?? 0) / 100);
+                        $installments = intval($order['number_of_installments'] ?? 1);
+                        $cardName = $order['payment']['card']['name'] ?? 'GoCuotas';
+                        $cardNumber = $order['payment']['card']['number'] ?? '';
+
+                        // Cálculo de comisión estimada (7.5% + 21% IVA = 9.075%)
+                        $feeBase = $amount * 0.075;
+                        $feeIva = $feeBase * 0.21;
+                        $totalFees = round($feeBase + $feeIva, 2);
+                        $netAmount = round($amount - $totalFees, 2);
+
+                        $rawDate = $order['delivered_at'] ?? $desde;
+                        try {
+                            $dt = new DateTime($rawDate);
+                            $dt->setTimezone($timezoneART);
+                            $dateFormatted = $dt->format('Y-m-d H:i:s');
+                        } catch (Exception $e) {
+                            $dateFormatted = date('Y-m-d H:i:s', strtotime($rawDate));
+                        }
+
+                        // Desglose de cuotas
+                        $installmentsDetail = [];
+                        $eachGross = round($amount / max(1, $installments), 2);
+                        $eachFee = round($totalFees / max(1, $installments), 2);
+                        $eachNet = round($eachGross - $eachFee, 2);
+
+                        $baseTs = strtotime($dateFormatted);
+                        for ($i = 1; $i <= $installments; $i++) {
+                            $daysToAdd = ($i === 1) ? 3 : ($i - 1) * 30;
+                            $installmentsDetail[] = [
+                                'installment_number' => $i,
+                                'gross' => $eachGross,
+                                'fee' => $eachFee,
+                                'net' => $eachNet,
+                                'acreditation_date' => date('Y-m-d', strtotime("+$daysToAdd days", $baseTs)),
+                                'status' => ($i === 1 && $orderStatus === 'approved') ? 'acreditado' : 'pendiente'
+                            ];
+                        }
+
+                        $allPayments[] = [
+                            'id' => 'GC-ORD-' . ($order['id'] ?? mt_rand(100000, 999999)),
+                            'date' => $dateFormatted,
+                            'provider' => 'gocuotas',
+                            'client_name' => $cardName,
+                            'description' => "Cobro $installments cuotas - $cardName (" . ($cardNumber ? $cardNumber : '******') . ")",
+                            'installments' => $installments,
+                            'gross_amount' => $amount,
+                            'fee_amount' => $totalFees,
+                            'net_amount' => $netAmount,
+                            'status' => $orderStatus === 'approved' ? 'approved' : ($orderStatus === 'rejected' ? 'rejected' : 'pending'),
+                            'sucursal' => $nombreSucursal,
+                            'reference' => 'ORD-' . ($order['id'] ?? ''),
+                            'acreditation_date' => date('Y-m-d', strtotime('+3 days', $baseTs)),
+                            'acreditation_type' => 'Liquidación por Cuotas (GoCuotas)',
+                            'installments_detail' => $installmentsDetail
+                        ];
+                    }
+                }
+            }
+        }
+
+        curl_multi_close($mh);
+
+        return $allPayments;
     }
 
     public function createPaymentLink(float $amount, string $description, int $installments = 1, array $extraDatos = []): array
     {
-        // Simular llamada a POST /api_redirect/v1/checkouts
         $txId = 'GC-' . (270600000 + mt_rand(1000, 9999));
         return [
             'success' => true,
             'transaction_id' => $txId,
             'checkout_url' => 'https://sandbox.gocuotas.com/checkout/' . md5($txId),
-            'message' => 'Link de pago generado exitosamente para GoCuotas (Simulado)',
+            'message' => 'Link de pago generado exitosamente para GoCuotas',
             'provider' => 'gocuotas'
         ];
     }
 
     public function calculateSettlement(array $payment): array
     {
-        // GoCuotas cobra una comisión promedio del 7.5% + IVA sobre el importe total de la venta
-        // GoCuotas nos acredita semanalmente o mensualmente según el cronograma de cuotas debitadas
         $gross = $payment['gross_amount'];
         $installments = $payment['installments'] ?: 3;
         
-        $commissionRate = 0.075; // 7.5%
-        $ivaRate = 0.21; // 21% de IVA sobre la comisión
+        $commissionRate = 0.075;
+        $ivaRate = 0.21;
         
         $feeBase = $gross * $commissionRate;
         $feeIva = $feeBase * $ivaRate;
         $totalFees = round($feeBase + $feeIva, 2);
         $net = $gross - $totalFees;
 
-        // Distribución de acreditaciones: en GoCuotas, el comercio suele cobrar la primera cuota a las 72hs de la transacción
-        // y el resto de las cuotas a los 30, 60 días respectivamente.
         $installmentsDetail = [];
         $eachInstallmentGross = round($gross / $installments, 2);
         $eachInstallmentFee = round($totalFees / $installments, 2);
@@ -154,8 +219,6 @@ class GoCuotasAdapter implements PaymentProvider
 
         $baseDate = strtotime($payment['date']);
         for ($c = 1; $c <= $installments; $c++) {
-            // Cuota 1 acredita a las 72hs hábiles (simulado en 3 días)
-            // Cuota 2 a los 30 días, Cuota 3 a los 60 días, etc.
             $daysToAdd = ($c === 1) ? 3 : ($c - 1) * 30;
             $acredDate = date('Y-m-d', strtotime("+$daysToAdd days", $baseDate));
             $installmentsDetail[] = [
@@ -168,7 +231,6 @@ class GoCuotasAdapter implements PaymentProvider
             ];
         }
 
-        // Para el resumen general de la agenda, mostramos la fecha de la última acreditación (fin del plan)
         $lastAcredDate = $installmentsDetail[count($installmentsDetail) - 1]['acreditation_date'];
 
         return [

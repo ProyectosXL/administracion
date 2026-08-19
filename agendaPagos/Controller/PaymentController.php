@@ -14,16 +14,19 @@ switch ($action) {
         $hasta = $_GET['hasta'] ?? date('Y-m-d');
         $procesador = $_GET['procesador'] ?? 'todos';
         $estado = $_GET['estado'] ?? 'todos';
+        $sucursal = $_GET['sucursal'] ?? 'todos';
 
         try {
-            $payments = $service->getConsolidatedPayments($desde, $hasta, $procesador, $estado);
+            $payments = $service->getConsolidatedPayments($desde, $hasta, $procesador, $estado, $sucursal);
             $metrics = $service->calculateMetrics($payments);
+            $posSales = $service->getPosSales($desde, $hasta, $sucursal, $procesador);
             
             echo json_encode([
                 'success' => true,
                 'data' => [
                     'payments' => $payments,
-                    'metrics' => $metrics
+                    'metrics' => $metrics,
+                    'pos_sales' => $posSales
                 ]
             ]);
         } catch (Exception $e) {
@@ -56,6 +59,29 @@ switch ($action) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Error al generar link: ' . $e->getMessage()
+            ]);
+        }
+        break;
+
+    case 'get_bank_promos':
+        $desde = $_GET['desde'] ?? date('Y-m-01');
+        $hasta = $_GET['hasta'] ?? date('Y-m-d');
+        $sucursal = $_GET['sucursal'] ?? 'todos';
+        $banco = $_GET['banco'] ?? 'todos';
+
+        require_once __DIR__ . '/../Class/BankPromoService.php';
+        $promoService = new BankPromoService();
+
+        try {
+            $res = $promoService->getBankPromos($desde, $hasta, $sucursal, $banco);
+            echo json_encode([
+                'success' => true,
+                'data' => $res
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error al consultar promociones bancarias: ' . $e->getMessage()
             ]);
         }
         break;
