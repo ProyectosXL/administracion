@@ -20,20 +20,8 @@
         session_start();
     }
     
-    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
-        $checked = 'checked';
-    }else{
-        $checked = '';
-    }
-        
+    // Entornos de este módulo: 'central' (Argentina) y 'uy' (Uruguay).
     $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $dataOnValue = 'ARG';
-    $dataOffValue = 'UY';
-    
-    // Imagen de la bandera que se mostrará al lado del toggle
-    $imagenBandera = ($checkedValue === 'central') ? '../../../assets/images/bandera_con_sol__55757_std.jpg' : '../../../assets/images/UY.png';
-
-    $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
 ?>
 
 <!DOCTYPE html>
@@ -51,7 +39,6 @@
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/cargaContratoAlquileres.css">
 </head>
 
@@ -67,14 +54,17 @@
                 <h1>Carga Contratos Alquiler</h1>
             </div>
             
-            <div class="environment-toggle">
-                <div class="environment-controls">
-                    <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
-                           data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
-                           class="custom-toggle" onchange="cambiarEntorno(this)" 
-                           id="checkEntorno">
-                    <div class="flag-indicator" style="background-image: url('<?= $imagenBandera ?>');" title="<?= $nombrePais ?>"></div>
-                    <span class="country-label"><?= $nombrePais ?></span>
+            <div class="toggle-wrapper">
+                <label>Cambiar entorno:</label>
+                <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)" title="Cambiar entorno">
+                    <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
+                        <img src="../../../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
+                        <span>ARG</span>
+                    </div>
+                    <div class="toggle-flag <?= ($checkedValue === 'uy') ? 'active' : '' ?>" data-entorno="uy">
+                        <img src="../../../assets/images/UY.png" alt="Uruguay">
+                        <span>UY</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -95,11 +85,20 @@
                         <label for="selectSucursal" class="form-label">Sucursal</label>
                         <select name="selectSucursal" id="selectSucursal" class="form-control">
                             <option value="">Seleccione una sucursal...</option>
-                            <?php foreach ($locales as $value): ?>
+                            <optgroup label="Activas">
+                            <?php foreach ($locales as $value): if (!empty($value['HABILITADO'])): ?>
                                 <option value="<?= $value['NRO_SUCURSAL'] ?>-<?= $value['DESC_SUCURSAL'] ?>">
                                     <?= $value['DESC_SUCURSAL'] ?>
                                 </option>
-                            <?php endforeach; ?>
+                            <?php endif; endforeach; ?>
+                            </optgroup>
+                            <optgroup label="Cerradas con historial">
+                            <?php foreach ($locales as $value): if (empty($value['HABILITADO'])): ?>
+                                <option value="<?= $value['NRO_SUCURSAL'] ?>-<?= $value['DESC_SUCURSAL'] ?>">
+                                    <?= $value['DESC_SUCURSAL'] ?> (Cerrada)
+                                </option>
+                            <?php endif; endforeach; ?>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
@@ -165,7 +164,6 @@
     <!-- Scripts -->
     <?php require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <script src="js/cargaContratoAlquileres.js"></script>
 
     <script>
@@ -176,30 +174,31 @@
                 allowClear: true,
                 width: '100%'
             });
-
-            // Ajustes del toggle después de la inicialización
-            setTimeout(() => {
-                const toggle = document.querySelector(".toggle");
-                if (toggle) {
-                    toggle.style.width = "90px";
-                    toggle.style.height = "38px";
-                }
-            }, 100);
         });
 
-        function cambiarEntorno(elemento) {
-            const toggle = document.getElementById('checkEntorno');
-            const entorno = toggle.checked ? 0 : 1;
-            
+        /**
+         * Selector de entorno con banderas. Un clic cambia al entorno opuesto.
+         * En Alquileres los entornos son 'central' y 'uy'; el controller espera 0 / 1.
+         */
+        function cambiarEntornoCustom(container) {
+            const activa = container.querySelector('.toggle-flag.active');
+            const entorno = (activa && activa.dataset.entorno === 'central') ? 1 : 0;
+
+            // Sin esto el clic parece no hacer nada mientras se procesa el request.
+            container.style.pointerEvents = 'none';
+            container.style.opacity = '0.6';
+
             $.ajax({
                 url: '../Controller/cambiarEntorno.php',
                 method: 'POST',
                 data: { entorno: entorno },
-                success: function(response) {
+                success: function() {
                     location.reload();
                 },
                 error: function(xhr, status, error) {
                     console.error('Error al cambiar entorno:', error);
+                    container.style.pointerEvents = '';
+                    container.style.opacity = '';
                 }
             });
         }

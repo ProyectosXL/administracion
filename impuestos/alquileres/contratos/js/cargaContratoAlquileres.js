@@ -11,31 +11,7 @@ $(document).ready(function() {
         allowClear: true,
         width: '100%'
     });
-    
-    // Ajustes de estilo después de la inicialización
-    setTimeout(adjustToggleStyles, 100);
 });
-
-/**
- * Ajusta los estilos del toggle después de la inicialización
- */
-function adjustToggleStyles() {
-    const toggle = document.querySelector(".toggle");
-    const toggleOn = document.querySelector(".toggle-on");
-    const toggleOff = document.querySelector(".toggle-off");
-    
-    if (toggle) toggle.style.width = "80px";
-    
-    // Asegurar que el texto sea visible en el toggle
-    if (toggleOn) {
-        toggleOn.style.fontSize = "12px";
-        toggleOn.style.fontWeight = "bold";
-    }
-    if (toggleOff) {
-        toggleOff.style.fontSize = "12px"; 
-        toggleOff.style.fontWeight = "bold";
-    }
-}
 
 /**
  * Función principal para guardar el contrato

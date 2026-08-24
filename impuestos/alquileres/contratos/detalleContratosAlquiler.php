@@ -16,20 +16,8 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
-    $checked = 'checked';
-}else{
-    $checked = '';
-}
-    
+// Entornos de este módulo: 'central' (Argentina) y 'uy' (Uruguay).
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-$dataOnValue = 'ARG';
-$dataOffValue = 'UY';
-
-// Imagen de la bandera que se mostrará al lado del toggle
-$imagenBandera = ($checkedValue === 'central') ? '../../../assets/images/bandera_con_sol__55757_std.jpg' : '../../../assets/images/UY.png';
-
-$nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
 ?>
 
 <!DOCTYPE html>
@@ -47,99 +35,78 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/detalleContratosAlquiler.css">
 
     <style>
 
-        /* Toggle simple sin banderas - Sobreescribir estilos del CSS externo */
-        .toggle-on, .toggle-off {
-            font-size: 12px !important;
-            font-weight: bold !important;
-            color: white !important;
-            text-shadow: none !important;
-            line-height: 30px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            /* Sobreescribir estilos conflictivos del CSS externo */
-            background-size: auto !important;
-            background-image: none !important;
-            background-repeat: no-repeat !important;
-            background-position: center !important;
-            height: auto !important;
-            width: auto !important;
-            min-height: 34px !important;
-            min-width: 45px !important;
-        }
-
-        /* Custom toggle styles */
-        .toggle.btn {
-            height: 38px !important;
-            min-width: 90px !important;
-            border-radius: 6px !important;
-            padding: 0 !important;
-        }
-
-        /* Colores específicos para cada estado */
-        .toggle-on {
-            background-color: #007bff !important;
-            border-color: #007bff !important;
-            color: white !important;
-        }
-        
-        .toggle-off {
-            background-color: #6c757d !important;
-            border-color: #6c757d !important;
-            color: white !important;
-        }
-
-        /* Bandera al lado del toggle */
-        .flag-indicator {
-            width: 40px;
-            height: 30px;
-            margin-left: 10px;
-            border-radius: 4px;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            border: 2px solid #ddd;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .environment-controls {
+        /* ===================================
+           Selector de entorno / país
+           Mismo estilo que controlSucursales/resumenVentas.php
+           =================================== */
+        .toggle-wrapper {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.5rem;
         }
 
-        .country-label {
+        .toggle-wrapper > label {
+            margin: 0;
+            margin-right: 10px;
+            align-self: center;
+            font-weight: 500;
             color: white;
-            font-size: 14px;
-            font-weight: bold;
-            margin-left: 5px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
-        /* Asegurar que el toggle tenga colores correctos y no sean sobreescritos */
-        .toggle.off .toggle-off {
-            background-color: #6c757d !important;
-            border-color: #6c757d !important;
-            color: white !important;
-        }
-        
-        .toggle:not(.off) .toggle-on {
-            background-color: #007bff !important;
-            border-color: #007bff !important;
-            color: white !important;
+        .custom-toggle-container {
+            display: flex;
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 50px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
 
-        /* Forzar estilos del texto del toggle */
-        .toggle .toggle-handle {
-            background-color: white !important;
-            border: 1px solid #ccc !important;
+        .custom-toggle-container:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            border-color: #6366f1;
+        }
+
+        .toggle-flag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+            background: transparent;
+        }
+
+        .toggle-flag img {
+            width: 30px;
+            height: 20px;
+            object-fit: cover;
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .toggle-flag span {
+            font-weight: 600;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .toggle-flag.active {
+            opacity: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle-flag.active span {
+            color: white;
         }
 
         /* Estilos para botones de acción */
@@ -226,14 +193,17 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                     </div>
                 </div>
                 
-                <div class="environment-toggle">
-                    <div class="environment-controls">
-                        <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
-                               data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
-                               class="custom-toggle" onchange="cambiarEntorno(this)" 
-                               id="checkEntorno">
-                        <div class="flag-indicator" style="background-image: url('<?= $imagenBandera ?>');" title="<?= $nombrePais ?>"></div>
-                        <span class="country-label"><?= $nombrePais ?></span>
+                <div class="toggle-wrapper">
+                    <label>Cambiar entorno:</label>
+                    <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)" title="Cambiar entorno">
+                        <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
+                            <img src="../../../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
+                            <span>ARG</span>
+                        </div>
+                        <div class="toggle-flag <?= ($checkedValue === 'uy') ? 'active' : '' ?>" data-entorno="uy">
+                            <img src="../../../assets/images/UY.png" alt="Uruguay">
+                            <span>UY</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -555,7 +525,6 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
@@ -608,67 +577,20 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                 }
             });
 
-            // Configurar toggle
-            setTimeout(() => {
-                const toggle = document.querySelector(".toggle");
-                if (toggle) {
-                    toggle.style.width = "90px";
-                    toggle.style.height = "38px";
-                }
-                
-                // Asegurar que el toggle muestre texto blanco y centrado
-                const toggleOn = document.querySelector(".toggle-on");
-                const toggleOff = document.querySelector(".toggle-off");
-                
-                if (toggleOn) {
-                    // Limpiar estilos conflictivos del CSS externo
-                    toggleOn.style.backgroundImage = "none";
-                    toggleOn.style.backgroundSize = "auto";
-                    toggleOn.style.width = "auto";
-                    toggleOn.style.height = "auto";
-                    toggleOn.style.minWidth = "45px";
-                    toggleOn.style.minHeight = "34px";
-                    
-                    // Aplicar estilos correctos
-                    toggleOn.style.fontSize = "12px";
-                    toggleOn.style.fontWeight = "bold";
-                    toggleOn.style.color = "white";
-                    toggleOn.style.display = "flex";
-                    toggleOn.style.alignItems = "center";
-                    toggleOn.style.justifyContent = "center";
-                    toggleOn.style.textShadow = "none";
-                }
-                if (toggleOff) {
-                    // Limpiar estilos conflictivos del CSS externo
-                    toggleOff.style.backgroundImage = "none";
-                    toggleOff.style.backgroundSize = "auto";
-                    toggleOff.style.width = "auto";
-                    toggleOff.style.height = "auto";
-                    toggleOff.style.minWidth = "45px";
-                    toggleOff.style.minHeight = "34px";
-                    
-                    // Aplicar estilos correctos
-                    toggleOff.style.fontSize = "12px";
-                    toggleOff.style.fontWeight = "bold";
-                    toggleOff.style.color = "white";
-                    toggleOff.style.display = "flex";
-                    toggleOff.style.alignItems = "center";
-                    toggleOff.style.justifyContent = "center";
-                    toggleOff.style.textShadow = "none";
-                }
-            }, 100);
-
             // Inicializar tooltips
             $('[data-toggle="tooltip"]').tooltip();
         });
 
-        const cambiarEntorno = (toggle) => {
-            // Determinar el entorno basado en si el toggle está marcado
-            // checked = true significa Argentina (central), false significa Uruguay (uy)
-            const entorno = toggle.checked ? 0 : 1;
-            
-            console.log('Toggle checked:', toggle.checked, 'Entorno:', entorno);
-            
+        /**
+         * Selector de entorno con banderas. Un clic cambia al entorno opuesto.
+         * En Alquileres los entornos son 'central' y 'uy'; el controller espera 0 / 1.
+         */
+        const cambiarEntornoCustom = (container) => {
+            const activa = container.querySelector('.toggle-flag.active');
+            const entorno = (activa && activa.dataset.entorno === 'central') ? 1 : 0;
+
+            console.log('Entorno actual:', activa && activa.dataset.entorno, '-> nuevo:', entorno);
+
             Swal.fire({
                 title: 'Cambiando entorno',
                 text: 'Por favor espere...',

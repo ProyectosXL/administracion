@@ -174,7 +174,8 @@ function cargarAlquieres($fecha, $periodo)
 
     $contratoAlquiler = $contrato->traerContratoAlquiler($fecha);
 
-    $todosLosLocales = $sucursal->traerLocales();
+    // Modo carga: sólo las sucursales que corresponden a ESTE período.
+    $todosLosLocales = $sucursal->traerLocales(null, $periodo, $fecha);
 
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
 
@@ -387,7 +388,8 @@ function traerDetalleAlquiler($fecha, $periodo)
     $traerPorcentajes = $alquiler->traerTodosLosPorcentajes();
 
     $conceptos = $alquiler->traerConceptos();
-    $todosLosLocales = $sucursal->traerLocales();
+    // Modo carga: sólo las sucursales que corresponden a ESTE período.
+    $todosLosLocales = $sucursal->traerLocales(null, $periodo, $fecha);
 
     $rentabilidadNeta = $alquiler->traerRentabilidadNeta($fecha);
     $rentabilidadBruta = $alquiler->traerRentabilidadBruta($periodo);
@@ -605,13 +607,17 @@ function traerDetalleAlquiler($fecha, $periodo)
     return $newArray;
 }
 
-function traerLocales()
+/**
+ * Con $periodo/$fecha devuelve las sucursales de ESE período (modo carga);
+ * sin ellos, el catálogo histórico completo.
+ */
+function traerLocales(?string $periodo = null, ?string $fecha = null)
 {
 
     require_once __DIR__ . "/../Class/Sucursal.php";
 
     $sucursal = new Sucursal();
-    $todosLosLocales = $sucursal->traerLocales();
+    $todosLosLocales = $sucursal->traerLocales(null, $periodo, $fecha);
 
     return $todosLosLocales;
 }

@@ -26,7 +26,9 @@
  
     $result = $alquiler->conteoDetalle($periodo);
 
-    $todosLosLocales = traerLocales();
+    // Modo carga: activas + las que tienen datos o contrato vigente en ESTE período.
+    // Sin el período, un mes futuro generaría filas en cero para toda sucursal cerrada.
+    $todosLosLocales = traerLocales($periodo, $fecha);
     $conceptos = traerConceptos();
     $estado = $alquiler->traerEstado($periodo);
 
@@ -78,14 +80,8 @@
         $_SESSION['entorno'] = 'central';
     }
     
+    // Entornos de este módulo: 'central' (Argentina) y 'uy' (Uruguay).
     $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $checked = ($checkedValue === 'central') ? 'checked' : '';
-    $dataOnValue = 'ARG';
-    $dataOffValue = 'UY';
-    $imagenBandera = ($checkedValue === 'central') ? 
-        '../../assets/images/bandera_con_sol__55757_std.jpg' : 
-        '../../assets/images/UY.png';
-    $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
     
 
 ?>
@@ -206,67 +202,72 @@
 
         </head>
         <style>
-              /* Toggle styles */
-        .toggle-on, .toggle-off {
-            font-size: 12px !important;
-            font-weight: bold !important;
-            color: white !important;
-            text-shadow: none !important;
-            line-height: 30px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            background-size: auto !important;
-            background-image: none !important;
-            background-repeat: no-repeat !important;
-            background-position: center !important;
-            height: auto !important;
-            width: auto !important;
-            min-height: 34px !important;
-            min-width: 45px !important;
-        }
-
-        .toggle.btn {
-            height: 38px !important;
-            min-width: 90px !important;
-            border-radius: 6px !important;
-            padding: 0 !important;
-        }
-
-        .toggle-on {
-            background-color: #007bff !important;
-            border-color: #007bff !important;
-        }
-        
-        .toggle-off {
-            background-color: #6c757d !important;
-            border-color: #6c757d !important;
-        }
-
-        .flag-indicator {
-            width: 40px;
-            height: 30px;
-            margin-left: 10px;
-            border-radius: 4px;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            border: 2px solid #ddd;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .environment-controls {
+        /* ===================================
+           Selector de entorno / país
+           Mismo estilo que controlSucursales/resumenVentas.php
+           =================================== */
+        .toggle-wrapper {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.5rem;
         }
 
-        .country-label {
+        .toggle-wrapper > label {
+            margin: 0;
+            margin-right: 10px;
+            align-self: center;
+            font-weight: 500;
             color: white;
-            font-size: 14px;
-            font-weight: bold;
-            margin-left: 5px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .custom-toggle-container {
+            display: flex;
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 50px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .custom-toggle-container:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            border-color: #6366f1;
+        }
+
+        .toggle-flag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+            background: transparent;
+        }
+
+        .toggle-flag img {
+            width: 30px;
+            height: 20px;
+            object-fit: cover;
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .toggle-flag span {
+            font-weight: 600;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .toggle-flag.active {
+            opacity: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle-flag.active span {
+            color: white;
         }
 
         </style>
@@ -284,17 +285,21 @@
                                     <h3><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga de Gastos de Alquiler - <?= $fechaParaMostrar ?></strong></h3>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 15px; margin-right: 50px;">
-                                    <button type="button" class="btn btn-secondary" onclick="abrirModalPorcentajes()" data-toggle="tooltip" data-placement="top" title="Gestionar porcentajes de conceptos por sucursal">
-                                        <i class="bi bi-gear-fill"></i> Porcentajes
+                                    <button type="button" class="btn btn-secondary" onclick="abrirModalParametros()" data-toggle="tooltip" data-placement="top" title="Porcentajes por concepto y visibilidad de sucursales">
+                                        <i class="bi bi-gear-fill"></i> Parámetros
                                     </button>
-                                    <div class="environment-controls">
-                                        <input type="checkbox" <?= $checked ?> data-toggle="toggle" 
-                                               data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" 
-                                               class="custom-toggle" onchange="cambiarEntorno(this)" 
-                                               id="checkEntorno">
-                                        <div class="flag-indicator" style="background-image: url('<?= $imagenBandera ?>');" 
-                                             title="<?= $nombrePais ?>"></div>
-                                        <span class="country-label"><?= $nombrePais ?></span>
+                                    <div class="toggle-wrapper">
+                                        <label>Cambiar entorno:</label>
+                                        <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)" title="Cambiar entorno">
+                                            <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
+                                                <img src="../../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
+                                                <span>ARG</span>
+                                            </div>
+                                            <div class="toggle-flag <?= ($checkedValue === 'uy') ? 'active' : '' ?>" data-entorno="uy">
+                                                <img src="../../assets/images/UY.png" alt="Uruguay">
+                                                <span>UY</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -385,7 +390,7 @@
                                                         continue;
                                                     } 
                                             ?>
-                                                <th id="sucursal" class="suc<?= $value['NRO_SUCURSAL']?>" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?></th>
+                                                <th id="sucursal" class="suc<?= $value['NRO_SUCURSAL']?>" attr-nrosuc="<?= $value['NRO_SUCURSAL']?>" attr-infosuc="<?= $value['DESC_SUCURSAL']?>-<?= $value['NRO_SUCURSAL']?>"><?= $value['NRO_SUCURSAL']?><?php if (empty($value['HABILITADO'])) { ?> <span class="badge badge-secondary" title="Sucursal cerrada">Cerrada</span><?php } ?></th>
                                             <?php
                                                 }
                                             ?>
@@ -400,9 +405,14 @@
                                                 <tr>
                                                     <td id="idConcepto"><?= $value['ID_CA']?> </td>
                                                     <td id="concepto"><strong><?= $value['CONCEPTO']?></strong> </td>
-                                                    <?php   
-                                                        foreach ($newArray as $k => $val) {
+                                                    <?php
+                                                        // Se recorre $todosLosLocales (no $newArray) para que haya exactamente
+                                                        // una celda por cada <th> de la cabecera: $newArray está indexado por
+                                                        // NRO_SUCURSAL y una clave repetida colapsaría, desalineando la tabla.
+                                                        foreach ($todosLosLocales as $local) {
 
+                                                            $k = $local['NRO_SUCURSAL'];
+                                                            $val = isset($newArray[$k]) ? $newArray[$k] : [];
 
                                                             $porcentajeDelLocal = 0;
                                                             $rentabilidadDelConcepto = 0;
@@ -463,7 +473,8 @@
 
                                                             }
 
-                                                            $valor = $val[$value['CONCEPTO']];
+                                                            $valorReal = isset($val[$value['CONCEPTO']]) ? $val[$value['CONCEPTO']] : 0;
+                                                            $valor = $valorReal;
                                                             if($valor < 0){
                                                                 $valor = $valor * -1;
                                                             }
@@ -475,7 +486,7 @@
                                                             } 
                                                 
                                                     ?>  
-                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($val[$value['CONCEPTO']] < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $val[$value['CONCEPTO']] ?>" attr-ajustado="<?= $ajustado ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - IMPORTE VENTA: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
+                                                            <td style='text-align:center;padding-top:3px;padding-bottom:3' class = "suc<?= $k ?>"><input type="text" value="<?= ($valorReal < 0) ? "-" : "" ?>$<?php echo number_format($valor, 0, ',', '.') ?>"  attr-realvalue="<?= $valorReal ?>" attr-ajustado="<?= $ajustado ?>" class='form-control form-control-sm'  style="width:100px"id='input-<?=$value['ID_CA']?>-<?=$k?>' onchange='totalizar(this)' <?= in_array($value['ID_CA'],$readOn) ? "readOnly" : "" ?> <?php if($value['carga_manual'] != 1) {echo ' data-toggle="tooltip" data-placement="top" title="PORCENTAJE : '.$porcentajeDelLocal.'% - IMPORTE VENTA: $'.number_format($rentabilidadDelConcepto, 0, ',', '.').'"'; } ?> attr-porcentaje='<?= $porcentajeDelLocal?>'></td>
 
                                                     <?php 
                                                         }
@@ -518,11 +529,10 @@
                 require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
             ?>
 
-            <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-            <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
             <script src="js/cargaAlquileres.js"></script>
             <script src="js/ayuda.js"></script>
             <script src="js/modalPorcentajes.js"></script>
+            <script src="js/modalSucursales.js"></script>
 
             <!-- Incluir Modal de Ayuda -->
             <?php include 'components/modalAyuda.php'; ?>

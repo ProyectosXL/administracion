@@ -13,7 +13,8 @@ $periodo = isset($_GET['periodo']) ? $_GET['periodo'] : (int)$mes."-".$anio;
 $fechaParaMostrar = $mes."/".$anio;
 $fecha = $anio."-".$mes;
 
-$todosLosLocales = traerLocales();
+// Mismo período que traerDetalleAlquiler(), o la cabecera no coincide con las filas.
+$todosLosLocales = traerLocales($periodo, $fecha);
 $conceptos = traerConceptos();
 $newArray = traerDetalleAlquiler($fecha, $periodo);
 
@@ -111,7 +112,8 @@ foreach ($todosLosLocales as $value) {
     if (in_array($value['NRO_SUCURSAL'], $sucursalesOcultasArray)) {
         continue;
     } 
-    $htmlContent .= '<th>'.$value['NRO_SUCURSAL'].'</th>';
+    $sufijoCerrada = empty($value['HABILITADO']) ? ' (Cerrada)' : '';
+    $htmlContent .= '<th>'.$value['NRO_SUCURSAL'].$sufijoCerrada.'</th>';
 }
 
 $htmlContent .= '
@@ -124,15 +126,19 @@ foreach ($conceptos as $concepto) {
     $htmlContent .= '<td>'.$concepto['ID_CA'].'</td>';
     $htmlContent .= '<td><strong>'.$concepto['CONCEPTO'].'</strong></td>';
     
-    foreach ($newArray as $k => $val) {
+    // Se recorre $todosLosLocales (no $newArray) para que haya exactamente una celda
+    // por cada <th> de la cabecera, pase lo que pase con las claves de $newArray.
+    foreach ($todosLosLocales as $local) {
+        $k = $local['NRO_SUCURSAL'];
+
         if (in_array($k, $sucursalesOcultasArray)) {
             continue;
         }
-        
-        $valor = $val[$concepto['CONCEPTO']];
+
+        $valor = isset($newArray[$k][$concepto['CONCEPTO']]) ? $newArray[$k][$concepto['CONCEPTO']] : 0;
         $signo = ($valor < 0) ? "-" : "";
         $valor = abs($valor);
-        
+
         $htmlContent .= '<td>'.$signo.'$'.number_format($valor, 0, ',', '.').'</td>';
     }
     

@@ -87,64 +87,72 @@ body {
     height: 30px;
 }
 
-/* Environment Toggle */
-.environment-toggle {
+/* ===================================
+   Selector de entorno / país
+   Mismo estilo que controlSucursales/resumenVentas.php
+   =================================== */
+.toggle-wrapper {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0.5rem;
 }
 
-.environment-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.flag-indicator {
-    width: 40px;
-    height: 30px;
-    border-radius: 4px;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    border: 2px solid #ddd;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.country-label {
+.toggle-wrapper > label {
+    margin: 0;
+    margin-right: 10px;
+    align-self: center;
+    font-weight: 500;
     color: white;
-    font-size: 14px;
-    font-weight: bold;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
-/* Toggle Styles */
-.toggle.btn {
-    height: 38px !important;
-    min-width: 90px !important;
-    border-radius: 6px !important;
-    padding: 0 !important;
+.custom-toggle-container {
+    display: flex;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 50px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
 }
 
-.toggle-on, .toggle-off {
-    font-size: 12px !important;
-    font-weight: bold !important;
-    color: white !important;
-    text-shadow: none !important;
-    line-height: 30px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+.custom-toggle-container:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    border-color: #6366f1;
 }
 
-.toggle-on {
-    background-color: #007bff !important;
-    border-color: #007bff !important;
+.toggle-flag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+    opacity: 0.5;
+    background: transparent;
 }
 
-.toggle-off {
-    background-color: #6c757d !important;
-    border-color: #6c757d !important;
+.toggle-flag img {
+    width: 30px;
+    height: 20px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-flag span {
+    font-weight: 600;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.toggle-flag.active {
+    opacity: 1;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.toggle-flag.active span {
+    color: white;
 }
 
 /* Form Content */

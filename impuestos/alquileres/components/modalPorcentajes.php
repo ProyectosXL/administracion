@@ -16,13 +16,31 @@
         <div class="modal-content modal-porcentajes-content">
             <div class="modal-header modal-porcentajes-header">
                 <h5 class="modal-title" id="modalPorcentajesLabel">
-                    <i class="bi bi-gear-fill"></i> Gestión de Porcentajes por Concepto
+                    <i class="bi bi-gear-fill"></i> Parámetros
                 </h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body modal-porcentajes-body">
+
+                <ul class="nav nav-tabs parametros-tabs" id="tabsParametros" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-porcentajes" data-toggle="tab" href="#panel-porcentajes"
+                           role="tab" aria-controls="panel-porcentajes" aria-selected="true">
+                            <i class="bi bi-percent"></i> Porcentajes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-sucursales" data-toggle="tab" href="#panel-sucursales"
+                           role="tab" aria-controls="panel-sucursales" aria-selected="false">
+                            <i class="bi bi-building"></i> Sucursales
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="contenidoParametros">
+                <div class="tab-pane fade show active" id="panel-porcentajes" role="tabpanel" aria-labelledby="tab-porcentajes">
                 <!-- Controles de Filtro y Agregar -->
                 <div class="porcentajes-controls">
                     <div class="control-group">
@@ -45,11 +63,20 @@
                         <div class="form-group-inline">
                             <label for="localesModal">Sucursal:</label>
                             <select name="locales" id="localesModal" class="form-control form-control">
-                                <?php foreach ($localesModal as $value) { ?>
+                                <optgroup label="Activas">
+                                <?php foreach ($localesModal as $value) { if (!empty($value['HABILITADO'])) { ?>
                                     <option value="<?= $value['NRO_SUCURSAL'] ?>">
                                         <?= $value['NRO_SUCURSAL'] ?> - <?= $value['DESC_SUCURSAL'] ?>
                                     </option>
-                                <?php } ?>
+                                <?php } } ?>
+                                </optgroup>
+                                <optgroup label="Cerradas con historial">
+                                <?php foreach ($localesModal as $value) { if (empty($value['HABILITADO'])) { ?>
+                                    <option value="<?= $value['NRO_SUCURSAL'] ?>">
+                                        <?= $value['NRO_SUCURSAL'] ?> - <?= $value['DESC_SUCURSAL'] ?> (Cerrada)
+                                    </option>
+                                <?php } } ?>
+                                </optgroup>
                             </select>
                             <button class="btn btn-success btn-sm" onclick="agregarPorcentajeModal()">
                                 <i class="bi bi-plus-circle"></i> Agregar
@@ -74,6 +101,41 @@
                         </tbody>
                     </table>
                 </div>
+                </div><!-- /panel-porcentajes -->
+
+                <div class="tab-pane fade" id="panel-sucursales" role="tabpanel" aria-labelledby="tab-sucursales">
+
+                    <div class="sucursales-ayuda">
+                        <i class="bi bi-info-circle"></i>
+                        <div>
+                            Por defecto cada sucursal se resuelve sola: se <strong>muestra</strong> si está
+                            activa o tiene historial de alquileres, y se <strong>carga</strong> si está activa.
+                            Usá esta pestaña sólo para las excepciones. Dejar ambas columnas en
+                            <em>Automático</em> equivale a no tener excepción.
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3" id="tablaSucursalesContainer">
+                        <table class="table table-hover table-sm table-porcentajes" id="tablaSucursales">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th style="width: 80px;">SUCURSAL</th>
+                                    <th>NOMBRE</th>
+                                    <th style="width: 105px;">ESTADO</th>
+                                    <th style="width: 165px;">SE MUESTRA</th>
+                                    <th style="width: 165px;">SE CARGA</th>
+                                    <th>OBSERVACIÓN</th>
+                                    <th style="width: 90px;">ACCIÓN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodySucursales">
+                                <!-- Se carga dinámicamente con JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div><!-- /panel-sucursales -->
+                </div><!-- /tab-content -->
             </div>
             <div class="modal-footer modal-porcentajes-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
@@ -131,6 +193,96 @@
         padding: 1rem 1.5rem;
         background-color: #fff;
         border-radius: 0 0 12px 12px;
+    }
+
+    /* Pestañas */
+    .parametros-tabs {
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 1.25rem;
+    }
+
+    .parametros-tabs .nav-link {
+        color: #495057;
+        font-weight: 600;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 0.6rem 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .parametros-tabs .nav-link:hover {
+        color: #007bff;
+        border-bottom-color: #ced4da;
+    }
+
+    .parametros-tabs .nav-link.active {
+        color: #007bff;
+        background: transparent;
+        border-bottom-color: #007bff;
+    }
+
+    /* Ayuda de la pestaña Sucursales */
+    .sucursales-ayuda {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: #e7f1ff;
+        border-left: 4px solid #007bff;
+        border-radius: 6px;
+        padding: 0.85rem 1rem;
+        font-size: 0.9rem;
+        color: #31465c;
+        line-height: 1.45;
+    }
+
+    .sucursales-ayuda i {
+        font-size: 1.1rem;
+        color: #007bff;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    #tablaSucursalesContainer {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    #tablaSucursales td {
+        vertical-align: middle;
+    }
+
+    /*
+        css/cargaAlquileres.css pisa .form-control con padding 8px + borde 2px, pero
+        Bootstrap le deja a .form-control-sm un height fijo calculado para un padding
+        mucho menor: el texto no entra y se corta por abajo. height:auto deja que la
+        caja crezca con su contenido, sin depender de que los números coincidan.
+    */
+    #tablaSucursales td select.form-control-sm,
+    #tablaSucursales td input.form-control-sm {
+        height: auto;
+        min-height: 32px;
+        padding: 4px 8px;
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+
+    #tablaSucursales td select.form-control-sm {
+        /* Sin esto la flecha nativa se come la última letra en Chrome */
+        padding-right: 22px;
+    }
+
+    /* Una fila con excepción tiene que saltar a la vista entre decenas de automáticas */
+    #tablaSucursales tr.fila-excepcion {
+        background-color: #fff8e1;
+    }
+
+    #tablaSucursales tr.fila-excepcion:hover {
+        background-color: #fff3cd;
     }
 
     /* Controles de Filtro */
@@ -255,6 +407,9 @@
 
     .table-porcentajes tbody td input[type="number"] {
         width: 100%;
+        height: auto;          /* mismo motivo que en #tablaSucursales: el height fijo de
+                                  .form-control-sm no contempla este padding */
+        min-height: 34px;
         padding: 0.375rem 0.75rem;
         border: 1px solid #ced4da;
         border-radius: 6px;

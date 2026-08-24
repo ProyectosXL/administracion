@@ -108,21 +108,6 @@ body {
     opacity: 0.8;
 }
 
-.environment-toggle {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* Toggle customization */
-.toggle-on, .toggle-off {
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    height: 30px !important;
-    width: 30px !important;
-    border-radius: 4px;
-}
 
 /* ============================================
    Content Wrapper

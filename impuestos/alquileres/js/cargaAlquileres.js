@@ -1,5 +1,14 @@
 
 
+/**
+ * Número de sucursal a partir de su <th>.
+ * El <th> puede contener un badge ("Cerrada"), así que su textContent ya no es sólo
+ * el número: hay que leerlo del atributo. Si se usa el textContent, los selectores
+ * `#input-{concepto}-{sucursal}` no matchean, el querySelector devuelve null y la
+ * excepción corta el forEach — dejando sin totales a esa sucursal y a todas las que siguen.
+ */
+const nroSucursalDe = (th) => (th.getAttribute("attr-nrosuc") || th.textContent).trim();
+
 const comprobarEstado = (estado) => {
 
     if (estado == 1) {
@@ -15,10 +24,11 @@ const comprobarEstado = (estado) => {
         sucursales.forEach(s => {
 
             let result = 0;
+            let nroSuc = nroSucursalDe(s);
 
             idConceptos.forEach(e => {
                 let concepto = e.textContent;
-                $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
+                $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${nroSuc}`).value.replace(/[$.]/g, "");
                 $valorSumar = $valorSumar.replace(/ /g, '');
 
                 result = parseInt(result) + parseInt($valorSumar);
@@ -26,7 +36,7 @@ const comprobarEstado = (estado) => {
 
             })
 
-            document.querySelector("#total-" + s.textContent).textContent = "$" + parseNumber(result);
+            document.querySelector("#total-" + nroSuc).textContent = "$" + parseNumber(result);
         });
 
     } else {
@@ -43,14 +53,16 @@ const totalizar = (div = null) => {
     sucursales.forEach(s => {
 
         let result = 0;
+        let nroSuc = nroSucursalDe(s);
+
         idConceptos.forEach(e => {
             let concepto = e.textContent;
 
             if (e.textContent == 9 || e.textContent == 13) {
 
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${nroSuc}`);
                 let porcentaje = inputActual.getAttribute("attr-porcentaje");
-                let valorId8 = document.querySelector(`#input-8-${s.textContent}`).getAttribute("attr-realvalue") || 0;
+                let valorId8 = document.querySelector(`#input-8-${nroSuc}`).getAttribute("attr-realvalue") || 0;
                 let calculo = (parseInt(valorId8) * parseFloat(porcentaje)) / 100;
 
                 inputActual.value = "$" + parseNumber(calculo);
@@ -61,9 +73,9 @@ const totalizar = (div = null) => {
             // Concepto 16: Restar concepto 9
             if (e.textContent == 16) {
 
-                let inputConcepto9 = document.querySelector(`#input-9-${s.textContent}`);
+                let inputConcepto9 = document.querySelector(`#input-9-${nroSuc}`);
                 let valorId9 = parseInt(inputConcepto9.getAttribute('attr-realvalue') || 0);
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${nroSuc}`);
                 let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
 
                 let calculo = valorBruto - valorId9;
@@ -78,9 +90,9 @@ const totalizar = (div = null) => {
 
             // Concepto 17: Calcular porcentaje sobre venta neta y RESTAR concepto 9
             if (e.textContent == 17) {
-                let inputConcepto9 = document.querySelector(`#input-9-${s.textContent}`);
+                let inputConcepto9 = document.querySelector(`#input-9-${nroSuc}`);
                 let valorId9 = parseInt(inputConcepto9.getAttribute('attr-realvalue') || 0);
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${nroSuc}`);
 
                 // Usar el valor BRUTO original (porcentaje sobre venta neta)
                 let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
@@ -97,9 +109,9 @@ const totalizar = (div = null) => {
 
             if (e.textContent == 6 || e.textContent == 7) {
 
-                let inputConcepto8 = document.querySelector(`#input-8-${s.textContent}`);
+                let inputConcepto8 = document.querySelector(`#input-8-${nroSuc}`);
                 let valorId8 = parseInt(inputConcepto8.getAttribute('attr-realvalue') || 0);
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${nroSuc}`);
 
                 // Usar el valor BRUTO original (antes de cualquier resta)
                 let valorBruto = parseInt(inputActual.getAttribute('attr-realvalue-original') || inputActual.getAttribute('attr-realvalue') || 0);
@@ -117,9 +129,9 @@ const totalizar = (div = null) => {
 
             // Concepto 14: Calcular sobre el concepto 7 NETO (ya con mínimo restado)
             if (e.textContent == 14) {
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`);
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${nroSuc}`);
                 let porcentaje = inputActual.getAttribute("attr-porcentaje");
-                let inputConcepto7 = document.querySelector(`#input-7-${s.textContent}`);
+                let inputConcepto7 = document.querySelector(`#input-7-${nroSuc}`);
 
                 // IMPORTANTE: Usar el attr-realvalue del concepto 7 que ahora tiene el valor NETO
                 // (después de restar el mínimo en el bloque anterior)
@@ -135,7 +147,7 @@ const totalizar = (div = null) => {
 
             if (e.textContent == 4 || e.textContent == 5 || e.textContent == 18) {
 
-                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`)
+                let inputActual = document.querySelector(`#input-${concepto.trimEnd()}-${nroSuc}`)
 
                 let value = inputActual.value.replace(/[$.]/g, "")
                 let ajustado = inputActual.getAttribute('attr-ajustado');
@@ -147,13 +159,13 @@ const totalizar = (div = null) => {
 
             }
 
-            $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${s.textContent}`).value.replace(/[$.]/g, "");
+            $valorSumar = document.querySelector(`#input-${concepto.trimEnd()}-${nroSuc}`).value.replace(/[$.]/g, "");
             $valorSumar = $valorSumar.replace(/ /g, '');
 
             result = parseInt(result) + parseInt($valorSumar);
         });
 
-        document.querySelector("#total-" + s.textContent).textContent = "$" + parseNumber(result);
+        document.querySelector("#total-" + nroSuc).textContent = "$" + parseNumber(result);
 
     });
 
@@ -270,11 +282,18 @@ const insertarDetalle = () => {
 
         sucursales.forEach(sucursal => {
 
-            let infoSucursal = sucursal.getAttribute("attr-infosuc").split("-")
+            // El número sale de su propio atributo, y el nombre se corta por el ÚLTIMO
+            // separador: attr-infosuc es "DESC_SUCURSAL-NRO_SUCURSAL" y hay nombres de
+            // sucursal con guiones, que con un split("-") dejaban de matchear (la
+            // sucursal no recibía ninguna fila) y guardaban el nombre truncado.
+            let nroSucursal = sucursal.getAttribute("attr-nrosuc");
+            let infoSucursal = sucursal.getAttribute("attr-infosuc") || "";
+            let corte = infoSucursal.lastIndexOf("-");
+            let descSucursal = corte > 0 ? infoSucursal.substring(0, corte) : infoSucursal;
 
-            if (idSucursal == infoSucursal[1]) {
+            if (idSucursal == nroSucursal) {
 
-                values += `('${periodo}','${idSucursal}','${infoSucursal[0]}','${valor}','${idConcepto}'),`;
+                values += `('${periodo}','${idSucursal}','${descSucursal}','${valor}','${idConcepto}'),`;
                 conteoRegistros++;
 
             }
@@ -794,7 +813,7 @@ const verificarDiferenciasYCerrar = (periodo) => {
     let conceptos = document.querySelectorAll("#idConcepto");
 
     sucursales.forEach(sucursal => {
-        const nroSucursal = sucursal.textContent.trim();
+        const nroSucursal = nroSucursalDe(sucursal);
         datosActuales[nroSucursal] = {};
 
         conceptos.forEach(concepto => {
@@ -950,7 +969,7 @@ const actualizarValoresYCerrar = (periodo) => {
     let promises = [];
 
     sucursales.forEach(sucursal => {
-        const nroSucursal = sucursal.textContent.trim();
+        const nroSucursal = nroSucursalDe(sucursal);
 
         conceptos.forEach(concepto => {
             const idConcepto = concepto.textContent.trim();
@@ -1347,7 +1366,7 @@ const ejecutarAplicarAjuste = (periodo) => {
     let newArray = {};
 
     sucursales.forEach((sucursal) => {
-        const sucursalName = sucursal.textContent;
+        const sucursalName = nroSucursalDe(sucursal);
         newArray[sucursalName] = [];
 
         ["4", "5", "18"].forEach((concepto) => {
@@ -1398,6 +1417,42 @@ const ejecutarAplicarAjuste = (periodo) => {
     });
 };
 
+
+/**
+ * Selector de entorno con banderas (mismo estilo que resumenVentas).
+ * Un clic en cualquier parte del control cambia al entorno opuesto.
+ *
+ * Ojo: en Alquileres los entornos son 'central' y 'uy' — no 'suc_uy' como en
+ * controlSucursales. Controller/cambiarEntorno.php espera 0 = central, 1 = uy.
+ */
+const cambiarEntornoCustom = (container) => {
+    const activa = container.querySelector('.toggle-flag.active');
+    const entorno = (activa && activa.dataset.entorno === 'central') ? 1 : 0;
+
+    // Feedback inmediato: el reload tarda y sin esto el clic parece no hacer nada.
+    container.style.pointerEvents = 'none';
+    container.style.opacity = '0.6';
+
+    $.ajax({
+        url: "Controller/cambiarEntorno.php",
+        method: "POST",
+        data: { entorno: entorno },
+        success: function () {
+            location.reload();
+        },
+        error: function (xhr, status, error) {
+            console.error('Error al cambiar entorno:', error);
+            container.style.pointerEvents = '';
+            container.style.opacity = '';
+            Swal.fire({
+                icon: 'error',
+                title: 'No se pudo cambiar el entorno',
+                text: 'Intentá nuevamente.',
+                confirmButtonColor: '#667eea'
+            });
+        }
+    });
+}
 
 const cambiarEntorno = (t) => {
     let entorno = 0;

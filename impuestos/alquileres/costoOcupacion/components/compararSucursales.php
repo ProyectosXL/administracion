@@ -476,9 +476,16 @@ div.dataTables_scrollHead table.table-bordered {
                         <label for="selectSucursal1"><i class="bi bi-building"></i> Sucursal 1</label>
                         <select class="form-control" id="selectSucursal1">
                             <option value="">Seleccionar sucursal...</option>
-                            <?php foreach ($todosLosLocales as $local): ?>
+                            <optgroup label="Activas">
+                            <?php foreach ($todosLosLocales as $local): if (!empty($local['HABILITADO'])): ?>
                                 <option value="<?= $local['ID'] ?>"><?= $local['SUCURSAL'] ?></option>
-                            <?php endforeach; ?>
+                            <?php endif; endforeach; ?>
+                            </optgroup>
+                            <optgroup label="Cerradas con historial">
+                            <?php foreach ($todosLosLocales as $local): if (empty($local['HABILITADO'])): ?>
+                                <option value="<?= $local['ID'] ?>"><?= $local['SUCURSAL'] ?> (Cerrada)</option>
+                            <?php endif; endforeach; ?>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
@@ -489,9 +496,16 @@ div.dataTables_scrollHead table.table-bordered {
                         <label for="selectSucursal2"><i class="bi bi-building"></i> Sucursal 2</label>
                         <select class="form-control" id="selectSucursal2">
                             <option value="">Seleccionar sucursal...</option>
-                            <?php foreach ($todosLosLocales as $local): ?>
+                            <optgroup label="Activas">
+                            <?php foreach ($todosLosLocales as $local): if (!empty($local['HABILITADO'])): ?>
                                 <option value="<?= $local['ID'] ?>"><?= $local['SUCURSAL'] ?></option>
-                            <?php endforeach; ?>
+                            <?php endif; endforeach; ?>
+                            </optgroup>
+                            <optgroup label="Cerradas con historial">
+                            <?php foreach ($todosLosLocales as $local): if (empty($local['HABILITADO'])): ?>
+                                <option value="<?= $local['ID'] ?>"><?= $local['SUCURSAL'] ?> (Cerrada)</option>
+                            <?php endif; endforeach; ?>
+                            </optgroup>
                         </select>
                     </div>
                 </div>

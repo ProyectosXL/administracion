@@ -433,11 +433,20 @@ $nombrePais = ($checkedValue === 'central') ? 'Argentina' : 'Uruguay';
                             <label for="selectSucursal" class="filter-label"><i class="bi bi-building"></i> Sucursal:</label>
                             <select id="selectSucursal" class="form-control" style="min-width: 300px; height: calc(2.25rem + 2px);">
                                 <option value="">Seleccione una sucursal...</option>
-                                <?php foreach ($todosLosLocales as $local): ?>
+                                <optgroup label="Activas">
+                                <?php foreach ($todosLosLocales as $local): if (!empty($local['HABILITADO'])): ?>
                                     <option value="<?= $local['ID'] ?>">
                                         <?= $local['SUCURSAL'] ?> (<?= $local['ID'] ?>)
                                     </option>
-                                <?php endforeach; ?>
+                                <?php endif; endforeach; ?>
+                                </optgroup>
+                                <optgroup label="Cerradas con historial">
+                                <?php foreach ($todosLosLocales as $local): if (empty($local['HABILITADO'])): ?>
+                                    <option value="<?= $local['ID'] ?>">
+                                        <?= $local['SUCURSAL'] ?> (<?= $local['ID'] ?>) (Cerrada)
+                                    </option>
+                                <?php endif; endforeach; ?>
+                                </optgroup>
                             </select>
                         </div>
                         

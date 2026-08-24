@@ -7,12 +7,17 @@
 let conceptoSeleccionadoModal = null;
 
 /**
- * Abrir el modal de porcentajes
+ * Abrir el modal de Parámetros (pestañas Porcentajes y Sucursales).
+ * Sólo carga la pestaña de Porcentajes: la de Sucursales se carga al entrar en ella
+ * (ver js/modalSucursales.js).
  */
-function abrirModalPorcentajes() {
-    console.log("🔧 Abriendo modal de porcentajes");
+function abrirModalParametros() {
+    console.log("🔧 Abriendo modal de parámetros");
     $('#modalPorcentajes').modal('show');
-    
+
+    // Siempre arranca en la primera pestaña
+    $('#tab-porcentajes').tab('show');
+
     // Cargar datos iniciales del primer concepto
     const conceptoSelect = document.getElementById('conceptosModal');
     if (conceptoSelect && conceptoSelect.options.length > 0) {
