@@ -1,5 +1,9 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/Shared/SsoAuth.php';
+SsoAuth::requireLogin();
+
 $titulo_pagina = 'Tesorería';
+$esAdmin = SsoAuth::tieneGrupo('admin');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -78,12 +82,14 @@ $titulo_pagina = 'Tesorería';
                         <i class="bi bi-receipt"></i> Compras Personales
                     </button>
                 </li>
+                <?php if ($esAdmin): ?>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="retiros-tab" data-bs-toggle="tab" 
+                    <button class="nav-link" id="retiros-tab" data-bs-toggle="tab"
                             data-bs-target="#retiros" type="button" role="tab">
                         <i class="bi bi-cash-coin"></i> Retiros de Dinero
                     </button>
                 </li>
+                <?php endif; ?>
             </ul>
             
             <div class="tab-content" id="tesoreriaTabsContent">

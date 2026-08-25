@@ -1,4 +1,7 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/Shared/SsoAuth.php';
+SsoAuth::requireLogin();
+
 $titulo_pagina = 'Contabilidad';
 ?>
 <!DOCTYPE html>

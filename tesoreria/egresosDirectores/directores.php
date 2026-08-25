@@ -1,6 +1,7 @@
 <?php
 
-session_start();
+require_once $_SERVER['DOCUMENT_ROOT'] . '/Shared/SsoAuth.php';
+SsoAuth::requireLogin(); // ya deja la sesión PHP iniciada
 
 // Convertir el nombre del usuario a formato capitalizado (primera letra en mayúscula)
 $usuario = isset($_SESSION['descLocal']) ? ucwords(strtolower($_SESSION['descLocal'])) : 'Usuario';

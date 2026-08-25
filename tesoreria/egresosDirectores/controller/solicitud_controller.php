@@ -1,4 +1,7 @@
 <?php
+require_once $_SERVER['DOCUMENT_ROOT'] . '/Shared/SsoAuth.php';
+SsoAuth::requireLoginAjax();
+
 // Deshabilitar output de errores en HTML para no romper el JSON
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
