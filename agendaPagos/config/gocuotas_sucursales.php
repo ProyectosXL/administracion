@@ -90,7 +90,7 @@ return [
     'PORTAL ROSARIO' => [
         'nombre' => 'PORTAL ROSARIO',
         'nro_sucursal' => '60',
-        'production_key' => '2327047-02af751c-974c-4e25-a541-fdaadea6ebb1',
+        'production_key' => '2327047-02af751c-974c-4e25-a541-fdaadeae6bb1',
         'sandbox_key' => '2327047-6ed27b85-6125-4bab-a9a5-0d0320f07682',
         'mail' => 'xl.portalrosario@xl.com.ar'
     ],
@@ -111,7 +111,7 @@ return [
     'SOLEIL' => [
         'nombre' => 'SOLEIL',
         'nro_sucursal' => '76',
-        'production_key' => '2327064-7ac5ae83-da84-4b11-a875-487c7bfe705e',
+        'production_key' => '2327064-7ac5ae83-da84-4b11-a875-48c7bfe705ee',
         'sandbox_key' => '2327064-4b245745-a6b9-4a7e-a8f7-52820ce95d34',
         'mail' => 'xl.soleil@xl.com.ar'
     ],
@@ -138,8 +138,8 @@ return [
     ],
     'TERRAZAS' => [
         'nombre' => 'TERRAZAS',
-        'nro_sucursal' => '51',
-        'production_key' => '5139580-c5e1303e-35fb-4812-84c0-4779eafeef8f',
+        'nro_sucursal' => '84',
+        'production_key' => '5139580-c5e1303e-35fb-4812-84c0-4779eafef8ff',
         'sandbox_key' => '5139580-5d160e2b-f7a5-466d-a7e3-0d955c54b437',
         'mail' => 'xl.terrazas@xl.com.ar'
     ]

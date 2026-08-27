@@ -318,9 +318,9 @@ $(document).ready(function () {
             if (estadoFilter === 'diferencia' && !isDiff) return;
 
             let statusBadge = '';
-            if (declaredValStr === '') {
+            if (declaredValStr === '' && expected <= 0) {
                 statusBadge = '<span class="badge bg-secondary-subtle text-secondary small py-1 px-2 rounded-pill"><i class="fa-regular fa-clock me-1"></i>Pendiente</span>';
-            } else if (Math.abs(diff) < 0.01) {
+            } else if (declaredValStr !== '' && Math.abs(diff) < 0.01) {
                 statusBadge = '<span class="badge bg-success-subtle text-success small py-1 px-2 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>OK / Conciliado</span>';
             } else {
                 statusBadge = '<span class="badge bg-danger-subtle text-danger small py-1 px-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i>Diferencia</span>';
@@ -459,10 +459,10 @@ $(document).ready(function () {
         $diffCol.text(formatMoney(diff));
 
         const $statusCol = $row.find('.status-column');
-        if (valStr === '') {
-            $diffCol.removeClass('text-success').addClass('text-danger');
+        if (valStr === '' && expected <= 0) {
+            $diffCol.removeClass('text-danger').addClass('text-secondary');
             $statusCol.html('<span class="badge bg-secondary-subtle text-secondary small py-1 px-2 rounded-pill"><i class="fa-regular fa-clock me-1"></i>Pendiente</span>');
-        } else if (Math.abs(diff) < 0.01) {
+        } else if (valStr !== '' && Math.abs(diff) < 0.01) {
             $diffCol.removeClass('text-danger').addClass('text-success');
             $statusCol.html('<span class="badge bg-success-subtle text-success small py-1 px-2 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>OK / Conciliado</span>');
         } else {

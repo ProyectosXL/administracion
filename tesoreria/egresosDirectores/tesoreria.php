@@ -1,5 +1,6 @@
 <?php
 $titulo_pagina = 'Tesorería';
+$esAdmin = SsoAuth::tieneGrupo('Tesoreria');
 ?>
 <!DOCTYPE html>
 <html lang="es">
