@@ -20,12 +20,18 @@
     --color-despachado: #F5A623;
     --color-recibido: #AC92EC;
     
-    /* Grises */
+    /* Grises.
+       400, 500 y 700 faltaban pero ya se usaban en 6 lugares (leyenda-titulo,
+       btn-mes:hover, panel-empty, entre otros): esas declaraciones eran
+       invalidas y el color caia al heredado sin aviso. */
     --gray-50: #F8F9FA;
     --gray-100: #E9ECEF;
     --gray-200: #DEE2E6;
     --gray-300: #CED4DA;
+    --gray-400: #ADB5BD;
+    --gray-500: #868E96;
     --gray-600: #6C757D;
+    --gray-700: #495057;
     --gray-800: #343A40;
     
     /* Fuente */
@@ -656,6 +662,168 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     background: var(--gray-100);
     color: var(--gray-800);
     border-color: var(--gray-600);
+}
+
+/* ---------- Tooltip propio de los badges ---------- */
+/* Un unico nodo reutilizable. pointer-events: none para que el puntero nunca
+   entre al tooltip: si entrara, dispararia el mouseleave del badge y quedaria
+   parpadeando. */
+.cronograma-tooltip {
+    position: fixed;
+    z-index: 1300;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.12s ease;
+    background: white;
+    color: var(--gray-800);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    padding: 10px 12px;
+    width: 260px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.cronograma-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tt-header {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.tt-alias {
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+}
+
+.tt-alias.alias-provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.tt-proveedor {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--gray-800);
+    word-break: break-word;
+}
+
+.tt-evento {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.tt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--gray-300);
+}
+
+.tt-evento.tipo-est-emb      .tt-dot { background: var(--color-est-emb); }
+.tt-evento.tipo-emb          .tt-dot { background: var(--color-emb); }
+.tt-evento.tipo-arr-estimado .tt-dot { background: var(--color-arr-estimado); }
+.tt-evento.tipo-arr-real     .tt-dot { background: var(--color-arr-real); }
+.tt-evento.tipo-desp         .tt-dot { background: var(--color-desp); }
+.tt-evento.tipo-rec          .tt-dot { background: var(--color-rec); }
+
+.tt-fila {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tt-label {
+    color: var(--gray-600);
+    flex-shrink: 0;
+}
+
+.tt-valor {
+    font-weight: 500;
+    text-align: right;
+    word-break: break-word;
+}
+
+.tt-dias {
+    margin-top: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+    background: var(--gray-50);
+}
+
+.tt-dias.urgencia-atrasado { background: #FDECEA; color: #C0392B; }
+.tt-dias.urgencia-alta     { background: #FEF3E2; color: #B9770E; }
+.tt-dias.urgencia-media    { background: #FEF9E7; color: #9A7D0A; }
+.tt-dias.urgencia-baja     { background: #EAF7EC; color: #1E8449; }
+
+.tt-rubros {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--gray-100);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.tt-rubro {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.tt-rubro-icono {
+    width: 14px;
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--gray-600);
+}
+
+.tt-rubro-nombre {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--gray-800);
+}
+
+.tt-rubro-cantidad {
+    font-weight: 600;
+    color: var(--gray-600);
+    flex-shrink: 0;
+}
+
+.tt-rubro-mas {
+    color: var(--gray-600);
+    font-style: italic;
+    padding-left: 20px;
+}
+
+.tt-nota {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--gray-100);
+    font-size: 11px;
+    color: var(--gray-600);
+    font-style: italic;
 }
 
 /* ---------- Popover con todos los eventos del día ---------- */

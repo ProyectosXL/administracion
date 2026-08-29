@@ -42,6 +42,16 @@ const LABELS_ESTADOS = {
     recibido: 'Recibido'
 };
 
+// Etiquetas por tipo de evento del calendario (distinto de los estados).
+const LABELS_EVENTOS = {
+    'est-emb': 'Embarque estimado',
+    'emb': 'Embarque real',
+    'arr-estimado': 'Arribo estimado',
+    'arr-real': 'Arribo real',
+    'desp': 'Despacho de aduana',
+    'rec': 'Recepción'
+};
+
 // ========== PREFERENCIAS EN localStorage ==========
 // Envueltas en try/catch: en ventana privada o con las cookies de sitio
 // bloqueadas el solo hecho de tocar localStorage tira excepcion.
@@ -193,6 +203,173 @@ function aplicarEstadoDensidad() {
         .filter(`[data-densidad="${densidad}"]`).addClass('active');
 }
 
+// ========== TOOLTIP ==========
+// Un unico div reutilizable, no un Tooltip de Bootstrap por badge: el
+// calendario pinta cientos de badges y se reconstruye entero en cada render,
+// asi que instanciar y destruir un tooltip por elemento cuesta caro y deja
+// instancias huerfanas. Aca hay un solo nodo que se reposiciona.
+const TOOLTIP_DELAY_MS = 150;
+
+let $tooltip = null;
+let tooltipTimer = null;
+
+function obtenerTooltip() {
+    if (!$tooltip) {
+        $tooltip = $('<div class="cronograma-tooltip" role="tooltip"></div>').appendTo('body');
+    }
+    return $tooltip;
+}
+
+function ocultarTooltip() {
+    // Sin delay al ocultar: si el puntero ya salio, el tooltip estorba.
+    clearTimeout(tooltipTimer);
+    if ($tooltip) {
+        $tooltip.removeClass('visible');
+    }
+}
+
+/**
+ * Dias restantes al arribo del grupo, en texto.
+ * Usa el arribo real si existe y si no el estimado.
+ */
+function textoDiasAlArribo(despacho) {
+    const fechaArribo = despacho.FECHA_ARR || calcularFechaArriboEstimada(despacho);
+    if (!fechaArribo) return null;
+
+    const dias = calcularDiasRestantes(fechaArribo);
+    const confirmado = !!despacho.FECHA_ARR;
+    const matiz = confirmado ? '' : ' (estimado)';
+
+    if (dias < 0) {
+        return { texto: `Atrasado ${Math.abs(dias)} días${matiz}`, clase: 'urgencia-atrasado' };
+    }
+    if (dias === 0) {
+        return { texto: `Arriba hoy${matiz}`, clase: 'urgencia-alta' };
+    }
+    return {
+        texto: `Faltan ${dias} ${dias === 1 ? 'día' : 'días'} para el arribo${matiz}`,
+        clase: obtenerClaseUrgencia(dias)
+    };
+}
+
+function construirTooltip(evento) {
+    const representante = evento.despacho;
+    const alias = aliasDeDespacho(representante);
+    const proveedor = representante.PROVEEDOR || 'Sin proveedor';
+
+    // Todas las OCs del grupo, no solo la del representante.
+    const ordenes = evento.despachos.map(d => (d.ORDEN_COMPRA || '').trim()).filter(Boolean);
+    const etiquetaOC = ordenes.length > 1 ? `OCs (${ordenes.length})` : 'OC';
+
+    const rubros = rubrosDelGrupo(evento.despachos);
+    const rubrosVisibles = rubros.slice(0, 5);
+    const rubrosRestantes = rubros.length - rubrosVisibles.length;
+
+    let rubrosHtml = '';
+    if (rubrosVisibles.length > 0) {
+        rubrosHtml = `
+            <div class="tt-rubros">
+                ${rubrosVisibles.map(r => `
+                    <div class="tt-rubro">
+                        <span class="tt-rubro-icono">${renderizarIcono(iconoDeRubro(r.rubro))}</span>
+                        <span class="tt-rubro-nombre">${escaparHtml(r.rubro)}</span>
+                        <span class="tt-rubro-cantidad">${r.cantidad.toLocaleString('es-AR')}</span>
+                    </div>
+                `).join('')}
+                ${rubrosRestantes > 0
+                    ? `<div class="tt-rubro tt-rubro-mas">y ${rubrosRestantes} más</div>`
+                    : ''}
+            </div>
+        `;
+    }
+
+    const dias = textoDiasAlArribo(representante);
+    const diasHtml = dias
+        ? `<div class="tt-dias ${dias.clase}">${escaparHtml(dias.texto)}</div>`
+        : '';
+
+    // La recepcion viene de Tango y no se puede editar; se avisa desde aca
+    // para que quede claro antes de intentar arrastrarla.
+    const notaRec = evento.tipo === 'rec'
+        ? '<div class="tt-nota">Fecha de recepción tomada de Tango, no editable</div>'
+        : '';
+
+    return `
+        <div class="tt-header">
+            <span class="tt-alias${alias.provisorio ? ' alias-provisorio' : ''}">${escaparHtml(alias.texto)}</span>
+            <span class="tt-proveedor">${escaparHtml(proveedor)}</span>
+        </div>
+        <div class="tt-evento tipo-${evento.tipo}">
+            <span class="tt-dot"></span>
+            ${escaparHtml(LABELS_EVENTOS[evento.tipo] || evento.tipo)} · ${formatearFecha(evento.fecha)}
+        </div>
+        <div class="tt-fila">
+            <span class="tt-label">Contenedor</span>
+            <span class="tt-valor">${escaparHtml(representante.CONTENEDOR || '-')}</span>
+        </div>
+        <div class="tt-fila">
+            <span class="tt-label">${etiquetaOC}</span>
+            <span class="tt-valor">${escaparHtml(ordenes.join(', ') || '-')}</span>
+        </div>
+        ${diasHtml}
+        ${rubrosHtml}
+        ${notaRec}
+    `;
+}
+
+/**
+ * Posiciona el tooltip pegado al badge, volteando arriba/abajo e
+ * izquierda/derecha cuando se saldria del viewport.
+ */
+function posicionarTooltip($tt, elemento) {
+    const ancla = elemento.getBoundingClientRect();
+    const ancho = $tt.outerWidth();
+    const alto = $tt.outerHeight();
+    const margen = 8;
+    const separacion = 6;
+
+    let izq = ancla.left;
+    let arriba = ancla.bottom + separacion;
+
+    // Volteo vertical: si no entra abajo, va arriba del badge.
+    if (arriba + alto > window.innerHeight - margen) {
+        const posArriba = ancla.top - alto - separacion;
+        arriba = (posArriba >= margen) ? posArriba
+                                       : Math.max(margen, window.innerHeight - alto - margen);
+    }
+
+    // Volteo horizontal: se alinea al borde derecho del badge.
+    if (izq + ancho > window.innerWidth - margen) {
+        izq = Math.max(margen, ancla.right - ancho);
+    }
+    if (izq < margen) {
+        izq = margen;
+    }
+
+    $tt.css({ left: `${izq}px`, top: `${arriba}px` });
+}
+
+function mostrarTooltip(elemento) {
+    const $pill = $(elemento);
+    const idGrupo = parseInt($pill.data('id-grupo'), 10);
+    const tipo = $pill.data('tipo');
+
+    // La fecha viaja en el badge y no en la celda: los badges del popover
+    // viven fuera de la grilla del calendario.
+    const fecha = $pill.data('fecha');
+    if (!fecha) return;
+
+    const evento = obtenerEventosPorFecha(fecha)
+        .find(e => e.idGrupo === idGrupo && e.tipo === tipo);
+    if (!evento) return;
+
+    const $tt = obtenerTooltip();
+    $tt.html(construirTooltip(evento));
+    // Se posiciona con el contenido ya puesto: antes de eso no se puede medir.
+    posicionarTooltip($tt, elemento);
+    $tt.addClass('visible');
+}
+
 // ========== POPOVER "+N MÁS" ==========
 function cerrarPopoverDia() {
     $('.popover-dia').remove();
@@ -277,6 +454,26 @@ function configurarEventListeners() {
         renderizarVista();
     });
     
+    // Tooltip propio sobre los badges. Delegado, asi sobrevive a los renders.
+    $(document).on('mouseenter', '.evento-pill', function() {
+        const elemento = this;
+        clearTimeout(tooltipTimer);
+        tooltipTimer = setTimeout(() => mostrarTooltip(elemento), TOOLTIP_DELAY_MS);
+    });
+
+    $(document).on('mouseleave', '.evento-pill', ocultarTooltip);
+
+    // Si no se oculta en estos tres casos, el tooltip queda flotando sobre
+    // contenido que ya no existe: el badge se va con el re-render, o la
+    // celda se scrollea y el tooltip queda apuntando al vacio.
+    $(document).on('click', '.evento-pill', ocultarTooltip);
+    $(window).on('resize', ocultarTooltip);
+
+    // En fase de captura y no delegado: el evento scroll no burbujea, asi que
+    // un $(document).on('scroll', '.calendario-view', ...) nunca se
+    // dispararia. Con capture:true se ven tambien los scrolls internos.
+    document.addEventListener('scroll', ocultarTooltip, true);
+
     // Abrir el detalle desde cualquier badge, tarjeta o card del panel.
     // Delegado y por ID: nada de serializar el despacho en el HTML.
     $(document).on('click', '.evento-pill', function() {
@@ -414,6 +611,11 @@ function cargarDespachos() {
 
 // ========== RENDERIZADO ==========
 function renderizarVista() {
+    // Los badges se reconstruyen: cualquier tooltip o popover abierto queda
+    // apuntando a un nodo que ya no existe.
+    ocultarTooltip();
+    cerrarPopoverDia();
+
     if (vistaActual === 'calendario') {
         renderizarCalendario();
         renderizarPanelProximosArribos();
@@ -591,7 +793,8 @@ function crearBadgeEvento(evento) {
     return `
         <div class="evento-pill ${evento.tipo}"
              data-id-grupo="${evento.idGrupo}"
-             data-tipo="${evento.tipo}">
+             data-tipo="${evento.tipo}"
+             data-fecha="${evento.fecha}">
             <div class="evento-info">
                 <div class="evento-titulo">
                     <span class="evento-alias${alias.provisorio ? ' alias-provisorio' : ''}">${escaparHtml(alias.texto)}</span>
