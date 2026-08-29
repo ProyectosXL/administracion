@@ -22,16 +22,15 @@ class CronogramaDespachos {
                     A.FECHA_EMB, A.FECHA_ARR, A.FECHA_DESP_ADU, 
                     COALESCE(CAST(A.FECHA_RECIBIDO AS DATE), D.FECHA_REC) AS FECHA_REC, A.ETA_CONFIRMADA
                     FROM RO_T_IMPORTACIONES_ENCABEZADO A
-                    LEFT JOIN RO_T_IMPORTACIONES_DETALLE B ON A.ID = B.ID_MG
                     LEFT JOIN CPA35 C ON A.ORDEN_COMPRA = C.N_ORDEN_CO
-                    LEFT JOIN 
+                    LEFT JOIN
                     (
-                        SELECT CAST(FECHA_MOV AS DATE) FECHA_REC, N_ORDEN_CO 
-                        FROM STA20 
-                        WHERE TCOMP_IN_S = 'RP' AND FECHA_MOV >= GETDATE()-360 
-                        GROUP BY FECHA_MOV, N_ORDEN_CO
+                        SELECT MAX(CAST(FECHA_MOV AS DATE)) FECHA_REC, N_ORDEN_CO
+                        FROM STA20
+                        WHERE TCOMP_IN_S = 'RP' AND FECHA_MOV >= GETDATE()-360
+                        GROUP BY N_ORDEN_CO
                     ) D ON A.ORDEN_COMPRA = D.N_ORDEN_CO
-                    WHERE B.ID_MG IS NULL AND A.FECHA_MOV >= GETDATE()-360
+                    WHERE A.FECHA_MOV >= GETDATE()-360
                     ORDER BY A.FECHA_MOV DESC";
             
             $stmt = sqlsrv_query($this->cid_central, $sql);
