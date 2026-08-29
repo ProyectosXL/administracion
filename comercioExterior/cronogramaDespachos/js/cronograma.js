@@ -67,8 +67,178 @@ function guardarPreferencia(clave, valor) {
 // Arranca expandido: solo se colapsa si el usuario lo dejo asi.
 let panelColapsado = leerPreferencia(PREF_PANEL_COLAPSADO, '0') === '1';
 
+// Densidad de los badges del calendario. Compacto por defecto.
+const PREF_DENSIDAD = 'cronograma.densidad';
+const MAX_EVENTOS_VISIBLES = { compacto: 5, comodo: 3 };
+
+let densidad = leerPreferencia(PREF_DENSIDAD, 'compacto') === 'comodo' ? 'comodo' : 'compacto';
+
+// ========== HELPERS ==========
+
+/**
+ * Fecha local en formato YYYY-MM-DD.
+ *
+ * Reemplaza a toISOString().split('T')[0], que convierte a UTC: al este de
+ * Greenwich adelanta un dia y al oeste lo atrasa, segun la hora. Las fechas
+ * del cronograma son fechas de calendario sin hora, asi que se arman con los
+ * getters locales.
+ */
+function aISO(fecha) {
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, '0');
+    const d = String(fecha.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+/** Suma dias corridos a una fecha 'YYYY-MM-DD' y devuelve otra 'YYYY-MM-DD'. */
+function sumarDias(fechaIso, dias) {
+    if (!fechaIso) return null;
+    const f = new Date(fechaIso + 'T00:00:00');
+    f.setDate(f.getDate() + dias);
+    return aISO(f);
+}
+
+/**
+ * Escapa texto para interpolarlo en HTML. Los nombres de proveedor traen
+ * comillas y ampersands ("GUANG ZHOU YILAN LEATHER CO.,LTD.") y ademas se
+ * usan dentro de atributos.
+ */
+function escaparHtml(texto) {
+    return String(texto === null || texto === undefined ? '' : texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/** Todas las OCs de un grupo de contenedor. */
+function despachosDelGrupo(idGrupo) {
+    return despachos.filter(d => d.ID_GRUPO === idGrupo);
+}
+
+/**
+ * Alias de 2 letras del proveedor.
+ * Si no hay alias configurado se derivan las 2 primeras letras del nombre y
+ * se marca como provisorio, para que el badge lo muestre atenuado y se note
+ * que falta cargarlo.
+ */
+function aliasDeDespacho(despacho) {
+    const codigo = despacho.COD_PROVEE;
+    const configurado = codigo ? aliasProveedor[codigo] : null;
+
+    if (configurado) {
+        return { texto: configurado, provisorio: false };
+    }
+
+    const letras = (despacho.PROVEEDOR || '')
+        .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '')
+        .slice(0, 2)
+        .toUpperCase();
+
+    return { texto: letras || '??', provisorio: true };
+}
+
+// Un warning por rubro y no uno por badge: si no, el mismo rubro sin mapear
+// inunda la consola en cada render.
+const rubrosSinIconoAvisados = new Set();
+
+function iconoDeRubro(rubro) {
+    if (!rubro || rubro === 'SIN RUBRO') {
+        return 'bi-question-circle';
+    }
+    if (iconosRubro[rubro]) {
+        return iconosRubro[rubro];
+    }
+    if (!rubrosSinIconoAvisados.has(rubro)) {
+        rubrosSinIconoAvisados.add(rubro);
+        console.warn(`[cronograma] Rubro sin icono configurado: "${rubro}". Se usa bi-tag.`);
+    }
+    return 'bi-tag';
+}
+
+/** La columna ICONO admite clase de bootstrap-icons o un emoji suelto. */
+function renderizarIcono(valor) {
+    if (typeof valor === 'string' && valor.indexOf('bi-') === 0) {
+        return `<i class="bi ${escaparHtml(valor)}"></i>`;
+    }
+    return escaparHtml(valor);
+}
+
+/**
+ * Rubros de un grupo, sumando las cantidades de TODAS sus OCs y ordenados
+ * por cantidad descendente.
+ */
+function rubrosDelGrupo(listaDespachos) {
+    const acumulado = new Map();
+
+    listaDespachos.forEach(d => {
+        const rubros = rubrosPorOC[d.ORDEN_COMPRA] || [];
+        rubros.forEach(r => {
+            acumulado.set(r.rubro, (acumulado.get(r.rubro) || 0) + r.cantidad);
+        });
+    });
+
+    return Array.from(acumulado, ([rubro, cantidad]) => ({ rubro, cantidad }))
+        .sort((a, b) => b.cantidad - a.cantidad);
+}
+
 function aplicarEstadoPanel() {
     $('body').toggleClass('panel-colapsado', panelColapsado);
+}
+
+function aplicarEstadoDensidad() {
+    $('body').toggleClass('densidad-comodo', densidad === 'comodo');
+    $('.btn-densidad').removeClass('active')
+        .filter(`[data-densidad="${densidad}"]`).addClass('active');
+}
+
+// ========== POPOVER "+N MÁS" ==========
+function cerrarPopoverDia() {
+    $('.popover-dia').remove();
+}
+
+/**
+ * Lista completa de eventos de un dia. Los badges son los mismos que en la
+ * celda, asi que siguen siendo clickeables y abren el detalle.
+ */
+function abrirPopoverDia(fechaStr, elementoAncla) {
+    cerrarPopoverDia();
+
+    const eventos = obtenerEventosPorFecha(fechaStr);
+    if (eventos.length === 0) return;
+
+    const html = `
+        <div class="popover-dia">
+            <div class="popover-dia-header">
+                <span>${formatearFecha(fechaStr)}</span>
+                <span class="popover-dia-conteo">${eventos.length} eventos</span>
+            </div>
+            <div class="popover-dia-body">
+                ${eventos.map(crearBadgeEvento).join('')}
+            </div>
+        </div>
+    `;
+
+    const $pop = $(html).appendTo('body');
+
+    // Posicionado sobre el chip, con volteo cuando se sale del viewport.
+    const ancla = elementoAncla.getBoundingClientRect();
+    const ancho = $pop.outerWidth();
+    const alto = $pop.outerHeight();
+    const margen = 8;
+
+    let izq = ancla.left;
+    let arriba = ancla.bottom + 4;
+
+    if (izq + ancho > window.innerWidth - margen) {
+        izq = Math.max(margen, window.innerWidth - ancho - margen);
+    }
+    if (arriba + alto > window.innerHeight - margen) {
+        arriba = Math.max(margen, ancla.top - alto - 4);
+    }
+
+    $pop.css({ left: `${izq}px`, top: `${arriba}px` });
 }
 
 function alternarPanel() {
@@ -83,6 +253,7 @@ function alternarPanel() {
 // ========== INICIALIZACIÓN ==========
 $(document).ready(function() {
     aplicarEstadoPanel();
+    aplicarEstadoDensidad();
     cargarDespachos();
     configurarEventListeners();
     actualizarMesDisplay();
@@ -106,6 +277,47 @@ function configurarEventListeners() {
         renderizarVista();
     });
     
+    // Abrir el detalle desde cualquier badge, tarjeta o card del panel.
+    // Delegado y por ID: nada de serializar el despacho en el HTML.
+    $(document).on('click', '.evento-pill', function() {
+        // Los badges del popover son los mismos: al abrir el detalle hay que
+        // cerrarlo, si no queda flotando detras del modal.
+        cerrarPopoverDia();
+        abrirDetallePorGrupo($(this).data('id-grupo'));
+    });
+
+    $(document).on('click', '.card-proximo-arribo, .despacho-card', function() {
+        abrirDetallePorId($(this).data('id'));
+    });
+
+    // Chip "+N mas": lista completa del dia
+    $(document).on('click', '.evento-mas', function(e) {
+        e.stopPropagation();
+        abrirPopoverDia($(this).data('fecha'), this);
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.popover-dia, .evento-mas').length) {
+            cerrarPopoverDia();
+        }
+    });
+
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarPopoverDia();
+        }
+    });
+
+    // Densidad de los badges
+    $(document).on('click', '.btn-densidad', function() {
+        const nueva = $(this).data('densidad');
+        if (nueva === densidad) return;
+        densidad = nueva;
+        guardarPreferencia(PREF_DENSIDAD, densidad);
+        aplicarEstadoDensidad();
+        renderizarVista();
+    });
+
     // Colapsar / expandir el panel de proximos arribos.
     // Delegados: el panel se vuelve a construir en cada render, asi que un
     // listener directo se perderia.
@@ -231,27 +443,27 @@ function renderizarCalendario() {
                 <span class="leyenda-titulo">Leyenda:</span>
                 <div class="leyenda-items">
                     <div class="leyenda-pill est-emb">
-                        <span class="leyenda-icono">📅</span>
+                        <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Embarque Estimado</span>
                     </div>
                     <div class="leyenda-pill emb">
-                        <span class="leyenda-icono">🚢</span>
+                        <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Embarque Real</span>
                     </div>
                     <div class="leyenda-pill arr-estimado">
-                        <span class="leyenda-icono">🛃</span>
+                        <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Arribo Estimado</span>
                     </div>
                     <div class="leyenda-pill arr-real">
-                        <span class="leyenda-icono">🛃</span>
+                        <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Arribo Real</span>
                     </div>
                     <div class="leyenda-pill desp">
-                        <span class="leyenda-icono">🚚</span>
+                        <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Despacho Aduana</span>
                     </div>
                     <div class="leyenda-pill rec">
-                        <span class="leyenda-icono">📦</span>
+                        <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Recepción</span>
                     </div>
                 </div>
@@ -313,106 +525,141 @@ function generarCalendario() {
 }
 
 function crearDiaCalendario(fecha, otroMes) {
-    const fechaStr = fecha.toISOString().split('T')[0];
+    const fechaStr = aISO(fecha);
     const eventos = obtenerEventosPorFecha(fechaStr);
-    
-    let eventosHtml = '';
-    eventos.forEach(evento => {
+
+    const maximo = MAX_EVENTOS_VISIBLES[densidad];
+    let visibles = eventos;
+    let ocultos = 0;
+
+    // Si no entran todos se muestra uno menos, para hacerle lugar al chip.
+    if (eventos.length > maximo) {
+        visibles = eventos.slice(0, maximo - 1);
+        ocultos = eventos.length - visibles.length;
+    }
+
+    let eventosHtml = visibles.map(crearBadgeEvento).join('');
+
+    if (ocultos > 0) {
         eventosHtml += `
-            <div class="evento-pill ${evento.tipo}" onclick='abrirDetalleDespacho(${JSON.stringify(evento.despacho)})' title="${evento.texto}">
-                <div class="evento-icono">${evento.icono}</div>
-                <div class="evento-info">
-                    <div class="evento-contenedor">${evento.contenedor}</div>
-                    <div class="evento-proveedor">${evento.proveedor}</div>
-                </div>
-            </div>
+            <button type="button" class="evento-mas" data-fecha="${fechaStr}">
+                +${ocultos} más
+            </button>
         `;
-    });
-    
+    }
+
     return `
-        <div class="calendario-dia ${otroMes ? 'otro-mes' : ''}">
+        <div class="calendario-dia ${otroMes ? 'otro-mes' : ''}" data-fecha="${fechaStr}">
             <div class="dia-numero">${fecha.getDate()}</div>
             <div class="dia-eventos">${eventosHtml}</div>
         </div>
     `;
 }
 
+/**
+ * Badge de un evento.
+ *
+ * Sin icono de estado: el color ya identifica el tipo de hito y el icono
+ * gastaba ancho que ahora usan el alias y los rubros. Los emojis de estado
+ * siguen en el timeline del modal.
+ *
+ * El despacho NO se serializa en el HTML: viaja el ID de grupo y el click se
+ * resuelve por delegacion buscando en el array. Serializar un objeto dentro
+ * de un atributo se rompe con las comillas de los nombres de proveedor.
+ */
+function crearBadgeEvento(evento) {
+    const representante = evento.despacho;
+    const alias = aliasDeDespacho(representante);
+    const contenedor = representante.CONTENEDOR || representante.ORDEN_COMPRA || 'Sin contenedor';
+
+    const rubros = rubrosDelGrupo(evento.despachos);
+    const rubrosVisibles = rubros.slice(0, 3);
+    const rubrosRestantes = rubros.length - rubrosVisibles.length;
+
+    let iconosHtml = rubrosVisibles
+        .map(r => renderizarIcono(iconoDeRubro(r.rubro)))
+        .join('');
+
+    if (rubrosRestantes > 0) {
+        iconosHtml += `<span class="evento-rubros-mas">+${rubrosRestantes}</span>`;
+    }
+
+    const proveedorHtml = (densidad === 'comodo')
+        ? `<div class="evento-proveedor">${escaparHtml(representante.PROVEEDOR || 'Sin proveedor')}</div>`
+        : '';
+
+    return `
+        <div class="evento-pill ${evento.tipo}"
+             data-id-grupo="${evento.idGrupo}"
+             data-tipo="${evento.tipo}">
+            <div class="evento-info">
+                <div class="evento-titulo">
+                    <span class="evento-alias${alias.provisorio ? ' alias-provisorio' : ''}">${escaparHtml(alias.texto)}</span>
+                    <span class="evento-contenedor">${escaparHtml(contenedor)}</span>
+                </div>
+                ${proveedorHtml}
+            </div>
+            <span class="evento-rubros">${iconosHtml}</span>
+        </div>
+    `;
+}
+
+/**
+ * Eventos de un dia, ya deduplicados por grupo de contenedor.
+ *
+ * Antes se emitia un evento por OC: un contenedor con 3 OCs pintaba 3 badges
+ * identicos el mismo dia. Ahora se agrupa por ID_GRUPO + tipo de evento y se
+ * emite uno solo, que se lleva la lista de OCs del grupo para que el tooltip,
+ * el modal y la suma de rubros la usen.
+ */
 function obtenerEventosPorFecha(fecha) {
-    const eventos = [];
-    
+    const porClave = new Map();
+
     despachos.forEach(despacho => {
-        const proveedor = despacho.PROVEEDOR || 'Sin proveedor';
-        const contenedor = despacho.CONTENEDOR || despacho.ORDEN_COMPRA;
-        const textoCompleto = `${proveedor} - ${contenedor}`;
-        
-        // Fecha estimada de embarque
-        if (despacho.FECHA_EST_EMB === fecha && filtrosActivos.includes('est-emb')) {
-            eventos.push({
-                tipo: 'est-emb',
-                texto: textoCompleto,
-                proveedor: proveedor,
-                contenedor: contenedor,
-                icono: '📅',
-                despacho: despacho
-            });
+        const tipos = [];
+
+        if (despacho.FECHA_EST_EMB === fecha) {
+            tipos.push('est-emb');
         }
-        
-        // Fecha real de embarque
-        if (despacho.FECHA_EMB === fecha && filtrosActivos.includes('emb')) {
-            eventos.push({
-                tipo: 'emb',
-                texto: textoCompleto,
-                proveedor: proveedor,
-                contenedor: contenedor,
-                icono: '🚢',
-                despacho: despacho
-            });
+        if (despacho.FECHA_EMB === fecha) {
+            tipos.push('emb');
         }
-        
-        // Fecha de arribo
         if (despacho.FECHA_ARR === fecha) {
-            // Determinar si es arribo real o estimado
-            const etaConfirmada = parseInt(despacho.ETA_CONFIRMADA) === 1;
-            const tipoArribo = etaConfirmada ? 'arr-real' : 'arr-estimado';
-            
-            if (filtrosActivos.includes(tipoArribo)) {
-                eventos.push({
-                    tipo: tipoArribo,
-                    texto: textoCompleto,
-                    proveedor: proveedor,
-                    contenedor: contenedor,
-                    icono: '🛃',
-                    despacho: despacho
+            tipos.push(parseInt(despacho.ETA_CONFIRMADA) === 1 ? 'arr-real' : 'arr-estimado');
+        }
+        if (despacho.FECHA_DESP_ADU === fecha) {
+            tipos.push('desp');
+        }
+        if (despacho.FECHA_REC === fecha) {
+            tipos.push('rec');
+        }
+
+        tipos.forEach(tipo => {
+            if (!filtrosActivos.includes(tipo)) return;
+
+            const clave = `${despacho.ID_GRUPO}|${tipo}`;
+
+            if (porClave.has(clave)) {
+                porClave.get(clave).despachos.push(despacho);
+            } else {
+                porClave.set(clave, {
+                    tipo: tipo,
+                    fecha: fecha,
+                    idGrupo: despacho.ID_GRUPO,
+                    despachos: [despacho]
                 });
             }
-        }
-        
-        // Fecha despacho aduana
-        if (despacho.FECHA_DESP_ADU === fecha && filtrosActivos.includes('desp')) {
-            eventos.push({
-                tipo: 'desp',
-                texto: textoCompleto,
-                proveedor: proveedor,
-                contenedor: contenedor,
-                icono: '🚚',
-                despacho: despacho
-            });
-        }
-        
-        // Fecha recibido
-        if (despacho.FECHA_REC === fecha && filtrosActivos.includes('rec')) {
-            eventos.push({
-                tipo: 'rec',
-                texto: textoCompleto,
-                proveedor: proveedor,
-                contenedor: contenedor,
-                icono: '📦',
-                despacho: despacho
-            });
-        }
+        });
     });
-    
-    return eventos;
+
+    // Representante estable: la OC principal del grupo si esta entre las del
+    // evento, y si no la de ID mas bajo. Sin esto el badge podria cambiar de
+    // proveedor entre renders, porque el orden de 'despachos' es por FECHA_MOV.
+    return Array.from(porClave.values()).map(evento => {
+        evento.despachos.sort((a, b) => a.ID - b.ID);
+        evento.despacho = evento.despachos.find(d => d.ID === evento.idGrupo) || evento.despachos[0];
+        return evento;
+    });
 }
 
 // ========== PANEL PRÓXIMOS ARRIBOS ==========
@@ -499,14 +746,14 @@ function calcularFechaArriboEstimada(despacho) {
     if (despacho.FECHA_EMB) {
         const fechaEmb = new Date(despacho.FECHA_EMB + 'T00:00:00');
         fechaEmb.setDate(fechaEmb.getDate() + 45);
-        return fechaEmb.toISOString().split('T')[0];
+        return aISO(fechaEmb);
     }
     
     // Si solo hay fecha estimada de embarque, sumar 45 días
     if (despacho.FECHA_EST_EMB) {
         const fechaEstEmb = new Date(despacho.FECHA_EST_EMB + 'T00:00:00');
         fechaEstEmb.setDate(fechaEstEmb.getDate() + 45);
-        return fechaEstEmb.toISOString().split('T')[0];
+        return aISO(fechaEstEmb);
     }
     
     return null;
@@ -529,7 +776,7 @@ function crearCardProximoArribo(despacho) {
     const progreso = calcularProgreso(despacho);
     
     return `
-        <div class="card-proximo-arribo arribo-${tipoArribo}" onclick='abrirDetalleDespacho(${JSON.stringify(despacho)})'>
+        <div class="card-proximo-arribo arribo-${tipoArribo}" data-id="${despacho.ID}">
             <div class="arribo-header">
                 <div class="arribo-contenedor">${contenedor}</div>
                 <div class="arribo-countdown ${claseUrgencia}">
@@ -619,7 +866,7 @@ function crearCardDespacho(despacho, proximoHito) {
     const claseArriboReal = (estado === 'arribado' && etaConfirmada) ? 'arribo-confirmado' : '';
     
     return `
-        <div class="despacho-card estado-${estado} ${claseArriboReal}" onclick='abrirDetalleDespacho(${JSON.stringify(despacho)})'>
+        <div class="despacho-card estado-${estado} ${claseArriboReal}" data-id="${despacho.ID}">
             <div class="card-header">
                 <div>
                     <div class="card-proveedor">${despacho.PROVEEDOR}</div>
@@ -663,6 +910,29 @@ function obtenerProximoHito(despacho) {
 }
 
 // ========== MODAL DETALLE ==========
+
+/** Abre el detalle a partir del ID de encabezado (tarjetas y panel). */
+function abrirDetallePorId(id) {
+    const despacho = despachos.find(d => d.ID === parseInt(id, 10));
+    if (despacho) {
+        abrirDetalleDespacho(despacho);
+    }
+}
+
+/**
+ * Abre el detalle a partir del grupo de contenedor (badges del calendario).
+ * Se muestra la OC principal del grupo; las demas quedan disponibles en
+ * evento.despachos para el modal y el tooltip.
+ */
+function abrirDetallePorGrupo(idGrupo) {
+    const grupo = despachosDelGrupo(parseInt(idGrupo, 10));
+    if (grupo.length === 0) return;
+
+    grupo.sort((a, b) => a.ID - b.ID);
+    const principal = grupo.find(d => d.ID === parseInt(idGrupo, 10)) || grupo[0];
+    abrirDetalleDespacho(principal);
+}
+
 function abrirDetalleDespacho(despacho) {
     despachoSeleccionado = despacho;
     const estado = despacho.ESTADO;
@@ -708,6 +978,9 @@ function abrirDetalleDespacho(despacho) {
     `;
     
     $('body').append(modalHtml);
+
+    // El modal ya esta en el DOM: se puede medir y animar la barra.
+    animarBarraProgresoColoreada();
 }
 
 function crearTimeline(despacho) {
@@ -846,15 +1119,15 @@ function calcularFechasEstimadas(despacho) {
         
         const fechaArr = new Date(fechaEmb);
         fechaArr.setDate(fechaArr.getDate() + 45);
-        fechas.arribo = fechaArr.toISOString().split('T')[0];
+        fechas.arribo = aISO(fechaArr);
         
         const fechaDesp = new Date(fechaArr);
         fechaDesp.setDate(fechaDesp.getDate() + 7);
-        fechas.despacho = fechaDesp.toISOString().split('T')[0];
+        fechas.despacho = aISO(fechaDesp);
         
         const fechaRec = new Date(fechaDesp);
         fechaRec.setDate(fechaRec.getDate() + 3);
-        fechas.recepcion = fechaRec.toISOString().split('T')[0];
+        fechas.recepcion = aISO(fechaRec);
     }
     // Si solo hay fecha estimada de embarque
     else if (despacho.FECHA_EST_EMB) {
@@ -862,15 +1135,15 @@ function calcularFechasEstimadas(despacho) {
         
         const fechaArr = new Date(fechaEstEmb);
         fechaArr.setDate(fechaArr.getDate() + 45);
-        fechas.arribo = fechaArr.toISOString().split('T')[0];
+        fechas.arribo = aISO(fechaArr);
         
         const fechaDesp = new Date(fechaArr);
         fechaDesp.setDate(fechaDesp.getDate() + 7);
-        fechas.despacho = fechaDesp.toISOString().split('T')[0];
+        fechas.despacho = aISO(fechaDesp);
         
         const fechaRec = new Date(fechaDesp);
         fechaRec.setDate(fechaRec.getDate() + 3);
-        fechas.recepcion = fechaRec.toISOString().split('T')[0];
+        fechas.recepcion = aISO(fechaRec);
     }
     
     return fechas;
@@ -890,10 +1163,10 @@ function cerrarModal() {
     despachoSeleccionado = null;
 }
 
-// Animar barra de progreso coloreada después de que se renderice el modal
-$(document).on('DOMNodeInserted', '.timeline-track', function() {
-    animarBarraProgresoColoreada();
-});
+// La barra de progreso se anima con una llamada directa desde
+// abrirDetalleDespacho(), justo despues de insertar el modal.
+// Antes se disparaba con $(document).on('DOMNodeInserted', ...): un evento
+// deprecado, que ademas corria varias veces por render.
 
 function animarBarraProgresoColoreada() {
     const steps = $('.timeline-step');

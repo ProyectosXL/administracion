@@ -60,32 +60,32 @@ header("Pragma: no-cache");
                         <div class="filtros-lista">
                             <label class="filtro-item">
                                 <input type="checkbox" value="est-emb" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">📅</span>
+                                <span class="filtro-color est-emb"></span>
                                 <span>Embarque Estimado</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="emb" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">🚢</span>
+                                <span class="filtro-color emb"></span>
                                 <span>Embarque Real</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="arr-estimado" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">🛃</span>
+                                <span class="filtro-color arr-estimado"></span>
                                 <span>Arribo Estimado</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="arr-real" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">🛃</span>
+                                <span class="filtro-color arr-real"></span>
                                 <span>Arribo Real</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="desp" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">🚚</span>
+                                <span class="filtro-color desp"></span>
                                 <span>Despacho Aduana</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="rec" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">📦</span>
+                                <span class="filtro-color rec"></span>
                                 <span>Recepción</span>
                             </label>
                         </div>
@@ -94,6 +94,18 @@ header("Pragma: no-cache");
                 <button type="button" class="btn-help" data-bs-toggle="modal" data-bs-target="#ayudaModal" title="Guía de ayuda: Estados, flujo y funcionalidades">
                     <i class="bi bi-info-circle"></i> Ayuda
                 </button>
+                <!-- Densidad de los badges del calendario. El estado activo lo
+                     marca aplicarEstadoDensidad() desde localStorage. -->
+                <div class="btn-density-toggle" id="densidadToggle">
+                    <button class="btn-densidad" data-densidad="compacto"
+                            title="Vista compacta: más contenedores por día">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <button class="btn-densidad" data-densidad="comodo"
+                            title="Vista cómoda: incluye el proveedor">
+                        <i class="bi bi-card-list"></i>
+                    </button>
+                </div>
                 <div class="btn-view-toggle">
                     <button class="btn-view active" data-view="calendario">
                         <i class="bi bi-calendar3"></i> Calendario
