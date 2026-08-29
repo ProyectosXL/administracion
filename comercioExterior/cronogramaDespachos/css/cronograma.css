@@ -30,6 +30,27 @@
     
     /* Fuente */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Geometria del calendario.
+       Las celdas son de tamano fijo para que todos los dias midan igual,
+       tengan eventos o no. La aritmetica con el panel abierto es
+       7 x 140 + 6 x 8 = 1028px, que entra en un viewport de 1440
+       descontando el panel y los paddings. */
+    --dia-width: 140px;
+    --dia-height: 168px;
+
+    /* Panel de proximos arribos. --panel-width lo pisa
+       body.panel-colapsado, y de ahi se derivan tanto el ancho del panel
+       como el margen que le reserva el calendario. */
+    --panel-width: 340px;
+    --panel-gap: 20px;
+}
+
+/* Panel colapsado: queda como solapa vertical y el calendario se ensancha.
+   7 x 160 + 48 = 1168px, holgado. */
+body.panel-colapsado {
+    --dia-width: 160px;
+    --panel-width: 44px;
 }
 
 * {
@@ -49,7 +70,7 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     padding: 24px;
-    margin-right: 360px;
+    margin-right: calc(var(--panel-width) + var(--panel-gap));
     transition: margin-right 0.3s ease;
 }
 
@@ -394,10 +415,20 @@ body {
     border-color: var(--gray-600);
 }
 
+/* El scroll horizontal vive aca y no en la grilla: con width max-content
+   la grilla se centra sola cuando entra, y cuando no entra el margin auto
+   colapsa a 0 y se puede scrollear desde el lunes. Con justify-content
+   center la primera columna quedaria fuera de alcance. */
+.calendario-view {
+    overflow-x: auto;
+}
+
 .calendario-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, var(--dia-width));
     gap: 8px;
+    width: max-content;
+    margin: 0 auto;
 }
 
 .calendario-dia-header {
@@ -411,12 +442,18 @@ body {
 }
 
 .calendario-dia {
-    min-height: 120px;
+    width: var(--dia-width);
+    height: var(--dia-height);
     padding: 8px;
     border: 1px solid var(--gray-200);
     border-radius: 8px;
     background: var(--gray-50);
-    transition: all 0.2s;
+    transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+    /* Alto fijo: todos los dias miden igual, con eventos o sin ellos.
+       Lo que no entra se recorta y lo resuelve el chip "+N mas". */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .calendario-dia:hover {
@@ -434,6 +471,7 @@ body {
     font-weight: 600;
     color: var(--gray-800);
     margin-bottom: 8px;
+    flex-shrink: 0;
 }
 
 .calendario-dia.otro-mes .dia-numero {
@@ -444,6 +482,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
+    min-height: 0; /* sin esto el flex item no se deja recortar */
+    overflow: hidden;
 }
 
 /* ========== PILLS DE EVENTOS ========== */
@@ -953,13 +994,22 @@ body {
         gap: 16px;
     }
     
+    /* La celda sigue siendo de tamano fijo tambien aca: se achica via
+       variables y el resto lo resuelve el scroll horizontal de
+       .calendario-view. Volver a 1fr chocaria con el width fijo de
+       .calendario-dia, y exprimir 7 columnas en un telefono dejaria los
+       badges ilegibles. */
+    :root,
+    body.panel-colapsado {
+        --dia-width: 110px;
+        --dia-height: 120px;
+    }
+
     .calendario-grid {
-        grid-template-columns: repeat(7, 1fr);
         gap: 4px;
     }
-    
+
     .calendario-dia {
-        min-height: 80px;
         padding: 4px;
     }
     
@@ -990,8 +1040,8 @@ body {
 .panel-proximos-arribos {
     position: fixed;
     top: 100px;
-    right: 20px;
-    width: 340px;
+    right: var(--panel-gap);
+    width: var(--panel-width);
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.12);
@@ -999,11 +1049,24 @@ body {
     max-height: calc(100vh - 120px);
     display: flex;
     flex-direction: column;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.panel-contenido {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
 }
 
 .panel-header {
     padding: 20px;
     border-bottom: 2px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .panel-header h3 {
@@ -1014,6 +1077,76 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.btn-panel-toggle {
+    border: none;
+    background: transparent;
+    color: var(--gray-600);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-panel-toggle:hover {
+    background: var(--gray-100);
+    color: var(--gray-800);
+}
+
+/* ---------- Solapa (panel colapsado) ---------- */
+.panel-solapa {
+    display: none;
+    width: 100%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 16px 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--gray-800);
+    font-family: inherit;
+}
+
+.panel-solapa:hover {
+    background: var(--gray-50);
+}
+
+.panel-solapa > i {
+    font-size: 22px;
+    color: var(--color-emb);
+}
+
+.panel-solapa-badge {
+    background: var(--color-emb);
+    color: white;
+    border-radius: 10px;
+    min-width: 20px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+}
+
+.panel-solapa-texto {
+    writing-mode: vertical-rl;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--gray-600);
+    white-space: nowrap;
+}
+
+body.panel-colapsado .panel-solapa {
+    display: flex;
+}
+
+body.panel-colapsado .panel-contenido {
+    display: none;
 }
 
 .panel-header i {
@@ -1231,13 +1364,12 @@ body {
 }
 
 /* ========== RESPONSIVE PANEL ========== */
+/* El ancho del panel y el margen del calendario salen de --panel-width, asi
+   que alcanza con pisar la variable. body.panel-colapsado tiene mas
+   especificidad que :root, o sea que el colapso sigue ganando aca. */
 @media (max-width: 1400px) {
-    .panel-proximos-arribos {
-        width: 300px;
-    }
-    
-    .cronograma-container {
-        margin-right: 340px;
+    :root {
+        --panel-width: 300px;
     }
 }
 
@@ -1249,15 +1381,39 @@ body {
         margin-bottom: 20px;
         margin-top: 0;
     }
-    
+
     .panel-body {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 12px;
     }
-    
+
     .card-proximo-arribo {
         margin-bottom: 0;
+    }
+
+    /* En este breakpoint el panel pasa a estatico y ocupa el ancho completo,
+       asi que el colapso no tiene sentido: se ignora aunque quede guardado
+       en localStorage, y el calendario recupera su ancho normal. */
+    body.panel-colapsado {
+        --dia-width: 140px;
+    }
+
+    .cronograma-container,
+    body.panel-colapsado .cronograma-container {
+        margin-right: auto;
+    }
+
+    body.panel-colapsado .panel-solapa {
+        display: none;
+    }
+
+    body.panel-colapsado .panel-contenido {
+        display: flex;
+    }
+
+    .btn-panel-toggle {
+        display: none;
     }
 }
 

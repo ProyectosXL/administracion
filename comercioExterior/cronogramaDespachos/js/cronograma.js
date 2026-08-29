@@ -42,8 +42,47 @@ const LABELS_ESTADOS = {
     recibido: 'Recibido'
 };
 
+// ========== PREFERENCIAS EN localStorage ==========
+// Envueltas en try/catch: en ventana privada o con las cookies de sitio
+// bloqueadas el solo hecho de tocar localStorage tira excepcion.
+const PREF_PANEL_COLAPSADO = 'cronograma.panelColapsado';
+
+function leerPreferencia(clave, porDefecto) {
+    try {
+        const v = localStorage.getItem(clave);
+        return v === null ? porDefecto : v;
+    } catch (e) {
+        return porDefecto;
+    }
+}
+
+function guardarPreferencia(clave, valor) {
+    try {
+        localStorage.setItem(clave, valor);
+    } catch (e) {
+        /* sin persistencia, la sesion sigue funcionando igual */
+    }
+}
+
+// Arranca expandido: solo se colapsa si el usuario lo dejo asi.
+let panelColapsado = leerPreferencia(PREF_PANEL_COLAPSADO, '0') === '1';
+
+function aplicarEstadoPanel() {
+    $('body').toggleClass('panel-colapsado', panelColapsado);
+}
+
+function alternarPanel() {
+    panelColapsado = !panelColapsado;
+    guardarPreferencia(PREF_PANEL_COLAPSADO, panelColapsado ? '1' : '0');
+    aplicarEstadoPanel();
+    // Colapsar ensancha las celdas, o sea que cambia cuantos badges entran
+    // por dia: hay que rehacer el calendario, no solo mover el panel.
+    renderizarVista();
+}
+
 // ========== INICIALIZACIÓN ==========
 $(document).ready(function() {
+    aplicarEstadoPanel();
     cargarDespachos();
     configurarEventListeners();
     actualizarMesDisplay();
@@ -67,6 +106,20 @@ function configurarEventListeners() {
         renderizarVista();
     });
     
+    // Colapsar / expandir el panel de proximos arribos.
+    // Delegados: el panel se vuelve a construir en cada render, asi que un
+    // listener directo se perderia.
+    $(document).on('click', '#btnPanelToggle', function(e) {
+        e.preventDefault();
+        alternarPanel();
+    });
+
+    // Colapsado, toda la solapa es el area de click para reexpandir.
+    $(document).on('click', '#panelSolapa', function(e) {
+        e.preventDefault();
+        alternarPanel();
+    });
+
     // Filtros múltiples
     $(document).on('click', '#btnFiltros', function(e) {
         e.stopPropagation();
@@ -382,15 +435,30 @@ function renderizarPanelProximosArribos() {
     
     // Tomar solo los 3 primeros
     const proximosArribos = despachosConArribo.slice(0, 3);
-    
+
+    // El badge de la solapa cuenta TODOS los arribos pendientes, no los 3
+    // que se listan: colapsado, ese numero es la unica senal que queda.
+    const totalPendientes = despachosConArribo.length;
+
     let html = `
         <div class="panel-proximos-arribos">
-            <div class="panel-header">
-                <h3><i class="bi bi-ship"></i> Próximos Arribos</h3>
-            </div>
-            <div class="panel-body">
+            <button type="button" class="panel-solapa" id="panelSolapa"
+                    title="Expandir panel de próximos arribos">
+                <i class="bi bi-ship"></i>
+                <span class="panel-solapa-badge">${totalPendientes}</span>
+                <span class="panel-solapa-texto">Próximos Arribos</span>
+            </button>
+            <div class="panel-contenido">
+                <div class="panel-header">
+                    <h3><i class="bi bi-ship"></i> Próximos Arribos</h3>
+                    <button type="button" class="btn-panel-toggle" id="btnPanelToggle"
+                            title="Colapsar panel">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="panel-body">
     `;
-    
+
     if (proximosArribos.length === 0) {
         html += '<div class="panel-empty">No hay arribos pendientes</div>';
     } else {
@@ -398,11 +466,12 @@ function renderizarPanelProximosArribos() {
             html += crearCardProximoArribo(despacho);
         });
     }
-    
+
     html += `
-            </div>
-            <div class="panel-footer">
-                <a href="#" class="panel-link" id="verTodosLink">Ver todos →</a>
+                </div>
+                <div class="panel-footer">
+                    <a href="#" class="panel-link" id="verTodosLink">Ver todos →</a>
+                </div>
             </div>
         </div>
     `;
