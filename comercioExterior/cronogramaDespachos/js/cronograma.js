@@ -9,6 +9,22 @@ let mesActual = new Date();
 let despachoSeleccionado = null;
 let filtrosActivos = ['est-emb', 'emb', 'arr-estimado', 'arr-real', 'desp', 'rec']; // Filtros múltiples
 
+// Todo esto llega en la misma respuesta que los despachos, para no tener que
+// resolver nada por AJAX en medio de un render.
+let rubrosPorOC = {};   // { '<ORDEN_COMPRA>': [{ rubro, cantidad }, ...] }
+let aliasProveedor = {}; // { '<COD_PROVEE>': 'LC' }
+let iconosRubro = {};    // { '<RUBRO>': 'bi-gem' | '👟' }
+let motivosFecha = [];   // [{ codigo, label }, ...]
+
+// Defaults de red: si el endpoint no los trae, son los mismos valores que
+// antes estaban hardcodeados en este archivo.
+let parametrosDias = {
+    DIAS_EMB_ARR: 45,
+    DIAS_ARR_DESP: 7,
+    DIAS_DESP_REC: 3,
+    DIAS_ARR_DIST: 10
+};
+
 // Configuración de iconos por estado
 const ICONOS_ESTADOS = {
     origen: '🏭',
@@ -112,6 +128,13 @@ function cargarDespachos() {
         success: function(response) {
             if (response.success) {
                 despachos = response.data;
+                rubrosPorOC = response.rubros || {};
+                aliasProveedor = response.alias || {};
+                iconosRubro = response.iconosRubro || {};
+                motivosFecha = response.motivos || [];
+                if (response.parametros) {
+                    parametrosDias = $.extend({}, parametrosDias, response.parametros);
+                }
                 renderizarVista();
             } else {
                 mostrarError('Error al cargar despachos: ' + response.message);
