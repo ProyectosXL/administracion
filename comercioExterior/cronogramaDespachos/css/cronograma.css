@@ -1821,6 +1821,11 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     flex-direction: column;
     align-items: center;
     gap: 12px;
+    /* Columnas de ancho igual. Sin esto cada paso crecia con el largo de su
+       etiqueta y, al pasar de 5 a 6 pasos, los textos se tocaban entre si.
+       min-width: 0 es lo que permite que el texto se achique y corte. */
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .timeline-icon {
@@ -1851,6 +1856,10 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
 
 .timeline-label {
     text-align: center;
+    width: 100%;
+    /* Aire entre columnas vecinas: son las etiquetas las que se tocaban, no
+       los iconos. */
+    padding: 0 6px;
 }
 
 .timeline-label-title {
@@ -1858,12 +1867,16 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     font-weight: 600;
     color: var(--gray-800);
     margin-bottom: 4px;
+    line-height: 1.25;
+    /* Que corte en vez de invadir la columna de al lado. */
+    overflow-wrap: break-word;
 }
 
 .timeline-label-date {
     font-size: 12px;
     color: var(--gray-600);
     font-weight: 500;
+    white-space: nowrap;   /* la fecha nunca se parte al medio */
 }
 
 .timeline-step.completed .timeline-label-date {
@@ -1976,6 +1989,13 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     .timeline-track {
         flex-direction: column;
         gap: 24px;
+    }
+
+    /* En columna, flex: 1 repartiria el ALTO y aplastaria los pasos: aca
+       cada uno ocupa lo que necesita. */
+    .timeline-step {
+        flex: 0 0 auto;
+        width: 100%;
     }
     
     .timeline-line {

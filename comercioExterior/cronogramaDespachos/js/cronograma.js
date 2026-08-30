@@ -1994,7 +1994,9 @@ function crearTimeline(despacho) {
         },
         { 
             key: 'embarcado', 
-            label: tieneEmbarqueReal ? 'Embarcado' : 'Embarque (estimado)', 
+            // Sin "(estimado)": el circulo punteado, la italica y el ~ de la
+            // fecha ya lo dicen. Repetirlo desbordaba la columna.
+            label: tieneEmbarqueReal ? 'Embarcado' : 'Embarque', 
             icono: '🚢', 
             fecha: despacho.FECHA_EMB || despacho.FECHA_EST_EMB,
             fechaEstimada: despacho.FECHA_EST_EMB,
@@ -2004,7 +2006,7 @@ function crearTimeline(despacho) {
         },
         { 
             key: 'arribado', 
-            label: etaConfirmada ? 'Arribo Real' : 'Arribo Estimado', 
+            label: etaConfirmada ? 'Arribo real' : 'Arribo', 
             icono: '🛃', 
             fecha: despacho.FECHA_ARR || fechasEstimadas.arribo,
             fechaEstimada: fechasEstimadas.arribo,
@@ -2015,7 +2017,7 @@ function crearTimeline(despacho) {
         },
         { 
             key: 'despachado', 
-            label: tieneEmbarqueReal ? 'Despachado' : 'Despacho (estimado)', 
+            label: tieneEmbarqueReal ? 'Despachado' : 'Despacho', 
             icono: '🚚', 
             fecha: despacho.FECHA_DESP_ADU || fechasEstimadas.despacho,
             fechaEstimada: fechasEstimadas.despacho,
@@ -2025,7 +2027,7 @@ function crearTimeline(despacho) {
         },
         {
             key: 'recibido',
-            label: tieneEmbarqueReal ? 'Recibido' : 'Recepción (estimada)',
+            label: tieneEmbarqueReal ? 'Recibido' : 'Recepción',
             icono: '📦',
             fecha: despacho.FECHA_REC || fechasEstimadas.recepcion,
             fechaEstimada: fechasEstimadas.recepcion,
@@ -2039,7 +2041,7 @@ function crearTimeline(despacho) {
             key: 'distribuido',
             // Solo DIST_ORIGEN = 'C' es una fecha en firme; 'A' (automatica)
             // y 'M' (movida a mano) siguen siendo proyecciones.
-            label: despacho.DIST_ORIGEN === 'C' ? 'Distribución' : 'Distribución (estimada)',
+            label: 'Distribución',
             icono: '🏬',
             fecha: despacho.FECHA_DISTRI || fechasEstimadas.distribucion,
             fechaEstimada: fechasEstimadas.distribucion,
