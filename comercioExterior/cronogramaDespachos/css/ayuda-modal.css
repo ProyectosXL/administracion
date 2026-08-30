@@ -7,6 +7,7 @@
     --color-arr-real: #6FA844;
     --color-desp: #F5A623;
     --color-rec: #AC92EC;
+    --color-dist: #E8598B;
     --color-origen: #95A5A6;
 }
 
@@ -210,6 +211,7 @@
 .color-arr-real { background: var(--color-arr-real); }
 .color-desp { background: var(--color-desp); }
 .color-rec { background: var(--color-rec); }
+.color-dist { background: var(--color-dist); }
 
 .feature-card {
     display: flex;
@@ -295,4 +297,11 @@
         flex-direction: column;
         text-align: center;
     }
+}
+
+/* Distribución: salida del depósito central hacia los locales, posterior a
+   la recepción. */
+.estado-distribuido {
+    background: #fdeaf1;
+    border-left-color: var(--color-dist);
 }
