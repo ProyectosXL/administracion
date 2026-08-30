@@ -992,6 +992,115 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     border-color: var(--color-emb);
 }
 
+/* ---------- Aviso flotante tras guardar un movimiento ---------- */
+.aviso-movimiento {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1400;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 380px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid #1E8449;
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    padding: 14px 16px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.aviso-movimiento.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.aviso-icono {
+    color: #1E8449;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.aviso-cuerpo {
+    flex: 1;
+    min-width: 0;
+}
+
+.aviso-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.aviso-detalle {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-top: 2px;
+}
+
+.aviso-advertencia {
+    font-size: 11px;
+    color: #9A7D0A;
+    background: #FEF9E7;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.aviso-link {
+    margin-top: 8px;
+    border: none;
+    background: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-emb);
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.aviso-cerrar {
+    border: none;
+    background: none;
+    color: var(--gray-500);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+.aviso-cerrar:hover {
+    color: var(--gray-800);
+}
+
+/* Atajo al historial en la cabecera del modal de detalle */
+.btn-ir-historial {
+    margin-top: 8px;
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-700);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-ir-historial:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+}
+
 /* ---------- Historial de cambios de fecha ---------- */
 .historial-fechas {
     margin-top: 24px;
@@ -1007,6 +1116,27 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     align-items: center;
     gap: 8px;
     margin-bottom: 12px;
+}
+
+.historial-contador {
+    background: var(--color-emb);
+    color: white;
+    border-radius: 10px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+}
+
+/* Destello al llegar desde el aviso o el atajo, para no perder de vista
+   donde quedo la seccion despues del scroll. */
+.historial-resaltado {
+    animation: historialDestello 1.6s ease;
+}
+
+@keyframes historialDestello {
+    0%, 100% { background: transparent; }
+    20%      { background: #EAF2FE; }
 }
 
 .historial-cargando,

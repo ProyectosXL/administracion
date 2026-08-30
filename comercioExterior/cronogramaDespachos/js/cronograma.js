@@ -780,6 +780,11 @@ function confirmarMovimientoFecha() {
             // fechas quedaron viejas.
             cerrarModal();
             renderizarVista();
+
+            // Sin este aviso el movimiento se guardaba en silencio: el modal
+            // se cerraba y no quedaba ninguna senal de que habia pasado algo,
+            // ni de donde mirar el registro.
+            mostrarAvisoMovimiento(respuesta, $btn.data('campo'), $btn.data('id'));
         },
         error: function (xhr) {
             mostrarErrorConfirmacion(xhr.responseJSON || {
@@ -797,6 +802,48 @@ function mostrarErrorConfirmacion(respuesta) {
     $('#confErrorServidor')
         .prop('hidden', false)
         .html(`<strong>${escaparHtml(respuesta.message || 'Error')}</strong>${detalle}`);
+}
+
+/**
+ * Aviso flotante tras guardar un movimiento, con acceso directo al historial.
+ * Se cierra solo a los 8 segundos.
+ */
+function mostrarAvisoMovimiento(respuesta, campo, idEncabezado) {
+    $('.aviso-movimiento').remove();
+
+    const recalculadas = Object.keys(respuesta.recalculadas || {}).length;
+    const avisos = (respuesta.advertencias || []).length;
+
+    const detalle = [
+        `${respuesta.ocsAfectadas} ${respuesta.ocsAfectadas === 1 ? 'orden de compra' : 'órdenes de compra'}`,
+        recalculadas > 0
+            ? `${recalculadas} distribución${recalculadas === 1 ? '' : 'es'} recalculada${recalculadas === 1 ? '' : 's'}`
+            : null
+    ].filter(Boolean).join(' · ');
+
+    const $aviso = $(`
+        <div class="aviso-movimiento">
+            <div class="aviso-icono"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="aviso-cuerpo">
+                <div class="aviso-titulo">${escaparHtml(ETIQUETAS_CAMPOS[campo] || campo)} actualizado</div>
+                <div class="aviso-detalle">${escaparHtml(detalle)}</div>
+                ${avisos > 0
+                    ? `<div class="aviso-advertencia"><i class="bi bi-exclamation-triangle"></i>
+                           ${escaparHtml(respuesta.advertencias[0])}</div>`
+                    : ''}
+                <button type="button" class="aviso-link" data-id="${idEncabezado}">
+                    Ver historial de cambios
+                </button>
+            </div>
+            <button type="button" class="aviso-cerrar" aria-label="Cerrar">&times;</button>
+        </div>
+    `).appendTo('body');
+
+    setTimeout(() => $aviso.addClass('visible'), 10);
+    setTimeout(() => {
+        $aviso.removeClass('visible');
+        setTimeout(() => $aviso.remove(), 300);
+    }, 8000);
 }
 
 /** Reemplaza en el array local las OCs que devolvio el servidor. */
@@ -1115,6 +1162,23 @@ function configurarEventListeners() {
         if (!destino || destino === arrastre.fechaOrigen) return;
 
         abrirModalConfirmacion(arrastre.campo, arrastre.fechaOrigen, destino, arrastre.idGrupo);
+    });
+
+    $(document).on('click', '.aviso-cerrar', function () {
+        $(this).closest('.aviso-movimiento').remove();
+    });
+
+    // Abre el detalle y baja directo al historial.
+    $(document).on('click', '.aviso-link', function () {
+        const id = $(this).data('id');
+        $('.aviso-movimiento').remove();
+        abrirDetallePorId(id);
+        irAlHistorial();
+    });
+
+    // Atajo desde la cabecera del modal de detalle.
+    $(document).on('click', '.btn-ir-historial', function () {
+        irAlHistorial();
     });
 
     $(document).on('click', '.historial-toggle', function () {
@@ -1939,6 +2003,30 @@ function abrirDetalleDespacho(despacho) {
 }
 
 // ========== HISTORIAL DE CAMBIOS ==========
+
+/**
+ * Lleva la vista al historial dentro del modal.
+ * Vive al fondo, despues del timeline y del editor, asi que sin esto hay que
+ * saber que existe y scrollear hasta abajo para encontrarlo.
+ */
+function irAlHistorial() {
+    // Espera a que el historial haya llegado del servidor.
+    const intentar = (restantes) => {
+        const $h = $('#historialFechas');
+        const $modal = $('.modal-overlay:not(.modal-confirmacion) .modal-content');
+
+        if ($h.length && $modal.length && $h.find('.historial-lista, .historial-vacio').length) {
+            const destino = $h.position().top + $modal.scrollTop() - 12;
+            $modal.animate({ scrollTop: destino }, 300);
+            $h.addClass('historial-resaltado');
+            setTimeout(() => $h.removeClass('historial-resaltado'), 1600);
+            return;
+        }
+        if (restantes > 0) setTimeout(() => intentar(restantes - 1), 100);
+    };
+    intentar(20);
+}
+
 function cargarHistorialFechas(idEncabezado) {
     $.ajax({
         url: 'controller/obtenerHistorialFechas.php',
@@ -1974,6 +2062,21 @@ function renderizarHistorialFechas(entradas) {
         `);
         return;
     }
+
+    // Contador en el titulo y atajo en la cabecera: el historial vive al
+    // fondo del modal y sin estas dos senales no se sabe que hay algo abajo.
+    $cont.find('.historial-contador').remove();
+    $cont.find('.historial-titulo').append(
+        `<span class="historial-contador">${entradas.length}</span>`
+    );
+
+    $('.modal-title-group .btn-ir-historial').remove();
+    $('.modal-overlay:not(.modal-confirmacion) .modal-title-group').append(`
+        <button type="button" class="btn-ir-historial">
+            <i class="bi bi-clock-history"></i>
+            ${entradas.length} ${entradas.length === 1 ? 'cambio registrado' : 'cambios registrados'}
+        </button>
+    `);
 
     // Colapsado por defecto a partir de 5 entradas, para que el historial no
     // empuje el resto del modal fuera de la vista.
