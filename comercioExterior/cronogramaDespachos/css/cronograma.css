@@ -11,6 +11,9 @@
     --color-arr-real: #6FA844; /* Verde más intenso para arribo real */
     --color-arr-estimado: #A8D68D; /* Verde más claro para arribo estimado */
     --color-desp: #F5A623;
+    /* Distribucion: magenta, el unico hueco que quedaba entre el naranja del
+       despacho y el violeta de la recepcion, que son sus vecinos en el flujo. */
+    --color-dist: #E8598B;
     --color-rec: #AC92EC;
     
     /* Colores de estados */
@@ -20,16 +23,43 @@
     --color-despachado: #F5A623;
     --color-recibido: #AC92EC;
     
-    /* Grises */
+    /* Grises.
+       400, 500 y 700 faltaban pero ya se usaban en 6 lugares (leyenda-titulo,
+       btn-mes:hover, panel-empty, entre otros): esas declaraciones eran
+       invalidas y el color caia al heredado sin aviso. */
     --gray-50: #F8F9FA;
     --gray-100: #E9ECEF;
     --gray-200: #DEE2E6;
     --gray-300: #CED4DA;
+    --gray-400: #ADB5BD;
+    --gray-500: #868E96;
     --gray-600: #6C757D;
+    --gray-700: #495057;
     --gray-800: #343A40;
     
     /* Fuente */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Geometria del calendario.
+       Las celdas son de tamano fijo para que todos los dias midan igual,
+       tengan eventos o no. La aritmetica con el panel abierto es
+       7 x 140 + 6 x 8 = 1028px, que entra en un viewport de 1440
+       descontando el panel y los paddings. */
+    --dia-width: 140px;
+    --dia-height: 168px;
+
+    /* Panel de proximos arribos. --panel-width lo pisa
+       body.panel-colapsado, y de ahi se derivan tanto el ancho del panel
+       como el margen que le reserva el calendario. */
+    --panel-width: 340px;
+    --panel-gap: 20px;
+}
+
+/* Panel colapsado: queda como solapa vertical y el calendario se ensancha.
+   7 x 160 + 48 = 1168px, holgado. */
+body.panel-colapsado {
+    --dia-width: 160px;
+    --panel-width: 44px;
 }
 
 * {
@@ -49,7 +79,7 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     padding: 24px;
-    margin-right: 360px;
+    margin-right: calc(var(--panel-width) + var(--panel-gap));
     transition: margin-right 0.3s ease;
 }
 
@@ -90,12 +120,35 @@ body {
     align-items: center;
 }
 
-.btn-view-toggle {
+.btn-view-toggle,
+.btn-density-toggle {
     display: flex;
     background: var(--gray-100);
     border-radius: 8px;
     padding: 4px;
     gap: 4px;
+}
+
+.btn-densidad {
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--gray-600);
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.btn-densidad.active {
+    background: white;
+    color: var(--gray-800);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.btn-densidad:hover:not(.active) {
+    color: var(--gray-800);
 }
 
 .btn-view {
@@ -226,10 +279,24 @@ body {
     accent-color: #667eea;
 }
 
-.filtro-icono {
-    font-size: 18px;
-    min-width: 24px;
+/* Cuadradito de color en vez del emoji de estado, con el mismo criterio que
+   la leyenda: el color es lo que identifica el hito. */
+.filtro-color {
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+    border-radius: 3px;
+    display: inline-block;
+    background: var(--gray-300);
 }
+
+.filtro-color.est-emb      { background: var(--color-est-emb); }
+.filtro-color.emb          { background: var(--color-emb); }
+.filtro-color.arr-estimado { background: var(--color-arr-estimado); }
+.filtro-color.arr-real     { background: var(--color-arr-real); }
+.filtro-color.desp         { background: var(--color-desp); }
+.filtro-color.dist         { background: var(--color-dist); }
+.filtro-color.rec          { background: var(--color-rec); }
 
 .filtro-item span:last-child {
     flex: 1;
@@ -345,6 +412,9 @@ body {
     flex-wrap: wrap;
 }
 
+/* La leyenda pasa de pastilla rellena con emoji a chip neutro con un punto
+   de color. El emoji no aportaba nada que el color no dijera ya, y sobre el
+   fondo saturado el texto se leia peor. */
 .leyenda-pill {
     display: inline-flex;
     align-items: center;
@@ -353,21 +423,27 @@ body {
     border-radius: 4px;
     font-size: 12px;
     font-weight: 500;
-    color: white;
+    color: var(--gray-800);
+    background: white;
+    border: 1px solid var(--gray-200);
 }
 
-.leyenda-pill.est-emb { background: var(--color-est-emb); }
-.leyenda-pill.emb { background: var(--color-emb); }
-.leyenda-pill.arr { background: var(--color-arr); }
-.leyenda-pill.arr-estimado { background: var(--color-arr-estimado); }
-.leyenda-pill.arr-real { background: var(--color-arr-real); }
-.leyenda-pill.desp { background: var(--color-desp); }
-.leyenda-pill.rec { background: var(--color-rec); }
-
-.leyenda-icono {
-    font-size: 14px;
-    line-height: 1;
+.leyenda-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--gray-300);
 }
+
+.leyenda-pill.est-emb      .leyenda-dot { background: var(--color-est-emb); }
+.leyenda-pill.emb          .leyenda-dot { background: var(--color-emb); }
+.leyenda-pill.arr          .leyenda-dot { background: var(--color-arr); }
+.leyenda-pill.arr-estimado .leyenda-dot { background: var(--color-arr-estimado); }
+.leyenda-pill.arr-real     .leyenda-dot { background: var(--color-arr-real); }
+.leyenda-pill.desp         .leyenda-dot { background: var(--color-desp); }
+.leyenda-pill.dist         .leyenda-dot { background: var(--color-dist); }
+.leyenda-pill.rec          .leyenda-dot { background: var(--color-rec); }
 
 .leyenda-texto {
     white-space: nowrap;
@@ -394,10 +470,20 @@ body {
     border-color: var(--gray-600);
 }
 
+/* El scroll horizontal vive aca y no en la grilla: con width max-content
+   la grilla se centra sola cuando entra, y cuando no entra el margin auto
+   colapsa a 0 y se puede scrollear desde el lunes. Con justify-content
+   center la primera columna quedaria fuera de alcance. */
+.calendario-view {
+    overflow-x: auto;
+}
+
 .calendario-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, var(--dia-width));
     gap: 8px;
+    width: max-content;
+    margin: 0 auto;
 }
 
 .calendario-dia-header {
@@ -411,12 +497,18 @@ body {
 }
 
 .calendario-dia {
-    min-height: 120px;
+    width: var(--dia-width);
+    height: var(--dia-height);
     padding: 8px;
     border: 1px solid var(--gray-200);
     border-radius: 8px;
     background: var(--gray-50);
-    transition: all 0.2s;
+    transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+    /* Alto fijo: todos los dias miden igual, con eventos o sin ellos.
+       Lo que no entra se recorta y lo resuelve el chip "+N mas". */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .calendario-dia:hover {
@@ -434,6 +526,7 @@ body {
     font-weight: 600;
     color: var(--gray-800);
     margin-bottom: 8px;
+    flex-shrink: 0;
 }
 
 .calendario-dia.otro-mes .dia-numero {
@@ -444,33 +537,41 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
+    min-height: 0; /* sin esto el flex item no se deja recortar */
+    overflow: hidden;
 }
 
 /* ========== PILLS DE EVENTOS ========== */
+/* Sin icono de estado: el color ya dice de que hito se trata, y ese ancho
+   ahora lo usan el alias del proveedor y los iconos de rubro. */
 .evento-pill {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 6px;
+    gap: 4px;
+    padding: 2px 5px;
     border-radius: 4px;
     font-size: 10px;
     font-weight: 500;
     color: white;
     cursor: pointer;
-    transition: all 0.2s;
-    max-height: 32px;
-    min-height: 32px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    /* Compacto (default): una linea de 20px. Entran 5 por celda. */
+    height: 20px;
+    flex-shrink: 0;
+}
+
+/* Cómodo: dos lineas, con el proveedor. Entran 3 por celda.
+   34px y no 32: las dos lineas suman ~25px de contenido y con padding 4
+   quedaba 1px corto, lo justo para que el proveedor se recortara. */
+body.densidad-comodo .evento-pill {
+    height: 34px;
+    padding: 3px 6px;
 }
 
 .evento-pill:hover {
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.evento-icono {
-    font-size: 14px;
-    flex-shrink: 0;
-    line-height: 1;
 }
 
 .evento-info {
@@ -482,6 +583,30 @@ body {
     min-width: 0;
 }
 
+.evento-titulo {
+    display: flex;
+    align-items: baseline;
+    /* Medio espacio entre el alias y el contenedor. */
+    gap: 3px;
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.evento-alias {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+}
+
+/* Alias derivado del nombre porque el proveedor todavia no tiene uno
+   cargado: se muestra atenuado para que se note que falta configurarlo. */
+.evento-alias.alias-provisorio {
+    opacity: 0.65;
+    font-style: italic;
+    font-weight: 600;
+}
+
 .evento-contenedor {
     font-weight: 600;
     font-size: 11px;
@@ -489,6 +614,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.2;
+    min-width: 0;
 }
 
 .evento-proveedor {
@@ -500,13 +626,1308 @@ body {
     line-height: 1.2;
 }
 
+/* En compacto el proveedor no se renderiza, pero por si acaso queda oculto. */
+body:not(.densidad-comodo) .evento-pill .evento-proveedor {
+    display: none;
+}
+
+.evento-rubros {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    font-size: 11px;
+    line-height: 1;
+    opacity: 0.95;
+}
+
+.evento-rubros-mas {
+    font-size: 8px;
+    font-weight: 700;
+    opacity: 0.85;
+}
+
+/* ---------- Drag & drop ---------- */
+.evento-pill[draggable="true"] {
+    cursor: grab;
+}
+
+.evento-pill[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* La recepción sale de Tango: su badge no se arrastra y el cursor lo dice. */
+.evento-pill.no-arrastrable {
+    cursor: default;
+}
+
+.evento-pill.arrastrando {
+    opacity: 0.4;
+}
+
+.calendario-dia.destino-activo {
+    background: #EAF2FE;
+    border-color: var(--color-emb);
+    border-style: dashed;
+    box-shadow: inset 0 0 0 1px var(--color-emb);
+}
+
+/* ---------- Modal de confirmación del movimiento ---------- */
+.conf-modal {
+    max-width: 560px;
+}
+
+.conf-alias {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    margin-right: 2px;
+}
+
+.conf-alias.alias-provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.conf-movimiento {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--gray-50);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+}
+
+.conf-fecha {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.conf-fecha-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+}
+
+.conf-fecha-valor {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.conf-fecha-valor.destino {
+    color: var(--color-emb);
+}
+
+.conf-flecha {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: var(--gray-600);
+    flex: 1;
+}
+
+.conf-diferencia {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.conf-diferencia.tarde    { color: #C0392B; }
+.conf-diferencia.temprano { color: #1E8449; }
+
+.conf-bloque {
+    margin-bottom: 16px;
+}
+
+.conf-bloque-titulo {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+    margin-bottom: 8px;
+}
+
+.conf-cascada,
+.conf-oc {
+    font-size: 13px;
+    color: var(--gray-800);
+    padding: 4px 0;
+}
+
+.conf-cascada.intacta {
+    color: var(--gray-600);
+}
+
+.conf-oc {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+}
+
+.conf-nota {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+}
+
+.conf-nota-destacada {
+    background: #FEF3E2;
+    color: #B9770E;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-weight: 600;
+}
+
+.conf-alerta {
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.conf-alerta-titulo {
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.conf-error {
+    background: #FDECEA;
+    color: #C0392B;
+}
+
+.conf-aviso {
+    background: #FEF9E7;
+    color: #9A7D0A;
+}
+
+.conf-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+}
+
+.conf-obligatorio {
+    background: #FDECEA;
+    color: #C0392B;
+    border-radius: 8px;
+    padding: 1px 7px;
+    font-size: 10px;
+    margin-left: 6px;
+}
+
+.conf-opcional {
+    color: var(--gray-500);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 6px;
+}
+
+.conf-input {
+    width: 100%;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--gray-800);
+    background: white;
+    resize: vertical;
+}
+
+.conf-input:focus {
+    outline: none;
+    border-color: var(--color-emb);
+}
+
+.conf-contador {
+    text-align: right;
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 4px;
+}
+
+.conf-error-servidor {
+    background: #FDECEA;
+    color: #C0392B;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.conf-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.btn-conf-cancelar,
+.btn-conf-aceptar {
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.btn-conf-cancelar {
+    border: 1px solid var(--gray-300);
+    background: white;
+    color: var(--gray-700);
+}
+
+.btn-conf-cancelar:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+}
+
+.btn-conf-aceptar {
+    border: none;
+    background: var(--color-emb);
+    color: white;
+}
+
+.btn-conf-aceptar:hover:not(:disabled) {
+    background: #3B72BC;
+}
+
+.btn-conf-aceptar:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ---------- Editor de fechas del modal de detalle ---------- */
+.editor-fechas {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.editor-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.editor-nota-general {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+
+.editor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+}
+
+.editor-fila {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.editor-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.editor-nota {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+    font-size: 10px;
+    color: #B9770E;
+    background: #FEF3E2;
+    border-radius: 8px;
+    padding: 1px 7px;
+}
+
+.editor-nota.tenue {
+    color: var(--gray-600);
+    background: var(--gray-100);
+}
+
+.editor-input {
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--gray-800);
+    background: white;
+}
+
+.editor-input:focus {
+    outline: none;
+    border-color: var(--color-emb);
+}
+
+/* ---------- Modal de alias dentro del cronograma ---------- */
+/* El fragmento abm-alias.php viene de Parámetros, que tiene su propio CSS.
+   Acá se replican solo las clases que ese markup necesita, scopeadas al
+   modal para no chocar con nada del calendario. */
+.modal-alias[hidden] {
+    display: none !important;
+}
+
+.modal-alias-content {
+    max-width: 900px;
+}
+
+#modalAlias .content-card {
+    background: white;
+}
+
+#modalAlias .card-header-custom {
+    padding: 0 0 16px;
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: 16px;
+}
+
+#modalAlias .card-title-custom {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#modalAlias .card-subtitle-custom {
+    font-size: 12px;
+    color: var(--gray-600);
+}
+
+#modalAlias .alert {
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin: 0 0 14px !important;
+}
+
+#modalAlias .alert-info    { background: #EAF2FE; color: #2E5FA3; border: none; }
+#modalAlias .alert-warning { background: #FEF3E2; color: #B9770E; border: none; }
+#modalAlias .alert-success { background: #EAF7EC; color: #1E8449; border: none; }
+
+#modalAlias .table {
+    width: 100%;
+    font-size: 13px;
+    border-collapse: collapse;
+}
+
+#modalAlias .table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+    padding: 8px;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+#modalAlias .table td {
+    padding: 8px;
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+}
+
+#modalAlias .abm-alias-form {
+    margin: 16px 0 0;
+}
+
+#modalAlias .abm-alias-form-caja {
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 18px;
+    background: var(--gray-50);
+}
+
+#modalAlias .abm-alias-form-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+/* Vista previa del badge tal como se ve en el calendario. */
+.preview-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--color-arr-estimado);
+    color: white;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.preview-alias {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.preview-alias.provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.preview-contenedor { font-weight: 600; }
+
+.preview-iconos {
+    display: inline-flex;
+    gap: 2px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.alias-chip {
+    display: inline-block;
+    background: var(--color-emb);
+    color: white;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 13px;
+}
+
+.alias-input {
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    font-size: 20px;
+    text-align: center;
+    max-width: 110px;
+}
+
+.alias-error {
+    color: #C0392B;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.btn-cerrar-alias {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--gray-600);
+    cursor: pointer;
+}
+
+.btn-cerrar-alias:hover { color: var(--gray-800); }
+
+/* ---------- Aviso flotante tras guardar un movimiento ---------- */
+.aviso-movimiento {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1400;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 380px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid #1E8449;
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    padding: 14px 16px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.aviso-movimiento.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.aviso-icono {
+    color: #1E8449;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.aviso-cuerpo {
+    flex: 1;
+    min-width: 0;
+}
+
+.aviso-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.aviso-detalle {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-top: 2px;
+}
+
+.aviso-advertencia {
+    font-size: 11px;
+    color: #9A7D0A;
+    background: #FEF9E7;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.aviso-link {
+    margin-top: 8px;
+    border: none;
+    background: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-emb);
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.aviso-cerrar {
+    border: none;
+    background: none;
+    color: var(--gray-500);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+.aviso-cerrar:hover {
+    color: var(--gray-800);
+}
+
+/* Atajo al historial en la cabecera del modal de detalle */
+.btn-ir-historial {
+    margin-top: 8px;
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-700);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-ir-historial:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+}
+
+/* ---------- Historial de cambios de fecha ---------- */
+.historial-fechas {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.historial-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.historial-contador {
+    background: var(--color-emb);
+    color: white;
+    border-radius: 10px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+}
+
+/* Destello al llegar desde el aviso o el atajo, para no perder de vista
+   donde quedo la seccion despues del scroll. */
+.historial-resaltado {
+    animation: historialDestello 1.6s ease;
+}
+
+@keyframes historialDestello {
+    0%, 100% { background: transparent; }
+    20%      { background: #EAF2FE; }
+}
+
+.historial-cargando,
+.historial-vacio {
+    font-size: 13px;
+    color: var(--gray-600);
+    padding: 8px 0;
+}
+
+.historial-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.historial-fila {
+    background: var(--gray-50);
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--gray-300);
+}
+
+.historial-oculto {
+    display: none;
+}
+
+.historial-cabecera {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.historial-campo {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.historial-cambio {
+    font-size: 13px;
+    color: var(--gray-600);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.historial-cambio b {
+    color: var(--gray-800);
+}
+
+.historial-fecha {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--gray-500);
+    white-space: nowrap;
+}
+
+.historial-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+    font-size: 11px;
+}
+
+.historial-origen {
+    border-radius: 8px;
+    padding: 1px 8px;
+    font-weight: 600;
+}
+
+.historial-origen.origen-cronograma {
+    background: #EAF2FE;
+    color: #2E5FA3;
+}
+
+.historial-origen.origen-gestion_despachos {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.historial-oc {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--gray-600);
+}
+
+.historial-motivo {
+    background: #FEF9E7;
+    color: #9A7D0A;
+    border-radius: 8px;
+    padding: 1px 8px;
+    font-weight: 600;
+}
+
+.historial-usuario {
+    color: var(--gray-500);
+    font-style: italic;
+}
+
+.historial-observacion {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--gray-700);
+    line-height: 1.45;
+    padding-left: 8px;
+    border-left: 2px solid var(--gray-200);
+}
+
+.historial-toggle {
+    margin-top: 10px;
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-600);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.historial-toggle:hover {
+    background: var(--gray-50);
+    color: var(--gray-800);
+}
+
+/* ---------- Chip de overflow "+N más" ---------- */
+.evento-mas {
+    border: 1px dashed var(--gray-300);
+    background: white;
+    color: var(--gray-600);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: inherit;
+    height: 18px;
+    padding: 0 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.evento-mas:hover {
+    background: var(--gray-100);
+    color: var(--gray-800);
+    border-color: var(--gray-600);
+}
+
+/* ========== FILTRO POR CONTENEDOR (select2) ========== */
+/* Ajustes para que select2 4.0.5, que trae su propia tipografia y alturas,
+   no desentone con el resto del header. */
+.contenedor-filtro .select2-container {
+    font-family: var(--font-family);
+}
+
+.contenedor-filtro .select2-container--default .select2-selection--multiple {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    min-height: 40px;
+    padding: 2px 4px;
+}
+
+.contenedor-filtro .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: var(--color-emb);
+}
+
+.contenedor-filtro .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background: var(--color-emb);
+    border: none;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    padding: 2px 8px;
+    margin-top: 5px;
+}
+
+.contenedor-filtro .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: white;
+    margin-right: 4px;
+    opacity: 0.85;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background: var(--color-emb);
+}
+
+.select2-dropdown {
+    border-color: var(--gray-200);
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+/* Aviso de que los filtros de estado quedaron suspendidos */
+.aviso-filtros-suspendidos {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #B9770E;
+    background: #FEF3E2;
+    border-radius: 10px;
+    padding: 2px 8px;
+    white-space: nowrap;
+}
+
+.btn-filtros.filtros-suspendidos {
+    opacity: 0.55;
+}
+
+/* ========== TIRA DE RECORRIDO ========== */
+.tira-recorrido {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.recorrido-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-800);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.btn-limpiar-contenedores {
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-600);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-limpiar-contenedores:hover {
+    background: var(--gray-50);
+    color: var(--gray-800);
+    border-color: var(--gray-400);
+}
+
+.recorrido-fila {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-50);
+}
+
+.recorrido-fila:last-child {
+    border-bottom: none;
+}
+
+.recorrido-titulo {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.recorrido-alias {
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+.recorrido-alias.alias-provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.recorrido-contenedor {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--gray-800);
+}
+
+.recorrido-proveedor {
+    font-size: 12px;
+    color: var(--gray-600);
+}
+
+.recorrido-ocs {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-600);
+    background: var(--gray-100);
+    border-radius: 10px;
+    padding: 1px 8px;
+}
+
+.recorrido-hitos {
+    display: flex;
+    /* flex-start y no center: el hito de embarque puede llevar una linea de
+       comparacion extra, y centrando quedarian los puntos desalineados. */
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.hito {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    min-width: 92px;
+    transition: background 0.2s;
+}
+
+.hito:hover {
+    background: var(--gray-50);
+}
+
+.hito-vacio {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.hito-vacio:hover {
+    background: transparent;
+}
+
+.hito-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--gray-300);
+    flex-shrink: 0;
+}
+
+.hito-est-emb      .hito-dot { background: var(--color-est-emb); }
+.hito-emb          .hito-dot { background: var(--color-emb); }
+.hito-arr-estimado .hito-dot { background: var(--color-arr-estimado); }
+.hito-arr-real     .hito-dot { background: var(--color-arr-real); }
+.hito-desp         .hito-dot { background: var(--color-desp); }
+.hito-dist         .hito-dot { background: var(--color-dist); }
+.hito-rec          .hito-dot { background: var(--color-rec); }
+
+/* Hito todavia sin fecha real: el punto va hueco. */
+.hito-estimado .hito-dot {
+    background: white;
+    box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.hito-estimado.hito-est-emb      .hito-dot { color: var(--color-est-emb); }
+.hito-estimado.hito-emb          .hito-dot { color: var(--color-emb); }
+.hito-estimado.hito-arr-estimado .hito-dot { color: var(--color-arr-estimado); }
+.hito-estimado.hito-desp         .hito-dot { color: var(--color-desp); }
+.hito-estimado.hito-dist         .hito-dot { color: var(--color-dist); }
+.hito-estimado.hito-rec          .hito-dot { color: var(--color-rec); }
+
+.hito-label {
+    font-size: 10px;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.hito-fecha {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-800);
+    white-space: nowrap;
+}
+
+.hito-estimado .hito-fecha {
+    font-style: italic;
+    color: var(--gray-600);
+}
+
+/* Fecha estimada como comparacion debajo de la real. En gris y mas chica:
+   es contexto, no un hito del recorrido. */
+.hito-comparacion {
+    font-size: 10px;
+    color: var(--gray-500);
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.hito-comparacion b {
+    font-weight: 700;
+}
+
+.hito-comparacion.desvio-tarde b    { color: #C0392B; }
+.hito-comparacion.desvio-temprano b { color: #1E8449; }
+
+.hito-union {
+    flex: 1;
+    min-width: 12px;
+    height: 2px;
+    background: var(--gray-200);
+    /* Alinea la union con los puntos, que estan arriba del todo de cada
+       hito. Los hitos con linea de comparacion son mas altos, asi que la
+       referencia se toma desde arriba y no desde el centro. */
+    align-self: flex-start;
+    margin-top: 9px;
+}
+
+/* ---------- Tooltip propio de los badges ---------- */
+/* Un unico nodo reutilizable. pointer-events: none para que el puntero nunca
+   entre al tooltip: si entrara, dispararia el mouseleave del badge y quedaria
+   parpadeando. */
+.cronograma-tooltip {
+    position: fixed;
+    z-index: 1300;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.12s ease;
+    background: white;
+    color: var(--gray-800);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    padding: 10px 12px;
+    width: 260px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.cronograma-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tt-header {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.tt-alias {
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+}
+
+.tt-alias.alias-provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.tt-proveedor {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--gray-800);
+    word-break: break-word;
+}
+
+.tt-evento {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.tt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--gray-300);
+}
+
+.tt-evento.tipo-est-emb      .tt-dot { background: var(--color-est-emb); }
+.tt-evento.tipo-emb          .tt-dot { background: var(--color-emb); }
+.tt-evento.tipo-arr-estimado .tt-dot { background: var(--color-arr-estimado); }
+.tt-evento.tipo-arr-real     .tt-dot { background: var(--color-arr-real); }
+.tt-evento.tipo-desp         .tt-dot { background: var(--color-desp); }
+.tt-evento.tipo-dist         .tt-dot { background: var(--color-dist); }
+.tt-evento.tipo-rec          .tt-dot { background: var(--color-rec); }
+
+.tt-fila {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tt-label {
+    color: var(--gray-600);
+    flex-shrink: 0;
+}
+
+.tt-valor {
+    font-weight: 500;
+    text-align: right;
+    word-break: break-word;
+}
+
+.tt-dias {
+    margin-top: 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+    background: var(--gray-50);
+}
+
+.tt-dias.urgencia-atrasado { background: #FDECEA; color: #C0392B; }
+.tt-dias.urgencia-alta     { background: #FEF3E2; color: #B9770E; }
+.tt-dias.urgencia-media    { background: #FEF9E7; color: #9A7D0A; }
+.tt-dias.urgencia-baja     { background: #EAF7EC; color: #1E8449; }
+
+.tt-rubros {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--gray-100);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.tt-rubro {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.tt-rubro-icono {
+    width: 14px;
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--gray-600);
+}
+
+.tt-rubro-nombre {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--gray-800);
+}
+
+.tt-rubro-cantidad {
+    font-weight: 600;
+    color: var(--gray-600);
+    flex-shrink: 0;
+}
+
+.tt-rubro-mas {
+    color: var(--gray-600);
+    font-style: italic;
+    padding-left: 20px;
+}
+
+.tt-nota {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--gray-100);
+    font-size: 11px;
+    color: var(--gray-600);
+    font-style: italic;
+}
+
+/* ---------- Popover con todos los eventos del día ---------- */
+.popover-dia {
+    position: fixed;
+    z-index: 1200;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    width: 260px;
+    max-height: 320px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.popover-dia-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.popover-dia-conteo {
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.popover-dia-body {
+    padding: 8px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
 .evento-pill.est-emb { background: var(--color-est-emb); }
 .evento-pill.emb { background: var(--color-emb); }
 .evento-pill.arr { background: var(--color-arr); }
 .evento-pill.arr-estimado { background: var(--color-arr-estimado); }
 .evento-pill.arr-real { background: var(--color-arr-real); }
 .evento-pill.desp { background: var(--color-desp); }
+.evento-pill.dist { background: var(--color-dist); }
 .evento-pill.rec { background: var(--color-rec); }
+
+/* Distribucion todavia no confirmada (DIST_ORIGEN A o M): rayado diagonal
+   suave sobre el color, para que se lea distinto de una fecha en firme sin
+   perder la identificacion por color. */
+.evento-pill.dist.dist-estimada {
+    background-image: repeating-linear-gradient(
+        135deg,
+        rgba(255,255,255,0.28) 0 4px,
+        rgba(255,255,255,0) 4px 8px
+    );
+}
 
 /* ========== VISTA GRILLA ========== */
 .grilla-view {
@@ -828,6 +2249,11 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 12px;
+    /* Columnas de ancho igual. Sin esto cada paso crecia con el largo de su
+       etiqueta y, al pasar de 5 a 6 pasos, los textos se tocaban entre si.
+       min-width: 0 es lo que permite que el texto se achique y corte. */
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .timeline-icon {
@@ -858,6 +2284,10 @@ body {
 
 .timeline-label {
     text-align: center;
+    width: 100%;
+    /* Aire entre columnas vecinas: son las etiquetas las que se tocaban, no
+       los iconos. */
+    padding: 0 6px;
 }
 
 .timeline-label-title {
@@ -865,12 +2295,16 @@ body {
     font-weight: 600;
     color: var(--gray-800);
     margin-bottom: 4px;
+    line-height: 1.25;
+    /* Que corte en vez de invadir la columna de al lado. */
+    overflow-wrap: break-word;
 }
 
 .timeline-label-date {
     font-size: 12px;
     color: var(--gray-600);
     font-weight: 500;
+    white-space: nowrap;   /* la fecha nunca se parte al medio */
 }
 
 .timeline-step.completed .timeline-label-date {
@@ -953,13 +2387,22 @@ body {
         gap: 16px;
     }
     
+    /* La celda sigue siendo de tamano fijo tambien aca: se achica via
+       variables y el resto lo resuelve el scroll horizontal de
+       .calendario-view. Volver a 1fr chocaria con el width fijo de
+       .calendario-dia, y exprimir 7 columnas en un telefono dejaria los
+       badges ilegibles. */
+    :root,
+    body.panel-colapsado {
+        --dia-width: 110px;
+        --dia-height: 120px;
+    }
+
     .calendario-grid {
-        grid-template-columns: repeat(7, 1fr);
         gap: 4px;
     }
-    
+
     .calendario-dia {
-        min-height: 80px;
         padding: 4px;
     }
     
@@ -974,6 +2417,13 @@ body {
     .timeline-track {
         flex-direction: column;
         gap: 24px;
+    }
+
+    /* En columna, flex: 1 repartiria el ALTO y aplastaria los pasos: aca
+       cada uno ocupa lo que necesita. */
+    .timeline-step {
+        flex: 0 0 auto;
+        width: 100%;
     }
     
     .timeline-line {
@@ -990,8 +2440,8 @@ body {
 .panel-proximos-arribos {
     position: fixed;
     top: 100px;
-    right: 20px;
-    width: 340px;
+    right: var(--panel-gap);
+    width: var(--panel-width);
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.12);
@@ -999,11 +2449,24 @@ body {
     max-height: calc(100vh - 120px);
     display: flex;
     flex-direction: column;
+    transition: width 0.3s ease;
+    overflow: hidden;
+}
+
+.panel-contenido {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
 }
 
 .panel-header {
     padding: 20px;
     border-bottom: 2px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .panel-header h3 {
@@ -1014,6 +2477,76 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.btn-panel-toggle {
+    border: none;
+    background: transparent;
+    color: var(--gray-600);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-panel-toggle:hover {
+    background: var(--gray-100);
+    color: var(--gray-800);
+}
+
+/* ---------- Solapa (panel colapsado) ---------- */
+.panel-solapa {
+    display: none;
+    width: 100%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 16px 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--gray-800);
+    font-family: inherit;
+}
+
+.panel-solapa:hover {
+    background: var(--gray-50);
+}
+
+.panel-solapa > i {
+    font-size: 22px;
+    color: var(--color-emb);
+}
+
+.panel-solapa-badge {
+    background: var(--color-emb);
+    color: white;
+    border-radius: 10px;
+    min-width: 20px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+}
+
+.panel-solapa-texto {
+    writing-mode: vertical-rl;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--gray-600);
+    white-space: nowrap;
+}
+
+body.panel-colapsado .panel-solapa {
+    display: flex;
+}
+
+body.panel-colapsado .panel-contenido {
+    display: none;
 }
 
 .panel-header i {
@@ -1231,13 +2764,12 @@ body {
 }
 
 /* ========== RESPONSIVE PANEL ========== */
+/* El ancho del panel y el margen del calendario salen de --panel-width, asi
+   que alcanza con pisar la variable. body.panel-colapsado tiene mas
+   especificidad que :root, o sea que el colapso sigue ganando aca. */
 @media (max-width: 1400px) {
-    .panel-proximos-arribos {
-        width: 300px;
-    }
-    
-    .cronograma-container {
-        margin-right: 340px;
+    :root {
+        --panel-width: 300px;
     }
 }
 
@@ -1249,15 +2781,39 @@ body {
         margin-bottom: 20px;
         margin-top: 0;
     }
-    
+
     .panel-body {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 12px;
     }
-    
+
     .card-proximo-arribo {
         margin-bottom: 0;
+    }
+
+    /* En este breakpoint el panel pasa a estatico y ocupa el ancho completo,
+       asi que el colapso no tiene sentido: se ignora aunque quede guardado
+       en localStorage, y el calendario recupera su ancho normal. */
+    body.panel-colapsado {
+        --dia-width: 140px;
+    }
+
+    .cronograma-container,
+    body.panel-colapsado .cronograma-container {
+        margin-right: auto;
+    }
+
+    body.panel-colapsado .panel-solapa {
+        display: none;
+    }
+
+    body.panel-colapsado .panel-contenido {
+        display: flex;
+    }
+
+    .btn-panel-toggle {
+        display: none;
     }
 }
 

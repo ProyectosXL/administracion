@@ -31,9 +31,12 @@ header("Pragma: no-cache");
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
+    <!-- Select2 (vendorizado local, 4.0.5) -->
+    <link rel="stylesheet" href="../assets/select2/select2.min.css">
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/cronograma.css">
     <link rel="stylesheet" href="css/ayuda-modal.css">
@@ -48,10 +51,22 @@ header("Pragma: no-cache");
             </div>
             
             <div class="header-actions">
+                <!-- Filtro por contenedor. Una opción por grupo (proveedor +
+                     oleada); las opciones las carga cronograma.js desde los
+                     despachos ya traídos. -->
+                <div class="contenedor-filtro">
+                    <select id="filtroContenedor" multiple
+                            data-placeholder="Filtrar por contenedor..."></select>
+                </div>
                 <div class="filtros-container">
                     <button class="btn-filtros" id="btnFiltros" title="Filtrar por tipo de fecha">
                         <i class="bi bi-funnel"></i> Filtros <span class="badge-filtros" id="badgeFiltros"></span>
                     </button>
+                    <!-- Aviso de filtros de estado suspendidos, visible sólo
+                         cuando hay contenedores seleccionados -->
+                    <span class="aviso-filtros-suspendidos" id="avisoFiltrosSuspendidos" hidden>
+                        <i class="bi bi-info-circle"></i> suspendidos
+                    </span>
                     <div class="filtros-dropdown" id="filtrosDropdown">
                         <div class="filtros-header">
                             <span>Seleccionar Estados</span>
@@ -60,40 +75,63 @@ header("Pragma: no-cache");
                         <div class="filtros-lista">
                             <label class="filtro-item">
                                 <input type="checkbox" value="est-emb" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">📅</span>
+                                <span class="filtro-color est-emb"></span>
                                 <span>Embarque Estimado</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="emb" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">🚢</span>
+                                <span class="filtro-color emb"></span>
                                 <span>Embarque Real</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="arr-estimado" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">🛃</span>
+                                <span class="filtro-color arr-estimado"></span>
                                 <span>Arribo Estimado</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="arr-real" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">🛃</span>
+                                <span class="filtro-color arr-real"></span>
                                 <span>Arribo Real</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="desp" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">🚚</span>
+                                <span class="filtro-color desp"></span>
                                 <span>Despacho Aduana</span>
                             </label>
                             <label class="filtro-item">
                                 <input type="checkbox" value="rec" class="filtro-checkbox" checked>
-                                <span class="filtro-icono">📦</span>
+                                <span class="filtro-color rec"></span>
                                 <span>Recepción</span>
+                            </label>
+                            <label class="filtro-item">
+                                <input type="checkbox" value="dist" class="filtro-checkbox" checked>
+                                <span class="filtro-color dist"></span>
+                                <span>Distribución</span>
                             </label>
                         </div>
                     </div>
                 </div>
+                <!-- Abre el mismo ABM de Parámetros en un modal: abastecimiento
+                     lo usa seguido y no debería tener que salir del cronograma. -->
+                <button type="button" class="btn-help" id="btnAliasCronograma"
+                        title="Configurar los alias de 2 letras de los proveedores">
+                    <i class="bi bi-person-badge"></i> Alias
+                </button>
                 <button type="button" class="btn-help" data-bs-toggle="modal" data-bs-target="#ayudaModal" title="Guía de ayuda: Estados, flujo y funcionalidades">
                     <i class="bi bi-info-circle"></i> Ayuda
                 </button>
+                <!-- Densidad de los badges del calendario. El estado activo lo
+                     marca aplicarEstadoDensidad() desde localStorage. -->
+                <div class="btn-density-toggle" id="densidadToggle">
+                    <button class="btn-densidad" data-densidad="compacto"
+                            title="Vista compacta: más contenedores por día">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <button class="btn-densidad" data-densidad="comodo"
+                            title="Vista cómoda: incluye el proveedor">
+                        <i class="bi bi-card-list"></i>
+                    </button>
+                </div>
                 <div class="btn-view-toggle">
                     <button class="btn-view active" data-view="calendario">
                         <i class="bi bi-calendar3"></i> Calendario
@@ -113,10 +151,37 @@ header("Pragma: no-cache");
     
     <!-- Modal de Ayuda -->
     <?php include 'components/ayuda-modal.php'; ?>
+
+    <!-- Modal de alias: reusa el mismo fragmento que la pestaña de Parámetros -->
+    <div class="modal-overlay modal-alias" id="modalAlias" hidden>
+        <div class="modal-content modal-alias-content">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <h2>Alias de proveedores</h2>
+                    <p>Los cambios se reflejan en el calendario al cerrar</p>
+                </div>
+                <button class="btn-cerrar-alias">&times;</button>
+            </div>
+            <div class="modal-body" id="cuerpoModalAlias">
+                <?php include __DIR__ . '/../parametros/components/abm-alias.php'; ?>
+            </div>
+        </div>
+    </div>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
+    <!-- Select2, antes de cronograma.js porque este lo inicializa al cargar -->
+    <script src="../assets/select2/select2.min.js"></script>
+
+    <!-- SweetAlert2: lo usa el ABM de alias para confirmar y avisar -->
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- ABM de alias compartido con Parámetros. La base del controller cambia
+         segun desde donde se lo consuma, asi que se define antes del script. -->
+    <script>window.ABM_ALIAS_BASE = '../parametros/controller/';</script>
+    <script src="../parametros/js/abmAlias.js"></script>
+
     <!-- JavaScript -->
     <script src="js/cronograma.js"></script>
 </body>

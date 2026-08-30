@@ -311,3 +311,92 @@ body {
         margin-bottom: 12px;
     }
 }
+
+/* ========== ABM DE ALIAS E ICONOS DE RUBRO ========== */
+
+/* Vista previa del badge tal como se ve en el calendario, para que se
+   entienda el efecto del alias o del icono antes de guardar. */
+.preview-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #8CC152;
+    color: white;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.preview-alias {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+/* Alias incompleto o derivado del nombre: atenuado, igual que en el
+   calendario cuando el proveedor no tiene alias cargado. */
+.preview-alias.provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.preview-contenedor {
+    font-weight: 600;
+}
+
+.preview-iconos {
+    display: inline-flex;
+    gap: 2px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.alias-chip {
+    display: inline-block;
+    background: #4A89DC;
+    color: white;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 13px;
+}
+
+.alias-input {
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    font-size: 20px;
+    text-align: center;
+    max-width: 110px;
+}
+
+.alias-error {
+    color: #C0392B;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.abm-alias-form {
+    margin: 0 16px 16px;
+}
+
+.abm-alias-form-caja {
+    border: 1px solid #DEE2E6;
+    border-radius: 10px;
+    padding: 18px;
+    background: #F8F9FA;
+}
+
+.abm-alias-form-titulo {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+.icono-celda {
+    font-size: 20px;
+    text-align: center;
+    line-height: 1;
+}
