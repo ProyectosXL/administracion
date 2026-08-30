@@ -31,9 +31,12 @@ header("Pragma: no-cache");
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
+    <!-- Select2 (vendorizado local, 4.0.5) -->
+    <link rel="stylesheet" href="../assets/select2/select2.min.css">
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="css/cronograma.css">
     <link rel="stylesheet" href="css/ayuda-modal.css">
@@ -48,10 +51,22 @@ header("Pragma: no-cache");
             </div>
             
             <div class="header-actions">
+                <!-- Filtro por contenedor. Una opción por grupo (proveedor +
+                     oleada); las opciones las carga cronograma.js desde los
+                     despachos ya traídos. -->
+                <div class="contenedor-filtro">
+                    <select id="filtroContenedor" multiple
+                            data-placeholder="Filtrar por contenedor..."></select>
+                </div>
                 <div class="filtros-container">
                     <button class="btn-filtros" id="btnFiltros" title="Filtrar por tipo de fecha">
                         <i class="bi bi-funnel"></i> Filtros <span class="badge-filtros" id="badgeFiltros"></span>
                     </button>
+                    <!-- Aviso de filtros de estado suspendidos, visible sólo
+                         cuando hay contenedores seleccionados -->
+                    <span class="aviso-filtros-suspendidos" id="avisoFiltrosSuspendidos" hidden>
+                        <i class="bi bi-info-circle"></i> suspendidos
+                    </span>
                     <div class="filtros-dropdown" id="filtrosDropdown">
                         <div class="filtros-header">
                             <span>Seleccionar Estados</span>
@@ -128,7 +143,10 @@ header("Pragma: no-cache");
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
+    <!-- Select2, antes de cronograma.js porque este lo inicializa al cargar -->
+    <script src="../assets/select2/select2.min.js"></script>
+
     <!-- JavaScript -->
     <script src="js/cronograma.js"></script>
 </body>

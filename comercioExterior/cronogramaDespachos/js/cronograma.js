@@ -9,6 +9,11 @@ let mesActual = new Date();
 let despachoSeleccionado = null;
 let filtrosActivos = ['est-emb', 'emb', 'arr-estimado', 'arr-real', 'desp', 'rec']; // Filtros múltiples
 
+// IDs de grupo seleccionados en el filtro por contenedor. Mientras haya al
+// menos uno, manda sobre los filtros de estado. No se persiste: es una
+// consulta puntual, no una preferencia.
+let contenedoresSeleccionados = [];
+
 // Todo esto llega en la misma respuesta que los despachos, para no tener que
 // resolver nada por AJAX en medio de un render.
 let rubrosPorOC = {};   // { '<ORDEN_COMPRA>': [{ rubro, cantidad }, ...] }
@@ -201,6 +206,191 @@ function aplicarEstadoDensidad() {
     $('body').toggleClass('densidad-comodo', densidad === 'comodo');
     $('.btn-densidad').removeClass('active')
         .filter(`[data-densidad="${densidad}"]`).addClass('active');
+}
+
+// ========== FILTRO POR CONTENEDOR ==========
+
+/** Los grupos de contenedor, uno por ID_GRUPO, listos para el combo. */
+function construirGrupos() {
+    const grupos = new Map();
+
+    despachos.forEach(d => {
+        if (!grupos.has(d.ID_GRUPO)) {
+            grupos.set(d.ID_GRUPO, []);
+        }
+        grupos.get(d.ID_GRUPO).push(d);
+    });
+
+    return Array.from(grupos, ([idGrupo, lista]) => {
+        lista.sort((a, b) => a.ID - b.ID);
+        const principal = lista.find(d => d.ID === idGrupo) || lista[0];
+        const alias = aliasDeDespacho(principal);
+
+        return {
+            idGrupo: idGrupo,
+            despachos: lista,
+            alias: alias,
+            contenedor: principal.CONTENEDOR || 'Sin contenedor',
+            proveedor: principal.PROVEEDOR || 'Sin proveedor',
+            ordenes: lista.map(d => (d.ORDEN_COMPRA || '').trim()).filter(Boolean)
+        };
+    }).sort((a, b) => a.contenedor.localeCompare(b.contenedor, 'es'));
+}
+
+function inicializarFiltroContenedor() {
+    const $select = $('#filtroContenedor');
+    if ($select.length === 0 || typeof $select.select2 !== 'function') return;
+
+    if ($select.hasClass('select2-hidden-accessible')) {
+        $select.select2('destroy');
+    }
+    $select.empty();
+
+    construirGrupos().forEach(g => {
+        const etiqueta = `${g.alias.texto} ${g.contenedor} — ${g.proveedor}`;
+        const sufijo = g.despachos.length > 1 ? ` [${g.despachos.length} OCs]` : '';
+
+        $select.append(
+            $('<option>', {
+                value: g.idGrupo,
+                text: etiqueta + sufijo,
+                // El buscador tiene que encontrar por contenedor, proveedor y
+                // numero de OC: los tres van concatenados en el data.
+                'data-busqueda': `${g.contenedor} ${g.proveedor} ${g.alias.texto} ${g.ordenes.join(' ')}`
+            })
+        );
+    });
+
+    $select.select2({
+        placeholder: $select.data('placeholder'),
+        allowClear: true,
+        width: '260px',
+        matcher: function (params, data) {
+            if ($.trim(params.term) === '') return data;
+            if (typeof data.text === 'undefined') return null;
+
+            const termino = params.term.toUpperCase();
+            const busqueda = ($(data.element).data('busqueda') || data.text).toString().toUpperCase();
+
+            return busqueda.indexOf(termino) > -1 ? data : null;
+        }
+    });
+
+    $select.on('change', function () {
+        contenedoresSeleccionados = ($(this).val() || []).map(v => parseInt(v, 10));
+        aplicarEstadoFiltroContenedor();
+        renderizarVista();
+    });
+}
+
+function aplicarEstadoFiltroContenedor() {
+    const hay = contenedoresSeleccionados.length > 0;
+    $('#avisoFiltrosSuspendidos').prop('hidden', !hay);
+    $('#btnFiltros').toggleClass('filtros-suspendidos', hay);
+}
+
+function limpiarFiltroContenedor() {
+    contenedoresSeleccionados = [];
+    $('#filtroContenedor').val(null).trigger('change.select2');
+    aplicarEstadoFiltroContenedor();
+    renderizarVista();
+}
+
+// ========== TIRA DE RECORRIDO ==========
+// Los hitos de un contenedor caen en meses distintos: el 78% de los grupos
+// reparte sus fechas en 3 o mas meses. Sin esta tira habria que navegar el
+// calendario a ciegas para reconstruir un recorrido.
+const HITOS_RECORRIDO = [
+    { tipo: 'est-emb',      campo: 'FECHA_EST_EMB',  label: 'Est. embarque' },
+    { tipo: 'emb',          campo: 'FECHA_EMB',      label: 'Embarque' },
+    { tipo: 'arr-estimado', campo: 'FECHA_ARR',      label: 'Arribo' },
+    { tipo: 'desp',         campo: 'FECHA_DESP_ADU', label: 'Despacho' },
+    { tipo: 'rec',          campo: 'FECHA_REC',      label: 'Recepción' }
+];
+
+function renderizarTiraRecorrido() {
+    $('#tiraRecorrido').remove();
+    if (contenedoresSeleccionados.length === 0) return;
+
+    const grupos = construirGrupos()
+        .filter(g => contenedoresSeleccionados.includes(g.idGrupo));
+
+    if (grupos.length === 0) return;
+
+    const filas = grupos.map(g => {
+        const principal = g.despachos.find(d => d.ID === g.idGrupo) || g.despachos[0];
+
+        const hitos = HITOS_RECORRIDO.map(h => {
+            let fecha = principal[h.campo];
+            let estimado = false;
+            let tipo = h.tipo;
+
+            // El arribo cambia de color segun este confirmado o no.
+            if (h.campo === 'FECHA_ARR' && parseInt(principal.ETA_CONFIRMADA) === 1) {
+                tipo = 'arr-real';
+            }
+
+            if (!fecha) {
+                estimado = true;
+                fecha = estimarHitoRecorrido(principal, h.campo);
+            }
+
+            if (!fecha) {
+                return `<div class="hito hito-vacio"><span class="hito-dot"></span>
+                            <span class="hito-label">${h.label}</span>
+                            <span class="hito-fecha">—</span></div>`;
+            }
+
+            return `
+                <button type="button" class="hito hito-${tipo}${estimado ? ' hito-estimado' : ''}"
+                        data-fecha="${fecha}"
+                        title="Ir a ${formatearFecha(fecha)}${estimado ? ' (estimado)' : ''}">
+                    <span class="hito-dot"></span>
+                    <span class="hito-label">${h.label}</span>
+                    <span class="hito-fecha">${formatearFecha(fecha)}</span>
+                </button>
+            `;
+        }).join('<span class="hito-union"></span>');
+
+        return `
+            <div class="recorrido-fila">
+                <div class="recorrido-titulo">
+                    <span class="recorrido-alias${g.alias.provisorio ? ' alias-provisorio' : ''}">${escaparHtml(g.alias.texto)}</span>
+                    <span class="recorrido-contenedor">${escaparHtml(g.contenedor)}</span>
+                    <span class="recorrido-proveedor">${escaparHtml(g.proveedor)}</span>
+                    ${g.despachos.length > 1
+                        ? `<span class="recorrido-ocs">${g.despachos.length} OCs</span>`
+                        : ''}
+                </div>
+                <div class="recorrido-hitos">${hitos}</div>
+            </div>
+        `;
+    }).join('');
+
+    const html = `
+        <div class="tira-recorrido" id="tiraRecorrido">
+            <div class="recorrido-header">
+                <span><i class="bi bi-signpost-split"></i>
+                      Recorrido de ${grupos.length} contenedor${grupos.length > 1 ? 'es' : ''}</span>
+                <button type="button" class="btn-limpiar-contenedores" id="btnLimpiarContenedores">
+                    <i class="bi bi-x-circle"></i> Limpiar selección
+                </button>
+            </div>
+            ${filas}
+        </div>
+    `;
+
+    $('#contenidoPrincipal').before(html);
+}
+
+/** Fecha estimada de un hito que todavia no tiene valor real. */
+function estimarHitoRecorrido(despacho, campo) {
+    const estimadas = calcularFechasEstimadas(despacho);
+
+    if (campo === 'FECHA_ARR')      return estimadas.arribo;
+    if (campo === 'FECHA_DESP_ADU') return estimadas.despacho;
+    if (campo === 'FECHA_REC')      return estimadas.recepcion;
+    return null;
 }
 
 // ========== TOOLTIP ==========
@@ -454,6 +644,26 @@ function configurarEventListeners() {
         renderizarVista();
     });
     
+    // Cada hito de la tira navega el calendario al mes de esa fecha, que es
+    // lo que resuelve que los hitos de un contenedor caigan en meses
+    // distintos.
+    $(document).on('click', '.hito[data-fecha]', function() {
+        const fecha = new Date($(this).data('fecha') + 'T00:00:00');
+        mesActual = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+
+        // Si estaba en Tarjetas, el salto de mes solo tiene sentido en el
+        // calendario.
+        if (vistaActual !== 'calendario') {
+            vistaActual = 'calendario';
+            $('.btn-view').removeClass('active').filter('[data-view="calendario"]').addClass('active');
+        }
+
+        actualizarMesDisplay();
+        renderizarVista();
+    });
+
+    $(document).on('click', '#btnLimpiarContenedores', limpiarFiltroContenedor);
+
     // Tooltip propio sobre los badges. Delegado, asi sobrevive a los renders.
     $(document).on('mouseenter', '.evento-pill', function() {
         const elemento = this;
@@ -597,6 +807,9 @@ function cargarDespachos() {
                 if (response.parametros) {
                     parametrosDias = $.extend({}, parametrosDias, response.parametros);
                 }
+                // Las opciones del combo salen de los despachos ya traidos,
+                // asi que se arma recien aca.
+                inicializarFiltroContenedor();
                 renderizarVista();
             } else {
                 mostrarError('Error al cargar despachos: ' + response.message);
@@ -618,11 +831,17 @@ function renderizarVista() {
 
     if (vistaActual === 'calendario') {
         renderizarCalendario();
-        renderizarPanelProximosArribos();
     } else {
         renderizarGrilla();
-        renderizarPanelProximosArribos();
     }
+
+    // La tira va entre el header y el contenido, asi que se pinta despues de
+    // que #contenidoPrincipal ya tenga su HTML.
+    renderizarTiraRecorrido();
+
+    // El panel queda global a proposito: es "que se viene", no una vista
+    // filtrada. No lo toca la seleccion de contenedores.
+    renderizarPanelProximosArribos();
 }
 
 function renderizarCalendario() {
@@ -817,6 +1036,7 @@ function crearBadgeEvento(evento) {
  */
 function obtenerEventosPorFecha(fecha) {
     const porClave = new Map();
+    const hayFiltroContenedor = contenedoresSeleccionados.length > 0;
 
     despachos.forEach(despacho => {
         const tipos = [];
@@ -837,8 +1057,15 @@ function obtenerEventosPorFecha(fecha) {
             tipos.push('rec');
         }
 
+        // Con contenedores seleccionados, el filtro por contenedor manda y
+        // los filtros de estado quedan suspendidos: la idea es ver el
+        // recorrido completo de ese contenedor, no un recorte por estado.
+        if (hayFiltroContenedor) {
+            if (!contenedoresSeleccionados.includes(despacho.ID_GRUPO)) return;
+        }
+
         tipos.forEach(tipo => {
-            if (!filtrosActivos.includes(tipo)) return;
+            if (!hayFiltroContenedor && !filtrosActivos.includes(tipo)) return;
 
             const clave = `${despacho.ID_GRUPO}|${tipo}`;
 
@@ -1048,12 +1275,18 @@ function crearIndicadorProgreso(progreso) {
 function renderizarGrilla() {
     const container = $('#contenidoPrincipal');
     let html = '<div class="grilla-view">';
-    
-    despachos.forEach(despacho => {
+
+    // El filtro por contenedor tambien aplica aca: seleccionar dos
+    // contenedores y seguir viendo las 128 tarjetas seria incoherente.
+    const visibles = contenedoresSeleccionados.length > 0
+        ? despachos.filter(d => contenedoresSeleccionados.includes(d.ID_GRUPO))
+        : despachos;
+
+    visibles.forEach(despacho => {
         const proximoHito = obtenerProximoHito(despacho);
         html += crearCardDespacho(despacho, proximoHito);
     });
-    
+
     html += '</div>';
     container.html(html);
 }

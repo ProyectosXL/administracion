@@ -664,6 +664,247 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     border-color: var(--gray-600);
 }
 
+/* ========== FILTRO POR CONTENEDOR (select2) ========== */
+/* Ajustes para que select2 4.0.5, que trae su propia tipografia y alturas,
+   no desentone con el resto del header. */
+.contenedor-filtro .select2-container {
+    font-family: var(--font-family);
+}
+
+.contenedor-filtro .select2-container--default .select2-selection--multiple {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    min-height: 40px;
+    padding: 2px 4px;
+}
+
+.contenedor-filtro .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: var(--color-emb);
+}
+
+.contenedor-filtro .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background: var(--color-emb);
+    border: none;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    padding: 2px 8px;
+    margin-top: 5px;
+}
+
+.contenedor-filtro .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: white;
+    margin-right: 4px;
+    opacity: 0.85;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background: var(--color-emb);
+}
+
+.select2-dropdown {
+    border-color: var(--gray-200);
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+/* Aviso de que los filtros de estado quedaron suspendidos */
+.aviso-filtros-suspendidos {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #B9770E;
+    background: #FEF3E2;
+    border-radius: 10px;
+    padding: 2px 8px;
+    white-space: nowrap;
+}
+
+.btn-filtros.filtros-suspendidos {
+    opacity: 0.55;
+}
+
+/* ========== TIRA DE RECORRIDO ========== */
+.tira-recorrido {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.recorrido-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-800);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.btn-limpiar-contenedores {
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-600);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-limpiar-contenedores:hover {
+    background: var(--gray-50);
+    color: var(--gray-800);
+    border-color: var(--gray-400);
+}
+
+.recorrido-fila {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-50);
+}
+
+.recorrido-fila:last-child {
+    border-bottom: none;
+}
+
+.recorrido-titulo {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.recorrido-alias {
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+.recorrido-alias.alias-provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.recorrido-contenedor {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--gray-800);
+}
+
+.recorrido-proveedor {
+    font-size: 12px;
+    color: var(--gray-600);
+}
+
+.recorrido-ocs {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-600);
+    background: var(--gray-100);
+    border-radius: 10px;
+    padding: 1px 8px;
+}
+
+.recorrido-hitos {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.hito {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    min-width: 92px;
+    transition: background 0.2s;
+}
+
+.hito:hover {
+    background: var(--gray-50);
+}
+
+.hito-vacio {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.hito-vacio:hover {
+    background: transparent;
+}
+
+.hito-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--gray-300);
+    flex-shrink: 0;
+}
+
+.hito-est-emb      .hito-dot { background: var(--color-est-emb); }
+.hito-emb          .hito-dot { background: var(--color-emb); }
+.hito-arr-estimado .hito-dot { background: var(--color-arr-estimado); }
+.hito-arr-real     .hito-dot { background: var(--color-arr-real); }
+.hito-desp         .hito-dot { background: var(--color-desp); }
+.hito-rec          .hito-dot { background: var(--color-rec); }
+
+/* Hito todavia sin fecha real: el punto va hueco. */
+.hito-estimado .hito-dot {
+    background: white;
+    box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.hito-estimado.hito-est-emb      .hito-dot { color: var(--color-est-emb); }
+.hito-estimado.hito-emb          .hito-dot { color: var(--color-emb); }
+.hito-estimado.hito-arr-estimado .hito-dot { color: var(--color-arr-estimado); }
+.hito-estimado.hito-desp         .hito-dot { color: var(--color-desp); }
+.hito-estimado.hito-rec          .hito-dot { color: var(--color-rec); }
+
+.hito-label {
+    font-size: 10px;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.hito-fecha {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-800);
+    white-space: nowrap;
+}
+
+.hito-estimado .hito-fecha {
+    font-style: italic;
+    color: var(--gray-600);
+}
+
+.hito-union {
+    flex: 1;
+    min-width: 12px;
+    height: 2px;
+    background: var(--gray-200);
+    margin-top: -18px;
+}
+
 /* ---------- Tooltip propio de los badges ---------- */
 /* Un unico nodo reutilizable. pointer-events: none para que el puntero nunca
    entre al tooltip: si entrara, dispararia el mouseleave del badge y quedaria
