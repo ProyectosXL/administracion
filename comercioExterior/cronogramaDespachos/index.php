@@ -111,6 +111,12 @@ header("Pragma: no-cache");
                         </div>
                     </div>
                 </div>
+                <!-- Abre el mismo ABM de Parámetros en un modal: abastecimiento
+                     lo usa seguido y no debería tener que salir del cronograma. -->
+                <button type="button" class="btn-help" id="btnAliasCronograma"
+                        title="Configurar los alias de 2 letras de los proveedores">
+                    <i class="bi bi-person-badge"></i> Alias
+                </button>
                 <button type="button" class="btn-help" data-bs-toggle="modal" data-bs-target="#ayudaModal" title="Guía de ayuda: Estados, flujo y funcionalidades">
                     <i class="bi bi-info-circle"></i> Ayuda
                 </button>
@@ -145,12 +151,36 @@ header("Pragma: no-cache");
     
     <!-- Modal de Ayuda -->
     <?php include 'components/ayuda-modal.php'; ?>
+
+    <!-- Modal de alias: reusa el mismo fragmento que la pestaña de Parámetros -->
+    <div class="modal-overlay modal-alias" id="modalAlias" hidden>
+        <div class="modal-content modal-alias-content">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <h2>Alias de proveedores</h2>
+                    <p>Los cambios se reflejan en el calendario al cerrar</p>
+                </div>
+                <button class="btn-cerrar-alias">&times;</button>
+            </div>
+            <div class="modal-body" id="cuerpoModalAlias">
+                <?php include __DIR__ . '/../parametros/components/abm-alias.php'; ?>
+            </div>
+        </div>
+    </div>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Select2, antes de cronograma.js porque este lo inicializa al cargar -->
     <script src="../assets/select2/select2.min.js"></script>
+
+    <!-- SweetAlert2: lo usa el ABM de alias para confirmar y avisar -->
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- ABM de alias compartido con Parámetros. La base del controller cambia
+         segun desde donde se lo consuma, asi que se define antes del script. -->
+    <script>window.ABM_ALIAS_BASE = '../parametros/controller/';</script>
+    <script src="../parametros/js/abmAlias.js"></script>
 
     <!-- JavaScript -->
     <script src="js/cronograma.js"></script>

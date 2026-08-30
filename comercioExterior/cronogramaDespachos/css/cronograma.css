@@ -992,6 +992,161 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     border-color: var(--color-emb);
 }
 
+/* ---------- Modal de alias dentro del cronograma ---------- */
+/* El fragmento abm-alias.php viene de Parámetros, que tiene su propio CSS.
+   Acá se replican solo las clases que ese markup necesita, scopeadas al
+   modal para no chocar con nada del calendario. */
+.modal-alias[hidden] {
+    display: none !important;
+}
+
+.modal-alias-content {
+    max-width: 900px;
+}
+
+#modalAlias .content-card {
+    background: white;
+}
+
+#modalAlias .card-header-custom {
+    padding: 0 0 16px;
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: 16px;
+}
+
+#modalAlias .card-title-custom {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#modalAlias .card-subtitle-custom {
+    font-size: 12px;
+    color: var(--gray-600);
+}
+
+#modalAlias .alert {
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin: 0 0 14px !important;
+}
+
+#modalAlias .alert-info    { background: #EAF2FE; color: #2E5FA3; border: none; }
+#modalAlias .alert-warning { background: #FEF3E2; color: #B9770E; border: none; }
+#modalAlias .alert-success { background: #EAF7EC; color: #1E8449; border: none; }
+
+#modalAlias .table {
+    width: 100%;
+    font-size: 13px;
+    border-collapse: collapse;
+}
+
+#modalAlias .table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+    padding: 8px;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+#modalAlias .table td {
+    padding: 8px;
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+}
+
+#modalAlias .abm-alias-form {
+    margin: 16px 0 0;
+}
+
+#modalAlias .abm-alias-form-caja {
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 18px;
+    background: var(--gray-50);
+}
+
+#modalAlias .abm-alias-form-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+/* Vista previa del badge tal como se ve en el calendario. */
+.preview-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--color-arr-estimado);
+    color: white;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.preview-alias {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.preview-alias.provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.preview-contenedor { font-weight: 600; }
+
+.preview-iconos {
+    display: inline-flex;
+    gap: 2px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.alias-chip {
+    display: inline-block;
+    background: var(--color-emb);
+    color: white;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 13px;
+}
+
+.alias-input {
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    font-size: 20px;
+    text-align: center;
+    max-width: 110px;
+}
+
+.alias-error {
+    color: #C0392B;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.btn-cerrar-alias {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--gray-600);
+    cursor: pointer;
+}
+
+.btn-cerrar-alias:hover { color: var(--gray-800); }
+
 /* ---------- Aviso flotante tras guardar un movimiento ---------- */
 .aviso-movimiento {
     position: fixed;

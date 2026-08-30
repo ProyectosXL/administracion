@@ -1025,6 +1025,41 @@ function mostrarTooltip(elemento) {
     $tt.addClass('visible');
 }
 
+// ========== MODAL DE ALIAS ==========
+function cerrarModalAlias() {
+    $('#modalAlias').prop('hidden', true);
+    $('#formAliasPanel').prop('hidden', true);
+}
+
+/**
+ * Recarga los alias y repinta el calendario sin recargar la pagina.
+ * Se pide solo el mapa de alias, no todo el cronograma.
+ */
+function refrescarAlias() {
+    $.getJSON('../parametros/controller/gestionarAlias.php', { accion: 'listar' })
+        .done(function (r) {
+            if (!r.success) return;
+
+            const nuevos = {};
+            (r.data || []).forEach(a => {
+                if (a.ACTIVO) nuevos[a.COD_PROVEE] = a.ALIAS;
+            });
+            aliasProveedor = nuevos;
+
+            // El combo de contenedores muestra el alias en cada opcion, asi
+            // que tambien hay que rearmarlo. Se preserva la seleccion: el
+            // rearmado la borraria y el usuario perderia su filtro.
+            const seleccion = contenedoresSeleccionados.slice();
+            inicializarFiltroContenedor();
+            if (seleccion.length > 0) {
+                $('#filtroContenedor').val(seleccion.map(String)).trigger('change.select2');
+                contenedoresSeleccionados = seleccion;
+                aplicarEstadoFiltroContenedor();
+            }
+            renderizarVista();
+        });
+}
+
 // ========== POPOVER "+N MÁS" ==========
 function cerrarPopoverDia() {
     $('.popover-dia').remove();
@@ -1163,6 +1198,25 @@ function configurarEventListeners() {
 
         abrirModalConfirmacion(arrastre.campo, arrastre.fechaOrigen, destino, arrastre.idGrupo);
     });
+
+    // ---------- Modal de alias ----------
+    $(document).on('click', '#btnAliasCronograma', function () {
+        $('#modalAlias').prop('hidden', false);
+        // El ABM carga sus datos la primera vez que se lo muestra.
+        if (typeof cargarAlias === 'function') {
+            cargarAlias();
+        }
+    });
+
+    $(document).on('click', '.btn-cerrar-alias', cerrarModalAlias);
+
+    $(document).on('click', '#modalAlias', function (e) {
+        if (e.target === this) cerrarModalAlias();
+    });
+
+    // El ABM avisa cuando cambio algo; se recargan los alias y se repinta el
+    // calendario, sin recargar la pagina.
+    $(document).on('alias:cambiado', refrescarAlias);
 
     $(document).on('click', '.aviso-cerrar', function () {
         $(this).closest('.aviso-movimiento').remove();

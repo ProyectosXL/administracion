@@ -64,6 +64,16 @@
                     <i class="bi bi-calendar3"></i> Cronograma
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="alias-tab" data-bs-toggle="tab" data-bs-target="#alias" type="button" role="tab">
+                    <i class="bi bi-person-badge"></i> Alias de Proveedores
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="rubros-tab" data-bs-toggle="tab" data-bs-target="#rubros" type="button" role="tab">
+                    <i class="bi bi-tags"></i> Iconos de Rubro
+                </button>
+            </li>
         </ul>
 
         <!-- Tab Content -->
@@ -259,6 +269,127 @@
                 </div>
             </div>
 
+            <!-- TAB: Alias de Proveedores -->
+            <div class="tab-pane fade" id="alias" role="tabpanel">
+                <?php include __DIR__ . '/components/abm-alias.php'; ?>
+            </div>
+
+            <!-- TAB: Iconos de Rubro -->
+            <div class="tab-pane fade" id="rubros" role="tabpanel">
+                <div class="content-card">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title-custom mb-1">
+                                <i class="bi bi-tags"></i> Iconos de Rubro
+                            </h3>
+                            <p class="card-subtitle-custom mb-0">
+                                Icono que representa cada rubro en los badges del cronograma
+                            </p>
+                        </div>
+                        <button class="btn btn-primary" id="btnNuevoRubroIcono">
+                            <i class="bi bi-plus-circle"></i> Nuevo Icono
+                        </button>
+                    </div>
+
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle"></i>
+                        El icono puede ser una clase de <strong>Bootstrap Icons</strong>
+                        (por ejemplo <code>bi-handbag-fill</code>) o directamente un
+                        <strong>emoji</strong>. Los rubros de indumentaria y calzado usan emoji
+                        porque Bootstrap Icons no tiene glifos para ellos.
+                    </div>
+
+                    <div id="rubrosSinMapear" class="m-3"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tablaRubroIcono">
+                            <thead>
+                                <tr>
+                                    <th style="width: 70px;">Icono</th>
+                                    <th>Rubro</th>
+                                    <th style="width: 160px;">Valor</th>
+                                    <th style="width: 110px;">Artículos</th>
+                                    <th style="width: 80px;">Orden</th>
+                                    <th style="width: 90px;">Estado</th>
+                                    <th style="width: 130px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="7" class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal de icono de rubro -->
+    <div class="modal fade" id="modalRubroIcono" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalRubroIconoTitulo">
+                        <i class="bi bi-tags"></i> Nuevo Icono de Rubro
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="rubroIconoId">
+
+                    <div class="mb-3">
+                        <label for="rubroIconoRubro" class="form-label">
+                            Rubro <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="rubroIconoRubro"
+                               list="listaRubrosTango" maxlength="40"
+                               placeholder="Elegí uno de Tango o escribí uno nuevo">
+                        <datalist id="listaRubrosTango"></datalist>
+                        <div class="form-text">Debe coincidir exactamente con el rubro de Tango</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="rubroIconoValor" class="form-label">
+                            Icono <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="rubroIconoValor" maxlength="60"
+                               placeholder="bi-handbag-fill  o  👜">
+                        <div class="form-text">Clase de Bootstrap Icons o un emoji</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Vista previa</label>
+                        <div class="preview-badge" id="previewRubroIcono">
+                            <span class="preview-alias">LC</span>
+                            <span class="preview-contenedor">VER03-26</span>
+                            <span class="preview-iconos" id="previewRubroIconoGlifo"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label for="rubroIconoOrden" class="form-label">Orden</label>
+                            <input type="number" class="form-control" id="rubroIconoOrden" value="0" min="0">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label for="rubroIconoActivo" class="form-label">Estado</label>
+                            <select class="form-select" id="rubroIconoActivo">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarRubroIcono">Guardar</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -595,5 +726,7 @@
     <script src="js/gestionTerminales.js"></script>
     <script src="js/gestionPuertos.js"></script>
     <script src="js/paramCronograma.js"></script>
+    <script src="js/abmAlias.js"></script>
+    <script src="js/abmRubroIcono.js"></script>
 </body>
 </html>
