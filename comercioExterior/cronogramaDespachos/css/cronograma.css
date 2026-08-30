@@ -992,6 +992,149 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     border-color: var(--color-emb);
 }
 
+/* ---------- Historial de cambios de fecha ---------- */
+.historial-fechas {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.historial-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.historial-cargando,
+.historial-vacio {
+    font-size: 13px;
+    color: var(--gray-600);
+    padding: 8px 0;
+}
+
+.historial-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.historial-fila {
+    background: var(--gray-50);
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--gray-300);
+}
+
+.historial-oculto {
+    display: none;
+}
+
+.historial-cabecera {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.historial-campo {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.historial-cambio {
+    font-size: 13px;
+    color: var(--gray-600);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.historial-cambio b {
+    color: var(--gray-800);
+}
+
+.historial-fecha {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--gray-500);
+    white-space: nowrap;
+}
+
+.historial-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+    font-size: 11px;
+}
+
+.historial-origen {
+    border-radius: 8px;
+    padding: 1px 8px;
+    font-weight: 600;
+}
+
+.historial-origen.origen-cronograma {
+    background: #EAF2FE;
+    color: #2E5FA3;
+}
+
+.historial-origen.origen-gestion_despachos {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.historial-oc {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--gray-600);
+}
+
+.historial-motivo {
+    background: #FEF9E7;
+    color: #9A7D0A;
+    border-radius: 8px;
+    padding: 1px 8px;
+    font-weight: 600;
+}
+
+.historial-usuario {
+    color: var(--gray-500);
+    font-style: italic;
+}
+
+.historial-observacion {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--gray-700);
+    line-height: 1.45;
+    padding-left: 8px;
+    border-left: 2px solid var(--gray-200);
+}
+
+.historial-toggle {
+    margin-top: 10px;
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-600);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.historial-toggle:hover {
+    background: var(--gray-50);
+    color: var(--gray-800);
+}
+
 /* ---------- Chip de overflow "+N más" ---------- */
 .evento-mas {
     border: 1px dashed var(--gray-300);

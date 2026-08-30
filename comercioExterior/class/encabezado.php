@@ -357,18 +357,100 @@ class Encabezado
      * del cronograma: solo se tocan las filas con DIST_ORIGEN = 'A'; las
      * movidas a mano ('M') o confirmadas ('C') quedan intactas.
      */
-    private function recalcularDistribucion($ids, $fechaArribo) {
-        require_once __DIR__ . '/../cronogramaDespachos/class/CronogramaFechas.php';
+    private function recalcularDistribucion($ids, $fechaArribo, $antes = null) {
+        $this->cargarCronogramaFechas();
 
         $tocadas = CronogramaFechas::recalcularDistribucion(
             $this->cid_central, $ids, $fechaArribo
         );
 
-        if (!empty($tocadas)) {
-            error_log('recalcularDistribucion: ' . count($tocadas) .
-                      ' OCs con FECHA_DISTRI recalculada a ' . reset($tocadas));
+        if (empty($tocadas)) {
+            return [];
         }
+
+        error_log('recalcularDistribucion: ' . count($tocadas) .
+                  ' OCs con FECHA_DISTRI recalculada a ' . reset($tocadas));
+
+        // La cascada se registra aparte, con su propio motivo.
+        if ($antes !== null) {
+            $parametros = CronogramaFechas::obtenerParametros($this->cid_central);
+            foreach ($tocadas as $id => $nueva) {
+                if (!isset($antes[$id])) continue;
+                CronogramaFechas::registrarHistorial($this->cid_central, [
+                    'idEncabezado'  => $id,
+                    'ordenCompra'   => $antes[$id]['ORDEN_COMPRA'],
+                    'contenedor'    => $antes[$id]['CONTENEDOR'],
+                    'campo'         => 'FECHA_DISTRI',
+                    'valorAnterior' => CronogramaFechas::derivarDistribucion($antes[$id], $parametros),
+                    'valorNuevo'    => $nueva,
+                    'motivo'        => MotivosFecha::RECALCULO_AUTOMATICO,
+                    'observacion'   => null,
+                    'usuario'       => isset($_SESSION['usuario_dns']) ? $_SESSION['usuario_dns'] : null,
+                    'origen'        => 'GESTION_DESPACHOS',
+                ]);
+            }
+        }
+
         return $tocadas;
+    }
+
+    private function cargarCronogramaFechas() {
+        require_once __DIR__ . '/../cronogramaDespachos/class/CronogramaFechas.php';
+        require_once __DIR__ . '/../cronogramaDespachos/class/MotivosFecha.php';
+    }
+
+    /**
+     * Fechas de las OCs indicadas, para comparar antes y despues de un UPDATE.
+     */
+    private function leerFechasParaHistorial($ids) {
+        $this->cargarCronogramaFechas();
+        return CronogramaFechas::leerFechas($this->cid_central, $ids);
+    }
+
+    /**
+     * Compara el estado previo contra el actual y registra una fila de
+     * historial por cada campo de fecha que cambio.
+     *
+     * Es lo que evita que el historial quede con agujeros: sin esto, toda
+     * edicion hecha desde gestion de despachos no dejaria rastro y el
+     * historial solo mostraria lo movido desde el cronograma.
+     *
+     * MOTIVO y OBSERVACION quedan en NULL a proposito: el formulario de
+     * gestion de despachos no los pide, y sumarle campos obligatorios no
+     * entra en esta tanda.
+     */
+    private function registrarCambiosDeFecha($ids, $antes) {
+        if (empty($antes)) return;
+
+        $this->cargarCronogramaFechas();
+        $despues = CronogramaFechas::leerFechas($this->cid_central, $ids);
+        $usuario = isset($_SESSION['usuario_dns']) ? $_SESSION['usuario_dns'] : null;
+
+        foreach ($despues as $id => $filaDespues) {
+            if (!isset($antes[$id])) continue;
+
+            foreach (CronogramaFechas::CAMPOS_EDITABLES as $campo) {
+                $previo = $antes[$id][$campo];
+                $actual = $filaDespues[$campo];
+
+                if ((string) $previo === (string) $actual) {
+                    continue;
+                }
+
+                CronogramaFechas::registrarHistorial($this->cid_central, [
+                    'idEncabezado'  => $id,
+                    'ordenCompra'   => $antes[$id]['ORDEN_COMPRA'],
+                    'contenedor'    => $antes[$id]['CONTENEDOR'],
+                    'campo'         => $campo,
+                    'valorAnterior' => $previo,
+                    'valorNuevo'    => $actual,
+                    'motivo'        => null,
+                    'observacion'   => null,
+                    'usuario'       => $usuario,
+                    'origen'        => 'GESTION_DESPACHOS',
+                ]);
+            }
+        }
     }
 
     /**
@@ -416,15 +498,20 @@ class Encabezado
 
         $parametros = array_merge($parametros, $idsGrupo);
 
+        // Estado previo, para poder registrar en el historial que cambio.
+        $antes = $this->leerFechasParaHistorial($idsGrupo);
+
         $stmt = sqlsrv_query($this->cid_central, $sql, $parametros);
         if ($stmt === false) {
             error_log('actualizarEncabezadoGrupo: ' . print_r(sqlsrv_errors(), true));
             return false;
         }
 
+        $this->registrarCambiosDeFecha($idsGrupo, $antes);
+
         // Si se movio el arribo, la distribucion automatica lo sigue.
         if (array_key_exists('FECHA_ARR', $datos) && !empty($datos['FECHA_ARR'])) {
-            $this->recalcularDistribucion($idsGrupo, $datos['FECHA_ARR']);
+            $this->recalcularDistribucion($idsGrupo, $datos['FECHA_ARR'], $antes);
         }
 
         $afectados = sqlsrv_rows_affected($stmt);
@@ -540,6 +627,9 @@ class Encabezado
 
         error_log("SQL UPDATE: " . $sql);
 
+        // Estado previo, para el historial.
+        $antes = $this->leerFechasParaHistorial([$id]);
+
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
 
@@ -549,11 +639,13 @@ class Encabezado
                 return false;
             }
 
+            $this->registrarCambiosDeFecha([$id], $antes);
+
             // Igual que en actualizarEncabezadoGrupo: mover el arribo arrastra
             // la distribucion automatica. Aca alcanza con esta OC, porque este
             // metodo actualiza una sola fila.
             if (isset($datosDeCabezera['fechaArr']) && !empty($datosDeCabezera['fechaArr'])) {
-                $this->recalcularDistribucion([$id], $datosDeCabezera['fechaArr']);
+                $this->recalcularDistribucion([$id], $datosDeCabezera['fechaArr'], $antes);
             }
 
             return $id;

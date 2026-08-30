@@ -1117,6 +1117,16 @@ function configurarEventListeners() {
         abrirModalConfirmacion(arrastre.campo, arrastre.fechaOrigen, destino, arrastre.idGrupo);
     });
 
+    $(document).on('click', '.historial-toggle', function () {
+        const $btn = $(this);
+        const expandido = $btn.data('expandido') === 1 || $btn.data('expandido') === '1';
+        const ocultas = $('#historialFechas .historial-fila').length - 5;
+
+        $('#historialFechas .historial-fila').slice(5).toggleClass('historial-oculto', expandido);
+        $btn.data('expandido', expandido ? '0' : '1')
+            .text(expandido ? `Ver las ${ocultas} entradas restantes` : 'Ver menos');
+    });
+
     // Editor de fechas del modal: mismo endpoint y mismo modal de motivo y
     // observación que el arrastre, para que nada esquive el historial.
     $(document).on('change', '.editor-input', function () {
@@ -1907,6 +1917,12 @@ function abrirDetalleDespacho(despacho) {
                     
                     ${crearTimeline(despacho)}
                     ${crearEditorFechas(despacho)}
+                    <div class="historial-fechas" id="historialFechas">
+                        <div class="historial-titulo">
+                            <i class="bi bi-clock-history"></i> Historial de cambios de fecha
+                        </div>
+                        <div class="historial-cargando">Cargando…</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1916,6 +1932,87 @@ function abrirDetalleDespacho(despacho) {
 
     // El modal ya esta en el DOM: se puede medir y animar la barra.
     animarBarraProgresoColoreada();
+
+    // El historial se pide aparte: no hace falta para pintar el modal y en la
+    // mayoria de los contenedores va a venir vacio.
+    cargarHistorialFechas(despacho.ID);
+}
+
+// ========== HISTORIAL DE CAMBIOS ==========
+function cargarHistorialFechas(idEncabezado) {
+    $.ajax({
+        url: 'controller/obtenerHistorialFechas.php',
+        method: 'GET',
+        data: { idEncabezado: idEncabezado },
+        dataType: 'json',
+        success: function (respuesta) {
+            if (respuesta.success) {
+                renderizarHistorialFechas(respuesta.data);
+            } else {
+                $('#historialFechas .historial-cargando')
+                    .text('No se pudo cargar el historial.');
+            }
+        },
+        error: function () {
+            $('#historialFechas .historial-cargando')
+                .text('No se pudo cargar el historial.');
+        }
+    });
+}
+
+function renderizarHistorialFechas(entradas) {
+    const $cont = $('#historialFechas');
+    if ($cont.length === 0) return;
+
+    $cont.find('.historial-cargando, .historial-lista, .historial-vacio, .historial-toggle').remove();
+
+    if (!entradas || entradas.length === 0) {
+        $cont.append(`
+            <div class="historial-vacio">
+                Todavía no se registraron cambios de fecha para este contenedor.
+            </div>
+        `);
+        return;
+    }
+
+    // Colapsado por defecto a partir de 5 entradas, para que el historial no
+    // empuje el resto del modal fuera de la vista.
+    const colapsar = entradas.length > 5;
+
+    const filas = entradas.map((e, i) => `
+        <div class="historial-fila${colapsar && i >= 5 ? ' historial-oculto' : ''}">
+            <div class="historial-cabecera">
+                <span class="historial-campo">${escaparHtml(e.campoLabel)}</span>
+                <span class="historial-cambio">
+                    ${e.valorAnterior ? formatearFecha(e.valorAnterior) : '—'}
+                    <i class="bi bi-arrow-right"></i>
+                    <b>${e.valorNuevo ? formatearFecha(e.valorNuevo) : '—'}</b>
+                </span>
+                <span class="historial-fecha">${escaparHtml(e.fechaAlta || '')}</span>
+            </div>
+            <div class="historial-meta">
+                <span class="historial-origen origen-${escaparHtml(e.origen.toLowerCase())}">
+                    ${e.origen === 'CRONOGRAMA' ? 'Cronograma' : 'Gestión de despachos'}
+                </span>
+                ${e.ordenCompra ? `<span class="historial-oc">${escaparHtml(e.ordenCompra)}</span>` : ''}
+                ${e.motivoLabel ? `<span class="historial-motivo">${escaparHtml(e.motivoLabel)}</span>` : ''}
+                <span class="historial-usuario">${e.usuario ? escaparHtml(e.usuario) : 'sin usuario'}</span>
+            </div>
+            ${e.observacion
+                ? `<div class="historial-observacion">${escaparHtml(e.observacion)}</div>`
+                : ''}
+        </div>
+    `).join('');
+
+    $cont.append(`<div class="historial-lista">${filas}</div>`);
+
+    if (colapsar) {
+        $cont.append(`
+            <button type="button" class="historial-toggle" data-expandido="0">
+                Ver las ${entradas.length - 5} entradas restantes
+            </button>
+        `);
+    }
 }
 
 /**
