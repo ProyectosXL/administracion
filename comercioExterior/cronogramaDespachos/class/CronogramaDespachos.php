@@ -4,6 +4,7 @@ class CronogramaDespachos {
 
     function __construct() {
         require_once __DIR__ . '/../../../class/conexion.php';
+        require_once __DIR__ . '/CronogramaFechas.php';
         $cid = new Conexion();
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
@@ -56,6 +57,9 @@ class CronogramaDespachos {
                 throw new Exception("Error en la consulta: " . print_r($errors, true));
             }
             
+            // Se leen una sola vez para derivar FECHA_DISTRI de todas las filas.
+            $parametros = CronogramaFechas::obtenerParametros($this->cid_central);
+
             $despachos = array();
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 // Formatear fechas
@@ -97,6 +101,13 @@ class CronogramaDespachos {
                 // Origen de FECHA_DISTRI: A automatica, M manual, C confirmada.
                 $row['DIST_ORIGEN'] = ($row['DIST_ORIGEN'] === null)
                     ? 'A' : strtoupper(trim($row['DIST_ORIGEN']));
+
+                // Con DIST_ORIGEN = 'A', la columna es solo una cache y la
+                // formula es la verdad: la recepcion llega por Tango, no por
+                // esta aplicacion, asi que no hay donde engancharse para
+                // recalcular al recibir. Derivarla en la lectura mantiene el
+                // calendario correcto sin escribir en cada carga.
+                $row['FECHA_DISTRI'] = CronogramaFechas::derivarDistribucion($row, $parametros);
 
                 $despachos[] = $row;
             }

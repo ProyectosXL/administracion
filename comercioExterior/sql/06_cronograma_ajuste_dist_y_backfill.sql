@@ -54,17 +54,31 @@ GO
 --   DIST_ORIGEN = 'A'      -> no pisa lo movido a mano ni lo confirmado
 --   FECHA_DISTRI IS NULL   -> no pisa nada ya calculado
 --   FECHA_ARR IS NOT NULL  -> sin arribo no hay de donde proyectar
---   FECHA_RECIBIDO IS NULL -> solo los no recibidos
+--   sin recepcion          -> ver abajo
+--
+-- OJO con "sin recepcion": la recepcion tiene DOS fuentes y hay que mirar
+-- las dos, igual que el COALESCE de la query del cronograma. Ademas de
+-- FECHA_RECIBIDO en el encabezado, esta STA20 con los comprobantes 'RP' de
+-- Tango. Filtrando solo por FECHA_RECIBIDO IS NULL se cuelan contenedores
+-- que ya fueron recibidos: en central eran 84 de 243.
 -- ---------------------------------------------------------------------
+WITH RECEPCIONES AS (
+    SELECT N_ORDEN_CO, MAX(CAST(FECHA_MOV AS DATE)) AS FECHA_REC
+    FROM STA20
+    WHERE TCOMP_IN_S = 'RP' AND FECHA_MOV >= GETDATE()-360
+    GROUP BY N_ORDEN_CO
+)
 UPDATE E
 SET FECHA_DISTRI = DATEADD(day, P.VALOR, E.FECHA_ARR)
 FROM RO_T_IMPORTACIONES_ENCABEZADO E
 CROSS JOIN (SELECT VALOR FROM RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
             WHERE CLAVE = 'DIAS_ARR_DIST') P
+LEFT JOIN RECEPCIONES R ON E.ORDEN_COMPRA = R.N_ORDEN_CO
 WHERE E.DIST_ORIGEN = 'A'
   AND E.FECHA_DISTRI IS NULL
   AND E.FECHA_ARR IS NOT NULL
-  AND E.FECHA_RECIBIDO IS NULL;
+  AND E.FECHA_RECIBIDO IS NULL
+  AND R.FECHA_REC IS NULL;
 GO
 
 -- ---------------------------------------------------------------------

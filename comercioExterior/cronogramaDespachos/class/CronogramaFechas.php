@@ -98,6 +98,60 @@ class CronogramaFechas
     }
 
     /**
+     * Fecha de distribucion que hay que MOSTRAR para una fila.
+     *
+     * Con DIST_ORIGEN = 'A' la columna FECHA_DISTRI es apenas una cache: la
+     * verdad es la formula. Hace falta derivarla en cada lectura porque la
+     * recepcion no entra por esta aplicacion sino por Tango (STA20,
+     * comprobantes 'RP'), y no hay ningun punto donde engancharse para
+     * recalcular cuando eso pasa. Sin esto, un contenedor que se recibe
+     * manana se queda para siempre con la proyeccion vieja de arribo + 10 en
+     * lugar de moverse a recepcion + 1.
+     *
+     * Con 'M' o 'C' se devuelve el valor guardado tal cual: son decisiones
+     * humanas y ninguna formula las pisa.
+     *
+     * Que filas entran en el calculo, y por que:
+     *   - no recibidas y con arribo  -> se proyecta: sirve para planificar,
+     *     y cubre tanto lo del backfill como los contenedores nuevos.
+     *   - recibidas y CON fecha ya cargada -> se reancla a recepcion + 1:
+     *     son las que venian siguiendose y acaban de recibirse.
+     *   - recibidas y SIN fecha -> queda null. Es el historico viejo:
+     *     inventarle una distribucion pasada que nadie confirmo solo
+     *     ensuciaria el calendario.
+     *
+     * @param  array $fila        con DIST_ORIGEN, FECHA_DISTRI, FECHA_ARR, FECHA_REC
+     * @param  array $parametros  de obtenerParametros()
+     * @return string|null 'Y-m-d'
+     */
+    public static function derivarDistribucion(array $fila, array $parametros)
+    {
+        $origen = isset($fila['DIST_ORIGEN']) ? $fila['DIST_ORIGEN'] : 'A';
+        $guardada = isset($fila['FECHA_DISTRI']) ? $fila['FECHA_DISTRI'] : null;
+
+        if ($origen !== 'A') {
+            return $guardada;
+        }
+
+        $arribo    = isset($fila['FECHA_ARR']) ? $fila['FECHA_ARR'] : null;
+        $recepcion = isset($fila['FECHA_REC']) ? $fila['FECHA_REC'] : null;
+
+        if (!empty($recepcion)) {
+            // Ya recibido: solo se sigue proyectando si venia con fecha.
+            return empty($guardada)
+                ? null
+                : self::calcularDistribucion($arribo, $parametros['DIAS_ARR_DIST'],
+                                             $recepcion, $parametros['DIAS_REC_DIST']);
+        }
+
+        if (empty($arribo)) {
+            return $guardada;
+        }
+
+        return self::calcularDistribucion($arribo, $parametros['DIAS_ARR_DIST']);
+    }
+
+    /**
      * Aplica el recalculo de FECHA_DISTRI a las OCs indicadas tras un cambio
      * de FECHA_ARR.
      *
