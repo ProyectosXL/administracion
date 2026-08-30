@@ -125,6 +125,9 @@
                     <div class="tab-pane fade" id="flujo" role="tabpanel">
                         <h4 class="mb-3">Flujo del Proceso Logístico</h4>
                         
+                        <!-- Los 6 pasos del timeline del detalle. Arribo es UN
+                             paso: estimado y real son dos estados del mismo
+                             hito, no dos etapas distintas. -->
                         <div class="timeline-demo">
                             <div class="timeline-demo-step">
                                 <div class="timeline-demo-icon">🏭</div>
@@ -132,25 +135,31 @@
                             </div>
                             <div class="timeline-demo-step">
                                 <div class="timeline-demo-icon">🚢</div>
-                                <div class="timeline-demo-label">Embarcado</div>
+                                <div class="timeline-demo-label">Embarque</div>
                             </div>
                             <div class="timeline-demo-step">
                                 <div class="timeline-demo-icon">🛃</div>
-                                <div class="timeline-demo-label">Arribo Estimado</div>
-                            </div>
-                            <div class="timeline-demo-step">
-                                <div class="timeline-demo-icon">🛃</div>
-                                <div class="timeline-demo-label">Arribo Real</div>
+                                <div class="timeline-demo-label">Arribo</div>
                             </div>
                             <div class="timeline-demo-step">
                                 <div class="timeline-demo-icon">🚚</div>
-                                <div class="timeline-demo-label">Despachado</div>
+                                <div class="timeline-demo-label">Despacho</div>
                             </div>
                             <div class="timeline-demo-step">
                                 <div class="timeline-demo-icon">📦</div>
-                                <div class="timeline-demo-label">Recibido</div>
+                                <div class="timeline-demo-label">Recepción</div>
+                            </div>
+                            <div class="timeline-demo-step">
+                                <div class="timeline-demo-icon">🏬</div>
+                                <div class="timeline-demo-label">Distribución</div>
                             </div>
                         </div>
+
+                        <p class="text-muted small mb-3">
+                            El <strong>arribo</strong> es un solo hito con dos estados: mientras la ETA
+                            no está confirmada se muestra en verde claro como estimado, y en verde
+                            intenso cuando se confirma.
+                        </p>
                         
                         <div class="accordion accordion-flush" id="flujoAccordion">
                             <div class="accordion-item">
@@ -183,7 +192,7 @@
                                             <li>El contenedor se carga en el buque</li>
                                             <li>Se confirma la <strong>fecha real de embarque</strong></li>
                                             <li>Desde este momento, las fechas siguientes pasan de estimadas a calculadas</li>
-                                            <li>El contenedor inicia su tránsito marítimo (aprox. 45 días)</li>
+                                            <li>El contenedor inicia su tránsito marítimo (45 días por defecto, configurable en Parámetros)</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -228,20 +237,45 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#paso5">
-                                        <strong>Paso 5:</strong> &nbsp; Recepción en Depósito
+                                        <strong>Paso 5:</strong> &nbsp; Recepción en Depósito Central
                                     </button>
                                 </h2>
                                 <div id="paso5" class="accordion-collapse collapse" data-bs-parent="#flujoAccordion">
                                     <div class="accordion-body">
                                         <ul class="small">
-                                            <li>El contenedor es transportado al depósito</li>
+                                            <li>El contenedor es transportado al depósito central</li>
                                             <li>Se descarga y verifica la mercadería</li>
-                                            <li>Se registra la fecha de recepción final</li>
-                                            <li><strong>Proceso finalizado</strong> - La mercadería está disponible</li>
+                                            <li>Se registra la fecha de recepción</li>
+                                            <li>Esta fecha <strong>la carga Tango</strong>, no el cronograma, y por eso es la única que no se puede mover</li>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#paso6">
+                                        <strong>Paso 6:</strong> &nbsp; Distribución a Locales
+                                    </button>
+                                </h2>
+                                <div id="paso6" class="accordion-collapse collapse" data-bs-parent="#flujoAccordion">
+                                    <div class="accordion-body">
+                                        <ul class="small">
+                                            <li>La mercadería sale del depósito central hacia los locales</li>
+                                            <li><strong>Es el paso final</strong> del proceso, posterior a la recepción</li>
+                                            <li>La fecha se proyecta sola: mientras no haya recepción real es <strong>arribo + 10 días</strong>; en cuanto Tango confirma la recepción pasa a ser <strong>el día siguiente</strong></li>
+                                            <li>Si se mueve a mano o se confirma, el sistema deja de recalcularla</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3 small mb-0">
+                            <i class="bi bi-sliders"></i>
+                            Los días de cada tramo (45 de tránsito, 7 hasta el despacho, 2 hasta la
+                            recepción, 10 hasta la distribución y 1 desde la recepción real) se
+                            configuran en <strong>Parámetros › Cronograma</strong>, sin tocar código.
                         </div>
                     </div>
                     
