@@ -816,7 +816,9 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
 
 .recorrido-hitos {
     display: flex;
-    align-items: center;
+    /* flex-start y no center: el hito de embarque puede llevar una linea de
+       comparacion extra, y centrando quedarian los puntos desalineados. */
+    align-items: flex-start;
     overflow-x: auto;
     padding-bottom: 4px;
 }
@@ -897,12 +899,32 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     color: var(--gray-600);
 }
 
+/* Fecha estimada como comparacion debajo de la real. En gris y mas chica:
+   es contexto, no un hito del recorrido. */
+.hito-comparacion {
+    font-size: 10px;
+    color: var(--gray-500);
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.hito-comparacion b {
+    font-weight: 700;
+}
+
+.hito-comparacion.desvio-tarde b    { color: #C0392B; }
+.hito-comparacion.desvio-temprano b { color: #1E8449; }
+
 .hito-union {
     flex: 1;
     min-width: 12px;
     height: 2px;
     background: var(--gray-200);
-    margin-top: -18px;
+    /* Alinea la union con los puntos, que estan arriba del todo de cada
+       hito. Los hitos con linea de comparacion son mas altos, asi que la
+       referencia se toma desde arriba y no desde el centro. */
+    align-self: flex-start;
+    margin-top: 9px;
 }
 
 /* ---------- Tooltip propio de los badges ---------- */

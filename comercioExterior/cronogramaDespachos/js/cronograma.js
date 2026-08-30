@@ -300,13 +300,56 @@ function limpiarFiltroContenedor() {
 // Los hitos de un contenedor caen en meses distintos: el 78% de los grupos
 // reparte sus fechas en 3 o mas meses. Sin esta tira habria que navegar el
 // calendario a ciegas para reconstruir un recorrido.
+// El embarque ocupa UN solo hito, no dos. Cuando hay fecha real, la estimada
+// deja de ser un hito propio y baja a linea de comparacion en gris: ya
+// cumplio su funcion y como hito al mismo nivel solo agrega ruido.
 const HITOS_RECORRIDO = [
-    { tipo: 'est-emb',      campo: 'FECHA_EST_EMB',  label: 'Est. embarque' },
     { tipo: 'emb',          campo: 'FECHA_EMB',      label: 'Embarque' },
     { tipo: 'arr-estimado', campo: 'FECHA_ARR',      label: 'Arribo' },
     { tipo: 'desp',         campo: 'FECHA_DESP_ADU', label: 'Despacho' },
     { tipo: 'rec',          campo: 'FECHA_REC',      label: 'Recepción' }
 ];
+
+/** Diferencia en dias corridos entre dos fechas 'YYYY-MM-DD'. */
+function diasEntre(desde, hasta) {
+    if (!desde || !hasta) return null;
+    const a = new Date(desde + 'T00:00:00');
+    const b = new Date(hasta + 'T00:00:00');
+    return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Resuelve que mostrar en un hito: la fecha real si existe, y si no la
+ * estimada. Para el embarque devuelve ademas la estimada como comparacion.
+ */
+function datosHitoRecorrido(despacho, hito) {
+    if (hito.campo === 'FECHA_EMB') {
+        const real = despacho.FECHA_EMB;
+        const estimada = despacho.FECHA_EST_EMB;
+
+        if (real) {
+            return {
+                fecha: real,
+                estimado: false,
+                label: 'Embarque',
+                comparacion: (estimada && estimada !== real) ? estimada : null
+            };
+        }
+        return { fecha: estimada, estimado: true, label: 'Est. embarque', comparacion: null };
+    }
+
+    const real = despacho[hito.campo];
+    if (real) {
+        return { fecha: real, estimado: false, label: hito.label, comparacion: null };
+    }
+
+    return {
+        fecha: estimarHitoRecorrido(despacho, hito.campo),
+        estimado: true,
+        label: hito.label,
+        comparacion: null
+    };
+}
 
 function renderizarTiraRecorrido() {
     $('#tiraRecorrido').remove();
@@ -321,33 +364,48 @@ function renderizarTiraRecorrido() {
         const principal = g.despachos.find(d => d.ID === g.idGrupo) || g.despachos[0];
 
         const hitos = HITOS_RECORRIDO.map(h => {
-            let fecha = principal[h.campo];
-            let estimado = false;
+            const datos = datosHitoRecorrido(principal, h);
             let tipo = h.tipo;
 
             // El arribo cambia de color segun este confirmado o no.
             if (h.campo === 'FECHA_ARR' && parseInt(principal.ETA_CONFIRMADA) === 1) {
                 tipo = 'arr-real';
             }
-
-            if (!fecha) {
-                estimado = true;
-                fecha = estimarHitoRecorrido(principal, h.campo);
+            // Sin fecha real de embarque, el hito toma el color de estimado.
+            if (h.campo === 'FECHA_EMB' && datos.estimado) {
+                tipo = 'est-emb';
             }
 
-            if (!fecha) {
+            if (!datos.fecha) {
                 return `<div class="hito hito-vacio"><span class="hito-dot"></span>
                             <span class="hito-label">${h.label}</span>
                             <span class="hito-fecha">—</span></div>`;
             }
 
+            // Linea gris de comparacion contra lo que se habia estimado, con
+            // el desvio en dias. Es lo unico que la estimada sigue aportando
+            // una vez que hay fecha real.
+            let comparacionHtml = '';
+            if (datos.comparacion) {
+                const desvio = diasEntre(datos.comparacion, datos.fecha);
+                const signo = desvio > 0 ? '+' : '';
+                const claseDesvio = desvio > 0 ? ' desvio-tarde' : (desvio < 0 ? ' desvio-temprano' : '');
+                comparacionHtml = `
+                    <span class="hito-comparacion${claseDesvio}">
+                        est. ${formatearFecha(datos.comparacion)}
+                        ${desvio !== 0 ? `<b>${signo}${desvio} d</b>` : ''}
+                    </span>
+                `;
+            }
+
             return `
-                <button type="button" class="hito hito-${tipo}${estimado ? ' hito-estimado' : ''}"
-                        data-fecha="${fecha}"
-                        title="Ir a ${formatearFecha(fecha)}${estimado ? ' (estimado)' : ''}">
+                <button type="button" class="hito hito-${tipo}${datos.estimado ? ' hito-estimado' : ''}"
+                        data-fecha="${datos.fecha}"
+                        title="Ir a ${formatearFecha(datos.fecha)}${datos.estimado ? ' (estimado)' : ''}">
                     <span class="hito-dot"></span>
-                    <span class="hito-label">${h.label}</span>
-                    <span class="hito-fecha">${formatearFecha(fecha)}</span>
+                    <span class="hito-label">${datos.label}</span>
+                    <span class="hito-fecha">${formatearFecha(datos.fecha)}</span>
+                    ${comparacionHtml}
                 </button>
             `;
         }).join('<span class="hito-union"></span>');
