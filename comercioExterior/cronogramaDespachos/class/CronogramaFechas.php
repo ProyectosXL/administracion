@@ -17,6 +17,29 @@ class CronogramaFechas
         'FECHA_DISTRI',
     ];
 
+    /** Etiquetas legibles, para mensajes de error y para el historial. */
+    const ETIQUETAS_CAMPOS = [
+        'FECHA_EST_EMB'  => 'Embarque estimado',
+        'FECHA_EMB'      => 'Embarque real',
+        'FECHA_ARR'      => 'Arribo',
+        'FECHA_DESP_ADU' => 'Despacho de aduana',
+        'FECHA_REC'      => 'Recepción',
+        'FECHA_DISTRI'   => 'Distribución',
+    ];
+
+    /**
+     * Orden cronologico del flujo. Lo usa la validacion de coherencia para
+     * saber que va antes y que va despues de que.
+     */
+    const ORDEN_FLUJO = [
+        'FECHA_EST_EMB',
+        'FECHA_EMB',
+        'FECHA_ARR',
+        'FECHA_DESP_ADU',
+        'FECHA_REC',
+        'FECHA_DISTRI',
+    ];
+
     /**
      * FECHA_REC no entra: sale de Tango (STA20, comprobantes 'RP') y el
      * cronograma no la escribe.
@@ -24,6 +47,147 @@ class CronogramaFechas
     public static function esCampoEditable($campo)
     {
         return in_array($campo, self::CAMPOS_EDITABLES, true);
+    }
+
+    public static function etiqueta($campo)
+    {
+        return isset(self::ETIQUETAS_CAMPOS[$campo]) ? self::ETIQUETAS_CAMPOS[$campo] : $campo;
+    }
+
+    /** Valida el formato y que la fecha sea real (rechaza 2026-02-31). */
+    public static function esFechaValida($fecha)
+    {
+        if (!is_string($fecha) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            return false;
+        }
+        $d = DateTime::createFromFormat('Y-m-d', $fecha);
+        return $d && $d->format('Y-m-d') === $fecha;
+    }
+
+    /**
+     * Una fecha es "real" (en firme) o una estimacion.
+     *
+     * Importa para la validacion de coherencia: chocar contra una fecha real
+     * bloquea el movimiento, chocar contra una estimacion solo advierte.
+     */
+    public static function esFechaReal($campo, array $fila)
+    {
+        switch ($campo) {
+            case 'FECHA_EST_EMB':
+                return false;  // es una estimacion por definicion
+            case 'FECHA_ARR':
+                return (int) $fila['ETA_CONFIRMADA'] === 1;
+            case 'FECHA_DISTRI':
+                return $fila['DIST_ORIGEN'] === 'C';
+            default:
+                // FECHA_EMB, FECHA_DESP_ADU y FECHA_REC son hechos cargados.
+                return !empty($fila[$campo]);
+        }
+    }
+
+    /**
+     * Coherencia cronologica del movimiento propuesto.
+     *
+     * Se compara la fecha nueva contra todas las demas del mismo encabezado,
+     * segun ORDEN_FLUJO. Un choque contra una fecha REAL ya persistida
+     * bloquea; contra una estimacion solo advierte, porque las estimaciones
+     * se mueven solas al recalcularse.
+     *
+     * @return array ['errores' => [...], 'advertencias' => [...]]
+     */
+    public static function validarCoherencia($campo, $fechaNueva, array $fila)
+    {
+        $errores = [];
+        $advertencias = [];
+
+        $posicion = array_search($campo, self::ORDEN_FLUJO, true);
+        if ($posicion === false) {
+            return ['errores' => ['Campo fuera del flujo: ' . $campo], 'advertencias' => []];
+        }
+
+        foreach (self::ORDEN_FLUJO as $i => $otro) {
+            if ($otro === $campo || empty($fila[$otro])) {
+                continue;
+            }
+
+            $valorOtro = substr((string) $fila[$otro], 0, 10);
+            $anterior  = ($i < $posicion);
+
+            $invierte = $anterior
+                ? ($valorOtro > $fechaNueva)   // algo previo quedaria despues
+                : ($valorOtro < $fechaNueva);  // algo posterior quedaria antes
+
+            if (!$invierte) {
+                continue;
+            }
+
+            $etiquetaOtro = self::etiqueta($otro);
+            $etiquetaEste = self::etiqueta($campo);
+
+            $mensaje = $anterior
+                ? "{$etiquetaEste} quedaría antes de {$etiquetaOtro} ({$valorOtro})"
+                : "{$etiquetaEste} quedaría después de {$etiquetaOtro} ({$valorOtro})";
+
+            if (self::esFechaReal($otro, $fila)) {
+                $errores[] = $mensaje . ', que es una fecha en firme';
+            } else {
+                $advertencias[] = $mensaje . ', que es una estimación';
+            }
+        }
+
+        return ['errores' => $errores, 'advertencias' => $advertencias];
+    }
+
+    /**
+     * Reglas de arrastre: que campos exigen observacion obligatoria.
+     *
+     * @return string|null motivo por el que la observacion es obligatoria
+     */
+    public static function motivoObservacionObligatoria($campo, array $fila)
+    {
+        if ($campo === 'FECHA_ARR' && (int) $fila['ETA_CONFIRMADA'] === 1) {
+            return 'El arribo está confirmado (ETA confirmada)';
+        }
+        if ($campo === 'FECHA_DISTRI' && $fila['DIST_ORIGEN'] === 'C') {
+            return 'La fecha de distribución está confirmada';
+        }
+        return null;
+    }
+
+    /**
+     * Inserta una fila en el historial de cambios de fecha.
+     *
+     * USUARIO sale de $_SESSION['usuario_dns'], que hoy no se puebla en este
+     * modulo: comercioExterior no tiene autenticacion y esa variable la setea
+     * setearDnsBaseName(), que solo se usa en otros flujos. Queda en NULL
+     * hasta que haya un usuario de aplicacion de verdad.
+     */
+    public static function registrarHistorial($conn, array $datos)
+    {
+        $sql = "INSERT INTO RO_T_IMPORTACIONES_FECHAS_HIST
+                (ID_ENCABEZADO, ORDEN_COMPRA, CONTENEDOR, CAMPO,
+                 VALOR_ANTERIOR, VALOR_NUEVO, MOTIVO, OBSERVACION, USUARIO, ORIGEN)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        $params = [
+            (int) $datos['idEncabezado'],
+            isset($datos['ordenCompra']) ? $datos['ordenCompra'] : null,
+            isset($datos['contenedor'])  ? $datos['contenedor']  : null,
+            $datos['campo'],
+            !empty($datos['valorAnterior']) ? $datos['valorAnterior'] : null,
+            !empty($datos['valorNuevo'])    ? $datos['valorNuevo']    : null,
+            isset($datos['motivo'])      ? $datos['motivo']      : null,
+            isset($datos['observacion']) ? $datos['observacion'] : null,
+            isset($datos['usuario'])     ? $datos['usuario']     : null,
+            $datos['origen'],
+        ];
+
+        $stmt = sqlsrv_query($conn, $sql, $params);
+        if ($stmt === false) {
+            error_log('CronogramaFechas::registrarHistorial: ' . print_r(sqlsrv_errors(), true));
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -224,6 +388,51 @@ class CronogramaFechas
         }
 
         return $afectados;
+    }
+
+    /**
+     * IDs de todas las OCs del grupo de contenedor al que pertenece un ID.
+     *
+     * NO se usa Encabezado::obtenerIdsDelGrupo() aca, que agrupa solo por
+     * ID_PADRE: esa columna esta vacia en el 100% de las filas de las dos
+     * bases, asi que devolveria siempre una sola OC. El badge del calendario,
+     * en cambio, agrupa por ID_PADRE y ademas por COD_PROVEE + CONTENEDOR
+     * (ver el ID_GRUPO de CronogramaDespachos::obtenerDespachos). Si la
+     * escritura no agrupara igual que la lectura, arrastrar un badge que
+     * representa 3 OCs moveria una sola.
+     *
+     * La ventana de 360 dias es la misma que la de la query del cronograma,
+     * para que el grupo sea exactamente el que se ve en pantalla.
+     */
+    public static function obtenerIdsDelGrupo($conn, $idEncabezado)
+    {
+        $sql = "WITH V AS (
+                    SELECT ID, ID_PADRE, COD_PROVEE, LTRIM(RTRIM(CONTENEDOR)) AS CONT
+                    FROM RO_T_IMPORTACIONES_ENCABEZADO
+                    WHERE FECHA_MOV >= GETDATE()-360
+                ),
+                BASE AS (SELECT * FROM V WHERE ID = ?)
+                SELECT DISTINCT V.ID
+                FROM V CROSS JOIN BASE
+                WHERE V.ID = BASE.ID
+                   OR V.ID = COALESCE(BASE.ID_PADRE, BASE.ID)
+                   OR V.ID_PADRE = COALESCE(BASE.ID_PADRE, BASE.ID)
+                   OR (NULLIF(BASE.CONT, '') IS NOT NULL
+                       AND V.COD_PROVEE = BASE.COD_PROVEE
+                       AND V.CONT = BASE.CONT)";
+
+        $stmt = sqlsrv_query($conn, $sql, [(int) $idEncabezado]);
+        if ($stmt === false) {
+            error_log('CronogramaFechas::obtenerIdsDelGrupo: ' . print_r(sqlsrv_errors(), true));
+            return [(int) $idEncabezado];
+        }
+
+        $ids = [];
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $ids[] = (int) $row['ID'];
+        }
+
+        return empty($ids) ? [] : $ids;
     }
 
     /**
