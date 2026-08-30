@@ -59,6 +59,11 @@
                     <i class="bi bi-geo-alt"></i> Puertos
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="cronograma-tab" data-bs-toggle="tab" data-bs-target="#cronograma" type="button" role="tab">
+                    <i class="bi bi-calendar3"></i> Cronograma
+                </button>
+            </li>
         </ul>
 
         <!-- Tab Content -->
@@ -195,6 +200,54 @@
                             <tbody>
                                 <tr>
                                     <td colspan="6" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Cronograma -->
+            <div class="tab-pane fade" id="cronograma" role="tabpanel">
+                <div class="content-card">
+                    <div class="card-header-custom">
+                        <div>
+                            <h3 class="card-title-custom mb-1">
+                                <i class="bi bi-calendar3"></i>
+                                Días del Cronograma
+                            </h3>
+                            <p class="card-subtitle-custom mb-0">
+                                Días corridos que el cronograma usa para proyectar las fechas
+                                estimadas de cada contenedor
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle"></i>
+                        Estos valores se aplican al <strong>proyectar</strong> fechas estimadas.
+                        Cambiarlos no reescribe las fechas ya cargadas; sí afecta las próximas
+                        estimaciones y el recálculo de la fecha de distribución.
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tablaParamCronograma">
+                            <thead>
+                                <tr>
+                                    <th style="width: 180px;">Clave</th>
+                                    <th>Descripción</th>
+                                    <th style="width: 140px;">Días</th>
+                                    <th style="width: 180px;">Última Modificación</th>
+                                    <th style="width: 120px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="text-center">
                                         <div class="spinner-border text-primary" role="status">
                                             <span class="visually-hidden">Cargando...</span>
                                         </div>
@@ -541,5 +594,6 @@
     <script src="js/parametros.js"></script>
     <script src="js/gestionTerminales.js"></script>
     <script src="js/gestionPuertos.js"></script>
+    <script src="js/paramCronograma.js"></script>
 </body>
 </html>

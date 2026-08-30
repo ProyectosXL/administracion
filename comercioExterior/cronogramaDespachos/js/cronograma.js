@@ -7,7 +7,7 @@ let despachos = [];
 let vistaActual = 'calendario'; // 'calendario' o 'grilla'
 let mesActual = new Date();
 let despachoSeleccionado = null;
-let filtrosActivos = ['est-emb', 'emb', 'arr-estimado', 'arr-real', 'desp', 'rec']; // Filtros múltiples
+let filtrosActivos = ['est-emb', 'emb', 'arr-estimado', 'arr-real', 'desp', 'dist', 'rec']; // Filtros múltiples
 
 // IDs de grupo seleccionados en el filtro por contenedor. Mientras haya al
 // menos uno, manda sobre los filtros de estado. No se persiste: es una
@@ -54,6 +54,7 @@ const LABELS_EVENTOS = {
     'arr-estimado': 'Arribo estimado',
     'arr-real': 'Arribo real',
     'desp': 'Despacho de aduana',
+    'dist': 'Distribución',
     'rec': 'Recepción'
 };
 
@@ -307,6 +308,7 @@ const HITOS_RECORRIDO = [
     { tipo: 'emb',          campo: 'FECHA_EMB',      label: 'Embarque' },
     { tipo: 'arr-estimado', campo: 'FECHA_ARR',      label: 'Arribo' },
     { tipo: 'desp',         campo: 'FECHA_DESP_ADU', label: 'Despacho' },
+    { tipo: 'dist',         campo: 'FECHA_DISTRI',   label: 'Distribución' },
     { tipo: 'rec',          campo: 'FECHA_REC',      label: 'Recepción' }
 ];
 
@@ -447,6 +449,7 @@ function estimarHitoRecorrido(despacho, campo) {
 
     if (campo === 'FECHA_ARR')      return estimadas.arribo;
     if (campo === 'FECHA_DESP_ADU') return estimadas.despacho;
+    if (campo === 'FECHA_DISTRI')   return estimadas.distribucion;
     if (campo === 'FECHA_REC')      return estimadas.recepcion;
     return null;
 }
@@ -941,6 +944,10 @@ function renderizarCalendario() {
                         <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Despacho Aduana</span>
                     </div>
+                    <div class="leyenda-pill dist">
+                        <span class="leyenda-dot"></span>
+                        <span class="leyenda-texto">Distribución</span>
+                    </div>
                     <div class="leyenda-pill rec">
                         <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Recepción</span>
@@ -1067,8 +1074,14 @@ function crearBadgeEvento(evento) {
         ? `<div class="evento-proveedor">${escaparHtml(representante.PROVEEDOR || 'Sin proveedor')}</div>`
         : '';
 
+    // Una distribucion automatica (A) o movida a mano (M) sigue siendo una
+    // proyeccion; solo la confirmada (C) es una fecha en firme.
+    const claseDist = (evento.tipo === 'dist' && representante.DIST_ORIGEN !== 'C')
+        ? ' dist-estimada'
+        : '';
+
     return `
-        <div class="evento-pill ${evento.tipo}"
+        <div class="evento-pill ${evento.tipo}${claseDist}"
              data-id-grupo="${evento.idGrupo}"
              data-tipo="${evento.tipo}"
              data-fecha="${evento.fecha}">
@@ -1110,6 +1123,9 @@ function obtenerEventosPorFecha(fecha) {
         }
         if (despacho.FECHA_DESP_ADU === fecha) {
             tipos.push('desp');
+        }
+        if (despacho.FECHA_DISTRI === fecha) {
+            tipos.push('dist');
         }
         if (despacho.FECHA_REC === fecha) {
             tipos.push('rec');
@@ -1229,22 +1245,10 @@ function renderizarPanelProximosArribos() {
 
 function calcularFechaArriboEstimada(despacho) {
     if (despacho.FECHA_ARR) return despacho.FECHA_ARR;
-    
-    // Si hay fecha real de embarque, sumar 45 días
-    if (despacho.FECHA_EMB) {
-        const fechaEmb = new Date(despacho.FECHA_EMB + 'T00:00:00');
-        fechaEmb.setDate(fechaEmb.getDate() + 45);
-        return aISO(fechaEmb);
-    }
-    
-    // Si solo hay fecha estimada de embarque, sumar 45 días
-    if (despacho.FECHA_EST_EMB) {
-        const fechaEstEmb = new Date(despacho.FECHA_EST_EMB + 'T00:00:00');
-        fechaEstEmb.setDate(fechaEstEmb.getDate() + 45);
-        return aISO(fechaEstEmb);
-    }
-    
-    return null;
+
+    // Offset parametrizable (DIAS_EMB_ARR), antes 45 hardcodeado.
+    const base = despacho.FECHA_EMB || despacho.FECHA_EST_EMB;
+    return base ? sumarDias(base, parametrosDias.DIAS_EMB_ARR) : null;
 }
 
 function crearCardProximoArribo(despacho) {
@@ -1529,7 +1533,24 @@ function crearTimeline(despacho) {
             estimado: !tieneEmbarqueReal || !despacho.FECHA_DESP_ADU,
             demorado: verificarDemora(despacho.FECHA_DESP_ADU, fechasEstimadas.despacho)
         },
-        { 
+        {
+            key: 'distribuido',
+            // Solo DIST_ORIGEN = 'C' es una fecha en firme; 'A' (automatica)
+            // y 'M' (movida a mano) siguen siendo proyecciones.
+            label: despacho.DIST_ORIGEN === 'C' ? 'Distribución' : 'Distribución (estimada)',
+            icono: '🏬',
+            fecha: despacho.FECHA_DISTRI || fechasEstimadas.distribucion,
+            fechaEstimada: fechasEstimadas.distribucion,
+            // Se da por cumplido tambien si ya hay recepcion: la distribucion
+            // va antes en la cadena, asi que una recepcion hecha la implica.
+            // Sin esto los 108 contenedores ya recibidos, que no tienen
+            // FECHA_DISTRI cargada, caerian de 100% a 80% de progreso.
+            completado: (!!despacho.FECHA_DISTRI && despacho.DIST_ORIGEN === 'C')
+                        || !!despacho.FECHA_REC,
+            estimado: despacho.DIST_ORIGEN !== 'C',
+            demorado: verificarDemora(despacho.FECHA_DISTRI, fechasEstimadas.distribucion)
+        },
+        {
             key: 'recibido', 
             label: tieneEmbarqueReal ? 'Recibido' : 'Recepción (estimada)', 
             icono: '📦', 
@@ -1541,7 +1562,14 @@ function crearTimeline(despacho) {
         }
     ];
     
-    const pasosCompletados = pasos.filter(p => p.completado).length;
+    // Prefijo contiguo y no filter(): el progreso es hasta donde llego la
+    // cadena. Contando sueltos, un paso intermedio pendiente con uno
+    // posterior cumplido inflaba el porcentaje y pintaba segmentos de mas.
+    let pasosCompletados = 0;
+    for (const paso of pasos) {
+        if (!paso.completado) break;
+        pasosCompletados++;
+    }
     const porcentajeProgreso = ((pasosCompletados - 1) / (pasos.length - 1)) * 100;
     
     // Calcular countdown hasta recepción
@@ -1569,6 +1597,7 @@ function crearTimeline(despacho) {
             if (pasoSiguiente.key === 'embarcado') colorBarra = 'var(--color-emb)';
             else if (pasoSiguiente.key === 'arribado') colorBarra = 'var(--color-arr)';
             else if (pasoSiguiente.key === 'despachado') colorBarra = 'var(--color-desp)';
+            else if (pasoSiguiente.key === 'distribuido') colorBarra = 'var(--color-dist)';
             else if (pasoSiguiente.key === 'recibido') colorBarra = 'var(--color-rec)';
         }
         
@@ -1600,46 +1629,36 @@ function crearTimeline(despacho) {
     `;
 }
 
+/**
+ * Cadena de fechas estimadas a partir del embarque.
+ *
+ * Los offsets salen de parametrosDias, que llega del endpoint y se administra
+ * desde Parametros > Cronograma. Antes estaban hardcodeados 45 / 7 / 3 aca y
+ * el 45 tambien en calcularFechaArriboEstimada().
+ *
+ * El arribo se calcula desde el embarque real si existe, y si no desde el
+ * estimado. La distribucion cuelga del arribo, sea real o estimado.
+ */
 function calcularFechasEstimadas(despacho) {
     const fechas = {
         arribo: null,
         despacho: null,
+        distribucion: null,
         recepcion: null
     };
-    
-    // Si hay fecha real de embarque, calcular desde ahí
-    if (despacho.FECHA_EMB) {
-        const fechaEmb = new Date(despacho.FECHA_EMB + 'T00:00:00');
-        
-        const fechaArr = new Date(fechaEmb);
-        fechaArr.setDate(fechaArr.getDate() + 45);
-        fechas.arribo = aISO(fechaArr);
-        
-        const fechaDesp = new Date(fechaArr);
-        fechaDesp.setDate(fechaDesp.getDate() + 7);
-        fechas.despacho = aISO(fechaDesp);
-        
-        const fechaRec = new Date(fechaDesp);
-        fechaRec.setDate(fechaRec.getDate() + 3);
-        fechas.recepcion = aISO(fechaRec);
-    }
-    // Si solo hay fecha estimada de embarque
-    else if (despacho.FECHA_EST_EMB) {
-        const fechaEstEmb = new Date(despacho.FECHA_EST_EMB + 'T00:00:00');
-        
-        const fechaArr = new Date(fechaEstEmb);
-        fechaArr.setDate(fechaArr.getDate() + 45);
-        fechas.arribo = aISO(fechaArr);
-        
-        const fechaDesp = new Date(fechaArr);
-        fechaDesp.setDate(fechaDesp.getDate() + 7);
-        fechas.despacho = aISO(fechaDesp);
-        
-        const fechaRec = new Date(fechaDesp);
-        fechaRec.setDate(fechaRec.getDate() + 3);
-        fechas.recepcion = aISO(fechaRec);
-    }
-    
+
+    const base = despacho.FECHA_EMB || despacho.FECHA_EST_EMB;
+    if (!base) return fechas;
+
+    fechas.arribo      = sumarDias(base, parametrosDias.DIAS_EMB_ARR);
+    fechas.despacho    = sumarDias(fechas.arribo, parametrosDias.DIAS_ARR_DESP);
+    fechas.recepcion   = sumarDias(fechas.despacho, parametrosDias.DIAS_DESP_REC);
+
+    // La distribucion se estima sobre el arribo real cuando lo hay, no sobre
+    // el proyectado desde el embarque.
+    const arriboBase = despacho.FECHA_ARR || fechas.arribo;
+    fechas.distribucion = sumarDias(arriboBase, parametrosDias.DIAS_ARR_DIST);
+
     return fechas;
 }
 

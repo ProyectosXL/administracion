@@ -11,6 +11,9 @@
     --color-arr-real: #6FA844; /* Verde más intenso para arribo real */
     --color-arr-estimado: #A8D68D; /* Verde más claro para arribo estimado */
     --color-desp: #F5A623;
+    /* Distribucion: magenta, el unico hueco que quedaba entre el naranja del
+       despacho y el violeta de la recepcion, que son sus vecinos en el flujo. */
+    --color-dist: #E8598B;
     --color-rec: #AC92EC;
     
     /* Colores de estados */
@@ -292,6 +295,7 @@ body {
 .filtro-color.arr-estimado { background: var(--color-arr-estimado); }
 .filtro-color.arr-real     { background: var(--color-arr-real); }
 .filtro-color.desp         { background: var(--color-desp); }
+.filtro-color.dist         { background: var(--color-dist); }
 .filtro-color.rec          { background: var(--color-rec); }
 
 .filtro-item span:last-child {
@@ -438,6 +442,7 @@ body {
 .leyenda-pill.arr-estimado .leyenda-dot { background: var(--color-arr-estimado); }
 .leyenda-pill.arr-real     .leyenda-dot { background: var(--color-arr-real); }
 .leyenda-pill.desp         .leyenda-dot { background: var(--color-desp); }
+.leyenda-pill.dist         .leyenda-dot { background: var(--color-dist); }
 .leyenda-pill.rec          .leyenda-dot { background: var(--color-rec); }
 
 .leyenda-texto {
@@ -865,6 +870,7 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
 .hito-arr-estimado .hito-dot { background: var(--color-arr-estimado); }
 .hito-arr-real     .hito-dot { background: var(--color-arr-real); }
 .hito-desp         .hito-dot { background: var(--color-desp); }
+.hito-dist         .hito-dot { background: var(--color-dist); }
 .hito-rec          .hito-dot { background: var(--color-rec); }
 
 /* Hito todavia sin fecha real: el punto va hueco. */
@@ -877,6 +883,7 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
 .hito-estimado.hito-emb          .hito-dot { color: var(--color-emb); }
 .hito-estimado.hito-arr-estimado .hito-dot { color: var(--color-arr-estimado); }
 .hito-estimado.hito-desp         .hito-dot { color: var(--color-desp); }
+.hito-estimado.hito-dist         .hito-dot { color: var(--color-dist); }
 .hito-estimado.hito-rec          .hito-dot { color: var(--color-rec); }
 
 .hito-label {
@@ -1003,6 +1010,7 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
 .tt-evento.tipo-arr-estimado .tt-dot { background: var(--color-arr-estimado); }
 .tt-evento.tipo-arr-real     .tt-dot { background: var(--color-arr-real); }
 .tt-evento.tipo-desp         .tt-dot { background: var(--color-desp); }
+.tt-evento.tipo-dist         .tt-dot { background: var(--color-dist); }
 .tt-evento.tipo-rec          .tt-dot { background: var(--color-rec); }
 
 .tt-fila {
@@ -1134,7 +1142,19 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
 .evento-pill.arr-estimado { background: var(--color-arr-estimado); }
 .evento-pill.arr-real { background: var(--color-arr-real); }
 .evento-pill.desp { background: var(--color-desp); }
+.evento-pill.dist { background: var(--color-dist); }
 .evento-pill.rec { background: var(--color-rec); }
+
+/* Distribucion todavia no confirmada (DIST_ORIGEN A o M): rayado diagonal
+   suave sobre el color, para que se lea distinto de una fecha en firme sin
+   perder la identificacion por color. */
+.evento-pill.dist.dist-estimada {
+    background-image: repeating-linear-gradient(
+        135deg,
+        rgba(255,255,255,0.28) 0 4px,
+        rgba(255,255,255,0) 4px 8px
+    );
+}
 
 /* ========== VISTA GRILLA ========== */
 .grilla-view {

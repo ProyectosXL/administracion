@@ -351,6 +351,27 @@ class Encabezado
     }
 
     /**
+     * Recalcula FECHA_DISTRI de las OCs indicadas cuando se mueve FECHA_ARR.
+     *
+     * Delega en CronogramaFechas, que es la misma regla que usa el drag & drop
+     * del cronograma: solo se tocan las filas con DIST_ORIGEN = 'A'; las
+     * movidas a mano ('M') o confirmadas ('C') quedan intactas.
+     */
+    private function recalcularDistribucion($ids, $fechaArribo) {
+        require_once __DIR__ . '/../cronogramaDespachos/class/CronogramaFechas.php';
+
+        $tocadas = CronogramaFechas::recalcularDistribucion(
+            $this->cid_central, $ids, $fechaArribo
+        );
+
+        if (!empty($tocadas)) {
+            error_log('recalcularDistribucion: ' . count($tocadas) .
+                      ' OCs con FECHA_DISTRI recalculada a ' . reset($tocadas));
+        }
+        return $tocadas;
+    }
+
+    /**
      * Actualiza campos comunes de embarque/despacho en TODAS las OCs del grupo.
      * No toca ORDEN_COMPRA, OCM ni ID.
      *
@@ -399,6 +420,11 @@ class Encabezado
         if ($stmt === false) {
             error_log('actualizarEncabezadoGrupo: ' . print_r(sqlsrv_errors(), true));
             return false;
+        }
+
+        // Si se movio el arribo, la distribucion automatica lo sigue.
+        if (array_key_exists('FECHA_ARR', $datos) && !empty($datos['FECHA_ARR'])) {
+            $this->recalcularDistribucion($idsGrupo, $datos['FECHA_ARR']);
         }
 
         $afectados = sqlsrv_rows_affected($stmt);
@@ -521,6 +547,13 @@ class Encabezado
                 $errors = sqlsrv_errors();
                 error_log("Error en actualizarEncabezado: " . print_r($errors, true));
                 return false;
+            }
+
+            // Igual que en actualizarEncabezadoGrupo: mover el arribo arrastra
+            // la distribucion automatica. Aca alcanza con esta OC, porque este
+            // metodo actualiza una sola fila.
+            if (isset($datosDeCabezera['fechaArr']) && !empty($datosDeCabezera['fechaArr'])) {
+                $this->recalcularDistribucion([$id], $datosDeCabezera['fechaArr']);
             }
 
             return $id;
