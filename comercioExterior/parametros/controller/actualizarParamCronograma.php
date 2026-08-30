@@ -33,7 +33,10 @@ try {
 
     // Whitelist: la clave nunca se interpola ni se acepta libre. Ademas evita
     // que se den de alta claves sueltas que el cronograma no sabe leer.
-    $clavesValidas = ['DIAS_EMB_ARR', 'DIAS_ARR_DESP', 'DIAS_DESP_REC', 'DIAS_ARR_DIST'];
+    $clavesValidas = [
+        'DIAS_EMB_ARR', 'DIAS_ARR_DESP', 'DIAS_DESP_REC',
+        'DIAS_ARR_DIST', 'DIAS_REC_DIST'
+    ];
     $clave = trim($data['clave']);
 
     if (!in_array($clave, $clavesValidas, true)) {

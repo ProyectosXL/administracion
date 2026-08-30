@@ -32,12 +32,18 @@ GO
 
 -- Seed. Solo inserta lo que falta: si alguien ya ajusto un valor desde el
 -- ABM de Parametros, este script no lo pisa.
+-- La cadena estimada queda: arribo +7 despacho, +2 recepcion (arribo + 9),
+-- y distribucion en arribo + 10, o sea un dia despues de la recepcion.
+-- Cuando ya hay recepcion REAL, la distribucion pasa a ser recepcion +
+-- DIAS_REC_DIST, porque en el deposito se distribuye casi siempre al dia
+-- siguiente de recibir.
 MERGE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA AS destino
 USING (VALUES
      ('DIAS_EMB_ARR',  45, 'Dias corridos entre embarque y arribo estimado')
     ,('DIAS_ARR_DESP',  7, 'Dias corridos entre arribo y despacho de aduana estimado')
-    ,('DIAS_DESP_REC',  3, 'Dias corridos entre despacho y recepcion estimada')
+    ,('DIAS_DESP_REC',  2, 'Dias corridos entre despacho y recepcion estimada')
     ,('DIAS_ARR_DIST', 10, 'Dias corridos entre arribo y distribucion estimada')
+    ,('DIAS_REC_DIST',  1, 'Dias corridos entre la recepcion REAL y la distribucion')
 ) AS origen (CLAVE, VALOR, DESCRIPCION)
 ON destino.CLAVE = origen.CLAVE
 WHEN NOT MATCHED BY TARGET THEN

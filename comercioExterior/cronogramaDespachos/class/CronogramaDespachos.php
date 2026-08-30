@@ -241,8 +241,9 @@ class CronogramaDespachos {
         $parametros = [
             'DIAS_EMB_ARR'  => 45,
             'DIAS_ARR_DESP' => 7,
-            'DIAS_DESP_REC' => 3,
-            'DIAS_ARR_DIST' => 10,
+            'DIAS_DESP_REC' => 2,   // recepcion estimada = arribo + 9
+            'DIAS_ARR_DIST' => 10,  // distribucion estimada = arribo + 10
+            'DIAS_REC_DIST' => 1,   // con recepcion REAL, al dia siguiente
         ];
 
         $sql = "SELECT CLAVE, VALOR FROM RO_T_IMPORTACIONES_PARAM_CRONOGRAMA";

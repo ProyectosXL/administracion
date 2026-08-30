@@ -99,14 +99,14 @@ header("Pragma: no-cache");
                                 <span>Despacho Aduana</span>
                             </label>
                             <label class="filtro-item">
-                                <input type="checkbox" value="dist" class="filtro-checkbox" checked>
-                                <span class="filtro-color dist"></span>
-                                <span>Distribución</span>
-                            </label>
-                            <label class="filtro-item">
                                 <input type="checkbox" value="rec" class="filtro-checkbox" checked>
                                 <span class="filtro-color rec"></span>
                                 <span>Recepción</span>
+                            </label>
+                            <label class="filtro-item">
+                                <input type="checkbox" value="dist" class="filtro-checkbox" checked>
+                                <span class="filtro-color dist"></span>
+                                <span>Distribución</span>
                             </label>
                         </div>
                     </div>

@@ -7,7 +7,7 @@ let despachos = [];
 let vistaActual = 'calendario'; // 'calendario' o 'grilla'
 let mesActual = new Date();
 let despachoSeleccionado = null;
-let filtrosActivos = ['est-emb', 'emb', 'arr-estimado', 'arr-real', 'desp', 'dist', 'rec']; // Filtros múltiples
+let filtrosActivos = ['est-emb', 'emb', 'arr-estimado', 'arr-real', 'desp', 'rec', 'dist']; // Filtros múltiples
 
 // IDs de grupo seleccionados en el filtro por contenedor. Mientras haya al
 // menos uno, manda sobre los filtros de estado. No se persiste: es una
@@ -26,8 +26,9 @@ let motivosFecha = [];   // [{ codigo, label }, ...]
 let parametrosDias = {
     DIAS_EMB_ARR: 45,
     DIAS_ARR_DESP: 7,
-    DIAS_DESP_REC: 3,
-    DIAS_ARR_DIST: 10
+    DIAS_DESP_REC: 2,   // recepción estimada = arribo + 9
+    DIAS_ARR_DIST: 10,  // distribución estimada = arribo + 10, un día después
+    DIAS_REC_DIST: 1    // con recepción REAL, al día siguiente
 };
 
 // Configuración de iconos por estado
@@ -54,8 +55,8 @@ const LABELS_EVENTOS = {
     'arr-estimado': 'Arribo estimado',
     'arr-real': 'Arribo real',
     'desp': 'Despacho de aduana',
-    'dist': 'Distribución',
-    'rec': 'Recepción'
+    'rec': 'Recepción',
+    'dist': 'Distribución'
 };
 
 // ========== PREFERENCIAS EN localStorage ==========
@@ -308,8 +309,10 @@ const HITOS_RECORRIDO = [
     { tipo: 'emb',          campo: 'FECHA_EMB',      label: 'Embarque' },
     { tipo: 'arr-estimado', campo: 'FECHA_ARR',      label: 'Arribo' },
     { tipo: 'desp',         campo: 'FECHA_DESP_ADU', label: 'Despacho' },
-    { tipo: 'dist',         campo: 'FECHA_DISTRI',   label: 'Distribución' },
-    { tipo: 'rec',          campo: 'FECHA_REC',      label: 'Recepción' }
+    // Recepcion es el ingreso al deposito central; distribucion es la salida
+    // de ahi a los locales, o sea que va despues.
+    { tipo: 'rec',          campo: 'FECHA_REC',      label: 'Recepción' },
+    { tipo: 'dist',         campo: 'FECHA_DISTRI',   label: 'Distribución' }
 ];
 
 /** Diferencia en dias corridos entre dos fechas 'YYYY-MM-DD'. */
@@ -944,13 +947,13 @@ function renderizarCalendario() {
                         <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Despacho Aduana</span>
                     </div>
-                    <div class="leyenda-pill dist">
-                        <span class="leyenda-dot"></span>
-                        <span class="leyenda-texto">Distribución</span>
-                    </div>
                     <div class="leyenda-pill rec">
                         <span class="leyenda-dot"></span>
                         <span class="leyenda-texto">Recepción</span>
+                    </div>
+                    <div class="leyenda-pill dist">
+                        <span class="leyenda-dot"></span>
+                        <span class="leyenda-texto">Distribución</span>
                     </div>
                 </div>
             </div>
@@ -1124,11 +1127,11 @@ function obtenerEventosPorFecha(fecha) {
         if (despacho.FECHA_DESP_ADU === fecha) {
             tipos.push('desp');
         }
-        if (despacho.FECHA_DISTRI === fecha) {
-            tipos.push('dist');
-        }
         if (despacho.FECHA_REC === fecha) {
             tipos.push('rec');
+        }
+        if (despacho.FECHA_DISTRI === fecha) {
+            tipos.push('dist');
         }
 
         // Con contenedores seleccionados, el filtro por contenedor manda y
@@ -1534,6 +1537,18 @@ function crearTimeline(despacho) {
             demorado: verificarDemora(despacho.FECHA_DESP_ADU, fechasEstimadas.despacho)
         },
         {
+            key: 'recibido',
+            label: tieneEmbarqueReal ? 'Recibido' : 'Recepción (estimada)',
+            icono: '📦',
+            fecha: despacho.FECHA_REC || fechasEstimadas.recepcion,
+            fechaEstimada: fechasEstimadas.recepcion,
+            completado: !!despacho.FECHA_REC && tieneEmbarqueReal,
+            estimado: !tieneEmbarqueReal || !despacho.FECHA_REC,
+            demorado: verificarDemora(despacho.FECHA_REC, fechasEstimadas.recepcion)
+        },
+        {
+            // Ultimo paso: la salida del deposito central hacia los locales,
+            // posterior a la recepcion.
             key: 'distribuido',
             // Solo DIST_ORIGEN = 'C' es una fecha en firme; 'A' (automatica)
             // y 'M' (movida a mano) siguen siendo proyecciones.
@@ -1541,24 +1556,9 @@ function crearTimeline(despacho) {
             icono: '🏬',
             fecha: despacho.FECHA_DISTRI || fechasEstimadas.distribucion,
             fechaEstimada: fechasEstimadas.distribucion,
-            // Se da por cumplido tambien si ya hay recepcion: la distribucion
-            // va antes en la cadena, asi que una recepcion hecha la implica.
-            // Sin esto los 108 contenedores ya recibidos, que no tienen
-            // FECHA_DISTRI cargada, caerian de 100% a 80% de progreso.
-            completado: (!!despacho.FECHA_DISTRI && despacho.DIST_ORIGEN === 'C')
-                        || !!despacho.FECHA_REC,
+            completado: !!despacho.FECHA_DISTRI && despacho.DIST_ORIGEN === 'C',
             estimado: despacho.DIST_ORIGEN !== 'C',
             demorado: verificarDemora(despacho.FECHA_DISTRI, fechasEstimadas.distribucion)
-        },
-        {
-            key: 'recibido', 
-            label: tieneEmbarqueReal ? 'Recibido' : 'Recepción (estimada)', 
-            icono: '📦', 
-            fecha: despacho.FECHA_REC || fechasEstimadas.recepcion,
-            fechaEstimada: fechasEstimadas.recepcion,
-            completado: !!despacho.FECHA_REC && tieneEmbarqueReal, 
-            estimado: !tieneEmbarqueReal || !despacho.FECHA_REC,
-            demorado: verificarDemora(despacho.FECHA_REC, fechasEstimadas.recepcion)
         }
     ];
     
@@ -1597,8 +1597,8 @@ function crearTimeline(despacho) {
             if (pasoSiguiente.key === 'embarcado') colorBarra = 'var(--color-emb)';
             else if (pasoSiguiente.key === 'arribado') colorBarra = 'var(--color-arr)';
             else if (pasoSiguiente.key === 'despachado') colorBarra = 'var(--color-desp)';
-            else if (pasoSiguiente.key === 'distribuido') colorBarra = 'var(--color-dist)';
             else if (pasoSiguiente.key === 'recibido') colorBarra = 'var(--color-rec)';
+            else if (pasoSiguiente.key === 'distribuido') colorBarra = 'var(--color-dist)';
         }
         
         pasosHtml += `
@@ -1654,10 +1654,17 @@ function calcularFechasEstimadas(despacho) {
     fechas.despacho    = sumarDias(fechas.arribo, parametrosDias.DIAS_ARR_DESP);
     fechas.recepcion   = sumarDias(fechas.despacho, parametrosDias.DIAS_DESP_REC);
 
-    // La distribucion se estima sobre el arribo real cuando lo hay, no sobre
-    // el proyectado desde el embarque.
-    const arriboBase = despacho.FECHA_ARR || fechas.arribo;
-    fechas.distribucion = sumarDias(arriboBase, parametrosDias.DIAS_ARR_DIST);
+    // La distribucion es la salida del deposito hacia los locales, o sea que
+    // va DESPUES de la recepcion:
+    //   - con recepcion real, se distribuye al dia siguiente
+    //   - sin recepcion, arribo + 10, que cae un dia despues de la
+    //     recepcion estimada (arribo + 9)
+    if (despacho.FECHA_REC) {
+        fechas.distribucion = sumarDias(despacho.FECHA_REC, parametrosDias.DIAS_REC_DIST);
+    } else {
+        const arriboBase = despacho.FECHA_ARR || fechas.arribo;
+        fechas.distribucion = sumarDias(arriboBase, parametrosDias.DIAS_ARR_DIST);
+    }
 
     return fechas;
 }

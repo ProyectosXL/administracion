@@ -35,8 +35,9 @@ class CronogramaFechas
         $parametros = [
             'DIAS_EMB_ARR'  => 45,
             'DIAS_ARR_DESP' => 7,
-            'DIAS_DESP_REC' => 3,
-            'DIAS_ARR_DIST' => 10,
+            'DIAS_DESP_REC' => 2,   // recepcion estimada = arribo + 9
+            'DIAS_ARR_DIST' => 10,  // distribucion estimada = arribo + 10
+            'DIAS_REC_DIST' => 1,   // con recepcion REAL, al dia siguiente
         ];
 
         $stmt = sqlsrv_query($conn, "SELECT CLAVE, VALOR FROM RO_T_IMPORTACIONES_PARAM_CRONOGRAMA");
@@ -51,31 +52,49 @@ class CronogramaFechas
         return $parametros;
     }
 
+    /** Suma dias corridos a una fecha 'Y-m-d' o DateTime. */
+    private static function sumarDias($fecha, $dias)
+    {
+        if (empty($fecha)) {
+            return null;
+        }
+
+        $d = ($fecha instanceof DateTime)
+            ? clone $fecha
+            : DateTime::createFromFormat('Y-m-d', substr((string) $fecha, 0, 10));
+
+        if (!$d) {
+            return null;
+        }
+
+        $d->modify('+' . (int) $dias . ' days');
+        return $d->format('Y-m-d');
+    }
+
     /**
-     * Fecha de distribucion derivada del arribo.
+     * Fecha de distribucion.
+     *
+     * La distribucion es la salida del deposito central hacia los locales, o
+     * sea que va DESPUES de la recepcion. De ahi las dos ramas:
+     *
+     *   - Con recepcion REAL: recepcion + DIAS_REC_DIST. En el deposito se
+     *     distribuye casi siempre al dia siguiente de recibir, asi que en
+     *     cuanto Tango confirma la recepcion esa es la referencia buena.
+     *   - Sin recepcion: arribo + DIAS_ARR_DIST, que con los valores por
+     *     defecto cae un dia despues de la recepcion estimada (arribo + 9).
      *
      * Se calcula igual sobre un arribo confirmado que sobre uno estimado, y
-     * tambien cuando la fecha original ya paso: el objetivo es que la
-     * proyeccion siga al arribo, no que se congele.
+     * tambien cuando la fecha ya paso: la proyeccion sigue al arribo en vez
+     * de congelarse.
      *
      * @return string|null 'Y-m-d'
      */
-    public static function calcularDistribucion($fechaArribo, $diasArrDist)
+    public static function calcularDistribucion($fechaArribo, $diasArrDist, $fechaRecepcion = null, $diasRecDist = 1)
     {
-        if (empty($fechaArribo)) {
-            return null;
+        if (!empty($fechaRecepcion)) {
+            return self::sumarDias($fechaRecepcion, $diasRecDist);
         }
-
-        $fecha = ($fechaArribo instanceof DateTime)
-            ? clone $fechaArribo
-            : DateTime::createFromFormat('Y-m-d', substr((string) $fechaArribo, 0, 10));
-
-        if (!$fecha) {
-            return null;
-        }
-
-        $fecha->modify('+' . (int) $diasArrDist . ' days');
-        return $fecha->format('Y-m-d');
+        return self::sumarDias($fechaArribo, $diasArrDist);
     }
 
     /**
@@ -98,52 +117,56 @@ class CronogramaFechas
             return [];
         }
 
+        $parametros = self::obtenerParametros($conn);
         if ($diasArrDist === null) {
-            $parametros = self::obtenerParametros($conn);
             $diasArrDist = $parametros['DIAS_ARR_DIST'];
         }
+        $diasRecDist = $parametros['DIAS_REC_DIST'];
 
-        $nueva = self::calcularDistribucion($fechaArribo, $diasArrDist);
-        if ($nueva === null) {
-            return [];
-        }
-
-        $ids = array_values(array_map('intval', $ids));
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-
-        // Se leen primero las filas que van a cambiar, para poder devolverlas
-        // y que el historial registre una linea por cada una.
-        $sqlLeer = "SELECT ID FROM RO_T_IMPORTACIONES_ENCABEZADO
-                    WHERE ID IN ($placeholders)
-                      AND DIST_ORIGEN = 'A'
-                      AND (FECHA_DISTRI IS NULL OR FECHA_DISTRI <> ?)";
-
-        $stmt = sqlsrv_query($conn, $sqlLeer, array_merge($ids, [$nueva]));
-        if ($stmt === false) {
-            error_log('CronogramaFechas::recalcularDistribucion (lectura): ' . print_r(sqlsrv_errors(), true));
+        // Cada OC puede tener su propia recepcion, asi que la fecha no es
+        // necesariamente la misma para todo el grupo: se resuelve por fila.
+        $actuales = self::leerFechas($conn, $ids);
+        if (empty($actuales)) {
             return [];
         }
 
         $afectados = [];
-        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            $afectados[(int) $row['ID']] = $nueva;
+        foreach ($actuales as $id => $fila) {
+            // 'M' y 'C' no se tocan: si abastecimiento la movio a mano o la
+            // confirmo, el recalculo no debe pisarla.
+            if ($fila['DIST_ORIGEN'] !== 'A') {
+                continue;
+            }
+
+            $nueva = self::calcularDistribucion(
+                $fechaArribo, $diasArrDist, $fila['FECHA_REC'], $diasRecDist
+            );
+
+            if ($nueva !== null && $nueva !== $fila['FECHA_DISTRI']) {
+                $afectados[$id] = $nueva;
+            }
         }
 
         if (empty($afectados)) {
             return [];
         }
 
-        $idsAfectados = array_keys($afectados);
-        $ph = implode(',', array_fill(0, count($idsAfectados), '?'));
+        // Un UPDATE por valor distinto. Son pocas filas (las OCs de un grupo)
+        // y con la doble condicion DIST_ORIGEN = 'A' se evita cualquier
+        // carrera contra una confirmacion simultanea.
+        foreach ($afectados as $id => $nueva) {
+            $stmt = sqlsrv_query(
+                $conn,
+                "UPDATE RO_T_IMPORTACIONES_ENCABEZADO
+                 SET FECHA_DISTRI = ?
+                 WHERE ID = ? AND DIST_ORIGEN = 'A'",
+                [$nueva, $id]
+            );
 
-        $sqlUpdate = "UPDATE RO_T_IMPORTACIONES_ENCABEZADO
-                      SET FECHA_DISTRI = ?
-                      WHERE ID IN ($ph) AND DIST_ORIGEN = 'A'";
-
-        $stmt = sqlsrv_query($conn, $sqlUpdate, array_merge([$nueva], $idsAfectados));
-        if ($stmt === false) {
-            error_log('CronogramaFechas::recalcularDistribucion (update): ' . print_r(sqlsrv_errors(), true));
-            return [];
+            if ($stmt === false) {
+                error_log('CronogramaFechas::recalcularDistribucion: ' . print_r(sqlsrv_errors(), true));
+                unset($afectados[$id]);
+            }
         }
 
         return $afectados;
