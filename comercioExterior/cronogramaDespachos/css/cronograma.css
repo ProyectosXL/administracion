@@ -647,6 +647,351 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
     opacity: 0.85;
 }
 
+/* ---------- Drag & drop ---------- */
+.evento-pill[draggable="true"] {
+    cursor: grab;
+}
+
+.evento-pill[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* La recepción sale de Tango: su badge no se arrastra y el cursor lo dice. */
+.evento-pill.no-arrastrable {
+    cursor: default;
+}
+
+.evento-pill.arrastrando {
+    opacity: 0.4;
+}
+
+.calendario-dia.destino-activo {
+    background: #EAF2FE;
+    border-color: var(--color-emb);
+    border-style: dashed;
+    box-shadow: inset 0 0 0 1px var(--color-emb);
+}
+
+/* ---------- Modal de confirmación del movimiento ---------- */
+.conf-modal {
+    max-width: 560px;
+}
+
+.conf-alias {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    margin-right: 2px;
+}
+
+.conf-alias.alias-provisorio {
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.conf-movimiento {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--gray-50);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+}
+
+.conf-fecha {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.conf-fecha-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+}
+
+.conf-fecha-valor {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.conf-fecha-valor.destino {
+    color: var(--color-emb);
+}
+
+.conf-flecha {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: var(--gray-600);
+    flex: 1;
+}
+
+.conf-diferencia {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.conf-diferencia.tarde    { color: #C0392B; }
+.conf-diferencia.temprano { color: #1E8449; }
+
+.conf-bloque {
+    margin-bottom: 16px;
+}
+
+.conf-bloque-titulo {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+    margin-bottom: 8px;
+}
+
+.conf-cascada,
+.conf-oc {
+    font-size: 13px;
+    color: var(--gray-800);
+    padding: 4px 0;
+}
+
+.conf-cascada.intacta {
+    color: var(--gray-600);
+}
+
+.conf-oc {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+}
+
+.conf-nota {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+}
+
+.conf-nota-destacada {
+    background: #FEF3E2;
+    color: #B9770E;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-weight: 600;
+}
+
+.conf-alerta {
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.conf-alerta-titulo {
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.conf-error {
+    background: #FDECEA;
+    color: #C0392B;
+}
+
+.conf-aviso {
+    background: #FEF9E7;
+    color: #9A7D0A;
+}
+
+.conf-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+}
+
+.conf-obligatorio {
+    background: #FDECEA;
+    color: #C0392B;
+    border-radius: 8px;
+    padding: 1px 7px;
+    font-size: 10px;
+    margin-left: 6px;
+}
+
+.conf-opcional {
+    color: var(--gray-500);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 6px;
+}
+
+.conf-input {
+    width: 100%;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--gray-800);
+    background: white;
+    resize: vertical;
+}
+
+.conf-input:focus {
+    outline: none;
+    border-color: var(--color-emb);
+}
+
+.conf-contador {
+    text-align: right;
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 4px;
+}
+
+.conf-error-servidor {
+    background: #FDECEA;
+    color: #C0392B;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.conf-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.btn-conf-cancelar,
+.btn-conf-aceptar {
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+}
+
+.btn-conf-cancelar {
+    border: 1px solid var(--gray-300);
+    background: white;
+    color: var(--gray-700);
+}
+
+.btn-conf-cancelar:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+}
+
+.btn-conf-aceptar {
+    border: none;
+    background: var(--color-emb);
+    color: white;
+}
+
+.btn-conf-aceptar:hover:not(:disabled) {
+    background: #3B72BC;
+}
+
+.btn-conf-aceptar:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ---------- Editor de fechas del modal de detalle ---------- */
+.editor-fechas {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.editor-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.editor-nota-general {
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+
+.editor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+}
+
+.editor-fila {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.editor-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.editor-nota {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+    font-size: 10px;
+    color: #B9770E;
+    background: #FEF3E2;
+    border-radius: 8px;
+    padding: 1px 7px;
+}
+
+.editor-nota.tenue {
+    color: var(--gray-600);
+    background: var(--gray-100);
+}
+
+.editor-input {
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--gray-800);
+    background: white;
+}
+
+.editor-input:focus {
+    outline: none;
+    border-color: var(--color-emb);
+}
+
 /* ---------- Chip de overflow "+N más" ---------- */
 .evento-mas {
     border: 1px dashed var(--gray-300);

@@ -48,6 +48,38 @@ const LABELS_ESTADOS = {
     recibido: 'Recibido'
 };
 
+/**
+ * Columna que escribe cada tipo de evento.
+ *
+ * 'rec' vale null a proposito: la recepción sale de Tango (STA20,
+ * comprobantes 'RP') y el cronograma no la escribe, asi que su badge no se
+ * puede arrastrar. El servidor lo rechaza igual.
+ */
+const CAMPO_POR_TIPO = {
+    'est-emb': 'FECHA_EST_EMB',
+    'emb': 'FECHA_EMB',
+    'arr-estimado': 'FECHA_ARR',
+    'arr-real': 'FECHA_ARR',
+    'desp': 'FECHA_DESP_ADU',
+    'dist': 'FECHA_DISTRI',
+    'rec': null
+};
+
+const ETIQUETAS_CAMPOS = {
+    'FECHA_EST_EMB': 'Embarque estimado',
+    'FECHA_EMB': 'Embarque real',
+    'FECHA_ARR': 'Arribo',
+    'FECHA_DESP_ADU': 'Despacho de aduana',
+    'FECHA_REC': 'Recepción',
+    'FECHA_DISTRI': 'Distribución'
+};
+
+// Orden cronológico del flujo, espejo de CronogramaFechas::ORDEN_FLUJO.
+const ORDEN_FLUJO = [
+    'FECHA_EST_EMB', 'FECHA_EMB', 'FECHA_ARR',
+    'FECHA_DESP_ADU', 'FECHA_REC', 'FECHA_DISTRI'
+];
+
 // Etiquetas por tipo de evento del calendario (distinto de los estados).
 const LABELS_EVENTOS = {
     'est-emb': 'Embarque estimado',
@@ -457,6 +489,328 @@ function estimarHitoRecorrido(despacho, campo) {
     return null;
 }
 
+// ========== DRAG & DROP ==========
+// API nativa HTML5, sin libreria. El estado del arrastre vive aca porque
+// dataTransfer solo es legible en dragstart y drop, no en dragover.
+let arrastreActual = null;
+
+function iniciarArrastre(elemento, evento) {
+    const $pill = $(elemento);
+    const tipo = $pill.data('tipo');
+    const campo = CAMPO_POR_TIPO[tipo];
+
+    if (!campo) return false;
+
+    arrastreActual = {
+        idGrupo: parseInt($pill.data('id-grupo'), 10),
+        tipo: tipo,
+        campo: campo,
+        fechaOrigen: $pill.data('fecha')
+    };
+
+    // Se usa dataTransfer igual, porque sin setData Firefox no arranca el
+    // arrastre.
+    if (evento && evento.dataTransfer) {
+        evento.dataTransfer.effectAllowed = 'move';
+        evento.dataTransfer.setData('text/plain', String(arrastreActual.idGrupo));
+    }
+
+    $pill.addClass('arrastrando');
+    ocultarTooltip();
+    return true;
+}
+
+// Algunos navegadores disparan un click despues del drop. Sin esta guarda se
+// abriria el detalle encima del modal de confirmación.
+let recienArrastrado = false;
+
+function terminarArrastre() {
+    $('.evento-pill').removeClass('arrastrando');
+    $('.calendario-dia').removeClass('destino-activo');
+    arrastreActual = null;
+    recienArrastrado = true;
+    setTimeout(() => { recienArrastrado = false; }, 100);
+}
+
+/**
+ * Coherencia calculada en el front, solo para mostrar el impacto antes de
+ * confirmar. La validacion que manda es la del servidor.
+ */
+function evaluarCoherencia(campo, fechaNueva, despacho) {
+    const errores = [];
+    const advertencias = [];
+    const posicion = ORDEN_FLUJO.indexOf(campo);
+
+    ORDEN_FLUJO.forEach((otro, i) => {
+        if (otro === campo || !despacho[otro]) return;
+
+        const valorOtro = despacho[otro];
+        const anterior = i < posicion;
+        const invierte = anterior ? (valorOtro > fechaNueva) : (valorOtro < fechaNueva);
+        if (!invierte) return;
+
+        // Que cuenta como fecha en firme depende de la fila.
+        let esReal;
+        if (otro === 'FECHA_EST_EMB') esReal = false;
+        else if (otro === 'FECHA_ARR') esReal = parseInt(despacho.ETA_CONFIRMADA) === 1;
+        else if (otro === 'FECHA_DISTRI') esReal = despacho.DIST_ORIGEN === 'C';
+        else esReal = true;
+
+        const texto = `${ETIQUETAS_CAMPOS[campo]} quedaría ${anterior ? 'antes' : 'después'} de ` +
+                      `${ETIQUETAS_CAMPOS[otro]} (${formatearFecha(valorOtro)})`;
+
+        if (esReal) {
+            errores.push(texto + ', que es una fecha en firme');
+        } else {
+            advertencias.push(texto + ', que es una estimación');
+        }
+    });
+
+    return { errores, advertencias };
+}
+
+/** Que fechas derivadas se van a recalcular, para mostrarlo antes de aceptar. */
+function calcularImpactoCascada(campo, fechaNueva, grupo) {
+    if (campo !== 'FECHA_ARR') return [];
+
+    return grupo.map(d => {
+        if (d.DIST_ORIGEN !== 'A') {
+            return {
+                oc: d.ORDEN_COMPRA,
+                intacta: true,
+                motivo: d.DIST_ORIGEN === 'C'
+                    ? 'está confirmada'
+                    : 'fue movida a mano'
+            };
+        }
+        // Misma regla que CronogramaFechas::calcularDistribucion.
+        const nueva = d.FECHA_REC
+            ? sumarDias(d.FECHA_REC, parametrosDias.DIAS_REC_DIST)
+            : sumarDias(fechaNueva, parametrosDias.DIAS_ARR_DIST);
+
+        return { oc: d.ORDEN_COMPRA, intacta: false, anterior: d.FECHA_DISTRI, nueva: nueva };
+    });
+}
+
+function abrirModalConfirmacion(campo, fechaOrigen, fechaDestino, idGrupo) {
+    const grupo = despachosDelGrupo(idGrupo);
+    if (grupo.length === 0) return;
+
+    grupo.sort((a, b) => a.ID - b.ID);
+    const principal = grupo.find(d => d.ID === idGrupo) || grupo[0];
+    const alias = aliasDeDespacho(principal);
+
+    const dias = diasEntre(fechaOrigen, fechaDestino);
+    const signo = dias > 0 ? '+' : '';
+
+    const { errores, advertencias } = evaluarCoherencia(campo, fechaDestino, principal);
+
+    // Espejo de CronogramaFechas::motivoObservacionObligatoria.
+    let obligatoria = null;
+    if (campo === 'FECHA_ARR' && parseInt(principal.ETA_CONFIRMADA) === 1) {
+        obligatoria = 'El arribo está confirmado (ETA confirmada)';
+    } else if (campo === 'FECHA_DISTRI' && principal.DIST_ORIGEN === 'C') {
+        obligatoria = 'La fecha de distribución está confirmada';
+    }
+
+    const cascada = calcularImpactoCascada(campo, fechaDestino, grupo);
+
+    const cascadaHtml = cascada.length === 0 ? '' : `
+        <div class="conf-bloque">
+            <div class="conf-bloque-titulo">Impacto en cascada</div>
+            ${cascada.map(c => c.intacta
+                ? `<div class="conf-cascada intacta">
+                       <i class="bi bi-lock"></i> ${escaparHtml(c.oc.trim())}:
+                       la distribución queda intacta porque ${c.motivo}
+                   </div>`
+                : `<div class="conf-cascada">
+                       <i class="bi bi-arrow-return-right"></i> ${escaparHtml(c.oc.trim())}:
+                       distribución ${c.anterior ? formatearFecha(c.anterior) : '(sin fecha)'}
+                       → <b>${formatearFecha(c.nueva)}</b>
+                   </div>`
+            ).join('')}
+        </div>`;
+
+    const ocsHtml = grupo.length <= 1 ? '' : `
+        <div class="conf-bloque">
+            <div class="conf-bloque-titulo">
+                ${grupo.length} órdenes de compra afectadas
+            </div>
+            <div class="conf-nota">El cambio impacta a todo el grupo del contenedor.</div>
+            ${grupo.map(d => `<div class="conf-oc">${escaparHtml((d.ORDEN_COMPRA || '').trim())}</div>`).join('')}
+        </div>`;
+
+    const erroresHtml = errores.length === 0 ? '' : `
+        <div class="conf-alerta conf-error">
+            <div class="conf-alerta-titulo"><i class="bi bi-x-octagon"></i> El servidor va a rechazar este movimiento</div>
+            ${errores.map(e => `<div>${escaparHtml(e)}</div>`).join('')}
+        </div>`;
+
+    const avisosHtml = advertencias.length === 0 ? '' : `
+        <div class="conf-alerta conf-aviso">
+            <div class="conf-alerta-titulo"><i class="bi bi-exclamation-triangle"></i> Advertencia</div>
+            ${advertencias.map(a => `<div>${escaparHtml(a)}</div>`).join('')}
+        </div>`;
+
+    const html = `
+        <div class="modal-overlay modal-confirmacion" id="modalConfirmacionFecha">
+            <div class="modal-content conf-modal">
+                <div class="modal-header">
+                    <div class="modal-title-group">
+                        <h2>Mover ${escaparHtml(ETIQUETAS_CAMPOS[campo])}</h2>
+                        <p>
+                            <span class="conf-alias${alias.provisorio ? ' alias-provisorio' : ''}">${escaparHtml(alias.texto)}</span>
+                            <strong>${escaparHtml(principal.CONTENEDOR || 'Sin contenedor')}</strong>
+                            · ${escaparHtml(principal.PROVEEDOR || 'Sin proveedor')}
+                        </p>
+                    </div>
+                    <button class="btn-close-modal" data-accion="cancelar">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="conf-movimiento">
+                        <div class="conf-fecha">
+                            <span class="conf-fecha-label">Desde</span>
+                            <span class="conf-fecha-valor">${formatearFecha(fechaOrigen)}</span>
+                        </div>
+                        <div class="conf-flecha">
+                            <i class="bi bi-arrow-right"></i>
+                            <span class="conf-diferencia ${dias > 0 ? 'tarde' : (dias < 0 ? 'temprano' : '')}">
+                                ${dias === 0 ? 'mismo día' : `${signo}${dias} ${Math.abs(dias) === 1 ? 'día' : 'días'}`}
+                            </span>
+                        </div>
+                        <div class="conf-fecha">
+                            <span class="conf-fecha-label">Hasta</span>
+                            <span class="conf-fecha-valor destino">${formatearFecha(fechaDestino)}</span>
+                        </div>
+                    </div>
+
+                    ${erroresHtml}
+                    ${avisosHtml}
+                    ${cascadaHtml}
+                    ${ocsHtml}
+
+                    <div class="conf-bloque">
+                        <label class="conf-label" for="confMotivo">Motivo</label>
+                        <select class="conf-input" id="confMotivo">
+                            <option value="">Sin especificar</option>
+                            ${motivosFecha.map(m =>
+                                `<option value="${escaparHtml(m.codigo)}">${escaparHtml(m.label)}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+
+                    <div class="conf-bloque">
+                        <label class="conf-label" for="confObservacion">
+                            Observación
+                            ${obligatoria
+                                ? '<span class="conf-obligatorio">obligatoria</span>'
+                                : '<span class="conf-opcional">opcional</span>'}
+                        </label>
+                        ${obligatoria
+                            ? `<div class="conf-nota conf-nota-destacada">${escaparHtml(obligatoria)}</div>`
+                            : ''}
+                        <textarea class="conf-input" id="confObservacion" rows="3" maxlength="500"
+                                  placeholder="${obligatoria ? 'Explicá por qué se mueve esta fecha…' : 'Opcional'}"></textarea>
+                        <div class="conf-contador"><span id="confContador">0</span>/500</div>
+                    </div>
+
+                    <div class="conf-error-servidor" id="confErrorServidor" hidden></div>
+                </div>
+
+                <div class="conf-acciones">
+                    <button class="btn-conf-cancelar" data-accion="cancelar">Cancelar</button>
+                    <button class="btn-conf-aceptar" id="btnConfirmarFecha"
+                            data-campo="${campo}"
+                            data-id-grupo="${idGrupo}"
+                            data-id="${principal.ID}"
+                            data-fecha="${fechaDestino}"
+                            data-obligatoria="${obligatoria ? '1' : '0'}">
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    $('body').append(html);
+    $('#confObservacion').trigger('focus');
+}
+
+function cerrarModalConfirmacion() {
+    $('#modalConfirmacionFecha').remove();
+}
+
+function confirmarMovimientoFecha() {
+    const $btn = $('#btnConfirmarFecha');
+    const obligatoria = $btn.data('obligatoria') === 1 || $btn.data('obligatoria') === '1';
+    const observacion = $('#confObservacion').val().trim();
+    const motivo = $('#confMotivo').val();
+    const $error = $('#confErrorServidor');
+
+    if (obligatoria && observacion === '') {
+        $error.prop('hidden', false).text('La observación es obligatoria para este movimiento.');
+        $('#confObservacion').trigger('focus');
+        return;
+    }
+
+    $btn.prop('disabled', true).text('Guardando…');
+    $error.prop('hidden', true);
+
+    $.ajax({
+        url: 'controller/actualizarFechaCronograma.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            idEncabezado: $btn.data('id'),
+            campo: $btn.data('campo'),
+            fechaNueva: $btn.data('fecha'),
+            motivo: motivo,
+            observacion: observacion
+        }),
+        dataType: 'json',
+        success: function (respuesta) {
+            if (!respuesta.success) {
+                mostrarErrorConfirmacion(respuesta);
+                return;
+            }
+            aplicarDespachosActualizados(respuesta.data);
+            cerrarModalConfirmacion();
+            // Tambien se cierra el modal de detalle si estaba abierto: sus
+            // fechas quedaron viejas.
+            cerrarModal();
+            renderizarVista();
+        },
+        error: function (xhr) {
+            mostrarErrorConfirmacion(xhr.responseJSON || {
+                message: 'No se pudo guardar el cambio.'
+            });
+        },
+        complete: function () {
+            $btn.prop('disabled', false).text('Confirmar');
+        }
+    });
+}
+
+function mostrarErrorConfirmacion(respuesta) {
+    const detalle = (respuesta.errores || []).map(e => `<div>· ${escaparHtml(e)}</div>`).join('');
+    $('#confErrorServidor')
+        .prop('hidden', false)
+        .html(`<strong>${escaparHtml(respuesta.message || 'Error')}</strong>${detalle}`);
+}
+
+/** Reemplaza en el array local las OCs que devolvio el servidor. */
+function aplicarDespachosActualizados(actualizados) {
+    if (!Array.isArray(actualizados)) return;
+
+    actualizados.forEach(nuevo => {
+        const i = despachos.findIndex(d => d.ID === nuevo.ID);
+        if (i >= 0) {
+            despachos[i] = nuevo;
+        }
+    });
+}
+
 // ========== TOOLTIP ==========
 // Un unico div reutilizable, no un Tooltip de Bootstrap por badge: el
 // calendario pinta cientos de badges y se reconstruye entero en cada render,
@@ -728,6 +1082,79 @@ function configurarEventListeners() {
 
     $(document).on('click', '#btnLimpiarContenedores', limpiarFiltroContenedor);
 
+    // ---------- Drag & drop de fechas ----------
+    $(document).on('dragstart', '.evento-pill', function (e) {
+        if (!iniciarArrastre(this, e.originalEvent)) {
+            e.preventDefault();
+        }
+    });
+
+    $(document).on('dragend', '.evento-pill', terminarArrastre);
+
+    // Sin preventDefault en dragover el navegador no admite el drop.
+    $(document).on('dragover', '.calendario-dia', function (e) {
+        if (!arrastreActual) return;
+        e.preventDefault();
+        e.originalEvent.dataTransfer.dropEffect = 'move';
+        $(this).addClass('destino-activo');
+    });
+
+    $(document).on('dragleave', '.calendario-dia', function () {
+        $(this).removeClass('destino-activo');
+    });
+
+    $(document).on('drop', '.calendario-dia', function (e) {
+        e.preventDefault();
+        if (!arrastreActual) return;
+
+        const destino = $(this).data('fecha');
+        const arrastre = arrastreActual;
+        terminarArrastre();
+
+        // Soltar en el mismo dia no es un movimiento.
+        if (!destino || destino === arrastre.fechaOrigen) return;
+
+        abrirModalConfirmacion(arrastre.campo, arrastre.fechaOrigen, destino, arrastre.idGrupo);
+    });
+
+    // Editor de fechas del modal: mismo endpoint y mismo modal de motivo y
+    // observación que el arrastre, para que nada esquive el historial.
+    $(document).on('change', '.editor-input', function () {
+        const $input = $(this);
+        const nueva = $input.val();
+        const original = $input.data('original');
+
+        if (!nueva || nueva === original) return;
+
+        // Se revierte el input: quien decide es el modal de confirmación, y
+        // si se cancela el valor visible tiene que volver al anterior.
+        $input.val(original);
+
+        abrirModalConfirmacion(
+            $input.data('campo'),
+            original || nueva,
+            nueva,
+            parseInt($input.data('id-grupo'), 10)
+        );
+    });
+
+    // Cancelar revierte solo: no se toco nada hasta confirmar.
+    $(document).on('click', '#modalConfirmacionFecha [data-accion="cancelar"]', cerrarModalConfirmacion);
+
+    $(document).on('click', '#modalConfirmacionFecha', function (e) {
+        if (e.target === this) cerrarModalConfirmacion();
+    });
+
+    $(document).on('click', '#btnConfirmarFecha', confirmarMovimientoFecha);
+
+    $(document).on('input', '#confObservacion', function () {
+        $('#confContador').text($(this).val().length);
+    });
+
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape') cerrarModalConfirmacion();
+    });
+
     // Tooltip propio sobre los badges. Delegado, asi sobrevive a los renders.
     $(document).on('mouseenter', '.evento-pill', function() {
         const elemento = this;
@@ -751,6 +1178,7 @@ function configurarEventListeners() {
     // Abrir el detalle desde cualquier badge, tarjeta o card del panel.
     // Delegado y por ID: nada de serializar el despacho en el HTML.
     $(document).on('click', '.evento-pill', function() {
+        if (recienArrastrado) return;
         // Los badges del popover son los mismos: al abrir el detalle hay que
         // cerrarlo, si no queda flotando detras del modal.
         cerrarPopoverDia();
@@ -824,14 +1252,15 @@ function configurarEventListeners() {
         actualizarFiltros();
     });
     
-    // Cerrar modal
-    $(document).on('click', '.modal-overlay', function(e) {
+    // Cerrar modal. El de confirmación se excluye: tiene su propio cierre,
+    // y si no cerraria tambien el modal de detalle que puede estar debajo.
+    $(document).on('click', '.modal-overlay:not(.modal-confirmacion)', function(e) {
         if (e.target === this) {
             cerrarModal();
         }
     });
-    
-    $(document).on('click', '.btn-close-modal', cerrarModal);
+
+    $(document).on('click', '.modal-overlay:not(.modal-confirmacion) .btn-close-modal', cerrarModal);
 }
 
 function actualizarFiltros() {
@@ -1083,8 +1512,12 @@ function crearBadgeEvento(evento) {
         ? ' dist-estimada'
         : '';
 
+    // La recepción viene de Tango: su badge no se arrastra.
+    const arrastrable = CAMPO_POR_TIPO[evento.tipo] !== null;
+
     return `
-        <div class="evento-pill ${evento.tipo}${claseDist}"
+        <div class="evento-pill ${evento.tipo}${claseDist}${arrastrable ? '' : ' no-arrastrable'}"
+             ${arrastrable ? 'draggable="true"' : ''}
              data-id-grupo="${evento.idGrupo}"
              data-tipo="${evento.tipo}"
              data-fecha="${evento.fecha}">
@@ -1473,6 +1906,7 @@ function abrirDetalleDespacho(despacho) {
                     </div>
                     
                     ${crearTimeline(despacho)}
+                    ${crearEditorFechas(despacho)}
                 </div>
             </div>
         </div>
@@ -1482,6 +1916,59 @@ function abrirDetalleDespacho(despacho) {
 
     // El modal ya esta en el DOM: se puede medir y animar la barra.
     animarBarraProgresoColoreada();
+}
+
+/**
+ * Editor de fechas del modal de detalle.
+ *
+ * Es el camino para los movimientos entre meses, que el arrastre no cubre
+ * porque solo funciona dentro del mes visible. Usa el MISMO endpoint y el
+ * mismo modal de motivo y observación que el drag & drop, asi que ninguna
+ * edición esquiva el historial.
+ */
+function crearEditorFechas(despacho) {
+    const editables = [
+        { campo: 'FECHA_EST_EMB',  label: 'Embarque estimado' },
+        { campo: 'FECHA_EMB',      label: 'Embarque real' },
+        { campo: 'FECHA_ARR',      label: 'Arribo' },
+        { campo: 'FECHA_DESP_ADU', label: 'Despacho de aduana' },
+        { campo: 'FECHA_DISTRI',   label: 'Distribución' }
+    ];
+
+    const filas = editables.map(e => {
+        const valor = despacho[e.campo] || '';
+
+        let nota = '';
+        if (e.campo === 'FECHA_ARR' && parseInt(despacho.ETA_CONFIRMADA) === 1) {
+            nota = '<span class="editor-nota">confirmada · exige observación</span>';
+        } else if (e.campo === 'FECHA_DISTRI' && despacho.DIST_ORIGEN === 'C') {
+            nota = '<span class="editor-nota">confirmada · exige observación</span>';
+        } else if (e.campo === 'FECHA_DISTRI' && despacho.DIST_ORIGEN === 'A') {
+            nota = '<span class="editor-nota tenue">automática</span>';
+        }
+
+        return `
+            <div class="editor-fila">
+                <label class="editor-label">${e.label}${nota}</label>
+                <input type="date" class="editor-input" value="${valor}"
+                       data-campo="${e.campo}" data-original="${valor}"
+                       data-id-grupo="${despacho.ID_GRUPO}">
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="editor-fechas">
+            <div class="editor-titulo">
+                <i class="bi bi-pencil-square"></i> Editar fechas
+            </div>
+            <div class="editor-nota-general">
+                Cambiar una fecha impacta a todas las OCs del contenedor y queda
+                registrada en el historial. La recepción no se edita: viene de Tango.
+            </div>
+            <div class="editor-grid">${filas}</div>
+        </div>
+    `;
 }
 
 function crearTimeline(despacho) {
@@ -1679,7 +2166,8 @@ function verificarDemora(fechaReal, fechaEstimada) {
 }
 
 function cerrarModal() {
-    $('.modal-overlay').remove();
+    // No toca el modal de confirmación: ese se cierra solo.
+    $('.modal-overlay:not(.modal-confirmacion)').remove();
     despachoSeleccionado = null;
 }
 

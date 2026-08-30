@@ -146,6 +146,18 @@ try {
         }
     }
 
+    // Valor anterior tal como se veia en pantalla. Para FECHA_DISTRI con
+    // DIST_ORIGEN = 'A' la columna es una cache y lo que se muestra es la
+    // fecha derivada; guardar la columna cruda dejaria un historial que no
+    // coincide con lo que la persona vio al mover el badge.
+    $parametros = CronogramaFechas::obtenerParametros($conn);
+    $valorPrevio = function ($fila, $campoLeer) use ($parametros) {
+        if ($campoLeer === 'FECHA_DISTRI') {
+            return CronogramaFechas::derivarDistribucion($fila, $parametros);
+        }
+        return $fila[$campoLeer];
+    };
+
     // 9. Historial: una fila por cada OC del grupo.
     foreach ($idsGrupo as $id) {
         if (!isset($antes[$id])) {
@@ -156,7 +168,7 @@ try {
             'ordenCompra'   => $antes[$id]['ORDEN_COMPRA'],
             'contenedor'    => $antes[$id]['CONTENEDOR'],
             'campo'         => $campo,
-            'valorAnterior' => $antes[$id][$campo],
+            'valorAnterior' => $valorPrevio($antes[$id], $campo),
             'valorNuevo'    => $fechaNueva,
             'motivo'        => ($motivo !== '' ? $motivo : null),
             'observacion'   => ($observacion !== '' ? $observacion : null),
@@ -176,7 +188,7 @@ try {
                 'ordenCompra'   => $antes[$id]['ORDEN_COMPRA'],
                 'contenedor'    => $antes[$id]['CONTENEDOR'],
                 'campo'         => 'FECHA_DISTRI',
-                'valorAnterior' => $antes[$id]['FECHA_DISTRI'],
+                'valorAnterior' => $valorPrevio($antes[$id], 'FECHA_DISTRI'),
                 'valorNuevo'    => $nuevaDistri,
                 'motivo'        => MotivosFecha::RECALCULO_AUTOMATICO,
                 'observacion'   => null,
