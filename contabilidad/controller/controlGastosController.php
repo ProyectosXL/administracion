@@ -48,7 +48,11 @@ switch ($accion) {
     case 'verificarProrrateado':
         verificarProrrateado();
         break;
-    
+
+    case 'hayPendientesProrrateo':
+        hayPendientesProrrateo();
+        break;
+
     case 'revertirAmortizacion':
         revertirAmortizacion();
         break;
@@ -203,7 +207,19 @@ function verificarProrrateado() {
     $hasta = $_POST['hasta'];
     
     $result = $gasto->verificarProrrateado($desde, $hasta);
-    
+
+    echo $result;
+}
+
+function hayPendientesProrrateo() {
+    require_once '../Class/Gasto.php';
+    $gasto = new Gasto();
+
+    $desde = $_POST['desde'];
+    $hasta = $_POST['hasta'];
+
+    $result = $gasto->hayPendientesProrrateo($desde, $hasta);
+
     echo $result;
 }
 

@@ -45,9 +45,23 @@ class Gasto
              AND COD_CUENTA LIKE '$codCuenta'";
 
     }elseif($estado == '3'){
-            // Gastos sin asignar // 
+            // Gastos sin asignar //
             $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL AND AMORTIZADO IS NULL)
              AND COD_CUENTA LIKE '$codCuenta'";
+
+    }elseif($estado == '4'){
+            // Pendiente prorratear //
+            // Replica la validacion de RO_SP_PROCESAR_DATAWAREHOUSE_IE que impide cerrar el periodo,
+            // para que el filtro muestre exactamente los registros que bloquean el proceso.
+            $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0
+                    AND ((CONTROLADO = 0 OR CONTROLADO IS NULL) OR PRORRATEADO IS NULL)
+                    AND (AMORTIZADO IS NULL OR AMORTIZADO = 0)
+                    AND COD_CUENTA LIKE '$codCuenta'
+                        UNION ALL
+                   SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NOT NULL
+                    AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR)
+                    AND PRORRATEADO IS NULL AND EXCLUIR = 0
+                    AND COD_CUENTA LIKE '$codCuenta'";
 
     }else{
 
@@ -696,6 +710,46 @@ class Gasto
             return 'false';
         }
         
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        return $row['resultado'];
+    }
+
+    /**
+     * Indica si quedan registros pendientes de prorratear que impiden cerrar el periodo.
+     * Usa la misma condicion que RO_SP_PROCESAR_DATAWAREHOUSE_IE, igual que el filtro
+     * "Pendiente prorratear" de la pantalla, para que ambos muestren siempre lo mismo.
+     * Sirve para reofrecer el prorrateo cuando se controlaron gastos despues de la corrida:
+     * RO_SP_PRORRATEAR_INTEGRAL es incremental y solo toma lo que quedo pendiente.
+     * @param string $desde Fecha inicio
+     * @param string $hasta Fecha fin
+     * @return string 'true' si hay pendientes, 'false' si no
+     */
+    public function hayPendientesProrrateo($desde, $hasta) {
+
+        $sql = "SELECT
+                CASE
+                    WHEN EXISTS (
+                        SELECT 1 FROM RO_T_INTEGRAL_TANGO_2
+                        WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0
+                          AND ((CONTROLADO = 0 OR CONTROLADO IS NULL) OR PRORRATEADO IS NULL)
+                          AND (AMORTIZADO IS NULL OR AMORTIZADO = 0)
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM RO_T_INTEGRAL_TANGO_2
+                        WHERE AMORTIZADO = 1 AND AMORTIZAR IS NOT NULL
+                          AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR)
+                          AND PRORRATEADO IS NULL AND EXCLUIR = 0
+                    )
+                    THEN 'true'
+                    ELSE 'false'
+                END AS resultado";
+
+        $stmt = sqlsrv_query($this->cid_central, $sql);
+
+        if ($stmt === false) {
+            return 'false';
+        }
+
         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
         return $row['resultado'];
     }
