@@ -191,6 +191,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                                 <option value="1" <?= (isset($_GET['selectEstado']) &&  $_GET['selectEstado'] == '1') ? "selected" : "" ?>>Amortizar</option>
                                 <option value="2" <?= (isset($_GET['selectEstado']) &&  $_GET['selectEstado'] == '2') ? "selected" : "" ?>>Excluidos</option>
                                 <option value="3" <?= (isset($_GET['selectEstado']) &&  $_GET['selectEstado'] == '3') ? "selected" : "" ?>>Pendiente asignar</option>
+                                <option value="4" <?= (isset($_GET['selectEstado']) &&  $_GET['selectEstado'] == '4') ? "selected" : "" ?>>Pendiente prorratear</option>
                                 <option value="0" 
                                 <?php
                                     if (isset($_GET['selectEstado'])){

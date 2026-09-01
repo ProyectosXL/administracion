@@ -10,7 +10,8 @@ const AccionesControl = {
         amortizado: false,
         prorrateado: false,
         procesado: false,
-        sinGastos: false  // Nuevo estado para meses sin gastos para amortizar
+        sinGastos: false,  // Nuevo estado para meses sin gastos para amortizar
+        pendientesProrrateo: false  // Quedan gastos sin prorratear que bloquean el cierre
     },
 
     // Inicializar el módulo
@@ -66,7 +67,7 @@ const AccionesControl = {
         });
     },
 
-    // Verificar si ya se prorrateó
+    // Verificar si ya se prorrateó y si aún quedan gastos pendientes de prorratear
     verificarEstadoProrrateo: function(desde, hasta) {
         $.ajax({
             url: 'Controller/controlGastosController.php?accion=verificarProrrateado',
@@ -74,7 +75,22 @@ const AccionesControl = {
             data: { desde: desde, hasta: hasta },
             success: (data) => {
                 this.estados.prorrateado = data.trim() === 'true';
-                this.actualizarBotonProrratear();
+
+                // Aunque el período ya tenga prorrateos, pueden haberse controlado gastos
+                // despues de esa corrida. El SP es incremental, asi que hay que poder
+                // volver a ejecutarlo para levantar solo lo que quedo pendiente.
+                $.ajax({
+                    url: 'Controller/controlGastosController.php?accion=hayPendientesProrrateo',
+                    method: 'POST',
+                    data: { desde: desde, hasta: hasta },
+                    success: (pend) => {
+                        this.estados.pendientesProrrateo = pend.trim() === 'true';
+                        this.actualizarBotonProrratear();
+                    },
+                    error: () => {
+                        this.actualizarBotonProrratear();
+                    }
+                });
             }
         });
     },
@@ -138,6 +154,22 @@ const AccionesControl = {
         if (!btn || !dropdownMenu) return;
 
         if (this.estados.prorrateado) {
+
+            if (this.estados.pendientesProrrateo) {
+                // Ya se prorrateó, pero quedaron gastos sin prorratear que bloquean el cierre
+                btn.innerHTML = '<i class="bi bi-file-text"></i> Prorratear <span class="estado-indicador estado-pendiente">!</span>';
+                btn.className = 'btn btn-ejecutar dropdown-toggle';
+                dropdownMenu.innerHTML = `
+                    <a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarProrrateo(); return false;">
+                        <i class="bi bi-play-fill"></i> Prorratear pendientes
+                    </a>
+                    <a class="dropdown-item revertir-item" href="#" onclick="AccionesControl.revertirProrrateo(); return false;">
+                        <i class="bi bi-arrow-counterclockwise"></i> Revertir Prorrateo
+                    </a>
+                `;
+                return;
+            }
+
             btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i> Revertir Prorr. <span class="estado-indicador estado-ejecutado">✓</span>';
             btn.className = 'btn btn-revertir dropdown-toggle';
             dropdownMenu.innerHTML = `
