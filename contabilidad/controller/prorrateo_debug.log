@@ -700,3 +700,471 @@
 [2026-05-21 20:49:30] Marcando proceso como COMPLETADO...
 [2026-05-21 20:49:30] Proceso marcado como COMPLETADO exitosamente
 [2026-05-21 20:49:30] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 01:57:37] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 01:57:37] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 21
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 01:57:37] ID Proceso: 21
+[2026-09-01 01:57:37] Desde: 2026-04-01
+[2026-09-01 01:57:37] Hasta: 2026-04-30
+[2026-09-01 01:57:37] Entorno: central
+[2026-09-01 01:57:37] Incluyendo archivo de conexión...
+[2026-09-01 01:57:37] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 01:57:37] Conexión establecida exitosamente
+[2026-09-01 01:57:37] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 01:57:37] Estado actualizado a EN_PROCESO
+[2026-09-01 01:57:37] Actualizando progreso a 30%...
+[2026-09-01 01:57:37] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 01:59:18] Resultado de ejecución SP V2: OK
+[2026-09-01 01:59:18] SP V2 ejecutado exitosamente
+[2026-09-01 01:59:18] Marcando proceso como COMPLETADO...
+[2026-09-01 01:59:18] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 01:59:18] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 02:10:31] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 02:10:31] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 22
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 02:10:31] ID Proceso: 22
+[2026-09-01 02:10:31] Desde: 2026-04-01
+[2026-09-01 02:10:31] Hasta: 2026-04-30
+[2026-09-01 02:10:31] Entorno: central
+[2026-09-01 02:10:31] Incluyendo archivo de conexión...
+[2026-09-01 02:10:31] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 02:10:31] Conexión establecida exitosamente
+[2026-09-01 02:10:31] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 02:10:31] Estado actualizado a EN_PROCESO
+[2026-09-01 02:10:31] Actualizando progreso a 30%...
+[2026-09-01 02:10:31] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 02:11:59] Resultado de ejecución SP V2: OK
+[2026-09-01 02:11:59] SP V2 ejecutado exitosamente
+[2026-09-01 02:11:59] Marcando proceso como COMPLETADO...
+[2026-09-01 02:11:59] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 02:11:59] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 02:14:53] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 02:14:53] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 23
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 02:14:53] ID Proceso: 23
+[2026-09-01 02:14:53] Desde: 2026-04-01
+[2026-09-01 02:14:53] Hasta: 2026-04-30
+[2026-09-01 02:14:53] Entorno: central
+[2026-09-01 02:14:53] Incluyendo archivo de conexión...
+[2026-09-01 02:14:53] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 02:14:53] Conexión establecida exitosamente
+[2026-09-01 02:14:53] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 02:14:53] Estado actualizado a EN_PROCESO
+[2026-09-01 02:14:53] Actualizando progreso a 30%...
+[2026-09-01 02:14:53] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 02:16:40] Resultado de ejecución SP V2: OK
+[2026-09-01 02:16:40] SP V2 ejecutado exitosamente
+[2026-09-01 02:16:40] Marcando proceso como COMPLETADO...
+[2026-09-01 02:16:40] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 02:16:40] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 02:18:42] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 02:18:42] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 24
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 02:18:42] ID Proceso: 24
+[2026-09-01 02:18:42] Desde: 2026-04-01
+[2026-09-01 02:18:42] Hasta: 2026-04-30
+[2026-09-01 02:18:42] Entorno: central
+[2026-09-01 02:18:42] Incluyendo archivo de conexión...
+[2026-09-01 02:18:42] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 02:18:42] Conexión establecida exitosamente
+[2026-09-01 02:18:42] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 02:18:42] Estado actualizado a EN_PROCESO
+[2026-09-01 02:18:42] Actualizando progreso a 30%...
+[2026-09-01 02:18:42] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 02:20:36] Resultado de ejecución SP V2: OK
+[2026-09-01 02:20:36] SP V2 ejecutado exitosamente
+[2026-09-01 02:20:36] Marcando proceso como COMPLETADO...
+[2026-09-01 02:20:36] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 02:20:36] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 02:22:34] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 02:22:34] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 25
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 02:22:34] ID Proceso: 25
+[2026-09-01 02:22:34] Desde: 2026-04-01
+[2026-09-01 02:22:34] Hasta: 2026-04-30
+[2026-09-01 02:22:34] Entorno: central
+[2026-09-01 02:22:34] Incluyendo archivo de conexión...
+[2026-09-01 02:22:34] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 02:22:34] Conexión establecida exitosamente
+[2026-09-01 02:22:34] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 02:22:34] Estado actualizado a EN_PROCESO
+[2026-09-01 02:22:34] Actualizando progreso a 30%...
+[2026-09-01 02:22:34] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 02:24:09] Resultado de ejecución SP V2: OK
+[2026-09-01 02:24:09] SP V2 ejecutado exitosamente
+[2026-09-01 02:24:09] Marcando proceso como COMPLETADO...
+[2026-09-01 02:24:09] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 02:24:09] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 02:39:43] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 02:39:43] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 26
+    [2] => 2026-05-01
+    [3] => 2026-05-31
+    [4] => central
+)
+
+[2026-09-01 02:39:43] ID Proceso: 26
+[2026-09-01 02:39:43] Desde: 2026-05-01
+[2026-09-01 02:39:43] Hasta: 2026-05-31
+[2026-09-01 02:39:43] Entorno: central
+[2026-09-01 02:39:43] Incluyendo archivo de conexión...
+[2026-09-01 02:39:43] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 02:39:44] Conexión establecida exitosamente
+[2026-09-01 02:39:44] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 02:39:44] Estado actualizado a EN_PROCESO
+[2026-09-01 02:39:44] Actualizando progreso a 30%...
+[2026-09-01 02:39:44] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 02:41:17] Resultado de ejecución SP V2: OK
+[2026-09-01 02:41:17] SP V2 ejecutado exitosamente
+[2026-09-01 02:41:17] Marcando proceso como COMPLETADO...
+[2026-09-01 02:41:17] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 02:41:17] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 02:42:13] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 02:42:13] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 27
+    [2] => 2026-05-01
+    [3] => 2026-05-31
+    [4] => central
+)
+
+[2026-09-01 02:42:13] ID Proceso: 27
+[2026-09-01 02:42:13] Desde: 2026-05-01
+[2026-09-01 02:42:13] Hasta: 2026-05-31
+[2026-09-01 02:42:13] Entorno: central
+[2026-09-01 02:42:13] Incluyendo archivo de conexión...
+[2026-09-01 02:42:13] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 02:42:13] Conexión establecida exitosamente
+[2026-09-01 02:42:13] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 02:42:13] Estado actualizado a EN_PROCESO
+[2026-09-01 02:42:13] Actualizando progreso a 30%...
+[2026-09-01 02:42:13] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 02:43:36] Resultado de ejecución SP V2: OK
+[2026-09-01 02:43:36] SP V2 ejecutado exitosamente
+[2026-09-01 02:43:36] Marcando proceso como COMPLETADO...
+[2026-09-01 02:43:36] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 02:43:36] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 02:45:15] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 02:45:15] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 28
+    [2] => 2026-05-01
+    [3] => 2026-05-31
+    [4] => central
+)
+
+[2026-09-01 02:45:15] ID Proceso: 28
+[2026-09-01 02:45:15] Desde: 2026-05-01
+[2026-09-01 02:45:15] Hasta: 2026-05-31
+[2026-09-01 02:45:15] Entorno: central
+[2026-09-01 02:45:15] Incluyendo archivo de conexión...
+[2026-09-01 02:45:15] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 02:45:15] Conexión establecida exitosamente
+[2026-09-01 02:45:15] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 02:45:15] Estado actualizado a EN_PROCESO
+[2026-09-01 02:45:15] Actualizando progreso a 30%...
+[2026-09-01 02:45:15] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 02:46:53] Resultado de ejecución SP V2: OK
+[2026-09-01 02:46:53] SP V2 ejecutado exitosamente
+[2026-09-01 02:46:53] Marcando proceso como COMPLETADO...
+[2026-09-01 02:46:53] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 02:46:53] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 02:54:15] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 02:54:15] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 29
+    [2] => 2026-05-01
+    [3] => 2026-05-31
+    [4] => central
+)
+
+[2026-09-01 02:54:15] ID Proceso: 29
+[2026-09-01 02:54:15] Desde: 2026-05-01
+[2026-09-01 02:54:15] Hasta: 2026-05-31
+[2026-09-01 02:54:15] Entorno: central
+[2026-09-01 02:54:15] Incluyendo archivo de conexión...
+[2026-09-01 02:54:15] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 02:54:15] Conexión establecida exitosamente
+[2026-09-01 02:54:15] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 02:54:15] Estado actualizado a EN_PROCESO
+[2026-09-01 02:54:15] Actualizando progreso a 30%...
+[2026-09-01 02:54:15] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 02:56:07] Resultado de ejecución SP V2: OK
+[2026-09-01 02:56:07] SP V2 ejecutado exitosamente
+[2026-09-01 02:56:07] Marcando proceso como COMPLETADO...
+[2026-09-01 02:56:07] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 02:56:07] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 04:52:03] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 04:52:03] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 30
+    [2] => 2026-01-01
+    [3] => 2026-01-31
+    [4] => central
+)
+
+[2026-09-01 04:52:03] ID Proceso: 30
+[2026-09-01 04:52:03] Desde: 2026-01-01
+[2026-09-01 04:52:03] Hasta: 2026-01-31
+[2026-09-01 04:52:03] Entorno: central
+[2026-09-01 04:52:03] Incluyendo archivo de conexión...
+[2026-09-01 04:52:03] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 04:52:03] Conexión establecida exitosamente
+[2026-09-01 04:52:03] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 04:52:03] Estado actualizado a EN_PROCESO
+[2026-09-01 04:52:03] Actualizando progreso a 30%...
+[2026-09-01 04:52:03] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 04:53:54] Resultado de ejecución SP V2: OK
+[2026-09-01 04:53:54] SP V2 ejecutado exitosamente
+[2026-09-01 04:53:54] Marcando proceso como COMPLETADO...
+[2026-09-01 04:53:54] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 04:53:54] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 04:57:08] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 04:57:08] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 31
+    [2] => 2026-02-01
+    [3] => 2026-02-28
+    [4] => central
+)
+
+[2026-09-01 04:57:08] ID Proceso: 31
+[2026-09-01 04:57:08] Desde: 2026-02-01
+[2026-09-01 04:57:08] Hasta: 2026-02-28
+[2026-09-01 04:57:08] Entorno: central
+[2026-09-01 04:57:08] Incluyendo archivo de conexión...
+[2026-09-01 04:57:08] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 04:57:08] Conexión establecida exitosamente
+[2026-09-01 04:57:08] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 04:57:08] Estado actualizado a EN_PROCESO
+[2026-09-01 04:57:08] Actualizando progreso a 30%...
+[2026-09-01 04:57:08] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 04:58:54] Resultado de ejecución SP V2: OK
+[2026-09-01 04:58:54] SP V2 ejecutado exitosamente
+[2026-09-01 04:58:54] Marcando proceso como COMPLETADO...
+[2026-09-01 04:58:54] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 04:58:54] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 05:01:20] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 05:01:20] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 32
+    [2] => 2026-03-01
+    [3] => 2026-03-31
+    [4] => central
+)
+
+[2026-09-01 05:01:20] ID Proceso: 32
+[2026-09-01 05:01:20] Desde: 2026-03-01
+[2026-09-01 05:01:20] Hasta: 2026-03-31
+[2026-09-01 05:01:20] Entorno: central
+[2026-09-01 05:01:20] Incluyendo archivo de conexión...
+[2026-09-01 05:01:20] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 05:01:20] Conexión establecida exitosamente
+[2026-09-01 05:01:20] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 05:01:20] Estado actualizado a EN_PROCESO
+[2026-09-01 05:01:20] Actualizando progreso a 30%...
+[2026-09-01 05:01:20] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 05:03:24] Resultado de ejecución SP V2: OK
+[2026-09-01 05:03:24] SP V2 ejecutado exitosamente
+[2026-09-01 05:03:24] Marcando proceso como COMPLETADO...
+[2026-09-01 05:03:24] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 05:03:24] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 13:19:31] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 13:19:31] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 33
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 13:19:31] ID Proceso: 33
+[2026-09-01 13:19:31] Desde: 2026-04-01
+[2026-09-01 13:19:31] Hasta: 2026-04-30
+[2026-09-01 13:19:31] Entorno: central
+[2026-09-01 13:19:31] Incluyendo archivo de conexión...
+[2026-09-01 13:19:31] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 13:19:31] Conexión establecida exitosamente
+[2026-09-01 13:19:31] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 13:19:31] Estado actualizado a EN_PROCESO
+[2026-09-01 13:19:31] Actualizando progreso a 30%...
+[2026-09-01 13:19:31] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 13:22:25] Resultado de ejecución SP V2: OK
+[2026-09-01 13:22:25] SP V2 ejecutado exitosamente
+[2026-09-01 13:22:25] Marcando proceso como COMPLETADO...
+[2026-09-01 13:22:25] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 13:22:25] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 13:56:09] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 13:56:09] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 34
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 13:56:09] ID Proceso: 34
+[2026-09-01 13:56:09] Desde: 2026-04-01
+[2026-09-01 13:56:09] Hasta: 2026-04-30
+[2026-09-01 13:56:09] Entorno: central
+[2026-09-01 13:56:09] Incluyendo archivo de conexión...
+[2026-09-01 13:56:09] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 13:56:10] Conexión establecida exitosamente
+[2026-09-01 13:56:10] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 13:56:10] Estado actualizado a EN_PROCESO
+[2026-09-01 13:56:10] Actualizando progreso a 30%...
+[2026-09-01 13:56:10] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 13:59:06] Resultado de ejecución SP V2: OK
+[2026-09-01 13:59:06] SP V2 ejecutado exitosamente
+[2026-09-01 13:59:06] Marcando proceso como COMPLETADO...
+[2026-09-01 13:59:06] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 13:59:06] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 14:20:21] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 14:20:21] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 35
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 14:20:21] ID Proceso: 35
+[2026-09-01 14:20:21] Desde: 2026-04-01
+[2026-09-01 14:20:21] Hasta: 2026-04-30
+[2026-09-01 14:20:21] Entorno: central
+[2026-09-01 14:20:21] Incluyendo archivo de conexión...
+[2026-09-01 14:20:21] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 14:20:21] Conexión establecida exitosamente
+[2026-09-01 14:20:21] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 14:20:21] Estado actualizado a EN_PROCESO
+[2026-09-01 14:20:21] Actualizando progreso a 30%...
+[2026-09-01 14:20:21] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 14:20:46] Resultado de ejecución SP V2: OK
+[2026-09-01 14:20:46] SP V2 ejecutado exitosamente
+[2026-09-01 14:20:46] Marcando proceso como COMPLETADO...
+[2026-09-01 14:20:46] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 14:20:46] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 14:32:23] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 14:32:23] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 36
+    [2] => 2026-04-01
+    [3] => 2026-04-30
+    [4] => central
+)
+
+[2026-09-01 14:32:23] ID Proceso: 36
+[2026-09-01 14:32:23] Desde: 2026-04-01
+[2026-09-01 14:32:23] Hasta: 2026-04-30
+[2026-09-01 14:32:23] Entorno: central
+[2026-09-01 14:32:23] Incluyendo archivo de conexión...
+[2026-09-01 14:32:23] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 14:32:23] Conexión establecida exitosamente
+[2026-09-01 14:32:23] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 14:32:23] Estado actualizado a EN_PROCESO
+[2026-09-01 14:32:23] Actualizando progreso a 30%...
+[2026-09-01 14:32:23] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 14:32:43] Resultado de ejecución SP V2: OK
+[2026-09-01 14:32:43] SP V2 ejecutado exitosamente
+[2026-09-01 14:32:43] Marcando proceso como COMPLETADO...
+[2026-09-01 14:32:43] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 14:32:43] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 14:39:53] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 14:39:53] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 37
+    [2] => 2026-05-01
+    [3] => 2026-05-31
+    [4] => central
+)
+
+[2026-09-01 14:39:53] ID Proceso: 37
+[2026-09-01 14:39:53] Desde: 2026-05-01
+[2026-09-01 14:39:53] Hasta: 2026-05-31
+[2026-09-01 14:39:53] Entorno: central
+[2026-09-01 14:39:53] Incluyendo archivo de conexión...
+[2026-09-01 14:39:53] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 14:39:53] Conexión establecida exitosamente
+[2026-09-01 14:39:53] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 14:39:53] Estado actualizado a EN_PROCESO
+[2026-09-01 14:39:53] Actualizando progreso a 30%...
+[2026-09-01 14:39:53] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 14:43:34] Resultado de ejecución SP V2: OK
+[2026-09-01 14:43:34] SP V2 ejecutado exitosamente
+[2026-09-01 14:43:34] Marcando proceso como COMPLETADO...
+[2026-09-01 14:43:34] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 14:43:34] === FIN EXITOSO DEL PROCESO ===
+[2026-09-01 14:56:09] === INICIO PROCESO DE PRORRATEO ===
+[2026-09-01 14:56:09] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 38
+    [2] => 2026-06-01
+    [3] => 2026-06-30
+    [4] => central
+)
+
+[2026-09-01 14:56:09] ID Proceso: 38
+[2026-09-01 14:56:09] Desde: 2026-06-01
+[2026-09-01 14:56:09] Hasta: 2026-06-30
+[2026-09-01 14:56:09] Entorno: central
+[2026-09-01 14:56:09] Incluyendo archivo de conexión...
+[2026-09-01 14:56:09] Creando conexión a base de datos (entorno: central)...
+[2026-09-01 14:56:09] Conexión establecida exitosamente
+[2026-09-01 14:56:09] Actualizando estado a EN_PROCESO (10%)...
+[2026-09-01 14:56:09] Estado actualizado a EN_PROCESO
+[2026-09-01 14:56:09] Actualizando progreso a 30%...
+[2026-09-01 14:56:09] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-09-01 14:59:20] Resultado de ejecución SP V2: OK
+[2026-09-01 14:59:20] SP V2 ejecutado exitosamente
+[2026-09-01 14:59:20] Marcando proceso como COMPLETADO...
+[2026-09-01 14:59:20] Proceso marcado como COMPLETADO exitosamente
+[2026-09-01 14:59:20] === FIN EXITOSO DEL PROCESO ===

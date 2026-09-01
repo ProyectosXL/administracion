@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-require_once '../../../class/conexion.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 session_start();
 
 $response = ['success' => false, 'message' => 'Acción no válida.'];

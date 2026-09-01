@@ -25,7 +25,7 @@ $previous_month_last = date('Y-m-t', strtotime("last day of last month"));
                 </div>
                 <div class="col-md-2">
                     <button type="button" id="btn-descargar-excel-control" class="btn btn-success w-100">
-                        <i class="bi bi-file-earmark-excel"></i> Descargar Excel
+                        <i class="bi bi-file-earmark-excel"></i> Descargar Resumen
                     </button>
                 </div>
                 <div class="col-md-4">

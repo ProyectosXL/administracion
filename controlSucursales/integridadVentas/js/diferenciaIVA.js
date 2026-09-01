@@ -20,6 +20,10 @@ $(document).ready(function() {
         descargarExcelIVA();
     });
 
+    $('#btn-descargar-detalle-iva').on('click', function() {
+        descargarDetalleIVA();
+    });
+
     // Delegación de evento para botones de actualizar por sucursal
     $('#resultado-consulta-iva').on('click', '.btn-actualizar-sucursal-iva', function() {
         const nroSucursal = $(this).data('sucursal');
@@ -243,9 +247,23 @@ $(document).ready(function() {
     }
 
     /**
-     * Descargar datos en formato Excel
+     * Descargar el resumen por sucursal en formato Excel
      */
     function descargarExcelIVA() {
+        enviarDescargaIVA('Controller/exportarExcelIVA.php');
+    }
+
+    /**
+     * Descargar el detalle de comprobantes en formato Excel
+     */
+    function descargarDetalleIVA() {
+        enviarDescargaIVA('Controller/exportarDetalleIVA.php');
+    }
+
+    /**
+     * Envía el rango de fechas por POST al controlador de exportación indicado
+     */
+    function enviarDescargaIVA(action) {
         const fechaDesde = $('#fecha-desde-iva').val();
         const fechaHasta = $('#fecha-hasta-iva').val();
 
@@ -256,7 +274,7 @@ $(document).ready(function() {
 
         const form = $('<form>', {
             method: 'POST',
-            action: 'Controller/exportarExcelIVA.php'
+            action: action
         });
 
         form.append($('<input>', {

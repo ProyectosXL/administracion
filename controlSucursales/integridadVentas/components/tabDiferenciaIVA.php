@@ -25,10 +25,15 @@ $previous_month_last = date('Y-m-t', strtotime("last day of last month"));
                 </div>
                 <div class="col-md-2">
                     <button type="button" id="btn-descargar-excel-iva" class="btn btn-success w-100">
-                        <i class="bi bi-file-earmark-excel"></i> Descargar Excel
+                        <i class="bi bi-file-earmark-excel"></i> Descargar Resumen
                     </button>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2">
+                    <button type="button" id="btn-descargar-detalle-iva" class="btn btn-outline-success w-100">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Descargar Detalle
+                    </button>
+                </div>
+                <div class="col-md-2">
                     <div class="integridadVentas_info-box">
                         <i class="bi bi-info-circle me-2"></i>
                         <span>Comparación de IVA Ventas entre central y local por sucursal</span>

@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 
 // Ajustar ruta para apuntar a la clase conexion desde integridadVentas/Controller/
-require_once '../../../class/conexion.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 session_start();
 
 $response = ['success' => false, 'message' => 'Acción no válida.'];

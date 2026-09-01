@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../../class/conexion.php';
+require_once __DIR__ . '/../../../class/conexion.php';
 
 try {
     $desde = $_POST['desde'] ?? '';

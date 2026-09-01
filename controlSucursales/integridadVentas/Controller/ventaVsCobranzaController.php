@@ -15,7 +15,7 @@ switch ($accion) {
 
 function confirmarVentaVsCobranza() {
     // Ajustar la ruta para apuntar a la clase Ventas desde integridadVentas/Controller/
-    require_once '../Class/ventas.php';
+    require_once __DIR__ . '/../Class/ventas.php';
 
     $ventas = new Ventas();
     $nroSucursal = $_POST['nroSucursal'] ?? '';
