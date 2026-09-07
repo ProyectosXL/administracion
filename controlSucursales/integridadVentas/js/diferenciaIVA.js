@@ -30,24 +30,14 @@ $(document).ready(function() {
         ejecutarSPPorSucursalIVA(nroSucursal);
     });
 
-    // Delegación de evento para ver detalle de comprobantes (click en la fila)
-    $('#resultado-consulta-iva').on('click', 'tbody tr', function(e) {
-        // No abrir modal si se hizo click en el botón de actualizar
-        if ($(e.target).closest('.btn-actualizar-sucursal-iva').length > 0) {
-            return;
-        }
-        
-        const nroSucursal = $(this).find('td:first').text();
-        const codSucursal = $(this).find('td:eq(1)').text();
-        const totalComprobantes = $(this).find('td:eq(2)').text();
-        
-        if (nroSucursal && nroSucursal !== 'Haga clic') {
-            abrirModalDetalleIVA(nroSucursal, codSucursal, totalComprobantes);
-        }
+    // Delegación de evento para ver detalle de comprobantes (botón "Ver detalle")
+    $('#resultado-consulta-iva').on('click', '.btn-ver-detalle-iva', function() {
+        const btn = $(this);
+        abrirModalDetalleIVA(btn.data('sucursal'), btn.data('cod'), btn.data('comprobantes'));
     });
 
     // Exportar detalle a Excel desde el modal
-    $('#btn-exportar-detalle-iva').on('click', function() {
+    $(document).on('click', '#btn-exportar-detalle-iva-nuevo', function() {
         exportarDetalleExcel();
     });
 
@@ -173,9 +163,16 @@ $(document).ready(function() {
                     <td>${formatCurrency(fila.DIFERENCIA_NETA)}</td>
                     <td>${estadoBadge}</td>
                     <td>${refreshedDate}</td>
-                    <td>
+                    <td style="white-space:nowrap;">
                         <button class="integridadVentas_btn-actualizar btn-actualizar-sucursal-iva" data-sucursal="${fila.NUM_SUC}" title="Actualizar esta sucursal">
                             <i class="bi bi-arrow-clockwise"></i> Actualizar
+                        </button>
+                        <button class="integridadVentas_btn-detalle btn-ver-detalle-iva ms-1"
+                                data-sucursal="${fila.NUM_SUC}"
+                                data-cod="${fila.COD_SUCURSAL || ''}"
+                                data-comprobantes="${fila.COMPROBANTES_CON_DIF}"
+                                title="Ver detalle de comprobantes">
+                            <i class="bi bi-list-columns-reverse"></i> Ver detalle
                         </button>
                     </td>
                 </tr>
@@ -298,14 +295,20 @@ $(document).ready(function() {
      * Abrir modal con detalle de comprobantes de una sucursal
      */
     function abrirModalDetalleIVA(nroSucursal, codSucursal, totalComprobantes) {
-        // Actualizar información del header del modal
-        $('#modal-nro-sucursal').text(nroSucursal);
-        $('#modal-nombre-sucursal').text(codSucursal);
-        $('#modal-total-comprobantes').text(totalComprobantes);
+        // Resetear tarjetas del modal al estado de carga
+        $('#dv-m-sucursal-iva').text('Suc. ' + nroSucursal);
+        $('#dv-m-cod-sucursal-iva').text(codSucursal || '—');
+        $('#dv-m-comprobantes-iva').text((totalComprobantes || 0) + ' comprobante' + (String(totalComprobantes) === '1' ? '' : 's'));
+        $('#dv-m-central-iva').text('—').css('color', '');
+        $('#dv-m-local-iva').text('—').css('color', '');
+        $('#dv-m-diferencia-iva').text('—').css('color', '');
+        $('#dv-m-estado-badge-iva').html('<span style="color:#64748b;font-size:.75rem;">Cargando…</span>');
+        $('#modalDetalleIVA .dv-card-diferencia').removeClass('dv-card-diff-bad');
 
-        // Mostrar spinner y ocultar tabla
-        $('#modal-loading').show();
-        $('#modal-tabla-container').hide();
+        $('#tbody-detalle-iva-comprobantes').empty();
+        $('#tfoot-detalle-iva').hide();
+        $('#dv-loading-iva').show();
+        $('#dv-tabla-container-iva').hide();
 
         // Abrir el modal
         const modal = new bootstrap.Modal(document.getElementById('modalDetalleIVA'));
@@ -324,7 +327,7 @@ $(document).ready(function() {
                 try {
                     const response = JSON.parse(responseText);
                     if (response.success) {
-                        renderizarDetalleComprobantes(response.data);
+                        renderizarDetalleIVA(response.data);
                     } else {
                         alert('Error: ' + response.message);
                         modal.hide();
@@ -342,78 +345,117 @@ $(document).ready(function() {
                 modal.hide();
             },
             complete: function() {
-                $('#modal-loading').hide();
-                $('#modal-tabla-container').show();
+                $('#dv-loading-iva').hide();
+                $('#dv-tabla-container-iva').show();
             }
         });
     }
 
     /**
-     * Renderizar tabla de detalle de comprobantes en el modal
+     * Renderizar tabla de detalle de comprobantes en el modal (estilo Precision Analytics)
      */
-    function renderizarDetalleComprobantes(data) {
-        const tbody = $('#tbody-detalle-comprobantes-iva');
+    function renderizarDetalleIVA(data) {
+        const tbody = $('#tbody-detalle-iva-comprobantes');
         tbody.empty();
 
         if (!data || data.length === 0) {
-            tbody.html('<tr><td colspan="7" class="text-center text-muted">No se encontraron comprobantes con diferencias.</td></tr>');
-            actualizarTotalesModal(0, 0, 0);
+            tbody.html(`
+                <tr class="dv-empty-row">
+                    <td colspan="6">
+                        <div class="dv-empty-state">
+                            <i class="bi bi-inbox dv-empty-icon"></i>
+                            <p>No se encontraron comprobantes con diferencias</p>
+                        </div>
+                    </td>
+                </tr>`);
+            $('#dv-table-count-iva').text('0 registros');
+            $('#tfoot-detalle-iva').hide();
             return;
         }
 
-        let totalIvaLocal = 0;
-        let totalIvaCentral = 0;
-        let totalDiferencia = 0;
+        let totLocal = 0, totCentral = 0, totDif = 0;
 
         data.forEach(function(comp) {
-            totalIvaLocal += parseFloat(comp.IVA_LOCAL) || 0;
-            totalIvaCentral += parseFloat(comp.IVA_CENTRAL) || 0;
-            totalDiferencia += parseFloat(comp.DIFERENCIA) || 0;
+            const impL = parseFloat(comp.IVA_LOCAL) || 0;
+            const impC = parseFloat(comp.IVA_CENTRAL) || 0;
+            const dif  = parseFloat(comp.DIFERENCIA) || 0;
+
+            totLocal   += impL;
+            totCentral += impC;
+            totDif     += dif;
+
+            let difClass = 'dv-dif-cero';
+            if (dif > 0.005)  difClass = 'dv-dif-positiva';
+            if (dif < -0.005) difClass = 'dv-dif-negativa';
 
             // Formatear fecha
-            let fechaFormateada = 'N/A';
+            let fecha = '—';
             if (comp.FECHA_COMPROBANTE) {
                 if (comp.FECHA_COMPROBANTE.date) {
-                    fechaFormateada = comp.FECHA_COMPROBANTE.date.substring(0, 10);
+                    fecha = formatFechaCorta(comp.FECHA_COMPROBANTE.date.substring(0, 10));
                 } else if (typeof comp.FECHA_COMPROBANTE === 'string') {
-                    fechaFormateada = comp.FECHA_COMPROBANTE.substring(0, 10);
+                    fecha = formatFechaCorta(comp.FECHA_COMPROBANTE.substring(0, 10));
                 }
             }
 
-            const filaHtml = `
+            tbody.append(`
                 <tr>
-                    <td>${comp.NRO_SUCURSAL}</td>
-                    <td>${comp.TIPO_COMPROBANTE || 'N/A'}</td>
-                    <td>${comp.NRO_COMPROBANTE || 'N/A'}</td>
-                    <td>${fechaFormateada}</td>
-                    <td>${formatCurrency(comp.IVA_LOCAL)}</td>
-                    <td>${formatCurrency(comp.IVA_CENTRAL)}</td>
-                    <td>${formatCurrency(comp.DIFERENCIA)}</td>
-                </tr>
-            `;
-            tbody.append(filaHtml);
+                    <td><span class="dv-badge-tcomp">${comp.TIPO_COMPROBANTE || '—'}</span></td>
+                    <td class="dv-fecha-cell">${comp.NRO_COMPROBANTE || '—'}</td>
+                    <td class="dv-fecha-cell">${fecha}</td>
+                    <td class="dv-imp-cell">${formatCurrency(impL)}</td>
+                    <td class="dv-imp-cell">${formatCurrency(impC)}</td>
+                    <td class="dv-dif-cell ${difClass}">${formatCurrency(dif)}</td>
+                </tr>`);
         });
 
-        actualizarTotalesModal(totalIvaLocal, totalIvaCentral, totalDiferencia);
+        // Totales en footer
+        $('#dv-tot-local-iva').text(formatCurrency(totLocal));
+        $('#dv-tot-central-iva').text(formatCurrency(totCentral));
+        const totDifEl = $('#dv-tot-diferencia-iva');
+        totDifEl.text(formatCurrency(totDif));
+        totDifEl.css('color', Math.abs(totDif) < 0.01 ? '#15803d' : '#dc2626');
+        $('#tfoot-detalle-iva').show();
+
+        $('#dv-table-count-iva').text(data.length + ' registro' + (data.length !== 1 ? 's' : ''));
+
+        // Actualizar tarjetas con los valores reales
+        $('#dv-m-central-iva').text(formatCurrency(totCentral));
+        $('#dv-m-local-iva').text(formatCurrency(totLocal));
+        $('#dv-m-diferencia-iva').text(formatCurrency(totDif));
+        const cardDif = $('#modalDetalleIVA .dv-card-diferencia');
+        if (Math.abs(totDif) < 0.01) {
+            $('#dv-m-diferencia-iva').css('color', '#15803d');
+            $('#dv-m-estado-badge-iva').html('<span style="color:#15803d;font-size:.75rem;">✔ Sin diferencias</span>');
+            cardDif.removeClass('dv-card-diff-bad');
+        } else {
+            $('#dv-m-diferencia-iva').css('color', '#dc2626');
+            $('#dv-m-estado-badge-iva').html('<span style="color:#dc2626;font-size:.75rem;">⚠ Con diferencias</span>');
+            cardDif.addClass('dv-card-diff-bad');
+        }
     }
 
     /**
-     * Actualizar totales en el footer del modal
+     * Formatea una fecha YYYY-MM-DD a DD/MM/YYYY
      */
-    function actualizarTotalesModal(totalLocal, totalCentral, totalDif) {
-        $('#modal-total-iva-local').text(formatCurrency(totalLocal));
-        $('#modal-total-iva-central').text(formatCurrency(totalCentral));
-        $('#modal-total-diferencia').text(formatCurrency(totalDif));
+    function formatFechaCorta(fechaStr) {
+        if (!fechaStr) return '—';
+        try {
+            const parts = fechaStr.split('-');
+            if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
+            const d = new Date(fechaStr);
+            return d.toLocaleDateString('es-AR');
+        } catch (e) { return fechaStr; }
     }
 
     /**
      * Exportar detalle a Excel
      */
     function exportarDetalleExcel() {
-        const nroSucursal = $('#modal-nro-sucursal').text();
-        const codSucursal = $('#modal-nombre-sucursal').text();
-        
-        $("#tabla-detalle-comprobantes-iva").table2excel({
+        const nroSucursal = ($('#dv-m-sucursal-iva').text() || '').replace('Suc. ', '').trim();
+        const codSucursal = ($('#dv-m-cod-sucursal-iva').text() || '').trim();
+
+        $("#tabla-detalle-iva-comprobantes").table2excel({
             exclude: "",
             name: "Detalle IVA",
             filename: `Detalle_IVA_Sucursal_${nroSucursal}_${codSucursal}`,

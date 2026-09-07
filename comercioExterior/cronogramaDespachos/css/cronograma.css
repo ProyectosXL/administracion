@@ -90,6 +90,10 @@ body {
 }
 
 /* ========== HEADER ========== */
+/* El z-index no es decorativo: .panel-proximos-arribos es fixed en top:100px
+   con z-index 100, y se monta sobre la franja inferior del header, justo
+   encima de los botones de la derecha. Sin esto, los clicks en Alias y
+   Resumen caen en el panel y los modales no abren. */
 .cronograma-header {
     background: white;
     border-radius: 12px;
@@ -99,6 +103,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
+    z-index: 200;
 }
 
 .cronograma-header h1 {
@@ -1146,6 +1152,245 @@ body:not(.densidad-comodo) .evento-pill .evento-proveedor {
 }
 
 .btn-cerrar-alias:hover { color: var(--gray-800); }
+
+/* ---------- Modal de resumen de unidades ---------- */
+.modal-resumen[hidden] {
+    display: none !important;
+}
+
+.modal-resumen-content {
+    max-width: 760px;
+}
+
+#modalResumen .modal-body {
+    padding: 24px 32px 32px;
+}
+
+/* ---------- KPIs ---------- */
+.resumen-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.resumen-kpi {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    padding: 16px 18px;
+    color: white;
+}
+
+/* Los dos secundarios no compiten con el numero que importa. */
+.resumen-kpi:not(:first-child) {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    color: var(--gray-800);
+}
+
+.resumen-kpi-valor {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.resumen-kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    opacity: 0.85;
+}
+
+/* ---------- Filtros ---------- */
+.resumen-filtros {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+}
+
+/* Etiqueta a la izquierda con ancho fijo: las tres filas alinean sus
+   controles en la misma columna. */
+.resumen-filtro-fila {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.resumen-filtro-label {
+    flex: 0 0 90px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-600);
+}
+
+.resumen-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.resumen-chip {
+    padding: 6px 14px;
+    border: 1px solid var(--gray-300);
+    background: white;
+    color: var(--gray-600);
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.resumen-chip:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.resumen-chip.activo {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.resumen-preset {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    color: #B9770E;
+    border: 1px dashed #E5B87A;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.resumen-preset:hover {
+    background: #FEF3E2;
+}
+
+#resumenFiltroProveedor + .select2-container {
+    width: 320px !important;
+}
+
+/* ---------- Tabla ---------- */
+.resumen-tabla-wrap {
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.resumen-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.resumen-tabla th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--gray-600);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+}
+
+.resumen-tabla th:not(:first-child),
+.resumen-tabla td:not(:first-child) {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.resumen-tabla td {
+    padding: 9px 12px;
+    color: var(--gray-800);
+    border-bottom: 1px solid var(--gray-100);
+    font-variant-numeric: tabular-nums;
+}
+
+/* La barra va de fondo, detras del texto: agrega la lectura comparativa sin
+   gastar una columna. */
+.resumen-celda-etiqueta {
+    position: relative;
+    font-weight: 500;
+}
+
+.resumen-barra {
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    background: rgba(102, 126, 234, 0.13);
+    border-radius: 0 4px 4px 0;
+    z-index: 0;
+}
+
+.resumen-etiqueta-texto {
+    position: relative;
+    z-index: 1;
+}
+
+.resumen-unidades {
+    font-weight: 600;
+}
+
+.resumen-porcentaje {
+    display: inline-block;
+    min-width: 46px;
+    margin-left: 10px;
+    color: var(--gray-500);
+    font-size: 11.5px;
+}
+
+.resumen-tabla-total td {
+    font-weight: 700;
+    font-size: 14px;
+    border-top: 2px solid var(--gray-300);
+    border-bottom: none;
+    padding-top: 12px;
+}
+
+.resumen-tabla-vacia {
+    text-align: center !important;
+    color: var(--gray-500);
+    font-style: italic;
+    padding: 24px 12px !important;
+}
+
+@media (max-width: 768px) {
+    .resumen-kpis {
+        grid-template-columns: 1fr;
+    }
+
+    .resumen-filtro-label {
+        flex-basis: 100%;
+    }
+
+    .resumen-preset {
+        margin-left: 0;
+    }
+}
 
 /* ---------- Aviso flotante tras guardar un movimiento ---------- */
 .aviso-movimiento {

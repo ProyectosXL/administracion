@@ -1,80 +1,133 @@
-<!-- Modal para mostrar detalle de comprobantes con diferencias de IVA -->
+<!-- ============================================================
+     Modal: Detalle de Diferencias de IVA por Sucursal
+     Diseño: "Precision Analytics" (comparte estilos .dv-* con
+     modals/modalDetalleVentas.php; las tipografías premium ya
+     las carga ese archivo)
+     ============================================================ -->
+
 <div class="modal fade" id="modalDetalleIVA" tabindex="-1" aria-labelledby="modalDetalleIVALabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalDetalleIVALabel">
-                    <i class="bi bi-receipt-cutoff me-2"></i>
-                    Detalle de Comprobantes con Diferencias de IVA
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+    <div class="modal-dialog modal-xl modal-dialog-scrollable dv-modal-dialog">
+        <div class="modal-content dv-modal-content">
+
+            <!-- ── HEADER ─────────────────────────────────────── -->
+            <div class="modal-header dv-modal-header">
+                <div class="dv-header-grid-pattern"></div>
+                <div class="dv-header-inner">
+                    <div class="dv-header-title-group">
+                        <div class="dv-header-icon-wrap">
+                            <i class="bi bi-receipt-cutoff"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title dv-title" id="modalDetalleIVALabel">
+                                Detalle de Diferencias de IVA
+                            </h5>
+                            <p class="dv-subtitle">Comparativa IVA central vs. local por comprobante</p>
+                        </div>
+                    </div>
+                    <button type="button" class="dv-close-btn" data-bs-dismiss="modal" aria-label="Cerrar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="dv-header-accent-line"></div>
             </div>
-            <div class="modal-body">
-                <!-- Información de la sucursal -->
-                <div class="alert alert-info mb-3">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <strong>Sucursal:</strong> <span id="modal-nombre-sucursal"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong>Nro. Sucursal:</strong> <span id="modal-nro-sucursal"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong>Total Comprobantes:</strong> <span id="modal-total-comprobantes"></span>
-                        </div>
+
+            <!-- ── BODY ───────────────────────────────────────── -->
+            <div class="modal-body dv-modal-body">
+
+                <!-- Tarjetas de resumen -->
+                <div class="dv-metrics-row" id="dv-metrics-row-iva">
+                    <div class="dv-metric-card dv-card-sucursal">
+                        <span class="dv-metric-label">Sucursal</span>
+                        <span class="dv-metric-value" id="dv-m-sucursal-iva">—</span>
+                        <span class="dv-metric-sub" id="dv-m-cod-sucursal-iva">—</span>
+                    </div>
+                    <div class="dv-metric-card dv-card-central">
+                        <span class="dv-metric-label">
+                            <i class="bi bi-building me-1"></i>IVA Central
+                        </span>
+                        <span class="dv-metric-value dv-mono" id="dv-m-central-iva">$ 0,00</span>
+                        <span class="dv-metric-sub" id="dv-m-comprobantes-iva">— comprobantes</span>
+                    </div>
+                    <div class="dv-metric-card dv-card-local">
+                        <span class="dv-metric-label">
+                            <i class="bi bi-shop me-1"></i>IVA Local
+                        </span>
+                        <span class="dv-metric-value dv-mono" id="dv-m-local-iva">$ 0,00</span>
+                        <span class="dv-metric-sub">Comprobantes con diferencia</span>
+                    </div>
+                    <div class="dv-metric-card dv-card-diferencia">
+                        <span class="dv-metric-label">
+                            <i class="bi bi-plusminus me-1"></i>Diferencia
+                        </span>
+                        <span class="dv-metric-value dv-mono" id="dv-m-diferencia-iva">$ 0,00</span>
+                        <span class="dv-metric-sub" id="dv-m-estado-badge-iva">—</span>
                     </div>
                 </div>
 
                 <!-- Spinner de carga -->
-                <div id="modal-loading" class="text-center py-5" style="display: none;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
-                    <p class="mt-2">Cargando comprobantes...</p>
+                <div id="dv-loading-iva" class="dv-loading-state" style="display: none;">
+                    <div class="dv-spinner-ring"></div>
+                    <p class="dv-loading-text">Consultando comprobantes con diferencias…</p>
                 </div>
 
-                <!-- Tabla de comprobantes -->
-                <div id="modal-tabla-container">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered table-striped table-hover" id="tabla-detalle-comprobantes-iva">
-                            <thead class="table-dark">
+                <!-- Contenedor de tabla -->
+                <div id="dv-tabla-container-iva">
+
+                    <div class="dv-table-toolbar">
+                        <div class="dv-toolbar-left">
+                            <span class="dv-table-count" id="dv-table-count-iva">0 registros</span>
+                        </div>
+                        <div class="dv-toolbar-right">
+                            <button class="dv-export-btn" id="btn-exportar-detalle-iva-nuevo">
+                                <i class="bi bi-file-earmark-excel me-1"></i>Exportar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive dv-table-wrapper">
+                        <table class="dv-table" id="tabla-detalle-iva-comprobantes">
+                            <thead>
                                 <tr>
-                                    <th>Nro. Sucursal</th>
-                                    <th>Tipo Comp.</th>
-                                    <th>Nro. Comp.</th>
-                                    <th>Fecha</th>
-                                    <th>IVA Local</th>
-                                    <th>IVA Central</th>
-                                    <th>Diferencia</th>
+                                    <th class="dv-th-tipo">Tipo Comp.</th>
+                                    <th class="dv-th-tipo">Nro. Comp.</th>
+                                    <th class="dv-th-fecha">Fecha</th>
+                                    <th class="dv-th-imp text-end">IVA Local</th>
+                                    <th class="dv-th-imp text-end">IVA Central</th>
+                                    <th class="dv-th-dif text-end">Diferencia</th>
                                 </tr>
                             </thead>
-                            <tbody id="tbody-detalle-comprobantes-iva">
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted">
-                                        No hay datos para mostrar
+                            <tbody id="tbody-detalle-iva-comprobantes">
+                                <tr class="dv-empty-row">
+                                    <td colspan="6">
+                                        <div class="dv-empty-state">
+                                            <i class="bi bi-inbox dv-empty-icon"></i>
+                                            <p>No hay datos para mostrar</p>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
-                            <tfoot class="table-secondary">
-                                <tr>
-                                    <th colspan="4" class="text-end">TOTALES:</th>
-                                    <th id="modal-total-iva-local">$ 0.00</th>
-                                    <th id="modal-total-iva-central">$ 0.00</th>
-                                    <th id="modal-total-diferencia">$ 0.00</th>
+                            <tfoot id="tfoot-detalle-iva" style="display: none;">
+                                <tr class="dv-tfoot-row">
+                                    <td colspan="3" class="dv-tfoot-label">TOTALES</td>
+                                    <td class="dv-tfoot-imp text-end dv-mono" id="dv-tot-local-iva">$ 0,00</td>
+                                    <td class="dv-tfoot-imp text-end dv-mono" id="dv-tot-central-iva">$ 0,00</td>
+                                    <td class="dv-tfoot-dif text-end dv-mono" id="dv-tot-diferencia-iva">$ 0,00</td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
+
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <!-- ── /BODY ──────────────────────────────────────── -->
+
+            <!-- ── FOOTER ─────────────────────────────────────── -->
+            <div class="modal-footer dv-modal-footer">
+                <button type="button" class="dv-btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-2"></i>Cerrar
                 </button>
-                <button type="button" class="btn btn-success" id="btn-exportar-detalle-iva">
-                    <i class="bi bi-file-earmark-excel me-2"></i>Exportar a Excel
-                </button>
             </div>
+
         </div>
     </div>
 </div>

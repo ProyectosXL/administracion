@@ -117,6 +117,13 @@ header("Pragma: no-cache");
                         title="Configurar los alias de 2 letras de los proveedores">
                     <i class="bi bi-person-badge"></i> Alias
                 </button>
+                <!-- Resumen de unidades por rubro/proveedor, con filtro por
+                     proveedor y estado. Todo se calcula en el cliente sobre
+                     los datos ya cargados, sin pedirlos de nuevo. -->
+                <button type="button" class="btn-help" id="btnResumenUnidades"
+                        title="Resumen de unidades por rubro o proveedor">
+                    <i class="bi bi-bar-chart"></i> Resumen
+                </button>
                 <button type="button" class="btn-help" data-bs-toggle="modal" data-bs-target="#ayudaModal" title="Guía de ayuda: Estados, flujo y funcionalidades">
                     <i class="bi bi-info-circle"></i> Ayuda
                 </button>
@@ -168,6 +175,83 @@ header("Pragma: no-cache");
         </div>
     </div>
     
+    <!-- Modal de resumen: unidades pendientes de recibir por rubro o
+         proveedor. Lo recibido queda afuera siempre: la pregunta que responde
+         es "cuanto falta que llegue", no el historico. Se calcula en el
+         cliente con los datos que ya trajo cargarDespachos(). -->
+    <div class="modal-overlay modal-resumen" id="modalResumen" hidden>
+        <div class="modal-content modal-resumen-content">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <h2>Unidades pendientes</h2>
+                    <p>Unidades pedidas que todavía no se recibieron, por rubro o proveedor</p>
+                </div>
+                <button class="btn-close-modal btn-cerrar-resumen">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="resumen-kpis">
+                    <div class="resumen-kpi">
+                        <div class="resumen-kpi-valor" id="resumenKpiUnidades">-</div>
+                        <div class="resumen-kpi-label">Unidades pendientes</div>
+                    </div>
+                    <div class="resumen-kpi">
+                        <div class="resumen-kpi-valor" id="resumenKpiContenedores">-</div>
+                        <div class="resumen-kpi-label">Contenedores</div>
+                    </div>
+                    <div class="resumen-kpi">
+                        <div class="resumen-kpi-valor" id="resumenKpiOrdenes">-</div>
+                        <div class="resumen-kpi-label">Órdenes de compra</div>
+                    </div>
+                </div>
+
+                <div class="resumen-filtros">
+                    <div class="resumen-filtro-fila">
+                        <span class="resumen-filtro-label">Agrupar por</span>
+                        <div class="resumen-chips" id="resumenChipsAgrupar">
+                            <button type="button" class="resumen-chip activo" data-agrupar="rubro">Rubro</button>
+                            <button type="button" class="resumen-chip" data-agrupar="proveedor">Proveedor</button>
+                        </div>
+                    </div>
+
+                    <div class="resumen-filtro-fila">
+                        <span class="resumen-filtro-label">Proveedor</span>
+                        <select id="resumenFiltroProveedor" multiple
+                                data-placeholder="Todos los proveedores"></select>
+                    </div>
+
+                    <div class="resumen-filtro-fila">
+                        <span class="resumen-filtro-label">Estado</span>
+                        <div class="resumen-chips" id="resumenChipsEstado">
+                            <button type="button" class="resumen-chip activo" data-estado="origen">En origen</button>
+                            <button type="button" class="resumen-chip activo" data-estado="embarcado">Embarcado</button>
+                            <button type="button" class="resumen-chip activo" data-estado="arribado">Arribado</button>
+                            <button type="button" class="resumen-chip activo" data-estado="despachado">Despachado</button>
+                        </div>
+                        <button type="button" class="resumen-preset" id="resumenPresetPendientes"
+                                title="Deja solo los estados anteriores al arribo">
+                            <i class="bi bi-hourglass-split"></i> Solo pendientes de arribo
+                        </button>
+                    </div>
+                </div>
+
+                <div class="resumen-tabla-wrap">
+                    <table class="resumen-tabla">
+                        <thead>
+                            <tr>
+                                <th id="resumenColEtiqueta">Rubro</th>
+                                <th>Unidades</th>
+                                <th title="Un contenedor con varios rubros se cuenta en cada uno, por eso la columna no suma al total">
+                                    Contenedores
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="resumenTablaBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 

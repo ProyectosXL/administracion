@@ -60,7 +60,7 @@ try {
 
             $response = ['success' => true, 'message' => 'Proceso masivo de IVA completado.'];
             break;
-
+            
         case 'ejecutar_sucursal':
             $desde = $_POST['desde'] ?? '';
             $hasta = $_POST['hasta'] ?? '';

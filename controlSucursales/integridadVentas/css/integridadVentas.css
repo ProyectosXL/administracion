@@ -483,60 +483,8 @@
     border-color: var(--primary-color);
 }
 
-/* ===== ESTILOS PARA FILAS CLICKEABLES EN TABLA IVA ===== */
-#tabla-diferencia-iva tbody tr {
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-#tabla-diferencia-iva tbody tr:hover {
-    background-color: #e7f3ff !important;
-    transform: translateX(2px);
-}
-
-#tabla-diferencia-iva tbody tr:active {
-    background-color: #cce5ff !important;
-}
-
-/* ===== ESTILOS PARA EL MODAL DE DETALLE IVA ===== */
-#modalDetalleIVA .modal-dialog {
-    max-width: 1200px;
-}
-
-#modalDetalleIVA .table th {
-    background-color: #343a40;
-    color: white;
-    font-weight: 600;
-    text-align: center;
-    vertical-align: middle;
-    font-size: 0.9rem;
-}
-
-#modalDetalleIVA .table td {
-    vertical-align: middle;
-    font-size: 0.85rem;
-}
-
-#modalDetalleIVA .table tfoot th {
-    background-color: #e9ecef;
-    font-weight: 700;
-    font-size: 1rem;
-    color: #495057;
-}
-
-#modalDetalleIVA .alert-info {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
-    color: #0c5460;
-}
-
-#modal-loading {
-    min-height: 200px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
+/* El modal de Detalle IVA (#modalDetalleIVA) reutiliza los estilos .dv-*
+   definidos más abajo para el modal de Detalle Ventas. */
 
 /* ================================================================
    BOTÓN "VER DETALLE" — complementario a btn-actualizar
@@ -572,8 +520,9 @@
    MODAL DETALLE VENTAS — "Clean Authority" Light UI
    ================================================================ */
 
-/* Variables locales del modal */
-#modalDetalleVentas {
+/* Variables locales del modal (compartidas con el modal de Diferencia IVA) */
+#modalDetalleVentas,
+#modalDetalleIVA {
     --dv-bg:          #ffffff;
     --dv-bg-2:        #f8fafc;
     --dv-bg-surface:  #f1f5f9;
@@ -1172,23 +1121,27 @@
 
 /* Scrollbar claro para el modal */
 #modalDetalleVentas .modal-body::-webkit-scrollbar,
+#modalDetalleIVA .modal-body::-webkit-scrollbar,
 .dv-table-wrapper::-webkit-scrollbar {
     width: 5px;
     height: 5px;
 }
 
 #modalDetalleVentas .modal-body::-webkit-scrollbar-track,
+#modalDetalleIVA .modal-body::-webkit-scrollbar-track,
 .dv-table-wrapper::-webkit-scrollbar-track {
     background: #f1f5f9;
 }
 
 #modalDetalleVentas .modal-body::-webkit-scrollbar-thumb,
+#modalDetalleIVA .modal-body::-webkit-scrollbar-thumb,
 .dv-table-wrapper::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 10px;
 }
 
 #modalDetalleVentas .modal-body::-webkit-scrollbar-thumb:hover,
+#modalDetalleIVA .modal-body::-webkit-scrollbar-thumb:hover,
 .dv-table-wrapper::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }

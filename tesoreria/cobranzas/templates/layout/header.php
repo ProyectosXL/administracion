@@ -17,7 +17,7 @@
     <!-- ============================================================== -->
 
     <!-- Estilos personalizados -->
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= time() ?>">
 </head>
 <body class="bg-light">
     <div class="container-fluid mt-4">
@@ -25,9 +25,11 @@
 
             <!-- ======================= INICIO DE LA LÓGICA CORREGIDA ======================= -->
             <?php 
-            // Determinamos a qué página de ayuda debe ir el enlace
-            if (isset($_SESSION['usuario_rol'])) {
-                $ayuda_url = ($_SESSION['usuario_rol'] === 'admin') ? 'capacitacion.php' : 'ayuda_cliente.php';
+            $currentPage = basename($_SERVER['PHP_SELF'] ?? '');
+            $rol = $_SESSION['usuario_rol'] ?? '';
+            // Ocultar botón de ayuda para mayoristas o en la vista mayoristas.php
+            if ($rol !== 'mayoristas' && $currentPage !== 'mayoristas.php') {
+                $ayuda_url = ($rol === 'admin') ? 'capacitacion.php' : 'ayuda_cliente.php';
             ?>
                 <a href="<?php echo $ayuda_url; ?>" class="btn btn-sm btn-outline-info me-3" title="Ayuda y Guía de Uso">
                     <i class="fa-solid fa-question-circle"></i> Ayuda

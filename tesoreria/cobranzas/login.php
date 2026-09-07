@@ -69,10 +69,11 @@
                     success: function(response) {
                         if (response.success) {
                             // Redirigir según el rol del usuario
-                            if (response.rol === 'admin') {
+                            if (response.rol === 'mayoristas') {
+                                window.location.href = 'mayoristas.php';
+                            } else if (response.rol === 'admin') {
                                 window.location.href = 'index.php';
                             } else {
-                                // Futuro: redirigir al portal del cliente
                                 window.location.href = 'portal_cliente.php'; 
                             }
                         } else {

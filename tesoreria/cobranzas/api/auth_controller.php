@@ -18,7 +18,11 @@ if ($action === 'login_externo') {
         $stmt_usuario = sqlsrv_query($conn, $sql_usuario, [$nombre]);
 
         if ($stmt_usuario && $usuario = sqlsrv_fetch_array($stmt_usuario, SQLSRV_FETCH_ASSOC)) {
-            $rol = (strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) ? 'admin' : 'cliente';
+            if (in_array(strtolower(trim($usuario['NOMBRE'])), ['valeria', 'vvillarreal'])) {
+                $rol = 'mayoristas';
+            } else {
+                $rol = (strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) ? 'admin' : 'cliente';
+            }
             
             $_SESSION['usuario_id'] = $usuario['ID'];
             $_SESSION['usuario_nombre'] = $usuario['NOMBRE'];
@@ -55,7 +59,13 @@ if ($action === 'login_externo') {
                 verificarYActualizarVencimientosCliente($conn_apps, $_SESSION['codigos_cliente_agrupados']);
             }
 
-            header('Location: ' . ($rol === 'admin' ? '../index.php' : '../portal_cliente.php'));
+            if ($rol === 'mayoristas') {
+                header('Location: ../mayoristas.php');
+            } elseif ($rol === 'admin') {
+                header('Location: ../index.php');
+            } else {
+                header('Location: ../portal_cliente.php');
+            }
             exit;
         } else {
             header('Location: ../login.php?error=usuario_no_encontrado');
@@ -89,7 +99,11 @@ if ($action === 'login') {
         $usuario = sqlsrv_fetch_array($stmt_usuario, SQLSRV_FETCH_ASSOC);
 
         if ($usuario) {
-            $rol = (strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) ? 'admin' : 'cliente';
+            if (in_array(strtolower(trim($usuario['NOMBRE'])), ['valeria', 'vvillarreal'])) {
+                $rol = 'mayoristas';
+            } else {
+                $rol = (strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) ? 'admin' : 'cliente';
+            }
 
             $_SESSION['usuario_id'] = $usuario['ID'];
             $_SESSION['usuario_nombre'] = $usuario['NOMBRE'];

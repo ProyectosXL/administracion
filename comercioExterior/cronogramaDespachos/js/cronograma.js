@@ -21,6 +21,18 @@ let aliasProveedor = {}; // { '<COD_PROVEE>': 'LC' }
 let iconosRubro = {};    // { '<RUBRO>': 'bi-gem' | '👟' }
 let motivosFecha = [];   // [{ codigo, label }, ...]
 
+// ---------- Modal de resumen de unidades ----------
+// Independiente de los filtros del calendario/grilla: es una consulta
+// puntual sobre TODOS los despachos cargados, no sobre lo que se ve pintado.
+// 'recibido' no esta entre los estados posibles a proposito: el modal
+// responde "cuanto falta que llegue", asi que lo ya recibido nunca suma.
+const ESTADOS_PENDIENTES = ['origen', 'embarcado', 'arribado', 'despachado'];
+
+let resumenModalInicializado = false;
+let resumenAgruparPor = 'rubro'; // 'rubro' | 'proveedor'
+let resumenProveedoresSeleccionados = []; // array de COD_PROVEE
+let resumenEstadosSeleccionados = ESTADOS_PENDIENTES.slice();
+
 // Defaults de red: si el endpoint no los trae, son los mismos valores que
 // antes estaban hardcodeados en este archivo.
 let parametrosDias = {
@@ -328,6 +340,190 @@ function limpiarFiltroContenedor() {
     $('#filtroContenedor').val(null).trigger('change.select2');
     aplicarEstadoFiltroContenedor();
     renderizarVista();
+}
+
+// ========== RESUMEN DE UNIDADES ==========
+
+/**
+ * Proveedores únicos presentes en los despachos cargados, con su alias, para
+ * poblar el combo de filtro. Mismo criterio que construirGrupos() usa para
+ * el combo de contenedores.
+ */
+function construirOpcionesProveedorResumen() {
+    const proveedores = new Map(); // COD_PROVEE -> { nombre, alias }
+
+    despachos.forEach(d => {
+        const codigo = d.COD_PROVEE;
+        if (!codigo || proveedores.has(codigo)) return;
+        proveedores.set(codigo, {
+            nombre: d.PROVEEDOR || 'Sin proveedor',
+            alias: aliasDeDespacho(d).texto
+        });
+    });
+
+    return Array.from(proveedores, ([codigo, info]) => ({ codigo, ...info }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+}
+
+function inicializarFiltroProveedorResumen() {
+    const $select = $('#resumenFiltroProveedor');
+    if ($select.length === 0 || typeof $select.select2 !== 'function') return;
+
+    if ($select.hasClass('select2-hidden-accessible')) {
+        $select.select2('destroy');
+    }
+    $select.empty();
+
+    construirOpcionesProveedorResumen().forEach(p => {
+        $select.append(
+            $('<option>', {
+                value: p.codigo,
+                text: `${p.alias} — ${p.nombre}`
+            })
+        );
+    });
+
+    $select.select2({
+        placeholder: $select.data('placeholder'),
+        allowClear: true,
+        width: '320px',
+        // Sin esto el desplegable se corta contra el scroll del modal.
+        dropdownParent: $('#modalResumen')
+    });
+
+    $select.on('change', function () {
+        resumenProveedoresSeleccionados = $(this).val() || [];
+        renderizarTablaResumen();
+    });
+}
+
+/**
+ * Unidades pedidas todavia no recibidas, agrupadas por rubro o por proveedor.
+ *
+ * Generaliza rubrosDelGrupo() (que suma sobre un solo contenedor) a todos los
+ * despachos filtrados. Cada OC aporta sus unidades una sola vez, porque tiene
+ * un unico ESTADO: no hay doble conteo por pasar de un estado a otro. Si un
+ * contenedor viene partido en varias OCs con estados distintos (recepcion
+ * parcial, por ejemplo), cada OC cae en su propio estado y solo suman las que
+ * siguen pendientes, que es justamente lo que se quiere saber.
+ *
+ * La cantidad de contenedores por fila cuenta ID_GRUPO distintos, asi que un
+ * contenedor con tres rubros aparece en las tres filas. Por eso la columna no
+ * suma al total: el total usa el distinto sobre todos los filtrados.
+ */
+function calcularResumenUnidades() {
+    const filtrados = despachos.filter(d =>
+        d.ESTADO !== 'recibido' &&
+        (resumenProveedoresSeleccionados.length === 0 || resumenProveedoresSeleccionados.includes(d.COD_PROVEE)) &&
+        resumenEstadosSeleccionados.includes(d.ESTADO)
+    );
+
+    const acumulado = new Map(); // clave -> { etiqueta, unidades, grupos: Set }
+
+    filtrados.forEach(d => {
+        const rubros = rubrosPorOC[d.ORDEN_COMPRA] || [];
+        if (rubros.length === 0) return;
+
+        const clave = resumenAgruparPor === 'rubro'
+            ? null // se resuelve por renglon de rubro mas abajo
+            : (d.COD_PROVEE || d.PROVEEDOR || 'SIN PROVEEDOR');
+
+        rubros.forEach(r => {
+            const k = resumenAgruparPor === 'rubro' ? r.rubro : clave;
+            if (!acumulado.has(k)) {
+                acumulado.set(k, {
+                    etiqueta: resumenAgruparPor === 'rubro'
+                        ? r.rubro
+                        : `${aliasDeDespacho(d).texto} — ${d.PROVEEDOR || 'Sin proveedor'}`,
+                    unidades: 0,
+                    grupos: new Set()
+                });
+            }
+            const acc = acumulado.get(k);
+            acc.unidades += r.cantidad;
+            acc.grupos.add(d.ID_GRUPO);
+        });
+    });
+
+    const filas = Array.from(acumulado.values())
+        .map(v => ({ etiqueta: v.etiqueta, unidades: v.unidades, contenedores: v.grupos.size }))
+        .sort((a, b) => b.unidades - a.unidades);
+
+    return {
+        filas: filas,
+        totalUnidades: filas.reduce((acc, f) => acc + f.unidades, 0),
+        totalContenedores: new Set(filtrados.map(d => d.ID_GRUPO)).size,
+        totalOrdenes: filtrados.length
+    };
+}
+
+function renderizarTablaResumen() {
+    const resumen = calcularResumenUnidades();
+    const filas = resumen.filas;
+
+    $('#resumenKpiUnidades').text(resumen.totalUnidades.toLocaleString('es-AR'));
+    $('#resumenKpiContenedores').text(resumen.totalContenedores.toLocaleString('es-AR'));
+    $('#resumenKpiOrdenes').text(resumen.totalOrdenes.toLocaleString('es-AR'));
+
+    $('#resumenColEtiqueta').text(resumenAgruparPor === 'rubro' ? 'Rubro' : 'Proveedor');
+
+    if (filas.length === 0) {
+        $('#resumenTablaBody').html(
+            '<tr><td colspan="3" class="resumen-tabla-vacia">' +
+            'No hay unidades pendientes para los filtros seleccionados</td></tr>'
+        );
+        return;
+    }
+
+    // La barra es proporcional a la fila mas grande, no al total: con 30
+    // rubros contra el total todas quedarian invisibles.
+    const maximo = filas[0].unidades || 1;
+
+    let html = '';
+    filas.forEach(f => {
+        const ancho = Math.max(2, Math.round((f.unidades / maximo) * 100));
+        const porcentaje = resumen.totalUnidades > 0
+            ? (f.unidades / resumen.totalUnidades) * 100
+            : 0;
+
+        html += `
+            <tr>
+                <td class="resumen-celda-etiqueta">
+                    <span class="resumen-barra" style="width: ${ancho}%"></span>
+                    <span class="resumen-etiqueta-texto">${escaparHtml(f.etiqueta)}</span>
+                </td>
+                <td>
+                    <span class="resumen-unidades">${f.unidades.toLocaleString('es-AR')}</span>
+                    <span class="resumen-porcentaje">${porcentaje.toFixed(1)}%</span>
+                </td>
+                <td>${f.contenedores}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+        <tr class="resumen-tabla-total">
+            <td>Total</td>
+            <td>${resumen.totalUnidades.toLocaleString('es-AR')}</td>
+            <td>${resumen.totalContenedores}</td>
+        </tr>
+    `;
+
+    $('#resumenTablaBody').html(html);
+}
+
+/** Lee del DOM que chips de estado quedaron prendidos. */
+function sincronizarEstadosResumen() {
+    resumenEstadosSeleccionados = $('#resumenChipsEstado .resumen-chip.activo')
+        .map(function () { return $(this).data('estado'); }).get();
+}
+
+/** Lazy: el combo de proveedores se arma recien la primera vez que se abre. */
+function inicializarModalResumen() {
+    if (resumenModalInicializado) return;
+    resumenModalInicializado = true;
+    inicializarFiltroProveedorResumen();
+    renderizarTablaResumen();
 }
 
 // ========== TIRA DE RECORRIDO ==========
@@ -1217,6 +1413,56 @@ function configurarEventListeners() {
     // El ABM avisa cuando cambio algo; se recargan los alias y se repinta el
     // calendario, sin recargar la pagina.
     $(document).on('alias:cambiado', refrescarAlias);
+
+    // ---------- Modal de resumen de unidades ----------
+    $(document).on('click', '#btnResumenUnidades', function () {
+        $('#modalResumen').prop('hidden', false);
+        inicializarModalResumen();
+    });
+
+    $(document).on('click', '.btn-cerrar-resumen', function () {
+        $('#modalResumen').prop('hidden', true);
+    });
+
+    $(document).on('click', '#modalResumen', function (e) {
+        if (e.target === this) $('#modalResumen').prop('hidden', true);
+    });
+
+    // Escape cierra los dos modales del header, como el de confirmacion.
+    $(document).on('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        $('#modalResumen').prop('hidden', true);
+        cerrarModalAlias();
+    });
+
+    $(document).on('click', '#resumenChipsAgrupar .resumen-chip', function () {
+        resumenAgruparPor = $(this).data('agrupar');
+        $('#resumenChipsAgrupar .resumen-chip').removeClass('activo');
+        $(this).addClass('activo');
+        renderizarTablaResumen();
+    });
+
+    // Los chips de estado son un multi-select: se prenden y apagan sueltos.
+    // Apagar el ultimo dejaria la tabla vacia sin motivo, asi que no se puede.
+    $(document).on('click', '#resumenChipsEstado .resumen-chip', function () {
+        const $chip = $(this);
+        if ($chip.hasClass('activo') && $('#resumenChipsEstado .resumen-chip.activo').length === 1) {
+            return;
+        }
+        $chip.toggleClass('activo');
+        sincronizarEstadosResumen();
+        renderizarTablaResumen();
+    });
+
+    // Deja solo los estados anteriores al arribo: es el caso de uso que pidio
+    // abastecimiento ("cuantas unidades estan pendientes de llegar").
+    $(document).on('click', '#resumenPresetPendientes', function () {
+        $('#resumenChipsEstado .resumen-chip').each(function () {
+            $(this).toggleClass('activo', ['origen', 'embarcado'].includes($(this).data('estado')));
+        });
+        sincronizarEstadosResumen();
+        renderizarTablaResumen();
+    });
 
     $(document).on('click', '.aviso-cerrar', function () {
         $(this).closest('.aviso-movimiento').remove();

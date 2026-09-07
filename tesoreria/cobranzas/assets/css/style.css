@@ -252,3 +252,68 @@ table.dataTable.fixedHeader-floating {
     border: none !important;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
+
+/* --- ESTILOS NAVEGACIÓN MODERNA / SEGMENTED CONTROL (COBRANZAS MAYORISTAS) --- */
+.modulo-nav-container {
+    background-color: #f1f5f9;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.modulo-nav-container .nav-pills .nav-link {
+    color: #475569;
+    font-size: 0.85rem;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.modulo-nav-container .nav-pills .nav-link:hover {
+    color: #0d6efd;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+.modulo-nav-container .nav-pills .nav-link.active {
+    background-color: #ffffff !important;
+    color: #0d6efd !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    border-color: #e2e8f0;
+}
+
+.modulo-nav-container .nav-pills .nav-link.active i {
+    color: #0d6efd !important;
+}
+
+/* --- ANIMACIONES DE TABLA ACORDEON REPORTES --- */
+.toggle-icon {
+    transition: transform 0.25s ease-in-out;
+}
+
+.toggle-icon.rotate-90 {
+    transform: rotate(90deg);
+}
+
+.table-group-header:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* --- SCROLL INTERNO PARA TABLAS DATATABLES --- */
+.dataTables_scrollBody {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.dataTables_scrollBody::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.dataTables_scrollBody::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.dataTables_scrollBody::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
