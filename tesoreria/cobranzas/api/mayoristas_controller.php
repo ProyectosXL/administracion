@@ -104,6 +104,7 @@ try {
                     GROUP BY T_COMP, N_COMP
                 ) s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
                 WHERE v.COD_VENDED IN ('Z3', 'Z4', 'Z5')
+                  AND v.COD_CLIENT != 'FRCOBO'
             ";
 
             if ($cod_vended_filtro !== 'TODOS' && in_array($cod_vended_filtro, ['Z3', 'Z4', 'Z5'])) {
@@ -117,6 +118,7 @@ try {
             if ($stmt_f !== false) {
                 while ($row = sqlsrv_fetch_array($stmt_f, SQLSRV_FETCH_ASSOC)) {
                     $cod = trim($row['COD_CLIENT']);
+                    if ($cod === 'FRCOBO') continue;
                     if (!isset($clientes[$cod])) {
                         $clientes[$cod] = [
                             'COD_CLIENT' => $cod,
@@ -172,6 +174,8 @@ try {
                   AND (C.rendido != 1 OR C.rendido IS NULL) 
                   AND D.ESTADO_MOV != 'A'
                   AND A.CHEQUEADO = 0
+                  AND ISNULL(E.GRUPO_EMPR, A.COD_PRO_CL) != 'FRCOBO'
+                  AND A.COD_PRO_CL != 'FRCOBO'
             ";
             
             try {
@@ -179,6 +183,7 @@ try {
                 if ($stmt_r !== false) {
                     while ($rRow = sqlsrv_fetch_array($stmt_r, SQLSRV_FETCH_ASSOC)) {
                         $cod = trim($rRow['COD_CLIENT']);
+                        if ($cod === 'FRCOBO') continue;
                         $codVendedRem = trim($rRow['COD_VENDED'] ?? '');
                         
                         // Si se filtra por vendedor y no coincide (y el cliente no estaba ya en la lista)
@@ -273,6 +278,7 @@ try {
             // 1.5 Filtrar clientes: Si ya tienen una cobranza enviada pendiente de pago, no mostrarlos como pendientes
             $lista = [];
             foreach ($clientes as $c) {
+                if ($c['COD_CLIENT'] === 'FRCOBO') continue;
                 // Si el cliente tiene un envío en estado 'ENVIADO' (aún no abonado), se oculta de la bandeja de pendientes
                 if (isset($c['ULTIMO_ENVIO']) && $c['ULTIMO_ENVIO'] !== null && $c['ULTIMO_ENVIO']['ESTADO'] === 'ENVIADO') {
                     continue;
@@ -282,7 +288,7 @@ try {
             }
 
             usort($lista, function($a, $b) {
-                return $b['TOTAL_GENERAL'] <=> $a['TOTAL_GENERAL'];
+                return strcasecmp($a['RAZON_SOCI'], $b['RAZON_SOCI']);
             });
 
             echo json_encode([
@@ -423,7 +429,11 @@ try {
                 $sql_hist .= " AND h.COD_VENDED = '" . $cod_vended . "'";
             }
             if ($estado !== 'TODOS' && !empty($estado)) {
-                $sql_hist .= " AND h.ESTADO = '" . $estado . "'";
+                if ($estado === 'PAGADO' || $estado === 'ABONADO') {
+                    $sql_hist .= " AND h.ESTADO IN ('PAGADO', 'ABONADO')";
+                } else {
+                    $sql_hist .= " AND h.ESTADO = '" . $estado . "'";
+                }
             }
 
             $sql_hist .= " ORDER BY h.FECHA_ENVIO DESC";
@@ -464,17 +474,26 @@ try {
             break;
 
         // =========================================================================
-        // 5. VINCULAR RECIBO Y CONCILIAR PAGO
+        // 5. REGISTRAR GESTIÓN / CAMBIAR ESTADO DE COBRANZA
         // =========================================================================
+        case 'marcar_gestion':
         case 'conciliar_recibo':
             $id_cobranza = (int)($_POST['id_cobranza'] ?? 0);
-            $nro_recibo = trim($_POST['nro_recibo'] ?? '');
+            $nuevo_estado = trim($_POST['nuevo_estado'] ?? 'PAGADO');
+            // Aceptar también 'ABONADO' como equivalente a 'PAGADO'
+            if ($nuevo_estado === 'PAGADO' || $nuevo_estado === 'ABONADO') {
+                $nuevo_estado = 'PAGADO';
+            } else if ($nuevo_estado === 'ENVIADO') {
+                $nuevo_estado = 'ENVIADO';
+            }
+            
             $fecha_pago = trim($_POST['fecha_pago'] ?? '');
-            $monto_pago = (float)($_POST['monto_pago'] ?? 0);
+            $monto_pago = isset($_POST['monto_pago']) && $_POST['monto_pago'] !== '' ? (float)$_POST['monto_pago'] : null;
             $observaciones = trim($_POST['observaciones'] ?? '');
+            $nro_recibo = trim($_POST['nro_recibo'] ?? '');
 
-            if ($id_cobranza <= 0 || empty($nro_recibo)) {
-                throw new Exception("ID de cobranza y Numero de Recibo son requeridos.");
+            if ($id_cobranza <= 0) {
+                throw new Exception("ID de cobranza es requerido.");
             }
 
             $sql_cob = "SELECT TOTAL_PROPUESTO, FECHA_ENVIO FROM FP_COBRANZAS_MAYORISTAS_HISTORIAL WHERE ID = ?";
@@ -487,14 +506,25 @@ try {
 
             $total_propuesto = (float)$cob['TOTAL_PROPUESTO'];
             $fecha_envio = $cob['FECHA_ENVIO'] instanceof DateTime ? $cob['FECHA_ENVIO'] : new DateTime($cob['FECHA_ENVIO']);
-            $f_pago = !empty($fecha_pago) ? new DateTime($fecha_pago) : new DateTime();
+            
+            if ($nuevo_estado === 'PAGADO') {
+                $f_pago = !empty($fecha_pago) ? new DateTime($fecha_pago) : new DateTime();
+                $diff = $fecha_envio->diff($f_pago);
+                $dias_a_pago = (int)$diff->format("%r%a");
+                if ($dias_a_pago < 0) $dias_a_pago = 0;
 
-            $diff = $fecha_envio->diff($f_pago);
-            $dias_a_pago = (int)$diff->format("%r%a");
-            if ($dias_a_pago < 0) $dias_a_pago = 0;
-
-            $dif_monto = $monto_pago - $total_propuesto;
-            $dif_porc = $total_propuesto > 0 ? (($monto_pago - $total_propuesto) / $total_propuesto) * 100 : 0;
+                $monto_real = $monto_pago !== null ? $monto_pago : $total_propuesto;
+                $dif_monto = $monto_real - $total_propuesto;
+                $dif_porc = $total_propuesto > 0 ? (($monto_real - $total_propuesto) / $total_propuesto) * 100 : 0;
+                $fecha_pago_sql = $f_pago->format('Y-m-d');
+            } else {
+                // Volver a estado ENVIADO
+                $dias_a_pago = null;
+                $monto_real = null;
+                $dif_monto = null;
+                $dif_porc = null;
+                $fecha_pago_sql = null;
+            }
 
             $sql_up_hist = "
                 UPDATE FP_COBRANZAS_MAYORISTAS_HISTORIAL 
@@ -505,33 +535,35 @@ try {
                     DIFERENCIA_MONTO = ?,
                     DIFERENCIA_PORC = ?,
                     DIAS_A_PAGO = ?,
-                    ESTADO = 'ABONADO',
+                    ESTADO = ?,
                     OBSERVACIONES_GESTION = ?
                 WHERE ID = ?
             ";
 
             $params_up = [
                 $nro_recibo,
-                $f_pago->format('Y-m-d'),
-                $monto_pago,
+                $fecha_pago_sql,
+                $monto_real,
                 $dif_monto,
                 $dif_porc,
                 $dias_a_pago,
+                $nuevo_estado,
                 $observaciones,
                 $id_cobranza
             ];
 
             $stmt_up_hist = sqlsrv_query($conn_apps, $sql_up_hist, $params_up);
             if ($stmt_up_hist === false) {
-                throw new Exception("Error al actualizar gestion de recibo: " . print_r(sqlsrv_errors(), true));
+                throw new Exception("Error al actualizar estado de la gestión: " . print_r(sqlsrv_errors(), true));
             }
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Cobranza conciliada con recibo exitosamente.',
+                'message' => $nuevo_estado === 'PAGADO' ? 'Cobranza marcada como Pagada exitosamente.' : 'Estado actualizado a Enviado.',
+                'nuevo_estado' => $nuevo_estado,
                 'dias_a_pago' => $dias_a_pago,
                 'dif_monto' => $dif_monto,
-                'dif_porc' => round($dif_porc, 2)
+                'dif_porc' => $dif_porc !== null ? round($dif_porc, 2) : null
             ]);
             break;
 
@@ -607,11 +639,11 @@ try {
             $sql_kpis = "
                 SELECT 
                     COUNT(*) as TOTAL_ENVIADOS,
-                    SUM(CASE WHEN ESTADO = 'ABONADO' THEN 1 ELSE 0 END) as TOTAL_ABONADOS,
+                    SUM(CASE WHEN ESTADO IN ('PAGADO', 'ABONADO') THEN 1 ELSE 0 END) as TOTAL_ABONADOS,
                     SUM(TOTAL_PROPUESTO) as MONTO_TOTAL_PROPUESTO,
-                    SUM(CASE WHEN ESTADO = 'ABONADO' THEN MONTO_PAGO_RECIBO ELSE 0 END) as MONTO_TOTAL_COBRADO,
-                    AVG(CASE WHEN ESTADO = 'ABONADO' THEN CAST(DIAS_A_PAGO AS FLOAT) ELSE NULL END) as PROMEDIO_DIAS_PAGO,
-                    AVG(CASE WHEN ESTADO = 'ABONADO' THEN CAST(DIFERENCIA_PORC AS FLOAT) ELSE NULL END) as PROMEDIO_DESVIO_PORC
+                    SUM(CASE WHEN ESTADO IN ('PAGADO', 'ABONADO') THEN ISNULL(MONTO_PAGO_RECIBO, TOTAL_PROPUESTO) ELSE 0 END) as MONTO_TOTAL_COBRADO,
+                    AVG(CASE WHEN ESTADO IN ('PAGADO', 'ABONADO') THEN CAST(DIAS_A_PAGO AS FLOAT) ELSE NULL END) as PROMEDIO_DIAS_PAGO,
+                    AVG(CASE WHEN ESTADO IN ('PAGADO', 'ABONADO') THEN CAST(DIFERENCIA_PORC AS FLOAT) ELSE NULL END) as PROMEDIO_DESVIO_PORC
                 FROM FP_COBRANZAS_MAYORISTAS_HISTORIAL
             ";
 
@@ -622,10 +654,10 @@ try {
                 SELECT 
                     COD_VENDED,
                     COUNT(*) as CANT_ENVIOS,
-                    SUM(CASE WHEN ESTADO = 'ABONADO' THEN 1 ELSE 0 END) as CANT_ABONADOS,
+                    SUM(CASE WHEN ESTADO IN ('PAGADO', 'ABONADO') THEN 1 ELSE 0 END) as CANT_ABONADOS,
                     SUM(TOTAL_PROPUESTO) as MONTO_PROPUESTO,
-                    SUM(CASE WHEN ESTADO = 'ABONADO' THEN MONTO_PAGO_RECIBO ELSE 0 END) as MONTO_COBRADO,
-                    AVG(CASE WHEN ESTADO = 'ABONADO' THEN CAST(DIAS_A_PAGO AS FLOAT) ELSE NULL END) as PROMEDIO_DIAS
+                    SUM(CASE WHEN ESTADO IN ('PAGADO', 'ABONADO') THEN ISNULL(MONTO_PAGO_RECIBO, TOTAL_PROPUESTO) ELSE 0 END) as MONTO_COBRADO,
+                    AVG(CASE WHEN ESTADO IN ('PAGADO', 'ABONADO') THEN CAST(DIAS_A_PAGO AS FLOAT) ELSE NULL END) as PROMEDIO_DIAS
                 FROM FP_COBRANZAS_MAYORISTAS_HISTORIAL
                 GROUP BY COD_VENDED
             ";

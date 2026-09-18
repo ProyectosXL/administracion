@@ -32,7 +32,7 @@ include 'templates/layout/header.php';
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link fw-bold py-1 px-3 rounded-2" id="historial-tab" data-bs-toggle="tab" data-bs-target="#tab-historial" type="button" role="tab">
-                                <i class="fa-solid fa-clock-rotate-left me-1"></i> Historial y Recibos
+                                <i class="fa-solid fa-clock-rotate-left me-1"></i> Historial de Gestiones
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -58,7 +58,7 @@ include 'templates/layout/header.php';
                     <div class="card shadow-sm border-start border-primary border-4 h-100">
                         <div class="card-body py-2 px-3">
                             <div class="text-xs font-weight-bold text-primary text-uppercase">Total General Pendiente</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-total-pendiente">$ 0,00</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-total-pendiente">$ 0</div>
                         </div>
                     </div>
                 </div>
@@ -66,7 +66,7 @@ include 'templates/layout/header.php';
                     <div class="card shadow-sm border-start border-success border-4 h-100">
                         <div class="card-body py-2 px-3">
                             <div class="text-xs font-weight-bold text-success text-uppercase">Camino 1 (Facturas)</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-total-facturas">$ 0,00</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-total-facturas">$ 0</div>
                         </div>
                     </div>
                 </div>
@@ -74,7 +74,7 @@ include 'templates/layout/header.php';
                     <div class="card shadow-sm border-start border-purple border-4 h-100" style="border-left-color: #6f42c1 !important;">
                         <div class="card-body py-2 px-3">
                             <div class="text-xs font-weight-bold text-uppercase" style="color: #6f42c1;">Camino 2 (Remitos)</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-total-remitos">$ 0,00</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-total-remitos">$ 0</div>
                         </div>
                     </div>
                 </div>
@@ -149,8 +149,8 @@ include 'templates/layout/header.php';
                             <label class="form-label small fw-bold mb-1">Estado</label>
                             <select class="form-select form-select-sm" id="filtro-estado-historial">
                                 <option value="TODOS">Todos los Estados</option>
-                                <option value="ENVIADO">Enviado (Pendiente)</option>
-                                <option value="ABONADO">Abonado (Con Recibo)</option>
+                                <option value="ENVIADO">Enviada (Pendiente)</option>
+                                <option value="PAGADO">Pagada</option>
                             </select>
                         </div>
                         <div class="col-md-6 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
@@ -205,7 +205,7 @@ include 'templates/layout/header.php';
                     <div class="card shadow-sm border-start border-primary border-4 h-100">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Cobrado Real</div>
-                            <div class="h4 mb-0 font-weight-bold text-gray-800" id="reporte-kpi-monto-cobrado">$ 0,00</div>
+                            <div class="h4 mb-0 font-weight-bold text-gray-800" id="reporte-kpi-monto-cobrado">$ 0</div>
                         </div>
                     </div>
                 </div>
@@ -279,15 +279,15 @@ include 'templates/layout/header.php';
                         <div class="d-flex gap-3">
                             <div class="bg-white p-2 px-3 rounded border text-end">
                                 <span class="text-xs text-success text-uppercase fw-bold d-block">Total Facturas</span>
-                                <strong class="h6 mb-0 text-success" id="modal-desglose-total-fac">$ 0,00</strong>
+                                <strong class="h6 mb-0 text-success" id="modal-desglose-total-fac">$ 0</strong>
                             </div>
                             <div class="bg-white p-2 px-3 rounded border text-end">
                                 <span class="text-xs text-uppercase fw-bold d-block" style="color: #6f42c1;">Total Remitos</span>
-                                <strong class="h6 mb-0" style="color: #6f42c1;" id="modal-desglose-total-rem">$ 0,00</strong>
+                                <strong class="h6 mb-0" style="color: #6f42c1;" id="modal-desglose-total-rem">$ 0</strong>
                             </div>
                             <div class="bg-white p-2 px-3 rounded border text-end border-primary">
                                 <span class="text-xs text-primary text-uppercase fw-bold d-block">Total General</span>
-                                <strong class="h6 mb-0 text-dark" id="modal-desglose-total-gral">$ 0,00</strong>
+                                <strong class="h6 mb-0 text-dark" id="modal-desglose-total-gral">$ 0</strong>
                             </div>
                         </div>
                     </div>
@@ -389,9 +389,62 @@ include 'templates/layout/header.php';
                     </div>
                 </div>
 
+                <!-- Selección Granular de Comprobantes (Cobros Parcializados) -->
+                <div class="card border mb-3">
+                    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                        <span class="small fw-bold text-dark text-uppercase">
+                            <i class="fa-solid fa-list-check me-1 text-primary"></i> Selección de Comprobantes a Integrar
+                        </span>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 small" id="btn-wpp-seleccionar-todos">Todos</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 small" id="btn-wpp-deseleccionar-todos">Ninguno</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="row g-2">
+                            <!-- Facturas a integrar -->
+                            <div class="col-md-6 border-end" id="cont-wpp-sel-facturas">
+                                <div class="d-flex justify-content-between align-items-center mb-1 pb-1 border-bottom">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="chk-switch-todas-fac" checked>
+                                        <label class="form-check-label fw-bold text-success small" for="chk-switch-todas-fac">
+                                            <i class="fa-solid fa-file-invoice-dollar me-1"></i> Facturas
+                                        </label>
+                                    </div>
+                                    <span class="badge bg-success" id="badge-total-fac-wpp">$ 0</span>
+                                </div>
+                                <div id="lista-wpp-facturas" class="overflow-auto pe-1" style="max-height: 140px;">
+                                    <!-- Checkboxes dinámicos de Facturas -->
+                                </div>
+                            </div>
+                            <!-- Remitos a integrar -->
+                            <div class="col-md-6" id="cont-wpp-sel-remitos">
+                                <div class="d-flex justify-content-between align-items-center mb-1 pb-1 border-bottom">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="chk-switch-todos-rem" checked>
+                                        <label class="form-check-label fw-bold small" style="color: #6f42c1;" for="chk-switch-todos-rem">
+                                            <i class="fa-solid fa-truck-ramp-box me-1"></i> Remitos
+                                        </label>
+                                    </div>
+                                    <span class="badge" style="background-color: #6f42c1;" id="badge-total-rem-wpp">$ 0</span>
+                                </div>
+                                <div id="lista-wpp-remitos" class="overflow-auto pe-1" style="max-height: 140px;">
+                                    <!-- Checkboxes dinámicos de Remitos -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resumen Total Seleccionado a Cobrar -->
+                        <div class="bg-light p-2 mt-2 rounded border d-flex justify-content-between align-items-center">
+                            <span class="small fw-bold text-muted">Total a reclamar en esta gestión:</span>
+                            <span class="h6 mb-0 fw-bold text-primary" id="wpp-total-seleccionado-gral">$ 0</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Selección de Formato de Mensaje -->
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted text-uppercase mb-2">Seleccionar Tipo de Mensaje</label>
+                    <label class="form-label fw-bold small text-muted text-uppercase mb-2">Formato de Plantilla de Mensaje</label>
                     <div class="row g-2">
                         <div class="col-md-6">
                             <div class="card h-100 p-2 border">
@@ -400,7 +453,7 @@ include 'templates/layout/header.php';
                                     <label class="form-check-label fw-bold" for="tipoMensaje1">
                                         Opción 1: Factura + Remito
                                     </label>
-                                    <div class="small text-muted mt-1">Incluye desglose de Facturas y Remitos pendientes con sus condiciones completas.</div>
+                                    <div class="small text-muted mt-1">Incluye condiciones para Facturas y Remitos seleccionados.</div>
                                 </div>
                             </div>
                         </div>
@@ -411,7 +464,7 @@ include 'templates/layout/header.php';
                                     <label class="form-check-label fw-bold" for="tipoMensaje2">
                                         Opción 2: Solo Factura
                                     </label>
-                                    <div class="small text-muted mt-1">Incluye únicamente el monto pendiente por Facturas y sus condiciones asociadas.</div>
+                                    <div class="small text-muted mt-1">Incluye únicamente condiciones de Facturas.</div>
                                 </div>
                             </div>
                         </div>
@@ -421,7 +474,7 @@ include 'templates/layout/header.php';
                 <!-- Vista Previa del Mensaje -->
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted text-uppercase mb-1">Vista Previa del Texto a Enviar</label>
-                    <textarea class="form-control font-monospace bg-light" id="modal-wpp-preview" rows="11" style="font-size: 0.85rem; line-height: 1.4;"></textarea>
+                    <textarea class="form-control font-monospace bg-light" id="modal-wpp-preview" rows="10" style="font-size: 0.85rem; line-height: 1.4;"></textarea>
                 </div>
             </div>
             <div class="modal-footer bg-light">
@@ -468,53 +521,75 @@ include 'templates/layout/header.php';
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL: CONCILIAR RECIBO Y PAGO -->
+<!-- MODAL: GESTIONAR ESTADO DE COBRANZA (ENVIADO / PAGADO) -->
 <!-- ========================================================================= -->
-<div class="modal fade" id="modalConciliarRecibo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal fade" id="modalGestionarEstado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-dark text-white py-3">
                 <h5 class="modal-title fs-5">
-                    <i class="fa-solid fa-receipt me-2 text-info"></i>Asociar Recibo y Conciliar Pago
+                    <i class="fa-solid fa-circle-check me-2 text-success"></i>Gestionar Estado de Cobranza
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <input type="hidden" id="recibo-id-cobranza">
-                <div class="alert alert-info py-2 mb-3">
-                    <strong id="recibo-cliente-info">-</strong>
+                <input type="hidden" id="gestion-id-cobranza">
+                
+                <div class="alert alert-light border py-2 mb-3">
+                    <strong class="d-block text-primary" id="gestion-cliente-info">-</strong>
+                    <small class="text-muted" id="gestion-monto-info">-</small>
                 </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">Número de Recibo (Comprobante)</label>
-                        <input type="text" class="form-control font-monospace" id="recibo-nro" placeholder="Ej: 0000200103035">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">Fecha de Pago</label>
-                        <input type="date" class="form-control" id="recibo-fecha-pago">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">Monto Abonado ($)</label>
-                        <input type="number" step="0.01" class="form-control" id="recibo-monto-pago" placeholder="0.00">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label small fw-bold">Observaciones de la Gestión</label>
-                        <textarea class="form-control" id="recibo-observaciones" rows="2" placeholder="Detalles adicionales del pago o recibo..."></textarea>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase text-muted mb-2">Estado de la Gestión</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="card p-2 border h-100" style="cursor: pointer;" onclick="$('#radio-estado-pagado').prop('checked', true).trigger('change');">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="radioEstadoGestion" id="radio-estado-pagado" value="PAGADO" checked>
+                                    <label class="form-check-label fw-bold text-success" for="radio-estado-pagado">
+                                        <i class="fa-solid fa-check-double me-1"></i> PAGADA
+                                    </label>
+                                    <div class="small text-muted mt-1">El cliente ya efectuó el pago.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card p-2 border h-100" style="cursor: pointer;" onclick="$('#radio-estado-enviado').prop('checked', true).trigger('change');">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="radioEstadoGestion" id="radio-estado-enviado" value="ENVIADO">
+                                    <label class="form-check-label fw-bold text-warning text-dark" for="radio-estado-enviado">
+                                        <i class="fa-solid fa-clock me-1"></i> ENVIADA
+                                    </label>
+                                    <div class="small text-muted mt-1">Pendiente de pago / en seguimiento.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <hr>
-                <h6 class="small fw-bold text-muted text-uppercase mb-2">
-                    <i class="fa-solid fa-magnifying-glass me-1"></i>Comprobantes REC Detectados en Sistema
-                </h6>
-                <div id="lista-sugerencias-recibos" class="border rounded p-2 bg-light" style="max-height: 180px; overflow-y: auto;">
+                <div id="seccion-datos-pago">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold mb-1">Fecha de Pago</label>
+                            <input type="date" class="form-control form-control-sm" id="gestion-fecha-pago">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold mb-1">Monto Cobrado ($)</label>
+                            <input type="number" step="0.01" class="form-control form-control-sm" id="gestion-monto-pago" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-bold mb-1">Observaciones / Detalle de la Gestión</label>
+                    <textarea class="form-control form-control-sm" id="gestion-observaciones" rows="2" placeholder="Notas sobre la gestión realizada, acuerdo de pago, etc..."></textarea>
                 </div>
             </div>
             <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary px-4" id="btn-guardar-conciliacion">
-                    <i class="fa-solid fa-check me-1"></i> Guardar Conciliación
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success btn-sm px-4 fw-bold" id="btn-guardar-estado-gestion">
+                    <i class="fa-solid fa-check me-1"></i> Guardar Gestión
                 </button>
             </div>
         </div>
@@ -545,15 +620,15 @@ include 'templates/layout/header.php';
                         <div class="d-flex gap-3">
                             <div class="bg-white p-2 px-3 rounded border text-end">
                                 <span class="text-xs text-success text-uppercase fw-bold d-block">Facturas Enviadas</span>
-                                <strong class="h6 mb-0 text-success" id="hist-modal-total-fac">$ 0,00</strong>
+                                <strong class="h6 mb-0 text-success" id="hist-modal-total-fac">$ 0</strong>
                             </div>
                             <div class="bg-white p-2 px-3 rounded border text-end">
                                 <span class="text-xs text-uppercase fw-bold d-block" style="color: #6f42c1;">Remitos Enviados</span>
-                                <strong class="h6 mb-0" style="color: #6f42c1;" id="hist-modal-total-rem">$ 0,00</strong>
+                                <strong class="h6 mb-0" style="color: #6f42c1;" id="hist-modal-total-rem">$ 0</strong>
                             </div>
                             <div class="bg-white p-2 px-3 rounded border text-end border-primary">
                                 <span class="text-xs text-primary text-uppercase fw-bold d-block">Total Propuesto</span>
-                                <strong class="h6 mb-0 text-dark" id="hist-modal-total-gral">$ 0,00</strong>
+                                <strong class="h6 mb-0 text-dark" id="hist-modal-total-gral">$ 0</strong>
                             </div>
                         </div>
                     </div>

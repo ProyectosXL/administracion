@@ -9,8 +9,8 @@ $(document).ready(function() {
     let clienteSeleccionado = null;
 
     const formatoMoneda = (val) => {
-        const num = parseFloat(val || 0);
-        return num.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 });
+        const num = Math.ceil(parseFloat(val || 0));
+        return num.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 });
     };
 
     const formatoFecha = (fechaStr) => {
@@ -90,7 +90,7 @@ $(document).ready(function() {
             scrollY: '55vh',
             scrollCollapse: true,
             paging: true,
-            pageLength: 25,
+            pageLength: 100,
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
@@ -100,6 +100,9 @@ $(document).ready(function() {
                     data: 'RAZON_SOCI',
                     title: 'Cliente',
                     render: function(data, type, row) {
+                        if (type === 'sort' || type === 'type') {
+                            return data;
+                        }
                         return `<span class="badge bg-secondary font-monospace">${row.COD_CLIENT}</span><br><strong>${data}</strong>`;
                     }
                 },
@@ -188,6 +191,7 @@ $(document).ready(function() {
                             <div class="btn-group btn-group-sm" role="group">
                                 <button class="btn btn-outline-primary btn-ver-detalle" data-cliente="${rowJson}" title="Ver Desglose de Facturas y Remitos">
                                     <i class="fa-solid fa-eye me-1"></i> Desglosar
+                                
                                 </button>
                                 <button class="btn ${btnCobrarClass} btn-generar-wpp" data-cliente="${rowJson}" title="Generar Cobranza WhatsApp">
                                     <i class="fa-brands fa-whatsapp me-1"></i> ${textoCobrar}
@@ -200,7 +204,7 @@ $(document).ready(function() {
                     }
                 }
             ],
-            order: [[4, 'desc']]
+            order: [[0, 'asc']]
         });
     }
 
@@ -259,60 +263,203 @@ $(document).ready(function() {
         $('#modalDesgloseCliente').modal('show');
     });
 
+    // =========================================================================
+    // 2. MODAL Y GENERADOR DE MENSAJES WHATSAPP (CON SELECCIÓN PARCIALIZADA)
+    // =========================================================================
+    function inicializarModalWpp(clienteData) {
+        clienteSeleccionado = clienteData;
+
+        $('#modal-wpp-cliente-nombre').text(`${clienteData.RAZON_SOCI} (${clienteData.COD_CLIENT})`);
+        $('#modal-wpp-vendedor').text(`Vendedor: ${clienteData.COD_VENDED}`);
+        $('#modal-wpp-telefono').val(clienteData.TELEFONO_WPP || '');
+        $('#modal-wpp-contacto-nombre').val(clienteData.CONTACTO_NOMBRE || '');
+
+        // Renderizar Lista de Facturas
+        let htmlFac = '';
+        if (clienteData.FACTURAS && clienteData.FACTURAS.length > 0) {
+            $('#cont-wpp-sel-facturas').removeClass('d-none');
+            $('#chk-switch-todas-fac').prop('checked', true).prop('disabled', false);
+            clienteData.FACTURAS.forEach((f, idx) => {
+                const facJson = encodeURIComponent(JSON.stringify(f));
+                htmlFac += `
+                    <div class="form-check small py-1 border-bottom border-light">
+                        <input class="form-check-input chk-wpp-factura" type="checkbox" value="${facJson}" id="chk-wpp-fac-${idx}" data-importe="${f.IMPORTE || 0}" checked>
+                        <label class="form-check-label d-flex justify-content-between align-items-center" for="chk-wpp-fac-${idx}">
+                            <span><strong class="font-monospace">${f.T_COMP || 'FAC'} ${f.N_COMP}</strong> <small class="text-muted d-block">${formatoFecha(f.FECHA_EMIS)}</small></span>
+                            <span class="fw-bold text-success font-monospace ms-2">${formatoMoneda(f.IMPORTE)}</span>
+                        </label>
+                    </div>
+                `;
+            });
+        } else {
+            $('#cont-wpp-sel-facturas').addClass('d-none');
+            $('#chk-switch-todas-fac').prop('checked', false).prop('disabled', true);
+            htmlFac = '<div class="text-muted small py-2 text-center">Sin facturas pendientes</div>';
+        }
+        $('#lista-wpp-facturas').html(htmlFac);
+
+        // Renderizar Lista de Remitos
+        let htmlRem = '';
+        if (clienteData.REMITOS && clienteData.REMITOS.length > 0) {
+            $('#cont-wpp-sel-remitos').removeClass('d-none');
+            $('#chk-switch-todos-rem').prop('checked', true).prop('disabled', false);
+            clienteData.REMITOS.forEach((r, idx) => {
+                const remJson = encodeURIComponent(JSON.stringify(r));
+                htmlRem += `
+                    <div class="form-check small py-1 border-bottom border-light">
+                        <input class="form-check-input chk-wpp-remito" type="checkbox" value="${remJson}" id="chk-wpp-rem-${idx}" data-importe="${r.IMPORTE || 0}" checked>
+                        <label class="form-check-label d-flex justify-content-between align-items-center" for="chk-wpp-rem-${idx}">
+                            <span><strong class="font-monospace">REM ${r.N_COMP}</strong> <small class="text-muted d-block">${formatoFecha(r.FECHA_EMIS)}</small></span>
+                            <span class="fw-bold font-monospace ms-2" style="color: #6f42c1;">${formatoMoneda(r.IMPORTE)}</span>
+                        </label>
+                    </div>
+                `;
+            });
+        } else {
+            $('#cont-wpp-sel-remitos').addClass('d-none');
+            $('#chk-switch-todos-rem').prop('checked', false).prop('disabled', true);
+            htmlRem = '<div class="text-muted small py-2 text-center">Sin remitos pendientes</div>';
+        }
+        $('#lista-wpp-remitos').html(htmlRem);
+
+        // Si solo tiene facturas o solo remitos, ajustar clases de columnas
+        if ((!clienteData.FACTURAS || clienteData.FACTURAS.length === 0) && (clienteData.REMITOS && clienteData.REMITOS.length > 0)) {
+            $('#cont-wpp-sel-remitos').removeClass('col-md-6').addClass('col-12');
+        } else if ((clienteData.FACTURAS && clienteData.FACTURAS.length > 0) && (!clienteData.REMITOS || clienteData.REMITOS.length === 0)) {
+            $('#cont-wpp-sel-facturas').removeClass('col-md-6 border-end').addClass('col-12');
+        } else {
+            $('#cont-wpp-sel-facturas').removeClass('col-12').addClass('col-md-6 border-end');
+            $('#cont-wpp-sel-remitos').removeClass('col-12').addClass('col-md-6');
+        }
+
+        recalcularSeleccionComprobantesWpp(true);
+        $('#modalGenerarWpp').modal('show');
+    }
+
+    // Obtener comprobantes seleccionados actualmente
+    function obtenerComprobantesSeleccionados() {
+        const facturas = [];
+        let totalFac = 0;
+        $('.chk-wpp-factura:checked').each(function() {
+            try {
+                const f = JSON.parse(decodeURIComponent($(this).val()));
+                facturas.push(f);
+                totalFac += parseFloat($(this).data('importe') || 0);
+            } catch (e) {}
+        });
+
+        const remitos = [];
+        let totalRem = 0;
+        $('.chk-wpp-remito:checked').each(function() {
+            try {
+                const r = JSON.parse(decodeURIComponent($(this).val()));
+                remitos.push(r);
+                totalRem += parseFloat($(this).data('importe') || 0);
+            } catch (e) {}
+        });
+
+        return {
+            facturas: facturas,
+            remitos: remitos,
+            totalFacturas: totalFac,
+            totalRemitos: totalRem,
+            totalGeneral: totalFac + totalRem
+        };
+    }
+
+    function recalcularSeleccionComprobantesWpp(autoAjustarTipoMensaje = false) {
+        const seleccion = obtenerComprobantesSeleccionados();
+
+        $('#badge-total-fac-wpp').text(formatoMoneda(seleccion.totalFacturas));
+        $('#badge-total-rem-wpp').text(formatoMoneda(seleccion.totalRemitos));
+        $('#wpp-total-seleccionado-gral').text(formatoMoneda(seleccion.totalGeneral));
+
+        // Auto-seleccionar tipo de mensaje según selección
+        if (autoAjustarTipoMensaje) {
+            if (seleccion.totalRemitos > 0 && seleccion.totalFacturas > 0) {
+                $('#tipoMensaje1').prop('checked', true);
+            } else if (seleccion.totalFacturas > 0) {
+                $('#tipoMensaje2').prop('checked', true);
+            } else if (seleccion.totalRemitos > 0) {
+                $('#tipoMensaje1').prop('checked', true);
+            } else {
+                $('#tipoMensaje1').prop('checked', true);
+            }
+        }
+
+        actualizarVistaPreviaMensaje();
+    }
+
+    // Switches y botones de selección rápida
+    $(document).on('change', '#chk-switch-todas-fac', function() {
+        const isChecked = $(this).is(':checked');
+        $('.chk-wpp-factura').prop('checked', isChecked);
+        recalcularSeleccionComprobantesWpp(true);
+    });
+
+    $(document).on('change', '#chk-switch-todos-rem', function() {
+        const isChecked = $(this).is(':checked');
+        $('.chk-wpp-remito').prop('checked', isChecked);
+        recalcularSeleccionComprobantesWpp(true);
+    });
+
+    $(document).on('change', '.chk-wpp-factura', function() {
+        const total = $('.chk-wpp-factura').length;
+        const checked = $('.chk-wpp-factura:checked').length;
+        $('#chk-switch-todas-fac').prop('checked', checked > 0);
+        recalcularSeleccionComprobantesWpp(false);
+    });
+
+    $(document).on('change', '.chk-wpp-remito', function() {
+        const total = $('.chk-wpp-remito').length;
+        const checked = $('.chk-wpp-remito:checked').length;
+        $('#chk-switch-todos-rem').prop('checked', checked > 0);
+        recalcularSeleccionComprobantesWpp(false);
+    });
+
+    $('#btn-wpp-seleccionar-todos').on('click', function() {
+        $('.chk-wpp-factura').prop('checked', true);
+        $('.chk-wpp-remito').prop('checked', true);
+        $('#chk-switch-todas-fac').prop('checked', true);
+        $('#chk-switch-todos-rem').prop('checked', true);
+        recalcularSeleccionComprobantesWpp(true);
+    });
+
+    $('#btn-wpp-deseleccionar-todos').on('click', function() {
+        $('.chk-wpp-factura').prop('checked', false);
+        $('.chk-wpp-remito').prop('checked', false);
+        $('#chk-switch-todas-fac').prop('checked', false);
+        $('#chk-switch-todos-rem').prop('checked', false);
+        recalcularSeleccionComprobantesWpp(true);
+    });
+
     $(document).on('click', '#btn-desglose-ir-wpp', function() {
         $('#modalDesgloseCliente').modal('hide');
         const clienteData = JSON.parse(decodeURIComponent($(this).data('cliente')));
-        clienteSeleccionado = clienteData;
-
-        $('#modal-wpp-cliente-nombre').text(`${clienteData.RAZON_SOCI} (${clienteData.COD_CLIENT})`);
-        $('#modal-wpp-vendedor').text(`Vendedor: ${clienteData.COD_VENDED}`);
-        $('#modal-wpp-telefono').val(clienteData.TELEFONO_WPP || '');
-        $('#modal-wpp-contacto-nombre').val(clienteData.CONTACTO_NOMBRE || '');
-
-        if (clienteData.TOTAL_REMITO > 0) {
-            $('#tipoMensaje1').prop('checked', true);
-        } else {
-            $('#tipoMensaje2').prop('checked', true);
-        }
-
-        actualizarVistaPreviaMensaje();
-        $('#modalGenerarWpp').modal('show');
+        inicializarModalWpp(clienteData);
     });
 
-    // =========================================================================
-    // 2. MODAL Y GENERADOR DE MENSAJES WHATSAPP
-    // =========================================================================
     $(document).on('click', '.btn-generar-wpp', function() {
         const clienteData = JSON.parse(decodeURIComponent($(this).data('cliente')));
-        clienteSeleccionado = clienteData;
-
-        $('#modal-wpp-cliente-nombre').text(`${clienteData.RAZON_SOCI} (${clienteData.COD_CLIENT})`);
-        $('#modal-wpp-vendedor').text(`Vendedor: ${clienteData.COD_VENDED}`);
-        $('#modal-wpp-telefono').val(clienteData.TELEFONO_WPP || '');
-        $('#modal-wpp-contacto-nombre').val(clienteData.CONTACTO_NOMBRE || '');
-
-        // Determinar qué opción predeterminar: si tiene remito, opción 1; si no, opción 2
-        if (clienteData.TOTAL_REMITO > 0) {
-            $('#tipoMensaje1').prop('checked', true);
-        } else {
-            $('#tipoMensaje2').prop('checked', true);
-        }
-
-        actualizarVistaPreviaMensaje();
-        $('#modalGenerarWpp').modal('show');
+        inicializarModalWpp(clienteData);
     });
 
     $('input[name="tipoMensaje"]').on('change', function() {
         actualizarVistaPreviaMensaje();
     });
 
-    function construirTextoMensaje(tipo, cliente) {
+    function construirTextoMensaje(tipo, cliente, seleccion) {
         const razonSocial = cliente.RAZON_SOCI || '';
-        const montoFac = formatoMoneda(cliente.TOTAL_FACTURA || 0);
-        const montoRem = formatoMoneda(cliente.TOTAL_REMITO || 0);
+        const totalFac = seleccion ? seleccion.totalFacturas : (cliente.TOTAL_FACTURA || 0);
+        const totalRem = seleccion ? seleccion.totalRemitos : (cliente.TOTAL_REMITO || 0);
+        const totalGral = seleccion ? seleccion.totalGeneral : ((cliente.TOTAL_FACTURA || 0) + (cliente.TOTAL_REMITO || 0));
+        const montoFac = formatoMoneda(totalFac);
+        const montoRem = formatoMoneda(totalRem);
+        const montoGral = formatoMoneda(totalGral);
         const fechaActual = fechaHoyLegible();
 
-        if (tipo === 1) {
+        // Si se seleccionaron ambos o si es tipo 1 con ambos montos
+        if (totalFac > 0 && totalRem > 0) {
             return `🙂 ¡HOLA! ${razonSocial}
 
 🔈🔉🔊 Tienen mercadería preparada
@@ -339,7 +486,29 @@ Remitos
 📍Uruguay 4415, Victoria, San Fernando.
       Pcia. De Buenos Aires. CP 1644
 ${fechaActual}`;
+        } else if (totalRem > 0 && totalFac === 0) {
+            // Solo Remitos seleccionados
+            return `🙂 ¡HOLA! ${razonSocial}
+
+🔈🔉🔊 Tienen mercadería preparada
+
+🟣 Remito ${montoRem}
+
+Condición de pago
+Remitos
+💵Efectivo. 
+⚠️ Deposito
+📝Valores, a 60 días fecha remito máximo. (propios)
+
+🔖 Horarios de entrega
+📌De lunes a viernes de 8.30 a 12.30 y de 14 a 15.30 horas.
+
+🌎 Dirección
+📍Uruguay 4415, Victoria, San Fernando.
+      Pcia. De Buenos Aires. CP 1644
+${fechaActual}`;
         } else {
+            // Solo Facturas seleccionadas
             return `🙂 ¡HOLA! ${razonSocial}
 
 🔈🔉🔊 Tienen mercadería preparada
@@ -365,13 +534,20 @@ ${fechaActual}`;
     function actualizarVistaPreviaMensaje() {
         if (!clienteSeleccionado) return;
         const tipo = parseInt($('input[name="tipoMensaje"]:checked').val() || 1);
-        const texto = construirTextoMensaje(tipo, clienteSeleccionado);
+        const seleccion = obtenerComprobantesSeleccionados();
+        const texto = construirTextoMensaje(tipo, clienteSeleccionado, seleccion);
         $('#modal-wpp-preview').val(texto);
     }
 
     // Botón Enviar WhatsApp
     $('#btn-confirmar-envio-wpp').on('click', function() {
         if (!clienteSeleccionado) return;
+
+        const seleccion = obtenerComprobantesSeleccionados();
+        if (seleccion.totalGeneral <= 0 && seleccion.facturas.length === 0 && seleccion.remitos.length === 0) {
+            alert('Debe seleccionar al menos una factura o remito para generar la cobranza.');
+            return;
+        }
 
         const telefono = $('#modal-wpp-telefono').val().trim();
         const contactoNombre = $('#modal-wpp-contacto-nombre').val().trim();
@@ -400,10 +576,10 @@ ${fechaActual}`;
             dataType: 'json'
         });
 
-        // 2. Registrar en el historial de cobranzas
+        // 2. Registrar en el historial de cobranzas solo los comprobantes seleccionados
         const comprobantesSnapshot = {
-            FACTURAS: clienteSeleccionado.FACTURAS || [],
-            REMITOS: clienteSeleccionado.REMITOS || []
+            FACTURAS: seleccion.facturas,
+            REMITOS: seleccion.remitos
         };
 
         $.ajax({
@@ -414,8 +590,8 @@ ${fechaActual}`;
                 razon_soci: clienteSeleccionado.RAZON_SOCI,
                 cod_vended: clienteSeleccionado.COD_VENDED,
                 tipo_mensaje: tipoMensaje,
-                monto_factura: clienteSeleccionado.TOTAL_FACTURA || 0,
-                monto_remito: clienteSeleccionado.TOTAL_REMITO || 0,
+                monto_factura: seleccion.totalFacturas,
+                monto_remito: seleccion.totalRemitos,
                 telefono_destino: telefono,
                 mensaje_enviado: mensajeTexto,
                 comprobantes_json: JSON.stringify(comprobantesSnapshot)
@@ -553,7 +729,7 @@ ${fechaActual}`;
             scrollY: '55vh',
             scrollCollapse: true,
             paging: true,
-            pageLength: 25,
+            pageLength: 100,
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
@@ -600,21 +776,20 @@ ${fechaActual}`;
                     data: 'ESTADO',
                     title: 'Estado',
                     render: function(data) {
-                        if (data === 'ABONADO') {
-                            return `<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Abonado</span>`;
+                        if (data === 'PAGADO' || data === 'ABONADO') {
+                            return `<span class="badge bg-success"><i class="fa-solid fa-check-double me-1"></i>Pagada</span>`;
                         }
-                        return `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Enviado</span>`;
+                        return `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Enviada</span>`;
                     }
                 },
                 {
-                    data: 'NRO_RECIBO',
-                    title: 'Recibo Asociado',
+                    data: 'FECHA_PAGO',
+                    title: 'Fecha de Pago',
                     render: function(data, type, row) {
-                        if (data && data.trim() !== '') {
-                            return `<span class="badge bg-info text-dark font-monospace"><i class="fa-solid fa-receipt me-1"></i>${data}</span>
-                                    <small class="d-block text-muted">Pago: ${formatoFecha(row.FECHA_PAGO)}</small>`;
+                        if (data) {
+                            return `<span class="fw-bold text-success">${formatoFecha(data)}</span>`;
                         }
-                        return `<span class="text-muted small">Sin Recibo</span>`;
+                        return `<span class="text-muted small">Pendiente</span>`;
                     }
                 },
                 {
@@ -632,18 +807,13 @@ ${fechaActual}`;
                     }
                 },
                 {
-                    data: 'DIFERENCIA_MONTO',
-                    title: 'Desvío vs Plan',
-                    className: 'text-end',
-                    render: function(data, type, row) {
-                        if (data !== null && data !== undefined) {
-                            const difPorc = row.DIFERENCIA_PORC || 0;
-                            const colorClass = data >= 0 ? 'text-success' : 'text-danger';
-                            const sign = data > 0 ? '+' : '';
-                            return `<span class="${colorClass} fw-bold">${sign}${formatoMoneda(data)}</span>
-                                    <small class="d-block text-muted">${sign}${difPorc.toFixed(1)}%</small>`;
+                    data: 'OBSERVACIONES_GESTION',
+                    title: 'Observaciones / Gestión',
+                    render: function(data) {
+                        if (data && data.trim() !== '') {
+                            return `<small class="text-dark">${data}</small>`;
                         }
-                        return `<span class="text-muted">-</span>`;
+                        return `<span class="text-muted small">-</span>`;
                     }
                 },
                 {
@@ -653,13 +823,18 @@ ${fechaActual}`;
                     className: 'text-center',
                     render: function(data, type, row) {
                         const rowJson = encodeURIComponent(JSON.stringify(row));
+                        const isPagado = row.ESTADO === 'PAGADO' || row.ESTADO === 'ABONADO';
+                        const btnColor = isPagado ? 'btn-outline-success' : 'btn-outline-primary';
+                        const btnIcon = isPagado ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-circle-check';
+                        const btnTitle = isPagado ? 'Modificar Estado / Gestión' : 'Marcar como Pagada / Gestionar';
+                        
                         return `
                             <div class="btn-group btn-group-sm" role="group">
                                 <button class="btn btn-outline-info btn-ver-detalle-historial" data-cobranza="${rowJson}" title="Ver Detalle de Facturas y Remitos Enviados">
                                     <i class="fa-solid fa-list-ul"></i>
                                 </button>
-                                <button class="btn btn-outline-primary btn-gestionar-recibo" data-cobranza="${rowJson}" title="Asociar N° de Recibo">
-                                    <i class="fa-solid fa-file-circle-check"></i>
+                                <button class="btn ${btnColor} btn-gestionar-estado" data-cobranza="${rowJson}" title="${btnTitle}">
+                                    <i class="${btnIcon}"></i>
                                 </button>
                                 <button class="btn btn-outline-danger btn-eliminar-cobranza" data-id="${row.ID}" data-cliente="${row.RAZON_SOCI}" title="Eliminar Cobranza">
                                     <i class="fa-solid fa-trash"></i>
@@ -822,102 +997,82 @@ ${fechaActual}`;
         });
     }
 
-    // Modal de Vinculación de Recibo
-    $(document).on('click', '.btn-gestionar-recibo', function() {
+    // Modal de Gestión de Estado (Enviado / Pagado)
+    $(document).on('click', '.btn-gestionar-estado', function() {
         const cob = JSON.parse(decodeURIComponent($(this).data('cobranza')));
-        $('#recibo-id-cobranza').val(cob.ID);
-        $('#recibo-cliente-info').text(`${cob.RAZON_SOCI} (Total Enviado: ${formatoMoneda(cob.TOTAL_PROPUESTO)})`);
-        $('#recibo-nro').val(cob.NRO_RECIBO || '');
-        $('#recibo-fecha-pago').val(cob.FECHA_PAGO || new Date().toISOString().split('T')[0]);
-        $('#recibo-monto-pago').val(cob.MONTO_PAGO_RECIBO || cob.TOTAL_PROPUESTO || '');
-        $('#recibo-observaciones').val(cob.OBSERVACIONES_GESTION || '');
-
-        cargarSugerenciasRecibos(cob.COD_CLIENT);
-        $('#modalConciliarRecibo').modal('show');
-    });
-
-    function cargarSugerenciasRecibos(codClient) {
-        $('#lista-sugerencias-recibos').html('<div class="spinner-border spinner-border-sm text-primary" role="status"></div> Buscando comprobantes REC...');
-        $.ajax({
-            url: `api/mayoristas_controller.php?action=buscar_recibos&cod_client=${codClient}`,
-            type: 'GET',
-            dataType: 'json',
-            success: function(res) {
-                if (res.success && res.data.length > 0) {
-                    let html = '<div class="list-group list-group-flush">';
-                    res.data.forEach(r => {
-                        html += `
-                            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center btn-select-recibo" data-ncomp="${r.N_COMP}" data-fecha="${r.FECHA_EMIS}" data-monto="${r.IMPORTE}">
-                                <div>
-                                    <strong class="font-monospace text-primary">${r.T_COMP} ${r.N_COMP}</strong>
-                                    <small class="d-block text-muted">Fecha: ${formatoFecha(r.FECHA_EMIS)}</small>
-                                </div>
-                                <span class="badge bg-light text-dark border">${formatoMoneda(r.IMPORTE)}</span>
-                            </button>
-                        `;
-                    });
-                    html += '</div>';
-                    $('#lista-sugerencias-recibos').html(html);
-                } else {
-                    $('#lista-sugerencias-recibos').html('<span class="text-muted small">No se hallaron comprobantes de tipo REC pendientes automáticos. Puede ingresarlo manualmente arriba.</span>');
-                }
-            },
-            error: function() {
-                $('#lista-sugerencias-recibos').html('<span class="text-muted small">No se pudo cargar la búsqueda de recibos. Ingrese el número manualmente.</span>');
-            }
-        });
-    }
-
-    $(document).on('click', '.btn-select-recibo', function() {
-        const ncomp = $(this).data('ncomp');
-        const fecha = $(this).data('fecha');
-        const monto = $(this).data('monto');
-
-        $('#recibo-nro').val(ncomp);
-        if (fecha) $('#recibo-fecha-pago').val(fecha);
-        if (monto) $('#recibo-monto-pago').val(monto);
-    });
-
-    $('#btn-guardar-conciliacion').on('click', function() {
-        const idCobranza = $('#recibo-id-cobranza').val();
-        const nroRecibo = $('#recibo-nro').val().trim();
-        const fechaPago = $('#recibo-fecha-pago').val();
-        const montoPago = parseFloat($('#recibo-monto-pago').val() || 0);
-        const observaciones = $('#recibo-observaciones').val();
-
-        if (!nroRecibo) {
-            alert('Por favor ingrese el número de recibo.');
-            $('#recibo-nro').focus();
-            return;
+        $('#gestion-id-cobranza').val(cob.ID);
+        $('#gestion-cliente-info').text(`${cob.RAZON_SOCI} (${cob.COD_CLIENT})`);
+        $('#gestion-monto-info').text(`Total Enviado: ${formatoMoneda(cob.TOTAL_PROPUESTO)} | Propuesta #${cob.ID} (${cob.FECHA_ENVIO})`);
+        
+        const isPagado = cob.ESTADO === 'PAGADO' || cob.ESTADO === 'ABONADO';
+        if (isPagado) {
+            $('#radio-estado-pagado').prop('checked', true);
+            $('#seccion-datos-pago').show();
+        } else {
+            $('#radio-estado-pagado').prop('checked', true); // Sugerir marcar como Pagado
+            $('#seccion-datos-pago').show();
         }
+
+        const montoSugerido = Math.ceil(parseFloat(cob.MONTO_PAGO_RECIBO || cob.TOTAL_PROPUESTO || 0));
+        $('#gestion-fecha-pago').val(cob.FECHA_PAGO || new Date().toISOString().split('T')[0]);
+        $('#gestion-monto-pago').val(montoSugerido > 0 ? montoSugerido : '');
+        $('#gestion-observaciones').val(cob.OBSERVACIONES_GESTION || '');
+
+        $('#modalGestionarEstado').modal('show');
+    });
+
+    $('input[name="radioEstadoGestion"]').on('change', function() {
+        if ($(this).val() === 'PAGADO') {
+            $('#seccion-datos-pago').slideDown(150);
+        } else {
+            $('#seccion-datos-pago').slideUp(150);
+        }
+    });
+
+    $('#btn-guardar-estado-gestion').on('click', function() {
+        const idCobranza = $('#gestion-id-cobranza').val();
+        const nuevoEstado = $('input[name="radioEstadoGestion"]:checked').val() || 'PAGADO';
+        const fechaPago = $('#gestion-fecha-pago').val();
+        const montoPago = parseFloat($('#gestion-monto-pago').val() || 0);
+        const observaciones = $('#gestion-observaciones').val().trim();
 
         const btn = $(this);
         btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Guardando...');
 
         $.ajax({
-            url: 'api/mayoristas_controller.php?action=conciliar_recibo',
+            url: 'api/mayoristas_controller.php?action=marcar_gestion',
             type: 'POST',
             data: {
                 id_cobranza: idCobranza,
-                nro_recibo: nroRecibo,
+                nuevo_estado: nuevoEstado,
                 fecha_pago: fechaPago,
                 monto_pago: montoPago,
                 observaciones: observaciones
             },
             dataType: 'json',
             success: function(res) {
-                btn.prop('disabled', false).html('<i class="fa-solid fa-check me-1"></i> Guardar Conciliación');
+                btn.prop('disabled', false).html('<i class="fa-solid fa-check me-1"></i> Guardar Gestión');
                 if (res.success) {
-                    $('#modalConciliarRecibo').modal('hide');
+                    $('#modalGestionarEstado').modal('hide');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Gestión Guardada!',
+                            text: res.message,
+                            timer: 1600,
+                            showConfirmButton: false
+                        });
+                    }
                     cargarHistorialCobranzas();
+                    cargarCobranzasPendientes();
                     cargarReportesMayoristas();
                 } else {
                     alert('Error: ' + res.message);
                 }
             },
             error: function(err) {
-                btn.prop('disabled', false).html('<i class="fa-solid fa-check me-1"></i> Guardar Conciliación');
-                alert('Error en el servidor al guardar el recibo.');
+                btn.prop('disabled', false).html('<i class="fa-solid fa-check me-1"></i> Guardar Gestión');
+                alert('Error en el servidor al guardar la gestión.');
             }
         });
     });
@@ -1096,11 +1251,12 @@ ${fechaActual}`;
 
     // Helper para formatear columnas de moneda en hojas de SheetJS
     function aplicarFormatoMonedaSheet(ws, colIndicesMoneda, numFilas) {
-        const fmtMoneda = '"$"#,##0.00;[Red]("$"#,##0.00);"-"';
+        const fmtMoneda = '"$"#,##0;[Red]("$"#,##0);"-"';
         for (let r = 1; r <= numFilas; r++) {
             colIndicesMoneda.forEach(c => {
                 const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
                 if (ws[cellRef] && typeof ws[cellRef].v === 'number') {
+                    ws[cellRef].v = Math.ceil(ws[cellRef].v);
                     ws[cellRef].z = fmtMoneda;
                 }
             });
@@ -1143,11 +1299,11 @@ ${fechaActual}`;
             'Código Cliente': row.COD_CLIENT,
             'Razón Social': row.RAZON_SOCI,
             'Vendedor': row.COD_VENDED,
-            'Camino 1: Factura': row.TOTAL_FACTURA || 0,
+            'Camino 1: Factura': Math.ceil(parseFloat(row.TOTAL_FACTURA || 0)),
             'Cant. Facturas': row.CANT_FACTURAS || 0,
-            'Camino 2: Remito': row.TOTAL_REMITO || 0,
+            'Camino 2: Remito': Math.ceil(parseFloat(row.TOTAL_REMITO || 0)),
             'Cant. Remitos': row.CANT_REMITOS || 0,
-            'Total Pendiente': row.TOTAL_GENERAL || 0,
+            'Total Pendiente': Math.ceil(parseFloat(row.TOTAL_GENERAL || 0)),
             'Teléfono WhatsApp': row.TELEFONO_WPP || '',
             'Nombre Contacto': row.CONTACTO_NOMBRE || '',
             'Estado Cobranza': (row.ULTIMO_ENVIO && row.ULTIMO_ENVIO.ESTADO) ? row.ULTIMO_ENVIO.ESTADO : 'SIN ENVIAR',
@@ -1185,15 +1341,15 @@ ${fechaActual}`;
             'Razón Social': row.RAZON_SOCI,
             'Vendedor': row.COD_VENDED,
             'Usuario Envío': row.NOMBRE_USUARIO || '',
-            'Total Propuesto': row.TOTAL_PROPUESTO || 0,
-            'Monto Factura': row.MONTO_FACTURA || 0,
-            'Monto Remito': row.MONTO_REMITO || 0,
+            'Total Propuesto': Math.ceil(parseFloat(row.TOTAL_PROPUESTO || 0)),
+            'Monto Factura': Math.ceil(parseFloat(row.MONTO_FACTURA || 0)),
+            'Monto Remito': Math.ceil(parseFloat(row.MONTO_REMITO || 0)),
             'Teléfono Destino': row.TELEFONO_DESTINO || '',
             'Estado': row.ESTADO,
             'N° Recibo': row.NRO_RECIBO || '',
             'Fecha Pago': row.FECHA_PAGO || '',
-            'Monto Abonado': row.MONTO_PAGO_RECIBO !== null ? row.MONTO_PAGO_RECIBO : '',
-            'Diferencia Monto': row.DIFERENCIA_MONTO !== null ? row.DIFERENCIA_MONTO : '',
+            'Monto Abonado': row.MONTO_PAGO_RECIBO !== null ? Math.ceil(parseFloat(row.MONTO_PAGO_RECIBO)) : '',
+            'Diferencia Monto': row.DIFERENCIA_MONTO !== null ? Math.ceil(parseFloat(row.DIFERENCIA_MONTO)) : '',
             'Diferencia (%)': row.DIFERENCIA_PORC !== null ? (row.DIFERENCIA_PORC / 100) : '',
             'Días a Pago': row.DIAS_A_PAGO !== null ? row.DIAS_A_PAGO : '',
             'Observaciones': row.OBSERVACIONES_GESTION || ''
@@ -1241,8 +1397,8 @@ ${fechaActual}`;
                 'Envíos Realizados': v.CANT_ENVIOS,
                 'Cobranzas Abonadas': v.CANT_ABONADOS,
                 'Efectividad': tasaCobro,
-                'Monto Propuesto': v.MONTO_PROPUESTO,
-                'Monto Cobrado': v.MONTO_COBRADO,
+                'Monto Propuesto': Math.ceil(parseFloat(v.MONTO_PROPUESTO || 0)),
+                'Monto Cobrado': Math.ceil(parseFloat(v.MONTO_COBRADO || 0)),
                 'Promedio Días a Pago': v.PROMEDIO_DIAS
             };
         });
@@ -1270,15 +1426,15 @@ ${fechaActual}`;
                         'Razón Social': c.RAZON_SOCI,
                         'Propuesta ID': c.ID,
                         'Fecha Envío': c.FECHA_ENVIO,
-                        'Monto Propuesto': c.TOTAL_PROPUESTO,
-                        'Monto Facturas': c.MONTO_FACTURA,
-                        'Monto Remitos': c.MONTO_REMITO,
+                        'Monto Propuesto': Math.ceil(parseFloat(c.TOTAL_PROPUESTO || 0)),
+                        'Monto Facturas': Math.ceil(parseFloat(c.MONTO_FACTURA || 0)),
+                        'Monto Remitos': Math.ceil(parseFloat(c.MONTO_REMITO || 0)),
                         'Estado': c.ESTADO,
                         'N° Recibo': c.NRO_RECIBO || '',
                         'Fecha Pago': c.FECHA_PAGO || '',
-                        'Monto Cobrado': c.MONTO_PAGO_RECIBO !== null ? c.MONTO_PAGO_RECIBO : '',
+                        'Monto Cobrado': c.MONTO_PAGO_RECIBO !== null ? Math.ceil(parseFloat(c.MONTO_PAGO_RECIBO)) : '',
                         'Días a Pago': c.DIAS_A_PAGO !== null ? c.DIAS_A_PAGO : '',
-                        'Diferencia Monto': c.DIFERENCIA_MONTO !== null ? c.DIFERENCIA_MONTO : '',
+                        'Diferencia Monto': c.DIFERENCIA_MONTO !== null ? Math.ceil(parseFloat(c.DIFERENCIA_MONTO)) : '',
                         'Diferencia (%)': c.DIFERENCIA_PORC !== null ? (c.DIFERENCIA_PORC / 100) : ''
                     });
                 });
