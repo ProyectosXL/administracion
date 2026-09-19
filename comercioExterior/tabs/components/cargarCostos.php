@@ -13,9 +13,11 @@ $idDespacho = intval($_GET['id']);
 // Cargar datos del despacho
 require_once '../../Class/encabezado.php';
 require_once '../../Class/maestroGastos.php';
+require_once '../../Class/Orden.php';
 
 $encabezadoClass = new Encabezado();
 $gastosClass     = new Gastos();
+$ordenClass      = new Orden();
 
 // Guardia: si el ID pertenece a una OC hija, redirigir al principal con aviso
 $idPrincipal = $encabezadoClass->resolverIdPrincipal($idDespacho);
@@ -48,10 +50,96 @@ if (!$despacho) {
 
 // Formatear valores
 $valorFobPeso = isset($despacho['VALOR_FOB_PESO']) ? number_format($despacho['VALOR_FOB_PESO'], 2, ',', '.') : '0,00';
+$valorFobDolar = isset($despacho['VALOR_FOB_DOLAR']) ? number_format($despacho['VALOR_FOB_DOLAR'], 2, ',', '.') : '0,00';
 $tipoCambio = isset($despacho['TIPO_CAMBIO']) ? number_format($despacho['TIPO_CAMBIO'], 2, ',', '.') : '0,00';
 $ordenCompra = $despacho['ORDEN_COMPRA'] ?? '';
 $proveedor = $despacho['PROVEEDOR'] ?? '';
 $contenedor = $despacho['CONTENEDOR'] ?? '';
+
+/* ---------------------------------------------------------------------
+   LOS COSTOS YA CARGADOS.
+
+   Esta pantalla se dibujaba SIEMPRE en blanco: recorría el maestro de
+   gastos y pintaba una fila vacía por cada uno, sin mirar nunca
+   RO_T_IMPORTACIONES_DETALLE. Guardar funcionaba, pero volver a entrar
+   mostraba el formulario limpio y cualquier "modificar un importe"
+   terminaba siendo "volver a tipear los veinte".
+
+   No hace falta nada más para que la edición posterior funcione: el
+   guardado ya borra el detalle del grupo e inserta el que manda la
+   pantalla (OrdenDeCompraController -> deleteDetalleGrupo +
+   insertDetalleReplicado), así que guardar diez veces deja siempre una
+   fila por gasto. Lo único que faltaba era traer lo guardado.
+
+   Se indexa por GASTOS y no por ID porque es lo que une las dos tablas:
+   el detalle guarda el NOMBRE del gasto, no el ID del maestro.
+   --------------------------------------------------------------------- */
+$detalleGuardado = [];
+foreach ($ordenClass->traerPorOrdenCompra($idDespacho) as $fila) {
+    $nombreGasto = isset($fila['GASTOS']) ? trim((string) $fila['GASTOS']) : '';
+    if ($nombreGasto === '') {
+        continue;
+    }
+    $detalleGuardado[mb_strtoupper($nombreGasto)] = $fila;
+}
+
+$hayDetalleGuardado = count($detalleGuardado) > 0;
+
+/* FILAS GUARDADAS QUE YA NO ESTÁN EN EL MAESTRO DE GASTOS.
+   El formulario dibuja una fila por gasto del maestro, así que un costo
+   guardado con un nombre que el maestro ya no tiene no se puede mostrar —y
+   el guardado, que borra el detalle y lo reinserta desde la pantalla, lo
+   perdería sin decir nada.
+
+   Ya pasaba antes de traer los valores; lo que cambia es que ahora se avisa.
+   En la base al 19/09/2026 son 27 filas en 5 contenedores viejos (ID_MG 20,
+   131, 195, 369 y 497), de 6162: nombres anteriores al maestro actual, como
+   "MONTECON" o "GASTOS DESPACHANTE PRACCA".
+
+   La comparación se hace acá y no en SQL a propósito: las dos tablas tienen
+   collations distintas -Latin1_General_BIN contra Modern_Spanish_CI_AI- y
+   un JOIN por nombre falla con "cannot resolve the collation conflict", que
+   es el mismo problema que Orden::traerOrdenPorFecha resuelve con un COLLATE
+   explícito. */
+$gastosDelMaestro = [];
+foreach ($todosLosGastos as $g) {
+    $gastosDelMaestro[mb_strtoupper(trim($g['GASTOS']))] = true;
+}
+
+$costosHuerfanos = [];
+foreach ($detalleGuardado as $clave => $fila) {
+    if (!isset($gastosDelMaestro[$clave])) {
+        $costosHuerfanos[] = trim((string) $fila['GASTOS']);
+    }
+}
+
+/**
+ * Formatea un número al formato que espera cargarCostos.js: miles con
+ * punto y decimales con coma ("1.234,56"), que es lo que produce el
+ * toLocaleString('es-ES') del lado del navegador. Si se devolviera con
+ * punto decimal, sacarParseo() lo leería como separador de miles al
+ * guardar y 1.234,56 se convertiría en 123456.
+ */
+function formatoCampo($valor) {
+    if ($valor === null || $valor === '') {
+        return '';
+    }
+    $num = floatval(str_replace(',', '.', (string) $valor));
+    return number_format($num, 2, ',', '.');
+}
+
+/**
+ * El % sobre FOB va con PUNTO decimal y sufijo '%', que es exactamente lo
+ * que escribe iniciarCalculo() con toFixed(2) y lo que el guardado espera
+ * al hacer replace('%',''). Con coma, el INSERT recibiría "8,50" y SQL
+ * Server lo tomaría como dos columnas.
+ */
+function formatoPorcentaje($valor) {
+    if ($valor === null || $valor === '') {
+        return '';
+    }
+    return number_format(floatval(str_replace(',', '.', (string) $valor)), 2, '.', '') . '%';
+}
 ?>
 
 <!DOCTYPE html>
@@ -118,6 +206,11 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
                     <div class="info-value" id="valorPesosFob" attr-value="<?= $valorFobPeso ?>">
                         $ <?= $valorFobPeso ?>
                     </div>
+                    <!-- El FOB en dólares, que es el editable y del que sale
+                         el de pesos. Se muestra al lado para que, si alguien
+                         lo corrigió, se vea acá de dónde salió el % sobre FOB
+                         de cada fila. -->
+                    <div class="provider-code">U$S <?= $valorFobDolar ?> × TC <?= $tipoCambio ?></div>
                 </div>
 
                 <div class="info-item">
@@ -147,6 +240,33 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
                 Detalle de Costos de Nacionalización
             </div>
 
+            <?php if ($hayDetalleGuardado) { ?>
+            <!-- Que la pantalla diga que está mostrando lo guardado, y no una
+                 carga nueva en blanco, es la mitad del arreglo: los mismos
+                 campos llenos podrían leerse como valores tipeados y todavía
+                 sin guardar. -->
+            <div class="alert alert-info py-2 px-3 mb-0" style="margin: 0 1rem;">
+                <i class="bi bi-clock-history"></i>
+                Se muestran los <strong><?= count($detalleGuardado) ?></strong> costos ya registrados
+                para este contenedor. Modificá lo que haga falta y guardá: se reemplazan los valores,
+                no se agregan filas nuevas.
+            </div>
+            <?php } ?>
+
+            <?php if (!empty($costosHuerfanos)) { ?>
+            <!-- Se avisa antes de guardar, no después: guardar reemplaza el
+                 detalle entero por lo que está en pantalla, y estos conceptos
+                 no están en pantalla porque ya no existen en el maestro. -->
+            <div class="alert alert-warning py-2 px-3 mb-0" style="margin: 0.5rem 1rem 0;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Este contenedor tiene <strong><?= count($costosHuerfanos) ?></strong> costo(s)
+                guardado(s) con conceptos que ya no están en el maestro de gastos:
+                <strong><?= htmlspecialchars(implode(', ', $costosHuerfanos)) ?></strong>.
+                No se pueden mostrar acá y <strong>se van a perder si guardás</strong>.
+                Si hacen falta, hay que darlos de alta en el maestro de gastos primero.
+            </div>
+            <?php } ?>
+
             <table class="custom-table">
                 <thead>
                     <tr>
@@ -162,6 +282,25 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
                 <tbody id="table">
                     <?php
                     foreach ($todosLosGastos as $valor => $key) {
+                        // Lo que ya estaba guardado para este gasto, si hay algo.
+                        $guardado = $detalleGuardado[mb_strtoupper(trim($key['GASTOS']))] ?? null;
+
+                        $vImporteUsd = $guardado ? formatoCampo($guardado['IMPORTE_U$S']) : '';
+                        $vImportePeso = $guardado ? formatoCampo($guardado['IMPORTE_$']) : '';
+                        $vPorcentaje = $guardado ? formatoPorcentaje($guardado['PORCENTAJE']) : '';
+                        $vObserva    = $guardado ? (string) $guardado['OBSERVACIONES'] : '';
+
+                        /* El tipo de cambio guardado gana sobre el valor por
+                           defecto. Sin esto, reabrir una carga hecha con otro
+                           tipo de cambio la recalcularía sola contra el del
+                           encabezado y cambiaría importes que nadie tocó. */
+                        if ($guardado && $guardado['TIPO_CAMBIO'] !== null && $guardado['TIPO_CAMBIO'] !== '') {
+                            $vTipoCambio = formatoCampo($guardado['TIPO_CAMBIO']);
+                        } elseif (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') {
+                            $vTipoCambio = '0';
+                        } else {
+                            $vTipoCambio = ($valor <= 6) ? $tipoCambio : '0';
+                        }
                     ?>
                     <tr id="trBody">
                         <td class="cell-id" id="id">
@@ -169,45 +308,35 @@ $contenedor = $despacho['CONTENEDOR'] ?? '';
                         </td>
                         <td><?= htmlspecialchars($key['GASTOS']) ?></td>
                         <td>
-                            <input class="input-field decimales currencyInput" 
-                                   type="text" 
-                                   id="valorFobDolar" 
-                                   onkeyup="iniciarCalculo(this)" 
-                                   onchange='convertirNumeros(this)' 
+                            <input class="input-field decimales currencyInput"
+                                   type="text"
+                                   id="valorFobDolar"
+                                   value="<?= htmlspecialchars($vImporteUsd) ?>"
+                                   onkeyup="iniciarCalculo(this)"
+                                   onchange='convertirNumeros(this)'
                                    onclick='limpiarInput(this)'>
                         </td>
-                        <?php if (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') { ?>
-                            <td>
-                                <input class="input-field decimales currencyInput tipoCambio" 
-                                       type="text" 
-                                       onkeyup="iniciarCalculo(this)" 
-                                       id="tipoCambio" 
-                                       value="0" 
-                                       onchange='convertirNumeros(this)' 
-                                       onclick='limpiarInput(this)'>
-                            </td>
-                        <?php } else { ?>
-                            <td>
-                                <input class="input-field decimales currencyInput tipoCambio" 
-                                       type="text" 
-                                       onkeyup="iniciarCalculo(this)" 
-                                       id="tipoCambio" 
-                                       onchange='convertirNumeros(this)' 
-                                       value="<?= ($valor <= 6) ? $tipoCambio : "0" ?>" 
-                                       onclick='limpiarInput(this)'>
-                            </td>
-                        <?php } ?>
                         <td>
-                            <input class="input-field decimales currencyInput importe skip" 
-                                   id="valorFobPeso" 
-                                   name="inputNum[]" 
+                            <input class="input-field decimales currencyInput tipoCambio"
+                                   type="text"
+                                   onkeyup="iniciarCalculo(this)"
+                                   id="tipoCambio"
+                                   value="<?= htmlspecialchars($vTipoCambio) ?>"
+                                   onchange='convertirNumeros(this)'
+                                   onclick='limpiarInput(this)'>
+                        </td>
+                        <td>
+                            <input class="input-field decimales currencyInput importe skip"
+                                   id="valorFobPeso"
+                                   name="inputNum[]"
+                                   value="<?= htmlspecialchars($vImportePeso) ?>"
                                    readonly>
                         </td>
                         <td>
-                            <input class="input-field skip" readonly>
+                            <input class="input-field skip" value="<?= htmlspecialchars($vPorcentaje) ?>" readonly>
                         </td>
                         <td>
-                            <input class="input-field skip">
+                            <input class="input-field skip" value="<?= htmlspecialchars($vObserva) ?>">
                         </td>
                     </tr>
                     <?php } ?>

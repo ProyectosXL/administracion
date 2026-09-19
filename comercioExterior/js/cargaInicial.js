@@ -10,6 +10,18 @@ let fechaDespachoIsManual = false;
 let fechaEstPagoIsManual = false; // Flag para fecha estimada de pago
 let cargandoDatos = false; // Flag para evitar marcar como manual durante carga inicial
 
+/* Estado de los pagos. Se declara acá arriba, junto al resto de las globales,
+   y no al lado de sus helpers: cargarPagos() y renderizarTablaPagos() están
+   definidas antes en el archivo y las leen, y con `let` eso sería una zona
+   muerta temporal si alguna llegara a ejecutarse durante la evaluación del
+   script en vez de después del ready. */
+
+/** Último resumen de pagos que devolvió el servidor. */
+let resumenPagos = { fobUsd: 0, totalPagado: 0, saldoPendiente: 0 };
+
+/** Últimos pagos traídos, para que el modal de edición los pueda leer. */
+let pagosCargados = [];
+
 // ========== FUNCIONES DE VALIDACIÓN DE FECHAS HÁBILES ==========
 
 /**
@@ -462,9 +474,13 @@ function cargarDatosDespacho(datos) {
 function cargarPagos(idDespacho) {
     const id = parseInt(idDespacho);
     if (!id || id <= 0) {
+        // Contenedor todavía sin guardar: no hay pagos, y el saldo es el FOB
+        // entero. La cuenta la hace el servidor apenas exista el registro.
         $('#tbodyPagos').html('');
         $('#sinPagos').show();
-        actualizarSaldoPendiente(obtenerFOBPesos());
+        pagosCargados = [];
+        aplicarResumenPagos({ fobUsd: obtenerFOBDolar(), totalPagado: 0,
+                              saldoPendiente: obtenerFOBDolar() });
         return;
     }
 
@@ -479,9 +495,7 @@ function cargarPagos(idDespacho) {
             console.log('Pagos cargados:', response);
             if (response && response.pagos) {
                 renderizarTablaPagos(response.pagos);
-                if (response.saldoPendiente !== undefined) {
-                    actualizarSaldoPendiente(response.saldoPendiente);
-                }
+                aplicarResumenPagos(response);
             }
         },
         error: function(err) {
@@ -491,34 +505,51 @@ function cargarPagos(idDespacho) {
 }
 
 /**
- * Renderiza la tabla de pagos
+ * Renderiza la tabla de pagos. Los importes son U$S.
  */
 function renderizarTablaPagos(pagos) {
     const tbody = $('#tbodyPagos');
     tbody.html(''); // Limpiar tabla
-    
+
+    pagosCargados = pagos || [];
+
     if (!pagos || pagos.length === 0) {
         // Mostrar mensaje "No hay pagos"
         $('#sinPagos').show();
         return;
     }
-    
+
     // Ocultar mensaje "No hay pagos"
     $('#sinPagos').hide();
-    
+
     pagos.forEach(pago => {
+        /* Los pagos que el script 08 convirtió de pesos a dólares lo dicen
+           acá. El importe que manda es el de U$S -es el que cuenta para el
+           saldo- pero de dónde salió no debería tener que buscarse en la
+           base para entender por qué ese número no es el que se tipeó. */
+        const convertido = pago.MONTO_ORIGEN_ARS !== null && pago.MONTO_ORIGEN_ARS !== undefined;
+        const marcaConversion = convertido
+            ? ` <i class="bi bi-arrow-left-right text-muted" title="Cargado originalmente como $ ${formatearMonedaUI(pago.MONTO_ORIGEN_ARS)} y convertido a U$S"></i>`
+            : '';
+
         const fila = `
             <tr>
                 <td>
-                    <a href="#" class="link-primary" data-bs-toggle="modal" data-bs-target="#modalEditarFechaPago" onclick="abrirModalEditarFecha(${pago.ID}, '${pago.FECHA_PAGO}')">
+                    <a href="#" class="link-primary" data-bs-toggle="modal" data-bs-target="#modalEditarFechaPago" onclick="abrirModalEditarPago(${pago.ID})">
                         ${pago.FECHA_PAGO || '-'}
                         <i class="bi bi-pencil-square ms-1"></i>
                     </a>
                 </td>
                 <td>${pago.FORMA_PAGO || '-'}</td>
                 <td>${pago.MEDIO_PAGO || '-'}</td>
-                <td class="text-end">$ ${parseFloat(pago.MONTO || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
-                <td style="text-align: center;"><button class="btn btn-sm btn-danger" onclick="eliminarPago(${pago.ID})"><i class="bi bi-trash"></i></button></td>
+                <td class="text-end">U$S ${formatearMonedaUI(pago.MONTO)}${marcaConversion}</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-sm btn-outline-secondary" title="Editar pago"
+                            data-bs-toggle="modal" data-bs-target="#modalEditarFechaPago"
+                            onclick="abrirModalEditarPago(${pago.ID})"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-danger" title="Eliminar pago"
+                            onclick="eliminarPago(${pago.ID})"><i class="bi bi-trash"></i></button>
+                </td>
             </tr>
         `;
         tbody.append(fila);
@@ -526,12 +557,36 @@ function renderizarTablaPagos(pagos) {
 }
 
 /**
- * Abre modal para editar fecha de pago
+ * Abre el modal de edición con TODOS los campos del pago, no sólo la fecha.
+ *
+ * Recibe el ID y busca el pago en lo último que trajo el servidor, en vez de
+ * recibir los valores interpolados en el onclick: una observación o una forma
+ * de pago con una comilla rompía el atributo, y el importe llegaba ya
+ * formateado para mostrar, que no es lo que hay que poner en un input number.
  */
-function abrirModalEditarFecha(idPago, fechaActual) {
-    $('#idPagoEdit').val(idPago);
-    $('#fechaPagoEdit').val(fechaActual);
-    console.log('Editando pago ID:', idPago, 'Fecha:', fechaActual);
+function abrirModalEditarPago(idPago) {
+    const pago = (pagosCargados || []).find(p => parseInt(p.ID) === parseInt(idPago));
+    if (!pago) {
+        console.warn('No se encontró el pago', idPago, 'en los datos cargados');
+        return;
+    }
+
+    $('#idPagoEdit').val(pago.ID);
+    $('#fechaPagoEdit').val(pago.FECHA_PAGO || '');
+    $('#formaPagoEdit').val(pago.FORMA_PAGO || 'PAGO VISTA');
+    $('#medioPagoEdit').val(pago.MEDIO_PAGO || 'Transferencia');
+    $('#montoEdit').val(parseFloat(pago.MONTO || 0).toFixed(2));
+
+    const $aviso = $('#avisoOrigenArs');
+    if (pago.MONTO_ORIGEN_ARS !== null && pago.MONTO_ORIGEN_ARS !== undefined) {
+        $aviso.html('<i class="bi bi-arrow-left-right"></i> Este pago se cargó originalmente como ' +
+                    '$ ' + formatearMonedaUI(pago.MONTO_ORIGEN_ARS) + ' y se convirtió a dólares. ' +
+                    'El importe original queda guardado.').show();
+    } else {
+        $aviso.hide().html('');
+    }
+
+    console.log('Editando pago ID:', pago.ID);
     
     // Inicializar datepicker del modal si no está inicializado
     if (!$('.js-datepicker-edit-fecha').data('daterangepicker')) {
@@ -548,7 +603,7 @@ function abrirModalEditarFecha(idPago, fechaActual) {
     // Establecer la fecha en el datepicker
     const picker = $('.js-datepicker-edit-fecha').data('daterangepicker');
     if (picker) {
-        const fecha = moment(fechaActual, 'DD/MM/YYYY');
+        const fecha = moment(pago.FECHA_PAGO, 'DD/MM/YYYY');
         if (fecha.isValid()) {
             picker.setStartDate(fecha);
             picker.setEndDate(fecha);
@@ -557,23 +612,35 @@ function abrirModalEditarFecha(idPago, fechaActual) {
 }
 
 /**
- * Guarda la fecha de pago editada
+ * Guarda el pago editado: fecha, forma, medio e importe en U$S.
+ *
+ * Conserva el nombre porque es el que invoca el botón del modal; lo que
+ * cambió es que ya no manda sólo la fecha.
  */
 function guardarFechaPago() {
     const idPago = $('#idPagoEdit').val();
     const nuevaFecha = $('#fechaPagoEdit').val();
-    
+    const nuevoMonto = parseFloat($('#montoEdit').val());
+
     if (!idPago || !nuevaFecha) {
         Swal.fire('Error', 'Fecha requerida', 'error');
         return;
     }
-    
+
+    if (isNaN(nuevoMonto) || nuevoMonto <= 0) {
+        Swal.fire('Error', 'El importe en U$S tiene que ser mayor a cero', 'error');
+        return;
+    }
+
     $.ajax({
-        url: '../controller/actualizarFechaPagoController.php',
+        url: '../controller/actualizarPagoController.php',
         method: 'POST',
         data: {
             id_pago: idPago,
-            fecha_pago: nuevaFecha
+            fecha_pago: nuevaFecha,
+            forma_pago: $('#formaPagoEdit').val(),
+            medio_pago: $('#medioPagoEdit').val(),
+            monto: nuevoMonto
         },
         dataType: 'json',
         success: function(response) {
@@ -589,7 +656,7 @@ function guardarFechaPago() {
 
                 Swal.fire({
                     icon: 'success',
-                    title: 'Fecha actualizada',
+                    title: 'Pago actualizado',
                     toast: true,
                     position: 'top-end',
                     timer: 2000,
@@ -606,16 +673,38 @@ function guardarFechaPago() {
 }
 
 // ========== HELPERS DE PAGOS ==========
+//
+// LA MONEDA DE LOS PAGOS ES EL DÓLAR.
+//
+//     Saldo pendiente U$S = Valor FOB U$S - Σ Pagos U$S
+//
+// Antes el saldo se calculaba contra el FOB en pesos, y el total pagado se
+// obtenía leyendo el TEXTO de una columna de la tabla y desarmando su formato.
+// Eso tenía dos problemas: la columna MONTO no declara moneda -y de hecho
+// convivían las dos, ver sql/08_pagos_en_dolares.sql- y la suma del navegador
+// era una segunda implementación de una cuenta que el servidor ya hacía.
+//
+// Ahora la cuenta la hace Pagos::obtenerResumen() y la pantalla la muestra.
+// Lo que el servidor devuelve se guarda acá para que el modal de alta pueda
+// calcular el "nuevo saldo" sin volver a pedirlo.
 
 function formatearMonedaUI(valor) {
     if (isNaN(valor) || valor === null) return '0,00';
     return parseFloat(valor).toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
-function obtenerFOBPesos() {
-    let valor = $('#valorFobPeso').val();
+/**
+ * El FOB en dólares tal como está en el formulario.
+ *
+ * Se lee de la pantalla y no del resumen del servidor porque tiene que
+ * reaccionar mientras el usuario EDITA el FOB, antes de guardar: es lo que
+ * hace que el saldo se mueva al corregir el importe. El número que manda para
+ * la cuenta definitiva sigue siendo el del servidor.
+ */
+function obtenerFOBDolar() {
+    let valor = $('#valorFobDolar').val();
     if (!valor) return 0;
-    valor = valor.toString().replace(/\$|\s/g, '');
+    valor = valor.toString().replace(/U\$S|\$|\s/gi, '');
     if (valor.includes(',')) {
         valor = valor.replace(/\./g, '').replace(',', '.');
     }
@@ -623,34 +712,73 @@ function obtenerFOBPesos() {
 }
 
 function obtenerTotalPagado() {
-    let total = 0;
-    $('#tbodyPagos tr').each(function() {
-        const $monto = $(this).find('td:eq(3)');
-        if ($monto.length) {
-            const txt = $monto.text().replace(/\$|\s/g, '').replace(/\./g, '').replace(',', '.');
-            const num = parseFloat(txt);
-            if (!isNaN(num)) total += num;
-        }
-    });
-    return total;
-}
-
-function obtenerSaldoPendiente() {
-    return obtenerFOBPesos() - obtenerTotalPagado();
+    return parseFloat(resumenPagos.totalPagado) || 0;
 }
 
 /**
- * Habilita/deshabilita el botón Agregar Pago según FOB y saldo
+ * El saldo que muestra la pantalla.
+ *
+ * Usa el FOB del formulario -que puede estar recién editado y todavía sin
+ * guardar- contra el total pagado que informó el servidor. Así, corregir el
+ * FOB mueve el saldo en el momento, que es justamente lo que se espera al
+ * hacer editable ese campo.
+ */
+function obtenerSaldoPendiente() {
+    return obtenerFOBDolar() - obtenerTotalPagado();
+}
+
+/**
+ * Guarda lo que devolvió el servidor y repinta.
+ */
+function aplicarResumenPagos(resumen) {
+    if (!resumen) return;
+
+    resumenPagos = {
+        fobUsd:         parseFloat(resumen.fobUsd) || 0,
+        totalPagado:    parseFloat(resumen.totalPagado) || 0,
+        saldoPendiente: parseFloat(resumen.saldoPendiente) || 0
+    };
+
+    repintarResumenPagos();
+}
+
+/**
+ * Repinta los TRES números de una sola pasada: FOB, pagado y saldo.
+ *
+ * Van juntos a propósito. El FOB que se muestra es el del formulario -que
+ * puede estar recién corregido y todavía sin guardar- y es el mismo con el
+ * que se calcula el saldo. Si el cartel del FOB mostrara el valor del
+ * servidor y el saldo usara el de la pantalla, editar el FOB dejaría tres
+ * números que no cierran entre sí, y no habría nada que explicara por qué.
+ */
+function repintarResumenPagos() {
+    const fob = obtenerFOBDolar();
+
+    $('#fobTotalUsd').html('<i class="bi bi-cash-stack"></i> FOB: U$S ' + formatearMonedaUI(fob));
+    $('#totalPagadoUsd').html('<i class="bi bi-check2-all"></i> Pagado: U$S ' +
+                              formatearMonedaUI(resumenPagos.totalPagado));
+
+    actualizarSaldoPendiente(fob - obtenerTotalPagado());
+}
+
+/**
+ * Habilita/deshabilita el botón Agregar Pago según FOB y saldo.
+ *
+ * Ya no depende del Tipo de Cambio: como el pago es en dólares, alcanza con
+ * tener cargado el FOB U$S. Antes un contenedor con FOB pero sin TC no dejaba
+ * registrar ningún pago, aunque el importe en dólares se supiera perfectamente.
  */
 function actualizarEstadoBotonPago() {
     const $btn = $('#btnAgregarPago');
-    const fob = obtenerFOBPesos();
+    if (!$btn.length) return;
+
+    const fob = obtenerFOBDolar();
     const saldo = obtenerSaldoPendiente();
     const TOLERANCIA = 0.01;
 
     if (fob <= 0) {
         $btn.prop('disabled', true)
-            .attr('title', 'Cargá primero el Tipo de Cambio para calcular el FOB en pesos')
+            .attr('title', 'Cargá primero el Valor F.O.B. U$S para poder registrar pagos')
             .attr('data-bs-toggle', 'tooltip');
     } else if (saldo <= TOLERANCIA) {
         $btn.prop('disabled', true)
@@ -670,7 +798,7 @@ function actualizarEstadoBotonPago() {
 }
 
 /**
- * Actualiza el badge de saldo pendiente con color según estado
+ * Actualiza el badge de saldo pendiente con color según estado. Todo en U$S.
  */
 function actualizarSaldoPendiente(saldo) {
     const $badge = $('#saldoPendiente');
@@ -682,11 +810,15 @@ function actualizarSaldoPendiente(saldo) {
               .addClass('bg-success text-white')
               .css('color', '');
     } else if (saldo < 0) {
-        $badge.html('<i class="bi bi-exclamation-triangle"></i> Sobrepago: $ ' + formatearMonedaUI(Math.abs(saldo)))
+        /* Sobrepago: se muestra, no se bloquea. Puede ser un pago cargado de
+           más -y entonces hay que corregirlo- o un FOB que quedó viejo, que
+           es exactamente lo que el campo editable vino a permitir arreglar.
+           Cuál de las dos cosas es, lo sabe quien mira, no la pantalla. */
+        $badge.html('<i class="bi bi-exclamation-triangle"></i> Sobrepago: U$S ' + formatearMonedaUI(Math.abs(saldo)))
               .addClass('bg-danger text-white')
               .css('color', '');
     } else {
-        $badge.html('<i class="bi bi-hourglass-split"></i> Saldo pendiente: $ ' + formatearMonedaUI(saldo))
+        $badge.html('<i class="bi bi-hourglass-split"></i> Saldo pendiente: U$S ' + formatearMonedaUI(saldo))
               .addClass('bg-warning')
               .css('color', '#856404');
     }
@@ -885,7 +1017,11 @@ function recalcularFobPesos() {
         }
     }
 
-    actualizarEstadoBotonPago();
+    /* Corregir el FOB U$S mueve el saldo de los pagos en el acto, sin esperar
+       a guardar. Antes acá sólo se refrescaba el botón de Agregar Pago, así
+       que el badge seguía mostrando el saldo del FOB viejo hasta recargar la
+       pantalla: el número que la gente mira para decidir cuánto pagar. */
+    repintarResumenPagos();
 }
 
 // ========== FUNCIONES DE MANUAL OVERRIDE ==========
@@ -979,9 +1115,17 @@ function establecerModoFormulario(esEdicion) {
         });
         $('#btnAddOrdenCompra').prop('disabled', true).css('opacity', '0.5');
         
-        // Valor FOB U$S sigue editable
-        $('#valorFobDolar').prop('readonly', false).removeClass('campo-readonly');
-        
+        /* Valor FOB U$S sigue editable: es la excepción de la Sección 1.
+           Funcionaba, pero no se notaba. Rodeado de seis campos grises, un
+           campo blanco más se lee como "otro readonly", y la corrección del
+           FOB terminaba pidiéndose por mail. La marca lo dice. */
+        $('#valorFobDolar')
+            .prop('readonly', false)
+            .removeClass('campo-readonly')
+            .addClass('campo-editable-excepcion')
+            .attr('title', 'El Valor F.O.B. U$S se puede corregir después de creado el contenedor');
+        $('#avisoFobEditable, #ayudaFobEditable').show();
+
         // Secciones 2 y 3 editables
         $('#fechaEmb, #numeroBl, #factura, #fechaArr').prop('readonly', false).removeClass('campo-readonly');
         $('#tipoCambio, #formaPago, #fechaPago, #fechaDespAdu, #despacho').prop('readonly', false).removeClass('campo-readonly');
@@ -990,6 +1134,10 @@ function establecerModoFormulario(esEdicion) {
         // MODO ALTA INICIAL: Sección 1 obligatoria y editable
         $('#proveedor').prop('disabled', false).removeClass('campo-readonly');
         $('#contenedor, #material, #origen, #fechaEstEmb, #valorFobDolar').prop('readonly', false).removeClass('campo-readonly');
+        // En el alta TODA la sección es editable, así que destacar el FOB no
+        // distinguiría nada: la marca sólo tiene sentido contra campos grises.
+        $('#valorFobDolar').removeClass('campo-editable-excepcion').removeAttr('title');
+        $('#avisoFobEditable, #ayudaFobEditable').hide();
         // Para select2, habilitar el select y el contenedor
         $('#despachante').prop('disabled', false).removeClass('campo-readonly');
         $('#despachante').next('.select-dropdown').find('.select2-container').css({
@@ -1490,12 +1638,13 @@ $(document).ready(function() {
         $('#medioPagoNuevo').val('');
         $('#montoNuevo').val('');
 
-        // Inicializar header informativo del modal
-        const fobTotal = obtenerFOBPesos();
+        // Inicializar header informativo del modal. Todo en U$S: es la
+        // moneda en la que se le paga al proveedor del exterior.
+        const fobTotal = obtenerFOBDolar();
         const saldoActual = obtenerSaldoPendiente();
-        $('#modalFobTotal').text('$ ' + formatearMonedaUI(fobTotal));
-        $('#modalSaldoActual').text('$ ' + formatearMonedaUI(saldoActual));
-        $('#modalNuevoSaldo').text('$ ' + formatearMonedaUI(saldoActual));
+        $('#modalFobTotal').text('U$S ' + formatearMonedaUI(fobTotal));
+        $('#modalSaldoActual').text('U$S ' + formatearMonedaUI(saldoActual));
+        $('#modalNuevoSaldo').text('U$S ' + formatearMonedaUI(saldoActual));
         $('#modalNuevoSaldoContainer').removeClass('text-danger');
         $('#guardarNuevoPagoBtn').prop('disabled', false);
 
@@ -1511,7 +1660,7 @@ $(document).ready(function() {
         const nuevoSaldo = saldoActual - monto;
         const TOLERANCIA = 0.01;
 
-        $('#modalNuevoSaldo').text('$ ' + formatearMonedaUI(nuevoSaldo));
+        $('#modalNuevoSaldo').text('U$S ' + formatearMonedaUI(nuevoSaldo));
 
         if (nuevoSaldo < -TOLERANCIA) {
             $('#modalNuevoSaldoContainer').addClass('text-danger');
@@ -2172,17 +2321,18 @@ function guardarNuevoPago() {
     if (!fechaPago) { Swal.fire('Error', 'La fecha de pago es requerida', 'error'); return; }
     if (!formaPago) { Swal.fire('Error', 'Debe seleccionar una forma de pago', 'error'); return; }
     if (!medioPago) { Swal.fire('Error', 'Debe seleccionar un medio de pago', 'error'); return; }
-    if (monto <= 0)  { Swal.fire('Error', 'El monto debe ser mayor a cero', 'error'); return; }
+    if (monto <= 0)  { Swal.fire('Error', 'El importe en U$S debe ser mayor a cero', 'error'); return; }
 
-    // Validar que no supere el saldo pendiente
+    // Validar que no supere el saldo pendiente. Todo en U$S.
     const saldoActual = obtenerSaldoPendiente();
     const TOLERANCIA  = 0.01;
     if (monto > saldoActual + TOLERANCIA) {
         Swal.fire({
-            title: 'Monto excede el saldo',
-            html: `El monto ingresado <strong>$ ${formatearMonedaUI(monto)}</strong> ` +
-                  `supera el saldo pendiente de <strong>$ ${formatearMonedaUI(saldoActual)}</strong>. ` +
-                  `Ajustá el monto antes de guardar.`,
+            title: 'El importe excede el saldo',
+            html: `El importe ingresado <strong>U$S ${formatearMonedaUI(monto)}</strong> ` +
+                  `supera el saldo pendiente de <strong>U$S ${formatearMonedaUI(saldoActual)}</strong>. ` +
+                  `Ajustá el importe antes de guardar, o corregí el Valor F.O.B. U$S si el que ` +
+                  `está cargado quedó viejo.`,
             icon: 'error',
             confirmButtonColor: '#dc3545'
         });

@@ -122,6 +122,35 @@ try {
         // error_log("Valor FOB PESO Limpio: " . $datosDeCabezera['valorFobPeso']);
     }
 
+    /* EL FOB EN PESOS LO DERIVA EL SERVIDOR.
+       Desde que el Valor F.O.B. U$S se puede corregir después del alta, el
+       FOB en pesos no puede depender de lo que informe el navegador: si el
+       campo llegaba vacío, el UPDATE salteaba la columna y quedaba el valor
+       calculado con el FOB anterior. Ese número es el que usan el % sobre FOB
+       de los costos de nacionalización y la impresión, así que quedaba un
+       contenedor diciendo dos cosas distintas sobre cuánto vale.
+
+       Si no hay con qué calcularlo -falta el tipo de cambio- NO se pisa la
+       columna y se avisa. Escribir cero afirmaría que el contenedor no vale
+       nada; borrarla rompería el % sobre FOB de los costos ya cargados. */
+    $esUruguay = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy');
+    $fobPesoDerivado = Encabezado::calcularFobPeso(
+        $datosDeCabezera['valorFobDolar'],
+        $datosDeCabezera['tipoCambio'] ?? null,
+        $esUruguay
+    );
+
+    $avisoFobPeso = null;
+    if ($fobPesoDerivado !== null) {
+        $datosDeCabezera['valorFobPeso'] = $fobPesoDerivado;
+    } else {
+        unset($datosDeCabezera['valorFobPeso']);
+        $avisoFobPeso = $esUruguay
+            ? 'No se pudo recalcular el Valor F.O.B. $ porque falta el Valor F.O.B. U$S.'
+            : 'El Valor F.O.B. $ no se recalculó porque falta el Tipo de Cambio. '
+              . 'Cargalo y volvé a guardar para que el % sobre FOB de los costos quede bien.';
+    }
+
     if (!empty($_POST['formaPago']))
         $datosDeCabezera['formaPago'] = $_POST['formaPago'];
     if (!empty($_POST['despacho']))
@@ -200,7 +229,10 @@ try {
             echo json_encode([
                 'success' => true,
                 'ids' => [$result],
-                'message' => 'Despacho actualizado correctamente'
+                'avisoFobPeso' => $avisoFobPeso,
+                'message' => $avisoFobPeso === null
+                    ? 'Despacho actualizado correctamente'
+                    : 'Despacho actualizado. ' . $avisoFobPeso
             ]);
         } else {
             $errors = sqlsrv_errors();

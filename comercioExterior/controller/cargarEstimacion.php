@@ -26,8 +26,14 @@ try {
         throw new Exception('Despacho no encontrado');
     }
     
-    // Obtener conceptos configurados
-    $conceptos = $estimacion->obtenerConceptos();
+    /* Los conceptos salen con la alícuota que regía a la FECHA DE
+       NACIONALIZACIÓN del contenedor, no con la vigente hoy: una operación
+       nacionalizada en marzo se calcula con la alícuota de marzo. Sin fecha
+       cargada -o sin vigencia que la cubra- se usa el padrón, que es lo que
+       la aplicación hacía antes. Ver AlicuotasVigencia. */
+    $fechaNacionalizacion = isset($despacho['FECHA_DESP_ADU']) ? $despacho['FECHA_DESP_ADU'] : null;
+
+    $conceptos = $estimacion->obtenerConceptos($fechaNacionalizacion);
     
     // Aplicar lógica dinámica para concepto DESPACHANTE en los conceptos base
     $despachante = $despacho['DESPACHANTE'];
@@ -103,7 +109,10 @@ try {
             'despacho' => $despacho,
             'conceptos' => $conceptos,
             'estimacion' => $estimacionExistente,
-            'confirmada' => $confirmada
+            'confirmada' => $confirmada,
+            // De dónde salieron las alícuotas: de una vigencia o del padrón.
+            // La pantalla lo dice; sin esto, los dos casos se ven igual.
+            'vigencia' => $estimacion->resumenVigencia($fechaNacionalizacion)
         ]
     ]);
     

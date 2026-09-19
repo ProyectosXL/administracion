@@ -9,6 +9,7 @@ class EstimacionCostos
     function __construct() {
         require_once __DIR__.'/../../class/conexion.php';
         require_once __DIR__.'/encabezado.php';
+        require_once __DIR__.'/AlicuotasVigencia.php';
         $cid = new Conexion();
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
@@ -139,9 +140,19 @@ class EstimacionCostos
     }
 
     /**
-     * Obtener todos los conceptos de estimación configurados
+     * Obtener todos los conceptos de estimación configurados.
+     *
+     * Si se pasa la fecha de nacionalización del contenedor, los valores no
+     * salen del padrón sino de la vigencia que regía A ESA FECHA: una
+     * operación nacionalizada en marzo usa la alícuota de marzo, aunque desde
+     * julio rija otra. Ver AlicuotasVigencia.
+     *
+     * Sin fecha -o sin vigencia que la cubra, o sin el script 09 corrido- se
+     * usa el padrón, que es lo que la aplicación hacía antes de esta tanda.
+     *
+     * @param string|null $fechaNacionalizacion FECHA_DESP_ADU del contenedor
      */
-    public function obtenerConceptos() {
+    public function obtenerConceptos($fechaNacionalizacion = null) {
         $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
         if ($db === 'uy') {
             $sql = "SELECT 
@@ -177,13 +188,31 @@ class EstimacionCostos
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                 $conceptos[] = $row;
             }
-            
-            return $conceptos;
-            
+
+            $resolucion = AlicuotasVigencia::resolver($this->cid_central, $fechaNacionalizacion);
+
+            return AlicuotasVigencia::aplicarAConceptos($conceptos, $resolucion);
+
         } catch (Exception $e) {
             error_log('Error en obtenerConceptos: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Resumen de qué vigencia se usó, para que la pantalla lo pueda decir.
+     * Sin esto, trece números en pantalla son indistinguibles entre "salió de
+     * la alícuota que regía ese día" y "salió del padrón porque no había".
+     */
+    public function resumenVigencia($fechaNacionalizacion) {
+        $resolucion = AlicuotasVigencia::resolver($this->cid_central, $fechaNacionalizacion);
+
+        return [
+            'disponible' => AlicuotasVigencia::disponible($this->cid_central),
+            'fecha'      => $resolucion['fecha'],
+            'aplicada'   => $resolucion['aplicada'],
+            'conceptos'  => count($resolucion['valores']),
+        ];
     }
 
     /**
@@ -273,6 +302,7 @@ class EstimacionCostos
                     E.VALOR_FOB_DOLAR,
                     E.ORDEN_COMPRA,
                     E.DESPACHANTE,
+                    E.FECHA_DESP_ADU,
                     STUFF((
                         SELECT ', ' + LTRIM(RTRIM(H.ORDEN_COMPRA))
                         FROM RO_T_IMPORTACIONES_ENCABEZADO H
@@ -299,11 +329,17 @@ class EstimacionCostos
                 if (isset($row['FECHA_MOV']) && is_object($row['FECHA_MOV'])) {
                     $row['FECHA_MOV'] = $row['FECHA_MOV']->format('Y-m-d');
                 }
+                // La fecha que decide qué alícuota aplica. Va en 'Y-m-d' y no
+                // en 'd/m/Y' como las del formulario: acá se usa para comparar
+                // contra vigencias, no para mostrar.
+                if (isset($row['FECHA_DESP_ADU']) && is_object($row['FECHA_DESP_ADU'])) {
+                    $row['FECHA_DESP_ADU'] = $row['FECHA_DESP_ADU']->format('Y-m-d');
+                }
                 return $row;
             }
-            
+
             return null;
-            
+
         } catch (Exception $e) {
             error_log('Error en obtenerDespacho: ' . $e->getMessage());
             return null;
@@ -350,9 +386,13 @@ class EstimacionCostos
             return false; // No es el concepto DESPACHANTE, mantener valores originales
         }
         
-        // Obtener despachante del despacho y valores del concepto
-        $sql = "SELECT 
+        // Obtener despachante del despacho y valores del concepto.
+        // FECHA_DESP_ADU viaja para resolver la vigencia unas líneas más abajo:
+        // el honorario del despachante también es un valor que cambia en el
+        // tiempo, y una estimación histórica tiene que usar el de su fecha.
+        $sql = "SELECT
                     enc.DESPACHANTE,
+                    enc.FECHA_DESP_ADU,
                     conc.VALOR_DEFAULT_1,
                     conc.VALOR_DEFAULT_2
                 FROM RO_T_IMPORTACIONES_ENCABEZADO enc
@@ -372,21 +412,33 @@ class EstimacionCostos
         
         if ($row) {
             $despachante = $row['DESPACHANTE'];
-            
+
+            $v1 = $row['VALOR_DEFAULT_1'];
+            $v2 = $row['VALOR_DEFAULT_2'];
+
+            // Si hay una vigencia que cubre la fecha de nacionalización, sus
+            // valores ganan sobre los del padrón. Si no la hay, quedan los
+            // del padrón: mismo criterio que obtenerConceptos().
+            $resolucion = AlicuotasVigencia::resolver($this->cid_central, $row['FECHA_DESP_ADU']);
+            if (isset($resolucion['valores'][intval($idCe)])) {
+                $v1 = $resolucion['valores'][intval($idCe)]['VALOR_1'];
+                $v2 = $resolucion['valores'][intval($idCe)]['VALOR_2'];
+            }
+
             // Lógica de asignación según despachante
             if ($despachante === 'Farre') {
                 // Farre usa VALOR_DEFAULT_2
-                $valor1 = $row['VALOR_DEFAULT_2'];
+                $valor1 = $v2;
                 $valor2 = null;
             } else {
                 // Laffitte o cualquier otro caso usa VALOR_DEFAULT_1
-                $valor1 = $row['VALOR_DEFAULT_1'];
+                $valor1 = $v1;
                 $valor2 = null;
             }
-            
+
             return true;
         }
-        
+
         return false;
     }
 
@@ -432,7 +484,19 @@ class EstimacionCostos
     }
 
     /**
-     * Actualizar estimación existente
+     * Actualizar estimación existente.
+     *
+     * NO GENERA FILAS DUPLICADAS: el UPDATE va por (ID_MG, ID_CE), que es la
+     * clave natural de la estimación -un importe por concepto y contenedor-.
+     * Guardar diez veces el mismo contenedor deja siempre trece filas.
+     *
+     * El INSERT de respaldo cubre el concepto que se creó DESPUÉS de que esta
+     * estimación naciera: sin él, su importe se tipearía en pantalla, el
+     * UPDATE no afectaría ninguna fila y el valor se perdería en silencio al
+     * volver a abrir. Tampoco genera duplicados: solo inserta si no hay fila.
+     *
+     * CONFIRMADO no se toca. Editar los importes de un contenedor confirmado
+     * no lo devuelve a borrador: sigue confirmado y con los valores nuevos.
      */
     private function actualizarEstimacion($idMg, $conceptos) {
         try {
@@ -440,17 +504,17 @@ class EstimacionCostos
                 // Valores por defecto
                 $valor1 = isset($concepto['valor_default_1']) ? $concepto['valor_default_1'] : null;
                 $valor2 = isset($concepto['valor_default_2']) ? $concepto['valor_default_2'] : null;
-                
+
                 // Aplicar lógica dinámica para concepto DESPACHANTE
                 $this->obtenerParametrosDespachante($idMg, $concepto['id_ce'], $valor1, $valor2);
-                
-                $sql = "UPDATE RO_T_IMPORTACIONES_ESTIMACION_DETALLE 
+
+                $sql = "UPDATE RO_T_IMPORTACIONES_ESTIMACION_DETALLE
                         SET VALOR_DEFAULT_1 = ?,
                             VALOR_DEFAULT_2 = ?,
                             IMPORTE = ?,
                             FECHA_MOD = GETDATE()
                         WHERE ID_MG = ? AND ID_CE = ?";
-                
+
                 $params = array(
                     $valor1,
                     $valor2,
@@ -458,17 +522,48 @@ class EstimacionCostos
                     $idMg,
                     $concepto['id_ce']
                 );
-                
+
                 $stmt = sqlsrv_query($this->cid_central, $sql, $params);
-                
+
                 if ($stmt === false) {
                     error_log("Error actualizando concepto: " . print_r(sqlsrv_errors(), true));
                     return false;
                 }
+
+                if (sqlsrv_rows_affected($stmt) > 0) {
+                    continue;
+                }
+
+                // El concepto todavía no tenía fila en esta estimación.
+                // Hereda el CONFIRMADO del resto para no quedar como una fila
+                // suelta en borrador dentro de una estimación confirmada.
+                $sqlInsert = "INSERT INTO RO_T_IMPORTACIONES_ESTIMACION_DETALLE
+                                (ID_MG, ID_CE, VALOR_DEFAULT_1, VALOR_DEFAULT_2,
+                                 IMPORTE, CONFIRMADO, FECHA_MOD)
+                              SELECT ?, ?, ?, ?, ?,
+                                     ISNULL((SELECT TOP 1 CONFIRMADO
+                                             FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE
+                                             WHERE ID_MG = ?), 0),
+                                     GETDATE()
+                              WHERE NOT EXISTS (
+                                  SELECT 1 FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE
+                                  WHERE ID_MG = ? AND ID_CE = ?
+                              )";
+
+                $stmtInsert = sqlsrv_query($this->cid_central, $sqlInsert, array(
+                    $idMg, $concepto['id_ce'], $valor1, $valor2, $concepto['importe'],
+                    $idMg, $idMg, $concepto['id_ce']
+                ));
+
+                if ($stmtInsert === false) {
+                    error_log("Error insertando concepto nuevo en estimación existente: "
+                              . print_r(sqlsrv_errors(), true));
+                    return false;
+                }
             }
-            
+
             return true;
-            
+
         } catch (Exception $e) {
             error_log('Error en actualizarEstimacion: ' . $e->getMessage());
             return false;

@@ -122,13 +122,17 @@ function getEstadoClass(estado) {
 }
 
 function generarBotonesAccion(despacho) {
-    // Cambiar texto del botón según estado
     const esConfirmado = despacho.ESTADO === 'CONFIRMADO';
+
+    /* Un contenedor confirmado ya no se "ve": se edita. El botón decía "Ver
+       Estimación" con un ojo porque la pantalla de destino era de sólo
+       lectura; ahora que se pueden corregir los importes, ese texto mandaría
+       a la gente a buscar la edición donde no está. */
     const btnEditar = `
-        <a href="components/editar-estimacion.php?id=${despacho.ID}" 
-           class="btn btn-sm ${esConfirmado ? 'btn-info' : 'btn-primary'}" 
-           title="${esConfirmado ? 'Ver estimación' : 'Editar estimación'}">
-            <i class="bi bi-${esConfirmado ? 'eye' : 'pencil'}"></i> ${esConfirmado ? 'Ver Estimación' : 'Editar'}
+        <a href="components/editar-estimacion.php?id=${despacho.ID}"
+           class="btn btn-sm ${esConfirmado ? 'btn-info' : 'btn-primary'}"
+           title="${esConfirmado ? 'Editar los costos de un contenedor confirmado' : 'Editar estimación'}">
+            <i class="bi bi-pencil"></i> Editar
         </a>
     `;
     

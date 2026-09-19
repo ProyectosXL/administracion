@@ -136,6 +136,9 @@ function renderizarTabla(datos) {
                         <button class="btn btn-sm btn-primary" onclick='abrirModalEditar(${JSON.stringify(param)})' title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick='abrirModalVigencias(${JSON.stringify(param)})' title="Vigencias de la alícuota">
+                            <i class="bi bi-calendar-range"></i>
+                        </button>
                         <button class="btn btn-sm btn-danger" onclick='eliminarConcepto(${param.ID_CE}, "${param.CONCEPTO}")' title="Eliminar">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -445,7 +448,9 @@ function guardarParametro() {
         tipo_cambio: tc,
         valor_default_1_uyu: val1Uyu,
         valor_default_2_uyu: val2Uyu,
-        id_ref_concepto: $('#editRefConcepto').val() || null
+        id_ref_concepto: $('#editRefConcepto').val() || null,
+        // Desde cuándo rige el valor nuevo. Vacío: el servidor usa hoy.
+        vigencia_desde: $('#editVigenciaDesde').val() || null
     };
     
     Swal.fire({
@@ -479,9 +484,12 @@ function guardarParametro() {
                 
                 Swal.fire({
                     title: '¡Actualizado!',
-                    text: 'Parámetro actualizado correctamente',
+                    // El mensaje lo arma el servidor: dice si además quedó
+                    // registrada una vigencia nueva, que depende de si el
+                    // script 09 se corrió en esta base.
+                    text: response.message || 'Parámetro actualizado correctamente',
                     icon: 'success',
-                    timer: 1500,
+                    timer: 2500,
                     showConfirmButton: false
                 });
             } else {

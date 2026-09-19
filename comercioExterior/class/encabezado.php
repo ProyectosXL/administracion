@@ -4,6 +4,47 @@ class Encabezado
 {
     private $cid_central;
 
+    /**
+     * VALOR_FOB_PESO derivado del FOB en dólares y el tipo de cambio.
+     *
+     * Es la MISMA regla que recalcularFobPesos() aplica en el navegador, y
+     * está acá porque el Valor F.O.B. U$S pasó a ser editable después del
+     * alta: desde que ese número se puede corregir, el FOB en pesos no puede
+     * seguir saliendo de lo que el cliente informa. Si el formulario mandaba
+     * el campo vacío -por ejemplo porque el tipo de cambio no estaba cargado-
+     * el UPDATE salteaba la columna y VALOR_FOB_PESO quedaba con el valor del
+     * FOB viejo, que es el que después usan el % sobre FOB de los costos de
+     * nacionalización y la impresión.
+     *
+     * URUGUAY: FOB_PESO = FOB_DOLAR, sin multiplicar. Es lo que hace la
+     * pantalla y lo que hay en la base: en las 72 filas de uy las dos
+     * columnas son iguales y el TIPO_CAMBIO -que ronda 40- no se aplica.
+     *
+     * @return float|null null cuando no hay con qué calcularlo; en ese caso
+     *                    quien llama NO debe tocar la columna, porque escribir
+     *                    un cero sería afirmar que el contenedor no vale nada.
+     */
+    public static function calcularFobPeso($fobDolar, $tipoCambio, $esUruguay = false)
+    {
+        $fob = floatval(str_replace(',', '.', (string) $fobDolar));
+
+        if ($fob <= 0) {
+            return null;
+        }
+
+        if ($esUruguay) {
+            return round($fob, 2);
+        }
+
+        $tc = floatval(str_replace(',', '.', (string) $tipoCambio));
+
+        if ($tc <= 0) {
+            return null;
+        }
+
+        return round($fob * $tc, 2);
+    }
+
     function __construct()
     {
 

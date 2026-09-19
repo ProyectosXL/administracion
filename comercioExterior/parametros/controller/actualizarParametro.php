@@ -80,14 +80,44 @@ try {
     }
     
     $stmt = sqlsrv_query($conn, $sql, $params);
-    
+
     if ($stmt === false) {
         throw new Exception('Error al actualizar parámetro: ' . print_r(sqlsrv_errors(), true));
     }
-    
+
+    /* EDITAR UN PARÁMETRO DEJA RASTRO.
+       Este UPDATE pisa el valor anterior y no hay dónde leerlo después. Desde
+       que las alícuotas tienen vigencia, cada edición además INSERTA una
+       vigencia nueva y cierra la anterior, así que el valor viejo sigue
+       existiendo con el período en el que rigió.
+
+       vigencia_desde es opcional: si el formulario no lo manda, la vigencia
+       arranca HOY, que es lo que afirma una corrección hecha ahora. Quien
+       necesite fecharla distinto -"desde el 1/7 rige el 12%"- la manda.
+
+       Si el script 09 no se corrió, esto no hace nada y el UPDATE de arriba
+       se comporta como antes: la edición funciona, sin historial. */
+    $vigencia = null;
+    require_once __DIR__ . '/../../class/AlicuotasVigencia.php';
+
+    if (AlicuotasVigencia::disponible($conn)) {
+        $desde = (isset($data['vigencia_desde']) && trim((string) $data['vigencia_desde']) !== '')
+            ? $data['vigencia_desde'] : date('Y-m-d');
+
+        $vigencia = AlicuotasVigencia::agregar(
+            $conn, $idCe, $valorDefault1, $valorDefault2,
+            $desde, null,
+            'Editado desde Parámetros',
+            $_SESSION['usuario_dns'] ?? null
+        );
+    }
+
     echo json_encode([
-        'success' => true,
-        'message' => 'Parámetro actualizado correctamente'
+        'success'  => true,
+        'vigencia' => $vigencia,
+        'message'  => ($vigencia !== null && $vigencia['success'])
+            ? 'Parámetro actualizado. Se registró una vigencia nueva y la anterior quedó cerrada.'
+            : 'Parámetro actualizado correctamente'
     ]);
     
 } catch (Exception $e) {

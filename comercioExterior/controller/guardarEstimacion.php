@@ -26,18 +26,28 @@ try {
     require_once '../class/estimacionCostos.php';
     
     $estimacion = new EstimacionCostos();
-    
-    // Verificar si está confirmada
-    if ($estimacion->estaConfirmada($idMg)) {
-        throw new Exception('No se puede modificar una estimación confirmada');
-    }
-    
+
+    /* UNA ESTIMACIÓN CONFIRMADA SE PUEDE SEGUIR EDITANDO.
+       Antes acá había un throw: confirmar congelaba los importes y corregir un
+       número equivocado obligaba a borrar el contenedor y rehacerlo entero.
+       Los costos de nacionalización se conocen DESPUÉS de confirmar -llega el
+       despacho, llega la factura del despachante- así que el estado de "ya no
+       se toca" llegaba siempre demasiado temprano.
+
+       Lo que NO cambia: guardar no devuelve el contenedor a borrador -el flag
+       CONFIRMADO queda como está- y sigue sin generar filas nuevas, porque el
+       guardado va por (ID_MG, ID_CE). Ver EstimacionCostos::actualizarEstimacion. */
+    $estabaConfirmada = $estimacion->estaConfirmada($idMg);
+
     $resultado = $estimacion->guardarEstimacion($idMg, $conceptos);
-    
+
     if ($resultado) {
         echo json_encode([
-            'success' => true,
-            'message' => 'Estimación guardada correctamente'
+            'success'    => true,
+            'confirmada' => $estabaConfirmada,
+            'message'    => $estabaConfirmada
+                ? 'Costos actualizados. El contenedor sigue confirmado.'
+                : 'Estimación guardada correctamente'
         ]);
     } else {
         throw new Exception('Error al guardar la estimación');

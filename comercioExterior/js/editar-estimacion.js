@@ -179,9 +179,16 @@ function cargarDatosEstimacion(idDespacho) {
                 
                 mostrarInformacionDespacho();
                 generarFormularioConceptos();
-                
+                mostrarOrigenAlicuotas(response.data.vigencia);
+
+                /* Confirmado ya NO bloquea el formulario. Los costos de
+                   nacionalización se terminan de conocer después de confirmar
+                   -llega el despacho, llega la factura del despachante- y
+                   corregir un número obligaba a borrar el contenedor entero.
+                   Lo que se mantiene es el aviso: editar acá cambia un dato
+                   que el cashflow de Finanzas ya está leyendo. */
                 if (estaConfirmada) {
-                    bloquearFormulario();
+                    marcarConfirmadoEditable();
                 }
             } else {
                 mostrarError(response.message || 'Error al cargar los datos');
@@ -215,8 +222,12 @@ function mostrarInformacionDespacho() {
     }
 
     if (estaConfirmada) {
-        $('#estadoBadge').html('<i class="bi bi-check-circle-fill"></i> Confirmado')
-            .removeClass('badge-warning').addClass('badge-success');
+        // "editable" en el badge y no sólo en los campos: el usuario venía de
+        // una versión donde confirmado significaba que la pantalla era de
+        // sólo lectura, y los inputs habilitados solos se leen como un error.
+        $('#estadoBadge').html('<i class="bi bi-check-circle-fill"></i> Confirmado · editable')
+            .removeClass('badge-warning').addClass('badge-success')
+            .attr('title', 'Los importes se pueden seguir corrigiendo; el contenedor sigue confirmado');
     }
 }
 
@@ -314,17 +325,20 @@ function generarFilaConcepto(concepto, param1, param2, importe, confirmado, inde
     const param1Display = param1 !== null ? formatearParametro(param1, tipoValor) : '-';
     const param2Display = param2 !== null ? formatearParametro(param2, tipoValor) : '-';
     
-    // Determinar si el campo debe ser readonly:
-    // - Si el concepto está CONFIRMADO (confirmado=1), entonces readonly
-    // - Si está en BORRADOR (confirmado=0 o undefined), entonces editable
+    // Confirmado YA NO implica readonly: los importes se siguen editando
+    // después de confirmar. La clase 'confirmado' queda porque es la marca
+    // visual de que este contenedor ya pasó por confirmación, que es
+    // información distinta de "no se puede tocar".
     const esConfirmado = confirmado === 1;
-    const readonlyAttr = esConfirmado ? 'readonly' : '';
+    const readonlyAttr = '';
     const confirmadoClass = esConfirmado ? 'confirmado' : '';
-    
-    // Para tipo P: envolver el input con el ícono de override
-    const overrideActivo = tieneOverride && !esConfirmado;
+
+    // Para tipo P: envolver el input con el ícono de override.
+    // Un importe confirmado siempre es un override -es un valor que alguien
+    // fijó- así que el recálculo automático no debe pisarlo al abrir.
+    const overrideActivo = tieneOverride;
     let celdaImporte;
-    if (tipoValor === 'P' && !esConfirmado) {
+    if (tipoValor === 'P') {
         celdaImporte = `
             <div class="input-override-wrapper">
                 <input type="text"
@@ -746,14 +760,19 @@ function getInputOverride(idCe) {
 function setConceptoValorCalculado(idCe, valor) {
     const $row = $(`tr[data-concepto-id="${idCe}"]`);
     const $input = $row.find('.importe-editable');
-    const confirmado = parseInt($row.data('confirmado')) || 0;
     const override = $input.attr('data-override') === 'true';
 
     // NO actualizar si:
-    // 1. El concepto está confirmado (valores congelados)
-    // 2. El usuario está editando el campo actualmente
-    // 3. El usuario (o la carga inicial desde BD) marcó un override manual
-    if (confirmado === 1 || $input.is(':focus') || override) {
+    // 1. El usuario está editando el campo actualmente
+    // 2. El usuario (o la carga inicial desde BD) marcó un override manual
+    //
+    // El corte por CONFIRMADO que había acá se fue junto con el bloqueo del
+    // formulario, y no hace falta: una fila confirmada nace con override en
+    // true -el importe guardado es un valor que alguien fijó- así que el
+    // recálculo automático sigue sin pisarla al abrir. La diferencia es que
+    // ahora el botón de "volver al automático" funciona también sobre un
+    // contenedor confirmado, que antes quedaba muerto.
+    if ($input.is(':focus') || override) {
         return;
     }
 
@@ -773,16 +792,35 @@ function setValorCalculado(nombre, valor) {
  * Guardar estimación
  */
 function guardarEstimacion() {
+    /* Un contenedor confirmado se guarda igual. Acá había un return que lo
+       impedía; lo que queda en su lugar es una confirmación, porque estos
+       importes son los que el cashflow de Finanzas lee como gastos de
+       nacionalización y cambiarlos mueve ese tablero. */
     if (estaConfirmada) {
         Swal.fire({
-            title: 'Estimación confirmada',
-            text: 'No se puede modificar una estimación confirmada',
-            icon: 'warning',
+            title: 'El contenedor está confirmado',
+            html: 'Vas a modificar los importes de una estimación ya confirmada.<br>' +
+                  'Sigue confirmada después de guardar, y el cambio se ve también en el ' +
+                  'cashflow de Finanzas.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Guardar cambios',
+            cancelButtonText: 'Cancelar',
             confirmButtonColor: '#7066e0'
+        }).then((r) => {
+            if (r.isConfirmed) enviarEstimacion();
         });
         return;
     }
-    
+
+    enviarEstimacion();
+}
+
+/**
+ * El envío en sí, separado de la confirmación para que los dos caminos
+ * -borrador y confirmado- manden exactamente lo mismo.
+ */
+function enviarEstimacion() {
     const conceptosData = [];
     
     // Solo guardar conceptos de BD (no los calculados como FOB, CIF, etc.)
@@ -857,12 +895,69 @@ function guardarEstimacion() {
 }
 
 /**
- * Bloquear formulario cuando está confirmado
+ * Un contenedor confirmado se sigue editando, y la pantalla lo dice.
+ *
+ * Reemplaza a bloquearFormulario(), que ponía los importes en readonly y
+ * deshabilitaba los dos botones de guardar. Los campos quedan editables y el
+ * único cambio es el texto del botón: "Guardar cambios" en vez de "Guardar",
+ * porque acá no se está creando una estimación sino corrigiendo una que ya
+ * existe y que el cashflow de Finanzas ya está leyendo.
  */
-function bloquearFormulario() {
-    $('.importe-editable').prop('readonly', true).addClass('confirmado');
-    $('#btnGuardar').prop('disabled', true).html('<i class="bi bi-lock"></i> Confirmado');
-    $('#btnGuardarBottom').prop('disabled', true).html('<i class="bi bi-lock"></i> Confirmado');
+function marcarConfirmadoEditable() {
+    $('.importe-editable').prop('readonly', false);
+    $('#btnGuardar, #btnGuardarBottom')
+        .prop('disabled', false)
+        .html('<i class="bi bi-save"></i> Guardar cambios')
+        .attr('title', 'El contenedor está confirmado: al guardar sigue confirmado, con los importes nuevos');
+}
+
+/**
+ * Dice de dónde salieron las alícuotas de la pantalla.
+ *
+ * Sin este cartel, un importe calculado con la alícuota que regía el día de
+ * la nacionalización y uno calculado con la del padrón se ven exactamente
+ * igual, y la diferencia es justamente lo que el módulo de vigencias vino a
+ * hacer visible.
+ */
+function mostrarOrigenAlicuotas(vigencia) {
+    const $destino = $('#avisoVigencia');
+    if (!$destino.length || !vigencia) return;
+
+    if (!vigencia.disponible) {
+        $destino
+            .html('<i class="bi bi-info-circle"></i> Las alícuotas salen del padrón. ' +
+                  'Para que se resuelvan por fecha de nacionalización falta correr ' +
+                  '<code>comercioExterior/sql/09_alicuotas_vigencia.sql</code> en esta base.')
+            .attr('class', 'alert alert-secondary py-2 px-3 mb-3')
+            .show();
+        return;
+    }
+
+    if (!vigencia.fecha) {
+        $destino
+            .html('<i class="bi bi-exclamation-triangle"></i> El contenedor no tiene ' +
+                  '<strong>fecha de nacionalización</strong> cargada, así que las alícuotas ' +
+                  'salen del padrón. Al cargarla, se recalculan con las que regían ese día.')
+            .attr('class', 'alert alert-warning py-2 px-3 mb-3')
+            .show();
+        return;
+    }
+
+    const fecha = vigencia.fecha.split('-').reverse().join('/');
+
+    if (vigencia.aplicada) {
+        $destino
+            .html('<i class="bi bi-calendar-check"></i> Alícuotas vigentes al <strong>' + fecha +
+                  '</strong> (fecha de nacionalización), no las de hoy.')
+            .attr('class', 'alert alert-info py-2 px-3 mb-3')
+            .show();
+    } else {
+        $destino
+            .html('<i class="bi bi-exclamation-triangle"></i> No hay ninguna vigencia cargada que ' +
+                  'cubra el <strong>' + fecha + '</strong>, así que las alícuotas salen del padrón.')
+            .attr('class', 'alert alert-warning py-2 px-3 mb-3')
+            .show();
+    }
 }
 
 /**
