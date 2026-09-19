@@ -238,6 +238,17 @@ const convertirNumeros = (input) =>{
   input.value = parseFloat(valueI).toLocaleString('es-ES', { minimumFractionDigits: 2 });
 }
 
+/**
+ * Antes borraba el contenido del campo al hacerle clic.
+ *
+ * Con el formulario siempre vacío eso no costaba nada -no había qué
+ * perder- pero ahora la pantalla trae los costos ya cargados, y un clic
+ * accidental borraba un importe sin dejar rastro ni forma de deshacerlo.
+ *
+ * Seleccionarlo tiene el mismo efecto para quien viene a reemplazarlo -la
+ * primera tecla lo pisa igual- y no pierde nada para quien sólo pasó por
+ * ahí o quiere corregir un dígito.
+ */
 const limpiarInput = (input) =>{
-  input.value = '';
+  input.select();
 }

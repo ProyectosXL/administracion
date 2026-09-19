@@ -104,6 +104,10 @@ if (session_status() == PHP_SESSION_NONE) {
                 </div>
             </div>
 
+            <!-- De qué fecha salieron las alícuotas. Lo llena
+                 mostrarOrigenAlicuotas() con lo que informa el controller. -->
+            <div id="avisoVigencia" class="alert alert-info py-2 px-3 mb-3" style="display:none;"></div>
+
             <div class="table-responsive">
                 <table class="table table-estimation">
                     <thead>

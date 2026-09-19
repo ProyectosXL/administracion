@@ -276,10 +276,23 @@ try {
 
                         <div class="row row-space">
                             <div class="col-md-5">
-                                <label class="label-campo">Valor F.O.B. U$S</label>
+                                <label class="label-campo">
+                                    Valor F.O.B. U$S
+                                    <!-- Sólo se muestra en modo edición: lo prende
+                                         establecerModoFormulario(). Es el único campo
+                                         de la Sección 1 que sigue siendo editable, y
+                                         sin decirlo pasaba desapercibido entre los
+                                         campos grises de al lado. -->
+                                    <span id="avisoFobEditable" class="badge bg-primary" style="display:none; font-weight:500;">
+                                        <i class="bi bi-pencil-fill"></i> Editable
+                                    </span>
+                                </label>
                                 <div class="input-group">
                                     <input class="input--style-1 decimales currencyInput" type="text" id="valorFobDolar" required>
-                                </div>    
+                                </div>
+                                <small id="ayudaFobEditable" class="text-muted" style="display:none;">
+                                    Al cambiarlo se recalculan el F.O.B. $, el saldo de pagos y el % sobre FOB de los costos.
+                                </small>
                             </div>
                             <div class="col-md-5">
                                 <label class="label-campo">Órdenes de Compra</label>
@@ -454,9 +467,20 @@ try {
 
                         <div class="row row-space">
                             <div class="col-md-12">
-                                <h5 class="mb-3">Registro de Pagos</h5>
-                                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-                                    <label class="label-campo" style="margin-bottom: 0;"><span id="saldoPendiente" class="badge bg-warning" style="font-size: 14px; padding: 6px 12px; border-radius: 4px; color: #856404;"><i class="bi bi-hourglass-split"></i> Saldo pendiente: $ 0,00</span></label>
+                                <h5 class="mb-3">Registro de Pagos <small class="text-muted">— en U$S</small></h5>
+                                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                        <!-- Los tres números que pide el circuito: qué se debía,
+                                             qué se pagó y qué falta. Antes sólo estaba el saldo,
+                                             y el total pagado había que sumarlo a ojo de la tabla. -->
+                                        <span id="fobTotalUsd" class="badge bg-light text-dark border" style="font-size: 13px; padding: 6px 10px;">
+                                            <i class="bi bi-cash-stack"></i> FOB: U$S 0,00
+                                        </span>
+                                        <span id="totalPagadoUsd" class="badge bg-light text-dark border" style="font-size: 13px; padding: 6px 10px;">
+                                            <i class="bi bi-check2-all"></i> Pagado: U$S 0,00
+                                        </span>
+                                        <label class="label-campo" style="margin-bottom: 0;"><span id="saldoPendiente" class="badge bg-warning" style="font-size: 14px; padding: 6px 12px; border-radius: 4px; color: #856404;"><i class="bi bi-hourglass-split"></i> Saldo pendiente: U$S 0,00</span></label>
+                                    </div>
                                     <button type="button" id="btnAgregarPago" class="btn btn-sm btn-primary">
                                         <i class="bi bi-plus-circle"></i> Agregar Pago
                                     </button>
@@ -470,11 +494,11 @@ try {
                                     <table class="table table-sm table-bordered" id="tablaPagos" style="background: white; margin: 0;">
                                         <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 1;">
                                             <tr>
-                                                <th style="width: 25%;">Fecha de Pago</th>
-                                                <th style="width: 25%;">Forma de Pago</th>
-                                                <th style="width: 25%;">Medio de Pago</th>
-                                                <th style="width: 20%;">Monto ($)</th>
-                                                <th style="width: 5%; text-align: center;">Acciones</th>
+                                                <th style="width: 22%;">Fecha de Pago</th>
+                                                <th style="width: 23%;">Forma de Pago</th>
+                                                <th style="width: 23%;">Medio de Pago</th>
+                                                <th style="width: 20%;">Importe U$S</th>
+                                                <th style="width: 12%; text-align: center;">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tbodyPagos">
@@ -544,16 +568,16 @@ try {
                     <div class="alert alert-light border mb-3" style="background-color: #f8f9fa;">
                         <div class="row text-center">
                             <div class="col-4">
-                                <small class="text-muted d-block">FOB Total</small>
-                                <strong id="modalFobTotal">$ 0,00</strong>
+                                <small class="text-muted d-block">FOB Total U$S</small>
+                                <strong id="modalFobTotal">U$S 0,00</strong>
                             </div>
                             <div class="col-4">
-                                <small class="text-muted d-block">Saldo Actual</small>
-                                <strong id="modalSaldoActual">$ 0,00</strong>
+                                <small class="text-muted d-block">Saldo Actual U$S</small>
+                                <strong id="modalSaldoActual">U$S 0,00</strong>
                             </div>
                             <div class="col-4" id="modalNuevoSaldoContainer">
-                                <small class="text-muted d-block">Nuevo Saldo</small>
-                                <strong id="modalNuevoSaldo">$ 0,00</strong>
+                                <small class="text-muted d-block">Nuevo Saldo U$S</small>
+                                <strong id="modalNuevoSaldo">U$S 0,00</strong>
                             </div>
                         </div>
                     </div>
@@ -581,8 +605,19 @@ try {
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Monto</label>
-                        <input type="number" class="form-control" id="montoNuevo" placeholder="0.00" step="0.01" min="0">
+                        <label class="form-label">Importe U$S</label>
+                        <div class="input-group">
+                            <span class="input-group-text">U$S</span>
+                            <input type="number" class="form-control" id="montoNuevo" placeholder="0.00" step="0.01" min="0">
+                        </div>
+                        <!-- Se dice acá y no sólo en el título: el campo decía
+                             "Monto" a secas y la gente cargaba indistintamente
+                             pesos o dólares, que es el origen de las 7 filas
+                             que hubo que convertir con el script 08. -->
+                        <div class="form-text">
+                            El pago al proveedor del exterior se registra en dólares.
+                            Se admiten pagos parciales: el saldo se actualiza solo.
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -593,13 +628,16 @@ try {
         </div>
     </div>
 
-    <!-- Modal para Editar Fecha de Pago -->
+    <!-- Modal para Editar un Pago.
+         Antes editaba SOLO la fecha. Con el saldo calculado en dólares, el
+         importe es lo que más se corrige -un pago cargado de más deja el
+         saldo mintiendo- y la única salida era borrar el pago y rehacerlo. -->
     <div class="modal fade" id="modalEditarFechaPago" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="bi bi-calendar-event"></i> Editar Fecha de Pago
+                        <i class="bi bi-pencil-square"></i> Editar Pago
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -608,6 +646,30 @@ try {
                         <label class="form-label">Fecha de Pago</label>
                         <input type="text" class="form-control js-datepicker-edit-fecha" id="fechaPagoEdit" readonly>
                         <input type="hidden" id="idPagoEdit">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Forma de Pago</label>
+                        <select class="form-select" id="formaPagoEdit">
+                            <option>PAGO ANTICIPADO</option>
+                            <option>PAGO VISTA</option>
+                            <option>PAGO DIFERIDO</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Medio de Pago</label>
+                        <select class="form-select" id="medioPagoEdit">
+                            <option>Transferencia</option>
+                            <option>Cheque</option>
+                            <option>Tarjeta</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Importe U$S</label>
+                        <div class="input-group">
+                            <span class="input-group-text">U$S</span>
+                            <input type="number" class="form-control" id="montoEdit" step="0.01" min="0">
+                        </div>
+                        <div class="form-text" id="avisoOrigenArs" style="display:none;"></div>
                     </div>
                 </div>
                 <div class="modal-footer">

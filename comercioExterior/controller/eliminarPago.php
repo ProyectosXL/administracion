@@ -19,23 +19,37 @@ try {
         throw new Exception('ID de pago requerido');
     }
     
-    $idPago = $_POST['id_pago'];
-    
+    $idPago = intval($_POST['id_pago']);
+
     // Incluir clases necesarias
     require_once('../class/Pagos.php');
-    
+
     $pagosClass = new Pagos();
-    
+
+    /* El contenedor se lee ANTES de borrar: después el pago ya no está y no
+       hay de dónde sacar sobre cuál recalcular el saldo. */
+    $pago = $pagosClass->obtenerPago($idPago);
+    if (!$pago) {
+        throw new Exception('El pago no existe');
+    }
+
     // Eliminar el pago
     $resultado = $pagosClass->eliminarPago($idPago);
-    
-    if ($resultado) {
+
+    if ($resultado === true) {
+        // Igual que al insertar y al editar: el saldo lo devuelve el servidor.
+        $resumen = $pagosClass->obtenerResumen($pago['ID_ENCABEZADO']);
+
         echo json_encode([
-            'success' => true,
-            'message' => 'Pago eliminado correctamente'
+            'success'        => true,
+            'message'        => 'Pago eliminado correctamente',
+            'fobUsd'         => $resumen['fobUsd'],
+            'totalPagado'    => $resumen['totalPagado'],
+            'saldoPendiente' => $resumen['saldoPendiente'],
+            'estado'         => $resumen['estado']
         ]);
     } else {
-        throw new Exception('No se pudo eliminar el pago');
+        throw new Exception(is_string($resultado) ? $resultado : 'No se pudo eliminar el pago');
     }
     
 } catch (Exception $e) {

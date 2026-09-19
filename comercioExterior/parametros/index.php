@@ -596,10 +596,30 @@
                             <div class="form-text" id="editParam2Help"></div>
                         </div>
 
+                        <!-- Desde cuándo rige el valor nuevo.
+                             Sin esta fecha, editar un parámetro pisaba el valor
+                             anterior y no quedaba forma de saber qué alícuota
+                             regía cuando se nacionalizó un contenedor de hace
+                             ocho meses. Ahora cada edición abre una vigencia y
+                             cierra la anterior el día previo. -->
+                        <div class="mb-3">
+                            <label for="editVigenciaDesde" class="form-label fw-bold">
+                                Vigente desde
+                            </label>
+                            <input type="date" class="form-control" id="editVigenciaDesde" name="vigencia_desde">
+                            <div class="form-text">
+                                El valor anterior no se pierde: queda cerrado el día previo a esta fecha
+                                y las operaciones nacionalizadas antes lo siguen usando.
+                                Vacío = hoy.
+                            </div>
+                        </div>
+
                         <div class="alert alert-warning mb-0">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Atención:</strong> Este cambio solo afectará a nuevas estimaciones que se creen a partir de ahora.
-                            Las estimaciones existentes NO se modificarán automáticamente.
+                            <strong>Atención:</strong> este cambio no reescribe estimaciones ya guardadas:
+                            cada estimación conserva los valores con los que se calculó.
+                            Lo que sí cambia es qué alícuota se usa al recalcular, y eso se decide
+                            por la <strong>fecha de nacionalización</strong> del contenedor, no por la de hoy.
                         </div>
                     </form>
                 </div>
@@ -609,6 +629,97 @@
                     </button>
                     <button type="button" class="btn btn-primary" onclick="guardarParametro()">
                         <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Vigencias de una alícuota.
+         Muestra el historial completo -incluidas las retiradas- y permite
+         cargar una vigencia nueva con su período. Es la pantalla que faltaba
+         para que el historial que la tabla guarda se pueda mirar. -->
+    <div class="modal fade" id="modalVigencias" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-calendar-range"></i>
+                        Vigencias de <span id="vigConceptoNombre"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="vigIdCe">
+                    <input type="hidden" id="vigTipoValor">
+
+                    <div id="vigAviso" class="alert alert-secondary py-2 px-3" style="display:none;"></div>
+
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 70px;">#</th>
+                                    <th>Valor</th>
+                                    <th>Valor 2</th>
+                                    <th style="width: 120px;">Desde</th>
+                                    <th style="width: 120px;">Hasta</th>
+                                    <th style="width: 110px;">Estado</th>
+                                    <th style="width: 80px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="vigTbody"></tbody>
+                        </table>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="fw-bold"><i class="bi bi-plus-circle"></i> Nueva vigencia</h6>
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label">Valor <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="vigValor1" step="0.000001">
+                                <span class="input-group-text" id="vigUnidad1"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Valor 2</label>
+                            <input type="number" class="form-control" id="vigValor2" step="0.000001">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Desde <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="vigDesde">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Hasta</label>
+                            <input type="date" class="form-control" id="vigHasta">
+                            <!-- Vacío es un estado, no un olvido: es lo que
+                                 distingue "sigue vigente" de "rigió hasta tal
+                                 día y después no la reemplazó ninguna". -->
+                            <div class="form-text">Vacío = sigue vigente</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Observación</label>
+                            <input type="text" class="form-control" id="vigObservacion" maxlength="200"
+                                   placeholder="Ej: Resolución General 5.xxx/2026">
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 px-3 mt-3 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        La alícuota de una operación se resuelve contra su <strong>fecha de
+                        nacionalización</strong>. Los dos extremos entran: una operación
+                        nacionalizada justo el "desde" o justo el "hasta" usa esta vigencia.
+                        Al guardar, la vigencia abierta anterior se cierra el día previo.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cerrar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarVigencia" onclick="guardarVigencia()">
+                        <i class="bi bi-save"></i> Agregar vigencia
                     </button>
                 </div>
             </div>
@@ -723,6 +834,9 @@
     
     <!-- Custom JS -->
     <script src="js/parametros.js"></script>
+    <!-- El ABM de vigencias de alícuotas. Va después de parametros.js porque
+         usa cargarParametros() para refrescar la grilla al guardar. -->
+    <script src="js/vigenciasAlicuotas.js"></script>
     <script src="js/gestionTerminales.js"></script>
     <script src="js/gestionPuertos.js"></script>
     <script src="js/paramCronograma.js"></script>

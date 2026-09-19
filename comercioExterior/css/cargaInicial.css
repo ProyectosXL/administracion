@@ -157,6 +157,25 @@
     opacity: 0.7;
 }
 
+/* Campo editable que es la EXCEPCIÓN en una sección bloqueada.
+   Hoy sólo el Valor F.O.B. U$S en modo edición.
+
+   Es al revés que .campo-readonly: en vez de apagar lo que no se toca,
+   enciende lo único que sí. Hace falta porque la Sección 1 en edición tiene
+   seis campos grises y uno blanco, y un campo blanco de más se lee como uno
+   más que no responde, no como el que se puede corregir. */
+.campo-editable-excepcion {
+    background-color: #fff !important;
+    border-left: 3px solid var(--primary-color) !important;
+    box-shadow: 0 0 0 1px rgba(112, 102, 224, 0.25);
+    position: relative;
+    cursor: text;
+}
+
+.campo-editable-excepcion:focus {
+    box-shadow: 0 0 0 2px rgba(112, 102, 224, 0.45);
+}
+
 /* Tooltip informativo */
 .label-campo .bi-exclamation-circle {
     cursor: help;
