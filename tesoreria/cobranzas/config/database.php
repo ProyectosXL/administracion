@@ -67,12 +67,21 @@ class Database {
                 } elseif ($connectionName === 'lakers') {
                     $serverName = 'XL-LAKERBIS';
                     $dbName     = 'LOCALES_LAKERS';
+                } elseif ($connectionName === 'franquicias') {
+                    // Liquidacion FRANQUICIAS GA. Los comprobantes del canal
+                    // (CTA02/CTA03), la Lista 30 (GVA17), los recibos (GVA12) y
+                    // las tablas RO_T_FRANQ_GA_* viven todos aca. Mismo servidor
+                    // que 'lakers', otra base.
+                    $serverName = 'XL-LAKERBIS';
+                    $dbName     = 'FRANQUICIAS_LAKERS';
                 } else {
                     throw new Exception("Nombre de conexión no válido: $connectionName");
                 }
                 
                 $uid     = $_ENV['USER'];
-                $pwd     = ($connectionName === 'lakers') ? $_ENV['PASS_LOCALES'] : $_ENV['PASS'];
+                $pwd     = in_array($connectionName, ['lakers', 'franquicias'], true)
+                           ? $_ENV['PASS_LOCALES']
+                           : $_ENV['PASS'];
                 $charset = $_ENV['CHARACTER'];
 
                 if (empty($dbName) || empty($uid)) { // PWD puede estar vacío

@@ -436,6 +436,11 @@ $(document).ready(function () {
             $('#summary-cards').show(); // Mostramos los KPIs de deuda total
             $('#btn-abrir-parametros').show(); // Mostramos el botón de parámetros
             initializeDataTable('#tabla-franquicias', 'api/cobranzas_controller.php?tipo=franquicias');
+        } else if (targetId === 'franquicias-ga-tab') {
+            // --- VISTA LIQUIDACIÓN FRANQUICIAS GA (assets/js/franquicias_ga.js) ---
+            // Sin esta rama la pestaña caería en el 'else' de mayoristas y
+            // dispararía una carga de datos que no corresponde.
+            initFranquiciasGA();
         } else {
             // --- VISTA PENDIENTES (MAYORISTAS) ---
             $('#summary-cards').show(); // Mostramos los KPIs de deuda total
