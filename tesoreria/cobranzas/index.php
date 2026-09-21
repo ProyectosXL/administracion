@@ -173,6 +173,14 @@ include 'templates/layout/header.php';
                     </button>
                 </li>
                 <?php endif; ?>
+                <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) !== 'vvillarreal'): ?>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="franquicias-ga-tab" data-bs-toggle="tab"
+                        data-bs-target="#franquicias-ga" type="button" role="tab">
+                        <i class="fa-solid fa-file-invoice me-1"></i> Franquicias GA
+                    </button>
+                </li>
+                <?php endif; ?>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="gestion-tab" data-bs-toggle="tab" data-bs-target="#gestion"
                         type="button" role="tab">
@@ -349,6 +357,96 @@ include 'templates/layout/header.php';
                 </div>
                 <?php endif; ?>
                 <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) !== 'vvillarreal'): ?>
+                <!-- ======================= LIQUIDACIÓN SEMANAL FRANQUICIAS GA ======================= -->
+                <div class="tab-pane fade" id="franquicias-ga" role="tabpanel" aria-labelledby="franquicias-ga-tab">
+
+                    <!-- Aviso: franquicias del canal sin fecha de alta (no se liquidan) -->
+                    <div class="alert alert-warning d-none" id="fga-aviso-sin-alta" role="alert"></div>
+
+                    <!-- KPIs del conjunto filtrado -->
+                    <div class="row mb-3">
+                        <div class="col-md-3 mb-3">
+                            <div class="card shadow-sm border-left-primary h-100 py-2">
+                                <div class="card-body">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Liquidado</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="fga-kpi-importe">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card shadow-sm border-left-success h-100 py-2">
+                                <div class="card-body">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Cobrado</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="fga-kpi-cobrado">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card shadow-sm border-left-danger h-100 py-2">
+                                <div class="card-body">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Saldo Pendiente</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="fga-kpi-saldo">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card shadow-sm border-left-info h-100 py-2">
+                                <div class="card-body">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Comprobantes</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="fga-kpi-comprobantes">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="card border-0 bg-light mb-3 shadow-sm">
+                        <div class="card-body p-3">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Período Desde</label>
+                                    <input type="date" class="form-control form-control-sm" id="fga-desde">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Período Hasta</label>
+                                    <input type="date" class="form-control form-control-sm" id="fga-hasta">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Franquicia</label>
+                                    <select class="form-select form-select-sm" id="fga-sucursal">
+                                        <option value="">Todas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Estado del Lote</label>
+                                    <select class="form-select form-select-sm" id="fga-estado">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex gap-1">
+                                    <button type="button" class="btn btn-primary btn-sm" id="fga-btn-filtrar" title="Filtrar">
+                                        <i class="fa-solid fa-filter"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="fga-btn-limpiar" title="Limpiar filtros">
+                                        <i class="fa-solid fa-eraser"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-warning btn-sm ms-auto" id="fga-btn-generar"
+                                        title="Reprocesar manualmente si falló el job del lunes">
+                                        <i class="fa-solid fa-rotate me-1"></i> Generar lote manual
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="tabla-franq-ga-resumen" class="table table-striped table-hover align-middle" style="width:100%">
+                        </table>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <!-- ================================================================================== -->
+                <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) !== 'vvillarreal'): ?>
                 <div class="tab-pane fade" id="sugerencias" role="tabpanel" aria-labelledby="sugerencias-tab">
                     <div class="card bg-light mb-3 shadow-sm border-left-primary">
                         <div class="card-body p-3 d-flex justify-content-between align-items-center">
@@ -480,6 +578,153 @@ include 'templates/layout/header.php';
 </div>
 <!-- ======================================================================================== -->
 
+<!-- ======================= MODAL DETALLE DEL LOTE (FRANQUICIAS GA) ======================= -->
+<div class="modal fade" id="modalFranqGaDetalle" tabindex="-1" aria-labelledby="modalFranqGaDetalleLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalFranqGaDetalleLabel">
+                    <i class="fa-solid fa-list-ul me-2"></i>
+                    Detalle de la liquidación &mdash; <span id="fga-detalle-titulo"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="fga-detalle-resumen" class="mb-3"></div>
+                <div class="alert alert-light border small py-2">
+                    <i class="fa-solid fa-circle-info text-warning me-1"></i>
+                    Las filas resaltadas en amarillo son <strong>rezagados</strong>: comprobantes de períodos
+                    anteriores que no habían entrado en ningún lote. Las filas en itálica son artículos que no
+                    tenían precio en la Lista 30 al momento de generar el lote.
+                </div>
+                <div class="table-responsive">
+                    <table id="tabla-franq-ga-detalle" class="table table-sm table-hover align-middle" style="width:100%">
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================= MODAL RECIBOS DEL LOTE (FRANQUICIAS GA) ======================= -->
+<div class="modal fade" id="modalFranqGaRecibos" tabindex="-1" aria-labelledby="modalFranqGaRecibosLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalFranqGaRecibosLabel">
+                    <i class="fa-solid fa-link me-2"></i>
+                    Recibos de cobranza &mdash; <span id="fga-recibos-titulo"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 bg-light">
+                            <div class="text-xs text-uppercase text-muted">Importe del lote</div>
+                            <div class="h5 mb-0 fw-bold" id="fga-recibos-importe">-</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 bg-light">
+                            <div class="text-xs text-uppercase text-muted">Cobrado</div>
+                            <div class="h5 mb-0 fw-bold" id="fga-recibos-cobrado">-</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 bg-light">
+                            <div class="text-xs text-uppercase text-muted">Saldo pendiente</div>
+                            <div class="h5 mb-0 fw-bold" id="fga-recibos-saldo">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-success"><i class="fa-solid fa-magnifying-glass-dollar me-1"></i> Recibos candidatos</h6>
+                <p class="small text-muted">
+                    Ordenados por proximidad al saldo pendiente. Los resaltados en verde coinciden
+                    <strong>exactamente</strong> con el saldo.
+                </p>
+                <div class="table-responsive mb-4">
+                    <table id="tabla-franq-ga-recibos" class="table table-sm table-hover align-middle" style="width:100%">
+                    </table>
+                </div>
+
+                <h6 class="fw-bold text-primary"><i class="fa-solid fa-paperclip me-1"></i> Recibos ya vinculados</h6>
+                <div id="fga-recibos-vinculados" class="border rounded p-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ======================= MODAL ENVÍO DE LIQUIDACIÓN POR MAIL (FRANQUICIAS GA) ======================= -->
+<div class="modal fade" id="modalFranqGaMail" tabindex="-1" aria-labelledby="modalFranqGaMailLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalFranqGaMailLabel">
+                    <i class="fa-solid fa-envelope me-2"></i>
+                    Enviar liquidación por mail &mdash; <span id="fga-mail-titulo"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Aviso: ya se envió antes -->
+                <div class="alert alert-warning d-none" id="fga-mail-aviso-enviado" role="alert"></div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold" for="fga-mail-destinatario">Para</label>
+                        <input type="email" class="form-control" id="fga-mail-destinatario"
+                            placeholder="mail@franquicia.com" autocomplete="off">
+                        <div class="invalid-feedback">Ingresá una dirección de mail válida.</div>
+                        <div class="form-text d-none text-danger" id="fga-mail-sin-mail">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                            Esta franquicia <strong>no tiene mail cargado</strong> en SUCURSALES_LAKERS.
+                            Escribilo acá para enviar igual, y conviene cargarlo en la tabla para la próxima.
+                        </div>
+                        <div class="form-text">Tomado de <code>SUCURSALES_LAKERS.MAIL</code>. Se puede modificar.</div>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label small fw-bold" for="fga-mail-asunto">Asunto</label>
+                        <input type="text" class="form-control" id="fga-mail-asunto" maxlength="300">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Adjunto</label>
+                    <div class="border rounded p-2 bg-light small" id="fga-mail-adjunto-info">Preparando adjunto...</div>
+                    <div class="form-text">
+                        Detalle completo de comprobantes en Excel, idéntico al que se descarga con el botón Excel del detalle.
+                    </div>
+                </div>
+
+                <label class="form-label small fw-bold">Vista previa del mail</label>
+                <div class="border rounded" style="background: #fff;">
+                    <!-- srcdoc: se renderiza el HTML exacto que arma el servidor, aislado del CSS de la página -->
+                    <iframe id="fga-mail-preview" title="Vista previa del mail" sandbox=""
+                        style="width: 100%; height: 520px; border: 0; display: block;" srcdoc=""></iframe>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="fga-btn-enviar-mail" disabled>
+                    <i class="fa-solid fa-paper-plane me-1"></i> Enviar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ====================================================================================== -->
+
 <?php
 include 'templates/layout/footer.php';
 ?>
@@ -489,6 +734,7 @@ include 'templates/layout/footer.php';
 </script>
 <!-- Scripts específicos para el panel admin -->
 <script src="assets/js/sugerencias.js"></script>
+<script src="assets/js/franquicias_ga.js?v=1.3"></script>
 <script src="assets/js/app.js?v=1.5"></script>
 
 </body>
