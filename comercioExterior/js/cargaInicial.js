@@ -7,7 +7,24 @@
 let fechaArriboIsManual = false;
 let fechaPagoIsManual = false;
 let fechaDespachoIsManual = false;
-let fechaEstPagoIsManual = false; // Flag para fecha estimada de pago
+/* Fecha Est. Pago fijada a mano.
+   YA NO ES UN FLAG DE MEMORIA: se inicializa desde datos.FECHA_PAGO_CONF, el
+   BIT del maestro que creó sql/10_fecha_pago_manual.sql. Antes vivía solo acá,
+   así que una fecha guardada a mano volvía a nacer automática en la siguiente
+   apertura de la pantalla, y el recálculo de +5 días la pisaba. */
+let fechaEstPagoIsManual = false;
+
+/* Quién la fijó y cuándo, para el tooltip del badge. Vienen del maestro y no se
+   calculan acá. */
+let fechaEstPagoConfUsuario = null;
+let fechaEstPagoConfFecha = null;
+
+/* ETA en firme (ETA_CONFIRMADA del maestro).
+   Reemplaza al checkbox "ETA Confirmada": ahora se enciende SOLA al editar la
+   ETA a mano. El campo no se deprecia —lo leen el cronograma, la validación de
+   coherencia de CronogramaFechas::esFechaReal() y las dos pestañas del
+   cashflow—; lo que cambia es cómo se enciende, no qué significa. */
+let etaConfirmada = false;
 let cargandoDatos = false; // Flag para evitar marcar como manual durante carga inicial
 
 /* Estado de los pagos. Se declara acá arriba, junto al resto de las globales,
@@ -338,6 +355,168 @@ function recalcularFechaEstimadaPago() {
 }
 
 
+/* ==========================================================================
+   EL BADGE DE LA FECHA EST. PAGO
+
+   Era HTML estático que decía "Auto" siempre, incluso sobre una fecha que
+   alguien había puesto a mano. Ahora dice cuál de las dos cosas es, porque es
+   la diferencia entre "esto se va a recalcular solo" y "esto lo decidió
+   alguien", y hasta ahora la pantalla no la mostraba.
+   ========================================================================== */
+
+/**
+ * Redibuja el badge de Fecha Est. Pago según fechaEstPagoIsManual.
+ *
+ * Manual además trae el botón "volver a auto". Ese botón NO aparece en modo
+ * lectura ni en alta: en lectura no se edita nada, y en un alta todavía no hay
+ * fila en la base sobre la que revertir.
+ */
+function actualizarBadgeFechaEstPago() {
+    const $cont = $('#badgeFechaEstPago');
+    if (!$cont.length) return;
+
+    if (!fechaEstPagoIsManual) {
+        $cont.html('<span class="badge-auto" title="La calcula el sistema: fecha de embarque + 5 días.">Auto</span>');
+        return;
+    }
+
+    /* Sin login en este módulo, así que el usuario puede llegar vacío. Decir
+       "la fijó null" sería peor que no decir quién; misma decisión que
+       tooltipRastro() en el cashflow. */
+    const quien = fechaEstPagoConfUsuario || 'desde Comercio Exterior';
+    const cuando = fechaEstPagoConfFecha
+        ? (' el ' + fechaEstPagoConfFecha)
+        : ' (se guarda al confirmar)';
+
+    const titulo = 'Fecha fijada a mano ' + quien + cuando
+        + '. El recálculo automático de +5 días no la toca.';
+
+    let html = '<span class="badge-manual" title="' + escaparAtributo(titulo) + '">Manual</span>';
+
+    /* Los dos hidden los pone tabs/cargaInicial.php. En un alta todavía no hay
+       fila en la base sobre la que revertir, y en solo lectura no se edita
+       nada: en los dos casos queda el badge sin botón. */
+    const enEdicion = $('#modoEdicion').val() === 'true';
+    const enLectura = $('#esLectura').val() === '1';
+
+    if (enEdicion && !enLectura) {
+        html += '<button type="button" id="btnVolverAutoFechaEstPago" class="btn-volver-auto"'
+              + ' title="Descarta la fecha cargada y vuelve al cálculo automático.">'
+              + '<i class="zmdi zmdi-refresh"></i> volver a auto</button>';
+    }
+
+    $cont.html(html);
+}
+
+/**
+ * El indicador verde sobre el campo de arribo cuando la ETA está en firme.
+ *
+ * Es lo único que quedó del checkbox "ETA Confirmada": el gesto se fue, la
+ * señal no. Sin ella la pantalla no tendría dónde decir que esa fecha es un
+ * hecho y no una estimación, que es justo lo que decide si un choque de fechas
+ * bloquea o solo advierte en el cronograma -CronogramaFechas::esFechaReal()-.
+ */
+function aplicarEstiloEtaConfirmada() {
+    const $fechaArr = $('#fechaArr');
+    if (!$fechaArr.length) return;
+
+    if (etaConfirmada) {
+        $fechaArr.css({
+            'border-left': '3px solid #28a745',
+            'background-color': '#f0f9f0'
+        }).attr('title', 'ETA confirmada. Se confirmó al editarla a mano.');
+    } else {
+        $fechaArr.css({
+            'border-left': '',
+            'background-color': ''
+        }).removeAttr('title');
+    }
+}
+
+/** Escapa un texto para meterlo en un atributo HTML. */
+function escaparAtributo(texto) {
+    return String(texto === null || texto === undefined ? '' : texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+}
+
+/**
+ * "Volver a auto": descarta la fecha fijada y la recalcula en el servidor.
+ *
+ * PIDE CONFIRMACIÓN porque descarta un dato cargado a mano, y la fecha vieja no
+ * queda en ningún lado de la pantalla: queda en
+ * RO_T_IMPORTACIONES_FECHAS_HIST, que es otra pantalla.
+ *
+ * ACTUALIZA SIN RECARGAR, pero el valor que muestra es el que devolvió el
+ * servidor y no uno recalculado acá: si los dos calcularan por su cuenta, un
+ * día se despegarían y la pantalla mostraría una fecha que la base no tiene.
+ */
+$(document).on('click', '#btnVolverAutoFechaEstPago', function() {
+    const id = $('#idDespacho').val();
+    if (!id) return;
+
+    Swal.fire({
+        title: '¿Volver al cálculo automático?',
+        html: 'Se va a descartar la fecha estimada de pago cargada a mano y se va a '
+            + 'recalcular como <b>fecha de embarque + 5 días</b>.<br><br>'
+            + 'El cambio queda registrado en el historial de fechas.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, volver a auto',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#ff9800'
+    }).then((res) => {
+        if (!res.isConfirmed) return;
+
+        $.ajax({
+            url: '../controller/revertirFechaPagoAuto.php',
+            method: 'POST',
+            dataType: 'json',
+            data: { id: id },
+            success: function(r) {
+                if (!r.success) {
+                    Swal.fire('No se pudo', r.message || 'Error al revertir la fecha', 'error');
+                    return;
+                }
+
+                fechaEstPagoIsManual = false;
+                fechaEstPagoConfUsuario = null;
+                fechaEstPagoConfFecha = null;
+
+                if (r.fechaPantalla) {
+                    $('#fechaEstPago').val(r.fechaPantalla);
+
+                    const $picker = $('#fechaEstPago').data('daterangepicker');
+                    if ($picker) {
+                        const m = moment(r.fechaPantalla, 'DD/MM/YYYY');
+                        $picker.setStartDate(m);
+                        $picker.setEndDate(m);
+                    }
+
+                    marcarCampoCalculado('#fechaEstPago');
+                }
+
+                actualizarBadgeFechaEstPago();
+
+                Swal.fire({
+                    title: 'Listo',
+                    text: r.message,
+                    icon: r.aviso ? 'warning' : 'success',
+                    timer: r.aviso ? undefined : 2000,
+                    showConfirmButton: !!r.aviso
+                });
+            },
+            error: function(xhr) {
+                let msg = 'Error al revertir la fecha';
+                try { msg = JSON.parse(xhr.responseText).message || msg; } catch (e) {}
+                Swal.fire('No se pudo', msg, 'error');
+            }
+        });
+    });
+});
+
+
 /**
  * Carga los datos de un despacho existente en el formulario (modo edición)
  */
@@ -380,10 +559,11 @@ function cargarDatosDespacho(datos) {
         fechaArriboIsManual = true;
     }
     
-    // ETA Confirmada - checkbox
-    if (datos.ETA_CONFIRMADA) {
-        $('#etaConfirmada').prop('checked', datos.ETA_CONFIRMADA === 1 || datos.ETA_CONFIRMADA === '1');
-    }
+    /* ETA en firme. Se lee del maestro y NO se apaga acá: una ETA que ya estaba
+       confirmada sigue estándolo. El indicador verde sobre el campo es lo que
+       quedó del checkbox que se sacó. */
+    etaConfirmada = (datos.ETA_CONFIRMADA === 1 || datos.ETA_CONFIRMADA === '1');
+    aplicarEstiloEtaConfirmada();
     if (datos.NUMERO_BL) $('#numeroBl').val(datos.NUMERO_BL);
     if (datos.FACTURA) $('#factura').val(datos.FACTURA);
     if (datos.PUERTO_ORIGEN) {
@@ -413,10 +593,24 @@ function cargarDatosDespacho(datos) {
             $('.js-datepicker-est-pago').data('daterangepicker').setStartDate(fecha);
             $('.js-datepicker-est-pago').data('daterangepicker').setEndDate(fecha);
         }
-        // NO marcar como manual - es solo carga de datos de BD
-        // El flag manual se activará solo cuando el usuario lo edite después
-        fechaEstPagoIsManual = false;
     }
+
+    /* EL ESTADO SALE DE LA BASE, NO DE ESTA SESIÓN.
+       Acá había un `fechaEstPagoIsManual = false` con el comentario "NO marcar
+       como manual - es solo carga de datos de BD". Era el bug: una fecha que
+       alguien había fijado a mano volvía a nacer automática en cada apertura y
+       el recálculo de +5 días la pisaba en el primer guardado.
+
+       Va FUERA del if de arriba a propósito: un contenedor puede estar marcado
+       como fijado sin fecha cargada -pasa si se revirtió el embarque después de
+       fijarla- y en ese caso el badge igual tiene que decir Manual.
+
+       Sin el script 10 la clave llega en 0 -Encabezado::obtenerDespachoPorId()
+       la define siempre- y la pantalla se comporta exactamente como hoy. */
+    fechaEstPagoIsManual = (datos.FECHA_PAGO_CONF === 1 || datos.FECHA_PAGO_CONF === '1');
+    fechaEstPagoConfUsuario = datos.FECHA_PAGO_CONF_USUARIO || null;
+    fechaEstPagoConfFecha = datos.FECHA_PAGO_CONF_FECHA || null;
+    actualizarBadgeFechaEstPago();
     if (datos.FECHA_DESP_ADU) {
         $('#fechaDespAdu').val(datos.FECHA_DESP_ADU);
         // Sincronizar datepicker
@@ -1395,6 +1589,22 @@ function inicializarDatepickers() {
         autoApply: true,
         locale: {format: 'DD/MM/YYYY'}
     }).on('apply.daterangepicker', function(ev, picker) {
+        /* EDITAR LA ETA A MANO ES CONFIRMARLA. Reemplaza al checkbox "ETA
+           Confirmada", que pedía dos gestos para una sola decisión y se
+           olvidaba: quien corrige la ETA con la fecha que le pasó la naviera ya
+           está afirmando que esa fecha es en firme.
+
+           LA GUARDA DE cargandoDatos ES LO QUE HACE QUE ESTO SEA SEGURO, y es
+           el mismo patrón que el datepicker de est. pago. NO se puede usar
+           fechaArriboIsManual: ese flag se enciende al CARGAR los datos de la
+           base -ver cargarDatosDespacho()- así que no distingue "el usuario la
+           editó" de "vino así", y colgarse de él marcaría como confirmada toda
+           ETA existente en el primer guardado. */
+        if (!cargandoDatos) {
+            etaConfirmada = true;
+            aplicarEstiloEtaConfirmada();
+            console.log('ETA editada a mano - queda CONFIRMADA');
+        }
         setTimeout(() => validarCampoFechaHabil($(this)), 100);
     });
     
@@ -1435,8 +1645,18 @@ function inicializarDatepickers() {
         locale: {format: 'DD/MM/YYYY'}
     }).on('apply.daterangepicker', function(ev, picker) {
         console.log('Evento apply.daterangepicker en fechaEstPago');
+        /* La guarda de cargandoDatos es lo que separa "el usuario eligió una
+           fecha" de "el datepicker se sincronizó con lo que vino de la base".
+           Sin ella, abrir la pantalla marcaría todo como manual. */
         if (!cargandoDatos) {
             fechaEstPagoIsManual = true;
+            /* La fecha todavía no se guardó: el usuario y la hora reales los
+               pone el backend al confirmar. Se limpian para no mostrar en el
+               tooltip los datos de la edición anterior, que ya no describen
+               esta fecha. */
+            fechaEstPagoConfUsuario = null;
+            fechaEstPagoConfFecha = null;
+            actualizarBadgeFechaEstPago();
             console.log('Fecha Est. Pago - Manual Override ACTIVADO');
         }
         setTimeout(() => validarCampoFechaHabil($(this)), 100);
@@ -1448,9 +1668,13 @@ function inicializarDatepickers() {
         recalcularFechaEstimadaPago();
     });
     
+    /* El ETD recalcula la fecha estimada de pago, PERO NO DESCARTA LA DECISIÓN
+       DEL USUARIO: acá había un `fechaEstPagoIsManual = false` que hacía que
+       poner la fecha a mano y después tocar el ETD la pisara dentro de la misma
+       sesión. Si está fijada, recalcularFechaEstimadaPago() corta sola. Para
+       volver al automático está el botón "volver a auto", que es explícito. */
     $(document).on('apply.daterangepicker', '.js-datepicker-etd', function(ev, picker) {
-        console.log('FECHA_EMB (ETD) cambió - resetear manual flag y recalcular fechaEstPago');
-        fechaEstPagoIsManual = false;
+        console.log('FECHA_EMB (ETD) cambió - recalculando fechaEstPago');
         recalcularFechaEstimadaPago();
     });
     
@@ -1460,30 +1684,6 @@ function inicializarDatepickers() {
         const $campo = $('#' + campoId);
         ocultarAdvertenciaFecha($campo);
     });
-    
-    // Checkbox ETA Confirmada
-    $(document).on('change', '#etaConfirmada', function() {
-        const $fechaArr = $('#fechaArr');
-        if ($(this).is(':checked')) {
-            $fechaArr.css({
-                'border-left': '3px solid #28a745',
-                'background-color': '#f0f9f0'
-            });
-        } else {
-            $fechaArr.css({
-                'border-left': '',
-                'background-color': ''
-            });
-        }
-    });
-    
-    // Aplicar estilo inicial si está marcado
-    if ($('#etaConfirmada').is(':checked')) {
-        $('#fechaArr').css({
-            'border-left': '3px solid #28a745',
-            'background-color': '#f0f9f0'
-        });
-    }
     
     console.log('=== Datepickers Inicializados ===');
 }
@@ -2058,11 +2258,19 @@ function guardarCabecera() {
             puertoOrigen: $('#puertoOrigen').val(),
             terminal: $('#terminal').val(),
             
-            // ETA Confirmada
-            eta_confirmada: $('#etaConfirmada').is(':checked') ? 1 : 0,
+            /* ETA en firme. Ya no sale de un checkbox: se enciende al editar la
+               ETA a mano y se arrastra tal cual si venía confirmada de antes. */
+            eta_confirmada: etaConfirmada ? 1 : 0,
             
             // Sección 3 - Datos Financieros y Aduana
             fechaEstPago: $('#fechaEstPago').val(),
+
+            /* "Esta fecha la fijó el usuario". El backend NO le cree solo: además
+               compara contra lo que tiene el maestro y no marca nada si el valor
+               no cambió -Encabezado::marcarFechaPagoFijada()-. Va igual porque es
+               lo único que distingue esta edición de un recálculo automático:
+               los dos mandan un fechaEstPago distinto del guardado. */
+            fechaEstPagoManual: fechaEstPagoIsManual ? 1 : 0,
             
             // LIMPIEZA DE NÚMEROS (Aquí solucionamos el problema del valor gigante o cortado)
             tipoCambio: limpiarParaEnviar($('#tipoCambio').val()),
