@@ -86,6 +86,66 @@ switch ($action) {
         }
         break;
 
+    case 'get_bank_promo_detail':
+        $fecha = $_GET['fecha'] ?? '';
+        $nroSucursal = $_GET['nro_sucursal'] ?? '';
+
+        if (empty($fecha) || empty($nroSucursal)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Faltan parámetros requeridos (fecha o sucursal).'
+            ]);
+            exit;
+        }
+
+        require_once __DIR__ . '/../Class/BankPromoService.php';
+        $promoService = new BankPromoService();
+
+        try {
+            $detail = $promoService->getPromoVouchersDetail($fecha, $nroSucursal);
+            echo json_encode([
+                'success' => true,
+                'data' => $detail
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error al obtener detalle de comprobantes: ' . $e->getMessage()
+            ]);
+        }
+        break;
+
+    case 'update_promo_status':
+        $fecha = $_POST['fecha'] ?? '';
+        $nroSucursal = $_POST['nro_sucursal'] ?? '';
+        $estado = $_POST['estado'] ?? '';
+        $observacion = $_POST['observacion'] ?? '';
+
+        if (empty($fecha) || empty($nroSucursal) || empty($estado)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Parámetros incompletos para actualizar estado.'
+            ]);
+            exit;
+        }
+
+        require_once __DIR__ . '/../Class/BankPromoService.php';
+        $promoService = new BankPromoService();
+
+        try {
+            $ok = $promoService->updatePromoStatus($fecha, $nroSucursal, $estado, $observacion);
+            echo json_encode([
+                'success' => $ok,
+                'message' => 'Estado de auditoría actualizado correctamente.'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error al actualizar estado: ' . $e->getMessage()
+            ]);
+        }
+        break;
+
     default:
         echo json_encode([
             'success' => false,
