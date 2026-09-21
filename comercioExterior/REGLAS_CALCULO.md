@@ -249,6 +249,38 @@ El sistema cuenta con 13 conceptos configurables que se utilizan en los cálculo
 - **P (Porcentaje):** Se multiplica por el valor base (ej: 0.21 = 21%)
 - **I (Importe):** Valor fijo en moneda (ej: 5000.00 = USD 5,000)
 
+### 🧮 Qué suma cada total
+
+| Total | Conceptos |
+|---|---|
+| **CIF** | FOB + Flete (1) + Seguro (2) |
+| **Base imponible** | CIF + Derechos (3) + Tasa estadística (4) |
+| **Total nacionalización** | **3 a 10** — Derechos, Tasa, IVA General, IVA Adicional, IIGG, IIBB, SIM, Antidumping |
+| **Total Cashflow** | Total nacionalización + Despachante (11) + Terminal (12) + conceptos nuevos |
+| *(fuera de los totales)* | Suma asegurada (13) |
+
+#### ⚠️ Flete y Seguro NO son costos de nacionalización
+
+Se pagan **antes** de nacionalizar, para poner la mercadería en el puerto de
+destino, y por eso son **componentes del CIF** — que es la *base* sobre la que
+se calculan los impuestos que sí lo son. Sumarlos al total contaría dos veces
+el mismo concepto en dos roles distintos.
+
+> El **Seguro estaba sumado** al `Total nacionalización` en la rama Argentina
+> de `calcularTodosLosConceptos()` hasta la rama `feature/fecha-pago-manual`.
+> Era el único de los tres lugares que lo hacía: la rama de Uruguay de esa
+> misma función ya lo excluía, y el cashflow de Finanzas suma `ID_CE BETWEEN 3
+> AND 10` en `getCronoNacionalizacion()`. Ahora los tres coinciden.
+
+#### ⚠️ Flete y Seguro no los proyecta nadie
+
+Quedan **fuera del cashflow de Finanzas**: sus dos pestañas cubren el pago al
+proveedor por `VALOR_FOB_DOLAR` (Proveedores Exterior) y los gastos de
+nacionalización 3 a 10 (Crono Nacionalización). Al 21/09/2026 son **208.560,00
+de flete y 5.353,05 de seguro** sobre 60 contenedores que el tablero no está
+proyectando. Es anterior a este trabajo y nadie lo documentó; queda anotado acá
+porque el flete no es un importe menor.
+
 ### 📝 Lógica de Aplicación de Parámetros
 
 > **REGLA FUNDAMENTAL:** Los cambios en parámetros **SOLO** afectan a **nuevas estimaciones** que se creen después de modificar los valores.

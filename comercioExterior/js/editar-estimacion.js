@@ -636,8 +636,23 @@ function calcularTodosLosConceptos() {
     // 13. Antidumping (ID_CE=10): Valor manual editable
     const antidumping = getConceptoValorEditable(CONCEPTOS_ID.ANTIDUMPING);
 
-    // 14. Total Nacionalización (calculado): seguro + derechos + tasa + IVA + IIGG + IIBB + SIM + antidumping
-    const totalNac = seguro + derechos + tasaEstadistica + ivaGeneral +
+    /* 14. Total Nacionalización: derechos + tasa + IVA general + IVA adicional
+           + IIGG + IIBB + SIM + antidumping. O sea ID_CE 3 a 10.
+
+       EL SEGURO NO ENTRA, y hasta esta rama entraba. No es un costo de
+       nacionalización: se paga ANTES —junto con el flete, para poner la
+       mercadería en el puerto de destino— y por eso es un componente del CIF,
+       que es la BASE sobre la que se calculan los impuestos que sí lo son.
+       Sumarlo era contar dos veces el mismo concepto en dos roles distintos.
+
+       ERA EL ÚNICO DE LOS TRES LUGARES QUE LO INCLUÍA. La rama de Uruguay de
+       esta misma función ya lo excluye explícitamente —su loop hace return
+       para FLETE y SEGURO— y el cashflow de Finanzas suma ID_CE entre 3 y 10
+       en getCronoNacionalizacion(). Con este cambio los tres dicen lo mismo.
+
+       El flete nunca estuvo en esta suma: se lee más arriba sólo para calcular
+       el seguro y el CIF. */
+    const totalNac = derechos + tasaEstadistica + ivaGeneral +
                      ivaAdicional + iigg + iibb + sim + antidumping;
     setValorCalculado('Total nacionalización', totalNac);
 

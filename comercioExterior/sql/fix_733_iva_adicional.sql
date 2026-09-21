@@ -51,32 +51,18 @@
 --
 -- EFECTO. Son 20.282,50 que hoy no estan en ningun lado.
 --
--- OJO: "Total nacionalizacion" son DOS NUMEROS DISTINTOS en el sistema, y
--- la diferencia es el SEGURO (ID_CE = 2).
+-- EL TOTAL NACIONALIZACION SON LOS CONCEPTOS 3 A 10, en las dos
+-- aplicaciones. Para este contenedor pasa de 50.918,26 a 71.200,76.
 --
---   La PANTALLA de proyeccion de costos suma ID_CE 2 a 10:
---       seguro + derechos + tasa + IVA general + IVA adicional
---             + IIGG + IIBB + SIM + antidumping
---       (ver calcularTodosLosConceptos() en js/editar-estimacion.js)
+-- Cuando se escribio este script no era asi: la pantalla de proyeccion de
+-- costos sumaba ID_CE 2 a 10 -o sea, tambien el SEGURO- y mostraba
+-- 71.241,96 mientras el cashflow de Finanzas mostraba 71.200,76. La
+-- pantalla se corrigio en esta misma rama, porque el seguro se paga ANTES
+-- de nacionalizar y ya esta contado adentro del CIF, que es la base de
+-- los impuestos que si son de nacionalizacion.
 --
---   El CASHFLOW de Finanzas suma ID_CE 3 a 10, escrito en duro en la
---   consulta de getCronoNacionalizacion() (cashflow/Class/Comex.php).
---       No incluye el seguro.
---
--- Para este contenedor, con el seguro en 41,20:
---
---                         antes        despues
---       pantalla (2-10)   50.959,46    71.241,96
---       cashflow (3-10)   50.918,26    71.200,76
---
--- La discrepancia es ANTERIOR a esta entrega y NO se toca aca: cambiar el
--- rango del cashflow mueve el tablero de todos los contenedores. Esta
--- anotada como pendiente en finanzas/README-comex.md. Sobre el padron
--- entero al 21/09/2026 son 5.353,05 sobre 4.630.245,72, o sea el 0,116%.
---
--- Las dos consultas de control de abajo muestran LOS DOS numeros, para
--- que el que corra el script pueda contrastar contra la pantalla sin
--- pensar que uno de los dos esta mal.
+-- Las consultas de control de abajo siguen mostrando LOS DOS rangos y el
+-- seguro por separado, para que se pueda verificar que coinciden.
 -- =====================================================================
 
 SET NOCOUNT ON;
