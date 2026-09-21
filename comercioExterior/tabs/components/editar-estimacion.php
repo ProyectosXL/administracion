@@ -108,6 +108,12 @@ if (session_status() == PHP_SESSION_NONE) {
                  mostrarOrigenAlicuotas() con lo que informa el controller. -->
             <div id="avisoVigencia" class="alert alert-info py-2 px-3 mb-3" style="display:none;"></div>
 
+            <!-- Conceptos cuya alícuota guardada no coincide con la vigente para
+                 la fecha de nacionalización. Lo llena mostrarDesviosDeAlicuota().
+                 Va DEBAJO del de vigencia: el de arriba dice de qué fecha salen
+                 las alícuotas, y éste, que lo guardado dice otra cosa. -->
+            <div id="avisoDesvios" class="alert alert-warning py-2 px-3 mb-3" style="display:none;"></div>
+
             <div class="table-responsive">
                 <table class="table table-estimation">
                     <thead>

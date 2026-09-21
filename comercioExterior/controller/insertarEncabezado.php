@@ -161,6 +161,19 @@ try {
         $datosDeCabezera['fechaPago'] = convertirFecha($_POST['fechaPago']);
     if (!empty($_POST['fechaEstPago']))
         $datosDeCabezera['fechaEstPago'] = convertirFecha($_POST['fechaEstPago']);
+
+    /* EL MARCADOR DE "ESTO LO TOCÓ EL USUARIO".
+       El navegador lo manda en 1 solo cuando la fecha estimada de pago se movió
+       desde su datepicker, y en 0 cuando el valor que viaja lo calculó el JS
+       -mover el ETD, por ejemplo, recalcula la fecha y la manda distinta-. Es
+       lo único que separa los dos casos, porque los dos llegan por este mismo
+       POST con un FECHA_EST_PAGO distinto del que había.
+
+       NO ALCANZA SOLO CON ÉL: Encabezado::marcarFechaPagoFijada() además
+       compara contra el maestro y no marca nada si el valor no cambió. El
+       cliente no decide solo. */
+    $datosDeCabezera['fechaEstPagoManual'] =
+        isset($_POST['fechaEstPagoManual']) && $_POST['fechaEstPagoManual'] == '1';
     if (!empty($_POST['fechaDespAdu']))
         $datosDeCabezera['fechaDespAdu'] = convertirFecha($_POST['fechaDespAdu']);
 
@@ -223,7 +236,12 @@ try {
             ], fn($v) => $v !== null && $v !== '');
 
             if (!empty($datosGrupo)) {
-                $cid->actualizarEncabezadoGrupo($idDespacho, $datosGrupo);
+                // El marcador viaja al grupo: la fecha se replica, la marca también.
+                $cid->actualizarEncabezadoGrupo(
+                    $idDespacho,
+                    $datosGrupo,
+                    $datosDeCabezera['fechaEstPagoManual']
+                );
             }
 
             echo json_encode([

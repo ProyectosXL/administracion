@@ -9,6 +9,16 @@ let conceptos = [];
 let estimacionExistente = null;
 let estaConfirmada = false;
 
+/* Conceptos cuya alícuota guardada NO coincide con la que rige para la fecha de
+   nacionalización del contenedor. Los calcula el backend -ver
+   EstimacionCostos::desviosDeAlicuota()- y no el navegador, porque la
+   comparación tiene que hacerse DESPUÉS del ajuste de despachante y ese ajuste
+   vive en el controller. */
+let desviosAlicuota = [];
+
+/* De qué fecha salieron las alícuotas vigentes, para poder decirlo en el aviso. */
+let vigenciaActual = null;
+
 // Mapeo de IDs de conceptos según BD real
 let CONCEPTOS_ID = {
     FLETE: 1,
@@ -78,7 +88,9 @@ function cargarDatosEstimacion(idDespacho) {
                 conceptos = response.data.conceptos;
                 estimacionExistente = response.data.estimacion;
                 estaConfirmada = response.data.confirmada;
-                
+                desviosAlicuota = response.data.desvios || [];
+                vigenciaActual = response.data.vigencia || null;
+
                 // Map names case-insensitively
                 const mapName = (name) => {
                     const n = name.toLowerCase().trim();
@@ -180,6 +192,7 @@ function cargarDatosEstimacion(idDespacho) {
                 mostrarInformacionDespacho();
                 generarFormularioConceptos();
                 mostrarOrigenAlicuotas(response.data.vigencia);
+                mostrarDesviosDeAlicuota();
 
                 /* Confirmado ya NO bloquea el formulario. Los costos de
                    nacionalización se terminan de conocer después de confirmar
@@ -623,8 +636,23 @@ function calcularTodosLosConceptos() {
     // 13. Antidumping (ID_CE=10): Valor manual editable
     const antidumping = getConceptoValorEditable(CONCEPTOS_ID.ANTIDUMPING);
 
-    // 14. Total Nacionalización (calculado): seguro + derechos + tasa + IVA + IIGG + IIBB + SIM + antidumping
-    const totalNac = seguro + derechos + tasaEstadistica + ivaGeneral +
+    /* 14. Total Nacionalización: derechos + tasa + IVA general + IVA adicional
+           + IIGG + IIBB + SIM + antidumping. O sea ID_CE 3 a 10.
+
+       EL SEGURO NO ENTRA, y hasta esta rama entraba. No es un costo de
+       nacionalización: se paga ANTES —junto con el flete, para poner la
+       mercadería en el puerto de destino— y por eso es un componente del CIF,
+       que es la BASE sobre la que se calculan los impuestos que sí lo son.
+       Sumarlo era contar dos veces el mismo concepto en dos roles distintos.
+
+       ERA EL ÚNICO DE LOS TRES LUGARES QUE LO INCLUÍA. La rama de Uruguay de
+       esta misma función ya lo excluye explícitamente —su loop hace return
+       para FLETE y SEGURO— y el cashflow de Finanzas suma ID_CE entre 3 y 10
+       en getCronoNacionalizacion(). Con este cambio los tres dicen lo mismo.
+
+       El flete nunca estuvo en esta suma: se lee más arriba sólo para calcular
+       el seguro y el CIF. */
+    const totalNac = derechos + tasaEstadistica + ivaGeneral +
                      ivaAdicional + iigg + iibb + sim + antidumping;
     setValorCalculado('Total nacionalización', totalNac);
 
@@ -958,6 +986,177 @@ function mostrarOrigenAlicuotas(vigencia) {
             .attr('class', 'alert alert-warning py-2 px-3 mb-3')
             .show();
     }
+}
+
+/* ==========================================================================
+   ALÍCUOTAS QUE NO COINCIDEN CON LA VIGENTE
+
+   EL VALOR GUARDADO NO SE PISA SOLO. Al abrir una estimación, el detalle
+   guardado le gana a la alícuota que acaba de resolver AlicuotasVigencia, y eso
+   sigue así: un importe que alguien revisó no cambia por abrir la pantalla.
+
+   Lo que cambia es que ahora la pantalla LO DICE. Hasta acá una estimación
+   calculada con una alícuota que ya no rige se veía igual que una al día, y la
+   diferencia es justamente lo que el módulo de vigencias vino a hacer visible.
+
+   RECALCULAR ES UNA DECISIÓN, con su botón y su confirmación, y sólo sobre
+   estimaciones SIN CONFIRMAR: congelar los números es el punto de confirmar.
+   ========================================================================== */
+
+/**
+ * Marca las filas desviadas y muestra el aviso con el botón de recalcular.
+ *
+ * EL AVISO SE MUESTRA TAMBIÉN EN LAS CONFIRMADAS, aunque ahí no haya botón.
+ * Es el caso que motivó todo esto -la OC 0000100015881 está confirmada y tiene
+ * el IVA Adicional en cero- y esconder el aviso justo donde el número está mal
+ * dejaría a la pantalla sin decir nada sobre el único síntoma visible. Lo que
+ * no se ofrece es recalcular: eso se resuelve corrigiendo el importe a mano, o
+ * desde la base.
+ */
+function mostrarDesviosDeAlicuota() {
+    const $destino = $('#avisoDesvios');
+    if (!$destino.length) return;
+
+    // Limpiar una corrida anterior: la función se vuelve a llamar al recalcular.
+    $('tr[data-concepto-id]').removeClass('alicuota-desviada');
+    $('.alicuota-desviada-nota').remove();
+
+    if (!desviosAlicuota.length) {
+        $destino.hide().empty();
+        return;
+    }
+
+    /* La marca va en la FILA y no sólo en el aviso: con trece conceptos, un
+       cartel que dice "2 conceptos" obliga a buscar cuáles. */
+    desviosAlicuota.forEach(d => {
+        const $fila = $(`tr[data-concepto-id="${d.ID_CE}"]`);
+        $fila.addClass('alicuota-desviada');
+
+        const guardado = (d.GUARDADO === null)
+            ? 'sin alícuota'
+            : formatearParametro(d.GUARDADO, d.TIPO_VALOR);
+        const vigente = (d.VIGENTE === null)
+            ? 'sin alícuota'
+            : formatearParametro(d.VIGENTE, d.TIPO_VALOR);
+
+        $fila.find('td').eq(2).append(
+            `<div class="alicuota-desviada-nota" title="La estimación guardó ${guardado}; ` +
+            `para la fecha de nacionalización rige ${vigente}.">` +
+            `<i class="bi bi-exclamation-triangle-fill"></i> vigente: ${vigente}</div>`
+        );
+    });
+
+    const cuantos = desviosAlicuota.length;
+    const plural = cuantos === 1 ? 'concepto tiene' : 'conceptos tienen';
+
+    /* De qué fecha sale la alícuota vigente. Sin esto el aviso afirma que hay
+       una diferencia sin decir contra qué, y "la vigente" es ambiguo: la de hoy
+       y la de la fecha de nacionalización no son la misma. */
+    const fecha = (vigenciaActual && vigenciaActual.fecha)
+        ? vigenciaActual.fecha.split('-').reverse().join('/')
+        : null;
+
+    const contra = fecha
+        ? `la que regía al <strong>${fecha}</strong> (fecha de nacionalización)`
+        : 'la del padrón (el contenedor no tiene fecha de nacionalización cargada)';
+
+    let html = `<i class="bi bi-exclamation-triangle-fill"></i> ${cuantos} ${plural} ` +
+               `guardada una alícuota distinta de ${contra}. ` +
+               `El valor guardado no se cambió: están marcados en la tabla.`;
+
+    if (estaConfirmada) {
+        /* CONFIRMADA: no hay botón. Se dice por qué, porque un aviso que señala
+           un problema y no ofrece nada se lee como un error de la pantalla. */
+        html += ` <span class="text-muted">La estimación está confirmada, así que ` +
+                `no se recalcula: si el número está mal, corregí el importe a mano.</span>`;
+    } else {
+        html += ` <button type="button" class="btn btn-sm btn-warning ms-2" ` +
+                `onclick="recalcularConAlicuotaVigente()">` +
+                `<i class="bi bi-arrow-repeat"></i> Recalcular con la alícuota vigente</button>`;
+    }
+
+    $destino.html(html).attr('class', 'alert alert-warning py-2 px-3 mb-3').show();
+}
+
+/**
+ * Recalcula los conceptos desviados con la alícuota vigente.
+ *
+ * QUÉ HACE, EXACTAMENTE: le pone a cada fila desviada el parámetro que resolvió
+ * la vigencia y le SACA EL OVERRIDE, para que calcularTodosLosConceptos() la
+ * vuelva a calcular. Sin sacar el override no pasaría nada visible: un importe
+ * guardado mayor a cero se interpreta como valor fijado a mano y el recálculo
+ * automático lo saltea -ver setConceptoValorCalculado()-.
+ *
+ * Y ES POR ESO QUE ESTO ES UN BOTÓN Y NO ALGO AUTOMÁTICO. Hoy la pantalla no
+ * puede distinguir "este importe lo escribió una persona" de "este importe lo
+ * calculó el sistema y quedó guardado": lo infiere de `importe > 0.01` en
+ * generarFormularioConceptos(), que da verdadero en los dos casos. Separar las
+ * dos cosas de verdad pide una columna en
+ * RO_T_IMPORTACIONES_ESTIMACION_DETALLE y está propuesta, no hecha. Mientras
+ * esa marca no exista, la única forma segura de recalcular es que lo pida
+ * alguien que está mirando la pantalla.
+ *
+ * NO GUARDA. Deja la pantalla con los números nuevos y el usuario decide si
+ * guarda, igual que cualquier otra edición.
+ */
+function recalcularConAlicuotaVigente() {
+    if (estaConfirmada || !desviosAlicuota.length) return;
+
+    const cuantos = desviosAlicuota.length;
+    const nombres = desviosAlicuota.map(d => d.CONCEPTO).join(', ');
+
+    Swal.fire({
+        title: '¿Recalcular con la alícuota vigente?',
+        html: `Se van a recalcular <b>${cuantos}</b> concepto(s) con la alícuota que rige ` +
+              `para la fecha de nacionalización:<br><br><b>${nombres}</b><br><br>` +
+              `Si alguno de esos importes lo habías escrito a mano, se pierde. ` +
+              `Los cambios no se guardan hasta que aprietes Guardar.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, recalcular',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#ff9800'
+    }).then((res) => {
+        if (!res.isConfirmed) return;
+
+        desviosAlicuota.forEach(d => {
+            const $fila = $(`tr[data-concepto-id="${d.ID_CE}"]`);
+            if (!$fila.length) return;
+
+            const vigente = (d.VIGENTE === null) ? 0 : d.VIGENTE;
+
+            // El parámetro que usa el cálculo, y el badge que lo muestra.
+            $fila.find('.param1').val(vigente);
+            $fila.find('td').eq(2).find('.parametro-badge')
+                .text(d.VIGENTE === null ? '-' : formatearParametro(vigente, d.TIPO_VALOR));
+
+            /* Sacar el override es lo que hace que el recálculo se vea. Sólo
+               sobre las filas desviadas: las demás conservan lo que tuvieran. */
+            const $input = $fila.find('.importe-editable');
+            $input.attr('data-override', 'false').removeClass('override-activo');
+            $fila.find('.btn-reset-override').addClass('d-none');
+
+            /* Y también el estado en memoria, para que la comparación no vuelva
+               a marcar como desviado algo que ya se recalculó. */
+            if (estimacionExistente) {
+                const g = estimacionExistente.find(e => e.ID_CE == d.ID_CE);
+                if (g) g.VALOR_DEFAULT_1 = vigente;
+            }
+        });
+
+        desviosAlicuota = [];
+
+        calcularTodosLosConceptos();
+        mostrarDesviosDeAlicuota();
+
+        Swal.fire({
+            title: 'Recalculado',
+            text: 'Revisá los importes y apretá Guardar para que queden en la base.',
+            icon: 'success',
+            timer: 2600,
+            showConfirmButton: false
+        });
+    });
 }
 
 /**

@@ -17,6 +17,32 @@ class CronogramaFechas
         'FECHA_DISTRI',
     ];
 
+    /**
+     * Campos cuyos cambios se REGISTRAN EN EL HISTORIAL.
+     *
+     * Es un superconjunto de CAMPOS_EDITABLES y no la misma lista, porque las
+     * dos constantes contestan preguntas distintas:
+     *
+     *   CAMPOS_EDITABLES  que puede escribir el CRONOGRAMA. Habilita el drag &
+     *                     drop y entra en la validacion de coherencia contra
+     *                     ORDEN_FLUJO.
+     *   CAMPOS_HISTORIAL  de que cambios queremos rastro.
+     *
+     * FECHA_EST_PAGO esta aca y NO en la otra: no vive en el flujo logistico
+     * -no tiene lugar en ORDEN_FLUJO, que va del embarque a la distribucion- y
+     * el cronograma no la dibuja ni la arrastra. Meterla en CAMPOS_EDITABLES
+     * para conseguir el historial le habilitaria de paso el drag & drop y la
+     * haria chocar con validarCoherencia(), que no sabe donde ubicarla.
+     */
+    const CAMPOS_HISTORIAL = [
+        'FECHA_EST_EMB',
+        'FECHA_EMB',
+        'FECHA_ARR',
+        'FECHA_DESP_ADU',
+        'FECHA_DISTRI',
+        'FECHA_EST_PAGO',
+    ];
+
     /** Etiquetas legibles, para mensajes de error y para el historial. */
     const ETIQUETAS_CAMPOS = [
         'FECHA_EST_EMB'  => 'Embarque estimado',
@@ -25,6 +51,7 @@ class CronogramaFechas
         'FECHA_DESP_ADU' => 'Despacho de aduana',
         'FECHA_REC'      => 'Recepción',
         'FECHA_DISTRI'   => 'Distribución',
+        'FECHA_EST_PAGO' => 'Fecha estimada de pago',
     ];
 
     /**
@@ -450,8 +477,13 @@ class CronogramaFechas
         $ids = array_values(array_map('intval', $ids));
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
 
+        /* FECHA_EST_PAGO entra aca aunque el cronograma no la dibuje: es lo que
+           le permite a registrarCambiosDeFecha() compararla y dejar rastro. No
+           aparece en ORDEN_FLUJO ni en CAMPOS_EDITABLES, asi que ni la
+           validacion de coherencia ni el drag & drop la ven. */
         $sql = "SELECT ID, ORDEN_COMPRA, CONTENEDOR, DIST_ORIGEN, ETA_CONFIRMADA,
                        FECHA_EST_EMB, FECHA_EMB, FECHA_ARR, FECHA_DESP_ADU, FECHA_DISTRI,
+                       FECHA_EST_PAGO,
                        CAST(FECHA_RECIBIDO AS DATE) AS FECHA_REC
                 FROM RO_T_IMPORTACIONES_ENCABEZADO
                 WHERE ID IN ($placeholders)";

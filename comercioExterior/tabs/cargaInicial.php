@@ -362,21 +362,18 @@ try {
                             </div>
                             <div class="col-md-5">
                                 <label class="label-campo">Fecha Arribo - ETA <span class="badge-auto">Auto</span></label>
+                                <!-- El checkbox "ETA Confirmada" que estaba acá se fue:
+                                     ETA_CONFIRMADA ahora se enciende SOLA al editar la
+                                     fecha a mano. Pedía dos gestos para una sola decisión
+                                     -corregir la ETA con la fecha de la naviera ya es
+                                     afirmar que es en firme- y se olvidaba.
+                                     El campo NO se depreció: lo siguen leyendo el
+                                     cronograma, esFechaReal() y las dos pestañas del
+                                     cashflow. Lo que quedó es el indicador verde sobre el
+                                     input, que lo pone aplicarEstiloEtaConfirmada(). -->
                                 <div class="input-group" style="margin-bottom: 5px;">
                                     <input class="input--style-1 js-datepicker-arribo" type="text" id="fechaArr">
                                     <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-arribo"></i>
-                                </div>
-                                <!-- Checkbox ETA Confirmada -->
-                                <div class="form-check" style="margin-top: 4px; margin-bottom: 0;">
-                                    <input type="checkbox" 
-                                           id="etaConfirmada" 
-                                           name="eta_confirmada" 
-                                           class="form-check-input"
-                                           value="1"
-                                           style="cursor: pointer;">
-                                    <label for="etaConfirmada" class="form-check-label" style="cursor: pointer; font-size: 12px; color: #666; font-weight: 500;">
-                                        <i class="bi bi-check-circle" style="font-size: 13px;"></i> ETA Confirmada
-                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -457,7 +454,15 @@ try {
 
                         <div class="row row-space">
                             <div class="col-md-5">
-                                <label class="label-campo">Fecha Est. Pago <span class="badge-auto">Auto</span></label>
+                                <!-- El badge lo dibuja actualizarBadgeFechaEstPago() en
+                                     js/cargaInicial.js: dice Auto o Manual según
+                                     FECHA_PAGO_CONF del maestro, y en Manual suma el
+                                     botón "volver a auto". Era HTML estático que decía
+                                     Auto siempre, incluso sobre una fecha puesta a mano.
+                                     El Auto de acá es el estado inicial de un alta. -->
+                                <label class="label-campo">Fecha Est. Pago
+                                    <span id="badgeFechaEstPago"><span class="badge-auto">Auto</span></span>
+                                </label>
                                 <div class="input-group">
                                     <input class="input--style-1 js-datepicker-est-pago" type="text" id="fechaEstPago" readonly>
                                     <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-est-pago"></i>

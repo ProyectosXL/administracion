@@ -113,6 +113,47 @@
     margin-left: 5px;
 }
 
+/* Fecha fijada a mano: el recálculo automático no la toca.
+   AMARILLO Y NO VERDE, y es el mismo par que ya usan los campos:
+   --success-color para lo calculado (.campo-calculado) y --warning-color para
+   lo que alguien puso a mano (.campo-manual-override). El badge dice de la
+   fecha lo mismo que el borde del input dice del campo. */
+.badge-manual {
+    background: var(--warning-color);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+/* "volver a auto": descarta la fecha fijada. Va discreto —es una acción
+   destructiva y poco frecuente— pero al lado del badge que explica por qué
+   existe, que es el único lugar donde se entiende. */
+.btn-volver-auto {
+    background: none;
+    border: 1px solid var(--warning-color);
+    color: var(--warning-color);
+    padding: 1px 6px;
+    margin-left: 6px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.btn-volver-auto:hover {
+    background: var(--warning-color);
+    color: #fff;
+}
+
+.btn-volver-auto i {
+    font-size: 0.7rem;
+}
+
 /* ===========================
    ESTADOS DE CAMPOS
    =========================== */
