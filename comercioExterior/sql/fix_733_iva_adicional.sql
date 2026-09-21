@@ -49,9 +49,34 @@
 -- El UPDATE lo recalcula con esa misma cuenta en vez de escribir el
 -- numero a mano, para que no haya un literal que nadie pueda explicar.
 --
--- EFECTO EN EL TABLERO. El Total nacionalizacion -que el cashflow de
--- Finanzas suma como ID_CE entre 3 y 10- pasa de 50.918,26 a 71.200,76.
--- Es un gasto que el tablero hoy NO esta proyectando.
+-- EFECTO. Son 20.282,50 que hoy no estan en ningun lado.
+--
+-- OJO: "Total nacionalizacion" son DOS NUMEROS DISTINTOS en el sistema, y
+-- la diferencia es el SEGURO (ID_CE = 2).
+--
+--   La PANTALLA de proyeccion de costos suma ID_CE 2 a 10:
+--       seguro + derechos + tasa + IVA general + IVA adicional
+--             + IIGG + IIBB + SIM + antidumping
+--       (ver calcularTodosLosConceptos() en js/editar-estimacion.js)
+--
+--   El CASHFLOW de Finanzas suma ID_CE 3 a 10, escrito en duro en la
+--   consulta de getCronoNacionalizacion() (cashflow/Class/Comex.php).
+--       No incluye el seguro.
+--
+-- Para este contenedor, con el seguro en 41,20:
+--
+--                         antes        despues
+--       pantalla (2-10)   50.959,46    71.241,96
+--       cashflow (3-10)   50.918,26    71.200,76
+--
+-- La discrepancia es ANTERIOR a esta entrega y NO se toca aca: cambiar el
+-- rango del cashflow mueve el tablero de todos los contenedores. Esta
+-- anotada como pendiente en finanzas/README-comex.md. Sobre el padron
+-- entero al 21/09/2026 son 5.353,05 sobre 4.630.245,72, o sea el 0,116%.
+--
+-- Las dos consultas de control de abajo muestran LOS DOS numeros, para
+-- que el que corra el script pueda contrastar contra la pantalla sin
+-- pensar que uno de los dos esta mal.
 -- =====================================================================
 
 SET NOCOUNT ON;
@@ -102,9 +127,12 @@ JOIN dbo.RO_T_CONCEPTOS_ESTIMACION_COMEX C ON C.ID_CE = D.ID_CE
 WHERE D.ID_MG = 733 AND D.ID_CE IN (5, 6, 7, 8)
 ORDER BY D.ID_CE;
 
-SELECT SUM(IMPORTE) AS TOTAL_NACIONALIZACION_ANTES
+SELECT
+    SUM(CASE WHEN ID_CE BETWEEN 2 AND 10 THEN IMPORTE ELSE 0 END) AS TOTAL_PANTALLA_ANTES,
+    SUM(CASE WHEN ID_CE BETWEEN 3 AND 10 THEN IMPORTE ELSE 0 END) AS TOTAL_CASHFLOW_ANTES,
+    SUM(CASE WHEN ID_CE = 2            THEN IMPORTE ELSE 0 END) AS SEGURO_LA_DIFERENCIA
 FROM dbo.RO_T_IMPORTACIONES_ESTIMACION_DETALLE
-WHERE ID_MG = 733 AND ID_CE BETWEEN 3 AND 10;
+WHERE ID_MG = 733;
 GO
 
 -- ---------------------------------------------------------------------
@@ -180,9 +208,12 @@ JOIN dbo.RO_T_CONCEPTOS_ESTIMACION_COMEX C ON C.ID_CE = D.ID_CE
 WHERE D.ID_MG = 733 AND D.ID_CE IN (5, 6, 7, 8)
 ORDER BY D.ID_CE;
 
-SELECT SUM(IMPORTE) AS TOTAL_NACIONALIZACION_DESPUES
+SELECT
+    SUM(CASE WHEN ID_CE BETWEEN 2 AND 10 THEN IMPORTE ELSE 0 END) AS TOTAL_PANTALLA_DESPUES,
+    SUM(CASE WHEN ID_CE BETWEEN 3 AND 10 THEN IMPORTE ELSE 0 END) AS TOTAL_CASHFLOW_DESPUES,
+    SUM(CASE WHEN ID_CE = 2            THEN IMPORTE ELSE 0 END) AS SEGURO_LA_DIFERENCIA
 FROM dbo.RO_T_IMPORTACIONES_ESTIMACION_DETALLE
-WHERE ID_MG = 733 AND ID_CE BETWEEN 3 AND 10;
+WHERE ID_MG = 733;
 GO
 
 -- ---------------------------------------------------------------------
