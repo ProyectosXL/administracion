@@ -216,6 +216,103 @@ class EstimacionCostos
     }
 
     /**
+     * Qué conceptos tienen guardada una alícuota distinta de la que rige para
+     * la fecha de nacionalización del contenedor.
+     *
+     * QUÉ PROBLEMA HACE VISIBLE
+     * -------------------------
+     * Al abrir una estimación, el detalle guardado en
+     * RO_T_IMPORTACIONES_ESTIMACION_DETALLE SIEMPRE le gana a la alícuota que
+     * acaba de resolver AlicuotasVigencia -es el `valorExistente ? ... : ...`
+     * de generarFormularioConceptos()-. Eso es correcto como default: un
+     * importe que alguien revisó no se pisa solo. Pero hasta ahora la pantalla
+     * tampoco DECÍA que los dos números no coincidían, así que una estimación
+     * calculada con una alícuota que ya no rige se veía igual que una al día.
+     *
+     * Esto no cambia ningún valor: sólo informa la diferencia. Recalcular es
+     * una decisión del usuario, con su botón, y sólo sobre estimaciones sin
+     * confirmar.
+     *
+     * POR QUÉ SE COMPARA ACÁ Y NO EN EL NAVEGADOR
+     * ------------------------------------------
+     * Por el DESPACHANTE. cargarEstimacion.php pisa VALOR_DEFAULT_1 de ese
+     * concepto -y el del detalle guardado- con VALOR_DEFAULT_2 cuando el
+     * despachante es Farre, porque los dos honorarios viven en las dos columnas
+     * del mismo concepto. Una comparación hecha antes de ese ajuste marca como
+     * desviadas TODAS las operaciones de Farre: al 21/09/2026 son 51 de 60 en
+     * central. Comparando después del ajuste -que es lo que recibe esta
+     * función- el falso positivo no existe.
+     *
+     * NULL CONTRA UN VALOR SÍ ES UNA DIFERENCIA, y es el caso que motivó todo
+     * esto: el detalle de la OC 0000100015881 tiene VALOR_DEFAULT_1 en NULL
+     * para IVA Adicional mientras el padrón y la vigencia dicen 0,20, así que
+     * ese impuesto se calcula en cero. NULL CONTRA NULL no lo es: es el estado
+     * normal de Antidumping, que no tiene alícuota cargada en ningún lado.
+     *
+     * SE COMPARA COMO NÚMERO Y NO COMO TEXTO. El detalle es DECIMAL(18,6) y el
+     * padrón DECIMAL(18,4): '0.2000' y '0.200000' son la misma alícuota y dos
+     * cadenas distintas.
+     *
+     * @param array $conceptos Conceptos CON la vigencia ya resuelta y con el
+     *                         ajuste de despachante aplicado
+     * @param array|null $estimacionExistente Detalle guardado, con el mismo ajuste
+     * @return array [['ID_CE'=>, 'CONCEPTO'=>, 'TIPO_VALOR'=>,
+     *                 'GUARDADO'=>float|null, 'VIGENTE'=>float|null], ...]
+     */
+    public static function desviosDeAlicuota($conceptos, $estimacionExistente)
+    {
+        if (empty($estimacionExistente) || empty($conceptos)) {
+            return [];
+        }
+
+        /* Tolerancia de comparación. No es un epsilon de punto flotante
+           cualquiera: DECIMAL(18,6) es la escala más fina de las dos columnas,
+           así que cualquier diferencia real es de al menos 1e-6. Por debajo de
+           la mitad de eso no hay diferencia que un humano pueda haber cargado. */
+        $tolerancia = 0.0000005;
+
+        $porId = [];
+        foreach ($estimacionExistente as $fila) {
+            $porId[(int) $fila['ID_CE']] = $fila;
+        }
+
+        $desvios = [];
+
+        foreach ($conceptos as $concepto) {
+            $idCe = (int) $concepto['ID_CE'];
+
+            if (!isset($porId[$idCe])) {
+                continue;   // concepto sin fila guardada: no hay nada que comparar
+            }
+
+            $guardado = $porId[$idCe]['VALOR_DEFAULT_1'];
+            $vigente  = $concepto['VALOR_DEFAULT_1'];
+
+            $hayGuardado = ($guardado !== null && $guardado !== '');
+            $hayVigente  = ($vigente  !== null && $vigente  !== '');
+
+            if (!$hayGuardado && !$hayVigente) {
+                continue;   // los dos vacíos: es el caso normal de Antidumping
+            }
+
+            if ($hayGuardado && $hayVigente
+                && abs((float) $guardado - (float) $vigente) < $tolerancia) {
+                continue;   // misma alícuota escrita con distinta escala
+            }
+
+            $desvios[] = [
+                'ID_CE'      => $idCe,
+                'CONCEPTO'   => $concepto['CONCEPTO'],
+                'TIPO_VALOR' => $concepto['TIPO_VALOR'],
+                'GUARDADO'   => $hayGuardado ? (float) $guardado : null,
+                'VIGENTE'    => $hayVigente  ? (float) $vigente  : null,
+            ];
+        }
+
+        return $desvios;
+    }
+
+    /**
      * Obtener estimación existente para un despacho
      */
     public function obtenerEstimacion($idMg) {

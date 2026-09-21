@@ -112,7 +112,18 @@ try {
             'confirmada' => $confirmada,
             // De dónde salieron las alícuotas: de una vigencia o del padrón.
             // La pantalla lo dice; sin esto, los dos casos se ven igual.
-            'vigencia' => $estimacion->resumenVigencia($fechaNacionalizacion)
+            'vigencia' => $estimacion->resumenVigencia($fechaNacionalizacion),
+
+            /* Qué conceptos tienen guardada una alícuota distinta de la que
+               rige para este contenedor. El valor guardado NO se pisa: la
+               pantalla lo avisa y ofrece recalcular.
+
+               Se calcula ACÁ ABAJO, después del ajuste de despachante de más
+               arriba, y no en el navegador: ese ajuste pisa VALOR_DEFAULT_1 en
+               los dos lados para las operaciones de Farre, y comparar antes
+               marcaría como desviadas todas esas operaciones. Ver
+               EstimacionCostos::desviosDeAlicuota(). */
+            'desvios' => EstimacionCostos::desviosDeAlicuota($conceptos, $estimacionExistente)
         ]
     ]);
     

@@ -556,3 +556,43 @@ body {
 .totals-card {
     animation: fadeIn 0.3s ease-out;
 }
+
+/* ============================================================================
+   ALÍCUOTA GUARDADA QUE NO COINCIDE CON LA VIGENTE
+
+   El valor guardado NO se pisa al abrir: lo que estas reglas hacen es que la
+   diferencia se vea. Sin ellas, una estimación calculada con una alícuota que
+   ya no rige se dibuja exactamente igual que una al día.
+
+   SE MARCA LA FILA ENTERA y no sólo el badge del parámetro: con trece
+   conceptos, un aviso arriba que dice "2 conceptos" obliga a buscar cuáles.
+
+   ÁMBAR Y NO ROJO. No es un error del sistema: es un dato que está esperando
+   una decisión —recalcular o dejarlo—, que es el mismo criterio con el que
+   .override-activo marca en ámbar un importe puesto a mano.
+   ============================================================================ */
+.table-estimation tr.alicuota-desviada {
+    background-color: #fffbeb;
+}
+
+.table-estimation tr.alicuota-desviada .parametro-badge {
+    background: #fef3c7;
+    color: #92400e;
+    text-decoration: line-through;
+}
+
+/* Qué alícuota rige, debajo de la guardada. Las dos juntas, porque la
+   diferencia es el dato: una sola no dice nada. */
+.alicuota-desviada-nota {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #b45309;
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+}
+
+.alicuota-desviada-nota i {
+    font-size: 0.7rem;
+}
