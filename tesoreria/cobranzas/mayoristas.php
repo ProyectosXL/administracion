@@ -220,14 +220,25 @@ include 'templates/layout/header.php';
             </div>
 
             <!-- Tabla Desempeño por Vendedor -->
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fa-solid fa-user-check me-2"></i>Desempeño de Cobranzas por Vendedor
-                    </h6>
-                    <button class="btn btn-success btn-sm shadow-sm" id="btn-exportar-reportes-excel">
-                        <i class="fa-solid fa-file-excel me-1"></i> Exportar a Excel
-                    </button>
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            <i class="fa-solid fa-user-check me-2"></i>Desempeño de Cobranzas por Vendedor
+                        </h6>
+                        <small class="text-muted">Desglose de gestiones, efectividad y conciliación de cobros</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary btn-sm shadow-sm" id="btn-toggle-todos-reportes" title="Expandir o contraer todos los vendedores">
+                            <i class="fa-solid fa-up-right-and-down-left-from-center me-1"></i> Expandir / Contraer Todo
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm shadow-sm" id="btn-refrescar-reportes" title="Actualizar datos">
+                            <i class="fa-solid fa-rotate me-1"></i> Actualizar
+                        </button>
+                        <button class="btn btn-success btn-sm shadow-sm" id="btn-exportar-reportes-excel">
+                            <i class="fa-solid fa-file-excel me-1"></i> Exportar a Excel
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">

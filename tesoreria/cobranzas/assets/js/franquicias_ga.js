@@ -211,8 +211,22 @@ function fgaWorkbookDetalle(datos) {
         tImporte += r.IMPORTE;
     });
 
+    /*  El total A COBRAR esta redondeado a pesos enteros y la suma de los
+        renglones no, asi que el pie tiene que mostrar los tres numeros. Este
+        Excel es el adjunto que recibe la franquicia: si mostrara solo la suma
+        cruda, no cerraria contra el importe del mail ni contra el recibo.
+        El redondeo se toma de datos.totales, que lo calcula el servidor; aca
+        no se replica la cuenta.                                             */
+    const t = datos.totales || {};
+    const ajuste = typeof t.ajuste_redondeo === 'number' ? t.ajuste_redondeo : 0;
+    const aCobrar = typeof t.importe === 'number' ? t.importe : tImporte;
+
     aoa.push([]);
     aoa.push(['', '', '', '', 'TOTAL (' + filas.length + ' renglones)', '', '', tImporte, '']);
+    if (Math.abs(ajuste) >= 0.005) {
+        aoa.push(['', '', '', '', 'Redondeo a pesos enteros', '', '', ajuste, '']);
+        aoa.push(['', '', '', '', 'TOTAL A COBRAR', '', '', aCobrar, '']);
+    }
 
     // Las fechas del bloque de cabecera tambien van con formato de fecha.
     const wb = fgaConstruirHoja(
@@ -393,7 +407,22 @@ function fgaCargarResumen() {
                             return '<span class="badge bg-warning text-dark" title="Comprobantes de períodos anteriores incluidos en este lote">' + d + '</span>';
                         }
                     },
-                    { data: 'IMPORTE_TOTAL', title: 'Importe', className: 'text-end fw-bold', render: fgaRenderMoneda },
+                    {
+                        /*  Importe A COBRAR: redondeado a pesos enteros por
+                            franquicia, que es por lo que se emite el recibo.
+                            El title deja a mano la suma cruda del detalle
+                            para quien tenga que conciliar los centavos.    */
+                        data: 'IMPORTE_TOTAL', title: 'Importe', className: 'text-end fw-bold',
+                        render: function (d, type, row) {
+                            if (type !== 'display') return d;
+                            const txt = fgaMoneda(d);
+                            return Math.abs(row.AJUSTE_REDONDEO || 0) >= 0.005
+                                ? '<span title="Redondeado a pesos enteros. Suma del detalle: ' +
+                                  fgaMoneda(row.IMPORTE_EXACTO) + '" class="border-bottom border-secondary-subtle">' +
+                                  txt + '</span>'
+                                : txt;
+                        }
+                    },
                     { data: 'IMPORTE_COBRADO', title: 'Cobrado', className: 'text-end', render: fgaRenderMoneda },
                     {
                         data: 'SALDO', title: 'Saldo', className: 'text-end fw-bold',
@@ -494,10 +523,23 @@ function fgaAbrirDetalle(idLote, nroSucursal) {
             const c = r.cabecera || {};
             $('#fga-detalle-titulo').text('Lote #' + idLote + '  ·  ' + (c.PERIODO_DESDE || '') + ' al ' + (c.PERIODO_HASTA || ''));
 
+            /*  La tarjeta muestra el importe A COBRAR (redondeado a pesos
+                enteros, igual que la columna Importe de la grilla) y debajo,
+                en chico, la suma cruda de los renglones cuando difiere. Sin
+                esa segunda linea el total de la tarjeta no cierra contra la
+                columna Importe de la tabla de abajo y parece un error.      */
+            const ajusteDet = r.totales.ajuste_redondeo || 0;
+            const notaRedondeo = Math.abs(ajusteDet) >= 0.005
+                ? '<div class="text-xs text-muted" title="El importe a cobrar se redondea a pesos enteros">' +
+                  'suma del detalle ' + fgaMoneda(r.totales.importe_exacto) +
+                  ' · redondeo ' + (ajusteDet > 0 ? '+' : '−') + fgaMoneda(Math.abs(ajusteDet)) +
+                  '</div>'
+                : '';
+
             $('#fga-detalle-resumen').html(
                 '<div class="row g-2">' +
                 '<div class="col-md-3"><div class="border rounded p-2 bg-light"><div class="text-xs text-uppercase text-muted">Total liquidado</div>' +
-                '<div class="h5 mb-0 fw-bold">' + fgaMoneda(r.totales.importe) + '</div></div></div>' +
+                '<div class="h5 mb-0 fw-bold">' + fgaMoneda(r.totales.importe) + '</div>' + notaRedondeo + '</div></div>' +
                 '<div class="col-md-3"><div class="border rounded p-2 bg-light"><div class="text-xs text-uppercase text-muted">Renglones</div>' +
                 '<div class="h5 mb-0 fw-bold">' + r.totales.renglones + '</div></div></div>' +
                 '<div class="col-md-3"><div class="border rounded p-2 bg-light"><div class="text-xs text-uppercase text-muted">Rezagados</div>' +

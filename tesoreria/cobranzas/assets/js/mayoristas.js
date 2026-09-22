@@ -1133,39 +1133,64 @@ ${fechaActual}`;
                 let htmlClientes = '';
                 if (v.CLIENTES && v.CLIENTES.length > 0) {
                     v.CLIENTES.forEach(c => {
-                        const estadoBadge = c.ESTADO === 'ABONADO' 
-                            ? `<span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Abonado</span>` 
-                            : `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Enviado</span>`;
+                        const isPagado = c.ESTADO === 'PAGADO' || c.ESTADO === 'ABONADO';
+                        const estadoBadge = isPagado 
+                            ? `<span class="badge bg-success"><i class="fa-solid fa-check-double me-1"></i>Pagada</span>` 
+                            : `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Enviada</span>`;
                         
-                        const reciboText = c.NRO_RECIBO ? `<span class="font-monospace text-dark fw-bold">${c.NRO_RECIBO}</span> (${c.FECHA_PAGO || '-'})` : '<span class="text-muted">-</span>';
-                        const montoReal = c.MONTO_PAGO_RECIBO !== null ? formatoMoneda(c.MONTO_PAGO_RECIBO) : '-';
-                        const diasPago = c.DIAS_A_PAGO !== null ? `<span class="badge bg-light text-dark border">${c.DIAS_A_PAGO} días</span>` : '-';
+                        const reciboText = c.NRO_RECIBO ? `<span class="font-monospace text-dark fw-bold">${c.NRO_RECIBO}</span> <small class="text-muted d-block">(${c.FECHA_PAGO || '-'})</small>` : '<span class="text-muted">-</span>';
+                        const montoReal = c.MONTO_PAGO_RECIBO !== null ? `<span class="text-success fw-bold">${formatoMoneda(c.MONTO_PAGO_RECIBO)}</span>` : '<span class="text-muted">-</span>';
+                        const diasPago = c.DIAS_A_PAGO !== null ? `<span class="badge bg-light text-dark border">${c.DIAS_A_PAGO} días</span>` : '<span class="text-muted">-</span>';
                         
-                        let desvioText = '-';
+                        let desvioText = '<span class="text-muted">-</span>';
                         if (c.DIFERENCIA_MONTO !== null) {
                             const colorDesv = c.DIFERENCIA_MONTO >= 0 ? 'text-success' : 'text-danger';
                             const sign = c.DIFERENCIA_MONTO > 0 ? '+' : '';
-                            desvioText = `<span class="${colorDesv} fw-bold">${sign}${formatoMoneda(c.DIFERENCIA_MONTO)}</span> <small class="text-muted">(${sign}${(c.DIFERENCIA_PORC || 0).toFixed(1)}%)</small>`;
+                            desvioText = `<span class="${colorDesv} fw-bold">${sign}${formatoMoneda(c.DIFERENCIA_MONTO)}</span> <small class="text-muted d-block">(${sign}${(c.DIFERENCIA_PORC || 0).toFixed(1)}%)</small>`;
                         }
 
+                        const cobJson = encodeURIComponent(JSON.stringify({
+                            ID: c.ID,
+                            COD_CLIENT: c.COD_CLIENT,
+                            RAZON_SOCI: c.RAZON_SOCI,
+                            COD_VENDED: c.COD_VENDED || v.COD_VENDED,
+                            ESTADO: isPagado ? 'PAGADO' : 'ENVIADO',
+                            FECHA_ENVIO: c.FECHA_ENVIO,
+                            FECHA_PAGO: c.FECHA_PAGO,
+                            TOTAL_PROPUESTO: c.TOTAL_PROPUESTO,
+                            MONTO_FACTURA: c.MONTO_FACTURA,
+                            MONTO_REMITO: c.MONTO_REMITO,
+                            MONTO_PAGO_RECIBO: c.MONTO_PAGO_RECIBO,
+                            OBSERVACIONES_GESTION: c.OBSERVACIONES_GESTION || ''
+                        }));
+
+                        const btnColor = isPagado ? 'btn-outline-success' : 'btn-outline-primary';
+                        const btnIcon = isPagado ? 'fa-solid fa-pen-to-square' : 'fa-solid fa-circle-check';
+                        const btnTitle = isPagado ? 'Modificar Estado / Pago' : 'Cambiar Estado a Pagado';
+
                         htmlClientes += `
-                            <tr>
-                                <td class="ps-4">
+                            <tr class="align-middle">
+                                <td class="ps-3">
                                     <span class="badge bg-secondary font-monospace">${c.COD_CLIENT}</span>
-                                    <strong class="ms-1">${c.RAZON_SOCI}</strong>
-                                    <small class="text-muted d-block mt-1">Propuesta #${c.ID} | Envío: ${c.FECHA_ENVIO}</small>
+                                    <strong class="ms-1 text-dark">${c.RAZON_SOCI}</strong>
+                                    <small class="text-muted d-block mt-0" style="font-size: 0.78rem;">Propuesta #${c.ID} | Envío: ${c.FECHA_ENVIO}</small>
                                 </td>
-                                <td class="text-end">${formatoMoneda(c.TOTAL_PROPUESTO)}</td>
+                                <td class="text-end fw-bold text-dark">${formatoMoneda(c.TOTAL_PROPUESTO)}</td>
                                 <td class="text-center">${estadoBadge}</td>
                                 <td>${reciboText}</td>
-                                <td class="text-end fw-bold text-success">${montoReal}</td>
+                                <td class="text-end">${montoReal}</td>
                                 <td class="text-center">${diasPago}</td>
                                 <td class="text-end">${desvioText}</td>
+                                <td class="text-center pe-3">
+                                    <button class="btn btn-sm ${btnColor} btn-gestionar-estado py-1 px-2" data-cobranza="${cobJson}" title="${btnTitle}">
+                                        <i class="${btnIcon} me-1"></i> ${isPagado ? 'Modificar' : 'Gestionar'}
+                                    </button>
+                                </td>
                             </tr>
                         `;
                     });
                 } else {
-                    htmlClientes = '<tr><td colspan="7" class="text-center text-muted py-2">No hay cobranzas registradas para este vendedor.</td></tr>';
+                    htmlClientes = '<tr><td colspan="8" class="text-center text-muted py-3">No hay cobranzas registradas para este vendedor.</td></tr>';
                 }
 
                 html += `
@@ -1173,20 +1198,24 @@ ${fechaActual}`;
                         <td colspan="8" class="p-0 border-0">
                             <div class="collapse" id="${collapseId}">
                                 <div class="p-3 bg-light border-start border-end border-bottom">
-                                    <h6 class="small fw-bold text-primary text-uppercase mb-2">
-                                        <i class="fa-solid fa-users me-1"></i>Detalle de Clientes y Cobranzas de ${v.NOMBRE_VENDEDOR}
-                                    </h6>
-                                    <div class="table-responsive bg-white rounded border">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="small fw-bold text-primary text-uppercase mb-0">
+                                            <i class="fa-solid fa-users me-1"></i>Detalle de Clientes y Cobranzas de ${v.NOMBRE_VENDEDOR} (${cantClientes})
+                                        </h6>
+                                        <span class="badge bg-white text-secondary border">Scroll disponible con encabezados fijos</span>
+                                    </div>
+                                    <div class="table-responsive bg-white rounded border shadow-sm reporte-detalle-scroll">
                                         <table class="table table-sm table-hover mb-0 align-middle">
                                             <thead class="table-light">
                                                 <tr class="text-muted small">
-                                                    <th class="ps-4">Cliente / Razón Social</th>
+                                                    <th class="ps-3">Cliente / Razón Social</th>
                                                     <th class="text-end">Monto Propuesto</th>
                                                     <th class="text-center">Estado</th>
                                                     <th>Recibo / Fecha</th>
                                                     <th class="text-end">Monto Cobrado</th>
                                                     <th class="text-center">Días a Pago</th>
                                                     <th class="text-end">Desvío</th>
+                                                    <th class="text-center pe-3" style="width: 110px;">Acción</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1230,6 +1259,20 @@ ${fechaActual}`;
 
     $('#btn-refrescar-historial').on('click', function() {
         cargarHistorialCobranzas();
+    });
+
+    $('#btn-refrescar-reportes').on('click', function() {
+        cargarReportesMayoristas();
+    });
+
+    let todosExpandidos = false;
+    $('#btn-toggle-todos-reportes').on('click', function() {
+        todosExpandidos = !todosExpandidos;
+        if (todosExpandidos) {
+            $('#cuerpo-tabla-reporte-vendedores .collapse').collapse('show');
+        } else {
+            $('#cuerpo-tabla-reporte-vendedores .collapse').collapse('hide');
+        }
     });
 
     // Pestañas

@@ -11,3 +11,5 @@ contabilidad/class/log_paso3.txt
 tesoreria/cajaDirectores/controller/_debug_log.txt
 tesoreria/cobranzas/adjuntos
 tesoreria/cobranzas/api/notificaciones.log
+tesoreria/cobranzas/sql
+tesoreria/cobranzas/sql/02_RO_SP_FRANQ_GA.sql

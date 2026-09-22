@@ -9,6 +9,7 @@
     y 06_RO_T_FRANQ_GA_LOTE_ENVIO.sql.
 
     Objetos que crea (todos CREATE OR ALTER, se puede recorrer varias veces):
+      RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO        (auxiliar, ver nota 6)
       RO_SP_FRANQ_GA_GENERAR_LOTE
       RO_SP_FRANQ_GA_RESUMEN
       RO_SP_FRANQ_GA_DETALLE
@@ -19,9 +20,10 @@
 
     NOTAS DE DISEÑO
     ---------------
-    1) CTA02 / CTA03 / GVA17 / GVA12 son LOCALES a esta base. El unico cruce es
-       [LOCALES_LAKERS].DBO.SUCURSALES_LAKERS: misma instancia (XL-LAKERBIS),
-       cross-database, sin linked server.
+    1) CTA02 / CTA03 / GVA17 son LOCALES a esta base. Los cruces son dos:
+       [LOCALES_LAKERS].DBO.SUCURSALES_LAKERS (misma instancia XL-LAKERBIS,
+       cross-database, sin linked server) y [XL-TANGO].LAKER_SA.DBO.GVA12
+       (linked server) para los RECIBOS -- ver nota 7.
 
     2) COLLATIONS. Las columnas de Tango son Latin1_General_BIN y las nuestras
        Modern_Spanish_CI_AI. En las comparaciones columna-vs-literal no hay
@@ -58,11 +60,96 @@
        discrimina por sucursal. RO_SP_FRANQ_GA_RESUMEN devuelve ademas un
        ESTADO_SUCURSAL calculado por franquicia (PENDIENTE / PARCIAL /
        COBRADO), que es lo que conviene mostrar en la grilla.
+
+    6) REDONDEO A PESOS ENTEROS. El importe a cobrar de cada franquicia es
+       ROUND(SUM(IMPORTE), 0), no la suma cruda. Motivo real: el lote 1 de la
+       501 sumaba 4.389.424,65 y el recibo se hizo por 4.389.425. Con la suma
+       cruda ese recibo nunca daba MATCH_EXACTO y el saldo quedaba en 0,35
+       eternamente: el lote no cerraba nunca por 35 centavos.
+
+       La regla es "una franquicia, un importe entero":
+         - se redondea el TOTAL POR SUCURSAL, no cada renglon. Los renglones
+           del detalle siguen siendo cantidad x precio exacto -- son la
+           aritmetica que la franquicia puede auditar;
+         - el total del LOTE es la SUMA DE LOS TOTALES YA REDONDEADOS de cada
+           sucursal, no el redondeo de la suma. Si fuera al reves, la suma de
+           lo que paga cada franquicia no cerraria contra el total del lote.
+
+       Ese calculo vive en UN SOLO lugar, RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO,
+       por el mismo motivo que la nota 4: seis copias del ROUND en seis SP es
+       la forma de que se desincronicen. La funcion es inline (RETURNS TABLE),
+       asi que el optimizador la expande y no paga el costo de una escalar.
+
+       ROUND de T-SQL redondea "half away from zero": 0,5 sube y -0,5 baja.
+       Para un lote con saldo neto negativo (mas notas de credito que
+       facturas) eso redondea a favor de la franquicia, que es el criterio
+       conservador correcto.
+
+    7) LOS RECIBOS ESTAN EN OTRO SERVIDOR Y NO SE IDENTIFICAN POR SUCURSAL.
+       Dos correcciones sobre el supuesto original:
+
+         a) GVA12 local a FRANQUICIAS_LAKERS esta VACIA (0 filas). Los recibos
+            viven en [XL-TANGO].LAKER_SA.DBO.GVA12. RO_SP_FRANQ_GA_VINCULAR_RECIBO
+            leia la local y por eso fallaba siempre con el error 50011.
+
+         b) En esa GVA12 los 94.456 recibos tienen NRO_SUCURS = 0: los emite
+            casa central, no la franquicia. Quien identifica a la franquicia
+            es COD_CLIENT ('LALOMA' para la 501), que es justamente la columna
+            por la que SUCURSALES_LAKERS mapea a NRO_SUCURSAL. Por eso el
+            cruce recibo <-> franquicia es SIEMPRE por COD_CLIENT, y lo que se
+            devuelve y se graba como NRO_SUCURS es S.NRO_SUCURSAL, nunca
+            G.NRO_SUCURS. Filtrar por G.NRO_SUCURS = 501 devolvia cero filas.
+
+       Ademas GVA12.N_COMP es VARCHAR(14) alineado a la DERECHA: el recibo
+       0000200103726 esta grabado como ' 0000200103726', con espacio adelante.
+       SQL Server ignora los espacios finales al comparar, pero NO los
+       iniciales, asi que el numero se normaliza con LTRIM/RTRIM en los dos
+       lados y se graba normalizado en RO_T_FRANQ_GA_LOTE_RECIBO. El filtro
+       que hace el trabajo pesado es COD_CLIENT (sargable); el LTRIM solo se
+       evalua sobre los recibos de esa franquicia.
 ================================================================================
 */
 
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
+GO
+
+
+/* ============================================================================
+   0. RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO   (auxiliar interno)
+   ----------------------------------------------------------------------------
+   Importe A COBRAR del alcance pedido, redondeado a pesos enteros por
+   franquicia -- ver nota 6 de la cabecera.
+
+     @NroSucursal NOT NULL -> ROUND(suma de esa franquicia, 0)
+     @NroSucursal NULL     -> suma de los totales YA redondeados de cada
+                              franquicia del lote
+
+   Es inline a proposito: se expande en el plan del SP que la llama, no se
+   evalua fila por fila como una funcion escalar.
+
+   OJO: hay que crearla ANTES que los SP. La resolucion diferida de nombres de
+   SQL Server cubre las TABLAS, no las funciones: un CREATE PROCEDURE que la
+   referencie falla si todavia no existe.
+============================================================================ */
+CREATE OR ALTER FUNCTION RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO
+(
+    @IdLote      INT,
+    @NroSucursal SMALLINT
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT CAST(ISNULL(SUM(X.IMPORTE_SUCURSAL), 0) AS DECIMAL(22,7)) AS IMPORTE
+    FROM (
+            SELECT ROUND(SUM(D.IMPORTE), 0) AS IMPORTE_SUCURSAL
+            FROM   RO_T_FRANQ_GA_LOTE_DETALLE D
+            WHERE  D.ID_LOTE = @IdLote
+              AND  (@NroSucursal IS NULL OR D.NRO_SUCURS = @NroSucursal)
+            GROUP BY D.NRO_SUCURS
+         ) X
+);
 GO
 
 
@@ -211,14 +298,13 @@ BEGIN
                     )
             GROUP BY A.NRO_SUCURS, A.T_COMP, A.N_COMP, ISNULL(B.COD_ARTICU, '');
 
+            /*  Lo que se graba es el importe A COBRAR: suma de los totales ya
+                redondeados de cada franquicia (nota 6), no la suma cruda del
+                detalle. Es el numero que tiene que cerrar contra los recibos. */
             UPDATE  L
-            SET     L.IMPORTE_TOTAL = ISNULL(T.TOTAL, 0)
+            SET     L.IMPORTE_TOTAL = T.IMPORTE
             FROM    RO_T_FRANQ_GA_LOTE L
-            OUTER APPLY (
-                        SELECT SUM(D.IMPORTE) AS TOTAL
-                        FROM   RO_T_FRANQ_GA_LOTE_DETALLE D
-                        WHERE  D.ID_LOTE = L.ID_LOTE
-                    ) T
+            CROSS APPLY RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO(L.ID_LOTE, NULL) T
             WHERE   L.ID_LOTE = @IdLote;
 
             COMMIT TRANSACTION;
@@ -305,7 +391,13 @@ BEGIN
                 COUNT(*)                                                AS CANT_RENGLONES,
                 SUM(CASE WHEN D.ES_REZAGADO      = 1 THEN 1 ELSE 0 END)  AS CANT_REZAGADOS,
                 SUM(CASE WHEN D.SIN_PRECIO_LISTA = 1 THEN 1 ELSE 0 END)  AS CANT_SIN_PRECIO,
-                SUM(D.IMPORTE)                                          AS IMPORTE_TOTAL
+                /*  IMPORTE_TOTAL es el importe A COBRAR: redondeado a pesos
+                    enteros por franquicia (nota 6). IMPORTE_EXACTO es la suma
+                    cruda de los renglones, que se expone para que la pantalla
+                    pueda explicar la diferencia de centavos contra el detalle
+                    en vez de que parezca un error de calculo.                */
+                ROUND(SUM(D.IMPORTE), 0)                                AS IMPORTE_TOTAL,
+                SUM(D.IMPORTE)                                          AS IMPORTE_EXACTO
         FROM    RO_T_FRANQ_GA_LOTE_DETALLE D
         GROUP BY D.ID_LOTE, D.NRO_SUCURS
     ),
@@ -352,6 +444,8 @@ BEGIN
         DET.CANT_REZAGADOS,
         DET.CANT_SIN_PRECIO,
         DET.IMPORTE_TOTAL,
+        DET.IMPORTE_EXACTO,
+        DET.IMPORTE_TOTAL - DET.IMPORTE_EXACTO      AS AJUSTE_REDONDEO,
         ISNULL(REC.CANT_RECIBOS, 0)                 AS CANT_RECIBOS,
         ISNULL(REC.IMPORTE_COBRADO, 0)              AS IMPORTE_COBRADO,
         DET.IMPORTE_TOTAL - ISNULL(REC.IMPORTE_COBRADO, 0) AS SALDO,
@@ -438,7 +532,12 @@ GO
    MATCH_EXACTO = 1 cuando el importe coincide exactamente con el saldo.
 
    El saldo se calcula para el alcance pedido: si viene @NroSucursal, es el
-   saldo de esa franquicia en el lote; si no, el del lote completo.
+   saldo de esa franquicia en el lote; si no, el del lote completo. El importe
+   del lote sale de RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO, o sea YA REDONDEADO a
+   pesos enteros (nota 6): es contra ese numero que se hace el recibo.
+
+   La franquicia del recibo sale de COD_CLIENT, no de GVA12.NRO_SUCURS, y el
+   numero se normaliza con LTRIM/RTRIM -- ver nota 7 de la cabecera.
 ============================================================================ */
 CREATE OR ALTER PROCEDURE RO_SP_FRANQ_GA_RECIBOS_CANDIDATOS
     @IdLote      INT,
@@ -454,10 +553,8 @@ BEGIN
             @Cobrado     DECIMAL(22,7),
             @Saldo       DECIMAL(22,7);
 
-    SELECT @ImporteLote = ISNULL(SUM(D.IMPORTE), 0)
-    FROM   RO_T_FRANQ_GA_LOTE_DETALLE D
-    WHERE  D.ID_LOTE = @IdLote
-      AND  (@NroSucursal IS NULL OR D.NRO_SUCURS = @NroSucursal);
+    SELECT @ImporteLote = F.IMPORTE
+    FROM   RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO(@IdLote, @NroSucursal) F;
 
     SELECT @Cobrado = ISNULL(SUM(R.IMPORTE_RECIBO), 0)
     FROM   RO_T_FRANQ_GA_LOTE_RECIBO R
@@ -467,10 +564,12 @@ BEGIN
     SET @Saldo = @ImporteLote - @Cobrado;
 
     SELECT
-        G.NRO_SUCURS,
+        /*  La sucursal sale de SUCURSALES_LAKERS, NO de G.NRO_SUCURS: en
+            GVA12 los recibos son todos de casa central (nota 7).             */
+        S.NRO_SUCURSAL                                  AS NRO_SUCURS,
         S.DESC_SUCURSAL,
         G.T_COMP,
-        G.N_COMP                                        AS N_COMP_RECIBO,
+        LTRIM(RTRIM(G.N_COMP))                          AS N_COMP_RECIBO,
         G.FECHA_EMIS                                    AS FECHA_EMIS_RECIBO,
         G.COD_CLIENT,
         CAST(ISNULL(G.IMPORTE, 0) AS DECIMAL(22,7))     AS IMPORTE_RECIBO,
@@ -478,25 +577,28 @@ BEGIN
         @ImporteLote                                    AS IMPORTE_LOTE,
         @Cobrado                                        AS IMPORTE_COBRADO,
         @Saldo                                          AS SALDO_PENDIENTE,
-        /*  Comparacion exacta sobre DECIMAL(22,7) en los dos lados: por eso el
-            modelo no redondea a 2 decimales en ningun punto.                 */
+        /*  Comparacion exacta sobre DECIMAL(22,7) en los dos lados. Ahora da
+            exacta porque el saldo viene redondeado a pesos enteros, que es
+            como se emite el recibo (nota 6). No se agrega tolerancia: si no
+            coincide, no coincide, y DIFERENCIA muestra por cuanto.           */
         CASE WHEN CAST(ISNULL(G.IMPORTE, 0) AS DECIMAL(22,7)) = @Saldo
              THEN 1 ELSE 0 END                          AS MATCH_EXACTO,
         ABS(CAST(ISNULL(G.IMPORTE, 0) AS DECIMAL(22,7)) - @Saldo) AS DIFERENCIA
-    FROM        GVA12 G WITH (NOLOCK)
+    FROM        [XL-TANGO].LAKER_SA.DBO.GVA12 G WITH (NOLOCK)
     INNER JOIN  [LOCALES_LAKERS].DBO.SUCURSALES_LAKERS S WITH (NOLOCK)
-            ON  G.NRO_SUCURS = S.NRO_SUCURSAL
+            ON  G.COD_CLIENT = S.COD_CLIENT COLLATE Latin1_General_BIN
     WHERE   S.CANAL COLLATE Modern_Spanish_CI_AI = 'FRANQUICIAS GA'
       AND   G.T_COMP = 'REC'
       /*  GVA12.N_COMP admite NULL; un recibo sin numero no se puede vincular
           porque el numero es parte de la clave unica del vinculo.            */
       AND   G.N_COMP IS NOT NULL
-      AND   (@NroSucursal IS NULL OR G.NRO_SUCURS = @NroSucursal)
+      AND   LTRIM(RTRIM(G.N_COMP)) <> ''
+      AND   (@NroSucursal IS NULL OR S.NRO_SUCURSAL = @NroSucursal)
       AND   NOT EXISTS (
                 SELECT 1
                 FROM   RO_T_FRANQ_GA_LOTE_RECIBO R
-                WHERE  R.NRO_SUCURS    = G.NRO_SUCURS
-                  AND  R.N_COMP_RECIBO = G.N_COMP
+                WHERE  R.NRO_SUCURS    = S.NRO_SUCURSAL
+                  AND  R.N_COMP_RECIBO = LTRIM(RTRIM(G.N_COMP))
             )
     ORDER BY ABS(CAST(ISNULL(G.IMPORTE, 0) AS DECIMAL(22,7)) - @Saldo) ASC,
              G.FECHA_EMIS DESC;
@@ -520,17 +622,18 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    /*  El importe a comparar contra lo cobrado es el REDONDEADO (nota 6). Con
+        la suma cruda el lote quedaba en 'GENERADO' para siempre por los
+        centavos que el recibo no trae.                                       */
     UPDATE  L
     SET     L.ESTADO = CASE
-                           WHEN ISNULL(TOT.IMPORTE, 0) - ISNULL(COB.COBRADO, 0) <= 0
+                           WHEN TOT.IMPORTE - ISNULL(COB.COBRADO, 0) <= 0
                             AND ISNULL(COB.COBRADO, 0) > 0
                            THEN 'COBRADO'
                            ELSE 'GENERADO'
                        END
     FROM    RO_T_FRANQ_GA_LOTE L
-    OUTER APPLY (SELECT SUM(D.IMPORTE) AS IMPORTE
-                 FROM   RO_T_FRANQ_GA_LOTE_DETALLE D
-                 WHERE  D.ID_LOTE = L.ID_LOTE) TOT
+    CROSS APPLY RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO(L.ID_LOTE, NULL) TOT
     OUTER APPLY (SELECT SUM(R.IMPORTE_RECIBO) AS COBRADO
                  FROM   RO_T_FRANQ_GA_LOTE_RECIBO R
                  WHERE  R.ID_LOTE = L.ID_LOTE) COB
@@ -548,6 +651,11 @@ GO
    El importe y la fecha se LEEN DE GVA12, no se reciben por parametro: el
    front manda solo sucursal y numero de recibo. Si los aceptara del cliente,
    cualquiera podria cerrar un lote con un importe inventado.
+
+   GVA12 es la de [XL-TANGO].LAKER_SA y la franquicia se resuelve por
+   COD_CLIENT, igual que en RO_SP_FRANQ_GA_RECIBOS_CANDIDATOS -- ver nota 7.
+   Este SP leia la GVA12 local (vacia) y filtraba por NRO_SUCURS: nunca
+   encontraba el recibo y siempre tiraba el error 50011.
 
    El recibo de Tango NO se modifica. La imputacion vive solo en
    RO_T_FRANQ_GA_LOTE_RECIBO, asi que es 100% reversible.
@@ -568,6 +676,14 @@ BEGIN
 
     IF @TipoMatch NOT IN ('AUTO', 'MANUAL')
         THROW 50006, 'RO_SP_FRANQ_GA_VINCULAR_RECIBO: @TipoMatch debe ser AUTO o MANUAL.', 1;
+
+    /*  Se normaliza una sola vez: GVA12.N_COMP viene alineado a la derecha y
+        lo que se graba tiene que ser siempre la forma sin espacios, que es la
+        que usan el indice unico y el NOT EXISTS de los candidatos (nota 7).  */
+    SET @NCompRecibo = LTRIM(RTRIM(@NCompRecibo));
+
+    IF @NCompRecibo = ''
+        THROW 50005, 'RO_SP_FRANQ_GA_VINCULAR_RECIBO: @NCompRecibo no puede venir vacio.', 1;
 
     DECLARE @EstadoLote VARCHAR(20);
 
@@ -595,23 +711,36 @@ BEGIN
                  AND  R.N_COMP_RECIBO = @NCompRecibo)
         THROW 50010, 'RO_SP_FRANQ_GA_VINCULAR_RECIBO: ese recibo ya esta vinculado a un lote.', 1;
 
-    DECLARE @FechaRec DATETIME,
-            @ImpRec   DECIMAL(22,7);
+    DECLARE @FechaRec  DATETIME,
+            @ImpRec    DECIMAL(22,7),
+            /*  VARCHAR(8) = el ancho de SUCURSALES_LAKERS.COD_CLIENT, que es
+                el origen. GVA12.COD_CLIENT es VARCHAR(6): la comparacion
+                ignora los espacios finales, asi que no hace falta recortar. */
+            @CodClient VARCHAR(8);
+
+    /*  Cliente de Tango de la franquicia. Es la unica llave que une el recibo
+        con la sucursal (nota 7): resolverla primero deja el filtro sobre
+        GVA12 sargable por COD_CLIENT, que es lo que importa porque GVA12 esta
+        del otro lado del linked server.                                      */
+    SELECT TOP 1 @CodClient = S.COD_CLIENT
+    FROM   [LOCALES_LAKERS].DBO.SUCURSALES_LAKERS S WITH (NOLOCK)
+    WHERE  S.NRO_SUCURSAL = @NroSucursal
+      AND  S.CANAL COLLATE Modern_Spanish_CI_AI = 'FRANQUICIAS GA';
+
+    IF @CodClient IS NULL
+        THROW 50011, 'RO_SP_FRANQ_GA_VINCULAR_RECIBO: la sucursal no pertenece al canal FRANQUICIAS GA o no tiene COD_CLIENT.', 1;
 
     SELECT TOP 1
            @FechaRec = G.FECHA_EMIS,
            @ImpRec   = CAST(ISNULL(G.IMPORTE, 0) AS DECIMAL(22,7))
-    FROM        GVA12 G WITH (NOLOCK)
-    INNER JOIN  [LOCALES_LAKERS].DBO.SUCURSALES_LAKERS S WITH (NOLOCK)
-            ON  G.NRO_SUCURS = S.NRO_SUCURSAL
-    WHERE   S.CANAL COLLATE Modern_Spanish_CI_AI = 'FRANQUICIAS GA'
-      AND   G.T_COMP     = 'REC'
-      AND   G.NRO_SUCURS = @NroSucursal
-      AND   G.N_COMP     = @NCompRecibo
+    FROM   [XL-TANGO].LAKER_SA.DBO.GVA12 G WITH (NOLOCK)
+    WHERE  G.T_COMP     = 'REC'
+      AND  G.COD_CLIENT = @CodClient
+      AND  LTRIM(RTRIM(G.N_COMP)) = @NCompRecibo
     ORDER BY G.FECHA_EMIS DESC;
 
     IF @ImpRec IS NULL
-        THROW 50011, 'RO_SP_FRANQ_GA_VINCULAR_RECIBO: no se encontro el recibo en GVA12 para esa sucursal del canal FRANQUICIAS GA.', 1;
+        THROW 50011, 'RO_SP_FRANQ_GA_VINCULAR_RECIBO: no se encontro el recibo en GVA12 para esa franquicia del canal FRANQUICIAS GA.', 1;
 
     BEGIN TRY
         BEGIN TRANSACTION;
@@ -640,13 +769,11 @@ BEGIN
         @NroSucursal                                    AS NRO_SUCURS,
         @NCompRecibo                                    AS N_COMP_RECIBO,
         @ImpRec                                         AS IMPORTE_RECIBO,
-        ISNULL(TOT.IMPORTE, 0)                          AS IMPORTE_SUCURSAL,
+        TOT.IMPORTE                                     AS IMPORTE_SUCURSAL,
         ISNULL(COB.COBRADO, 0)                          AS COBRADO_SUCURSAL,
-        ISNULL(TOT.IMPORTE, 0) - ISNULL(COB.COBRADO, 0) AS SALDO_SUCURSAL
+        TOT.IMPORTE - ISNULL(COB.COBRADO, 0)            AS SALDO_SUCURSAL
     FROM  RO_T_FRANQ_GA_LOTE L
-    OUTER APPLY (SELECT SUM(D.IMPORTE) AS IMPORTE
-                 FROM   RO_T_FRANQ_GA_LOTE_DETALLE D
-                 WHERE  D.ID_LOTE = L.ID_LOTE AND D.NRO_SUCURS = @NroSucursal) TOT
+    CROSS APPLY RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO(L.ID_LOTE, @NroSucursal) TOT
     OUTER APPLY (SELECT SUM(R.IMPORTE_RECIBO) AS COBRADO
                  FROM   RO_T_FRANQ_GA_LOTE_RECIBO R
                  WHERE  R.ID_LOTE = L.ID_LOTE AND R.NRO_SUCURS = @NroSucursal) COB
@@ -719,13 +846,11 @@ BEGIN
         L.ESTADO                                        AS ESTADO_LOTE,
         @NroSucursal                                    AS NRO_SUCURS,
         @NCompRecibo                                    AS N_COMP_RECIBO,
-        ISNULL(TOT.IMPORTE, 0)                          AS IMPORTE_SUCURSAL,
+        TOT.IMPORTE                                     AS IMPORTE_SUCURSAL,
         ISNULL(COB.COBRADO, 0)                          AS COBRADO_SUCURSAL,
-        ISNULL(TOT.IMPORTE, 0) - ISNULL(COB.COBRADO, 0) AS SALDO_SUCURSAL
+        TOT.IMPORTE - ISNULL(COB.COBRADO, 0)            AS SALDO_SUCURSAL
     FROM  RO_T_FRANQ_GA_LOTE L
-    OUTER APPLY (SELECT SUM(D.IMPORTE) AS IMPORTE
-                 FROM   RO_T_FRANQ_GA_LOTE_DETALLE D
-                 WHERE  D.ID_LOTE = L.ID_LOTE AND D.NRO_SUCURS = @NroSucursal) TOT
+    CROSS APPLY RO_FN_FRANQ_GA_IMPORTE_LIQUIDADO(L.ID_LOTE, @NroSucursal) TOT
     OUTER APPLY (SELECT SUM(R.IMPORTE_RECIBO) AS COBRADO
                  FROM   RO_T_FRANQ_GA_LOTE_RECIBO R
                  WHERE  R.ID_LOTE = L.ID_LOTE AND R.NRO_SUCURS = @NroSucursal) COB
@@ -735,10 +860,11 @@ GO
 
 
 /* ---------------------------------------------------------------------------
-   VERIFICACION -- deberia listar los 7 procedimientos.
+   VERIFICACION -- deberia listar los 7 procedimientos y la funcion auxiliar.
 --------------------------------------------------------------------------- */
-SELECT  name AS PROCEDIMIENTO, create_date, modify_date
-FROM    sys.procedures
-WHERE   name LIKE 'RO_SP_FRANQ_GA[_]%'
-ORDER BY name;
+SELECT  o.name AS OBJETO, o.type_desc, o.create_date, o.modify_date
+FROM    sys.objects o
+WHERE   o.name LIKE 'RO[_][SF][PN][_]FRANQ[_]GA[_]%'
+  AND   o.type IN ('P', 'IF', 'TF', 'FN')
+ORDER BY o.type_desc, o.name;
 GO

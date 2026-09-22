@@ -685,7 +685,8 @@ try {
                             MONTO_PAGO_RECIBO,
                             DIAS_A_PAGO,
                             DIFERENCIA_MONTO,
-                            DIFERENCIA_PORC
+                            DIFERENCIA_PORC,
+                            OBSERVACIONES_GESTION
                         FROM FP_COBRANZAS_MAYORISTAS_HISTORIAL
                         WHERE COD_VENDED = ?
                         ORDER BY FECHA_ENVIO DESC
@@ -708,7 +709,9 @@ try {
                                 'MONTO_PAGO_RECIBO' => $rowC['MONTO_PAGO_RECIBO'] !== null ? (float)$rowC['MONTO_PAGO_RECIBO'] : null,
                                 'DIAS_A_PAGO' => $rowC['DIAS_A_PAGO'] !== null ? (int)$rowC['DIAS_A_PAGO'] : null,
                                 'DIFERENCIA_MONTO' => $rowC['DIFERENCIA_MONTO'] !== null ? (float)$rowC['DIFERENCIA_MONTO'] : null,
-                                'DIFERENCIA_PORC' => $rowC['DIFERENCIA_PORC'] !== null ? (float)$rowC['DIFERENCIA_PORC'] : null
+                                'DIFERENCIA_PORC' => $rowC['DIFERENCIA_PORC'] !== null ? (float)$rowC['DIFERENCIA_PORC'] : null,
+                                'OBSERVACIONES_GESTION' => trim($rowC['OBSERVACIONES_GESTION'] ?? ''),
+                                'COD_VENDED' => $codV
                             ];
                         }
                     }

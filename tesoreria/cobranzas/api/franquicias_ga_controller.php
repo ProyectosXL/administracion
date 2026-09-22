@@ -224,7 +224,14 @@ function armarMailLiquidacion($conn, $idLote, $nroSucursal)
     $nroSuc       = (int) $resumen['NRO_SUCURS'];
     $desde        = fechaAR($resumen['PERIODO_DESDE']);
     $hasta        = fechaAR($resumen['PERIODO_HASTA']);
+    /*  $importe es el total REDONDEADO a pesos enteros (nota 6 del SP): es el
+        numero por el que la franquicia tiene que hacer el pago y por el que se
+        emite el recibo. El Excel adjunto suma los renglones exactos, asi que
+        cuando hay diferencia de centavos hay que decirlo en el cuerpo -- si no,
+        parece que el detalle no cierra contra el total.                      */
     $importe      = (float) $resumen['IMPORTE_TOTAL'];
+    $importeExac  = (float) $resumen['IMPORTE_EXACTO'];
+    $ajusteRedon  = (float) $resumen['AJUSTE_REDONDEO'];
     $cobrado      = (float) $resumen['IMPORTE_COBRADO'];
     $saldo        = (float) $resumen['SALDO'];
     $cantComp     = (int) $resumen['CANT_COMPROBANTES'];
@@ -255,6 +262,10 @@ function armarMailLiquidacion($conn, $idLote, $nroSucursal)
             ? $filaTabla('De los cuales, de períodos anteriores', number_format($cantRezag, 0, ',', '.'))
             : '')
         . $filaTabla('Lista de precios aplicada', "Lista {$nroLista}")
+        . (abs($ajusteRedon) >= 0.005
+            ? $filaTabla('Suma del detalle', monedaAR($importeExac))
+                . $filaTabla('Redondeo a pesos enteros', ($ajusteRedon > 0 ? '+ ' : '- ') . monedaAR(abs($ajusteRedon)))
+            : '')
         . $filaTabla('<strong>Total de la liquidación</strong>', monedaAR($importe), true)
         . ($cobrado > 0
             ? $filaTabla('Ya cobrado', monedaAR($cobrado)) . $filaTabla('Saldo pendiente', monedaAR($saldo), true)
@@ -274,7 +285,9 @@ function armarMailLiquidacion($conn, $idLote, $nroSucursal)
         {$notaSinPrecio}
         <p>Adjuntamos el <strong>detalle completo de los comprobantes</strong> en formato Excel,
            con fecha, tipo, número, artículo, cantidad, precio unitario e importe de cada renglón.
-           Las notas de crédito figuran con importe negativo y ya están descontadas del total.</p>
+           Las notas de crédito figuran con importe negativo y ya están descontadas del total.
+           El total de la liquidación se redondea a pesos enteros, por eso puede diferir
+           en centavos de la suma del detalle adjunto.</p>
         <p style='font-size: 14px; color: #666;'>Ante cualquier diferencia o consulta sobre esta liquidación,
            comunicarse con Tesorería de XL Extra Large.</p>
     ";
@@ -399,7 +412,14 @@ try {
                     'CANT_COMPROBANTES' => (int) $row['CANT_COMPROBANTES'],
                     'CANT_REZAGADOS'    => (int) $row['CANT_REZAGADOS'],
                     'CANT_SIN_PRECIO'   => (int) $row['CANT_SIN_PRECIO'],
+                    /*  IMPORTE_TOTAL es el importe A COBRAR, redondeado a
+                        pesos enteros por franquicia (nota 6 del SP). Se
+                        arrastran tambien la suma cruda y el ajuste para que
+                        la pantalla pueda explicar los centavos de diferencia
+                        contra el detalle en vez de que parezcan un error.   */
                     'IMPORTE_TOTAL'     => (float) $row['IMPORTE_TOTAL'],
+                    'IMPORTE_EXACTO'    => (float) $row['IMPORTE_EXACTO'],
+                    'AJUSTE_REDONDEO'   => (float) $row['AJUSTE_REDONDEO'],
                     'CANT_RECIBOS'      => (int) $row['CANT_RECIBOS'],
                     'IMPORTE_COBRADO'   => (float) $row['IMPORTE_COBRADO'],
                     'SALDO'             => (float) $row['SALDO'],
@@ -415,13 +435,14 @@ try {
             /*  Totales del conjunto filtrado, para la fila de pie de la grilla.
                 Se calculan aca y no en JS para que el Excel exportado y la
                 pantalla muestren el mismo numero.                            */
-            $tot = ['importe' => 0.0, 'cobrado' => 0.0, 'saldo' => 0.0, 'comprobantes' => 0, 'rezagados' => 0];
+            $tot = ['importe' => 0.0, 'cobrado' => 0.0, 'saldo' => 0.0, 'comprobantes' => 0, 'rezagados' => 0, 'ajuste_redondeo' => 0.0];
             foreach ($data as $d) {
-                $tot['importe']      += $d['IMPORTE_TOTAL'];
-                $tot['cobrado']      += $d['IMPORTE_COBRADO'];
-                $tot['saldo']        += $d['SALDO'];
-                $tot['comprobantes'] += $d['CANT_COMPROBANTES'];
-                $tot['rezagados']    += $d['CANT_REZAGADOS'];
+                $tot['importe']         += $d['IMPORTE_TOTAL'];
+                $tot['cobrado']         += $d['IMPORTE_COBRADO'];
+                $tot['saldo']           += $d['SALDO'];
+                $tot['comprobantes']    += $d['CANT_COMPROBANTES'];
+                $tot['rezagados']       += $d['CANT_REZAGADOS'];
+                $tot['ajuste_redondeo'] += $d['AJUSTE_REDONDEO'];
             }
 
             echo json_encode(['success' => true, 'data' => $data, 'totales' => $tot]);
@@ -441,7 +462,15 @@ try {
 
             $data     = [];
             $cabecera = null;
-            $tot      = ['importe' => 0.0, 'renglones' => 0, 'rezagados' => 0, 'sin_precio' => 0];
+            $tot      = ['importe' => 0.0, 'importe_exacto' => 0.0, 'ajuste_redondeo' => 0.0,
+                         'renglones' => 0, 'rezagados' => 0, 'sin_precio' => 0];
+
+            /*  Suma cruda por franquicia, para poder redondear DESPUES. Ver
+                nota 6 del SP: se redondea el total de cada franquicia, no el
+                renglon ni la suma del lote entero. Si el detalle viene de
+                varias sucursales, el importe a cobrar es la suma de los
+                totales ya redondeados de cada una.                          */
+            $porSucursal = [];
 
             foreach (traerFilas($conn, $sql, $params) as $row) {
                 if ($cabecera === null) {
@@ -471,8 +500,11 @@ try {
                     'CLASE_COMP'       => trim((string) $row['CLASE_COMP']),
                 ];
 
-                $tot['importe']   += $importe;
-                $tot['renglones'] += 1;
+                $suc = (int) $row['NRO_SUCURS'];
+                $porSucursal[$suc] = ($porSucursal[$suc] ?? 0.0) + $importe;
+
+                $tot['importe_exacto'] += $importe;
+                $tot['renglones']      += 1;
                 if ((int) $row['ES_REZAGADO'] === 1) {
                     $tot['rezagados'] += 1;
                 }
@@ -480,6 +512,15 @@ try {
                     $tot['sin_precio'] += 1;
                 }
             }
+
+            /*  'importe' es el importe A COBRAR y tiene que dar exactamente lo
+                mismo que la columna Importe de la grilla, que sale del SP.
+                PHP_ROUND_HALF_UP replica el ROUND de T-SQL, que redondea
+                alejandose del cero en los dos signos.                        */
+            foreach ($porSucursal as $sumaSucursal) {
+                $tot['importe'] += round($sumaSucursal, 0, PHP_ROUND_HALF_UP);
+            }
+            $tot['ajuste_redondeo'] = $tot['importe'] - $tot['importe_exacto'];
 
             echo json_encode([
                 'success'  => true,
