@@ -17,11 +17,38 @@
  * importe original en MONTO_ORIGEN_ARS, que es lo que hace que la conversión
  * sea auditable y reversible en vez de una pérdida de información.
  *
- * ESTA TABLA NO LA LEE NADIE MÁS.
- * Verificado sobre ProyectosXL/finanzas en develop: el cashflow lee
- * RO_T_IMPORTACIONES_ENCABEZADO, RO_T_IMPORTACIONES_DETALLE y
- * RO_T_IMPORTACIONES_ESTIMACION_DETALLE, y no toca los pagos en ningún lado.
- * Comercio Exterior es el único dueño de este circuito.
+ * EL CASHFLOW LEE ESTA TABLA.
+ * Este comentario decía lo contrario —"esta tabla no la lee nadie más"— y dejó
+ * de ser cierto con la rama feature/comex-saldo-pendiente de
+ * ProyectosXL/finanzas. Ahí la pestaña Comercio Exterior → Proveedores del
+ * exterior y la fila del tablero pasaron de proyectar el VALOR_FOB_DOLAR
+ * entero a proyectar LO QUE FALTA PAGAR, y para eso necesitan lo que acá se
+ * registró como pagado.
+ *
+ * Qué hace el cashflow con esto, para que se entienda qué se rompe del otro
+ * lado si acá cambia algo:
+ *
+ *   - Lee SUM(MONTO) por contenedor —resuelto a la OC principal, igual que
+ *     obtenerResumen()— y proyecta VALOR_FOB_DOLAR menos eso.
+ *   - Un contenedor cancelado acá SALE SOLO de su proyección, sin que nadie
+ *     del otro lado haga nada.
+ *   - Muestra los pagos uno por uno en su pestaña, con fecha, forma, medio e
+ *     importe.
+ *
+ * SÓLO LECTURA, y no es una etapa pendiente. El cashflow no inserta, no
+ * actualiza y no borra: este circuito sigue siendo de Comercio Exterior, y
+ * duplicar el alta serían dos formularios escribiendo la misma tabla con dos
+ * validaciones distintas.
+ *
+ * UN CAMBIO EN LA REGLA DEL SALDO HAY QUE REPLICARLO ALLÁ.
+ * obtenerResumen() está copiada —no incluida: son dos aplicaciones y dos
+ * despliegues— en Comex::saldoPendiente() de ProyectosXL/finanzas, con los
+ * mismos cuatro estados y la misma tolerancia de un centavo. Las dos pantallas
+ * tienen que dar el mismo número, y no hay nada en el código que lo detecte
+ * solo: si acá se mueve la tolerancia, el orden de los estados o cómo se
+ * resuelve la OC principal, allá hay que moverlo también. Esta nota y la del
+ * encabezado de cashflow/Class/Comex.php —en ProyectosXL/finanzas— son las dos
+ * mitades del pacto.
  */
 class Pagos {
     private $cid_central;
