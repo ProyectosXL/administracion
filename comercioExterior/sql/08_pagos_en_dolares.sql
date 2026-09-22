@@ -52,10 +52,30 @@
 -- ---------------------------------------------------------------------
 -- QUIEN MAS LEE ESTA TABLA
 --
--- Nadie fuera de Comercio Exterior. Verificado sobre ProyectosXL/finanzas
--- en develop: el cashflow lee RO_T_IMPORTACIONES_ENCABEZADO,
--- RO_T_IMPORTACIONES_DETALLE y RO_T_IMPORTACIONES_ESTIMACION_DETALLE, y
--- no toca RO_T_IMPORTACIONES_ENCABEZADO_PAGOS en ningun lado.
+-- EL CASHFLOW. Este bloque decia "nadie fuera de Comercio Exterior" y
+-- dejo de ser cierto con la rama feature/comex-saldo-pendiente de
+-- ProyectosXL/finanzas: su pestana Proveedores del exterior y la fila del
+-- tablero pasaron de proyectar el VALOR_FOB_DOLAR entero a proyectar LO
+-- QUE FALTA PAGAR, y para eso leen RO_T_IMPORTACIONES_ENCABEZADO_PAGOS.
+--
+-- Lee SUM(MONTO) por contenedor -resuelto a la OC principal, igual que
+-- Pagos::obtenerResumen()- y muestra los pagos uno por uno en su grilla.
+-- SOLO LECTURA: no inserta, no actualiza y no borra. El circuito sigue
+-- siendo de Comercio Exterior.
+--
+-- POR QUE IMPORTA PARA ESTE SCRIPT EN PARTICULAR: lo que este script
+-- decidio es que MONTO SIGNIFICA DOLARES, siempre. El cashflow lee esa
+-- columna dando por hecho eso, y la resta contra VALOR_FOB_DOLAR no
+-- tiene forma de notar si una fila vuelve a cargarse en pesos: daria un
+-- pendiente negativo, que alla se toma como cero, y el egreso
+-- desapareceria del tablero sin que nada falle. Si alguna vez se revierte
+-- esta conversion, hay que avisar del otro lado.
+--
+-- Y SI LA REGLA DEL SALDO CAMBIA, HAY QUE REPLICARLA ALLA:
+-- Pagos::obtenerResumen() esta copiada -no incluida: son dos
+-- aplicaciones y dos despliegues- en Comex::saldoPendiente() de
+-- ProyectosXL/finanzas, con los mismos cuatro estados y la misma
+-- tolerancia de un centavo. Nada en el codigo lo detecta solo.
 -- =====================================================================
 
 SET NOCOUNT ON;
