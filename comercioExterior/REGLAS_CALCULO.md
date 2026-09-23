@@ -40,7 +40,7 @@ embarque (ETD real, o estimado)
 | Estimada de pago | `FECHA_EST_PAGO` | embarque | `DIAS_EMB_PAGO` |
 | Nacionalización | `FECHA_DESP_ADU` | arribo | `DIAS_ARR_DESP` |
 | Recepción estimada | *(no se persiste)* | nacionalización | `DIAS_DESP_REC` |
-| Distribución | `FECHA_DISTRI` | recepción | `DIAS_REC_DIST` |
+| Distribución | `FECHA_DISTRI` | recepción (real o estimada) | `DIAS_REC_DIST` |
 
 ### Los hechos le ganan a las proyecciones
 
@@ -64,26 +64,35 @@ la pantalla de gestión de despachos (`validarCampoFechaHabil()`), sobre el
 campo ya cargado y **avisando al usuario**. Es la única diferencia posible
 entre lo que dibuja el cronograma y lo que termina guardado, y es visible.
 
-### ⚠️ Qué pasó con `DIAS_ARR_DIST` (10) — decisión pendiente
+### `DIAS_ARR_DIST` (10) se retiró
 
-Ese parámetro se eligió en 10 porque **con la cadena vieja** —nacionalización
-en arribo + 7, recepción estimada en arribo + 9— caía justo un día después de
-la recepción. Con la nacionalización en arribo + 5 la recepción estimada es
-arribo + 7, así que arribo + 10 **ya no es "el día siguiente" de nada**.
+Ese parámetro valía 10 porque **con la cadena vieja** —nacionalización en
+arribo + 7, recepción estimada en arribo + 9— caía justo un día después de la
+recepción. Con la nacionalización en arribo + 5 la recepción estimada es
+arribo + 7, así que arribo + 10 **dejó de ser "el día siguiente" de nada**:
+eran dos días de aire que nadie había decidido.
 
-`cadenaDeFechas()` deriva la distribución de la recepción y no lo usa. Pero
-`derivarDistribucion()` y `recalcularDistribucion()` —el camino que escribe y
-muestra `FECHA_DISTRI`— **lo siguen usando y no se tocaron**, para que ninguna
-fecha guardada se mueva sola antes de que se decida qué hacer:
+Ahora la distribución cuelga **siempre** de la recepción, en los dos caminos
+(`cadenaDeFechas()` y `derivarDistribucion()`):
 
-- **Opción A (recomendada):** eliminarlo. La distribución sale siempre de la
-  recepción (real o estimada), o sea arribo + 5 + 2 + 1 = **arribo + 8**. Un
-  parámetro menos y una sola regla.
-- **Opción B:** conservarlo como "cuánto tarda la distribución cuando nunca
-  llega una recepción", que es un caso que la cadena estimada ya cubre.
+| | sin recepción real | con recepción real |
+|---|---|---|
+| antes | arribo + `DIAS_ARR_DIST` (10) | recepción + `DIAS_REC_DIST` |
+| ahora | recepción **estimada** + `DIAS_REC_DIST` = arribo + 8 | recepción + `DIAS_REC_DIST` |
 
-Mientras tanto la fila sigue en la tabla y su descripción avisa que está a
-revisar. **Ninguna de las dos opciones se aplicó todavía.**
+**Por qué se eliminó en vez de bajarlo a 8.** Un 8 daría hoy el mismo
+resultado, pero volvería a quedar desactualizado **en silencio** la próxima vez
+que alguien toque `DIAS_ARR_DESP` o `DIAS_DESP_REC` desde el ABM. Es el mismo
+modo de falla que tenían el 45/7/2 repartidos: un número plausible que describe
+una cadena que ya cambió.
+
+**La fila no se borró** (`sql/15`): queda con `DESCRIPCION = 'SIN USO…'`, el ABM
+la muestra tachada y deshabilitada, y ya no está en la whitelist del controller.
+Un `DELETE` no dejaría rastro de que existió.
+
+Las `FECHA_DISTRI` guardadas **se mueven solas**: con `DIST_ORIGEN = 'A'` la
+columna es una caché y `derivarDistribucion()` la recalcula en cada lectura. Las
+`'M'` y `'C'` no se tocan nunca.
 
 ### 4️⃣ Valor FOB en Pesos - `valorFobPeso`
 ```
@@ -354,6 +363,8 @@ guardado real vive en `js/cargaInicial.js`.
 | `sql/11_fechas_fijadas_arribo_nacionalizacion.sql` | `FECHA_DESP_CONF`, `ETA_CONF_*` + backfill |
 | `sql/12_parametros_fechas_derivadas.sql` | `DIAS_EMB_PAGO`, y `DIAS_ARR_DESP` a 5 |
 | `sql/13_diagnostico_fecha_desp_adu.sql` | Sólo SELECT: clasifica las fechas existentes |
+| `sql/14_migrar_fecha_desp_adu.sql` | Migra las automáticas de arribo + 2 a arribo + `DIAS_ARR_DESP` |
+| `sql/15_retirar_dias_arr_dist.sql` | Retira `DIAS_ARR_DIST` (no borra la fila) |
 
 ---
 

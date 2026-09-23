@@ -220,10 +220,10 @@ class CronogramaFechas
     /**
      * Claves que hacen falta para calcular la cadena completa de fechas.
      *
-     * DIAS_ARR_DIST NO esta: la distribucion de la cadena cuelga de la
-     * recepcion (DIAS_REC_DIST). Ese parametro lo sigue usando el camino
-     * viejo -derivarDistribucion() y recalcularDistribucion()- mientras se
-     * decide si tiene que desaparecer; ver REGLAS_CALCULO.md.
+     * SON TODAS LAS QUE EXISTEN. DIAS_ARR_DIST se retiro: la distribucion
+     * cuelga de la recepcion en los dos caminos -este y derivarDistribucion()-
+     * y ya no hay ningun parametro que describa un tramo salteando eslabones.
+     * Ver el comentario de calcularDistribucion().
      */
     const CLAVES_CADENA = [
         'DIAS_EMB_ARR',
@@ -480,41 +480,60 @@ class CronogramaFechas
     }
 
     /**
-     * Fecha de distribucion.
+     * Fecha de distribucion: SIEMPRE la recepcion + DIAS_REC_DIST.
      *
      * La distribucion es la salida del deposito central hacia los locales, o
-     * sea que va DESPUES de la recepcion. De ahi las dos ramas:
+     * sea que va DESPUES de la recepcion, y en el deposito se distribuye casi
+     * siempre al dia siguiente de recibir. Lo unico que cambia es de donde
+     * sale la recepcion:
      *
-     *   - Con recepcion REAL: recepcion + DIAS_REC_DIST. En el deposito se
-     *     distribuye casi siempre al dia siguiente de recibir, asi que en
-     *     cuanto Tango confirma la recepcion esa es la referencia buena.
-     *   - Sin recepcion: arribo + DIAS_ARR_DIST.
+     *   - con recepcion REAL (Tango, STA20 comprobantes 'RP'): esa;
+     *   - sin ella: la estimada de la cadena, arribo + DIAS_ARR_DESP +
+     *     DIAS_DESP_REC.
      *
-     * OJO: LA SEGUNDA RAMA QUEDO DESALINEADA DE LA CADENA NUEVA. DIAS_ARR_DIST
-     * se eligio en 10 porque con la cadena vieja -nacionalizacion en arribo +
-     * 7 y recepcion en arribo + 9- caia justo un dia despues de la recepcion
-     * estimada. Con la nacionalizacion en arribo + 5, la recepcion estimada es
-     * arribo + 7 y "un dia despues" seria arribo + 8, no 10.
+     * DIAS_ARR_DIST SE FUE, y era la segunda rama de esta funcion. Valia 10
+     * porque con la cadena vieja -nacionalizacion en arribo + 7, recepcion
+     * estimada en arribo + 9- caia justo un dia despues de la recepcion. Con
+     * la nacionalizacion en arribo + 5 la recepcion estimada es arribo + 7,
+     * asi que arribo + 10 dejo de ser "el dia siguiente" de nada: eran dos
+     * dias de aire que nadie habia decidido.
      *
-     * NO SE CAMBIO ACA A PROPOSITO: si DIAS_ARR_DIST tiene que desaparecer -y
-     * la distribucion derivarse siempre de la recepcion, como hace
-     * cadenaDeFechas()- es una decision de negocio pendiente. Ver
-     * REGLAS_CALCULO.md. Mientras tanto este camino queda exactamente como
-     * estaba, que es lo unico que garantiza que ninguna FECHA_DISTRI guardada
-     * se mueva sola.
+     * POR QUE SE ELIMINO EN VEZ DE BAJARLO A 8. Un 8 daria hoy el mismo
+     * resultado, pero volveria a quedar desactualizado en silencio la proxima
+     * vez que se toque DIAS_ARR_DESP o DIAS_DESP_REC desde el ABM. Es
+     * exactamente el modo de falla que tenian el 45/7/2 repartidos: un numero
+     * plausible que describe una cadena que ya cambio. Derivandola, no hay
+     * nada que mantener sincronizado.
      *
      * Se calcula igual sobre un arribo confirmado que sobre uno estimado, y
      * tambien cuando la fecha ya paso: la proyeccion sigue al arribo en vez
      * de congelarse.
      *
+     * @param  string|null $fechaArribo    'Y-m-d'
+     * @param  array       $parametros     de obtenerParametros()
+     * @param  string|null $fechaRecepcion 'Y-m-d' de la recepcion REAL, si la hay
      * @return string|null 'Y-m-d'
      */
-    public static function calcularDistribucion($fechaArribo, $diasArrDist, $fechaRecepcion = null, $diasRecDist = 1)
+    public static function calcularDistribucion($fechaArribo, array $parametros, $fechaRecepcion = null)
     {
-        if (!empty($fechaRecepcion)) {
-            return self::sumarDias($fechaRecepcion, $diasRecDist);
+        foreach (['DIAS_ARR_DESP', 'DIAS_DESP_REC', 'DIAS_REC_DIST'] as $clave) {
+            if (!isset($parametros[$clave])) {
+                error_log('CronogramaFechas::calcularDistribucion: falta ' . $clave);
+                return null;
+            }
         }
-        return self::sumarDias($fechaArribo, $diasArrDist);
+
+        if (!empty($fechaRecepcion)) {
+            return self::sumarDias($fechaRecepcion, $parametros['DIAS_REC_DIST']);
+        }
+
+        /* La recepcion estimada NO se pide a cadenaDeFechas() para no arrastrar
+           la conexion hasta aca: esta funcion se llama por fila y ya recibe los
+           parametros resueltos. Son los mismos dos eslabones. */
+        $nacionalizacion = self::sumarDias($fechaArribo, $parametros['DIAS_ARR_DESP']);
+        $recepcion       = self::sumarDias($nacionalizacion, $parametros['DIAS_DESP_REC']);
+
+        return self::sumarDias($recepcion, $parametros['DIAS_REC_DIST']);
     }
 
     /**
@@ -525,8 +544,8 @@ class CronogramaFechas
      * recepcion no entra por esta aplicacion sino por Tango (STA20,
      * comprobantes 'RP'), y no hay ningun punto donde engancharse para
      * recalcular cuando eso pasa. Sin esto, un contenedor que se recibe
-     * manana se queda para siempre con la proyeccion vieja de arribo + 10 en
-     * lugar de moverse a recepcion + 1.
+     * manana se queda para siempre con la proyeccion vieja en lugar de
+     * moverse a recepcion + DIAS_REC_DIST.
      *
      * Con 'M' o 'C' se devuelve el valor guardado tal cual: son decisiones
      * humanas y ninguna formula las pisa.
@@ -553,16 +572,6 @@ class CronogramaFechas
             return $guardada;
         }
 
-        /* Desde que obtenerParametros() dejo de inventar defaults, las claves
-           pueden no estar. Sin ellas se devuelve lo guardado y no una fecha
-           derivada de la nada: mostrar la ultima proyeccion buena es mejor que
-           mostrar una calculada con un cero. */
-        if (!isset($parametros['DIAS_ARR_DIST']) || !isset($parametros['DIAS_REC_DIST'])) {
-            error_log('CronogramaFechas::derivarDistribucion: faltan DIAS_ARR_DIST/DIAS_REC_DIST '
-                    . 'en RO_T_IMPORTACIONES_PARAM_CRONOGRAMA');
-            return $guardada;
-        }
-
         $arribo    = isset($fila['FECHA_ARR']) ? $fila['FECHA_ARR'] : null;
         $recepcion = isset($fila['FECHA_REC']) ? $fila['FECHA_REC'] : null;
 
@@ -570,15 +579,19 @@ class CronogramaFechas
             // Ya recibido: solo se sigue proyectando si venia con fecha.
             return empty($guardada)
                 ? null
-                : self::calcularDistribucion($arribo, $parametros['DIAS_ARR_DIST'],
-                                             $recepcion, $parametros['DIAS_REC_DIST']);
+                : self::calcularDistribucion($arribo, $parametros, $recepcion);
         }
 
         if (empty($arribo)) {
             return $guardada;
         }
 
-        return self::calcularDistribucion($arribo, $parametros['DIAS_ARR_DIST']);
+        /* Si faltan parametros, calcularDistribucion() devuelve null y loguea.
+           Se devuelve lo guardado en vez de ese null: mostrar la ultima
+           proyeccion buena es mejor que vaciar la columna. */
+        $derivada = self::calcularDistribucion($arribo, $parametros);
+
+        return ($derivada === null) ? $guardada : $derivada;
     }
 
     /**
@@ -589,13 +602,17 @@ class CronogramaFechas
      * mano) y 'C' (confirmada) quedan intactas: sin esa distincion el
      * recalculo pisaria lo que abastecimiento ajusto a proposito.
      *
+     * EL PARAMETRO $diasArrDist SE FUE junto con DIAS_ARR_DIST. Nadie se lo
+     * pasaba: los tres llamadores -actualizarFechaCronograma.php y las dos
+     * ramas de encabezado.php- lo dejaban en null para que se leyera de la
+     * tabla.
+     *
      * @param  resource $conn
      * @param  array    $ids          IDs de encabezado a recalcular
      * @param  string   $fechaArribo  nueva fecha de arribo 'Y-m-d'
-     * @param  int|null $diasArrDist  si no viene, se lee de parametros
      * @return array    [idEncabezado => nuevaFechaDistri] de las filas tocadas
      */
-    public static function recalcularDistribucion($conn, array $ids, $fechaArribo, $diasArrDist = null)
+    public static function recalcularDistribucion($conn, array $ids, $fechaArribo)
     {
         if (empty($ids)) {
             return [];
@@ -606,19 +623,12 @@ class CronogramaFechas
         /* Sin parametros NO se recalcula nada. Antes obtenerParametros()
            devolvia defaults y esto nunca podia fallar; ahora puede, y la
            respuesta correcta es no tocar las fechas guardadas. */
-        if ($diasArrDist === null) {
-            if (!isset($parametros['DIAS_ARR_DIST'])) {
-                error_log('CronogramaFechas::recalcularDistribucion: falta DIAS_ARR_DIST, no se recalcula');
+        foreach (['DIAS_ARR_DESP', 'DIAS_DESP_REC', 'DIAS_REC_DIST'] as $clave) {
+            if (!isset($parametros[$clave])) {
+                error_log('CronogramaFechas::recalcularDistribucion: falta ' . $clave . ', no se recalcula');
                 return [];
             }
-            $diasArrDist = $parametros['DIAS_ARR_DIST'];
         }
-
-        if (!isset($parametros['DIAS_REC_DIST'])) {
-            error_log('CronogramaFechas::recalcularDistribucion: falta DIAS_REC_DIST, no se recalcula');
-            return [];
-        }
-        $diasRecDist = $parametros['DIAS_REC_DIST'];
 
         // Cada OC puede tener su propia recepcion, asi que la fecha no es
         // necesariamente la misma para todo el grupo: se resuelve por fila.
@@ -635,9 +645,7 @@ class CronogramaFechas
                 continue;
             }
 
-            $nueva = self::calcularDistribucion(
-                $fechaArribo, $diasArrDist, $fila['FECHA_REC'], $diasRecDist
-            );
+            $nueva = self::calcularDistribucion($fechaArribo, $parametros, $fila['FECHA_REC']);
 
             if ($nueva !== null && $nueva !== $fila['FECHA_DISTRI']) {
                 $afectados[$id] = $nueva;

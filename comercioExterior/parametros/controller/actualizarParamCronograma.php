@@ -38,12 +38,13 @@ try {
     // pago = embarque + N", que hasta ahora no era un parametro sino un 5
     // escrito en js/cargaInicial.js y repetido en una constante de PHP.
     //
-    // DIAS_ARR_DIST sigue en la lista aunque la cadena nueva derive la
-    // distribucion de la recepcion: mientras derivarDistribucion() lo use, hay
-    // que poder ajustarlo. Ver REGLAS_CALCULO.md.
+    // DIAS_ARR_DIST NO ESTA MAS: la distribucion se deriva de la recepcion en
+    // los dos caminos de calculo, asi que ese valor ya no lo lee nadie. La fila
+    // sigue en la tabla -el script 15 la marca SIN USO en vez de borrarla- pero
+    // dejarla editable seria ofrecer una perilla desconectada.
     $clavesValidas = [
         'DIAS_EMB_ARR', 'DIAS_EMB_PAGO', 'DIAS_ARR_DESP', 'DIAS_DESP_REC',
-        'DIAS_ARR_DIST', 'DIAS_REC_DIST'
+        'DIAS_REC_DIST'
     ];
     $clave = trim($data['clave']);
 

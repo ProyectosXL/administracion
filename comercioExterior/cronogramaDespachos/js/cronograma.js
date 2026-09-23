@@ -780,8 +780,8 @@ function calcularImpactoCascada(campo, fechaNueva, grupo) {
        no muestra la cascada, en vez de listar fechas NaN: la unica lectura
        posible de "distribucion nueva: Invalid date" es que el sistema esta
        roto, cuando lo unico que falta es una fila de configuracion. */
-    if (parametrosDias.DIAS_REC_DIST === undefined ||
-        parametrosDias.DIAS_ARR_DIST === undefined) {
+    const claves = ['DIAS_ARR_DESP', 'DIAS_DESP_REC', 'DIAS_REC_DIST'];
+    if (claves.some(k => parametrosDias[k] === undefined)) {
         return [];
     }
 
@@ -795,10 +795,15 @@ function calcularImpactoCascada(campo, fechaNueva, grupo) {
                     : 'fue movida a mano'
             };
         }
-        // Misma regla que CronogramaFechas::calcularDistribucion.
+        /* Misma regla que CronogramaFechas::calcularDistribucion: la
+           distribución cuelga SIEMPRE de la recepción. Sin recepción real se
+           usa la estimada de la cadena (arribo + DIAS_ARR_DESP + DIAS_DESP_REC),
+           que es lo que reemplazó al viejo arribo + DIAS_ARR_DIST. */
         const nueva = d.FECHA_REC
             ? sumarDias(d.FECHA_REC, parametrosDias.DIAS_REC_DIST)
-            : sumarDias(fechaNueva, parametrosDias.DIAS_ARR_DIST);
+            : sumarDias(fechaNueva, parametrosDias.DIAS_ARR_DESP
+                                  + parametrosDias.DIAS_DESP_REC
+                                  + parametrosDias.DIAS_REC_DIST);
 
         return { oc: d.ORDEN_COMPRA, intacta: false, anterior: d.FECHA_DISTRI, nueva: nueva };
     });
@@ -2664,10 +2669,10 @@ function crearTimeline(despacho) {
  * otro lado —o de una respuesta vieja cacheada— sigue devolviendo el objeto con
  * las cuatro claves en null en vez de romper a quien lo lee.
  *
- * OJO: la distribucion que devuelve el servidor cuelga de la recepcion
- * (DIAS_REC_DIST). La que se PINTA sigue siendo despacho.FECHA_DISTRI, que la
- * deriva derivarDistribucion() con DIAS_ARR_DIST. Son dos reglas distintas
- * mientras no se decida que pasa con DIAS_ARR_DIST; ver REGLAS_CALCULO.md.
+ * La distribucion de esta cadena y la que se pinta -despacho.FECHA_DISTRI, que
+ * deriva derivarDistribucion()- son ahora LA MISMA REGLA: recepcion (real o
+ * estimada) + DIAS_REC_DIST. Convivieron un rato con reglas distintas mientras
+ * existio DIAS_ARR_DIST.
  */
 function calcularFechasEstimadas(despacho) {
     const est = (despacho && despacho.FECHAS_EST) ? despacho.FECHAS_EST : {};

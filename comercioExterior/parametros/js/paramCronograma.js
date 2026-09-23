@@ -68,6 +68,36 @@ function renderizarParamCronograma(parametros) {
 
     parametros.forEach(p => {
         const clave = escaparHtmlParam(p.CLAVE);
+
+        /* Los parámetros retirados siguen en la tabla —no se borran datos— pero
+           no los lee nadie. Se muestran deshabilitados y con el motivo, en vez
+           de ofrecer un input y un botón que el servidor va a rechazar: una
+           perilla que no hace nada es peor que ninguna perilla.
+
+           El marcador es la propia DESCRIPCION, que pone el script 15. Una
+           lista de claves retiradas acá sería un cuarto lugar donde acordarse
+           de actualizar algo. */
+        const retirado = /^SIN USO/i.test(p.DESCRIPCION || '');
+
+        if (retirado) {
+            $tbody.append(`
+                <tr data-clave="${clave}" class="table-secondary text-muted">
+                    <td><code><s>${clave}</s></code></td>
+                    <td><em>${escaparHtmlParam(p.DESCRIPCION || '')}</em></td>
+                    <td>
+                        <div class="input-group input-group-sm" style="max-width: 130px;">
+                            <input type="number" class="form-control"
+                                   value="${parseInt(p.VALOR, 10)}" disabled>
+                            <span class="input-group-text">días</span>
+                        </div>
+                    </td>
+                    <td class="small">${p.FECHA_MOD ? escaparHtmlParam(p.FECHA_MOD) : '-'}</td>
+                    <td><span class="badge bg-secondary">sin uso</span></td>
+                </tr>
+            `);
+            return;
+        }
+
         $tbody.append(`
             <tr data-clave="${clave}">
                 <td><code>${clave}</code></td>
