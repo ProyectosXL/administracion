@@ -170,19 +170,28 @@ GO
 -- ---------------------------------------------------------------------
 -- 3) Descripciones al dia.
 --
--- Las que sembro el script 04 describian la cadena vieja y ahora mienten:
--- DIAS_DESP_REC decia "entre despacho y recepcion estimada", que sigue
--- siendo cierto, pero DIAS_ARR_DIST decia "entre arribo y distribucion
--- estimada" apoyandose en que arribo + 10 caia justo un dia despues de la
--- recepcion estimada (arribo + 9). Con la cadena nueva la recepcion estimada
--- es arribo + 7, asi que arribo + 10 ya no es "el dia siguiente" de nada.
+-- Las que sembro el script 04 describian la cadena vieja y ahora mienten.
+-- Son las que se leen en el ABM, asi que estaban afirmando algo que dejo de
+-- ser cierto.
 --
--- NO SE CAMBIA EL VALOR NI SE BORRA LA FILA: que pasa con DIAS_ARR_DIST es
--- una decision de negocio pendiente -ver REGLAS_CALCULO.md-. Lo que si se
--- corrige ya es la descripcion, porque es la que se lee en el ABM y ahi
--- estaba afirmando algo que dejo de ser cierto.
+-- Los UPDATE no tocan VALOR, asi que no pisan nada ajustado.
 --
--- El UPDATE no toca VALOR, asi que no pisa nada ajustado.
+-- ESTE PASO NO TOCA DIAS_ARR_DIST, y es a proposito. Lo tocaba: le ponia una
+-- descripcion que decia "a revisar", de cuando todavia no estaba decidido que
+-- hacer con ese parametro. Cuando se decidio retirarlo, el script 15 paso a
+-- ser el dueno de esa fila -le pone 'SIN USO desde el script 15: ...'- y los
+-- dos scripts quedaron peleandose por el mismo texto.
+--
+-- SE VIO EN LA PRIMERA CORRIDA REAL: correr el 12 despues del 15 -algo
+-- perfectamente razonable, los dos son idempotentes- deshacia la marca del
+-- 15. En central quedo DIAS_ARR_DIST con el texto "a revisar" en vez de
+-- "SIN USO", y como paramCronograma.js decide por ese prefijo si la fila va
+-- deshabilitada, el ABM volvia a ofrecerla editable mientras
+-- actualizarParamCronograma.php la rechazaba por no estar en la whitelist.
+--
+-- Un solo script escribe cada fila. Si el 12 corre solo, en una instalacion
+-- nueva, DIAS_ARR_DIST se queda con la descripcion del 04 hasta que corra el
+-- 15, que es el que sabe que paso con ese parametro.
 -- ---------------------------------------------------------------------
 UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
    SET DESCRIPCION = 'Dias corridos entre embarque (ETD real, o estimado) y arribo'
@@ -200,12 +209,6 @@ UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
    SET DESCRIPCION = 'Dias corridos entre la recepcion y la distribucion'
  WHERE CLAVE = 'DIAS_REC_DIST'
    AND DESCRIPCION <> 'Dias corridos entre la recepcion y la distribucion';
-GO
-
-UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
-   SET DESCRIPCION = 'Dias corridos entre arribo y distribucion, SOLO sin recepcion real (a revisar: la cadena nueva deriva la distribucion de la recepcion)'
- WHERE CLAVE = 'DIAS_ARR_DIST'
-   AND DESCRIPCION NOT LIKE '%a revisar%';
 GO
 
 -- ---------------------------------------------------------------------
