@@ -62,10 +62,10 @@
 --
 -- NADA. Este script no toca RO_T_IMPORTACIONES_ENCABEZADO. Los parametros
 -- nuevos rigen de acá en más: para los contenedores que se den de alta y
--- para los que se editen. Los 54 contenedores de central que hoy tienen
--- FECHA_DESP_ADU calculada con la regla vieja se migran aparte, con criterio
--- propio y despues de revisar el diagnostico -ver
--- 13_diagnostico_fecha_desp_adu.sql-.
+-- para los que se editen. Los contenedores que ya tienen FECHA_DESP_ADU
+-- calculada con la regla vieja se migran aparte, con criterio propio:
+-- 13_diagnostico_fecha_desp_adu.sql los clasifica (solo SELECT) y
+-- 14_migrar_fecha_desp_adu.sql los mueve.
 -- =====================================================================
 
 SET NOCOUNT ON;
@@ -132,12 +132,17 @@ GO
 --
 -- USUARIO queda marcado para que en el ABM se vea que lo movio un script y
 -- no una persona.
+--
+-- LA DESCRIPCION VA APARTE, en un UPDATE propio mas abajo. Estaba pegada al
+-- del valor y eso era un bug: en central, donde DIAS_ARR_DESP ya estaba en 5,
+-- el WHERE VALOR <> 5 hacia que no ejecutara y la descripcion quedaba con la
+-- del script 04. Las dos bases terminaron mostrando textos distintos para el
+-- mismo parametro. Cada cosa con su propia condicion de idempotencia.
 -- =====================================================================
 UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
-   SET VALOR       = 5,
-       DESCRIPCION = 'Dias corridos entre arribo y nacionalizacion (despacho de aduana) estimada',
-       USUARIO     = 'script 12',
-       FECHA_MOD   = GETDATE()
+   SET VALOR     = 5,
+       USUARIO   = 'script 12',
+       FECHA_MOD = GETDATE()
  WHERE CLAVE = 'DIAS_ARR_DESP'
    AND VALOR <> 5;
 
@@ -146,22 +151,47 @@ PRINT 'DIAS_ARR_DESP: ' + CASE WHEN @@ROWCOUNT > 0
         ELSE 'ya estaba en 5, no se toca.' END;
 GO
 
+/* LA DESCRIPCION VA EN SU PROPIA SENTENCIA, y no pegada al UPDATE del valor.
+   Pegada era un bug, y se vio en la primera corrida real: el UPDATE de arriba
+   lleva AND VALOR <> 5 para ser idempotente, asi que en central -donde el
+   valor YA estaba en 5- no ejecutaba, y la descripcion se quedo con la del
+   script 04. Resultado: las dos bases mostrando textos distintos para el
+   mismo parametro en el ABM, que es exactamente la divergencia que esta
+   entrega vino a eliminar.
+
+   Separada, cada UPDATE tiene su propia condicion de idempotencia y ninguno
+   depende de que el otro haya corrido. Correr el script de nuevo la arregla. */
+UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
+   SET DESCRIPCION = 'Dias corridos entre arribo y nacionalizacion (despacho de aduana) estimada'
+ WHERE CLAVE = 'DIAS_ARR_DESP'
+   AND DESCRIPCION <> 'Dias corridos entre arribo y nacionalizacion (despacho de aduana) estimada';
+GO
+
 -- ---------------------------------------------------------------------
 -- 3) Descripciones al dia.
 --
--- Las que sembro el script 04 describian la cadena vieja y ahora mienten:
--- DIAS_DESP_REC decia "entre despacho y recepcion estimada", que sigue
--- siendo cierto, pero DIAS_ARR_DIST decia "entre arribo y distribucion
--- estimada" apoyandose en que arribo + 10 caia justo un dia despues de la
--- recepcion estimada (arribo + 9). Con la cadena nueva la recepcion estimada
--- es arribo + 7, asi que arribo + 10 ya no es "el dia siguiente" de nada.
+-- Las que sembro el script 04 describian la cadena vieja y ahora mienten.
+-- Son las que se leen en el ABM, asi que estaban afirmando algo que dejo de
+-- ser cierto.
 --
--- NO SE CAMBIA EL VALOR NI SE BORRA LA FILA: que pasa con DIAS_ARR_DIST es
--- una decision de negocio pendiente -ver REGLAS_CALCULO.md-. Lo que si se
--- corrige ya es la descripcion, porque es la que se lee en el ABM y ahi
--- estaba afirmando algo que dejo de ser cierto.
+-- Los UPDATE no tocan VALOR, asi que no pisan nada ajustado.
 --
--- El UPDATE no toca VALOR, asi que no pisa nada ajustado.
+-- ESTE PASO NO TOCA DIAS_ARR_DIST, y es a proposito. Lo tocaba: le ponia una
+-- descripcion que decia "a revisar", de cuando todavia no estaba decidido que
+-- hacer con ese parametro. Cuando se decidio retirarlo, el script 15 paso a
+-- ser el dueno de esa fila -le pone 'SIN USO desde el script 15: ...'- y los
+-- dos scripts quedaron peleandose por el mismo texto.
+--
+-- SE VIO EN LA PRIMERA CORRIDA REAL: correr el 12 despues del 15 -algo
+-- perfectamente razonable, los dos son idempotentes- deshacia la marca del
+-- 15. En central quedo DIAS_ARR_DIST con el texto "a revisar" en vez de
+-- "SIN USO", y como paramCronograma.js decide por ese prefijo si la fila va
+-- deshabilitada, el ABM volvia a ofrecerla editable mientras
+-- actualizarParamCronograma.php la rechazaba por no estar en la whitelist.
+--
+-- Un solo script escribe cada fila. Si el 12 corre solo, en una instalacion
+-- nueva, DIAS_ARR_DIST se queda con la descripcion del 04 hasta que corra el
+-- 15, que es el que sabe que paso con ese parametro.
 -- ---------------------------------------------------------------------
 UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
    SET DESCRIPCION = 'Dias corridos entre embarque (ETD real, o estimado) y arribo'
@@ -179,12 +209,6 @@ UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
    SET DESCRIPCION = 'Dias corridos entre la recepcion y la distribucion'
  WHERE CLAVE = 'DIAS_REC_DIST'
    AND DESCRIPCION <> 'Dias corridos entre la recepcion y la distribucion';
-GO
-
-UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
-   SET DESCRIPCION = 'Dias corridos entre arribo y distribucion, SOLO sin recepcion real (a revisar: la cadena nueva deriva la distribucion de la recepcion)'
- WHERE CLAVE = 'DIAS_ARR_DIST'
-   AND DESCRIPCION NOT LIKE '%a revisar%';
 GO
 
 -- ---------------------------------------------------------------------
