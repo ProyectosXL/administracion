@@ -62,10 +62,10 @@
 --
 -- NADA. Este script no toca RO_T_IMPORTACIONES_ENCABEZADO. Los parametros
 -- nuevos rigen de acá en más: para los contenedores que se den de alta y
--- para los que se editen. Los 54 contenedores de central que hoy tienen
--- FECHA_DESP_ADU calculada con la regla vieja se migran aparte, con criterio
--- propio y despues de revisar el diagnostico -ver
--- 13_diagnostico_fecha_desp_adu.sql-.
+-- para los que se editen. Los contenedores que ya tienen FECHA_DESP_ADU
+-- calculada con la regla vieja se migran aparte, con criterio propio:
+-- 13_diagnostico_fecha_desp_adu.sql los clasifica (solo SELECT) y
+-- 14_migrar_fecha_desp_adu.sql los mueve.
 -- =====================================================================
 
 SET NOCOUNT ON;
@@ -132,18 +132,39 @@ GO
 --
 -- USUARIO queda marcado para que en el ABM se vea que lo movio un script y
 -- no una persona.
+--
+-- LA DESCRIPCION VA APARTE, en un UPDATE propio mas abajo. Estaba pegada al
+-- del valor y eso era un bug: en central, donde DIAS_ARR_DESP ya estaba en 5,
+-- el WHERE VALOR <> 5 hacia que no ejecutara y la descripcion quedaba con la
+-- del script 04. Las dos bases terminaron mostrando textos distintos para el
+-- mismo parametro. Cada cosa con su propia condicion de idempotencia.
 -- =====================================================================
 UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
-   SET VALOR       = 5,
-       DESCRIPCION = 'Dias corridos entre arribo y nacionalizacion (despacho de aduana) estimada',
-       USUARIO     = 'script 12',
-       FECHA_MOD   = GETDATE()
+   SET VALOR     = 5,
+       USUARIO   = 'script 12',
+       FECHA_MOD = GETDATE()
  WHERE CLAVE = 'DIAS_ARR_DESP'
    AND VALOR <> 5;
 
 PRINT 'DIAS_ARR_DESP: ' + CASE WHEN @@ROWCOUNT > 0
         THEN 'corregido a 5.'
         ELSE 'ya estaba en 5, no se toca.' END;
+GO
+
+/* LA DESCRIPCION VA EN SU PROPIA SENTENCIA, y no pegada al UPDATE del valor.
+   Pegada era un bug, y se vio en la primera corrida real: el UPDATE de arriba
+   lleva AND VALOR <> 5 para ser idempotente, asi que en central -donde el
+   valor YA estaba en 5- no ejecutaba, y la descripcion se quedo con la del
+   script 04. Resultado: las dos bases mostrando textos distintos para el
+   mismo parametro en el ABM, que es exactamente la divergencia que esta
+   entrega vino a eliminar.
+
+   Separada, cada UPDATE tiene su propia condicion de idempotencia y ninguno
+   depende de que el otro haya corrido. Correr el script de nuevo la arregla. */
+UPDATE RO_T_IMPORTACIONES_PARAM_CRONOGRAMA
+   SET DESCRIPCION = 'Dias corridos entre arribo y nacionalizacion (despacho de aduana) estimada'
+ WHERE CLAVE = 'DIAS_ARR_DESP'
+   AND DESCRIPCION <> 'Dias corridos entre arribo y nacionalizacion (despacho de aduana) estimada';
 GO
 
 -- ---------------------------------------------------------------------
