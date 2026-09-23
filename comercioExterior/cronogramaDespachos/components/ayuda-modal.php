@@ -192,7 +192,7 @@
                                             <li>El contenedor se carga en el buque</li>
                                             <li>Se confirma la <strong>fecha real de embarque</strong></li>
                                             <li>Desde este momento, las fechas siguientes pasan de estimadas a calculadas</li>
-                                            <li>El contenedor inicia su tránsito marítimo (45 días por defecto, configurable en Parámetros)</li>
+                                            <li>El contenedor inicia su tránsito marítimo: los días los fija DIAS_EMB_ARR en Parámetros &rsaquo; Cronograma</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -273,9 +273,16 @@
 
                         <div class="alert alert-info mt-3 small mb-0">
                             <i class="bi bi-sliders"></i>
-                            Los días de cada tramo (45 de tránsito, 7 hasta el despacho, 2 hasta la
-                            recepción, 10 hasta la distribución y 1 desde la recepción real) se
-                            configuran en <strong>Parámetros › Cronograma</strong>, sin tocar código.
+                            Los días de cada tramo se configuran en
+                            <strong>Parámetros › Cronograma</strong>, sin tocar código:
+                            <code>DIAS_EMB_ARR</code> hasta el arribo,
+                            <code>DIAS_EMB_PAGO</code> hasta la fecha estimada de pago,
+                            <code>DIAS_ARR_DESP</code> hasta la nacionalización,
+                            <code>DIAS_DESP_REC</code> hasta la recepción y
+                            <code>DIAS_REC_DIST</code> hasta la distribución.
+                            La misma cadena la usa la carga inicial de despachos, y
+                            <strong>también mueve el cashflow de Finanzas</strong>, que lee
+                            estas fechas del maestro.
                         </div>
                     </div>
                     

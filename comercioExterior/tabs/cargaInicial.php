@@ -361,7 +361,14 @@ try {
                                 </div>
                             </div>
                             <div class="col-md-5">
-                                <label class="label-campo">Fecha Arribo - ETA <span class="badge-auto">Auto</span></label>
+                                <!-- El badge lo dibuja actualizarBadgeFecha('ARRIBO'):
+                                     dice Auto o Manual según ETA_CONFIRMADA, que es el
+                                     BIT que ya significaba "esta ETA es un hecho". El
+                                     indicador verde sobre el input sigue estando: dice lo
+                                     mismo mirando el campo, este dice si se recalcula. -->
+                                <label class="label-campo">Fecha Arribo - ETA
+                                    <span id="badgeFechaArr"><span class="badge-auto">Auto</span></span>
+                                </label>
                                 <!-- El checkbox "ETA Confirmada" que estaba acá se fue:
                                      ETA_CONFIRMADA ahora se enciende SOLA al editar la
                                      fecha a mano. Pedía dos gestos para una sola decisión
@@ -522,7 +529,16 @@ try {
 
                         <div class="row row-space">
                             <div class="col-md-5">
-                                <label class="label-campo">Fecha Nacionalización <span class="badge-auto">Auto</span></label>
+                                <!-- El badge lo dibuja actualizarBadgeFecha('NACIONALIZACION'):
+                                     dice Auto o Manual según FECHA_DESP_CONF del maestro
+                                     (sql/11) y en Manual suma el botón "volver a auto".
+                                     Era un "Auto" estático que mentía sobre toda fecha
+                                     corregida a mano, que hoy son 19 contenedores en
+                                     central. El Auto de acá es el estado inicial de un
+                                     alta, antes de que el JS lo redibuje. -->
+                                <label class="label-campo">Fecha Nacionalización
+                                    <span id="badgeFechaDespAdu"><span class="badge-auto">Auto</span></span>
+                                </label>
                                 <div class="input-group">
                                     <input class="input--style-1 js-datepicker-despacho" type="text" id="fechaDespAdu">
                                     <i class="zmdi zmdi-calendar-note input-icon js-btn-calendar-despacho"></i>

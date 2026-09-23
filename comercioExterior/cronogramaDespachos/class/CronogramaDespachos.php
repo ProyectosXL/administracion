@@ -109,6 +109,37 @@ class CronogramaDespachos {
                 // calendario correcto sin escribir en cada carga.
                 $row['FECHA_DISTRI'] = CronogramaFechas::derivarDistribucion($row, $parametros);
 
+                /* LA CADENA ESTIMADA VIAJA CALCULADA DESDE ACA.
+                   calcularFechasEstimadas() la armaba en el navegador sumando
+                   dias por su cuenta; la carga inicial hacia lo mismo con otros
+                   numeros. Aunque los dias salgan ahora de la misma tabla, dos
+                   implementaciones de la misma suma se separan tarde o temprano
+                   por cualquier detalle. Calculandola una sola vez, la unica
+                   forma de que las dos pantallas difieran es que difieran los
+                   parametros.
+
+                   Se resuelve por fila y no de a una consulta por fila:
+                   obtenerParametros() cachea por request, asi que las 400 y
+                   pico de filas del cronograma cuestan un solo SELECT.
+
+                   EL ARRIBO EN FIRME ENTRA A LA CADENA. Con ETA_CONFIRMADA = 1
+                   la nacionalizacion estimada cuelga del arribo real y no del
+                   proyectado, que es lo que el JS no hacia: dibujaba la
+                   nacionalizacion sobre embarque + 45 aunque la naviera ya
+                   hubiera confirmado otra fecha. */
+                $arriboFirme = ((int) $row['ETA_CONFIRMADA'] === 1 && !empty($row['FECHA_ARR']))
+                    ? $row['FECHA_ARR']
+                    : null;
+
+                $cadena = CronogramaFechas::cadenaDeFechas(
+                    $this->cid_central,
+                    CronogramaFechas::fechaBaseEmbarque($row),
+                    $arriboFirme,
+                    $row['FECHA_REC']
+                );
+
+                $row['FECHAS_EST'] = $cadena['fechas'];
+
                 $despachos[] = $row;
             }
             
@@ -243,32 +274,20 @@ class CronogramaDespachos {
     }
 
     /**
-     * Parametros de dias del cronograma: ['DIAS_EMB_ARR' => 45, ...]
+     * Parametros de dias del cronograma, tal cual estan en la tabla.
      *
-     * Los defaults son los valores que estaban hardcodeados en cronograma.js
-     * y actuan de red por si la tabla todavia no fue sembrada.
+     * DELEGA EN CronogramaFechas y no repite la consulta. Este metodo tenia su
+     * propia copia de los defaults -45/7/2/10/1- identica a la que tenia
+     * CronogramaFechas::obtenerParametros() e identica a la del objeto
+     * parametrosDias de cronograma.js. Tres copias del mismo numero es como se
+     * llega a que una pantalla diga arribo + 2 y la otra arribo + 7.
+     *
+     * Ya no hay defaults en ningun lado: si falta una clave, el front lo dice.
+     * Ver el comentario de CronogramaFechas::obtenerParametros().
      */
     public function obtenerParametros() {
-        $parametros = [
-            'DIAS_EMB_ARR'  => 45,
-            'DIAS_ARR_DESP' => 7,
-            'DIAS_DESP_REC' => 2,   // recepcion estimada = arribo + 9
-            'DIAS_ARR_DIST' => 10,  // distribucion estimada = arribo + 10
-            'DIAS_REC_DIST' => 1,   // con recepcion REAL, al dia siguiente
-        ];
-
-        $sql = "SELECT CLAVE, VALOR FROM RO_T_IMPORTACIONES_PARAM_CRONOGRAMA";
-        $stmt = sqlsrv_query($this->cid_central, $sql);
-
-        if ($stmt === false) {
-            error_log('obtenerParametros: ' . print_r(sqlsrv_errors(), true));
-            return $parametros;
-        }
-
-        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            $parametros[trim($row['CLAVE'])] = (int)$row['VALOR'];
-        }
-        return $parametros;
+        require_once __DIR__ . '/CronogramaFechas.php';
+        return CronogramaFechas::obtenerParametros($this->cid_central);
     }
 
     /**

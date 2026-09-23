@@ -162,20 +162,39 @@ try {
     if (!empty($_POST['fechaEstPago']))
         $datosDeCabezera['fechaEstPago'] = convertirFecha($_POST['fechaEstPago']);
 
-    /* EL MARCADOR DE "ESTO LO TOCÓ EL USUARIO".
-       El navegador lo manda en 1 solo cuando la fecha estimada de pago se movió
-       desde su datepicker, y en 0 cuando el valor que viaja lo calculó el JS
-       -mover el ETD, por ejemplo, recalcula la fecha y la manda distinta-. Es
-       lo único que separa los dos casos, porque los dos llegan por este mismo
-       POST con un FECHA_EST_PAGO distinto del que había.
-
-       NO ALCANZA SOLO CON ÉL: Encabezado::marcarFechaPagoFijada() además
-       compara contra el maestro y no marca nada si el valor no cambió. El
-       cliente no decide solo. */
-    $datosDeCabezera['fechaEstPagoManual'] =
-        isset($_POST['fechaEstPagoManual']) && $_POST['fechaEstPagoManual'] == '1';
     if (!empty($_POST['fechaDespAdu']))
         $datosDeCabezera['fechaDespAdu'] = convertirFecha($_POST['fechaDespAdu']);
+
+    /* LOS MARCADORES DE "ESTO LO TOCÓ EL USUARIO", uno por cada fecha que el
+       sistema calcula.
+
+       El navegador los manda en 1 solo cuando la fecha se movió desde su
+       datepicker, y en 0 cuando el valor que viaja lo calculó el servidor
+       -mover el ETD, por ejemplo, recalcula la cadena entera y manda las tres
+       fechas distintas-. Es lo único que separa los dos casos, porque los dos
+       llegan por este mismo POST con valores distintos de los que había.
+
+       NO ALCANZA SOLO CON ELLOS: Encabezado::marcarFechaFijada() además compara
+       contra el maestro y no marca nada si el valor no cambió. El cliente no
+       decide solo.
+
+       EL ARRIBO NO TIENE MARCADOR PROPIO: es eta_confirmada, que ya viajaba y
+       ya significa esto. Ver el bloque de FECHAS_FIJABLES en encabezado.php. */
+    $datosDeCabezera['fechaEstPagoManual'] =
+        isset($_POST['fechaEstPagoManual']) && $_POST['fechaEstPagoManual'] == '1';
+
+    $datosDeCabezera['fechaArrManual'] = ($datosDeCabezera['etaConfirmada'] === 1);
+
+    $datosDeCabezera['fechaDespAduManual'] =
+        isset($_POST['fechaDespAduManual']) && $_POST['fechaDespAduManual'] == '1';
+
+    /* El mapa que consumen actualizarEncabezado() y actualizarEncabezadoGrupo().
+       Las claves son las de Encabezado::FECHAS_FIJABLES. */
+    $marcasManuales = [
+        'PAGO'            => $datosDeCabezera['fechaEstPagoManual'],
+        'ARRIBO'          => $datosDeCabezera['fechaArrManual'],
+        'NACIONALIZACION' => $datosDeCabezera['fechaDespAduManual'],
+    ];
 
     // === PROCESO DE GUARDADO ===
 
@@ -236,11 +255,12 @@ try {
             ], fn($v) => $v !== null && $v !== '');
 
             if (!empty($datosGrupo)) {
-                // El marcador viaja al grupo: la fecha se replica, la marca también.
+                // Los marcadores viajan al grupo: las fechas se replican a
+                // todas las OCs del contenedor, así que las marcas también.
                 $cid->actualizarEncabezadoGrupo(
                     $idDespacho,
                     $datosGrupo,
-                    $datosDeCabezera['fechaEstPagoManual']
+                    $marcasManuales
                 );
             }
 

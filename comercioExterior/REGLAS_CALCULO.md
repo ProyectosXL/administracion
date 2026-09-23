@@ -12,30 +12,78 @@ Todos los cálculos de fechas siguen esta regla de prioridad:
 > Si existe **Fecha de Embarque (ETD)** → usar para cálculos  
 > Si NO existe → usar **Fecha Estimada de Embarque**
 
+La resuelve `CronogramaFechas::fechaBaseEmbarque()`, en el servidor. Antes la
+aplicaban por su cuenta `obtenerFechaBase()` en `cargaInicial.js` y
+`calcularFechasEstimadas()` en `cronograma.js`.
+
 ---
 
-## 🔢 Campos Calculados Automáticamente
+## 🔢 La cadena de fechas derivadas
 
-### 1️⃣ Fecha de Arribo (ETA) - `fechaArr`
-```
-Fecha Arribo = Fecha base + 45 días
-```
-- Usa Fecha de Embarque si existe
-- Si no, usa Fecha Estimada de Embarque
+> **UN SOLO CÁLCULO, EN EL SERVIDOR.** Toda la cadena la resuelve
+> `CronogramaFechas::cadenaDeFechas()`. **Ningún JS ni PHP del módulo tiene
+> números de días escritos**: salen de `RO_T_IMPORTACIONES_PARAM_CRONOGRAMA` y
+> se administran desde **Parámetros › Cronograma**.
 
-### 2️⃣ Fecha de Pago - `fechaPago`
 ```
-Fecha Pago = Fecha base + 5 días
+embarque (ETD real, o estimado)
+   ├── + DIAS_EMB_ARR   (45) ──► arribo
+   │                               └── + DIAS_ARR_DESP  (5) ──► nacionalización
+   │                                        └── + DIAS_DESP_REC (2) ──► recepción
+   │                                                 └── + DIAS_REC_DIST (1) ──► distribución
+   └── + DIAS_EMB_PAGO  (5)  ──► fecha estimada de pago
 ```
-- Usa Fecha de Embarque si existe
-- Si no, usa Fecha Estimada de Embarque
 
-### 3️⃣ Fecha de Nacionalización (Despacho Aduana) - `fechaDespAdu`
-```
-Fecha Despacho = Fecha Arribo + 2 días
-```
-- Depende de la Fecha de Arribo calculada
-- Respeta la misma regla de prioridad (ETD → Estimada)
+| Fecha | Columna | Cuelga de | Parámetro |
+|---|---|---|---|
+| Arribo (ETA) | `FECHA_ARR` | embarque | `DIAS_EMB_ARR` |
+| Estimada de pago | `FECHA_EST_PAGO` | embarque | `DIAS_EMB_PAGO` |
+| Nacionalización | `FECHA_DESP_ADU` | arribo | `DIAS_ARR_DESP` |
+| Recepción estimada | *(no se persiste)* | nacionalización | `DIAS_DESP_REC` |
+| Distribución | `FECHA_DISTRI` | recepción | `DIAS_REC_DIST` |
+
+### Los hechos le ganan a las proyecciones
+
+- **Arribo en firme** (`ETA_CONFIRMADA = 1`, o corregido a mano): la
+  nacionalización cuelga de **ese** arribo, no del proyectado. Sin esto, un
+  contenedor cuya ETA se atrasó dos semanas seguiría mostrando la
+  nacionalización calculada sobre un arribo que ya se sabe que no va a pasar.
+- **Recepción real** (llega por Tango, STA20 comprobantes `'RP'`): la
+  distribución cuelga de ella y no de la recepción estimada.
+
+### El pago cuelga del embarque, no del arribo
+
+Se le paga al proveedor del exterior **contra embarque**. Es la única rama de
+la cadena que no pasa por el arribo, y por eso mover la ETA no mueve la fecha
+de pago.
+
+### Son días corridos
+
+La cadena no corre las fechas al siguiente día hábil. Quien **sí** lo hace es
+la pantalla de gestión de despachos (`validarCampoFechaHabil()`), sobre el
+campo ya cargado y **avisando al usuario**. Es la única diferencia posible
+entre lo que dibuja el cronograma y lo que termina guardado, y es visible.
+
+### ⚠️ Qué pasó con `DIAS_ARR_DIST` (10) — decisión pendiente
+
+Ese parámetro se eligió en 10 porque **con la cadena vieja** —nacionalización
+en arribo + 7, recepción estimada en arribo + 9— caía justo un día después de
+la recepción. Con la nacionalización en arribo + 5 la recepción estimada es
+arribo + 7, así que arribo + 10 **ya no es "el día siguiente" de nada**.
+
+`cadenaDeFechas()` deriva la distribución de la recepción y no lo usa. Pero
+`derivarDistribucion()` y `recalcularDistribucion()` —el camino que escribe y
+muestra `FECHA_DISTRI`— **lo siguen usando y no se tocaron**, para que ninguna
+fecha guardada se mueva sola antes de que se decida qué hacer:
+
+- **Opción A (recomendada):** eliminarlo. La distribución sale siempre de la
+  recepción (real o estimada), o sea arribo + 5 + 2 + 1 = **arribo + 8**. Un
+  parámetro menos y una sola regla.
+- **Opción B:** conservarlo como "cuánto tarda la distribución cuando nunca
+  llega una recepción", que es un caso que la cadena estimada ya cubre.
+
+Mientras tanto la fila sigue en la tabla y su descripción avisa que está a
+revisar. **Ninguna de las dos opciones se aplicó todavía.**
 
 ### 4️⃣ Valor FOB en Pesos - `valorFobPeso`
 ```
@@ -44,35 +92,84 @@ Valor FOB $ = Valor FOB U$S × Tipo de Cambio
 - Se recalcula automáticamente cada vez que cambie:
   - Valor FOB U$S
   - Tipo de Cambio
+- Lo deriva el servidor (`Encabezado::calcularFobPeso()`), no el navegador
 
 ---
 
-## 🔒 Sistema de "Manual Override"
+## 💸 Estos parámetros también mueven el cashflow de Finanzas
 
-Cada campo calculado tiene una bandera interna que controla si el usuario lo editó manualmente:
+El tablero de **ProyectosXL/finanzas** lee del maestro
+`RO_T_IMPORTACIONES_ENCABEZADO`:
 
-### Flags de Control:
-```javascript
-fechaArriboIsManual = false
-fechaPagoIsManual = false
-fechaDespachoIsManual = false
-```
+| Columna | Pestaña del cashflow |
+|---|---|
+| `FECHA_EST_PAGO` | Proveedores Exterior |
+| `FECHA_DESP_ADU` | Crono Nacionalización |
 
-### Reglas del Manual Override:
+o sea **las dos puntas de esta cadena**. Y va a leer además
+`RO_T_IMPORTACIONES_PARAM_CRONOGRAMA` para **proyectar contenedores que
+todavía no existen como fila** —cuando hay una fecha de embarque prevista pero
+nadie cargó el contenedor—, que es lo que hoy no puede hacer.
+
+> ⚠️ **Cambiar un valor desde Parámetros › Cronograma no es un ajuste cosmético
+> de Comercio Exterior: mueve fechas en las dos aplicaciones.** Subir
+> `DIAS_ARR_DESP` corre plata de un mes al siguiente en el tablero de Finanzas.
+
+---
+
+## 🔒 Fechas fijadas a mano
+
+Tres fechas las calcula el sistema, y para las tres hace falta poder decir
+"esta no, esta la puso una persona". **La marca vive en la base, no en la
+memoria del navegador:**
+
+| Fecha | Bit | Quién / cuándo | Script |
+|---|---|---|---|
+| `FECHA_EST_PAGO` | `FECHA_PAGO_CONF` | `FECHA_PAGO_CONF_USUARIO` / `_FECHA` | `sql/10` |
+| `FECHA_ARR` | `ETA_CONFIRMADA` | `ETA_CONF_USUARIO` / `_FECHA` | `sql/11` |
+| `FECHA_DESP_ADU` | `FECHA_DESP_CONF` | `FECHA_DESP_CONF_USUARIO` / `_FECHA` | `sql/11` |
+
+**El arribo no estrena bit**: `ETA_CONFIRMADA` ya existía y ya significaba
+esto —se enciende al editar la ETA a mano— además de que ya la leen el
+cronograma (`CronogramaFechas::esFechaReal()`) y las dos pestañas del cashflow.
+Una segunda columna afirmando el mismo hecho se contradice tarde o temprano.
+
+### Cuál era el bug
+
+Los flags `fechaArriboIsManual` y `fechaDespachoIsManual` vivían **solo en
+memoria del navegador** y arrancaban en `false` en cada apertura. Para que el
+recálculo no pisara una corrección hecha a mano, `cargarDatosDespacho()` los
+encendía a ciegas: *"si la fila trae `FECHA_ARR`, marcala como manual"*. Eso
+protegía, pero al precio de que **ninguna fecha ya guardada se recalculara
+nunca más**: ni al mover el ETD, ni al cambiar un parámetro. La pantalla no
+distinguía "esto lo decidió alguien" de "esto vino así".
+
+Es el mismo bug que el script 10 corrigió para la fecha de pago, al revés: en
+vez de perder la marca, la inventaba.
+
+### Reglas
 
 #### ✏️ Cuando el usuario EDITA un campo calculado:
-- ✅ Flag se pone en `TRUE`
-- ✅ Se deja de recalcular automáticamente
-- 🎨 Campo se marca visualmente con fondo naranja y icono ✏️
+- ✅ El navegador manda un marcador en el POST
+- ✅ El backend **no le cree solo**: además compara contra el maestro y no marca
+  nada si el valor no cambió (`Encabezado::marcarFechaFijada()`)
+- ✅ Se marca **todo el grupo de OCs** del contenedor, porque la fecha también
+  se replica a todas
+- 🎨 El badge del campo pasa de **Auto** a **Manual**, con el tooltip de quién y
+  cuándo
 
-#### 🗑️ Cuando el usuario BORRA el campo:
-- ✅ Flag vuelve a `FALSE`
-- ✅ Se reactivan los cálculos automáticos
-- 🎨 Campo vuelve al estado calculado automático
+#### 🔄 "Volver a auto":
+- Es un gesto **explícito**, con confirmación, vía
+  `controller/revertirFechaAuto.php`
+- Apaga el bit, recalcula con la cadena y deja el cambio en
+  `RO_T_IMPORTACIONES_FECHAS_HIST`
+- **Ningún guardado común apaga el bit**: si pudiera, la fecha fijada se
+  perdería sin que nadie lo pida
 
 #### 🔄 Cuando cambia la Fecha de Embarque (ETD o Estimada):
-- ✅ Se recalculan TODOS los campos dependientes
-- ⚠️ EXCEPTO los que están en modo manual (flag = true)
+- ✅ Se pide la cadena completa al servidor y se recalculan los campos
+  dependientes
+- ⚠️ EXCEPTO los que están fijados a mano
 
 ---
 
@@ -128,10 +225,16 @@ fechaDespachoIsManual = false
 ### Cambios en Fechas Base:
 ```javascript
 // Al cambiar Fecha Estimada de Embarque
-$('#fechaEmb').on('change') → recalcularTodasLasFechas()
+$('#fechaEstEmb').on('change') → recalcularTodasLasFechas()
 
 // Al cambiar Fecha de Embarque real (ETD) - PRIORIDAD MÁXIMA
-$('#fechaEtd').on('change') → recalcularTodasLasFechas()
+$('#fechaEmb').on('change')    → recalcularTodasLasFechas()
+
+// Al mover el arribo a mano, porque la nacionalización cuelga de él
+$('#fechaArr').on('dp.change') → recalcularTodasLasFechas()
+
+// recalcularTodasLasFechas() NO calcula: le pide la cadena a
+// controller/calcularCadenaFechas.php y escribe lo que devuelve.
 ```
 
 ### Cambios en Valores Financieros:
@@ -146,30 +249,43 @@ $('#tipoCambio').on('input') → recalcularFobPesos()
 ## 📊 Flujo de Datos
 
 ```
-┌─────────────────────────────┐
-│  Fecha Estimada Embarque    │ (Sección 1)
-│     (fechaEmb)              │
-└──────────┬──────────────────┘
-           │
-           ├──────────────────────────┐
-           │                          │
-           ↓                          ↓
-   ┌───────────────┐         ┌────────────────┐
-   │ Fecha Arribo  │         │  Fecha Pago    │
-   │   + 45 días   │         │   + 5 días     │
-   └───────┬───────┘         └────────────────┘
-           │
-           ↓
-   ┌───────────────┐
-   │Fecha Despacho │
-   │   + 2 días    │
-   └───────────────┘
-
 ┌─────────────────┐    ┌──────────────────┐
 │ Fecha Embarque  │ ──→│  SI EXISTE, USA  │
 │  (ETD) real     │    │  ESTA EN VEZ DE  │
 │   (fechaEtd)    │    │  LA ESTIMADA     │
 └─────────────────┘    └──────────────────┘
+           │
+           ↓
+┌─────────────────────────────┐
+│    FECHA BASE DE EMBARQUE   │
+└──────────┬──────────────────┘
+           │
+           ├──────────────────────────────────┐
+           ↓                                  ↓
+   ┌───────────────────┐            ┌─────────────────────┐
+   │   Fecha Arribo    │            │ Fecha Est. de Pago  │
+   │  + DIAS_EMB_ARR   │            │  + DIAS_EMB_PAGO    │
+   └───────┬───────────┘            └─────────────────────┘
+           │  (si la ETA está en firme, manda ESA)
+           ↓
+   ┌───────────────────┐
+   │ Nacionalización   │
+   │  + DIAS_ARR_DESP  │
+   └───────┬───────────┘
+           ↓
+   ┌───────────────────┐
+   │ Recepción estimada│ ←── si hay recepción REAL (Tango), manda ESA
+   │  + DIAS_DESP_REC  │
+   └───────┬───────────┘
+           ↓
+   ┌───────────────────┐
+   │   Distribución    │
+   │  + DIAS_REC_DIST  │
+   └───────────────────┘
+
+   Los cinco parámetros salen de RO_T_IMPORTACIONES_PARAM_CRONOGRAMA.
+   Los calcula CronogramaFechas::cadenaDeFechas(), en el servidor,
+   para las DOS pantallas: carga inicial y cronograma.
 
 ┌─────────────────┐    ┌──────────────────┐
 │  Valor FOB U$S  │    │   Tipo Cambio    │
@@ -187,27 +303,57 @@ $('#tipoCambio').on('input') → recalcularFobPesos()
 
 ## 🚀 Implementación Técnica
 
-### Archivos Involucrados:
+### Dónde vive cada cosa
 
-1. **cargaInicial.js** - Lógica de cálculos y validaciones
-2. **cargaInicial.css** - Estilos visuales de estados
-3. **cargaInicial.php** - Estructura HTML del formulario
-4. **main.js** - Función de guardado
-5. **insertarEncabezado.php** - Controller de backend
-6. **encabezado.php** - Clase con SQL dinámico
+**El cálculo (servidor) — es el único que existe:**
 
-### Funciones Principales:
+| Archivo | Qué hace |
+|---|---|
+| `cronogramaDespachos/class/CronogramaFechas.php` | `cadenaDeFechas()`, `fechaBaseEmbarque()`, `obtenerParametros()`. **La cadena entera.** |
+| `controller/calcularCadenaFechas.php` | Endpoint que consume la carga inicial |
+| `cronogramaDespachos/class/CronogramaDespachos.php` | Manda la cadena ya calculada en `FECHAS_EST`, una por fila |
+| `class/encabezado.php` | `FECHAS_FIJABLES`, `marcarFechaFijada()`, `revertirFechaAuto()` |
+| `controller/revertirFechaAuto.php` | "Volver a auto" de las tres fechas |
+
+**La pantalla (navegador) — ya no calcula fechas:**
 
 ```javascript
-obtenerFechaBase()         // Retorna fecha según prioridad
-recalcularFechaArribo()    // Calcula ETA
-recalcularFechaPago()      // Calcula fecha pago
-recalcularFechaDespacho()  // Calcula fecha nacionalización
-recalcularFobPesos()       // Calcula FOB en pesos
-recalcularTodasLasFechas() // Ejecuta todos los cálculos
-configurarManualOverride() // Configura detección de edición manual
-establecerModoFormulario() // Controla modo alta/edición
+// js/cargaInicial.js
+recalcularTodasLasFechas()  // pide la cadena al servidor
+aplicarCadenaFechas()       // la escribe, SALTEANDO las fijadas a mano
+escribirFechaCalculada()    // valor + datepicker + corrimiento a día hábil
+actualizarBadgeFecha(tipo)  // el badge Auto / Manual de las tres fechas
+recalcularFobPesos()        // esta sí sigue siendo del navegador
+configurarManualOverride()  // detecta la edición manual
+establecerModoFormulario()  // controla modo alta/edición
 ```
+
+```javascript
+// cronogramaDespachos/js/cronograma.js
+calcularFechasEstimadas(d)  // ya NO calcula: lee d.FECHAS_EST del servidor
+```
+
+**Las que se fueron**, y por qué están acá: `obtenerFechaBase()`,
+`recalcularFechaArribo()`, `recalcularFechaPago()`, `recalcularFechaDespacho()`
+y `recalcularFechaEstimadaPago()` sumaban los días en el navegador con 45, 5 y
+2 escritos en el código. `recalcularFechaPago()` además escribía sobre un
+`#fechaPago` que no existe en el formulario, y `FECHA_PAGO` tampoco es columna
+del maestro en ninguna de las dos bases.
+
+**`main.js` ya no estaba en uso** cuando se escribió esto: su `<script>` está
+comentado en `tabs/components/detalleCostos.php` y su función de guardado lee
+`document.getElementById('fechaPago').value`, que hoy tiraría `TypeError`. El
+guardado real vive en `js/cargaInicial.js`.
+
+### Scripts SQL de esta cadena
+
+| Script | Qué hace |
+|---|---|
+| `sql/04_cronograma_parametros_dias.sql` | Crea `RO_T_IMPORTACIONES_PARAM_CRONOGRAMA` |
+| `sql/10_fecha_pago_manual.sql` | `FECHA_PAGO_CONF` + backfill |
+| `sql/11_fechas_fijadas_arribo_nacionalizacion.sql` | `FECHA_DESP_CONF`, `ETA_CONF_*` + backfill |
+| `sql/12_parametros_fechas_derivadas.sql` | `DIAS_EMB_PAGO`, y `DIAS_ARR_DESP` a 5 |
+| `sql/13_diagnostico_fecha_desp_adu.sql` | Sólo SELECT: clasifica las fechas existentes |
 
 ---
 
@@ -217,8 +363,9 @@ establecerModoFormulario() // Controla modo alta/edición
 2. En **Alta Inicial**, solo se guardan campos de Sección 1
 3. En **Edición**, se pueden completar Secciones 2 y 3
 4. Los campos calculados respetan SIEMPRE la prioridad: ETD → Estimada
-5. Al editar manualmente un campo calculado, se desactiva su recálculo automático
-6. Al borrar un campo editado manualmente, vuelve al modo automático
+5. Al editar manualmente un campo calculado, se desactiva su recálculo automático **y la marca queda en la base**: sobrevive al cierre de la pantalla
+6. Para volver al modo automático está el botón **"volver a auto"** del badge, que es explícito y pide confirmación
+7. Las fechas **ya nacionalizadas o recibidas no se recalculan nunca**
 
 ---
 
@@ -363,4 +510,4 @@ porque el flete no es un importe menor.
 
 ---
 
-**Última actualización:** 20/11/2025
+**Última actualización:** 22/09/2026 — rama `feature/comex-fechas-parametros`

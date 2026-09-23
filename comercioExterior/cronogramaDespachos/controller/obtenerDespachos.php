@@ -4,6 +4,7 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/../class/CronogramaDespachos.php';
+require_once __DIR__ . '/../class/CronogramaFechas.php';
 require_once __DIR__ . '/../class/MotivosFecha.php';
 
 header('Content-Type: application/json');
@@ -41,12 +42,20 @@ unset($despacho);
 // parametros, que si no habria que resolver antes de cada render.
 $rubros = $cronograma->obtenerRubrosPorOC(array_column($resultado, 'ORDEN_COMPRA'));
 
+/* Los parametros viajan SIN defaults, y por eso viaja tambien que falta.
+   El calendario ya no tiene numeros de dias propios con los que dibujar
+   mientras espera: si falta una clave, tiene que decirlo en vez de pintar una
+   proyeccion inventada que nadie distingue de una buena. */
+$parametros = $cronograma->obtenerParametros();
+$faltan     = CronogramaFechas::parametrosFaltantes($parametros);
+
 echo json_encode([
     'success'     => true,
     'data'        => $resultado,
     'rubros'      => $rubros,
     'alias'       => $cronograma->obtenerAliasProveedores(),
     'iconosRubro' => $cronograma->obtenerIconosRubro(),
-    'parametros'  => $cronograma->obtenerParametros(),
+    'parametros'  => $parametros,
+    'faltanParam' => $faltan,
     'motivos'     => MotivosFecha::listar(),
 ], JSON_UNESCAPED_UNICODE);

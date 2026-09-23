@@ -59,79 +59,190 @@ class Encabezado
     }
 
     /* ====================================================================
-       LA FECHA ESTIMADA DE PAGO FIJADA A MANO
+       LAS FECHAS FIJADAS A MANO
 
-       FECHA_EST_PAGO la calcula el navegador como "fecha base + 5 dias". El
-       BIT FECHA_PAGO_CONF -script 10- es lo que dice que ese calculo NO se
-       aplica porque alguien puso la fecha a mano.
+       Tres de las fechas del maestro las calcula el sistema a partir de la de
+       embarque, y para las tres hace falta poder decir "esta no, esta la puso
+       una persona". Si no, el recalculo automatico las pisa.
+
+       El script 10 resolvio el caso de FECHA_EST_PAGO con un BIT en el
+       maestro. El script 11 extendio el mismo patron a las otras dos:
+
+           fecha              bit               quien / cuando
+           ---------------------------------------------------------------
+           FECHA_EST_PAGO     FECHA_PAGO_CONF   FECHA_PAGO_CONF_USUARIO/_FECHA
+           FECHA_ARR          ETA_CONFIRMADA    ETA_CONF_USUARIO/_FECHA
+           FECHA_DESP_ADU     FECHA_DESP_CONF   FECHA_DESP_CONF_USUARIO/_FECHA
+
+       EL ARRIBO NO ESTRENA BIT: ETA_CONFIRMADA ya existia y ya significaba
+       esto -se enciende al editar la ETA a mano, ver el datepicker
+       .js-datepicker-arribo en cargaInicial.js- ademas de que ya la leen el
+       cronograma y el cashflow. Agregarle un FECHA_ARR_CONF al lado seria
+       tener dos columnas afirmando el mismo hecho.
 
        Por que un BIT y no un flag deducido de RO_T_IMPORTACIONES_FECHAS_HIST:
        el recalculo automatico y la edicion manual llegan aca por el MISMO POST
        del formulario y dejan en el historial una fila indistinguible. Ver el
        encabezado de sql/10_fecha_pago_manual.sql.
+
+       LOS DIAS YA NO ESTAN ACA. Habia una constante DIAS_EMB_EST_PAGO = 5 con
+       el comentario "esta duplicada con el JS, si se cambia uno hay que
+       cambiar el otro". La cadena entera vive ahora en
+       CronogramaFechas::cadenaDeFechas(), que la lee de
+       RO_T_IMPORTACIONES_PARAM_CRONOGRAMA, y este archivo no tiene ni un
+       numero de dias escrito.
        ==================================================================== */
 
     /**
-     * Dias entre la fecha base de embarque y la estimada de pago.
+     * Las tres fechas que el sistema calcula y que se pueden fijar a mano.
      *
-     * Es la MISMA regla que recalcularFechaEstimadaPago() aplica en el
-     * navegador, y esta duplicada: el calculo sigue viviendo en el JS y este
-     * valor existe solo para que revertirFechaPagoAuto() pueda devolver la
-     * fecha ya resuelta. Si se cambia uno hay que cambiar el otro.
+     * Cada entrada dice que columna guarda la fecha, que columna dice si esta
+     * fijada, de donde sale el valor automatico dentro de la cadena, y como se
+     * llama el campo en el historial. Tener el mapa explicito es lo que
+     * permite que marcarFechaFijada() y revertirFechaAuto() sean una sola
+     * implementacion en vez de tres copias que se van separando.
+     *
+     * 'cadena' es la clave con la que la fecha viene dentro de lo que devuelve
+     * CronogramaFechas::cadenaDeFechas().
      */
-    const DIAS_EMB_EST_PAGO = 5;
+    const FECHAS_FIJABLES = [
+        'PAGO' => [
+            'columna'  => 'FECHA_EST_PAGO',
+            'conf'     => 'FECHA_PAGO_CONF',
+            'usuario'  => 'FECHA_PAGO_CONF_USUARIO',
+            'fecha'    => 'FECHA_PAGO_CONF_FECHA',
+            'cadena'   => 'pago',
+            'etiqueta' => 'fecha estimada de pago',
+        ],
+        'ARRIBO' => [
+            'columna'  => 'FECHA_ARR',
+            'conf'     => 'ETA_CONFIRMADA',
+            'usuario'  => 'ETA_CONF_USUARIO',
+            'fecha'    => 'ETA_CONF_FECHA',
+            'cadena'   => 'arribo',
+            'etiqueta' => 'fecha de arribo (ETA)',
+        ],
+        'NACIONALIZACION' => [
+            'columna'  => 'FECHA_DESP_ADU',
+            'conf'     => 'FECHA_DESP_CONF',
+            'usuario'  => 'FECHA_DESP_CONF_USUARIO',
+            'fecha'    => 'FECHA_DESP_CONF_FECHA',
+            'cadena'   => 'nacionalizacion',
+            'etiqueta' => 'fecha de nacionalización',
+        ],
+    ];
 
-    /** @var bool|null Cache por request de si el script 10 ya corrio */
-    private $fechaPagoConf = null;
+    /** @var array Cache por request de que columnas existen en esta base */
+    private $columnasConf = [];
 
     /**
-     * Si el maestro ya tiene la columna FECHA_PAGO_CONF.
+     * Si el maestro ya tiene una columna.
      *
-     * SE PREGUNTA en vez de darla por hecha, mismo criterio que
+     * SE PREGUNTA en vez de darlo por hecho, mismo criterio que
      * AlicuotasVigencia::disponible() y que Comex::tieneCotizEdit() en la
-     * aplicacion de Finanzas: sin el script 10 la pantalla sigue andando
-     * exactamente como hoy -la fecha se recalcula siempre- y lo unico que no se
-     * puede es fijarla. Los dos repos se despliegan juntos, pero no se puede
-     * asumir que el DDL corrio antes que el codigo.
+     * aplicacion de Finanzas: sin los scripts 10 y 11 la pantalla sigue
+     * andando -las fechas se recalculan siempre- y lo unico que no se puede es
+     * fijarlas. Los repos se despliegan juntos, pero no se puede asumir que el
+     * DDL corrio antes que el codigo.
      *
      * @return bool
      */
-    public function tieneFechaPagoConf()
+    private function tieneColumna($columna)
     {
-        if ($this->fechaPagoConf !== null) {
-            return $this->fechaPagoConf;
+        if (isset($this->columnasConf[$columna])) {
+            return $this->columnasConf[$columna];
         }
 
-        $this->fechaPagoConf = false;
+        $this->columnasConf[$columna] = false;
 
+        /* El nombre NO se interpola libre: sale de FECHAS_FIJABLES, que es una
+           constante de esta clase, y ademas va como parametro de COL_LENGTH. */
         $stmt = sqlsrv_query(
             $this->cid_central,
-            "SELECT COL_LENGTH('dbo.RO_T_IMPORTACIONES_ENCABEZADO', 'FECHA_PAGO_CONF') AS C"
+            "SELECT COL_LENGTH('dbo.RO_T_IMPORTACIONES_ENCABEZADO', ?) AS C",
+            [$columna]
         );
 
         if ($stmt === false) {
-            error_log('tieneFechaPagoConf: ' . print_r(sqlsrv_errors(), true));
+            error_log('tieneColumna(' . $columna . '): ' . print_r(sqlsrv_errors(), true));
             return false;
         }
 
         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
         sqlsrv_free_stmt($stmt);
 
-        $this->fechaPagoConf = ($row && $row['C'] !== null);
+        $this->columnasConf[$columna] = ($row && $row['C'] !== null);
 
-        return $this->fechaPagoConf;
+        return $this->columnasConf[$columna];
     }
 
     /**
-     * Marca como fijada a mano la fecha estimada de pago de las OCs indicadas.
+     * Si se puede fijar a mano la fecha de este tipo en esta base.
+     *
+     * Pregunta por las tres columnas y no solo por el BIT: el badge de la
+     * pantalla muestra quien y cuando, y con el BIT sin sus dos acompanantes
+     * quedaria a medias.
+     */
+    public function puedeFijar($tipo)
+    {
+        if (!isset(self::FECHAS_FIJABLES[$tipo])) {
+            return false;
+        }
+
+        $mapa = self::FECHAS_FIJABLES[$tipo];
+
+        return $this->tieneColumna($mapa['conf'])
+            && $this->tieneColumna($mapa['usuario'])
+            && $this->tieneColumna($mapa['fecha']);
+    }
+
+    /**
+     * Compatibilidad: lo que preguntaba el codigo del script 10.
+     *
+     * Se conserva el nombre porque lo usan actualizarFechaPagoController.php y
+     * las lecturas de obtenerDespachoPorId(); por dentro es puedeFijar('PAGO').
+     */
+    public function tieneFechaPagoConf()
+    {
+        return $this->puedeFijar('PAGO');
+    }
+
+    /**
+     * Normaliza lo que el front afirma sobre que fechas fijo el usuario.
+     *
+     * ACEPTA UN BOOL SUELTO porque la firma vieja de actualizarEncabezadoGrupo()
+     * recibia solo el marcador del pago, y este metodo se llama desde codigo
+     * que puede no haberse actualizado todavia. Un bool suelto significa lo
+     * que significaba antes: "el usuario fijo la fecha de pago".
+     *
+     * TODO LO QUE NO ESTE EN FECHAS_FIJABLES SE DESCARTA: la lista de tipos la
+     * decide esta clase, no el POST.
+     *
+     * @return array [TIPO => bool] con las tres claves siempre definidas
+     */
+    private static function normalizarMarcasManuales($marcas)
+    {
+        if (!is_array($marcas)) {
+            $marcas = ['PAGO' => (bool) $marcas];
+        }
+
+        $salida = [];
+        foreach (array_keys(self::FECHAS_FIJABLES) as $tipo) {
+            $salida[$tipo] = !empty($marcas[$tipo]);
+        }
+        return $salida;
+    }
+
+    /**
+     * Marca como fijada a mano una fecha de las OCs indicadas.
      *
      * HACEN FALTA LAS DOS COSAS, y por motivos distintos:
      *
      *   1. Que el FRONT diga que lo toco el usuario. Sin esto, cualquier
-     *      recalculo automatico -mover el ETD recalcula la fecha y la manda
-     *      distinta- quedaria marcado como manual y el contenedor no volveria a
-     *      recalcular nunca mas. El marcador es lo unico que separa los dos
-     *      casos, porque los dos llegan por el mismo POST.
+     *      recalculo automatico -mover el ETD recalcula la cadena entera y la
+     *      manda distinta- quedaria marcado como manual y el contenedor no
+     *      volveria a recalcular nunca mas. El marcador es lo unico que separa
+     *      los dos casos, porque los dos llegan por el mismo POST.
      *
      *   2. Que el valor REALMENTE difiera del maestro. Es la comparacion que
      *      manda, igual que en Comex::guardarFecha(): el cliente no decide
@@ -139,18 +250,31 @@ class Encabezado
      *      marcarla dejaria una fila de auditoria que afirma algo que no paso.
      *
      * NO APAGA EL BIT. Volver a automatico es una decision explicita y tiene su
-     * propio endpoint -controller/revertirFechaPagoAuto.php-. Que un guardado
+     * propio endpoint -controller/revertirFechaAuto.php-. Que un guardado
      * cualquiera pudiera apagarlo devolveria el problema original: la fecha
      * fijada se perderia sin que nadie lo pida.
      *
+     * EL BIT Y EL QUIEN/CUANDO SE ESCRIBEN POR SEPARADO a proposito. Para el
+     * arribo, el BIT -ETA_CONFIRMADA- existe desde antes que sus dos columnas
+     * de auditoria, asi que en una base donde el script 11 todavia no corrio
+     * hay que poder seguir marcando la ETA como confirmada, que es lo que la
+     * aplicacion ya hacia. Lo que falta ahi es el dato de quien, no la marca.
+     *
+     * @param string $tipo      clave de FECHAS_FIJABLES
      * @param array  $ids       OCs a marcar
      * @param array  $antes     Estado previo, de leerFechasParaHistorial()
      * @param bool   $marcador  Lo que el front afirma sobre esta edicion
      * @return int Cuantas OCs se marcaron
      */
-    private function marcarFechaPagoFijada($ids, $antes, $marcador)
+    private function marcarFechaFijada($tipo, $ids, $antes, $marcador)
     {
-        if (!$marcador || empty($ids) || !$this->tieneFechaPagoConf()) {
+        if (!$marcador || empty($ids) || !isset(self::FECHAS_FIJABLES[$tipo])) {
+            return 0;
+        }
+
+        $mapa = self::FECHAS_FIJABLES[$tipo];
+
+        if (!$this->tieneColumna($mapa['conf'])) {
             return 0;
         }
 
@@ -162,7 +286,7 @@ class Encabezado
         foreach ($despues as $id => $fila) {
             if (!isset($antes[$id])) continue;
 
-            if ((string) $antes[$id]['FECHA_EST_PAGO'] !== (string) $fila['FECHA_EST_PAGO']) {
+            if ((string) $antes[$id][$mapa['columna']] !== (string) $fila[$mapa['columna']]) {
                 $aMarcar[] = (int) $id;
             }
         }
@@ -174,49 +298,74 @@ class Encabezado
         $usuario      = isset($_SESSION['usuario_dns']) ? $_SESSION['usuario_dns'] : null;
         $placeholders = implode(',', array_fill(0, count($aMarcar), '?'));
 
+        /* Los nombres de columna salen de FECHAS_FIJABLES, que es una
+           constante de esta clase: no hay entrada del usuario en el SQL. */
+        $sets   = [$mapa['conf'] . ' = 1'];
+        $params = [];
+
+        if ($this->tieneColumna($mapa['usuario']) && $this->tieneColumna($mapa['fecha'])) {
+            $sets[]   = $mapa['usuario'] . ' = ?';
+            $sets[]   = $mapa['fecha'] . ' = GETDATE()';
+            $params[] = $usuario;
+        }
+
         $sql = "UPDATE RO_T_IMPORTACIONES_ENCABEZADO
-                   SET FECHA_PAGO_CONF         = 1,
-                       FECHA_PAGO_CONF_USUARIO = ?,
-                       FECHA_PAGO_CONF_FECHA   = GETDATE()
+                   SET " . implode(', ', $sets) . "
                  WHERE ID IN ($placeholders)";
 
-        $stmt = sqlsrv_query($this->cid_central, $sql, array_merge([$usuario], $aMarcar));
+        $stmt = sqlsrv_query($this->cid_central, $sql, array_merge($params, $aMarcar));
 
         if ($stmt === false) {
-            error_log('marcarFechaPagoFijada: ' . print_r(sqlsrv_errors(), true));
+            error_log('marcarFechaFijada(' . $tipo . '): ' . print_r(sqlsrv_errors(), true));
             return 0;
         }
 
-        error_log('marcarFechaPagoFijada: ' . count($aMarcar) .
-                  ' OCs con FECHA_EST_PAGO fijada a mano');
+        error_log('marcarFechaFijada: ' . count($aMarcar) . ' OCs con '
+                  . $mapa['columna'] . ' fijada a mano');
 
         return count($aMarcar);
     }
 
     /**
-     * Vuelve la fecha estimada de pago al calculo automatico.
+     * Vuelve una fecha al calculo automatico.
      *
-     * LA REGLA DE +5 DIAS SE DUPLICA ACA, y es deuda conocida: la formula
-     * canonica vive en recalcularFechaEstimadaPago() de js/cargaInicial.js y
-     * este metodo la repite porque el endpoint tiene que devolver la fecha ya
-     * resuelta. Moverla al backend -y que el JS deje de calcularla- es lo que
-     * cierra esta duplicacion y ademas haria deducible el BIT desde el
-     * historial; queda fuera de esta entrega.
+     * LA FORMULA YA NO SE DUPLICA ACA. Este metodo repetia "+5 dias" con un
+     * comentario que lo reconocia como deuda: "la formula canonica vive en
+     * recalcularFechaEstimadaPago() de js/cargaInicial.js y este metodo la
+     * repite porque el endpoint tiene que devolver la fecha ya resuelta.
+     * Moverla al backend -y que el JS deje de calcularla- es lo que cierra
+     * esta duplicacion". Eso es lo que se hizo: la fecha sale de
+     * CronogramaFechas::cadenaDeFechas() y el JS ya no calcula nada.
      *
-     * LA BASE ES LA MISMA QUE EN EL JS: FECHA_EMB -el ETD real- con fallback a
-     * FECHA_EST_EMB. Si no hay ninguna de las dos no hay de donde calcular: se
-     * apaga el BIT igual -que es lo que se pidio- y la fecha queda como estaba,
-     * porque escribir NULL le sacaria el dato a la pestana del cashflow.
+     * DE DONDE SALE CADA FECHA:
+     *   pago              del embarque (FECHA_EMB, con fallback a FECHA_EST_EMB)
+     *   arribo            del embarque
+     *   nacionalizacion   del arribo que quede vigente
      *
-     * @param int $id OC cuyo grupo se revierte
+     * OJO CON LA NACIONALIZACION: se recalcula sobre el FECHA_ARR guardado, no
+     * sobre el arribo proyectado. Si a un contenedor le confirmaron la ETA,
+     * volver la nacionalizacion a automatico tiene que devolver "esa ETA + 5",
+     * y no "embarque + 45 + 5", que es una fecha que ya se sabe que no va a
+     * pasar.
+     *
+     * @param int    $id    OC cuyo grupo se revierte
+     * @param string $tipo  clave de FECHAS_FIJABLES
      * @return array ['fecha' => 'Y-m-d'|null, 'ocs' => int, 'aviso' => string|null]
      */
-    public function revertirFechaPagoAuto($id)
+    public function revertirFechaAuto($id, $tipo = 'PAGO')
     {
-        if (!$this->tieneFechaPagoConf()) {
+        if (!isset(self::FECHAS_FIJABLES[$tipo])) {
+            throw new Exception('Tipo de fecha desconocido: ' . $tipo);
+        }
+
+        $mapa = self::FECHAS_FIJABLES[$tipo];
+
+        if (!$this->tieneColumna($mapa['conf'])) {
             throw new Exception(
-                'Todavía no se puede volver a automático: falta correr el script '
-                . 'comercioExterior/sql/10_fecha_pago_manual.sql en esta base.'
+                'Todavía no se puede volver a automático: falta la columna '
+                . $mapa['conf'] . ' en esta base. Corré los scripts '
+                . 'comercioExterior/sql/10_fecha_pago_manual.sql y '
+                . '11_fechas_fijadas_arribo_nacionalizacion.sql.'
             );
         }
 
@@ -225,11 +374,11 @@ class Encabezado
             throw new Exception('No se encontró el despacho ' . intval($id));
         }
 
-        /* Se revierte TODO EL GRUPO, no la OC sola: el guardado replica
-           FECHA_EST_PAGO a todas las OCs del contenedor -ver
-           actualizarEncabezadoGrupo()- y dejar media docena de hermanas fijadas
-           haria que la proxima edicion volviera a pisar la que se acaba de
-           liberar. */
+        /* Se revierte TODO EL GRUPO, no la OC sola: el guardado replica estas
+           fechas a todas las OCs del contenedor -ver
+           actualizarEncabezadoGrupo()- y dejar media docena de hermanas
+           fijadas haria que la proxima edicion volviera a pisar la que se
+           acaba de liberar. */
         $idsGrupo = $this->obtenerIdsDelGrupo($idPrincipal);
         if (empty($idsGrupo)) {
             throw new Exception('No se encontró el despacho ' . intval($id));
@@ -240,28 +389,30 @@ class Encabezado
             throw new Exception('No se encontró el despacho ' . intval($id));
         }
 
-        /* Cinco dias, en duro, igual que en el JS. NO sale de
-           RO_T_IMPORTACIONES_PARAM_CRONOGRAMA a proposito: el JS no lee esa
-           tabla, asi que un parametro configurable haria que el navegador y
-           este metodo calcularan fechas distintas sobre el mismo contenedor.
-           Cuando la formula se mude al backend -la deuda anotada arriba- ese es
-           el momento de hacerla configurable, en un solo lugar. */
-        $diasPago = self::DIAS_EMB_EST_PAGO;
+        $this->cargarCronogramaFechas();
 
-        $base = !empty($antes[$idPrincipal]['FECHA_EMB'])
-            ? $antes[$idPrincipal]['FECHA_EMB']
-            : $antes[$idPrincipal]['FECHA_EST_EMB'];
+        $fila = $antes[$idPrincipal];
+        $base = CronogramaFechas::fechaBaseEmbarque($fila);
 
-        $fechaNueva = null;
-        $aviso      = null;
+        /* El arribo vigente entra a la cadena SALVO cuando lo que se esta
+           revirtiendo es el arribo mismo: ahi hay que recalcularlo desde el
+           embarque, que es justo lo que se esta pidiendo. */
+        $arriboVigente = ($tipo === 'ARRIBO') ? null : $fila['FECHA_ARR'];
 
-        if (!empty($base)) {
-            $d = DateTime::createFromFormat('Y-m-d', substr((string) $base, 0, 10));
-            if ($d) {
-                $d->modify('+' . $diasPago . ' days');
-                $fechaNueva = $d->format('Y-m-d');
-            }
+        $cadena = CronogramaFechas::cadenaDeFechas(
+            $this->cid_central, $base, $arriboVigente, $fila['FECHA_REC']
+        );
+
+        if (!empty($cadena['faltan'])) {
+            throw new Exception(
+                'No se puede recalcular: faltan parámetros ('
+                . implode(', ', $cadena['faltan']) . '). Corré '
+                . 'comercioExterior/sql/12_parametros_fechas_derivadas.sql en esta base.'
+            );
         }
+
+        $aviso      = null;
+        $fechaNueva = $cadena['fechas'][$mapa['cadena']];
 
         if ($fechaNueva === null) {
             $aviso = 'La fecha quedó en automático, pero no se pudo recalcular porque '
@@ -279,12 +430,20 @@ class Encabezado
             /* El BIT y la fecha se escriben JUNTOS: si se apagara el BIT y
                fallara el recalculo, el contenedor quedaria diciendo "esta fecha
                es automatica" al lado de una fecha que nadie calculo. */
+            $sets = [$mapa['conf'] . ' = 0'];
+
+            if ($this->tieneColumna($mapa['usuario']) && $this->tieneColumna($mapa['fecha'])) {
+                $sets[] = $mapa['usuario'] . ' = NULL';
+                $sets[] = $mapa['fecha'] . ' = NULL';
+            }
+
+            if ($fechaNueva !== null) {
+                $sets[] = $mapa['columna'] . ' = ?';
+            }
+
             $sqlConf = "UPDATE RO_T_IMPORTACIONES_ENCABEZADO
-                           SET FECHA_PAGO_CONF         = 0,
-                               FECHA_PAGO_CONF_USUARIO = NULL,
-                               FECHA_PAGO_CONF_FECHA   = NULL"
-                     . ($fechaNueva !== null ? ", FECHA_EST_PAGO = ?" : "")
-                     . " WHERE ID IN ($placeholders)";
+                           SET " . implode(', ', $sets) . "
+                         WHERE ID IN ($placeholders)";
 
             $params = ($fechaNueva !== null)
                 ? array_merge([$fechaNueva], $idsGrupo)
@@ -301,25 +460,45 @@ class Encabezado
             throw $e;
         }
 
+        /* Volver el arribo a automatico mueve la distribucion, que cuelga de
+           el. La resuelve recalcularDistribucion(), que ya respeta
+           DIST_ORIGEN y no pisa lo movido a mano. */
+        if ($tipo === 'ARRIBO' && $fechaNueva !== null) {
+            $this->recalcularDistribucion($idsGrupo, $fechaNueva, $antes);
+        }
+
         /* El historial va DESPUES del commit y con su propio motivo: es el
            mismo criterio que recalcularDistribucion(), donde la cascada
-           automatica se registra aparte de lo que edito el usuario. */
+           automatica se registra aparte de lo que edito el usuario.
+
+           EL DETALLE SALE DE LOS PARAMETROS que se acaban de usar, no de un
+           literal: si manana DIAS_ARR_DESP pasa a 6, el historial viejo sigue
+           diciendo la verdad sobre con que numero se calculo esa fila. */
         if ($fechaNueva !== null) {
             $usuario = isset($_SESSION['usuario_dns']) ? $_SESSION['usuario_dns'] : null;
+            $dias    = $cadena['parametros'];
+
+            if ($tipo === 'NACIONALIZACION') {
+                $detalle = 'arribo + ' . $dias['DIAS_ARR_DESP'] . ' días';
+            } elseif ($tipo === 'ARRIBO') {
+                $detalle = 'embarque + ' . $dias['DIAS_EMB_ARR'] . ' días';
+            } else {
+                $detalle = 'embarque + ' . $dias['DIAS_EMB_PAGO'] . ' días';
+            }
 
             foreach ($idsGrupo as $idOc) {
                 if (!isset($antes[$idOc])) continue;
-                if ((string) $antes[$idOc]['FECHA_EST_PAGO'] === (string) $fechaNueva) continue;
+                if ((string) $antes[$idOc][$mapa['columna']] === (string) $fechaNueva) continue;
 
                 CronogramaFechas::registrarHistorial($this->cid_central, [
                     'idEncabezado'  => $idOc,
                     'ordenCompra'   => $antes[$idOc]['ORDEN_COMPRA'],
                     'contenedor'    => $antes[$idOc]['CONTENEDOR'],
-                    'campo'         => 'FECHA_EST_PAGO',
-                    'valorAnterior' => $antes[$idOc]['FECHA_EST_PAGO'],
+                    'campo'         => $mapa['columna'],
+                    'valorAnterior' => $antes[$idOc][$mapa['columna']],
                     'valorNuevo'    => $fechaNueva,
                     'motivo'        => MotivosFecha::RECALCULO_AUTOMATICO,
-                    'observacion'   => 'Se volvió al cálculo automático (+' . $diasPago . ' días)',
+                    'observacion'   => 'Se volvió al cálculo automático (' . $detalle . ')',
                     'usuario'       => $usuario,
                     'origen'        => 'GESTION_DESPACHOS',
                 ]);
@@ -332,6 +511,16 @@ class Encabezado
             'aviso' => $aviso,
         ];
     }
+
+    /**
+     * Compatibilidad con el endpoint que creo el script 10.
+     * Ver revertirFechaAuto(), que es donde esta la implementacion.
+     */
+    public function revertirFechaPagoAuto($id)
+    {
+        return $this->revertirFechaAuto($id, 'PAGO');
+    }
+
 
     public function insertarEncabezado($datosDeCabezera)
     {
@@ -567,19 +756,30 @@ class Encabezado
                     }
                 }
 
-                /* FECHA_PAGO_CONF llega por el SELECT * en cuanto el script 10
-                   corrio, y no llega si no corrio. Se normaliza a 0/1 acá, una
-                   sola vez: un BIT de SQL Server puede venir como '0', que en
-                   el JSON seria un string verdadero y dejaria toda la base
-                   marcada como manual. La clave se define SIEMPRE, asi que el
-                   front no tiene que preguntar si el DDL corrio: sin la columna
-                   vale 0, que es exactamente lo que la aplicacion hace hoy. */
-                $row['FECHA_PAGO_CONF'] =
-                    (isset($row['FECHA_PAGO_CONF']) && (string) $row['FECHA_PAGO_CONF'] === '1')
-                        ? 1 : 0;
+                /* LOS TRES BITS DE "FIJADA A MANO" llegan por el SELECT * en
+                   cuanto corrieron los scripts 10 y 11, y no llegan si no
+                   corrieron. Se normalizan a 0/1 acá, una sola vez: un BIT de
+                   SQL Server puede venir como '0', que en el JSON seria un
+                   string verdadero y dejaria toda la base marcada como manual.
 
-                if (isset($row['FECHA_PAGO_CONF_FECHA']) && is_object($row['FECHA_PAGO_CONF_FECHA'])) {
-                    $row['FECHA_PAGO_CONF_FECHA'] = $row['FECHA_PAGO_CONF_FECHA']->format('d/m/Y H:i');
+                   LAS CLAVES SE DEFINEN SIEMPRE, asi que el front no tiene que
+                   preguntar si el DDL corrio: sin la columna valen 0, que en el
+                   caso del pago y de la nacionalizacion es "se recalcula
+                   sola" -el comportamiento viejo- y en el del arribo es "ETA
+                   estimada", que es lo que ETA_CONFIRMADA ya significaba. */
+                foreach (self::FECHAS_FIJABLES as $mapa) {
+                    $row[$mapa['conf']] =
+                        (isset($row[$mapa['conf']]) && (string) $row[$mapa['conf']] === '1') ? 1 : 0;
+
+                    if (isset($row[$mapa['fecha']]) && is_object($row[$mapa['fecha']])) {
+                        $row[$mapa['fecha']] = $row[$mapa['fecha']]->format('d/m/Y H:i');
+                    }
+                    if (!array_key_exists($mapa['usuario'], $row)) {
+                        $row[$mapa['usuario']] = null;
+                    }
+                    if (!array_key_exists($mapa['fecha'], $row)) {
+                        $row[$mapa['fecha']] = null;
+                    }
                 }
 
                 return $row;
@@ -794,9 +994,14 @@ class Encabezado
      *
      * @param int   $idEncabezado  ID de cualquier OC del grupo
      * @param array $datos         ['COLUMNA' => valor, ...]
+     * @param array|bool $marcasManuales  que fechas afirma el front que fijo el
+     *                  usuario en esta edicion: ['PAGO' => bool, 'ARRIBO' =>
+     *                  bool, 'NACIONALIZACION' => bool]. Se acepta un bool
+     *                  suelto por compatibilidad con la firma vieja, que
+     *                  recibia solo el marcador del pago.
      * @return bool
      */
-    public function actualizarEncabezadoGrupo($idEncabezado, $datos, $fechaPagoManual = false) {
+    public function actualizarEncabezadoGrupo($idEncabezado, $datos, $marcasManuales = []) {
         $idPrincipal = $this->resolverIdPrincipal($idEncabezado);
         if (!$idPrincipal) return false;
 
@@ -845,10 +1050,14 @@ class Encabezado
         $this->registrarCambiosDeFecha($idsGrupo, $antes);
 
         /* La marca de "fijada a mano" se propaga al grupo entero porque la
-           fecha tambien se propaga: arriba, FECHA_EST_PAGO esta en
-           columnasPermitidas. Si el BIT quedara solo en la OC principal, la
-           proxima edicion recalcularia el de las hermanas y las pisaria. */
-        $this->marcarFechaPagoFijada($idsGrupo, $antes, $fechaPagoManual);
+           fecha tambien se propaga: arriba, FECHA_EST_PAGO, FECHA_ARR y
+           FECHA_DESP_ADU estan las tres en columnasPermitidas. Si el BIT
+           quedara solo en la OC principal, la proxima edicion recalcularia el
+           de las hermanas y las pisaria. */
+        $marcas = self::normalizarMarcasManuales($marcasManuales);
+        foreach ($marcas as $tipo => $fijada) {
+            $this->marcarFechaFijada($tipo, $idsGrupo, $antes, $fijada);
+        }
 
         // Si se movio el arribo, la distribucion automatica lo sigue.
         if (array_key_exists('FECHA_ARR', $datos) && !empty($datos['FECHA_ARR'])) {
@@ -982,15 +1191,19 @@ class Encabezado
 
             $this->registrarCambiosDeFecha([$id], $antes);
 
-            /* Si el usuario movio la fecha estimada de pago, queda fijada y el
-               recalculo de +5 dias deja de pisarla. Hacen falta las dos cosas
+            /* Si el usuario movio una de las tres fechas calculadas, queda
+               fijada y el recalculo deja de pisarla. Hacen falta las dos cosas
                -el marcador del front Y que el valor haya cambiado de verdad-;
-               ver marcarFechaPagoFijada(). */
-            $this->marcarFechaPagoFijada(
-                [$id],
-                $antes,
-                !empty($datosDeCabezera['fechaEstPagoManual'])
-            );
+               ver marcarFechaFijada(). */
+            $marcas = self::normalizarMarcasManuales([
+                'PAGO'            => !empty($datosDeCabezera['fechaEstPagoManual']),
+                'ARRIBO'          => !empty($datosDeCabezera['fechaArrManual']),
+                'NACIONALIZACION' => !empty($datosDeCabezera['fechaDespAduManual']),
+            ]);
+
+            foreach ($marcas as $tipo => $fijada) {
+                $this->marcarFechaFijada($tipo, [$id], $antes, $fijada);
+            }
 
             // Igual que en actualizarEncabezadoGrupo: mover el arribo arrastra
             // la distribucion automatica. Aca alcanza con esta OC, porque este
