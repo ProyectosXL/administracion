@@ -219,22 +219,25 @@ $(document).ready(function() {
         $('#modal-desglose-total-rem').text(formatoMoneda(clienteData.TOTAL_REMITO || 0));
         $('#modal-desglose-total-gral').text(formatoMoneda(clienteData.TOTAL_GENERAL || 0));
 
-        // 1. Renderizar Facturas
+        // 1. Renderizar Facturas / NCR
         let htmlFac = '';
         if (clienteData.FACTURAS && clienteData.FACTURAS.length > 0) {
             clienteData.FACTURAS.forEach(f => {
+                const esNC = (f.IMPORTE < 0 || (f.T_COMP && (f.T_COMP.includes('NC') || f.T_COMP.includes('NCR'))));
+                const badgeColor = esNC ? 'bg-danger text-white' : 'bg-secondary';
+                const textColor = esNC ? 'text-danger' : 'text-success';
                 htmlFac += `
                     <tr>
-                        <td><span class="badge bg-secondary font-monospace">${f.T_COMP}</span></td>
+                        <td><span class="badge ${badgeColor} font-monospace">${f.T_COMP}</span></td>
                         <td><strong class="font-monospace">${f.N_COMP}</strong></td>
                         <td>${formatoFecha(f.FECHA_EMIS)}</td>
                         <td>${formatoFecha(f.FECHA_PROB_COBRO)}</td>
-                        <td class="text-end fw-bold text-success">${formatoMoneda(f.IMPORTE)}</td>
+                        <td class="text-end fw-bold ${textColor}">${formatoMoneda(f.IMPORTE)}</td>
                     </tr>
                 `;
             });
         } else {
-            htmlFac = '<tr><td colspan="5" class="text-center text-muted py-3">No posee facturas pendientes en este momento.</td></tr>';
+            htmlFac = '<tr><td colspan="5" class="text-center text-muted py-3">No posee facturas ni notas de crédito pendientes en este momento.</td></tr>';
         }
         $('#cuerpo-tabla-desglose-facturas').html(htmlFac);
 
@@ -274,19 +277,21 @@ $(document).ready(function() {
         $('#modal-wpp-telefono').val(clienteData.TELEFONO_WPP || '');
         $('#modal-wpp-contacto-nombre').val(clienteData.CONTACTO_NOMBRE || '');
 
-        // Renderizar Lista de Facturas
+        // Renderizar Lista de Facturas / NCR
         let htmlFac = '';
         if (clienteData.FACTURAS && clienteData.FACTURAS.length > 0) {
             $('#cont-wpp-sel-facturas').removeClass('d-none');
             $('#chk-switch-todas-fac').prop('checked', true).prop('disabled', false);
             clienteData.FACTURAS.forEach((f, idx) => {
                 const facJson = encodeURIComponent(JSON.stringify(f));
+                const esNC = (f.IMPORTE < 0 || (f.T_COMP && (f.T_COMP.includes('NC') || f.T_COMP.includes('NCR'))));
+                const textClass = esNC ? 'text-danger' : 'text-success';
                 htmlFac += `
                     <div class="form-check small py-1 border-bottom border-light">
                         <input class="form-check-input chk-wpp-factura" type="checkbox" value="${facJson}" id="chk-wpp-fac-${idx}" data-importe="${f.IMPORTE || 0}" checked>
                         <label class="form-check-label d-flex justify-content-between align-items-center" for="chk-wpp-fac-${idx}">
                             <span><strong class="font-monospace">${f.T_COMP || 'FAC'} ${f.N_COMP}</strong> <small class="text-muted d-block">${formatoFecha(f.FECHA_EMIS)}</small></span>
-                            <span class="fw-bold text-success font-monospace ms-2">${formatoMoneda(f.IMPORTE)}</span>
+                            <span class="fw-bold ${textClass} font-monospace ms-2">${formatoMoneda(f.IMPORTE)}</span>
                         </label>
                     </div>
                 `;
@@ -294,7 +299,7 @@ $(document).ready(function() {
         } else {
             $('#cont-wpp-sel-facturas').addClass('d-none');
             $('#chk-switch-todas-fac').prop('checked', false).prop('disabled', true);
-            htmlFac = '<div class="text-muted small py-2 text-center">Sin facturas pendientes</div>';
+            htmlFac = '<div class="text-muted small py-2 text-center">Sin facturas / notas de crédito pendientes</div>';
         }
         $('#lista-wpp-facturas').html(htmlFac);
 
@@ -872,10 +877,10 @@ ${fechaActual}`;
         let htmlContainer = '';
         
         if (comprobantes && ((comprobantes.FACTURAS && comprobantes.FACTURAS.length > 0) || (comprobantes.REMITOS && comprobantes.REMITOS.length > 0))) {
-            // Tabla Facturas
+            // Tabla Facturas / NCR
             if (comprobantes.FACTURAS && comprobantes.FACTURAS.length > 0) {
                 htmlContainer += `
-                    <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-file-invoice-dollar me-1"></i> Facturas Incluidas</h6>
+                    <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-file-invoice-dollar me-1"></i> Facturas / Notas de Crédito Incluidas</h6>
                     <div class="table-responsive border rounded mb-4">
                         <table class="table table-hover table-striped mb-0 align-middle">
                             <thead class="table-light">
@@ -890,13 +895,16 @@ ${fechaActual}`;
                             <tbody>
                 `;
                 comprobantes.FACTURAS.forEach(f => {
+                    const esNC = (f.IMPORTE < 0 || (f.T_COMP && (f.T_COMP.includes('NC') || f.T_COMP.includes('NCR'))));
+                    const badgeColor = esNC ? 'bg-danger text-white' : 'bg-secondary';
+                    const textColor = esNC ? 'text-danger' : 'text-success';
                     htmlContainer += `
                         <tr>
-                            <td><span class="badge bg-secondary font-monospace">${f.T_COMP || 'FAC'}</span></td>
+                            <td><span class="badge ${badgeColor} font-monospace">${f.T_COMP || 'FAC'}</span></td>
                             <td><strong class="font-monospace">${f.N_COMP}</strong></td>
                             <td>${formatoFecha(f.FECHA_EMIS)}</td>
                             <td>${formatoFecha(f.FECHA_PROB_COBRO)}</td>
-                            <td class="text-end fw-bold text-success">${formatoMoneda(f.IMPORTE)}</td>
+                            <td class="text-end fw-bold ${textColor}">${formatoMoneda(f.IMPORTE)}</td>
                         </tr>
                     `;
                 });

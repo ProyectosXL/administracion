@@ -83,9 +83,69 @@ try {
         case 'listar_pendientes':
             $cod_vended_filtro = $_GET['cod_vended'] ?? 'TODOS';
 
-            // 1.1 Obtener Facturas Pendientes (Camino 1) desde RO_V_COBRANZA_PEND_MAYORISTAS
-            // Se filtra por vendedores Z3, Z4, Z5
+            // 1.1 Obtener Facturas y Notas de Crédito (NCR) Pendientes (Camino 1)
+            // Se filtran comprobantes de venta FAC y notas de crédito NCR para vendedores Z3, Z4, Z5
             $sql_facturas = "
+                WITH ComprobantesDescontables AS (            
+                    SELECT DISTINCT A.N_COMP            
+                    FROM GVA12 AS A            
+                    INNER JOIN GVA53 AS F ON A.N_COMP = F.N_COMP            
+                    WHERE            
+                        A.COD_CLIENT LIKE 'MA%'
+                        AND A.COD_VENDED IN ('Z3', 'Z4', 'Z5')
+                        AND A.FECHA_EMIS > GETDATE()-90            
+                        AND (F.COD_ARTICU LIKE 'X%' OR F.COD_ARTICU LIKE 'O%')            
+                        AND A.T_COMP IN ('FAC', 'NCP', 'NCR', 'NDP','ZD1','ZC1','REC')            
+                ),
+                BaseComprobantes AS (
+                    SELECT             
+                        A.COD_CLIENT,             
+                        B.RAZON_SOCI,             
+                        CAST(A.FECHA_EMIS AS DATE) AS FECHA_EMIS,             
+                        A.T_COMP,             
+                        A.N_COMP,             
+                        A.COD_VENDED,
+                        A.ESTADO,            
+                        D.DESC_PP_MAX AS DESC_PP,        
+                        D.DIAS_PP_MAX AS DIAS_PP,        
+                        D.MEDIO_PAGO_DEFAULT,        
+                        CAST(C.PPP AS FLOAT) AS PPP,               
+                        CAST(A.IMPORTE AS DECIMAL(18, 2)) AS IMPORTE,              
+                        CAST(DATEADD(day, 60, A.FECHA_EMIS) AS DATE) AS FECHA_PROB_COBRO,    
+                        CAST(A.IMPORTE * (1 -             
+                            CASE             
+                                WHEN F.N_COMP IS NOT NULL THEN            
+                                    CASE             
+                                        WHEN CAST((A.FECHA_EMIS + ISNULL(D.DIAS_PP_MAX, 0)) AS DATE) > CAST(GETDATE() AS DATE)             
+                                        THEN ISNULL(D.DESC_PP_MAX, 0)             
+                                        ELSE 0             
+                                    END            
+                                ELSE 0             
+                            END            
+                        ) AS DECIMAL(18, 2)) AS IMPORTE_NETO              
+                    FROM GVA12 AS A            
+                    INNER JOIN GVA14 AS B ON A.COD_CLIENT = B.COD_CLIENT            
+                    LEFT JOIN ComprobantesDescontables AS F ON A.N_COMP = F.N_COMP            
+                    LEFT JOIN (            
+                        SELECT               
+                            CASE WHEN GVA14.GRUPO_EMPR IS NULL OR GVA14.GRUPO_EMPR = '' THEN GC.COD_CLIENTE ELSE GVA14.GRUPO_EMPR END AS COD_CLIENTE,              
+                            ROUND(AVG(GC.PPP), 0) AS PPP               
+                        FROM GC_VIEW_PPP AS GC              
+                        INNER JOIN GVA14 ON GC.COD_CLIENTE = GVA14.COD_CLIENT              
+                        WHERE GC.FECHA_RECIBO >= GETDATE()-100               
+                          AND GVA14.HABILITADO = 1
+                        GROUP BY CASE WHEN GVA14.GRUPO_EMPR IS NULL OR GVA14.GRUPO_EMPR = '' THEN GC.COD_CLIENTE ELSE GVA14.GRUPO_EMPR END              
+                    ) AS C                
+                    ON CASE WHEN B.GRUPO_EMPR IS NULL OR B.GRUPO_EMPR = '' THEN A.COD_CLIENT ELSE B.GRUPO_EMPR END = C.COD_CLIENTE                
+                    LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES AS D ON A.COD_CLIENT = D.COD_CLIENT COLLATE Latin1_General_BIN              
+                    WHERE             
+                        A.COD_CLIENT LIKE 'MA%'             
+                        AND A.COD_VENDED IN ('Z3', 'Z4', 'Z5')
+                        AND A.FECHA_EMIS > GETDATE()-90            
+                        AND A.T_COMP IN ('FAC', 'NCR')      
+                        AND A.ESTADO <> 'CAN'
+                        AND B.HABILITADO = 1
+                )
                 SELECT 
                     v.COD_CLIENT,
                     v.RAZON_SOCI,
@@ -97,14 +157,13 @@ try {
                     CAST(ISNULL(s.SALDO_REAL * (v.IMPORTE_NETO / NULLIF(v.IMPORTE, 0)), v.IMPORTE_NETO) AS FLOAT) as SALDO_NETO,
                     v.FECHA_PROB_COBRO,
                     v.PPP
-                FROM RO_V_COBRANZA_PEND_MAYORISTAS v
+                FROM BaseComprobantes v
                 LEFT JOIN (
                     SELECT T_COMP, N_COMP, SUM(IMPORTE_VT - IMPORT_CAN) as SALDO_REAL 
                     FROM SJ_SALDOS_CC_DETALLE 
                     GROUP BY T_COMP, N_COMP
                 ) s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
-                WHERE v.COD_VENDED IN ('Z3', 'Z4', 'Z5')
-                  AND v.COD_CLIENT != 'FRCOBO'
+                WHERE v.COD_CLIENT != 'FRCOBO'
             ";
 
             if ($cod_vended_filtro !== 'TODOS' && in_array($cod_vended_filtro, ['Z3', 'Z4', 'Z5'])) {
@@ -137,8 +196,9 @@ try {
 
                     $tComp = strtoupper(trim($row['T_COMP'] ?? ''));
                     $saldo = (float)($row['SALDO_COMP'] ?? 0);
-                    $esNegativo = (strpos($tComp, 'NC') !== false || ($tComp === 'REC' && $saldo < 0));
-                    $montoReal = $esNegativo ? -abs($saldo) : abs($saldo);
+                    // Comprobantes que restan saldo: NC, NCR, NCP, NCD o REC negativo
+                    $esCredito = (strpos($tComp, 'NC') !== false || strpos($tComp, 'NCR') !== false || ($tComp === 'REC' && $saldo < 0));
+                    $montoReal = $esCredito ? -abs($saldo) : abs($saldo);
 
                     $clientes[$cod]['TOTAL_FACTURA'] += $montoReal;
                     $clientes[$cod]['CANT_FACTURAS']++;

@@ -65,7 +65,7 @@ include 'templates/layout/header.php';
                 <div class="col-xl-3 col-md-6">
                     <div class="card shadow-sm border-start border-success border-4 h-100">
                         <div class="card-body py-2 px-3">
-                            <div class="text-xs font-weight-bold text-success text-uppercase">Camino 1 (Facturas)</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase">Camino 1 (Facturas / NCR)</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-total-facturas">$ 0</div>
                         </div>
                     </div>
@@ -308,7 +308,7 @@ include 'templates/layout/header.php';
                 <ul class="nav nav-tabs nav-pills mb-3" id="desgloseTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold" id="desglose-facturas-tab" data-bs-toggle="tab" data-bs-target="#desglose-facturas" type="button" role="tab">
-                            <i class="fa-solid fa-file-invoice-dollar me-1 text-success"></i> Camino 1: Facturas Pendientes
+                            <i class="fa-solid fa-file-invoice-dollar me-1 text-success"></i> Camino 1: Facturas / NCR Pendientes
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
