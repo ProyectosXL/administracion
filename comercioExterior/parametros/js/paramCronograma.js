@@ -1,9 +1,15 @@
 /**
- * paramCronograma.js - Días de offset del cronograma de contenedores
+ * paramCronograma.js - Días de offset de las fechas derivadas
  *
- * Reemplazan los valores que estaban hardcodeados en
- * cronogramaDespachos/js/cronograma.js (45 / 7 / 3) y suman el nuevo
- * DIAS_ARR_DIST, que es el que proyecta la fecha de distribución.
+ * ESTOS VALORES SON LA ÚNICA FUENTE de la cadena de fechas. Ya no hay números
+ * de días escritos en ningún JS ni PHP del módulo: la cadena entera la calcula
+ * CronogramaFechas::cadenaDeFechas() leyendo esta tabla, y la usan tanto el
+ * cronograma como la carga inicial de despachos.
+ *
+ * ADEMÁS MUEVEN EL CASHFLOW DE ProyectosXL/finanzas, que lee FECHA_EST_PAGO y
+ * FECHA_DESP_ADU del maestro de importaciones y que va a leer esta misma tabla
+ * para proyectar contenedores que todavía no existen como fila. Cambiar un
+ * valor acá no es un ajuste cosmético: corre plata de mes en el tablero.
  */
 
 let paramCronogramaCargados = false;
@@ -62,6 +68,36 @@ function renderizarParamCronograma(parametros) {
 
     parametros.forEach(p => {
         const clave = escaparHtmlParam(p.CLAVE);
+
+        /* Los parámetros retirados siguen en la tabla —no se borran datos— pero
+           no los lee nadie. Se muestran deshabilitados y con el motivo, en vez
+           de ofrecer un input y un botón que el servidor va a rechazar: una
+           perilla que no hace nada es peor que ninguna perilla.
+
+           El marcador es la propia DESCRIPCION, que pone el script 15. Una
+           lista de claves retiradas acá sería un cuarto lugar donde acordarse
+           de actualizar algo. */
+        const retirado = /^SIN USO/i.test(p.DESCRIPCION || '');
+
+        if (retirado) {
+            $tbody.append(`
+                <tr data-clave="${clave}" class="table-secondary text-muted">
+                    <td><code><s>${clave}</s></code></td>
+                    <td><em>${escaparHtmlParam(p.DESCRIPCION || '')}</em></td>
+                    <td>
+                        <div class="input-group input-group-sm" style="max-width: 130px;">
+                            <input type="number" class="form-control"
+                                   value="${parseInt(p.VALOR, 10)}" disabled>
+                            <span class="input-group-text">días</span>
+                        </div>
+                    </td>
+                    <td class="small">${p.FECHA_MOD ? escaparHtmlParam(p.FECHA_MOD) : '-'}</td>
+                    <td><span class="badge bg-secondary">sin uso</span></td>
+                </tr>
+            `);
+            return;
+        }
+
         $tbody.append(`
             <tr data-clave="${clave}">
                 <td><code>${clave}</code></td>
@@ -126,7 +162,12 @@ $(document).on('click', '.btn-guardar-param-cronograma', function () {
                 Swal.fire({
                     icon: 'success',
                     title: 'Parámetro actualizado',
-                    text: 'Se aplica a las próximas estimaciones del cronograma.',
+                    /* El mensaje decía "se aplica a las próximas estimaciones
+                       del cronograma" y eso ya no es todo lo que pasa: la misma
+                       cadena la usa la carga inicial, y las fechas que escribe
+                       las lee el cashflow de Finanzas. */
+                    text: 'Se aplica a las fechas automáticas del cronograma y de la carga '
+                        + 'de despachos. Las fechas fijadas a mano no se tocan.',
                     timer: 2000,
                     showConfirmButton: false
                 });

@@ -33,15 +33,22 @@ let resumenAgruparPor = 'rubro'; // 'rubro' | 'proveedor'
 let resumenProveedoresSeleccionados = []; // array de COD_PROVEE
 let resumenEstadosSeleccionados = ESTADOS_PENDIENTES.slice();
 
-// Defaults de red: si el endpoint no los trae, son los mismos valores que
-// antes estaban hardcodeados en este archivo.
-let parametrosDias = {
-    DIAS_EMB_ARR: 45,
-    DIAS_ARR_DESP: 7,
-    DIAS_DESP_REC: 2,   // recepción estimada = arribo + 9
-    DIAS_ARR_DIST: 10,  // distribución estimada = arribo + 10, un día después
-    DIAS_REC_DIST: 1    // con recepción REAL, al día siguiente
-};
+/* Días de cada tramo. ARRANCA VACÍO Y LO LLENA EL SERVIDOR: lo trae
+   obtenerDespachos.php desde RO_T_IMPORTACIONES_PARAM_CRONOGRAMA.
+
+   ACÁ HABÍA DEFAULTS —45/7/2/10/1— "por si el endpoint no los trae". Eran los
+   mismos números que tenían CronogramaFechas::obtenerParametros() y
+   CronogramaDespachos::obtenerParametros(), y eran el problema: mientras la
+   tabla decía DIAS_ARR_DESP = 7 y la carga inicial calculaba arribo + 2, nadie
+   se enteró durante meses porque los valores de respaldo eran plausibles.
+   Cuando el número de respaldo es creíble, un parámetro faltante no se ve.
+
+   Sin parámetros no se dibuja ninguna fecha estimada y la pantalla lo dice.
+   Es ruidoso a propósito. */
+let parametrosDias = {};
+
+/** Claves que la base no tiene, si falta alguna. Las informa el endpoint. */
+let parametrosFaltantes = [];
 
 // Configuración de iconos por estado
 const ICONOS_ESTADOS = {
@@ -769,6 +776,15 @@ function evaluarCoherencia(campo, fechaNueva, despacho) {
 function calcularImpactoCascada(campo, fechaNueva, grupo) {
     if (campo !== 'FECHA_ARR') return [];
 
+    /* Sin parametros no se puede anticipar nada. Se devuelve vacio y el modal
+       no muestra la cascada, en vez de listar fechas NaN: la unica lectura
+       posible de "distribucion nueva: Invalid date" es que el sistema esta
+       roto, cuando lo unico que falta es una fila de configuracion. */
+    const claves = ['DIAS_ARR_DESP', 'DIAS_DESP_REC', 'DIAS_REC_DIST'];
+    if (claves.some(k => parametrosDias[k] === undefined)) {
+        return [];
+    }
+
     return grupo.map(d => {
         if (d.DIST_ORIGEN !== 'A') {
             return {
@@ -779,10 +795,15 @@ function calcularImpactoCascada(campo, fechaNueva, grupo) {
                     : 'fue movida a mano'
             };
         }
-        // Misma regla que CronogramaFechas::calcularDistribucion.
+        /* Misma regla que CronogramaFechas::calcularDistribucion: la
+           distribución cuelga SIEMPRE de la recepción. Sin recepción real se
+           usa la estimada de la cadena (arribo + DIAS_ARR_DESP + DIAS_DESP_REC),
+           que es lo que reemplazó al viejo arribo + DIAS_ARR_DIST. */
         const nueva = d.FECHA_REC
             ? sumarDias(d.FECHA_REC, parametrosDias.DIAS_REC_DIST)
-            : sumarDias(fechaNueva, parametrosDias.DIAS_ARR_DIST);
+            : sumarDias(fechaNueva, parametrosDias.DIAS_ARR_DESP
+                                  + parametrosDias.DIAS_DESP_REC
+                                  + parametrosDias.DIAS_REC_DIST);
 
         return { oc: d.ORDEN_COMPRA, intacta: false, anterior: d.FECHA_DISTRI, nueva: nueva };
     });
@@ -1674,6 +1695,18 @@ function cargarDespachos() {
                 if (response.parametros) {
                     parametrosDias = $.extend({}, parametrosDias, response.parametros);
                 }
+                parametrosFaltantes = response.faltanParam || [];
+
+                /* Si falta una clave, el calendario sigue mostrando las fechas
+                   REALES -que están en la base- pero no las estimadas, y lo
+                   dice. Antes se rellenaba con los defaults del archivo y el
+                   usuario veía una proyección que no distinguía de una buena. */
+                if (parametrosFaltantes.length) {
+                    mostrarError('Faltan parámetros de fechas (' +
+                        parametrosFaltantes.join(', ') +
+                        '). Las fechas estimadas no se pueden calcular: corré ' +
+                        'comercioExterior/sql/12_parametros_fechas_derivadas.sql en esta base.');
+                }
                 // Las opciones del combo salen de los despachos ya traidos,
                 // asi que se arma recien aca.
                 inicializarFiltroContenedor();
@@ -2056,9 +2089,9 @@ function renderizarPanelProximosArribos() {
 function calcularFechaArriboEstimada(despacho) {
     if (despacho.FECHA_ARR) return despacho.FECHA_ARR;
 
-    // Offset parametrizable (DIAS_EMB_ARR), antes 45 hardcodeado.
-    const base = despacho.FECHA_EMB || despacho.FECHA_EST_EMB;
-    return base ? sumarDias(base, parametrosDias.DIAS_EMB_ARR) : null;
+    // El arribo estimado sale de la cadena que calculo el servidor, igual que
+    // el resto. Acá se sumaba DIAS_EMB_ARR a mano, y antes de eso un 45 fijo.
+    return calcularFechasEstimadas(despacho).arribo;
 }
 
 function crearCardProximoArribo(despacho) {
@@ -2619,43 +2652,37 @@ function crearTimeline(despacho) {
 }
 
 /**
- * Cadena de fechas estimadas a partir del embarque.
+ * Cadena de fechas estimadas de un despacho.
  *
- * Los offsets salen de parametrosDias, que llega del endpoint y se administra
- * desde Parametros > Cronograma. Antes estaban hardcodeados 45 / 7 / 3 aca y
- * el 45 tambien en calcularFechaArriboEstimada().
+ * YA NO CALCULA NADA: la cadena viene resuelta del servidor, en FECHAS_EST,
+ * calculada por CronogramaFechas::cadenaDeFechas().
  *
- * El arribo se calcula desde el embarque real si existe, y si no desde el
- * estimado. La distribucion cuelga del arribo, sea real o estimado.
+ * Esta funcion sumaba los dias por su cuenta —45 / 7 / 3 hardcodeados, despues
+ * leidos de parametrosDias— mientras js/cargaInicial.js hacia la misma cuenta
+ * con 45 / 5 / 2. Con los mismos datos, el calendario y gestion de despachos
+ * mostraban nacionalizaciones distintas para el mismo contenedor. Sacar los
+ * numeros no alcanzaba: mientras la suma estuviera escrita dos veces, las dos
+ * pantallas se podian volver a separar por cualquier detalle.
+ *
+ * SE MANTIENE LA FUNCION, y no se reemplazan las llamadas por
+ * `despacho.FECHAS_EST`, porque ademas normaliza: un despacho que llego de
+ * otro lado —o de una respuesta vieja cacheada— sigue devolviendo el objeto con
+ * las cuatro claves en null en vez de romper a quien lo lee.
+ *
+ * La distribucion de esta cadena y la que se pinta -despacho.FECHA_DISTRI, que
+ * deriva derivarDistribucion()- son ahora LA MISMA REGLA: recepcion (real o
+ * estimada) + DIAS_REC_DIST. Convivieron un rato con reglas distintas mientras
+ * existio DIAS_ARR_DIST.
  */
 function calcularFechasEstimadas(despacho) {
-    const fechas = {
-        arribo: null,
-        despacho: null,
-        distribucion: null,
-        recepcion: null
+    const est = (despacho && despacho.FECHAS_EST) ? despacho.FECHAS_EST : {};
+
+    return {
+        arribo:       est.arribo          || null,
+        despacho:     est.nacionalizacion || null,
+        recepcion:    est.recepcion       || null,
+        distribucion: est.distribucion    || null
     };
-
-    const base = despacho.FECHA_EMB || despacho.FECHA_EST_EMB;
-    if (!base) return fechas;
-
-    fechas.arribo      = sumarDias(base, parametrosDias.DIAS_EMB_ARR);
-    fechas.despacho    = sumarDias(fechas.arribo, parametrosDias.DIAS_ARR_DESP);
-    fechas.recepcion   = sumarDias(fechas.despacho, parametrosDias.DIAS_DESP_REC);
-
-    // La distribucion es la salida del deposito hacia los locales, o sea que
-    // va DESPUES de la recepcion:
-    //   - con recepcion real, se distribuye al dia siguiente
-    //   - sin recepcion, arribo + 10, que cae un dia despues de la
-    //     recepcion estimada (arribo + 9)
-    if (despacho.FECHA_REC) {
-        fechas.distribucion = sumarDias(despacho.FECHA_REC, parametrosDias.DIAS_REC_DIST);
-    } else {
-        const arriboBase = despacho.FECHA_ARR || fechas.arribo;
-        fechas.distribucion = sumarDias(arriboBase, parametrosDias.DIAS_ARR_DIST);
-    }
-
-    return fechas;
 }
 
 function verificarDemora(fechaReal, fechaEstimada) {

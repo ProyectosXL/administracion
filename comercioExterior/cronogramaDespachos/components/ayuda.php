@@ -377,7 +377,7 @@ if (session_status() == PHP_SESSION_NONE) {
                                         <li>El contenedor se carga en el buque</li>
                                         <li>Se confirma la <strong>fecha real de embarque</strong></li>
                                         <li>Desde este momento, las fechas siguientes pasan de estimadas a calculadas</li>
-                                        <li>El contenedor inicia su tránsito marítimo (aprox. 45 días)</li>
+                                        <li>El contenedor inicia su tránsito marítimo: los días los fija DIAS_EMB_ARR en Parámetros &rsaquo; Cronograma</li>
                                     </ul>
                                 </div>
                             </div>

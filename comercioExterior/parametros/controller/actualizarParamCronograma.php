@@ -33,9 +33,18 @@ try {
 
     // Whitelist: la clave nunca se interpola ni se acepta libre. Ademas evita
     // que se den de alta claves sueltas que el cronograma no sabe leer.
+    //
+    // DIAS_EMB_PAGO entra con el script 12: es la regla de "fecha estimada de
+    // pago = embarque + N", que hasta ahora no era un parametro sino un 5
+    // escrito en js/cargaInicial.js y repetido en una constante de PHP.
+    //
+    // DIAS_ARR_DIST NO ESTA MAS: la distribucion se deriva de la recepcion en
+    // los dos caminos de calculo, asi que ese valor ya no lo lee nadie. La fila
+    // sigue en la tabla -el script 15 la marca SIN USO en vez de borrarla- pero
+    // dejarla editable seria ofrecer una perilla desconectada.
     $clavesValidas = [
-        'DIAS_EMB_ARR', 'DIAS_ARR_DESP', 'DIAS_DESP_REC',
-        'DIAS_ARR_DIST', 'DIAS_REC_DIST'
+        'DIAS_EMB_ARR', 'DIAS_EMB_PAGO', 'DIAS_ARR_DESP', 'DIAS_DESP_REC',
+        'DIAS_REC_DIST'
     ];
     $clave = trim($data['clave']);
 

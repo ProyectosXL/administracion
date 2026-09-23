@@ -1,23 +1,23 @@
 <?php
 /**
- * Vuelve la Fecha Est. Pago de un contenedor al cálculo automático.
+ * Vuelve al cálculo automático una de las tres fechas que el sistema calcula:
+ * la estimada de pago, el arribo o la nacionalización.
  *
- * Apaga FECHA_PAGO_CONF, limpia quién y cuándo la fijó, recalcula la fecha con
- * los días que diga DIAS_EMB_PAGO sobre la fecha base de embarque y deja el
- * cambio en RO_T_IMPORTACIONES_FECHAS_HIST con ORIGEN = 'GESTION_DESPACHOS'.
+ * GENERALIZA A controller/revertirFechaPagoAuto.php, que hacía esto mismo solo
+ * para el pago. Las tres fechas tienen ahora una marca de "fijada a mano" que
+ * sobrevive al cierre de la pantalla -scripts 10 y 11-, así que las tres
+ * necesitan la puerta de salida: sin ella, una fecha marcada por error queda
+ * congelada para siempre.
  *
- * QUEDA COMO ALIAS de controller/revertirFechaAuto.php, que hace lo mismo para
- * las tres fechas calculadas. Se conserva el archivo, y no solo el método, por
- * si quedó alguna pantalla o marcador apuntando a esta URL: borrarlo
- * devolvería un 404 sin explicación en vez de la fecha revertida.
+ * Y HAY FECHAS MARCADAS POR ERROR A PROPÓSITO: el backfill del script 11 marca
+ * como manual toda FECHA_DESP_ADU que no se explique con la regla vieja,
+ * porque equivocarse para ese lado se arregla con un clic y equivocarse para
+ * el otro deja que el recálculo pise una corrección hecha a mano. Este
+ * endpoint es ese clic.
  *
  * DESCARTA UN DATO CARGADO A MANO, así que es POST y la pantalla pide
  * confirmación antes de llamarlo. Un GET lo haría alcanzable desde una
  * precarga del navegador.
- *
- * TODO PARAMETRIZADO. No sigue el armado de SQL por concatenación de
- * actualizarFechaPagoController.php: ese es código existente que esta rama no
- * refactoriza, pero tampoco replica.
  */
 
 if (session_status() == PHP_SESSION_NONE) {
@@ -46,8 +46,16 @@ try {
 
     require_once '../class/encabezado.php';
 
+    /* El tipo se valida contra FECHAS_FIJABLES y no se pasa crudo: es lo que
+       elige qué columnas toca el UPDATE de revertirFechaAuto(). */
+    $tipo = isset($_POST['tipo']) ? strtoupper(trim($_POST['tipo'])) : 'PAGO';
+
+    if (!isset(Encabezado::FECHAS_FIJABLES[$tipo])) {
+        throw new Exception('Tipo de fecha no reconocido: ' . $tipo);
+    }
+
     $encabezado = new Encabezado();
-    $resultado  = $encabezado->revertirFechaPagoAuto($id);
+    $resultado  = $encabezado->revertirFechaAuto($id, $tipo);
 
     /* La fecha vuelve en los dos formatos: 'Y-m-d' es lo que guardó la base y
        'd/m/Y' es lo que el input de la pantalla muestra. Convertirla en el JS
@@ -60,19 +68,22 @@ try {
         $fechaPantalla = (count($p) === 3) ? ($p[2] . '/' . $p[1] . '/' . $p[0]) : $fechaISO;
     }
 
+    $etiqueta = Encabezado::FECHAS_FIJABLES[$tipo]['etiqueta'];
+
     echo json_encode([
         'success'       => true,
+        'tipo'          => $tipo,
         'fecha'         => $fechaISO,
         'fechaPantalla' => $fechaPantalla,
         'ocs'           => $resultado['ocs'],
         'aviso'         => $resultado['aviso'],
         'message'       => $resultado['aviso'] !== null
             ? $resultado['aviso']
-            : 'La fecha estimada de pago volvió al cálculo automático',
+            : 'La ' . $etiqueta . ' volvió al cálculo automático',
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $e) {
-    error_log('Error en revertirFechaPagoAuto.php: ' . $e->getMessage());
+    error_log('Error en revertirFechaAuto.php: ' . $e->getMessage());
     http_response_code(400);
     echo json_encode([
         'success' => false,

@@ -3,27 +3,47 @@
  * Maneja cálculos automáticos, validaciones y gestión de órdenes de compra
  */
 
-// ========== VARIABLES GLOBALES Y FLAGS ==========
+/* ==========================================================================
+   VARIABLES GLOBALES Y FLAGS
+
+   LOS TRES FLAGS DE "FIJADA A MANO" YA NO SON FLAGS DE MEMORIA. Salen del
+   maestro al abrir la pantalla:
+
+       fechaEstPagoIsManual   <- FECHA_PAGO_CONF   (sql/10)
+       fechaArriboIsManual    <- ETA_CONFIRMADA    (ya existía; sql/11 le suma
+                                                    quién y cuándo)
+       fechaDespachoIsManual  <- FECHA_DESP_CONF   (sql/11)
+
+   Antes vivían solo acá y arrancaban en false en cada apertura. Para que el
+   recálculo no pisara una corrección hecha a mano, cargarDatosDespacho() los
+   encendía a ciegas: "si la fila trae FECHA_ARR, marcala como manual". Eso
+   protegía, pero al precio de que NINGUNA fecha ya guardada se recalculara
+   nunca más —ni al mover el ETD, ni al cambiar un parámetro—. La pantalla no
+   distinguía "esto lo decidió alguien" de "esto vino así".
+   ========================================================================== */
 let fechaArriboIsManual = false;
-let fechaPagoIsManual = false;
 let fechaDespachoIsManual = false;
-/* Fecha Est. Pago fijada a mano.
-   YA NO ES UN FLAG DE MEMORIA: se inicializa desde datos.FECHA_PAGO_CONF, el
-   BIT del maestro que creó sql/10_fecha_pago_manual.sql. Antes vivía solo acá,
-   así que una fecha guardada a mano volvía a nacer automática en la siguiente
-   apertura de la pantalla, y el recálculo de +5 días la pisaba. */
 let fechaEstPagoIsManual = false;
 
-/* Quién la fijó y cuándo, para el tooltip del badge. Vienen del maestro y no se
-   calculan acá. */
+/* Quién fijó cada fecha y cuándo, para el tooltip de los badges. Vienen del
+   maestro y no se calculan acá. */
 let fechaEstPagoConfUsuario = null;
 let fechaEstPagoConfFecha = null;
+let fechaArrConfUsuario = null;
+let fechaArrConfFecha = null;
+let fechaDespConfUsuario = null;
+let fechaDespConfFecha = null;
 
 /* ETA en firme (ETA_CONFIRMADA del maestro).
    Reemplaza al checkbox "ETA Confirmada": ahora se enciende SOLA al editar la
    ETA a mano. El campo no se deprecia —lo leen el cronograma, la validación de
    coherencia de CronogramaFechas::esFechaReal() y las dos pestañas del
-   cashflow—; lo que cambia es cómo se enciende, no qué significa. */
+   cashflow—; lo que cambia es cómo se enciende, no qué significa.
+
+   ES LA MISMA COSA QUE fechaArriboIsManual y se mantienen las dos variables a
+   propósito: "fijada a mano" es lo que decide si se recalcula, y "ETA
+   confirmada" es lo que se guarda y lo que leen las otras pantallas. Hoy
+   coinciden porque el único modo de confirmar una ETA es editarla. */
 let etaConfirmada = false;
 let cargandoDatos = false; // Flag para evitar marcar como manual durante carga inicial
 
@@ -181,11 +201,15 @@ function validarCampoFechaHabil($campo) {
         // Mostrar alerta informativa
         mostrarAdvertenciaFecha($campo, fecha, fechaSugerida, motivo);
         
-        // Disparar recálculos dependientes según el campo
-        const campoId = $campo.attr('id');
-        if (campoId === 'fechaArr' && !fechaDespachoIsManual) {
-            // Si cambió fecha arribo, recalcular fecha despacho
-            recalcularFechaDespacho();
+        /* Correr el arribo al siguiente día hábil mueve la nacionalización,
+           que cuelga de él. Se vuelve a pedir la cadena entera en vez de
+           recalcular solo ese campo: la cuenta la hace el servidor.
+
+           NO se pregunta acá por fechaDespachoIsManual -como hacía el código
+           viejo- porque de eso ya se ocupa aplicarCadenaFechas(), que es el
+           único lugar donde se decide qué campo se pisa y cuál no. */
+        if ($campo.attr('id') === 'fechaArr') {
+            recalcularTodasLasFechas();
         }
     } else {
         ocultarAdvertenciaFecha($campo);
@@ -223,173 +247,313 @@ function ocultarAdvertenciaFecha($campo) {
     $campo.removeClass('campo-advertencia-fecha');
 }
 
-// ========== FUNCIONES DE CÁLCULO AUTOMÁTICO ==========
+/* ==========================================================================
+   LAS FECHAS DERIVADAS LAS CALCULA EL SERVIDOR
+
+   Acá había tres funciones que sumaban días con los números escritos en el
+   código: arribo = base + 45, pago = base + 5, nacionalización = arribo + 2.
+   El cronograma hacía la misma cuenta con otros números —45 y 7, leídos de
+   RO_T_IMPORTACIONES_PARAM_CRONOGRAMA— así que el mismo contenedor tenía dos
+   fechas de nacionalización distintas según por qué pantalla se lo mirara.
+
+   Ahora hay un solo cálculo, en CronogramaFechas::cadenaDeFechas(), y este
+   archivo NO TIENE NINGÚN NÚMERO DE DÍAS. Le pide la cadena al servidor cada
+   vez que cambia una fecha base y aplica lo que le devuelve.
+
+   POR QUÉ PEDIR LA CADENA Y NO LOS DÍAS. Traerse los días para sumar acá
+   habría sacado los números del JS pero no la aritmética, y con la aritmética
+   duplicada las dos pantallas pueden volver a separarse por cualquier
+   detalle. Pidiendo la cadena, la única forma de que difieran es que difieran
+   los parámetros. Los días llegan igual en la respuesta, pero solo para los
+   carteles ("+45 días"), nunca para calcular.
+   ========================================================================== */
+
+/** Días de cada tramo, como los devolvió el servidor. Solo para mostrar. */
+let parametrosDias = {};
+
+/** Claves de parámetros que la base no tiene, si falta alguna. */
+let parametrosFaltantes = [];
+
+/* La última petición en vuelo. Cambiar el ETD dispara varios handlers
+   -dp.change, change y apply.daterangepicker sobre el mismo input- y sin esto
+   salen tres pedidos cuyas respuestas pueden llegar desordenadas y dejar la
+   pantalla con la cadena de una fecha base vieja. */
+let cadenaEnVuelo = null;
+let cadenaSecuencia = 0;
 
 /**
- * Obtiene la fecha base según LÓGICA PRIORITARIA:
- * 1️⃣ Si existe Fecha de Embarque (ETD - FECHA_EMB) → usarla
- * 2️⃣ Si NO existe → usar Fecha Estimada de Embarque (FECHA_EST_EMB)
+ * Convierte un input DD/MM/YYYY al AAAA-MM-DD que espera el servidor.
+ * Devuelve '' si el campo está vacío o la fecha no es válida.
  */
-function obtenerFechaBase() {
-    // 1️⃣ PRIORIDAD: Fecha de Embarque real ETD (fechaEmb = FECHA_EMB)
-    const fechaEmb = $('#fechaEmb').val();
-    if (fechaEmb && fechaEmb.trim() !== '') {
-        return moment(fechaEmb, 'DD/MM/YYYY');
-    }
-    
-    // 2️⃣ FALLBACK: Fecha Estimada de Embarque (fechaEstEmb = FECHA_EST_EMB)
-    const fechaEstEmb = $('#fechaEstEmb').val();
-    if (fechaEstEmb && fechaEstEmb.trim() !== '') {
-        return moment(fechaEstEmb, 'DD/MM/YYYY');
-    }
-    
-    return null;
+function fechaInputAISO(selector) {
+    const valor = $(selector).val();
+    if (!valor || valor.trim() === '') return '';
+
+    const m = moment(valor.trim(), 'DD/MM/YYYY', true);
+    return m.isValid() ? m.format('YYYY-MM-DD') : '';
 }
 
 /**
- * Suma días a una fecha y retorna en formato DD/MM/YYYY
+ * Pide al servidor la cadena de fechas y la aplica a los campos.
+ *
+ * QUÉ MANDA. Las dos fechas de embarque -la prioridad ETD sobre estimada la
+ * resuelve el servidor, que es donde vive esa regla-, más el arribo y la
+ * recepción cuando son hechos y no proyecciones:
+ *
+ *   - El arribo va SOLO si está fijado a mano o confirmado. Si va, la
+ *     nacionalización cuelga de él. Si no fuera así, a un contenedor con la
+ *     ETA confirmada por la naviera se le calcularía la nacionalización sobre
+ *     un arribo proyectado que ya se sabe que no va a pasar.
+ *
+ * QUÉ APLICA. Solo los campos que NO están fijados a mano. Esa decisión se
+ * toma acá y no en el servidor a propósito: el servidor devuelve la cadena
+ * completa —el cronograma la necesita entera— y cada pantalla decide qué
+ * pisar.
  */
-function sumarDias(fechaMoment, dias) {
-    if (!fechaMoment || !fechaMoment.isValid()) return '';
-    return fechaMoment.clone().add(dias, 'days').format('DD/MM/YYYY');
-}
+function recalcularTodasLasFechas() {
+    const datos = {
+        fechaEmb:    fechaInputAISO('#fechaEmb'),
+        fechaEstEmb: fechaInputAISO('#fechaEstEmb')
+    };
 
-/**
- * Recalcula la Fecha de Arribo - ETA (Fecha base + 45 días)
- * Usa fecha de embarque real si existe, sino fecha estimada
- */
-function recalcularFechaArribo() {
-    if (fechaArriboIsManual) {
-        console.log('Fecha Arribo en modo manual, no se recalcula');
-        return; // No recalcular si está en modo manual
+    /* El arribo entra a la cadena solo cuando es un hecho. Con el arribo
+       automático, mandarlo sería circular: el servidor lo devolvería igual
+       que como se lo mandamos y la nacionalización nunca seguiría al ETD. */
+    if (fechaArriboIsManual || etaConfirmada) {
+        datos.fechaArr = fechaInputAISO('#fechaArr');
     }
-    
-    const fechaBase = obtenerFechaBase();
-    console.log('Recalculando Fecha Arribo. Fecha base:', fechaBase ? fechaBase.format('DD/MM/YYYY') : 'null');
-    
-    if (fechaBase) {
-        const nuevaFechaArribo = sumarDias(fechaBase, 45);
-        console.log('Nueva Fecha Arribo calculada:', nuevaFechaArribo);
-        $('#fechaArr').val(nuevaFechaArribo);
-        
-        // Sincronizar datepicker
-        const $picker = $('#fechaArr').data('daterangepicker');
-        if ($picker && nuevaFechaArribo) {
-            $picker.setStartDate(moment(nuevaFechaArribo, 'DD/MM/YYYY'));
-            $picker.setEndDate(moment(nuevaFechaArribo, 'DD/MM/YYYY'));
-        }
-        
-        marcarCampoCalculado('#fechaArr');
-        
-        // Validar fecha hábil después de recalcular (si no estamos cargando datos)
-        if (!cargandoDatos) {
-            setTimeout(() => validarCampoFechaHabil($('#fechaArr')), 100);
-        }
-        
-        // Al cambiar fecha arribo, recalcular fecha despacho si no es manual
-        console.log('Recalculando Fecha Despacho desde recalcularFechaArribo');
-        recalcularFechaDespacho();
-    } else {
-        $('#fechaArr').val('');
-    }
-}
 
-/**
- * Recalcula la Fecha de Pago (Fecha base + 5 días)
- * Usa fecha de embarque real si existe, sino fecha estimada
- */
-function recalcularFechaPago() {
-    if (fechaPagoIsManual) {
-        console.log('Fecha Pago en modo manual, no se recalcula');
+    if (!datos.fechaEmb && !datos.fechaEstEmb && !datos.fechaArr) {
+        // Sin ninguna fecha de la que colgar, no hay nada que pedir ni que
+        // limpiar: los campos quedan como estén.
         return;
     }
-    
-    const fechaBase = obtenerFechaBase();
-    console.log('Recalculando Fecha Pago. Fecha base:', fechaBase ? fechaBase.format('DD/MM/YYYY') : 'null');
-    
-    if (fechaBase) {
-        const nuevaFechaPago = sumarDias(fechaBase, 5);
-        console.log('Nueva Fecha Pago calculada:', nuevaFechaPago);
-        $('#fechaPago').val(nuevaFechaPago);
-        marcarCampoCalculado('#fechaPago');
-    } else {
-        $('#fechaPago').val('');
+
+    const secuencia = ++cadenaSecuencia;
+
+    if (cadenaEnVuelo && cadenaEnVuelo.abort) {
+        cadenaEnVuelo.abort();
+    }
+
+    cadenaEnVuelo = $.ajax({
+        url: '../controller/calcularCadenaFechas.php',
+        method: 'GET',
+        dataType: 'json',
+        data: datos,
+        success: function (r) {
+            // Llegó una respuesta vieja: la de la fecha base anterior. Se
+            // descarta, porque aplicarla dejaría la pantalla mintiendo.
+            if (secuencia !== cadenaSecuencia) return;
+
+            if (!r || !r.success) {
+                mostrarErrorCadenaFechas(r && r.message);
+                return;
+            }
+
+            parametrosDias      = r.parametros || {};
+            parametrosFaltantes = r.faltan || [];
+
+            if (parametrosFaltantes.length) {
+                mostrarErrorCadenaFechas(r.message);
+                return;
+            }
+
+            aplicarCadenaFechas(r.pantalla || {});
+        },
+        error: function (xhr, estado) {
+            if (estado === 'abort') return;   // la canceló un pedido más nuevo
+
+            let msg = 'No se pudieron calcular las fechas automáticas.';
+            try { msg = JSON.parse(xhr.responseText).message || msg; } catch (e) {}
+            mostrarErrorCadenaFechas(msg);
+        }
+    });
+}
+
+/**
+ * Escribe en los campos las fechas que devolvió el servidor.
+ *
+ * NO TOCA LAS FIJADAS A MANO. Es la razón de ser de los tres flags, que desde
+ * los scripts 10 y 11 ya no viven solo en memoria: salen del maestro al abrir
+ * la pantalla, así que una fecha corregida a mano sigue estando corregida
+ * mañana.
+ *
+ * @param {Object} pantalla fechas en DD/MM/YYYY, de la respuesta del servidor
+ */
+function aplicarCadenaFechas(pantalla) {
+    if (!fechaArriboIsManual && !etaConfirmada) {
+        escribirFechaCalculada('#fechaArr', pantalla.arribo);
+    }
+
+    if (!fechaEstPagoIsManual) {
+        escribirFechaCalculada('#fechaEstPago', pantalla.pago);
+    }
+
+    if (!fechaDespachoIsManual) {
+        escribirFechaCalculada('#fechaDespAdu', pantalla.nacionalizacion);
     }
 }
 
-
 /**
- * Recalcula la Fecha Estimada de Pago (Fecha base + 5 días)
- * Usa fecha de embarque real si existe, sino fecha estimada
+ * Pone una fecha calculada en un campo: valor, datepicker, estilo y aviso de
+ * día no hábil.
+ *
+ * EL CORRIMIENTO A DÍA HÁBIL SIGUE SIENDO DE ACÁ, no del servidor. La cadena
+ * son días corridos; si el resultado cae sábado, domingo o feriado, esta
+ * pantalla lo corre al siguiente hábil y AVISA. Subir eso al servidor
+ * cambiaría de golpe todas las fechas que dibuja el cronograma, que hoy no
+ * corre ninguna, y esta entrega cambia la nacionalización y nada más.
  */
-function recalcularFechaEstimadaPago() {
-    if (fechaEstPagoIsManual) {
-        console.log('Fecha Est. Pago en modo manual, no se recalcula');
+function escribirFechaCalculada(selector, fecha) {
+    const $campo = $(selector);
+    if (!$campo.length) return;
+
+    if (!fecha) {
+        $campo.val('');
         return;
     }
-    
-    const fechaBase = obtenerFechaBase();
-    console.log('Recalculando Fecha Est. Pago. Fecha base:', fechaBase ? fechaBase.format('DD/MM/YYYY') : 'null');
-    
-    if (fechaBase) {
-        const nuevaFechaEstPago = sumarDias(fechaBase, 5);
-        console.log('Nueva Fecha Est. Pago calculada:', nuevaFechaEstPago);
-        $('#fechaEstPago').val(nuevaFechaEstPago);
-        
-        // Sincronizar datepicker
-        const $picker = $('#fechaEstPago').data('daterangepicker');
-        if ($picker && nuevaFechaEstPago) {
-            $picker.setStartDate(moment(nuevaFechaEstPago, 'DD/MM/YYYY'));
-            $picker.setEndDate(moment(nuevaFechaEstPago, 'DD/MM/YYYY'));
+
+    $campo.val(fecha);
+
+    const $picker = $campo.data('daterangepicker');
+    if ($picker) {
+        const m = moment(fecha, 'DD/MM/YYYY');
+        if (m.isValid()) {
+            $picker.setStartDate(m);
+            $picker.setEndDate(m);
         }
-        
-        marcarCampoCalculado('#fechaEstPago');
-        
-        // Validar fecha hábil después de recalcular (si no estamos cargando datos)
-        if (!cargandoDatos) {
-            setTimeout(() => validarCampoFechaHabil($('#fechaEstPago')), 100);
-        }
-    } else {
-        $('#fechaEstPago').val('');
     }
+
+    marcarCampoCalculado(selector);
+
+    if (!cargandoDatos) {
+        setTimeout(() => validarCampoFechaHabil($campo), 100);
+    }
+}
+
+/**
+ * Avisa que las fechas automáticas no se pudieron calcular.
+ *
+ * NO DEJA LOS CAMPOS EN BLANCO ni les inventa un valor: se queda con lo que
+ * haya y lo dice. Un formulario que se vacía solo porque falló una llamada
+ * pierde datos que el usuario ya tenía en pantalla.
+ */
+function mostrarErrorCadenaFechas(mensaje) {
+    const texto = mensaje || 'No se pudieron calcular las fechas automáticas.';
+    console.warn('Cadena de fechas:', texto);
+
+    $('#avisoCadenaFechas').remove();
+    $('#fechaArr').closest('.input-group, .form-group, td, div').first().before(
+        '<div id="avisoCadenaFechas" class="alerta-fecha-no-habil">' +
+        '<i class="bi bi-exclamation-triangle"></i> ' + escaparAtributo(texto) +
+        '</div>'
+    );
 }
 
 
 /* ==========================================================================
-   EL BADGE DE LA FECHA EST. PAGO
+   LOS BADGES DE LAS FECHAS CALCULADAS
 
-   Era HTML estático que decía "Auto" siempre, incluso sobre una fecha que
-   alguien había puesto a mano. Ahora dice cuál de las dos cosas es, porque es
-   la diferencia entre "esto se va a recalcular solo" y "esto lo decidió
-   alguien", y hasta ahora la pantalla no la mostraba.
+   Eran HTML estático que decía "Auto" siempre, incluso sobre una fecha que
+   alguien había puesto a mano. Dicen cuál de las dos cosas es, porque es la
+   diferencia entre "esto se va a recalcular solo" y "esto lo decidió alguien".
+
+   AHORA SON TRES, uno por cada fecha que el sistema calcula. El del pago lo
+   trajo el script 10; los del arribo y la nacionalización, el 11. Es una sola
+   función para las tres: tres copias de este HTML serían tres lugares donde
+   arreglar el mismo detalle.
    ========================================================================== */
 
 /**
- * Redibuja el badge de Fecha Est. Pago según fechaEstPagoIsManual.
+ * Descripción de cada badge. La regla NO lleva el número de días escrito: sale
+ * de parametrosDias, que llega del servidor. Antes este tooltip decía
+ * "+5 días" en duro, así que cambiar DIAS_EMB_PAGO desde el ABM dejaba a la
+ * pantalla explicando una regla que ya no era la que se aplicaba.
+ */
+const BADGES_FECHA = {
+    PAGO: {
+        contenedor: '#badgeFechaEstPago',
+        boton:      'btnVolverAutoFechaEstPago',
+        etiqueta:   'fecha estimada de pago',
+        base:       'fecha de embarque',
+        clave:      'DIAS_EMB_PAGO'
+    },
+    ARRIBO: {
+        contenedor: '#badgeFechaArr',
+        boton:      'btnVolverAutoFechaArr',
+        etiqueta:   'fecha de arribo (ETA)',
+        base:       'fecha de embarque',
+        clave:      'DIAS_EMB_ARR'
+    },
+    NACIONALIZACION: {
+        contenedor: '#badgeFechaDespAdu',
+        boton:      'btnVolverAutoFechaDespAdu',
+        etiqueta:   'fecha de nacionalización',
+        base:       'fecha de arribo',
+        clave:      'DIAS_ARR_DESP'
+    }
+};
+
+/** Estado actual de cada badge, para no repetir el mismo `if` en tres lados. */
+function estadoBadge(tipo) {
+    if (tipo === 'PAGO') {
+        return { fijada: fechaEstPagoIsManual,
+                 usuario: fechaEstPagoConfUsuario, cuando: fechaEstPagoConfFecha };
+    }
+    if (tipo === 'ARRIBO') {
+        return { fijada: fechaArriboIsManual,
+                 usuario: fechaArrConfUsuario, cuando: fechaArrConfFecha };
+    }
+    return { fijada: fechaDespachoIsManual,
+             usuario: fechaDespConfUsuario, cuando: fechaDespConfFecha };
+}
+
+/**
+ * Redibuja el badge de una de las tres fechas calculadas.
  *
  * Manual además trae el botón "volver a auto". Ese botón NO aparece en modo
  * lectura ni en alta: en lectura no se edita nada, y en un alta todavía no hay
  * fila en la base sobre la que revertir.
+ *
+ * EL DE LA NACIONALIZACIÓN ES EL QUE MÁS IMPORTA hoy: el backfill del script 11
+ * marcó como manual toda FECHA_DESP_ADU que no se explicara con la regla vieja
+ * —marcar de más se arregla con un clic, marcar de menos deja que el recálculo
+ * pise una corrección a mano—, así que va a haber contenedores marcados que en
+ * realidad eran automáticos. Este botón es cómo se los libera.
  */
-function actualizarBadgeFechaEstPago() {
-    const $cont = $('#badgeFechaEstPago');
+function actualizarBadgeFecha(tipo) {
+    const cfg = BADGES_FECHA[tipo];
+    if (!cfg) return;
+
+    const $cont = $(cfg.contenedor);
     if (!$cont.length) return;
 
-    if (!fechaEstPagoIsManual) {
-        $cont.html('<span class="badge-auto" title="La calcula el sistema: fecha de embarque + 5 días.">Auto</span>');
+    const estado = estadoBadge(tipo);
+
+    /* Si todavía no llegaron los parámetros -primer render, antes de la
+       primera respuesta del servidor- se dice la regla sin el número en vez de
+       inventar uno. */
+    const dias  = parametrosDias[cfg.clave];
+    const regla = (dias === undefined)
+        ? cfg.base
+        : cfg.base + ' + ' + dias + ' días';
+
+    if (!estado.fijada) {
+        $cont.html('<span class="badge-auto" title="La calcula el sistema: '
+                 + escaparAtributo(regla) + '.">Auto</span>');
         return;
     }
 
     /* Sin login en este módulo, así que el usuario puede llegar vacío. Decir
        "la fijó null" sería peor que no decir quién; misma decisión que
        tooltipRastro() en el cashflow. */
-    const quien = fechaEstPagoConfUsuario || 'desde Comercio Exterior';
-    const cuando = fechaEstPagoConfFecha
-        ? (' el ' + fechaEstPagoConfFecha)
+    const quien = estado.usuario || 'desde Comercio Exterior';
+    const cuando = estado.cuando
+        ? (' el ' + estado.cuando)
         : ' (se guarda al confirmar)';
 
     const titulo = 'Fecha fijada a mano ' + quien + cuando
-        + '. El recálculo automático de +5 días no la toca.';
+        + '. El recálculo automático (' + regla + ') no la toca.';
 
     let html = '<span class="badge-manual" title="' + escaparAtributo(titulo) + '">Manual</span>';
 
@@ -400,12 +564,18 @@ function actualizarBadgeFechaEstPago() {
     const enLectura = $('#esLectura').val() === '1';
 
     if (enEdicion && !enLectura) {
-        html += '<button type="button" id="btnVolverAutoFechaEstPago" class="btn-volver-auto"'
+        html += '<button type="button" id="' + cfg.boton + '" class="btn-volver-auto"'
+              + ' data-tipo-fecha="' + tipo + '"'
               + ' title="Descarta la fecha cargada y vuelve al cálculo automático.">'
               + '<i class="zmdi zmdi-refresh"></i> volver a auto</button>';
     }
 
     $cont.html(html);
+}
+
+/** Alias del nombre que ya usaba el resto del archivo. */
+function actualizarBadgeFechaEstPago() {
+    actualizarBadgeFecha('PAGO');
 }
 
 /**
@@ -444,6 +614,11 @@ function escaparAtributo(texto) {
 /**
  * "Volver a auto": descarta la fecha fijada y la recalcula en el servidor.
  *
+ * SIRVE PARA LAS TRES FECHAS. Era solo para la estimada de pago; desde el
+ * script 11 el arribo y la nacionalización también se pueden fijar a mano, así
+ * que también necesitan la puerta de salida. El tipo viaja en el
+ * data-tipo-fecha que pone actualizarBadgeFecha().
+ *
  * PIDE CONFIRMACIÓN porque descarta un dato cargado a mano, y la fecha vieja no
  * queda en ningún lado de la pantalla: queda en
  * RO_T_IMPORTACIONES_FECHAS_HIST, que es otra pantalla.
@@ -452,14 +627,23 @@ function escaparAtributo(texto) {
  * servidor y no uno recalculado acá: si los dos calcularan por su cuenta, un
  * día se despegarían y la pantalla mostraría una fecha que la base no tiene.
  */
-$(document).on('click', '#btnVolverAutoFechaEstPago', function() {
-    const id = $('#idDespacho').val();
-    if (!id) return;
+$(document).on('click', '.btn-volver-auto', function() {
+    const id   = $('#idDespacho').val();
+    const tipo = $(this).data('tipo-fecha');
+
+    if (!id || !BADGES_FECHA[tipo]) return;
+
+    const cfg = BADGES_FECHA[tipo];
+
+    /* La regla que se le muestra al usuario sale de los parámetros, no de un
+       literal: es la cuenta que va a hacer el servidor. */
+    const dias  = parametrosDias[cfg.clave];
+    const regla = (dias === undefined) ? cfg.base : cfg.base + ' + ' + dias + ' días';
 
     Swal.fire({
         title: '¿Volver al cálculo automático?',
-        html: 'Se va a descartar la fecha estimada de pago cargada a mano y se va a '
-            + 'recalcular como <b>fecha de embarque + 5 días</b>.<br><br>'
+        html: 'Se va a descartar la ' + cfg.etiqueta + ' cargada a mano y se va a '
+            + 'recalcular como <b>' + regla + '</b>.<br><br>'
             + 'El cambio queda registrado en el historial de fechas.',
         icon: 'warning',
         showCancelButton: true,
@@ -470,34 +654,17 @@ $(document).on('click', '#btnVolverAutoFechaEstPago', function() {
         if (!res.isConfirmed) return;
 
         $.ajax({
-            url: '../controller/revertirFechaPagoAuto.php',
+            url: '../controller/revertirFechaAuto.php',
             method: 'POST',
             dataType: 'json',
-            data: { id: id },
+            data: { id: id, tipo: tipo },
             success: function(r) {
                 if (!r.success) {
                     Swal.fire('No se pudo', r.message || 'Error al revertir la fecha', 'error');
                     return;
                 }
 
-                fechaEstPagoIsManual = false;
-                fechaEstPagoConfUsuario = null;
-                fechaEstPagoConfFecha = null;
-
-                if (r.fechaPantalla) {
-                    $('#fechaEstPago').val(r.fechaPantalla);
-
-                    const $picker = $('#fechaEstPago').data('daterangepicker');
-                    if ($picker) {
-                        const m = moment(r.fechaPantalla, 'DD/MM/YYYY');
-                        $picker.setStartDate(m);
-                        $picker.setEndDate(m);
-                    }
-
-                    marcarCampoCalculado('#fechaEstPago');
-                }
-
-                actualizarBadgeFechaEstPago();
+                aplicarReversionFecha(tipo, r.fechaPantalla);
 
                 Swal.fire({
                     title: 'Listo',
@@ -515,6 +682,58 @@ $(document).on('click', '#btnVolverAutoFechaEstPago', function() {
         });
     });
 });
+
+/**
+ * Deja la pantalla como quedó la base después de revertir una fecha.
+ *
+ * VOLVER EL ARRIBO A AUTO ARRASTRA A LA NACIONALIZACIÓN, que cuelga de él: si
+ * no está fijada, se vuelve a pedir la cadena para que siga al arribo nuevo.
+ * El servidor ya la movió en la base; esto es solo que la pantalla no quede
+ * mostrando la vieja hasta el próximo F5.
+ */
+function aplicarReversionFecha(tipo, fechaPantalla) {
+    const campos = {
+        PAGO:            '#fechaEstPago',
+        ARRIBO:          '#fechaArr',
+        NACIONALIZACION: '#fechaDespAdu'
+    };
+
+    if (tipo === 'PAGO') {
+        fechaEstPagoIsManual = false;
+        fechaEstPagoConfUsuario = null;
+        fechaEstPagoConfFecha = null;
+    } else if (tipo === 'ARRIBO') {
+        fechaArriboIsManual = false;
+        etaConfirmada = false;
+        fechaArrConfUsuario = null;
+        fechaArrConfFecha = null;
+        aplicarEstiloEtaConfirmada();
+    } else {
+        fechaDespachoIsManual = false;
+        fechaDespConfUsuario = null;
+        fechaDespConfFecha = null;
+    }
+
+    if (fechaPantalla) {
+        const selector = campos[tipo];
+        $(selector).val(fechaPantalla);
+
+        const $picker = $(selector).data('daterangepicker');
+        if ($picker) {
+            const m = moment(fechaPantalla, 'DD/MM/YYYY');
+            $picker.setStartDate(m);
+            $picker.setEndDate(m);
+        }
+
+        marcarCampoCalculado(selector);
+    }
+
+    actualizarBadgeFecha(tipo);
+
+    if (tipo === 'ARRIBO' && !fechaDespachoIsManual) {
+        recalcularTodasLasFechas();
+    }
+}
 
 
 /**
@@ -555,15 +774,29 @@ function cargarDatosDespacho(datos) {
     }
     if (datos.FECHA_ARR) {
         $('#fechaArr').val(datos.FECHA_ARR);
-        // Marcar como manual para evitar recálculo
-        fechaArriboIsManual = true;
     }
-    
-    /* ETA en firme. Se lee del maestro y NO se apaga acá: una ETA que ya estaba
-       confirmada sigue estándolo. El indicador verde sobre el campo es lo que
-       quedó del checkbox que se sacó. */
+
+    /* EL ESTADO SALE DE LA BASE, NO DE QUE HAYA UN VALOR CARGADO.
+       Acá había un `fechaArriboIsManual = true` dentro del if de arriba, con
+       el comentario "Marcar como manual para evitar recálculo". Era el mismo
+       bug que el script 10 corrigió para la fecha de pago, al revés: en vez de
+       perder la marca, la inventaba. Todo contenedor con arribo cargado —o
+       sea, todos— quedaba marcado como fijado a mano, así que mover el ETD no
+       movía nada y cambiar DIAS_EMB_ARR desde el ABM no llegaba a ninguna
+       fila existente.
+
+       Ahora sale de ETA_CONFIRMADA, que es el BIT del maestro que ya
+       significaba "esta ETA es un hecho, no una proyección": se enciende al
+       editar la ETA a mano y sobrevive al cierre de la pantalla.
+
+       Va FUERA del if a propósito: un contenedor puede estar marcado sin fecha
+       cargada, y en ese caso el badge igual tiene que decir Manual. */
     etaConfirmada = (datos.ETA_CONFIRMADA === 1 || datos.ETA_CONFIRMADA === '1');
+    fechaArriboIsManual = etaConfirmada;
+    fechaArrConfUsuario = datos.ETA_CONF_USUARIO || null;
+    fechaArrConfFecha = datos.ETA_CONF_FECHA || null;
     aplicarEstiloEtaConfirmada();
+    actualizarBadgeFecha('ARRIBO');
     if (datos.NUMERO_BL) $('#numeroBl').val(datos.NUMERO_BL);
     if (datos.FACTURA) $('#factura').val(datos.FACTURA);
     if (datos.PUERTO_ORIGEN) {
@@ -582,9 +815,9 @@ function cargarDatosDespacho(datos) {
         $('#valorFobPeso').val(valorFormateado);
     }
     if (datos.FORMA_PAGO) $('#formaPago').val(datos.FORMA_PAGO).trigger('change');
-    if (datos.FECHA_PAGO) {
-        $('#fechaPago').val(datos.FECHA_PAGO);
-    }
+    /* Acá se cargaba datos.FECHA_PAGO en #fechaPago. Las dos puntas eran
+       fantasmas: ni el input existe en el formulario ni FECHA_PAGO es una
+       columna del maestro en central ni en uy. */
     if (datos.FECHA_EST_PAGO) {
         $('#fechaEstPago').val(datos.FECHA_EST_PAGO);
         // Sincronizar datepicker
@@ -619,9 +852,26 @@ function cargarDatosDespacho(datos) {
             $('.js-datepicker-despacho').data('daterangepicker').setStartDate(fecha);
             $('.js-datepicker-despacho').data('daterangepicker').setEndDate(fecha);
         }
-        // Marcar como manual para evitar recálculo
-        fechaDespachoIsManual = true;
     }
+
+    /* Misma corrección que en el arribo: acá había un
+       `fechaDespachoIsManual = true` por el solo hecho de que la fila trajera
+       FECHA_DESP_ADU, y todas la traen. El estado ahora sale de
+       FECHA_DESP_CONF, el BIT que creó sql/11.
+
+       ES EL CAMBIO QUE HACE QUE LA NACIONALIZACIÓN VUELVA A SEGUIR AL ARRIBO,
+       y es también el que hace imprescindible el backfill del script 11: sin
+       esas marcas, el primer guardado de cada contenedor pisaría con arribo +
+       DIAS_ARR_DESP las fechas que alguien había corregido a mano.
+
+       Sin el script 11 la clave llega en 0 -Encabezado::obtenerDespachoPorId()
+       la define siempre-. Ojo con eso: en una base donde el DDL no corrió, la
+       pantalla pasa a recalcular fechas que antes quedaban congeladas. Por eso
+       el 11 va antes que el deploy, no después. */
+    fechaDespachoIsManual = (datos.FECHA_DESP_CONF === 1 || datos.FECHA_DESP_CONF === '1');
+    fechaDespConfUsuario = datos.FECHA_DESP_CONF_USUARIO || null;
+    fechaDespConfFecha = datos.FECHA_DESP_CONF_FECHA || null;
+    actualizarBadgeFecha('NACIONALIZACION');
     if (datos.GASTOS_PUERTO_DOLAR) $('#gastosPuertoDolar').val(datos.GASTOS_PUERTO_DOLAR);
     if (datos.GASTOS_PUERTO_PESO) $('#gastosPuertoPeso').val(datos.GASTOS_PUERTO_PESO);
     if (datos.FLETE_INTERNACIONAL) $('#fleteInternacional').val(datos.FLETE_INTERNACIONAL);
@@ -1020,46 +1270,14 @@ function actualizarSaldoPendiente(saldo) {
     actualizarEstadoBotonPago();
 }
 
-/**
- * Recalcula la Fecha de Nacionalización (FECHA_DESP_ADU = FECHA_ARR + 2 días)
- */
+/* recalcularFechaDespacho() ESTABA ACÁ y hacía "arribo + 2 días", que era el
+   número que no coincidía con el DIAS_ARR_DESP = 7 de la tabla de parámetros
+   y que ahora es DIAS_ARR_DESP = 5 para las dos pantallas.
 
-function recalcularFechaDespacho() {
-    if (fechaDespachoIsManual) {
-        console.log('Fecha Despacho en modo manual, no se recalcula');
-        return;
-    }
-    
-    const fechaArr = $('#fechaArr').val();
-    console.log('Recalculando Fecha Despacho. Fecha Arribo actual:', fechaArr);
-    
-    if (fechaArr && fechaArr.trim() !== '') {
-        const fechaArriboMoment = moment(fechaArr, 'DD/MM/YYYY');
-        if (fechaArriboMoment.isValid()) {
-            const nuevaFechaDespacho = sumarDias(fechaArriboMoment, 2);
-            console.log('Nueva Fecha Despacho calculada:', nuevaFechaDespacho);
-            $('#fechaDespAdu').val(nuevaFechaDespacho);
-            
-            // Sincronizar datepicker
-            const $picker = $('#fechaDespAdu').data('daterangepicker');
-            if ($picker && nuevaFechaDespacho) {
-                $picker.setStartDate(moment(nuevaFechaDespacho, 'DD/MM/YYYY'));
-                $picker.setEndDate(moment(nuevaFechaDespacho, 'DD/MM/YYYY'));
-            }
-            
-            marcarCampoCalculado('#fechaDespAdu');
-            
-            // Validar fecha hábil después de recalcular (si no estamos cargando datos)
-            if (!cargandoDatos) {
-                setTimeout(() => validarCampoFechaHabil($('#fechaDespAdu')), 100);
-            }
-        } else {
-            console.log('Fecha Arribo no es válida para moment');
-        }
-    } else {
-        console.log('Fecha Arribo está vacía');
-    }
-}
+   Quedó reemplazada por recalcularTodasLasFechas(), que pide la cadena entera
+   al servidor: la nacionalización no se puede recalcular sola sin volver a
+   decidir de qué arribo cuelga, y esa decisión ya la toma
+   CronogramaFechas::cadenaDeFechas(). */
 
 /**
  * Sincroniza todos los datepickers con los valores actuales de los inputs
@@ -1141,19 +1359,10 @@ function sincronizarDatepickers() {
     console.log('Sincronización de datepickers completada');
 }
 
-/**
- * Recalcula todos los campos de fechas automáticas
- */
-function recalcularTodasLasFechas() {
-    console.log('=== Iniciando recálculo de todas las fechas ===');
-    console.log('Estados manuales - Arribo:', fechaArriboIsManual, 'Pago:', fechaPagoIsManual, 'Despacho:', fechaDespachoIsManual, 'Est. Pago:', fechaEstPagoIsManual);
-    recalcularFechaArribo();
-    recalcularFechaPago();
-    recalcularFechaEstimadaPago();
-    // No llamar recalcularFechaDespacho aquí porque ya se llama dentro de recalcularFechaArribo
-    // recalcularFechaDespacho();
-    console.log('=== Fin de recálculo ===');
-}
+/* recalcularTodasLasFechas() ESTABA ACÁ y encadenaba recalcularFechaArribo() ->
+   recalcularFechaDespacho() + recalcularFechaPago() + recalcularFechaEstimadaPago(),
+   cada una con sus días escritos en el código. Ahora es una sola llamada al
+   servidor y vive arriba, junto al resto de la cadena. */
 
 /**
  * Calcula FOB en Pesos = FOB U$S × Tipo de Cambio
@@ -1258,28 +1467,36 @@ function configurarManualOverride() {
             console.log('Usuario modificó Fecha Arribo manualmente');
             fechaArriboIsManual = true;
             marcarCampoManual('#fechaArr');
-            // Al cambiar manualmente fecha arribo, recalcular despacho si no es manual
-            recalcularFechaDespacho();
+            actualizarBadgeFecha('ARRIBO');
+            /* Mover el arribo mueve la nacionalización, que cuelga de él. Se
+               pide la cadena entera: el arribo ya fijado viaja al servidor y
+               la nacionalización se recalcula sobre ÉL y no sobre el arribo
+               proyectado. */
+            recalcularTodasLasFechas();
         }
     });
     verificarCampoVacio('#fechaArr', fechaArriboIsManual, 'fechaArriboIsManual');
 
-    // Fecha Pago
-    $('#fechaPago').on('dp.change', function(e) {
-        if (!cargandoDatos && e.date && $(this).val().trim() !== '') {
-            console.log('Usuario modificó Fecha Pago manualmente');
-            fechaPagoIsManual = true;
-            marcarCampoManual('#fechaPago');
-        }
-    });
-    verificarCampoVacio('#fechaPago', fechaPagoIsManual, 'fechaPagoIsManual');
+    /* EL HANDLER DE #fechaPago NO ESTÁ MÁS. Escuchaba un input que no existe:
+       tabs/cargaInicial.php no tiene ningún id="fechaPago" -los fechaPagoNuevo
+       y fechaPagoEdit son de los modales de pagos- y FECHA_PAGO tampoco es una
+       columna del maestro en ninguna de las dos bases. Era la otra mitad de la
+       regla "pago = embarque + 5": sumaba los días y los escribía en un
+       jQuery vacío. La fecha de pago que sí existe es FECHA_EST_PAGO, más
+       abajo, y ahora la calcula el servidor con DIAS_EMB_PAGO. */
 
     // Fecha Nacionalización (FECHA_DESP_ADU)
     $('#fechaDespAdu').on('dp.change', function(e) {
         if (!cargandoDatos && e.date && $(this).val().trim() !== '') {
             console.log('Usuario modificó Fecha Despacho manualmente');
             fechaDespachoIsManual = true;
+            /* La fecha todavía no se guardó: el usuario y la hora reales los
+               pone el backend al confirmar. Se limpian para no mostrar en el
+               tooltip los datos de la edición anterior. */
+            fechaDespConfUsuario = null;
+            fechaDespConfFecha = null;
             marcarCampoManual('#fechaDespAdu');
+            actualizarBadgeFecha('NACIONALIZACION');
         }
     });
     verificarCampoVacio('#fechaDespAdu', fechaDespachoIsManual, 'fechaDespachoIsManual');
@@ -1662,20 +1879,21 @@ function inicializarDatepickers() {
         setTimeout(() => validarCampoFechaHabil($(this)), 100);
     });
     
-    // Event listeners para cambios en fechas base que afectan fechaEstPago
+    // Event listeners para cambios en las fechas base de embarque
     $(document).on('apply.daterangepicker', '.js-datepicker-estimada', function(ev, picker) {
-        console.log('FECHA_EST_EMB cambió - recalculando fechaEstPago');
-        recalcularFechaEstimadaPago();
+        console.log('FECHA_EST_EMB cambió - pidiendo la cadena de fechas');
+        recalcularTodasLasFechas();
     });
-    
-    /* El ETD recalcula la fecha estimada de pago, PERO NO DESCARTA LA DECISIÓN
-       DEL USUARIO: acá había un `fechaEstPagoIsManual = false` que hacía que
-       poner la fecha a mano y después tocar el ETD la pisara dentro de la misma
-       sesión. Si está fijada, recalcularFechaEstimadaPago() corta sola. Para
-       volver al automático está el botón "volver a auto", que es explícito. */
+
+    /* El ETD recalcula la cadena, PERO NO DESCARTA LA DECISIÓN DEL USUARIO:
+       acá había un `fechaEstPagoIsManual = false` que hacía que poner la fecha
+       a mano y después tocar el ETD la pisara dentro de la misma sesión. Ahora
+       lo que corta es aplicarCadenaFechas(), que no escribe ningún campo
+       fijado. Para volver al automático está el botón "volver a auto", que es
+       explícito. */
     $(document).on('apply.daterangepicker', '.js-datepicker-etd', function(ev, picker) {
-        console.log('FECHA_EMB (ETD) cambió - recalculando fechaEstPago');
-        recalcularFechaEstimadaPago();
+        console.log('FECHA_EMB (ETD) cambió - pidiendo la cadena de fechas');
+        recalcularTodasLasFechas();
     });
     
     // Event listener para cerrar alerta informativa
@@ -2221,7 +2439,6 @@ function guardarCabecera() {
         
         // Sección 3 - Datos Financieros y Aduana
         const formaPago = $('#formaPago').val();
-        const fechaPago = $('#fechaPago').val();
         const fechaDespAdu = $('#fechaDespAdu').val();
         const despacho = $('#despacho').val();
  
@@ -2246,10 +2463,20 @@ function guardarCabecera() {
             ocm: ocm,
             despachante: $('#despachante').val() || 'Laffitte', 
             
-            // Campos calculados automáticamente
+            /* Campos calculados automáticamente. fechaPago ya no viaja: el
+               input no existía y FECHA_PAGO tampoco es columna del maestro, así
+               que insertarEncabezado.php le armaba a la UPDATE un
+               "FECHA_PAGO = ..." contra una columna inexistente cada vez que
+               llegaba con valor. */
             fechaArr: fechaArr,
-            fechaPago: fechaPago,
             fechaDespAdu: fechaDespAdu,
+
+            /* "Esta nacionalización la fijó el usuario". Mismo trato que
+               fechaEstPagoManual: el backend no le cree solo, además compara
+               contra el maestro -Encabezado::marcarFechaFijada()-. Va igual
+               porque es lo único que distingue esta edición de un recálculo:
+               los dos mandan un fechaDespAdu distinto del guardado. */
+            fechaDespAduManual: fechaDespachoIsManual ? 1 : 0,
             
             // Sección 2 - Datos de Embarque (solo enviar en modo edición)
             fechaEmb: (modoEdicion && fechaEmb) ? fechaEmb : '',
