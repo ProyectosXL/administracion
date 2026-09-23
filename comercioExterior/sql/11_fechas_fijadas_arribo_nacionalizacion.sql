@@ -10,6 +10,11 @@
 -- puestas a mano no estan marcadas antes, el primer recalculo que pase por
 -- ellas las pisa y no hay como distinguirlas despues.
 --
+-- SE PUEDE VOLVER A CORRER EN CUALQUIER MOMENTO, incluso despues del 14: el
+-- backfill excluye lo que migro el 14 mirando el historial. Antes no podia
+-- -marcaba como fijados a mano los 28 contenedores que el 14 acababa de
+-- recalcular- y eso los habria congelado. Ver el NOT EXISTS del paso 3.
+--
 -- ---------------------------------------------------------------------
 -- QUE PROBLEMA RESUELVE
 --
@@ -234,14 +239,37 @@ BEGIN TRY
        bases. La resta contra un lunes conocido (1900-01-01 fue lunes) da
        0=lunes .. 6=domingo sin depender de nada. */
     WITH PENDIENTES AS (
-        SELECT ID, FECHA_ARR, CAST(FECHA_DESP_ADU AS DATE) AS DESP
-        FROM dbo.RO_T_IMPORTACIONES_ENCABEZADO
-        WHERE FECHA_DESP_CONF = 0
-          AND FECHA_ARR       IS NOT NULL
-          AND FECHA_DESP_ADU  IS NOT NULL
-          AND FECHA_RECIBIDO  IS NULL
-          AND (DESPACHO IS NULL OR LTRIM(RTRIM(DESPACHO)) = '')
-          AND CAST(FECHA_DESP_ADU AS DATE) > CAST(GETDATE() AS DATE)
+        SELECT E.ID, E.FECHA_ARR, CAST(E.FECHA_DESP_ADU AS DATE) AS DESP
+        FROM dbo.RO_T_IMPORTACIONES_ENCABEZADO E
+        WHERE E.FECHA_DESP_CONF = 0
+          AND E.FECHA_ARR       IS NOT NULL
+          AND E.FECHA_DESP_ADU  IS NOT NULL
+          AND E.FECHA_RECIBIDO  IS NULL
+          AND (E.DESPACHO IS NULL OR LTRIM(RTRIM(E.DESPACHO)) = '')
+          AND CAST(E.FECHA_DESP_ADU AS DATE) > CAST(GETDATE() AS DATE)
+          /* LO QUE MIGRO EL SCRIPT 14 NO SE MARCA. Sin esto, correr este
+             script DESPUES del 14 congela justo lo que el 14 acababa de
+             recalcular: el 14 deja la fecha en arribo + DIAS_ARR_DESP, que ya
+             no coincide con la regla vieja, asi que el backfill de abajo la
+             leeria como "la tecleo una persona" y le pondria el BIT en 1.
+
+             ES EL UNICO PUNTO DONDE ESTE SCRIPT NO ES IDEMPOTENTE contra el
+             estado que dejan los otros: consigo mismo siempre lo fue -el
+             WHERE FECHA_DESP_CONF = 0 alcanza- pero el 14 le cambia el dato
+             sobre el que razona. Se vio corriendo los cuatro scripts de nuevo
+             sobre central ya migrada: marcaba 28 contenedores automaticos.
+
+             El rastro del historial es el criterio correcto y no una ventana
+             de fechas: dice literalmente "este valor lo escribio la migracion,
+             no una persona". Si el 14 todavia no corrio -instalacion nueva- el
+             NOT EXISTS es siempre verdadero y no cambia nada. */
+          AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.RO_T_IMPORTACIONES_FECHAS_HIST H
+                WHERE H.ID_ENCABEZADO = E.ID
+                  AND H.CAMPO         = 'FECHA_DESP_ADU'
+                  AND H.OBSERVACION LIKE 'Migración script 14%'
+          )
     ),
     ESPERADA AS (
         SELECT P.ID, P.DESP, H.HABIL AS ESPERADA
