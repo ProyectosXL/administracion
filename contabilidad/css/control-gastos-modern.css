@@ -47,7 +47,7 @@ body {
     border: 1px solid var(--cgm-border);
     border-radius: var(--cgm-radius);
     box-shadow: var(--cgm-shadow-sm);
-    padding: 16px 20px 14px;
+    padding: 10px 20px 14px;
     margin-bottom: 14px;
     color: var(--cgm-text);
 }
@@ -680,6 +680,175 @@ body {
     color: var(--cgm-muted);
 }
 
+/* â”€â”€ Filtros de control de gastos â”€â”€ */
+.cgm-filtros-wrapper {
+    width: 100%;
+    margin: 0;
+}
+
+.alert.alert-secondary > .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin: 0;
+}
+
+#titlePrincipal {
+    margin: 0 !important;
+    padding: 0;
+}
+
+#titlePrincipal .title {
+    margin: 0;
+}
+
+#formFiltros {
+    width: 100%;
+}
+
+.cgm-fila-principal {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+}
+
+.cgm-fila-principal > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.cgm-busqueda-rapida {
+    min-width: 260px;
+    flex: 1 1 300px;
+}
+
+/* Acciones y período comparten una sola línea en pantallas amplias. */
+.cgm-fila-principal > .cgm-acciones-principales {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.cgm-fila-principal > .cgm-acciones-masivas {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin: 0;
+}
+
+.cgm-acciones-masivas #titleCheck {
+    margin: 0 2px 0 0;
+}
+
+.cgm-acciones-masivas .form-check {
+    margin: 0;
+    padding-left: 1rem;
+}
+
+.cgm-acciones-principales .dropdown-toggle {
+    min-width: 0;
+    font-size: 12px;
+    padding: .375rem .55rem;
+}
+
+#formFiltros #search {
+    width: auto;
+    margin: 0;
+}
+
+.cgm-fila-principal label {
+    white-space: nowrap;
+}
+
+.cgm-boton-filtros .badge {
+    margin-left: 4px;
+    min-width: 18px;
+}
+
+.cgm-panel-filtros {
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid var(--cgm-border);
+    border-radius: var(--cgm-radius-sm);
+    background: var(--cgm-section);
+    box-shadow: var(--cgm-shadow-sm);
+}
+
+.cgm-panel-filtros .select2-container {
+    width: 100% !important;
+}
+
+.cgm-panel-pie {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.cgm-chips-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.cgm-chip {
+    border: 1px solid var(--cgm-accent-ring);
+    border-radius: 999px;
+    background: var(--cgm-accent-dim);
+    color: var(--cgm-accent-hover);
+    font-size: 12px;
+    line-height: 1.2;
+    padding: 5px 9px;
+    transition: background var(--cgm-transition), border-color var(--cgm-transition);
+}
+
+.cgm-chip:hover {
+    background: var(--cgm-accent-ring);
+    border-color: var(--cgm-accent);
+}
+
+.cgm-chip span {
+    font-size: 16px;
+    vertical-align: -1px;
+    margin-left: 3px;
+}
+
+/* Las acciones no deben heredar el margen fijo del estilo anterior. */
+.alert.alert-secondary .acciones-container {
+    margin: 0 !important;
+    flex-wrap: wrap;
+}
+
+/* La búsqueda rápida se traslada junto a "Show entries" al inicializar la tabla. */
+#myTable_wrapper .dataTables_length {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+#myTable_wrapper .dataTables_length > label {
+    margin: 0;
+}
+
+#myTable_wrapper #contenedorBusquedaRapida {
+    flex: 0 0 260px;
+    min-width: 0;
+    margin: 0 0 0 auto;
+}
+
+#myTable_wrapper #contenedorBusquedaRapida > label {
+    display: none;
+}
+
 /* ── Responsive ── */
 @media (max-width: 1200px) {
     .acciones-container {
@@ -719,6 +888,41 @@ body {
     }
 
     #paneCentros .form-row {
+        flex-direction: column;
+    }
+
+    .cgm-fila-principal {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .cgm-busqueda-rapida {
+        min-width: 0;
+    }
+
+    .cgm-fila-principal > .cgm-acciones-principales,
+    .cgm-fila-principal > .cgm-acciones-masivas {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    #myTable_wrapper .dataTables_length {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    #myTable_wrapper #contenedorBusquedaRapida {
+        flex-basis: auto;
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .cgm-fila-principal .btn,
+    .cgm-panel-pie .btn {
+        width: 100%;
+    }
+
+    .cgm-panel-pie {
         flex-direction: column;
     }
 }

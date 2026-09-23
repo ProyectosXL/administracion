@@ -4461,3 +4461,9 @@ sending limits go to
 [2026-09-07 14:11:37] Mail enviado con éxito!
 [2026-09-07 14:12:22] Enviando mail a: mariela.gueler@xl.com.ar | Asunto: Acción de Cliente en Portal: Propuesta #3649
 [2026-09-07 14:12:26] Mail enviado con éxito!
+[2026-09-21 19:33:17] Enviando mail a: ramiro.orozco@xl.com.ar | Asunto: Liquidación semanal Franquicias GA - LOMAS DE ZAMORA - 14/09/2026 al 20/09/2026
+[2026-09-21 19:33:21] ERROR PHPMailer: SMTP Error: Could not authenticate.
+[2026-09-21 19:35:27] Enviando mail a: ramiro.orozco@xl.com.ar | Asunto: Liquidación semanal Franquicias GA - LOMAS DE ZAMORA - 14/09/2026 al 20/09/2026
+[2026-09-21 19:35:33] Mail enviado con éxito! (con 1 adjunto/s)
+[2026-09-21 19:42:56] Enviando mail a: julieta.bianculli@xl.com.ar | Asunto: Liquidación semanal Franquicias GA - LOMAS DE ZAMORA - 14/09/2026 al 20/09/2026
+[2026-09-21 19:43:02] Mail enviado con éxito! (con 1 adjunto/s)

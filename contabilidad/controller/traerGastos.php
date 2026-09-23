@@ -6,11 +6,15 @@ if (session_status() == PHP_SESSION_NONE) {
 
 include '../Class/gasto.php';
 
-$desde     = isset($_GET['desde'])        ? $_GET['desde']        : '';
-$hasta     = isset($_GET['hasta'])        ? $_GET['hasta']        : '';
-$estado    = isset($_GET['selectEstado']) ? $_GET['selectEstado'] : '0';
-$codRubro  = isset($_GET['codRubro'])     ? $_GET['codRubro']     : '%';
-$codCuenta = isset($_GET['codCuenta'])    ? $_GET['codCuenta']    : '%';
+$filtros = !empty($_POST) ? $_POST : $_GET;
+$desde         = isset($filtros['desde'])        ? $filtros['desde']        : '';
+$hasta         = isset($filtros['hasta'])        ? $filtros['hasta']        : '';
+$estado        = isset($filtros['selectEstado']) ? $filtros['selectEstado'] : '0';
+$codRubro      = isset($filtros['codRubro'])     ? $filtros['codRubro']     : '%';
+$codCuenta     = isset($filtros['codCuenta'])    ? $filtros['codCuenta']    : '%';
+$codAuxiliar   = isset($filtros['codAuxiliar'])  ? $filtros['codAuxiliar']  : '%';
+$sector        = isset($filtros['sector'])       ? $filtros['sector']       : '%';
+$codProrrateo  = isset($filtros['codProrrateo']) ? $filtros['codProrrateo'] : '%';
 
 header('Content-Type: application/json');
 
@@ -20,4 +24,4 @@ if (!$desde || !$hasta) {
 }
 
 $gastos = new Gasto();
-echo $gastos->traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta);
+echo $gastos->traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta, $codAuxiliar, $sector, $codProrrateo);

@@ -61,6 +61,46 @@ foreach ($cuentas as $key => $value) {
 
 }
 
+$codRubroSelected = isset($_GET['codRubro']) ? $_GET['codRubro'] : '%';
+$codAuxiliar = isset($_GET['codAuxiliar']) ? $_GET['codAuxiliar'] : '%';
+$sector = isset($_GET['sector']) ? $_GET['sector'] : '%';
+$codProrrateo = isset($_GET['codProrrateo']) ? $_GET['codProrrateo'] : '%';
+$busquedaRapida = isset($_GET['q']) ? $_GET['q'] : '';
+$sectores = array();
+
+foreach ($todosLosCentrosCosto as $centroCosto) {
+    if (!empty($centroCosto->SECTOR) && !in_array($centroCosto->SECTOR, $sectores)) {
+        $sectores[] = $centroCosto->SECTOR;
+    }
+}
+sort($sectores);
+
+$filtrosActivos = array();
+if ($codRubroSelected !== '%') {
+    foreach ($todosLosRubros as $rubro) {
+        if ($rubro->COD_RUBRO == $codRubroSelected) $filtrosActivos['codRubro'] = 'Rubro: ' . $rubro->COD_RUBRO . '-' . $rubro->RUBRO_CONTABLE;
+    }
+}
+if ($codCuenta !== '%') {
+    foreach ($data as $cuentaFiltro) {
+        if ($cuentaFiltro['COD_CUENTA'] == $codCuenta) $filtrosActivos['codCuenta'] = 'Cuenta: ' . $cuentaFiltro['COD_CUENTA'] . '-' . $cuentaFiltro['DESC_CUENTA'];
+    }
+}
+if ($codAuxiliar !== '%') {
+    $filtrosActivos['codAuxiliar'] = 'Auxiliar: ' . ($codAuxiliar == 'SinAsignar' ? 'Sin asignar' : $codAuxiliar);
+    foreach ($todosLosCentrosCosto as $centroCosto) {
+        if ($centroCosto->COD_AUXILIAR == $codAuxiliar) $filtrosActivos['codAuxiliar'] = 'Auxiliar: ' . $centroCosto->DESC_AUXILIAR;
+    }
+}
+if ($sector !== '%') $filtrosActivos['sector'] = 'Sector: ' . $sector;
+if ($codProrrateo !== '%') {
+    $filtrosActivos['codProrrateo'] = 'Prorrateo: ' . ($codProrrateo == 'SinProrrateo' ? 'Sin prorrateo' : $codProrrateo);
+    foreach ($todosLosMetodos as $metodo) {
+        if ($metodo->COD_PRORRATEO == $codProrrateo) $filtrosActivos['codProrrateo'] = 'Prorrateo: ' . $metodo->COD_PRORRATEO . '-' . $metodo->DESC_PRORRATEO;
+    }
+}
+$panelFiltrosAbierto = count($filtrosActivos) > 0;
+
 if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
     $checked = 'checked';
 }else{
@@ -142,11 +182,12 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
             <div id="titlePrincipal" class="col-md-auto">
                 <h3 class="title"><i class="bi bi-ui-checks"></i> Control de Gastos</h3>
             </div>
-            <div class="form-row">
-                <form method="GET" action="controlGastos.php">
-                    <div class="contenedor">
+            <div class="form-row cgm-filtros-wrapper">
+                <form method="GET" action="controlGastos.php" id="formFiltros">
+                    <div class="contenedor cgm-fila-principal">
                         <input type="hidden" name="desde" value="<?= $desde ?>" id="desde">
                         <input type="hidden" name="hasta" value="<?= $hasta ?>" id="hasta">
+                        <input type="hidden" name="q" value="<?= htmlspecialchars($busquedaRapida, ENT_QUOTES, 'UTF-8') ?>" id="q">
                         
                         <div  class="col-">
                         <label > Mes :</label> 
@@ -204,105 +245,116 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
                                 ?> >Pendiente control</option>
                             </select>
                         </div>
-                        <div>
-                            <label for="Rubro">Rubro:</label>
-                            <select class="form-control form-control-sm codRubro" name="codRubro" >
-                                <option value="%" <?= (isset($_GET['codRubro']) && $_GET['codRubro'] == '%') ? "selected" : "" ?>>Todos</option>
-                                <?php
-                                $codRubroSelected = isset($_GET['codRubro']) ? $_GET['codRubro'] : '%';
-                                foreach ($todosLosRubros as $valor => $value) {
-                                ?>
-                                    <option value="<?= $value->COD_RUBRO; ?>" <?= ($codRubroSelected == $value->COD_RUBRO) ? "selected" : "" ?>><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE; ?></option>
-                                <?php
-                                }
-                                ?>
-                            </select>
+                        <div class="acciones-container cgm-acciones-principales">
+                            <div class="accion-dropdown amortizar dropdown">
+                                <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnAmortizarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="bi bi-calendar2-week"></i> Amortizar</button>
+                                <div class="dropdown-menu" aria-labelledby="btnAmortizarDropdown" id="menuAmortizar"><a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarAmortizacion(); return false;"><i class="bi bi-play-fill"></i> Ejecutar Amortización</a></div>
+                            </div>
+                            <div class="accion-dropdown prorratear dropdown">
+                                <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnProrratearDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="bi bi-file-text"></i> Prorratear</button>
+                                <div class="dropdown-menu" aria-labelledby="btnProrratearDropdown" id="menuProrratear"><a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarProrrateo(); return false;"><i class="bi bi-play-fill"></i> Ejecutar Prorrateo</a></div>
+                            </div>
+                            <div class="accion-dropdown procesar dropdown">
+                                <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnProcesarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="bi bi-check2-square"></i> Procesar</button>
+                                <div class="dropdown-menu" aria-labelledby="btnProcesarDropdown" id="menuProcesar"><a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarProcesamiento(); return false;"><i class="bi bi-play-fill"></i> Ejecutar Proceso</a></div>
+                            </div>
+                            <div class="accion-dropdown exportar dropdown">
+                                <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnExportarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="bi bi-file-earmark-excel"></i> Exportar</button>
+                                <div class="dropdown-menu" aria-labelledby="btnExportarDropdown" id="menuExportar">
+                                    <a class="dropdown-item ejecutar-item" href="#" onclick="resumen(); return false;"><i class="bi bi-file-earmark-spreadsheet"></i> Resumen IE</a>
+                                    <a class="dropdown-item ejecutar-item" href="#" onclick="exportarGastosExcluidos(); return false;"><i class="bi bi-file-earmark-excel"></i> Exportar Excluidos</a>
+                                </div>
+                            </div>
                         </div>
-
-                        <div >
-                            <label>Codigo de Cuenta:</label>
-                            <select class="form-control form-control-sm codCuenta" name="codCuenta" style="width: 180px;">
-                            <option  value="%" selected>Todos</option>
-                                        <?php 
-                                            foreach ($data as $cuenta ) {
-                                      ?> 
-                                            <option  value="<?= $cuenta['COD_CUENTA'] ?>" <?= ($codCuenta == $cuenta['COD_CUENTA']) ? "selected" : "" ?>><?= $cuenta['COD_CUENTA'] ?> - <?= $cuenta['DESC_CUENTA'] ?></option>
-                                        <?php
-                                            }
-
-                                        ?>
-                            </select>
+                        <div id="contCheck" class="cgm-acciones-masivas">
+                            <label id="titleCheck">Acciones masivas</label>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" onclick="checkExcluirAll(this);" value="" id="defaultCheck1"><label class="form-check-label" for="defaultCheck1">Excluir</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" onclick="checkControladoAll(this);" value="" id="defaultCheck2"><label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label></div>
                         </div>
-                        
+                        <div class="cgm-busqueda-rapida" id="contenedorBusquedaRapida">
+                            <label for="busquedaRapida">Búsqueda rápida:</label>
+                            <div class="input-group input-group-sm">
+                                <input type="search" class="form-control" id="busquedaRapida" value="<?= htmlspecialchars($busquedaRapida, ENT_QUOTES, 'UTF-8') ?>" placeholder="Razón social, leyenda o comprobante">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" id="limpiarBusquedaRapida" title="Limpiar búsqueda">&times;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cgm-boton-filtros">
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn btn-outline-primary" data-toggle="collapse" data-target="#panelFiltros" aria-expanded="<?= $panelFiltrosAbierto ? 'true' : 'false' ?>" aria-controls="panelFiltros">
+                                <i class="bi bi-sliders"></i> Filtros <span class="badge badge-primary" id="contadorFiltros"><?= count($filtrosActivos) ?></span>
+                            </button>
+                        </div>
                         <div>
+                            <label>&nbsp;</label>
                             <button type="submit" class="btn btn-primary" id="search"><i class="bi bi-funnel-fill"></i> Filtrar</button>
                         </div>
                     </div>
 
+                    <div class="cgm-chips-filtros" id="chipsFiltros">
+                        <?php foreach ($filtrosActivos as $nombreFiltro => $textoFiltro) { ?>
+                            <button type="button" class="cgm-chip" data-filtro="<?= $nombreFiltro ?>"><?= htmlspecialchars($textoFiltro, ENT_QUOTES, 'UTF-8') ?> <span aria-hidden="true">&times;</span></button>
+                        <?php } ?>
+                    </div>
+
+                    <div class="collapse cgm-panel-filtros <?= $panelFiltrosAbierto ? 'show' : '' ?>" id="panelFiltros">
+                        <div class="form-row">
+                            <div class="col-xl col-lg-4 col-md-6 col-12 mb-2">
+                                <label for="codRubro">Rubro:</label>
+                                <select class="form-control form-control-sm select2-filtro" name="codRubro" id="codRubro">
+                                    <option value="%" <?= $codRubroSelected == '%' ? 'selected' : '' ?>>Todos</option>
+                                    <?php foreach ($todosLosRubros as $value) { ?>
+                                        <option value="<?= $value->COD_RUBRO ?>" <?= $codRubroSelected == $value->COD_RUBRO ? 'selected' : '' ?>><?= $value->COD_RUBRO . '-' . $value->RUBRO_CONTABLE ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="col-xl col-lg-4 col-md-6 col-12 mb-2">
+                                <label for="codCuenta">Código de cuenta:</label>
+                                <select class="form-control form-control-sm select2-filtro" name="codCuenta" id="codCuenta">
+                                    <option value="%" <?= $codCuenta == '%' ? 'selected' : '' ?>>Todos</option>
+                                    <?php foreach ($data as $cuenta) { ?>
+                                        <option value="<?= $cuenta['COD_CUENTA'] ?>" <?= $codCuenta == $cuenta['COD_CUENTA'] ? 'selected' : '' ?>><?= $cuenta['COD_CUENTA'] ?> - <?= $cuenta['DESC_CUENTA'] ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="col-xl col-lg-4 col-md-6 col-12 mb-2">
+                                <label for="codAuxiliar">Auxiliar:</label>
+                                <select class="form-control form-control-sm select2-filtro" name="codAuxiliar" id="codAuxiliar">
+                                    <option value="%" <?= $codAuxiliar == '%' ? 'selected' : '' ?>>Todos</option>
+                                    <option value="SinAsignar" <?= $codAuxiliar == 'SinAsignar' ? 'selected' : '' ?>>Sin asignar</option>
+                                    <?php foreach ($todosLosCentrosCosto as $centroCosto) { ?>
+                                        <option value="<?= $centroCosto->COD_AUXILIAR ?>" <?= $codAuxiliar == $centroCosto->COD_AUXILIAR ? 'selected' : '' ?>><?= $centroCosto->DESC_AUXILIAR ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="col-xl col-lg-4 col-md-6 col-12 mb-2">
+                                <label for="sector">Sector:</label>
+                                <select class="form-control form-control-sm select2-filtro" name="sector" id="sector">
+                                    <option value="%" <?= $sector == '%' ? 'selected' : '' ?>>Todos</option>
+                                    <?php foreach ($sectores as $sectorOpcion) { ?>
+                                        <option value="<?= $sectorOpcion ?>" <?= $sector == $sectorOpcion ? 'selected' : '' ?>><?= $sectorOpcion ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="col-xl col-lg-4 col-md-6 col-12 mb-2">
+                                <label for="codProrrateo">Prorrateo:</label>
+                                <select class="form-control form-control-sm select2-filtro" name="codProrrateo" id="codProrrateo">
+                                    <option value="%" <?= $codProrrateo == '%' ? 'selected' : '' ?>>Todos</option>
+                                    <option value="SinProrrateo" <?= $codProrrateo == 'SinProrrateo' ? 'selected' : '' ?>>Sin prorrateo</option>
+                                    <?php foreach ($todosLosMetodos as $metodo) { ?>
+                                        <option value="<?= $metodo->COD_PRORRATEO ?>" <?= $codProrrateo == $metodo->COD_PRORRATEO ? 'selected' : '' ?>><?= $metodo->COD_PRORRATEO . '-' . $metodo->DESC_PRORRATEO ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cgm-panel-pie">
+                            <button type="submit" class="btn btn-primary btn-sm">Aplicar</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="limpiarFiltros">Limpiar filtros</button>
+                        </div>
+                    </div>
+
                 </form>
-            </div>
-            <div class="acciones-container mt-3">
-                <!-- Dropdown Amortizar -->
-                <div class="accion-dropdown amortizar dropdown">
-                    <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnAmortizarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="bi bi-calendar2-week"></i> Amortizar
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="btnAmortizarDropdown" id="menuAmortizar">
-                        <a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarAmortizacion(); return false;">
-                            <i class="bi bi-play-fill"></i> Ejecutar Amortización
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Dropdown Prorratear -->
-                <div class="accion-dropdown prorratear dropdown">
-                    <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnProrratearDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="bi bi-file-text"></i> Prorratear
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="btnProrratearDropdown" id="menuProrratear">
-                        <a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarProrrateo(); return false;">
-                            <i class="bi bi-play-fill"></i> Ejecutar Prorrateo
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Dropdown Procesar -->
-                <div class="accion-dropdown procesar dropdown">
-                    <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnProcesarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="bi bi-check2-square"></i> Procesar
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="btnProcesarDropdown" id="menuProcesar">
-                        <a class="dropdown-item ejecutar-item" href="#" onclick="AccionesControl.ejecutarProcesamiento(); return false;">
-                            <i class="bi bi-play-fill"></i> Ejecutar Proceso
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Dropdown Exportar -->
-                <div class="accion-dropdown exportar dropdown">
-                    <button class="btn btn-ejecutar dropdown-toggle" type="button" id="btnExportarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="bi bi-file-earmark-excel"></i> Exportar
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="btnExportarDropdown" id="menuExportar">
-                        <a class="dropdown-item ejecutar-item" href="#" onclick="resumen(); return false;">
-                            <i class="bi bi-file-earmark-spreadsheet"></i> Resumen IE
-                        </a>
-                        <a class="dropdown-item ejecutar-item" href="#" onclick="exportarGastosExcluidos(); return false;">
-                            <i class="bi bi-file-earmark-excel"></i> Exportar Excluidos
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div id="contCheck">
-                <label id="titleCheck">Acciones masivas</label>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" onclick="checkExcluirAll(this);" value="" id="defaultCheck1">
-                    <label class="form-check-label" for="defaultCheck1">Excluir</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" onclick="checkControladoAll(this);" value="" id="defaultCheck2">
-                    <label class="form-check-label checkControladoAll" for="defaultCheck2">Controlar</label>
-                </div>
             </div>
         </div>
     </div>
@@ -324,7 +376,7 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
             $codRubro = '%';
         }
 
-        $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta);
+        $todosLosGastos = $gastos->traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta, $codAuxiliar, $sector, $codProrrateo);
 
     ?>
 
@@ -402,7 +454,36 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         // La tabla se pinta vía AJAX en renderizarTablaGastos() (llamada desde functions.js)
         // DataTable y select2 de .codRubro se inicializan dentro de esa función
 
-        $('.codCuenta').select2();
+        $('.select2-filtro').select2({ width: '100%' });
+
+        // Select2 necesita recalcular el ancho cuando el panel se hace visible.
+        $('#panelFiltros').on('shown.bs.collapse', function() {
+            $('.select2-filtro').select2({ width: '100%' });
+        });
+
+        var temporizadorBusqueda;
+        $('#busquedaRapida').on('input', function() {
+            var valor = this.value;
+            $('#q').val(valor);
+            clearTimeout(temporizadorBusqueda);
+            temporizadorBusqueda = setTimeout(function() {
+                if (window.tablaGastos) window.tablaGastos.draw();
+            }, 300);
+        });
+
+        $('#limpiarBusquedaRapida').on('click', function() {
+            $('#busquedaRapida').val('').trigger('input');
+        });
+
+        $('#limpiarFiltros').on('click', function() {
+            $('#codRubro, #codCuenta, #codAuxiliar, #sector, #codProrrateo').val('%').trigger('change');
+            $('#formFiltros').submit();
+        });
+
+        $('.cgm-chip').on('click', function() {
+            $('#' + $(this).data('filtro')).val('%').trigger('change');
+            $('#formFiltros').submit();
+        });
 
         // Validar módulos al cargar la página
         validarModulos();
@@ -413,8 +494,9 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         });
 
         // Actualizar fechas antes de enviar el formulario
-        $('form').on('submit', function(e) {
+        $('#formFiltros').on('submit', function(e) {
             actualizarFechas();
+            $('#q').val($('#busquedaRapida').val());
         });
 
         // Pintar tabla si hay filtros activos

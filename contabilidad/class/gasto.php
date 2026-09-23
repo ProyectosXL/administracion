@@ -25,60 +25,80 @@ class Gasto
 
       
 
-    public function traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta = null){
+    public function traerGastos($desde, $hasta, $estado, $codRubro, $codCuenta = '%', $codAuxiliar = '%', $sector = '%', $codProrrateo = '%'){
 
-    if($estado == '0'){
-           // Pendiente control // 
-            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE  AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0 AND COD_CUENTA LIKE '$codCuenta'
-                        UNION ALL
-                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0 AND COD_CUENTA LIKE '$codCuenta'" ;
-    
-    }elseif($estado == '1'){
-            // Para amortizar //
-            $sql="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO IS NULL AND FECHA BETWEEN '$desde' AND '$hasta' 
-                  AND PRORRATEADO IS NULL AND CONTROLADO IS NOT NULL AND EXCLUIR = 0 AND AMORTIZAR > 0 AND AMORTIZADO IS NULL
-                  AND COD_CUENTA LIKE '$codCuenta'
-            ";
-    }elseif($estado == '2'){
-            // Gastos excluidos // 
-            $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 1
-             AND COD_CUENTA LIKE '$codCuenta'";
+        // Estos filtros se aplican a todas las vistas de estado, incluidas ambas partes de los UNION ALL.
+        $condicionesComunes = '';
+        $parametrosComunes = array();
 
-    }elseif($estado == '3'){
-            // Gastos sin asignar //
-            $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL AND AMORTIZADO IS NULL)
-             AND COD_CUENTA LIKE '$codCuenta'";
+        if ($codRubro !== '%') {
+            $condicionesComunes .= ' AND COD_RUBRO LIKE ?';
+            $parametrosComunes[] = $codRubro;
+        }
 
-    }elseif($estado == '4'){
-            // Pendiente prorratear //
-            // Replica la validacion de RO_SP_PROCESAR_DATAWAREHOUSE_IE que impide cerrar el periodo,
-            // para que el filtro muestre exactamente los registros que bloquean el proceso.
-            $sql ="SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN '$desde' AND '$hasta' AND EXCLUIR = 0
+        if ($codCuenta !== '%') {
+            $condicionesComunes .= ' AND COD_CUENTA LIKE ?';
+            $parametrosComunes[] = $codCuenta;
+        }
+
+        if ($codAuxiliar === 'SinAsignar') {
+            $condicionesComunes .= ' AND (COD_AUXILIAR = ? OR COD_AUXILIAR IS NULL)';
+            $parametrosComunes[] = 'SinAsignar';
+        } elseif ($codAuxiliar !== '%') {
+            $condicionesComunes .= ' AND COD_AUXILIAR LIKE ?';
+            $parametrosComunes[] = $codAuxiliar;
+        }
+
+        if ($sector !== '%') {
+            $condicionesComunes .= ' AND SECTOR LIKE ?';
+            $parametrosComunes[] = $sector;
+        }
+
+        if ($codProrrateo === 'SinProrrateo') {
+            $condicionesComunes .= ' AND COD_PRORRATEO IS NULL';
+        } elseif ($codProrrateo !== '%') {
+            $condicionesComunes .= ' AND COD_PRORRATEO LIKE ?';
+            $parametrosComunes[] = $codProrrateo;
+        }
+
+        if($estado == '0'){
+            // Pendiente control.
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO IS NULL AND FECHA BETWEEN ? AND ? AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0 $condicionesComunes
+                    UNION ALL
+                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL AND PERIODO = CAST(DATEPART(MONTH, ?) AS VARCHAR)+'-'+CAST(DATEPART(YEAR, ?) AS VARCHAR) AND PRORRATEADO IS NULL AND (CONTROLADO = 0 OR CONTROLADO IS NULL) AND EXCLUIR = 0 $condicionesComunes";
+            $params = array_merge(array($desde, $hasta), $parametrosComunes, array($hasta, $hasta), $parametrosComunes);
+        } elseif($estado == '1'){
+            // Para amortizar.
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO IS NULL AND FECHA BETWEEN ? AND ?
+                    AND PRORRATEADO IS NULL AND CONTROLADO IS NOT NULL AND EXCLUIR = 0 AND AMORTIZAR > 0 AND AMORTIZADO IS NULL $condicionesComunes";
+            $params = array_merge(array($desde, $hasta), $parametrosComunes);
+        } elseif($estado == '2'){
+            // Gastos excluidos.
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN ? AND ? AND EXCLUIR = 1 $condicionesComunes";
+            $params = array_merge(array($desde, $hasta), $parametrosComunes);
+        } elseif($estado == '3'){
+            // Gastos sin asignar.
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN ? AND ? AND EXCLUIR = 0 AND (COD_RUBRO IS NULL OR COD_PRORRATEO IS NULL AND AMORTIZADO IS NULL) $condicionesComunes";
+            $params = array_merge(array($desde, $hasta), $parametrosComunes);
+        } elseif($estado == '4'){
+            // Replica la validacion de RO_SP_PROCESAR_DATAWAREHOUSE_IE.
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE FECHA BETWEEN ? AND ? AND EXCLUIR = 0
                     AND ((CONTROLADO = 0 OR CONTROLADO IS NULL) OR PRORRATEADO IS NULL)
-                    AND (AMORTIZADO IS NULL OR AMORTIZADO = 0)
-                    AND COD_CUENTA LIKE '$codCuenta'
-                        UNION ALL
-                   SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NOT NULL
-                    AND PERIODO = CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR)
-                    AND PRORRATEADO IS NULL AND EXCLUIR = 0
-                    AND COD_CUENTA LIKE '$codCuenta'";
+                    AND (AMORTIZADO IS NULL OR AMORTIZADO = 0) $condicionesComunes
+                    UNION ALL
+                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NOT NULL
+                    AND PERIODO = CAST(DATEPART(MONTH, ?) AS VARCHAR)+'-'+CAST(DATEPART(YEAR, ?) AS VARCHAR)
+                    AND PRORRATEADO IS NULL AND EXCLUIR = 0 $condicionesComunes";
+            $params = array_merge(array($desde, $hasta), $parametrosComunes, array($hasta, $hasta), $parametrosComunes);
+        } else {
+            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN ? AND ? $condicionesComunes
+                    UNION ALL
+                    SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL
+                    AND PERIODO BETWEEN CAST(DATEPART(MONTH, ?) AS VARCHAR)+'-'+CAST(DATEPART(YEAR, ?) AS VARCHAR) AND CAST(DATEPART(MONTH, ?) AS VARCHAR)+'-'+CAST(DATEPART(YEAR, ?) AS VARCHAR) $condicionesComunes";
+            $params = array_merge(array($desde, $hasta), $parametrosComunes, array($desde, $desde, $hasta, $hasta), $parametrosComunes);
+        }
 
-    }else{
-
-            $sql = "SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE (AMORTIZADO IS NULL OR AMORTIZADO = 0) AND FECHA BETWEEN '$desde' AND '$hasta' --AND PRORRATEADO IS NULL
-                    AND COD_RUBRO LIKE '$codRubro'
-                    AND COD_CUENTA LIKE '$codCuenta'
-                        UNION ALL SELECT * FROM RO_T_INTEGRAL_TANGO_2 WHERE AMORTIZADO = 1 AND AMORTIZAR IS NULL 
-                    AND PERIODO BETWEEN CAST(DATEPART(MONTH, '$desde') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$desde') AS VARCHAR) AND CAST(DATEPART(MONTH, '$hasta') AS VARCHAR)+'-'+CAST(DATEPART(YEAR, '$hasta') AS VARCHAR) 
-                    --AND PRORRATEADO IS NULL 
-                    AND COD_RUBRO LIKE '$codRubro' 
-                    AND COD_CUENTA LIKE '$codCuenta'
-                    --ORDER BY ID
-                ";
-
-    }
-
-        $stmt = sqlsrv_query( $this->cid_central, $sql );
+        $stmt = sqlsrv_query($this->cid_central, $sql, $params);
     
         try{
             

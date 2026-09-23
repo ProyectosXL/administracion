@@ -2707,10 +2707,43 @@ function renderizarTablaGastos() {
                 tbody.appendChild(tr);
             });
 
-    // Inicializar DataTables
-    $('#myTable').DataTable({ responsive: true });
+    // La búsqueda rápida sólo consulta estas columnas: 6 LEYENDA, 8 RAZÓN SOCIAL y 9 NRO. COMP.
+    if (!window.filtroBusquedaRapidaRegistrado) {
+        $.fn.dataTable.ext.search.push(function(settings, data) {
+            if (settings.nTable.id !== 'myTable') return true;
+
+            const texto = normalizarBusquedaRapida($('#busquedaRapida').val() || '');
+            if (!texto) return true;
+
+            return [data[6], data[8], data[9]].some(function(valor) {
+                return normalizarBusquedaRapida(valor || '').indexOf(texto) !== -1;
+            });
+        });
+        window.filtroBusquedaRapidaRegistrado = true;
+    }
+
+    // Sin "f" se oculta el buscador global, que también inspecciona los select de las celdas.
+    window.tablaGastos = $('#myTable').DataTable({
+        responsive: true,
+        dom: 'lrtip'
+    });
+
+    // La búsqueda rápida comparte la fila del selector "Show entries" para no ocupar altura del encabezado.
+    const contenedorBusqueda = $('#contenedorBusquedaRapida');
+    const selectorCantidad = $('#myTable_wrapper .dataTables_length');
+    if (contenedorBusqueda.length && selectorCantidad.length) {
+        contenedorBusqueda.appendTo(selectorCantidad);
+    }
+    window.tablaGastos.draw();
 
     // Inicializar select2 en COD_RUBRO
     $('.codRubro').select2();
+}
+
+function normalizarBusquedaRapida(valor) {
+    return String(valor)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
 }
 
