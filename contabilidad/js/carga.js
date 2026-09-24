@@ -83,17 +83,12 @@ function completarCuenta(dato) {
 }
 
 
-const cambiarEntorno = (t) =>{
+// Toggle de banderas ARG / UY: cambia al entorno de la bandera inactiva
+const cambiarEntornoCustom = (container) => {
+  const inactiveFlag = container.querySelector('.toggle-flag:not(.active)');
+  if (!inactiveFlag) return;
 
-
-  let entorno = 'central';
-
-  if(t.getAttribute("data-off") == "ARG" ){
-      entorno = 'central';
-  }else{
-      entorno = 'uy';
-  }
-
+  const entorno = inactiveFlag.getAttribute('data-entorno');
 
   $.ajax({
   url: "Controller/controlGastosController.php?accion=cambiarEntorno",

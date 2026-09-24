@@ -31,7 +31,7 @@ class CuentaContable
             
         }else{
 
-            $sql = "SELECT COD_CUENTA, DESC_CUENTA FROM CUENTA WHERE COD_CUENTA BETWEEN '510100' AND '570200' ORDER BY DESC_CUENTA";
+            $sql = "SELECT COD_CUENTA, DESC_CUENTA FROM CUENTA WHERE COD_CUENTA BETWEEN '510100' AND '590999' ORDER BY DESC_CUENTA";
         }
         
         $stmt = sqlsrv_query( $this->cid_central, $sql );

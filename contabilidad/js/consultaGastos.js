@@ -22,17 +22,12 @@ function iniciarEscuchaSelect() {
 
 }
 
-const cambiarEntorno = (t) =>{
+// Toggle de banderas ARG / UY: cambia al entorno de la bandera inactiva
+const cambiarEntornoCustom = (container) => {
+  const inactiveFlag = container.querySelector('.toggle-flag:not(.active)');
+  if (!inactiveFlag) return;
 
-
-  let entorno = 'central';
-
-  if(t.getAttribute("data-off") == "ARG" ){
-      entorno = 'central';
-  }else{
-      entorno = 'uy';
-  }
-
+  const entorno = inactiveFlag.getAttribute('data-entorno');
 
   $.ajax({
   url: "Controller/controlGastosController.php?accion=cambiarEntorno",
@@ -51,7 +46,7 @@ function completarCampoRubro(e) {
   // 5 - al evento change de un codRubro se llama a la funcion completarCampoRubro, e , es el evento con la información de cual elemnto del dom fue clickeado
   let Dato = e.target; // 6 - guardo el elemento del html donde se produjo el evento.
   /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let ID = Dato.parentElement.parentElement.childNodes[33].textContent;
+  let ID = Dato.closest("tr").children[16].textContent;
   let codRubro = Dato.value;
   let rubroDesc = Dato.parentElement.parentElement.children[11];
   conexion = new XMLHttpRequest();
@@ -68,7 +63,7 @@ function completarCampoRubro(e) {
 function completarCampoProrrateo(e) {
   let Dato = e.target;
   /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let ID = Dato.parentElement.parentElement.childNodes[33].textContent;
+  let ID = Dato.closest("tr").children[16].textContent;
   let codProrrateo = Dato.value;
   let prorrateoDesc = Dato.parentElement.parentElement.children[13];
   /* let txtDescProrrateo = e.target; */

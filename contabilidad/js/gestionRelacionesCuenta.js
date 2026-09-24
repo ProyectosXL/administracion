@@ -278,15 +278,13 @@ const eliminarRelacion = (id) => {
     });
 }
 
-// Función para cambiar el entorno
-const cambiarEntorno = (t) => {
-    let entorno = 0;
-  
-    if(t.getAttribute("data-off") == "ARG") {
-      entorno = 0;
-    } else {
-      entorno = 1;
-    }
+// Función para cambiar el entorno (toggle de banderas ARG / UY)
+const cambiarEntornoCustom = (container) => {
+    const inactiveFlag = container.querySelector('.toggle-flag:not(.active)');
+    if (!inactiveFlag) return;
+
+    // cambiarEntorno.php espera 0 = central (ARG), 1 = uy
+    const entorno = inactiveFlag.getAttribute('data-entorno') === 'uy' ? 1 : 0;
 
     $.ajax({
       url: "Controller/cambiarEntorno.php",
@@ -303,10 +301,12 @@ $(document).ready(function() {
     // Inicializar Select2 cuando se abre el modal
     $('#editarModal').on('shown.bs.modal', function() {
         $('.editCodRubro').select2({
-            dropdownParent: $('#editarModal')
+            dropdownParent: $('#editarModal'),
+            width: '100%'
         });
         $('.editCodProrrateo').select2({
-            dropdownParent: $('#editarModal')
+            dropdownParent: $('#editarModal'),
+            width: '100%'
         });
     });
 });

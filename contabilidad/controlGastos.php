@@ -137,13 +137,17 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
 
 <body>  
 
-    <div class="row align-items-center">
+    <?php include 'partials/navegacion.php'; ?>
 
-        <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
-            <img src="../image/home-button.png" alt="Menú">
-        </a>
+    <div class="row align-items-center cgm-pasos" id="seccionPasos">
 
-        <div class="progressbar-wrapper">
+        <!-- Resumen compacto: visible solo con la sección de pasos contraída -->
+        <div class="cgm-pasos-resumen" id="pasosResumen" aria-live="polite">
+            <span class="cgm-pasos-dots" id="pasosResumenDots"></span>
+            <span class="cgm-pasos-texto" id="pasosResumenTexto"></span>
+        </div>
+
+        <div class="progressbar-wrapper" id="pasosDetalle">
             <div hidden id="periodo" attr-periodo= "<?= $periodo ?>" style="margin-top:-2rem;"></div>
             <ul class="progressbar" >
                 <li class="" id="paso1"><span class="paso-label" data-tooltip="Calcular y grabar las ventas sin IVA">Paso 1</span></li>
@@ -157,7 +161,10 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
             </ul>
             <div id="pasoTooltipBox" class="paso-tooltip-box" role="tooltip"></div>
         </div>
-        <div>
+        <div class="cgm-pasos-acciones">
+            <button type="button" class="btn cgm-pasos-toggle mt-3" id="togglePasos" aria-expanded="true" aria-controls="pasosDetalle" title="Contraer / expandir los pasos">
+                <i class="bi bi-chevron-up"></i> <span>Ocultar pasos</span>
+            </button>
             <button class="btn btn-primary ml-1 mt-3" id="btnEjecutar" style="margin-right:10">Ejecutar <i class="bi bi-check2-square"></i></button>
             <button class="btn btn-warning mt-3" id="btnGestionModulos" onclick="abrirGestionModulos()">
                 <i class="bi bi-gear-fill"></i> Gestión
@@ -557,6 +564,62 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
         document.addEventListener('click', function() {
             box.classList.remove('visible');
             open = null;
+        });
+    }());
+
+    // Expandir / contraer la sección de pasos (el estado se recuerda por navegador)
+    ;(function() {
+        var CLAVE    = 'cgm.pasosContraidos';
+        var seccion  = document.getElementById('seccionPasos');
+        var boton    = document.getElementById('togglePasos');
+        var pasos    = document.querySelectorAll('.progressbar li');
+        var dots     = document.getElementById('pasosResumenDots');
+        var texto    = document.getElementById('pasosResumenTexto');
+
+        function aplicar(contraido) {
+            seccion.classList.toggle('contraido', contraido);
+            boton.setAttribute('aria-expanded', contraido ? 'false' : 'true');
+            boton.querySelector('i').className = contraido ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+            boton.querySelector('span').textContent = contraido ? 'Mostrar pasos' : 'Ocultar pasos';
+            document.getElementById('pasoTooltipBox').classList.remove('visible');
+        }
+
+        // Resumen compacto: un punto por paso + próximo paso pendiente
+        function actualizarResumen() {
+            var completados = 0;
+            var proximo = null;
+            dots.innerHTML = '';
+
+            pasos.forEach(function(li, i) {
+                var activo = li.classList.contains('active');
+                var label  = li.querySelector('.paso-label');
+                var dot    = document.createElement('span');
+                dot.className = 'cgm-pasos-dot' + (activo ? ' active' : '');
+                dot.title = 'Paso ' + (i + 1) + ': ' + (label ? label.getAttribute('data-tooltip') : '');
+                dots.appendChild(dot);
+
+                if (activo) completados++;
+                else if (!proximo) proximo = { numero: i + 1, desc: label ? label.getAttribute('data-tooltip') : '' };
+            });
+
+            texto.innerHTML = '<strong>' + completados + ' de ' + pasos.length + '</strong> pasos completados' +
+                (proximo ? ' · Próximo: <strong>Paso ' + proximo.numero + '</strong> – ' + proximo.desc : ' · <strong>Listo</strong>');
+        }
+
+        var contraido = false;
+        try { contraido = localStorage.getItem(CLAVE) === '1'; } catch (e) {}
+        aplicar(contraido);
+        actualizarResumen();
+
+        boton.addEventListener('click', function() {
+            contraido = !seccion.classList.contains('contraido');
+            aplicar(contraido);
+            try { localStorage.setItem(CLAVE, contraido ? '1' : '0'); } catch (e) {}
+        });
+
+        // functions.js marca los pasos como activos de forma asíncrona
+        new MutationObserver(actualizarResumen).observe(document.querySelector('.progressbar'), {
+            attributes: true, attributeFilter: ['class'], subtree: true
         });
     }());
 

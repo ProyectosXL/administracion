@@ -1,0 +1,244 @@
+/* ============================================================
+   consulta-gastos-modern.css
+   Estilos propios de consultaGastos.php.
+   Se apoya en control-gastos-modern.css (variables --cgm-*,
+   cabecera .alert-secondary, navegación, toggle y #myTable).
+   ============================================================ */
+
+body {
+    padding: 10px;
+}
+
+/* ── Cabecera ── */
+.cns-cabecera {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.cns-cabecera #titlePrincipal {
+    flex: 1 1 auto;
+}
+
+.cns-cabecera .custom-toggle-container {
+    margin: 0;
+}
+
+/* ── Fila de filtros ── */
+.cns-campo-fecha .form-control {
+    width: 150px;
+}
+
+.cns-campo-cuenta {
+    flex: 1 1 280px;
+    min-width: 240px;
+}
+
+.cns-campo-rubro {
+    flex: 1 1 240px;
+    min-width: 200px;
+}
+
+.cns-campo-texto {
+    flex: 1 1 240px;
+    min-width: 200px;
+}
+
+.cgm-fila-principal .select2-container {
+    width: 100% !important;
+}
+
+#formFiltros #search {
+    padding: 6px 16px;
+}
+
+/* ── Select2 con el mismo look que los inputs ── */
+.select2-container--default .select2-selection--single {
+    height: 31px;
+    border: 1px solid var(--cgm-border-light);
+    border-radius: var(--cgm-radius-sm);
+    font-size: 13px;
+    transition: border-color var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 29px;
+    color: var(--cgm-text);
+    font-size: 13px;
+    padding-left: 10px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 29px;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--cgm-accent);
+    box-shadow: 0 0 0 3px var(--cgm-accent-dim);
+}
+
+.select2-dropdown {
+    border-color: var(--cgm-border-light);
+    border-radius: var(--cgm-radius-sm);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+    font-family: var(--cgm-sans);
+}
+
+.select2-container .select2-results__option {
+    font-size: 12px;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background: var(--cgm-accent);
+}
+
+/* ── Tarjeta de resultados ── */
+.cns-resultados {
+    background: var(--cgm-card);
+    border: 1px solid var(--cgm-border);
+    border-radius: var(--cgm-radius);
+    box-shadow: var(--cgm-shadow-sm);
+    padding: 14px 16px;
+}
+
+.cns-resultados-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--cgm-muted);
+}
+
+.cns-resultados-titulo .badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0;
+    background: var(--cgm-accent-dim);
+    color: var(--cgm-accent-hover);
+}
+
+.cns-tabla-wrapper {
+    max-height: calc(100vh - 290px);
+    min-height: 300px;
+    overflow: auto;
+    border: 1px solid var(--cgm-border);
+    border-radius: var(--cgm-radius-sm);
+}
+
+#myTable.table {
+    margin: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#myTable.table thead.thead-dark th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+#myTable .cns-saldo {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+#myTable .cns-saldo.negativo {
+    color: #b91c1c;
+}
+
+#myTable .cns-fecha {
+    white-space: nowrap;
+}
+
+#myTable .cns-periodo {
+    display: block;
+    font-size: 11px;
+    color: var(--cgm-muted);
+}
+
+#myTable .cns-desc-cuenta {
+    min-width: 16rem;
+}
+
+/* Selects editables de rubro / prorrateo en la tabla */
+#myTable select.codRubroC,
+#myTable select.codProrrateoC {
+    height: 28px;
+    padding: 2px 6px;
+    border: 1px solid var(--cgm-border-light);
+    border-radius: 4px;
+    background: var(--cgm-card);
+    font-family: var(--cgm-sans);
+    font-size: 12px;
+    color: var(--cgm-text);
+    cursor: pointer;
+    transition: border-color var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+#myTable select.codRubroC {
+    width: 140px;
+}
+
+#myTable select.codProrrateoC {
+    width: 70px;
+}
+
+#myTable select.codRubroC:focus,
+#myTable select.codProrrateoC:focus {
+    border-color: var(--cgm-accent);
+    box-shadow: 0 0 0 2px var(--cgm-accent-dim);
+    outline: none;
+}
+
+/* Controles de DataTables fuera del scroll */
+#myTable_wrapper .dataTables_length,
+#myTable_wrapper .dataTables_filter {
+    margin-bottom: 10px;
+}
+
+#myTable_wrapper .dataTables_length label,
+#myTable_wrapper .dataTables_filter label {
+    font-size: 12px;
+    color: var(--cgm-muted);
+}
+
+#myTable_wrapper .dataTables_paginate {
+    margin-top: 10px;
+}
+
+/* Estado vacío (antes de consultar) */
+.cns-vacio {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--cgm-muted);
+    background: var(--cgm-card);
+    border: 1px dashed var(--cgm-border-light);
+    border-radius: var(--cgm-radius);
+}
+
+.cns-vacio i {
+    display: block;
+    font-size: 32px;
+    color: var(--cgm-dim);
+    margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+    .cns-campo-fecha .form-control {
+        width: 100%;
+    }
+
+    .cns-campo-cuenta,
+    .cns-campo-rubro,
+    .cns-campo-texto {
+        min-width: 0;
+    }
+}

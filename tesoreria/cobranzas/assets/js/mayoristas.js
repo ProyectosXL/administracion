@@ -219,13 +219,17 @@ $(document).ready(function() {
         $('#modal-desglose-total-rem').text(formatoMoneda(clienteData.TOTAL_REMITO || 0));
         $('#modal-desglose-total-gral').text(formatoMoneda(clienteData.TOTAL_GENERAL || 0));
 
-        // 1. Renderizar Facturas / NCR
+        // 1. Renderizar Facturas / NCR / REC
         let htmlFac = '';
         if (clienteData.FACTURAS && clienteData.FACTURAS.length > 0) {
             clienteData.FACTURAS.forEach(f => {
                 const esNC = (f.IMPORTE < 0 || (f.T_COMP && (f.T_COMP.includes('NC') || f.T_COMP.includes('NCR'))));
-                const badgeColor = esNC ? 'bg-danger text-white' : 'bg-secondary';
-                const textColor = esNC ? 'text-danger' : 'text-success';
+                const esREC = (f.T_COMP === 'REC');
+                let badgeColor = 'bg-secondary';
+                if (esNC) badgeColor = 'bg-danger text-white';
+                else if (esREC) badgeColor = 'bg-info text-dark';
+                
+                const textColor = f.IMPORTE < 0 ? 'text-danger' : (esREC ? 'text-info fw-bold' : 'text-success');
                 htmlFac += `
                     <tr>
                         <td><span class="badge ${badgeColor} font-monospace">${f.T_COMP}</span></td>
@@ -237,7 +241,7 @@ $(document).ready(function() {
                 `;
             });
         } else {
-            htmlFac = '<tr><td colspan="5" class="text-center text-muted py-3">No posee facturas ni notas de crédito pendientes en este momento.</td></tr>';
+            htmlFac = '<tr><td colspan="5" class="text-center text-muted py-3">No posee comprobantes pendientes en este momento.</td></tr>';
         }
         $('#cuerpo-tabla-desglose-facturas').html(htmlFac);
 
@@ -277,7 +281,7 @@ $(document).ready(function() {
         $('#modal-wpp-telefono').val(clienteData.TELEFONO_WPP || '');
         $('#modal-wpp-contacto-nombre').val(clienteData.CONTACTO_NOMBRE || '');
 
-        // Renderizar Lista de Facturas / NCR
+        // Renderizar Lista de Facturas / NCR / REC
         let htmlFac = '';
         if (clienteData.FACTURAS && clienteData.FACTURAS.length > 0) {
             $('#cont-wpp-sel-facturas').removeClass('d-none');
@@ -285,7 +289,11 @@ $(document).ready(function() {
             clienteData.FACTURAS.forEach((f, idx) => {
                 const facJson = encodeURIComponent(JSON.stringify(f));
                 const esNC = (f.IMPORTE < 0 || (f.T_COMP && (f.T_COMP.includes('NC') || f.T_COMP.includes('NCR'))));
-                const textClass = esNC ? 'text-danger' : 'text-success';
+                const esREC = (f.T_COMP === 'REC');
+                let textClass = 'text-success';
+                if (f.IMPORTE < 0 || esNC) textClass = 'text-danger';
+                else if (esREC) textClass = 'text-info';
+
                 htmlFac += `
                     <div class="form-check small py-1 border-bottom border-light">
                         <input class="form-check-input chk-wpp-factura" type="checkbox" value="${facJson}" id="chk-wpp-fac-${idx}" data-importe="${f.IMPORTE || 0}" checked>
@@ -299,7 +307,7 @@ $(document).ready(function() {
         } else {
             $('#cont-wpp-sel-facturas').addClass('d-none');
             $('#chk-switch-todas-fac').prop('checked', false).prop('disabled', true);
-            htmlFac = '<div class="text-muted small py-2 text-center">Sin facturas / notas de crédito pendientes</div>';
+            htmlFac = '<div class="text-muted small py-2 text-center">Sin facturas / comprobantes pendientes</div>';
         }
         $('#lista-wpp-facturas').html(htmlFac);
 

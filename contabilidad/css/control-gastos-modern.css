@@ -91,35 +91,44 @@ body {
     outline: none;
 }
 
-/* ── Botón Home/Menú ── */
-.btn-home {
+/* ── Navegación entre pantallas (partials/navegacion.php) ── */
+.cgm-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    margin: 8px 8px 12px;
+    background: var(--cgm-card);
+    border: 1px solid var(--cgm-border);
+    border-radius: var(--cgm-radius);
+    box-shadow: var(--cgm-shadow-sm);
+}
+
+.cgm-nav-link {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    border: 1px solid var(--cgm-border);
-    border-radius: 8px;
-    padding: 0.4rem;
-    background: var(--cgm-card);
-    margin-right: 0.75rem;
-    margin-left: 0.5rem;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: var(--cgm-radius-sm);
+    font-family: var(--cgm-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--cgm-muted);
     text-decoration: none;
-    transition: transform var(--cgm-transition), box-shadow var(--cgm-transition),
-                border-color var(--cgm-transition);
+    transition: color var(--cgm-transition), background var(--cgm-transition);
 }
 
-.btn-home:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .14);
-    border-color: var(--cgm-border-light);
+.cgm-nav-link:hover {
+    color: var(--cgm-accent);
+    background: var(--cgm-accent-dim);
     text-decoration: none;
 }
 
-.btn-home img {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-    display: block;
+.cgm-nav-link.active {
+    color: #ffffff;
+    background: var(--cgm-accent);
+    font-weight: 600;
+    box-shadow: 0 2px 8px var(--cgm-accent-ring);
 }
 
 /* ── Toggle de entorno (ARG/UY) ── */
@@ -329,6 +338,92 @@ body {
     box-shadow: 0 2px 10px rgba(26, 111, 212, .35);
     font-size: 13px;
     line-height: 26px;
+}
+
+/* ── Sección de pasos expandible / contraíble ── */
+.cgm-pasos-acciones {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 1rem;
+}
+
+/* Los botones traen mt-3 / ml-1 inline: se alinean con el gap del contenedor */
+.cgm-pasos-acciones > .btn,
+.cgm-pasos-acciones > .custom-toggle-container {
+    margin: 0 !important;
+}
+
+.cgm-pasos-toggle.btn {
+    border: 1px solid var(--cgm-border-light);
+    border-radius: var(--cgm-radius-sm) !important;
+    background: var(--cgm-card);
+    color: var(--cgm-muted);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all var(--cgm-transition);
+}
+
+.cgm-pasos-toggle.btn:hover,
+.cgm-pasos-toggle.btn:focus {
+    color: var(--cgm-accent);
+    border-color: var(--cgm-accent);
+    background: var(--cgm-accent-dim);
+    box-shadow: none;
+}
+
+/* Resumen compacto: solo visible con la sección contraída */
+.cgm-pasos-resumen {
+    display: none;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 1rem 0.5rem 0;
+    padding: 6px 14px;
+    background: var(--cgm-card);
+    border: 1px solid var(--cgm-border);
+    border-radius: 999px;
+    box-shadow: var(--cgm-shadow-sm);
+    font-size: 12.5px;
+    color: var(--cgm-muted);
+}
+
+.cgm-pasos-resumen strong {
+    color: var(--cgm-text);
+    font-weight: 600;
+}
+
+.cgm-pasos-dots {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.cgm-pasos-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cgm-card);
+    border: 2px solid var(--cgm-border-light);
+}
+
+.cgm-pasos-dot.active {
+    background: var(--cgm-accent);
+    border-color: var(--cgm-accent);
+}
+
+.cgm-pasos.contraido .progressbar-wrapper {
+    display: none;
+}
+
+.cgm-pasos.contraido .cgm-pasos-resumen {
+    display: inline-flex;
+    flex: 1 1 auto;
+    max-width: max-content;
+}
+
+.cgm-pasos.contraido {
+    margin-bottom: 8px;
 }
 
 /* ── Label de paso (texto clickeable para tooltip) ── */
@@ -866,6 +961,11 @@ body {
 
 @media (max-width: 768px) {
     body { font-size: 13px; }
+
+    .cgm-nav-link {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
 
     .alert.alert-secondary .form-row {
         flex-direction: column;

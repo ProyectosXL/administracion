@@ -142,8 +142,10 @@ try {
                         A.COD_CLIENT LIKE 'MA%'             
                         AND A.COD_VENDED IN ('Z3', 'Z4', 'Z5')
                         AND A.FECHA_EMIS > GETDATE()-90            
-                        AND A.T_COMP IN ('FAC', 'NCR')      
-                        AND A.ESTADO <> 'CAN'
+                        AND (
+                            (A.T_COMP IN ('FAC', 'NCR') AND A.ESTADO <> 'CAN')
+                            OR (A.T_COMP = 'REC' AND A.ESTADO NOT IN ('IMP', 'CAN'))
+                        )
                         AND B.HABILITADO = 1
                 )
                 SELECT 
@@ -196,8 +198,8 @@ try {
 
                     $tComp = strtoupper(trim($row['T_COMP'] ?? ''));
                     $saldo = (float)($row['SALDO_COMP'] ?? 0);
-                    // Comprobantes que restan saldo: NC, NCR, NCP, NCD o REC negativo
-                    $esCredito = (strpos($tComp, 'NC') !== false || strpos($tComp, 'NCR') !== false || ($tComp === 'REC' && $saldo < 0));
+                    // Comprobantes que restan saldo: NC, NCR, NCP, NCD y REC (negativos como las NCR)
+                    $esCredito = (strpos($tComp, 'NC') !== false || $tComp === 'REC');
                     $montoReal = $esCredito ? -abs($saldo) : abs($saldo);
 
                     $clientes[$cod]['TOTAL_FACTURA'] += $montoReal;

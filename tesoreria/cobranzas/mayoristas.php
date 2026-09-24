@@ -65,7 +65,7 @@ include 'templates/layout/header.php';
                 <div class="col-xl-3 col-md-6">
                     <div class="card shadow-sm border-start border-success border-4 h-100">
                         <div class="card-body py-2 px-3">
-                            <div class="text-xs font-weight-bold text-success text-uppercase">Camino 1 (Facturas / NCR)</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase">Camino 1 (Facturas / NCR / REC)</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" id="kpi-total-facturas">$ 0</div>
                         </div>
                     </div>

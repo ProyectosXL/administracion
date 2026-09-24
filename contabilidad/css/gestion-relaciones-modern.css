@@ -1,0 +1,371 @@
+/* ============================================================
+   gestion-relaciones-modern.css
+   Estilos propios de gestionRelacionesCuenta.php.
+   Se apoya en las variables (--cgm-*) de control-gastos-modern.css.
+   ============================================================ */
+
+/* ── Cabecera ── */
+.grc-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 8px 4px;
+}
+
+.grc-titulo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--cgm-text);
+}
+
+.grc-titulo i {
+    color: var(--cgm-accent);
+}
+
+.grc-subtitulo {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--cgm-muted);
+}
+
+.grc-header .custom-toggle-container {
+    margin: 0 0 0 auto;
+}
+
+/* ── Contenedor principal ── */
+.grc-main {
+    padding: 8px;
+}
+
+/* ── Tarjetas ── */
+.grc-card {
+    background: var(--cgm-card);
+    border: 1px solid var(--cgm-border);
+    border-radius: var(--cgm-radius);
+    box-shadow: var(--cgm-shadow-sm);
+    padding: 16px 20px;
+    margin-bottom: 14px;
+}
+
+.grc-card-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--cgm-muted);
+}
+
+.grc-card-titulo .badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0;
+    background: var(--cgm-accent-dim);
+    color: var(--cgm-accent-hover);
+}
+
+/* ── Formulario de alta ── */
+.grc-form-alta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+    gap: 12px 14px;
+    align-items: start;
+}
+
+.grc-campo label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--cgm-muted);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.grc-campo .select2-container {
+    width: 100% !important;
+}
+
+/* Descripción que se completa al elegir una opción */
+.grc-desc {
+    min-height: 18px;
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--cgm-muted);
+}
+
+.grc-desc:empty::before {
+    content: '—';
+    color: var(--cgm-dim);
+}
+
+.grc-acciones-alta {
+    padding-top: 21px;
+}
+
+.grc-acciones-alta .btn {
+    border-radius: var(--cgm-radius-sm) !important;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 6px 16px;
+    white-space: nowrap;
+    transition: all var(--cgm-transition);
+}
+
+.grc-acciones-alta .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(40, 167, 69, .3);
+}
+
+/* ── Select2 con el mismo look que los inputs ── */
+.select2-container--default .select2-selection--single {
+    height: 34px;
+    border: 1px solid var(--cgm-border-light);
+    border-radius: var(--cgm-radius-sm);
+    font-size: 13px;
+    transition: border-color var(--cgm-transition), box-shadow var(--cgm-transition);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 32px;
+    color: var(--cgm-text);
+    padding-left: 10px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 32px;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--cgm-accent);
+    box-shadow: 0 0 0 3px var(--cgm-accent-dim);
+}
+
+.select2-dropdown {
+    border-color: var(--cgm-border-light);
+    border-radius: var(--cgm-radius-sm);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .12);
+    font-family: var(--cgm-sans);
+}
+
+.select2-container .select2-results__option {
+    font-size: 12px;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background: var(--cgm-accent);
+}
+
+/* ── Tabla de relaciones ── */
+.grc-tabla-wrapper {
+    max-height: calc(100vh - 360px);
+    min-height: 300px;
+    overflow: auto;
+    border: 1px solid var(--cgm-border);
+    border-radius: var(--cgm-radius-sm);
+}
+
+#tableData.table {
+    margin: 0 !important;
+    font-size: 12.5px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#tableData.table thead.thead-dark th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #2d3748;
+    color: #e2e8f0;
+    border-color: #374151;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 10px 8px;
+    white-space: nowrap;
+}
+
+#tableData.table tbody td {
+    padding: 6px 8px;
+    border-color: var(--cgm-border);
+    vertical-align: middle;
+}
+
+#tableData.table tbody tr:hover td {
+    background: #f0f5ff;
+}
+
+#tableData .grc-codigo {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+#tableData .grc-sector {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--cgm-section);
+    border: 1px solid var(--cgm-border);
+    font-size: 11.5px;
+    white-space: nowrap;
+}
+
+/* Botones de acción por fila */
+.grc-acciones {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.grc-btn-icono {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--cgm-radius-sm) !important;
+    border: 1px solid var(--cgm-border);
+    background: var(--cgm-card);
+    transition: all var(--cgm-transition);
+}
+
+.grc-btn-editar {
+    color: var(--cgm-accent);
+}
+
+.grc-btn-editar:hover {
+    color: #fff;
+    background: var(--cgm-accent);
+    border-color: var(--cgm-accent);
+}
+
+.grc-btn-eliminar {
+    color: #b91c1c;
+}
+
+.grc-btn-eliminar:hover {
+    color: #fff;
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+/* Filtro de DataTables en la cabecera de la tarjeta */
+#tableData_wrapper .dataTables_filter {
+    margin-bottom: 10px;
+}
+
+#tableData_wrapper .dataTables_filter label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--cgm-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+#tableData_wrapper .dataTables_filter input {
+    width: 260px;
+    margin-left: 8px;
+}
+
+/* ── Modal de edición ── */
+#editarModal .modal-content {
+    border: none;
+    border-radius: var(--cgm-radius);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .18);
+    overflow: hidden;
+}
+
+#editarModal .modal-header {
+    background: var(--cgm-accent-dim);
+    border-bottom: 2px solid var(--cgm-accent);
+    padding: 14px 20px;
+}
+
+#editarModal .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--cgm-accent-hover);
+}
+
+#editarModal .modal-body {
+    padding: 16px 20px 8px;
+}
+
+#editarModal .modal-footer {
+    background: var(--cgm-section);
+    border-top: 1px solid var(--cgm-border);
+    padding: 12px 20px;
+}
+
+#editarModal label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--cgm-muted);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+#editarModal .form-control {
+    border-color: var(--cgm-border-light);
+    border-radius: var(--cgm-radius-sm);
+    font-size: 13px;
+}
+
+#editarModal .form-control[readonly] {
+    background: var(--cgm-section);
+    color: var(--cgm-muted);
+}
+
+#editarModal .modal-footer .btn {
+    border-radius: var(--cgm-radius-sm);
+    font-weight: 600;
+    font-size: 13px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+    .grc-form-alta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grc-acciones-alta {
+        grid-column: 1 / -1;
+        padding-top: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .grc-form-alta {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .grc-header .custom-toggle-container {
+        margin-left: 0;
+    }
+
+    .grc-acciones-alta .btn,
+    #tableData_wrapper .dataTables_filter input {
+        width: 100%;
+    }
+
+    #tableData_wrapper .dataTables_filter input {
+        margin: 4px 0 0;
+    }
+}
