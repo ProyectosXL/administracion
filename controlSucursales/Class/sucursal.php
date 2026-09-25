@@ -133,46 +133,6 @@ class Sucursal
         }
     }
 
-    public function autorizarEgreso ($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy)
-    {
-        try {
-            // Verificamos si existe el registro
-            $sqlCheck = "SELECT COUNT(*) as count FROM RO_T_GASTOS_CAJA_SUCURSALES WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
-            $params = array($comprobante, $nroSucursal, $tipoComp);
-            $stmt = sqlsrv_query($this->conexion, $sqlCheck, $params);
-            
-            if ($stmt === false) {
-                throw new Exception("Error checking record existence");
-            }
-            
-            $row = sqlsrv_fetch_array($stmt);
-            
-            if ($row['count'] > 0) {
-                // El registro existe, actualizamos
-                $sql = "UPDATE RO_T_GASTOS_CAJA_SUCURSALES SET AUTORIZADO = 1, FECHA_AUTORIZADO = ? WHERE N_COMP = ? AND NRO_SUCURSAL = ? AND TIPO_COMP = ?";
-                $params = array($fechaDeHoy, $comprobante, $nroSucursal, $tipoComp);
-            } else {
-                // El registro no existe, lo insertamos
-                $sql = "INSERT INTO RO_T_GASTOS_CAJA_SUCURSALES (FECHA, NRO_SUCURSAL, TIPO_COMP, N_COMP, COD_CUENTA, CUENTA, MONTO, LEYENDA, FACTURA, CONTROL, AUTORIZADO, FECHA_AUTORIZADO) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, ?)";
-                $params = array($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy);
-            }
-            
-            $stmt = sqlsrv_query($this->conexion, $sql, $params);
-            
-            if ($stmt === false) {
-                $errors = sqlsrv_errors();
-                error_log("SQL Error en autorizarEgreso: " . print_r($errors, true));
-                throw new Exception("Error executing SQL");
-            }
-            
-            return $stmt;
-            
-        } catch (\Throwable $th){
-            error_log("Exception en autorizarEgreso: " . $th->getMessage());
-            throw $th;
-        }
-    }
-
     public function marcarFacturado ($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $descripcionCuenta, $monto, $leyenda, $factura, $control) 
     {
         try {
@@ -587,67 +547,6 @@ class Sucursal
         } catch (Exception $e) {
             error_log('Excepción capturada en contabilizar: ' . $e->getMessage());
             return false;
-        }
-    }
-
-    // Método actualizado con compatibilidad de nomenclatura nueva/vieja y validación de año
-    public function traerGastosAutorizarSucursales($desde, $hasta, $nroSucursal, $estado) {
-        
-        $sqlWhere = "";
-        if($estado == 1){
-            $sqlWhere = "AND (B.AUTORIZADO != 1 or B.AUTORIZADO IS NULL)";
-        }else if($estado == 2){
-            $sqlWhere = "AND B.AUTORIZADO = 1";
-        }
-
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        $prefix = "LOCALES_LAKERS";
-
-        if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy'){
-            $cid = $this->cid_uy;
-            $prefix = "SUCURSALES_URUGUAY";
-        }else{
-            $cid = $this->cid_central;
-        }
-
-        // ACTUALIZADA: Consulta modificada para incluir la validación de año con COD_COMP
-        $sql = "SELECT A.*, B.AUTORIZADO, B.FECHA_AUTORIZADO, (CASE WHEN C.FECHA_GUARDADO IS NOT NULL THEN 1 ELSE 0 END) guardado
-        FROM LAKERBIS.$prefix.DBO.RO_V_GASTOS_CAJA_SUCURSALES A
-        LEFT JOIN RO_T_GASTOS_CAJA_SUCURSALES B on REPLACE(A.N_COMP, ' ', '') = REPLACE (B.N_COMP, ' ', '') collate Latin1_General_BIN
-        AND A.NRO_SUCURS = B.NRO_SUCURSAL AND A.COD_COMP = B.TIPO_COMP collate Latin1_General_BIN AND A.COD_CTA = B.COD_CUENTA
-        AND A.COD_CTA = B.COD_CUENTA
-        LEFT JOIN SJ_EGRESOS_DE_CAJA_GUARDADO C on A.N_COMP = C.N_COMP collate Latin1_General_BIN 
-        AND A.NRO_SUCURS = C.NRO_SUCURSAL 
-        AND A.COD_CTA = C.COD_CTA
-        AND (
-            -- Nueva modalidad con COD_COMP
-            (A.COD_COMP = C.COD_COMP COLLATE Latin1_General_BIN AND C.COD_COMP IS NOT NULL AND C.COD_COMP != '') 
-            OR 
-            -- Modalidad vieja sin COD_COMP, solo si es del mismo año
-            (
-                (C.COD_COMP IS NULL OR C.COD_COMP = '') 
-                AND YEAR(A.FECHA) = YEAR(C.FECHA_GUARDADO)
-            )
-        )
-        AND C.NRO_SUCURSAL LIKE '$nroSucursal'
-        WHERE A.FECHA BETWEEN '$desde' AND '$hasta' AND A.NRO_SUCURS LIKE '$nroSucursal' AND A.COD_CTA LIKE '5%'
-        $sqlWhere
-        ORDER BY FECHA ASC
-        ";  
-
-        try{
-            $stmt = sqlsrv_query($cid, $sql);
-
-            $v = [];
-            while ($row = sqlsrv_fetch_array($stmt,SQLSRV_FETCH_ASSOC)) {
-                $v[] = $row;
-            }
-            return $v;
-        } catch (Exception $e) {
-            echo 'Excepción capturada: ',  $e->getMessage(), "\n";
         }
     }
 
