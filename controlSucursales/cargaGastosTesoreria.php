@@ -1,287 +1,328 @@
 <?php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Los filtros viajan por POST y se guardan en sesión (patrón POST-Redirect-GET)
+// para que no queden variables en la URL y un F5 no pida reenviar el formulario.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mes'], $_POST['anio'])) {
+    $mesPost  = str_pad((int)$_POST['mes'], 2, '0', STR_PAD_LEFT);
+    $anioPost = (int)$_POST['anio'];
+
+    if ((int)$mesPost >= 1 && (int)$mesPost <= 12 && $anioPost >= 2022 && $anioPost <= (int)date('Y')) {
+        $_SESSION['cargaGastosTesoreria'] = ['mes' => $mesPost, 'anio' => (string)$anioPost];
+    }
+
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+    exit;
+}
+
 require_once "Class/sucursal.php";
 
 $sucursal = new Sucursal();
-$todosLosLocales= $sucursal->traerLocales();
+$todosLosLocales = $sucursal->traerLocales();
 
-$mes = isset($_GET['mes']) ? $_GET['mes'] : date('m',  strtotime( date("Y-m-d")));
-$anio = isset($_GET['anio']) ? $_GET['anio'] : date('Y',  strtotime( date("Y-m-d")));
+$filtros = isset($_SESSION['cargaGastosTesoreria']) ? $_SESSION['cargaGastosTesoreria'] : [];
+$mes  = isset($filtros['mes'])  ? $filtros['mes']  : date('m');
+$anio = isset($filtros['anio']) ? $filtros['anio'] : date('Y');
 
-$fechaParaMostrar = $mes."/".$anio;
+$mesesNombre = [
+    '01' => 'Enero', '02' => 'Febrero', '03' => 'Marzo', '04' => 'Abril',
+    '05' => 'Mayo', '06' => 'Junio', '07' => 'Julio', '08' => 'Agosto',
+    '09' => 'Septiembre', '10' => 'Octubre', '11' => 'Noviembre', '12' => 'Diciembre'
+];
 
-$currentYear = date('Y',  strtotime( date("Y-m-d")));
+$fechaParaMostrar = $mesesNombre[$mes] . " " . $anio;
 
-$yearDif = $currentYear - 2023;
+$currentYear = (int)date('Y');
 
-$periodo = (int)$mes."-".$anio;
+$periodo = (int)$mes . "-" . $anio;
 
-$periodoRerverse = $anio."-".$mes;
-
-$primerDia = date('Y-m-01', strtotime($periodoRerverse));
-
+$primerDia = date('Y-m-01', strtotime($anio . "-" . $mes . "-01"));
 $ultimoDia = date('Y-m-t', strtotime($primerDia));
 
 $gastosTesoreria = $sucursal->traerGastosTesoreria($primerDia, $ultimoDia);
+if (!is_array($gastosTesoreria)) {
+    $gastosTesoreria = [];
+}
 
 $checkeados = $sucursal->traerGastosTesoreriaCheckeados($periodo);
 $arraySucursalesCheckeadas = [];
-foreach ($checkeados as $x => $checkeado) {
-    $arraySucursalesCheckeadas[$x] = $checkeado['NRO_SUCURSAL'];
-
-}
-$keys = [];
-if(count($gastosTesoreria) > 0){
-
-    $keys = array_keys($gastosTesoreria[0]);
-
+foreach ((array)$checkeados as $checkeado) {
+    $arraySucursalesCheckeadas[] = $checkeado['NRO_SUCURSAL'];
 }
 
-if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
-    $checked = 'checked';
-}else{
-    $checked = '';
+// Columnas de cuentas: el SP devuelve NRO_SUCURSAL, DESC_SUCURSAL y luego una columna por cuenta
+$columnasCuentas = [];
+if (count($gastosTesoreria) > 0) {
+    $columnasCuentas = array_slice(array_keys($gastosTesoreria[0]), 2);
 }
-    
+
+// Totales por sucursal y cuenta
+$totalesPorSucursal = [];
+foreach ($gastosTesoreria as $gasto) {
+    $nro = $gasto['NRO_SUCURSAL'];
+    foreach ($columnasCuentas as $col) {
+        if (!isset($totalesPorSucursal[$nro][$col])) {
+            $totalesPorSucursal[$nro][$col] = 0;
+        }
+        $totalesPorSucursal[$nro][$col] += (float)$gasto[$col];
+    }
+}
+
+$cantidadSucursales = count($todosLosLocales);
+$cantidadCargadas = 0;
+foreach ($todosLosLocales as $local) {
+    if (in_array($local['NRO_SUCURSAL'], $arraySucursalesCheckeadas)) {
+        $cantidadCargadas++;
+    }
+}
+
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-$dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
-$dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
-$imageOn = ($checkedValue === 'central') ? '../contabilidad/images/bandera_con_sol__55757_std.jpg' : '../contabilidad/images/UY.png';
-$imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '../contabilidad/images/bandera_con_sol__55757_std.jpg';
 
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Carga Gastos Tesoreria</title>
-        <!-- INCLUDE CSS FILES -->
-        <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
-        ?>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carga Gastos Tesorería</title>
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css">
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" class="rel">
-        <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.dataTables.min.css" class="rel">
+    <?php
+        require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+    ?>
 
-        <!-- Bootstrap Icons -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        
+    <!-- Estilos base compartidos con Resumen de Ventas -->
+    <link rel="stylesheet" href="css/resumenVentas.css">
+    <!-- Layout compacto compartido -->
+    <link rel="stylesheet" href="css/pantallaCompacta.css">
+    <!-- Estilos propios de la pantalla -->
+    <link rel="stylesheet" href="css/cargaGastosTesoreria.css">
+</head>
 
-        <style>
-            #myTable_filter input[type="search"] {
-                margin-right:20px;
-            }
-            .toggle-on {
-                background-image: url('<?= $imageOn ?>');
-                background-size: contain;
-                background-repeat: no-repeat;
-                height: 60px;
-                width: 60px;
-            }
-            .toggle-off {
-                background-image: url('<?= $imageOff ?>');
-                background-size: contain;
-                background-repeat: no-repeat;
-                height: 60px;
-                width: 60px;
-            }
-        </style>
+<body class="pantalla-compacta">
+    <div class="container-fluid">
+        <div class="modern-card">
+            <div class="page-title">
+                <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
+                    <img src="../image/home-button.png" alt="Home">
+                </a>
+                <i class="bi bi-bank2"></i>
+                <span>Carga Gastos Tesorería</span>
+                <span class="date-range"> (<?= $fechaParaMostrar ?>)</span>
 
-    </head>
+                <div class="title-actions ml-auto">
+                    <button type="button" class="btn-info-toggle" data-toggle="collapse" data-target="#panelInfo" aria-expanded="false" aria-controls="panelInfo">
+                        <i class="bi bi-info-circle"></i> ¿Qué muestra esta pantalla?
+                    </button>
 
-    <body>
-
-        <div class="alert alert-secondary">
-            <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w880"><div style="color:white; text-align:center"><h6>Carga Gastos Tesoreria</h6></div>
-                    <div class="card card-1">
-                        <div id="periodo" hidden><?= $periodo ?></div>
-                        <div class="row" style="margin-left:50px; margin-top:10px">
-                            <!-- <input type="checkbox" <?= $checked ?> data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px; margin-right:20px" onchange="cambiarEntorno(this)" id="checkEntorno" > -->
-                            <h3 style="margin-right:50%"><strong><i class="bi bi-bank2" style="margin-right:20px;font-size:40px"></i>Carga Gastos Tesoreria - <?= $fechaParaMostrar ?></strong></h3>
-                            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
-
+                    <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)" title="Cambiar entorno">
+                        <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
+                            <img src="../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
+                            <span>ARG</span>
                         </div>
-
-                        <form action="#" method="get" style="margin-bottom:20px" class="form-inline">
-                        <div class="container" style="margin: 0 50px;">
-                            <div class="row" style="margin-top:10px">
-                            
-                                <div class="form-group">
-                                <label>Mes:</label>  
-                                    <select name="mes" id="selectMes" class="form-control ml-2">
-                                        <?php 
-                                            for ($i=1; $i <= 12 ; $i++) { 
-                                                if(strlen($i) == 1){
-                                                    $i = "0".$i;
-                                                }
-                                        ?>
-
-                                        <option value="<?=$i?>" <?php if($mes == $i ) echo "selected"?>><?=$i?></option>
-
-                                        <?php
-                                            }
-                                        ?>
-                                    </select>
-                                </div>
-                                
-                                <div  class="form-group ml-2"> 
-                                <label>Año:</label> 
-                                <select name="anio" id="selectAnio"  class="form-control ml-2">
-                                        <option value="2022">2022</option>
-
-                                            <?php 
-                                                for ($i=0; $i <= $yearDif ; $i++) { 
-                                                    $y = 2023 + $i;
-                                            ?>
-                                            <option value="<?=$y?>" <?php if($anio == $y ) echo "selected"?>><?=$y?></option>
-                                            <?php
-                                                }
-                                            ?>
-
-                                </select>
-
-                                </div>
-                                    <button class="btn btn-primary btn-submit ml-2" value="">filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                    <button class="btn btn-success btn_exportar" id="btnExport" style="margin-left:40%"> Exportar<i class="bi bi-file-earmark-excel"></i></button>
-                                    <button class="btn btn-secondary  ml-2" type="button" onclick="checkMasivo()" id="checkAll">Check All</button>
-                            </div>
-                        </div>                                    
-                        </form>
-            
-                        <table class="table table-striped table-bordered table-sm table-hover" id="tablaGastosTesoreria" style="width: 100%;height:100px" cellspacing="0" data-page-length="100">
-                            <thead class="thead-dark" style="">
-                                <tr style="text-align:center">
-
-                                    <th style="text-align:center;width:5%" > NRO.SUCURSAL</th>
-                                    <th  style="text-align:center;width:20%" > DESC_SUCURSAL </th>
-                                    <?php 
-                                        foreach ($keys as $key => $value) {
-                                            if($key > 1)
-                                            echo "<th style='text-align:center;width:10%'>".$value."</th>";
-                                        }
-                                    ?>
-                                    <th style="text-align:center;width:5%" class="noExport">CARGADO</th>
-                                  
-                           
-
-                                </tr>
-                            </thead>
-                            <tbody>
-                            
-                                <?php 
-                                if(count($keys) > 0){
-
-                                
-                                    foreach ($todosLosLocales as $key => $value) {
-
-                                            ?>
-                                            <tr>
-                                                <td style='text-align:center'><?= $value['NRO_SUCURSAL'] ?></td>
-                                                <td style='text-align:center'><?= $value['DESC_SUCURSAL'] ?></td>
-
-                                                <?php
-
-                                                    foreach ($keys as $x => $k) {
-
-                                                        if($x > 1){
-                                                            $total = 0;
-                                                            foreach ($gastosTesoreria as $key => $gasto) {
-                                                                if($gasto['NRO_SUCURSAL'] == $value['NRO_SUCURSAL']){
-                                                                    $total += $gasto[$k];
-                                                                }
-                                                            }
-                                                ?>
-                                                        <td style='text-align:center' id="td-<?= $k ?>">$<?=(number_format($total, 0, ',', '.')) ?></td>
-                                                <?php
-                                                        }
-                                    
-                                                    }
-                                                ?>
-
-                                                <td style='text-align:center;'><input type='checkbox' class="noExport" onchange='checkControl(this)' id='checkControl' <?= (in_array($value['NRO_SUCURSAL'], $arraySucursalesCheckeadas)) ? "checked='true' ; disabled='true'" : "" ?>></td>
-                                            </tr>
-                                    <?php
-                                    }
-
-                                }
-                                ?>
-               
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td>Total</td>
-                                    <td></td>
-                                    <?php 
-                                        foreach ($keys as $key => $value) {
-                                            if($key > 1)
-                              
-                                            echo "<td style='text-align:center;width:10%' id='total". $value."'></td>";
-                                        }
-                                    ?>
-
-                                </tr>
-                            </tfoot>
-            
-                        </table>
+                        <div class="toggle-flag <?= ($checkedValue === 'suc_uy') ? 'active' : '' ?>" data-entorno="suc_uy">
+                            <img src="../assets/images/UY.png" alt="Uruguay">
+                            <span>UY</span>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Panel informativo -->
+            <div class="collapse" id="panelInfo">
+                <div class="info-panel">
+                    <div class="info-grid">
+                        <div class="info-block">
+                            <h6><i class="bi bi-database"></i> ¿Qué datos trae?</h6>
+                            <p>
+                                Muestra, para el mes seleccionado, el total de <strong>gastos de caja de las sucursales que no llevan IVA</strong>
+                                (egresos sin factura), acumulados por sucursal y por cuenta contable. Los importes salen del proceso
+                                <code>RO_SP_CARGA_GASTOS_CAJA_SUCURSALES</code> entre el primer y el último día del mes.
+                            </p>
+                            <p>
+                                Cada columna numérica es una cuenta de gasto. Las sucursales sin movimientos en el período aparecen en $0.
+                            </p>
+                        </div>
+
+                        <div class="info-block">
+                            <h6><i class="bi bi-check2-square"></i> ¿Qué significa "Cargado"?</h6>
+                            <p>
+                                Al marcar una sucursal se registra que sus gastos del período ya fueron cargados en tesorería y se guarda
+                                una foto de los importes de ese momento. La marca es por sucursal y por mes, y <strong>no se puede deshacer</strong>
+                                desde esta pantalla.
+                            </p>
+                            <p>
+                                <em>Marcar todas</em> registra solamente las sucursales que todavía no estaban cargadas.
+                            </p>
+                        </div>
+
+                        <div class="info-block info-block-wide">
+                            <h6><i class="bi bi-diagram-3"></i> Relación con otras pantallas de Control Sucursales</h6>
+                            <p>Todas trabajan sobre los mismos egresos de caja de sucursales (cuentas de gasto <code>5xxxxx</code>):</p>
+                            <ol class="info-flow">
+                                <li><strong>Control Egresos de Caja:</strong> se controla cada comprobante y se indica si tiene <strong>factura</strong> (lleva IVA) o no.</li>
+                                <li>
+                                    Según esa marca, el gasto sigue uno de dos caminos:
+                                    <ul>
+                                        <li><strong>Con factura (con IVA)</strong> → <strong>Carga Factura Sucursales</strong>, donde se contabiliza comprobante por comprobante.</li>
+                                        <li><strong>Sin factura (sin IVA)</strong> → <strong>esta pantalla</strong>, donde se carga el total mensual por sucursal y cuenta.</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                            <p class="info-note">
+                                <i class="bi bi-lightbulb"></i>
+                                Control Recepción de Efectivo trata los retiros de efectivo (RAF) de las sucursales, no los gastos, así que sus importes no se ven acá.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form class="filters-form" method="POST" id="formFiltros">
+                <div>
+                    <label for="selectMes">Mes:</label>
+                    <select name="mes" id="selectMes" class="form-control">
+                        <?php foreach ($mesesNombre as $num => $nombre) { ?>
+                            <option value="<?= $num ?>" <?= ($mes == $num) ? "selected" : "" ?>><?= $nombre ?></option>
+                        <?php } ?>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="selectAnio">Año:</label>
+                    <select name="anio" id="selectAnio" class="form-control">
+                        <?php for ($y = 2022; $y <= $currentYear; $y++) { ?>
+                            <option value="<?= $y ?>" <?= ($anio == $y) ? "selected" : "" ?>><?= $y ?></option>
+                        <?php } ?>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-modern btn-search" id="search">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+
+                <button type="button" class="btn-modern btn-export" id="btnExport">
+                    <i class="bi bi-file-earmark-excel"></i> Exportar
+                </button>
+
+                <button type="button" class="btn-modern btn-check-all" id="checkAll" onclick="checkMasivo()">
+                    <i class="bi bi-check2-all"></i> Marcar todas
+                </button>
+            </form>
         </div>
 
-        <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
-        ?>
-        <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <!-- <script src="https://code.jquery.com/jquery-3.5.1.js"></script> -->
-        <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-        <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
-        <script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
+        <!-- spinner -->
+        <div id="boxLoading"></div>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-        <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
-        <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-        <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+        <div id="periodo" hidden><?= $periodo ?></div>
+        <div id="periodoArchivo" hidden><?= $anio . "-" . $mes ?></div>
 
-    </body>
+        <?php if (count($columnasCuentas) > 0) { ?>
+
+        <div class="table-wrapper">
+            <!-- Resumen + buscador -->
+            <div class="table-toolbar">
+                <div class="stats-row">
+                    <div class="stat-chip">
+                        <span class="stat-label">Sucursales</span>
+                        <span class="stat-value"><?= $cantidadSucursales ?></span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-label">Cargadas</span>
+                        <span class="stat-value"><span id="statCargadas"><?= $cantidadCargadas ?></span> / <?= $cantidadSucursales ?></span>
+                    </div>
+                    <div class="stat-chip stat-chip-accent">
+                        <span class="stat-label">Total sin IVA</span>
+                        <span class="stat-value" id="statTotal">$0</span>
+                    </div>
+                </div>
+                <div class="table-search">
+                    <i class="bi bi-search"></i>
+                    <input type="search" id="searchInput" placeholder="Buscar sucursal o número...">
+                </div>
+            </div>
+
+            <table class="display" id="tablaGastosTesoreria">
+                <thead>
+                    <tr>
+                        <th>NRO. SUC</th>
+                        <th>SUCURSAL</th>
+                        <?php foreach ($columnasCuentas as $i => $col) { ?>
+                            <th class="th-cuenta" data-col="<?= $i ?>"><?= htmlspecialchars($col) ?></th>
+                        <?php } ?>
+                        <th class="col-total">TOTAL</th>
+                        <th class="noExport col-cargado">CARGADO</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <?php foreach ($todosLosLocales as $local) {
+                        $nro = $local['NRO_SUCURSAL'];
+                        $yaCargada = in_array($nro, $arraySucursalesCheckeadas);
+                        $totalFila = 0;
+                    ?>
+                        <tr data-sucursal="<?= $nro ?>" class="<?= $yaCargada ? 'row-cargada' : '' ?>">
+                            <td><?= $nro ?></td>
+                            <td><?= $local['DESC_SUCURSAL'] ?></td>
+                            <?php foreach ($columnasCuentas as $i => $col) {
+                                $valor = isset($totalesPorSucursal[$nro][$col]) ? $totalesPorSucursal[$nro][$col] : 0;
+                                $totalFila += $valor;
+                            ?>
+                                <td class="td-cuenta <?= ($valor == 0) ? 'valor-cero' : '' ?>" data-col="<?= $i ?>" data-value="<?= $valor ?>">$<?= number_format($valor, 0, ',', '.') ?></td>
+                            <?php } ?>
+                            <td class="td-total col-total" data-value="<?= $totalFila ?>">$<?= number_format($totalFila, 0, ',', '.') ?></td>
+                            <td class="noExport col-cargado">
+                                <label class="check-cargado">
+                                    <input type="checkbox" class="checkControl" onchange="checkControl(this)" <?= $yaCargada ? "checked disabled" : "" ?>>
+                                    <span><?= $yaCargada ? "Cargado" : "Pendiente" ?></span>
+                                </label>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </tbody>
+
+                <tfoot>
+                    <tr>
+                        <td colspan="2">TOTALES</td>
+                        <?php foreach ($columnasCuentas as $i => $col) { ?>
+                            <td class="total-cuenta" data-col="<?= $i ?>"></td>
+                        <?php } ?>
+                        <td class="col-total" id="totalGeneral"></td>
+                        <td class="noExport"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <?php } else { ?>
+
+        <div class="table-wrapper empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>No hay gastos sin IVA para <?= $fechaParaMostrar ?></h5>
+            <p>Probá con otro mes o año.</p>
+        </div>
+
+        <?php } ?>
+    </div>
+
+    <!-- jQuery (usar versión completa, no slim) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Plugin to export Excel -->
+    <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
+    <script src="js/gastosTesoreria.js" charset="utf-8"></script>
+
+</body>
 
 </html>
-
-<script src="js/gastosTesoreria.js"></script>
-<script>
-    document.ready = calcularTotales();
-
-
-     $("#btnExport").click(function() {
-        console.log("paso")
-
-        $("#tablaGastosTesoreria").table2excel({
-            // exclude CSS class
-            exclude: ".noExport",
-            name: "excel Document ",
-            filename: "Excel", //do not include extension
-            fileext: ".xlsx" // file extension
-        });
-    })
-
-    $(document).ready( function () {
-    
-        document.querySelector(".toggle").style.width="40px"
-        document.querySelector(".toggle-on").style.fontSize="0"
-        document.querySelector(".toggle-off").style.fontSize="0"
-        document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
-        document.querySelector('.toggle.btn.btn-primary').style.marginTop = '25px'
-
-    })
-    
-</script>
-

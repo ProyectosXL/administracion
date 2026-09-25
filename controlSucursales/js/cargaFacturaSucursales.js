@@ -1,82 +1,65 @@
-const checkContabilizar = (div) => {
+/* ===================================
+   CARGA FACTURA SUCURSALES - JAVASCRIPT
+   =================================== */
 
-    allTd = div.parentElement.parentElement.querySelectorAll("td");
-    let fecha = allTd[0].textContent;
-    let nro_sucursal = allTd[1].textContent;
-    let tipoComprobante = allTd[2].textContent;
-    let nroComprobante = allTd[3].textContent;
-    let codCuenta = allTd[4].textContent;
-    let monto = allTd[6].textContent.replace(/[$.]/g, "");
+let sortColumn = null;
+let sortDirection = 'asc';
 
-    let accion = "";
+/**
+ * Marca / desmarca un gasto como contabilizado.
+ * Envía los mismos valores que antes se leían del texto de las celdas.
+ */
+const checkContabilizar = (input) => {
+    const tr = input.closest('tr');
+    const d = tr.dataset;
+    const contabilizada = input.checked;
 
-    if(div.checked == true){
-        accion = "checkContabilizar"
-    }else{
-        accion = "uncheckContabilizar"
-    }
+    input.disabled = true;
 
     $.ajax({
         type: "POST",
-        url: "Controller/ControlEgresosController.php?accion="+accion,
+        url: "Controller/ControlEgresosController.php?accion=" + (contabilizada ? "checkContabilizar" : "uncheckContabilizar"),
         data: {
-            fecha: fecha,
-            nro_sucursal: nro_sucursal,
-            tipoComprobante: tipoComprobante,
-            nroComprobante: nroComprobante,
-            codCuenta: codCuenta,
-            monto: monto,
-
-        },
-        success: function (response) {
+            fecha: d.fecha,
+            nro_sucursal: d.sucursal,
+            tipoComprobante: d.tipo,
+            nroComprobante: d.comprobante,
+            codCuenta: d.codCuenta,
+            monto: d.monto
         }
+    }).done(function (response) {
+        // El controlador responde "1" si el UPDATE se ejecutó (y vacío si falló)
+        if (!/1\s*$/.test(String(response))) {
+            revertirCheck(input);
+            return;
+        }
+        $(input).closest('td').attr('data-sort', contabilizada ? 1 : 0);
+        tr.classList.toggle('row-contabilizada', contabilizada);
+        $('#statContabilizadas').text($('#tablaFacturas .checkContabilizar:checked').length);
+    }).fail(function () {
+        revertirCheck(input);
+    }).always(function () {
+        input.disabled = false;
     });
-
-    
 }
 
-$(document).ready( function () {
-    
-    $(function() {
-        $('[data-toggle="tooltip"]').tooltip()
-    })
-
-    $('#myTable').DataTable({
-        "bLengthChange": false,
-        "bInfo": false,
-        "aaSorting": false,
-        'columnDefs': [
-            {
-                "targets": "_all", 
-                "className": "text-center",
-                "sortable": false,
-         
-            },
-        ],
-        "oLanguage": {
-    
-            "sSearch": "Busqueda rapida:",
-            "sSearchPlaceholder": "Sobre cualquier campo"
-    
-        },
+const revertirCheck = (input) => {
+    input.checked = !input.checked;
+    Swal.fire({
+        icon: 'error',
+        title: 'No se pudo guardar',
+        text: 'Ocurrió un error al actualizar el comprobante. Intentá nuevamente.'
     });
-
-    // Inicializar el toggle de banderas
-    $('#checkEntorno').bootstrapToggle();
-
-})
-
+}
 
 const mostrarImagen = (divImagen, startIndex = 0) => {
     let codigosImagenes = [];
-    let nComp = divImagen.parentElement.parentElement.querySelectorAll("td")[3].textContent.trim();
-    let nroSucursal = divImagen.parentElement.parentElement.querySelectorAll("td")[1].textContent.trim();
-    let codComp = divImagen.parentElement.parentElement.querySelectorAll("td")[2].textContent.trim();
-    let codCta = divImagen.parentElement.parentElement.querySelectorAll("td")[4].textContent.trim();
-    let fechaComprobante = divImagen.parentElement.parentElement.querySelectorAll("td")[0].textContent.trim();
-    let carouselElement = document.querySelector('#carruselImagenes'); 
-    
-    carouselElement.innerHTML = ''; 
+    const d = divImagen.closest('tr').dataset;
+    let nComp = d.comprobante.trim();
+    let nroSucursal = d.sucursal.trim();
+    let codComp = d.tipo.trim();
+    let codCta = d.codCuenta.trim();
+    let fechaComprobante = d.fecha;
 
     $.ajax({
       url: "Controller/ControlEgresosController.php?accion=contarImagenes",
@@ -224,56 +207,117 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
     });
 }
 
-const validarExistenciaArchivo = (rutaArchivo, callback) => {
-    const img = new Image();
-    img.onload = function() {
-      // La imagen se ha cargado correctamente, por lo que el archivo existe
-      callback(true);
-    };
-    img.onerror = function() {
-      // La imagen no se pudo cargar, por lo que el archivo no existe
-      callback(false);
-    };
-    img.src = rutaArchivo;
+/* ===================================
+   INICIALIZACIÓN
+   =================================== */
+
+$(document).ready(function () {
+    $("#selectSucursal").select2({ width: '240px' });
+
+    $('#formFiltros').on('submit', function() {
+        $("#boxLoading").addClass("loading");
+    });
+
+    if ($('#tablaFacturas').length === 0) {
+        return;
+    }
+
+    $('#tablaFacturas [title]').tooltip({ container: 'body' });
+
+    setupSearch();
+    setupSorting();
+});
+
+/**
+ * Buscador sobre las filas de la tabla
+ */
+function setupSearch() {
+    $('#searchInput').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+
+        $('#tablaFacturas tbody tr').each(function() {
+            const rowText = $(this).text().toLowerCase();
+            $(this).toggle(rowText.indexOf(searchTerm) !== -1);
+        });
+    });
 }
 
-const pasarImagen = (pos) =>{
-
-    let items = document.querySelectorAll(".carousel-item")
-    
-    for (let index = 0; index < items.length; index++) {
-      
-      if (items[index].classList.contains("active")) {
-  
-        if (items[index + pos] !== undefined) {
-    
-          items[index].classList.remove("active");
-        
-          items[index + pos].classList.add("active");
-          break; // Detener el bucle una vez que se encontró el siguiente elemento activo
-  
+/**
+ * Ordenamiento al hacer click en los encabezados
+ */
+function setupSorting() {
+    $('#tablaFacturas thead th').each(function(index) {
+        if ($(this).hasClass('no-sort')) {
+            return;
         }
-  
-      }
-  
-    }
-  
+        $(this).on('click', function() {
+            sortTable(index);
+        });
+    });
 }
 
-// --- Cambio de entorno (ARG/UY) ---
-const cambiarEntorno = (t) => {
-    let entorno = 0;
-    if(t.getAttribute("data-off") == "ARG" ){
-        entorno = 0;
-    }else{
-        entorno = 1;
+function valorOrden(td) {
+    const $td = $(td);
+    return $td.attr('data-sort') !== undefined ? $td.attr('data-sort') : $td.text().trim();
+}
+
+function sortTable(columnIndex) {
+    const tbody = $('#tablaFacturas tbody');
+    const rows = tbody.find('tr').toArray();
+
+    if (sortColumn === columnIndex) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = columnIndex;
+        sortDirection = 'asc';
     }
+
+    rows.sort(function(a, b) {
+        const aVal = valorOrden($(a).find('td')[columnIndex]);
+        const bVal = valorOrden($(b).find('td')[columnIndex]);
+
+        const aNum = Number(aVal);
+        const bNum = Number(bVal);
+
+        let resultado;
+        if (aVal !== '' && bVal !== '' && !isNaN(aNum) && !isNaN(bNum)) {
+            resultado = aNum - bNum;
+        } else {
+            resultado = aVal.localeCompare(bVal, 'es', { numeric: true });
+        }
+
+        return sortDirection === 'asc' ? resultado : -resultado;
+    });
+
+    $('#tablaFacturas thead th').removeClass('sorting_asc sorting_desc');
+    $('#tablaFacturas thead th').eq(columnIndex).addClass(sortDirection === 'asc' ? 'sorting_asc' : 'sorting_desc');
+
+    tbody.append(rows);
+}
+
+/**
+ * Cambia el entorno (Argentina/Uruguay)
+ */
+function cambiarEntornoCustom(container) {
+    const activeFlag = $(container).find('.toggle-flag.active');
+    const nuevoEntorno = (activeFlag.data('entorno') === 'central') ? 1 : 0;
+
+    $("#boxLoading").addClass("loading");
+
     $.ajax({
         url: "Controller/cambiarEntorno.php",
         method: "POST",
-        data : {entorno: entorno},
-        success: function (data) {
+        data: { entorno: nuevoEntorno },
+        success: function () {
             location.reload();
+        },
+        error: function() {
+            $("#boxLoading").removeClass("loading");
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo cambiar el entorno. Por favor intente nuevamente.'
+            });
         }
     });
 }

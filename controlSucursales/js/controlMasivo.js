@@ -1,428 +1,370 @@
+/* ===================================
+   CONTROL MASIVO DE COBRANZA - JAVASCRIPT
+   =================================== */
 
+let sortColumn = null;
+let sortDirection = 'asc';
 
-const calcularTotales  = () => {
-    let totalEnSistema = 0;
-    let tdMontoEnSistema = document.querySelectorAll('#valorSistema');
-    let tdMontoFisico = document.querySelectorAll('#valorFisico');
+// Antes se leía el medio de pago con value.split("-")[1], que siempre daba undefined,
+// así que la validación de PROMO BANCO (valor negativo) nunca se ejecutó.
+// Se deja desactivada para no cambiar el comportamiento.
+const VALIDAR_PROMO_BANCO = false;
 
-    tdMontoEnSistema.forEach((td) => {
+$(document).ready(function () {
+    $("#selectSucursal").select2({ width: '200px' });
 
-        let valor = td.textContent.replace(/[$.]/g, "");
-
-        if (valor.includes("-")) {
-            
-            totalEnSistema -= parseInt(valor.replace(/-/g, ""))
-          
-
-        } else {
-
-            totalEnSistema += parseInt(valor)
-
-        }
-        
-    
-    });
-    if(totalEnSistema < 0){
-        totalEnSistema = totalEnSistema * -1;
-        document.querySelector('#totalEnSistema').textContent ="- $"+parseNumber(totalEnSistema);
-    }else{
-
-        document.querySelector('#totalEnSistema').textContent ="$" + parseNumber(totalEnSistema);
-    }
-
-    let totalFisico = 0;
-    tdMontoFisico.forEach((td) => {
-
-        let valor = td.value.replace(/[$.]/g, "");
-
-        if(valor.includes("-")){
-
-            valor = valor.replace(/-/g, "") * -1;
-          
-        }
-
-        totalFisico += parseInt(valor)
-        
-        
-    
-    });
-    if(totalFisico < 0){
-        totalFisico = totalFisico * -1;
-        document.querySelector('#totalFisico').textContent ="- $"+parseNumber(totalFisico);
-    }else{
-
-        document.querySelector('#totalFisico').textContent ="$" + parseNumber(totalFisico);
-    }
-
-
-    let tdDiferencia = document.querySelectorAll('#diferencias');
-    let totalDiferencia = 0;
-    tdDiferencia.forEach((td) => {
-            
-            let valorFisico = td.parentElement.querySelectorAll("td")[4].querySelector("input").value.replace(/[$.]/g, "");
-            let valorSistema = td.parentElement.querySelectorAll("td")[1].textContent.replace(/[$.]/g, "");
-    
-            if(valorSistema.includes("-")){
-                
-                valorSistema = valorSistema.replace(/-/g, "") * -1;
-
-                if(valorFisico.includes("-")){
-
-                    valorFisico = valorFisico.replace(/-/g, "") * -1;
-
-                }
-                if(valorSistema - valorFisico < 0){
-                    let numero = (parseInt(valorSistema) - valorFisico)
-                    numero = numero * -1;
-             
-                    td.textContent = "- $" + parseNumber(numero);
-                }else{
-                    td.textContent = "$" + parseNumber(valorSistema - valorFisico); 
-
-                }
-
-
-            }else{
-                td.textContent = "$" + parseNumber(valorSistema - valorFisico); 
-
-            }
-
-            let valor = td.textContent.replace(/[$.]/g, "");
-    
-            if(valor.includes("-")){
-
-                valor = valor.replace(/-/g, "") * -1;
-              
-            }
-
-            totalDiferencia += parseInt(valor)
-            
-        
+    $('#formFiltros').on('submit', function() {
+        $("#boxLoading").addClass("loading");
     });
 
-    if(totalDiferencia < 0){
-
-        totalDiferencia = totalDiferencia * -1;
-        document.querySelector('#totalDiferencia').textContent ="- $"+parseNumber(totalDiferencia);
-    }else{
-        document.querySelector('#totalDiferencia').textContent ="$" + parseNumber(totalDiferencia);
-
+    if ($('#tablaControl').length === 0) {
+        return;
     }
 
-}
+    $('#tablaControl [title]').tooltip({ container: 'body' });
 
+    setupSearch();
+    setupSorting();
+    setupExcelExport();
+    calcularTotales();
+});
+
+/* ===================================
+   FORMATO Y CÁLCULOS
+   =================================== */
 
 const parseNumber = (number) => {
     number = parseInt(number);
 
-    newNumber = number.toLocaleString('de-De', {
+    return number.toLocaleString('de-DE', {
         style: 'decimal',
         maximumFractionDigits: 0,
         minimumFractionDigits: 0
     });
-
-    return newNumber;
 }
 
-const calcularDiferecias = (div) => {
+/**
+ * "- $1.234" / "$1.234" / "$-1.234" -> número entero (NaN si no se puede leer)
+ */
+const aNumero = (texto) => {
+    const valor = String(texto).replace(/[$.\s]/g, "");
 
-    let datos = document.querySelector('#medioPago').value
-    let medioPago = datos.split("-")[1];
-    let valorFisico = div.value;
+    if (valor.includes("-")) {
+        return parseInt(valor.replace(/-/g, "")) * -1;
+    }
+    return parseInt(valor);
+}
 
-    if(medioPago == "PROMO BANCO"){
-        
-        valorFisico = valorFisico.replace(/[$.]/g, "");
-        if(!valorFisico.includes("-") && valorFisico != 0){
+const formatearMonto = (numero) => {
+    return (numero < 0) ? "- $" + parseNumber(numero * -1) : "$" + parseNumber(numero);
+}
+
+const inputControl = (tr) => tr.querySelector('.input-control');
+const inputObservacion = (tr) => tr.querySelector('.input-observacion');
+
+/**
+ * Valor que se envía al controlador: el texto del input sin "$" ni "." (igual que antes)
+ */
+const importeControlFila = (tr) => inputControl(tr).value.replace(/[$.]/g, "");
+
+const diferenciaFila = (tr) => aNumero(tr.dataset.sistema) - aNumero(inputControl(tr).value);
+
+/**
+ * Recalcula la diferencia de cada fila y los totales (footer y resumen)
+ */
+const calcularTotales = () => {
+    let totalEnSistema = 0;
+    let totalFisico = 0;
+    let totalDiferencia = 0;
+
+    document.querySelectorAll('#tablaControl tbody tr').forEach((tr) => {
+        const diferencia = diferenciaFila(tr);
+        const tdDiferencia = tr.querySelector('.td-diferencia');
+
+        tdDiferencia.textContent = formatearMonto(diferencia);
+        tdDiferencia.classList.toggle('con-diferencia', diferencia !== 0);
+
+        totalEnSistema += aNumero(tr.dataset.sistema);
+        totalFisico += aNumero(inputControl(tr).value);
+        totalDiferencia += diferencia;
+    });
+
+    $('#totalEnSistema, #statSistema').text(formatearMonto(totalEnSistema));
+    $('#totalFisico, #statControl').text(formatearMonto(totalFisico));
+    $('#totalDiferencia, #statDiferencia').text(formatearMonto(totalDiferencia));
+}
+
+/**
+ * Da formato al $ CONTROL cargado y recalcula las diferencias
+ */
+const calcularDiferecias = (input) => {
+    if (VALIDAR_PROMO_BANCO && document.querySelector('#medioPago').value == "PROMO BANCO") {
+        const valorFisico = input.value.replace(/[$.]/g, "");
+        const btnControlar = document.querySelector('#controlar');
+
+        if (!valorFisico.includes("-") && valorFisico != 0) {
             Swal.fire({
                 icon: 'warning',
                 title: 'El valor debe ser negativo',
-                text: 'Por favor ingrese un valor negativo',
-            })
-            document.querySelector('#controlar').disabled = true;
-            return 1
-        }else{
-
-            document.querySelector('#controlar').disabled = false;
+                text: 'Por favor ingresá un valor negativo'
+            });
+            if (btnControlar) btnControlar.disabled = true;
+            return;
         }
-
-    }
-    div.value = div.value.replace(/[$.]/g, "");
-
-
-    if(div.value < 0){
-        div.value = div.value * -1;
-        div.value = "- $" +parseNumber(div.value);
-
-    }else{
-
-        div.value = "$" +parseNumber(div.value);
-    }
-    let valorSistema = div.parentElement.parentElement.querySelectorAll("td")[1].textContent.replace(/[$.]/g, "");
-    
-    
-    if(valorSistema.includes("-")){
-        valorSistema = valorSistema.replace(/-/g, "") * -1;
+        if (btnControlar) btnControlar.disabled = false;
     }
 
-    if(valorSistema - parseInt(valorFisico) < 0){
-        
-        let total = (valorSistema - parseInt(valorFisico)) * -1;
-        div.parentElement.parentElement.querySelectorAll("td")[5].textContent= "- $" + parseNumber(total);
-
-    }else{
-
-        div.parentElement.parentElement.querySelectorAll("td")[5].textContent = "$" + parseNumber(valorSistema - parseInt(valorFisico));
-    }
+    // Se quitan también los espacios para que "- $500" editado no quede como $NaN
+    const valor = input.value.replace(/[$.\s]/g, "");
+    input.value = (valor < 0) ? "- $" + parseNumber(valor * -1) : "$" + parseNumber(valor);
 
     calcularTotales();
 }
 
-const guardar = () => {
+/* ===================================
+   GUARDAR / CONTROLAR
+   =================================== */
 
-    let allTr = document.querySelectorAll('tbody tr');
-    let data = [];
-    allTr.forEach((tr) => {
-        let id = tr.querySelectorAll('td')[7].textContent;
-        let importeControl = tr.querySelectorAll('td')[4].querySelector('input').value.replace(/[$.]/g, "");
-        let observaciones = tr.querySelectorAll('td')[6].querySelector('input').value;
+/**
+ * Datos de todas las filas (incluye las ocultas por el buscador y las ya verificadas, como antes)
+ */
+const armarData = () => {
+    const data = [];
 
+    document.querySelectorAll('#tablaControl tbody tr').forEach((tr) => {
         data.push({
-            id,
-            importeControl,
-            observaciones
+            id: tr.dataset.id,
+            importeControl: importeControlFila(tr),
+            observaciones: inputObservacion(tr).value
         });
-
     });
 
-    $.ajax({
-        url: 'Controller/ControlDiario.php?verificado=0',
+    return data;
+}
+
+const enviarControlDiario = (verificado, data) => {
+    $("#boxLoading").addClass("loading");
+
+    return $.ajax({
+        url: 'Controller/ControlDiario.php?verificado=' + verificado,
         type: 'POST',
         data: {
             data
-        },
-        success: function (response) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Guardado',
-                text: 'Se guardo correctamente',
-            }).then (() => {
-                location.reload();
-            });
         }
+    }).fail(function () {
+        Swal.fire({
+            icon: 'error',
+            title: 'No se pudo guardar',
+            text: 'Ocurrió un error al guardar los importes. Intentá nuevamente.'
+        });
+    }).always(function () {
+        $("#boxLoading").removeClass("loading");
     });
-
-
-
 }
 
-
+const guardar = () => {
+    enviarControlDiario(0, armarData()).done(function () {
+        Swal.fire({
+            icon: 'success',
+            title: 'Guardado',
+            text: 'Se guardó correctamente'
+        }).then(() => {
+            location.reload();
+        });
+    });
+}
 
 const controlar = () => {
-
- 
-    let allTr = document.querySelectorAll('tbody tr');
-    let data = [];
+    const filas = document.querySelectorAll('#tablaControl tbody tr');
     let error = false;
     let inputsCargados = true;
-    allTr.forEach((tr) => {
-        let id = tr.querySelectorAll('td')[6].textContent;
-        let importeControl = tr.querySelectorAll('td')[4].querySelector('input').value.replace(/[$.]/g, "");
-        let observaciones = tr.querySelectorAll('td')[6].querySelector('input').value;
 
-        if(importeControl == "" || importeControl == 0 )inputsCargados = false;
+    filas.forEach((tr) => {
+        const importeControl = importeControlFila(tr);
 
-        if(tr.querySelectorAll('td')[5].textContent.replace(/[$.]/g, "") != 0){
-            console.log(tr.querySelectorAll('td')[5].textContent.replace(/[$.]/g, ""));
-            error = true;
-        }
-
-            data.push({
-                id,
-                importeControl,
-                observaciones
-            });
-
-     
+        if (importeControl == "" || importeControl == 0) inputsCargados = false;
+        if (diferenciaFila(tr) !== 0) error = true;
     });
 
-    if(inputsCargados == false){
-
+    if (!inputsCargados) {
         Swal.fire({
             icon: 'warning',
             title: 'Hay valores sin cargar',
-            text: 'Por favor complete todos los valores',
-        })
-        return 1;
-
+            text: 'Por favor completá todos los valores'
+        });
+        return;
     }
-    
-    if(error == true){
 
+    const data = armarData();
+
+    if (error) {
         Swal.fire({
             icon: 'warning',
-            title: 'Desea realizar el control con diferencias?',
+            title: '¿Querés realizar el control con diferencias?',
             showDenyButton: true,
             confirmButtonText: 'Confirmar',
-            denyButtonText: 'Cancelar',
-            }).then((result) => {
-            /* Read more about isConfirmed, isDenied below */
+            denyButtonText: 'Cancelar'
+        }).then((result) => {
             if (result.isConfirmed) {
-
                 confirmarControl(data);
-               
-
             } else if (result.isDenied) {
-
-                Swal.fire('El control fue cancelado', '', 'info')
-                return 1 ;
-
+                Swal.fire('El control fue cancelado', '', 'info');
             }
-        })
-
-    }else{
-
+        });
+    } else {
         confirmarControl(data);
-       
     }
- 
-   
-
-
-
 }
-document.querySelector("#controlar").addEventListener('click', controlar);
-
-document.querySelector("#controlar").addEventListener('click', controlar);
 
 const confirmarControl = (data) => {
-
-    $.ajax({
-        url: 'Controller/ControlDiario.php?verificado=1',
-        type: 'POST',
-        data: {
-            data
-        },
-        success: function (response) {
-
-            Swal.fire('Controlado!', '', 'success').then (() => {
-                location.reload();
-            });
-
-
-        }
+    enviarControlDiario(1, data).done(function () {
+        Swal.fire('¡Controlado!', '', 'success').then(() => {
+            location.reload();
+        });
     });
-
 }
 
+/* ===================================
+   EXPORTAR A EXCEL
+   =================================== */
 
-$("#btnExport").click(function() {
+/**
+ * Se exporta una copia de la tabla con los inputs reemplazados por su valor actual
+ * (table2excel no exporta inputs)
+ */
+function setupExcelExport() {
+    $("#btnExport").click(function (e) {
+        e.preventDefault();
 
-    let inputs = document.querySelectorAll('#valorFisico');
+        const originales = $('#tablaControl input');
+        const copia = $('#tablaControl').clone();
 
-    inputs.forEach(element => {
+        copia.find('input').each(function (i) {
+            $(this).replaceWith(document.createTextNode(originales.eq(i).val()));
+        });
 
-    let valor = element.value
-    let td = element.parentElement; 
-    td.innerHTML = "";
-    td.id="tdValorFisico";
-    const text=document.createTextNode(valor);
-
-    td.appendChild(text);
-
-
+        copia.table2excel({
+            exclude: ".noExport",
+            name: "Control Masivo de Cobranza",
+            filename: "Control Masivo de Cobranza",
+            fileext: ".xlsx"
+        });
     });
+}
 
-    let inputsObservacion = document.querySelectorAll('#observacion');
+/* ===================================
+   BUSCADOR Y ORDENAMIENTO
+   =================================== */
 
-    inputsObservacion.forEach(element => {
+/**
+ * Buscador sobre las filas de la tabla (incluye lo escrito en los inputs)
+ */
+function setupSearch() {
+    $('#searchInput').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
 
-    let valor = element.value
-    let td = element.parentElement; 
-    td.innerHTML = "";
-    td.id="tdObservacion";
-    const text=document.createTextNode(valor);
-
-    td.appendChild(text);
-
-
+        $('#tablaControl tbody tr').each(function() {
+            const valoresInputs = $(this).find('input').map(function () { return $(this).val(); }).get().join(' ');
+            const rowText = ($(this).text() + ' ' + valoresInputs).toLowerCase();
+            $(this).toggle(rowText.indexOf(searchTerm) !== -1);
+        });
     });
+}
 
-    $("#tablaControl").table2excel({
-
-        // exclude CSS class
-        exclude: ".noE  xl",
-        name: "Control Masivo de Cobranza",
-        filename: "Control Masivo de Cobranza", //do not include extension
-        fileext: ".xlsx" // file extension
-        
+/**
+ * Ordenamiento al hacer click en los encabezados
+ */
+function setupSorting() {
+    $('#tablaControl thead th').each(function(index) {
+        if ($(this).hasClass('no-sort')) {
+            return;
+        }
+        $(this).on('click', function() {
+            sortTable(index);
+        });
     });
+}
 
+function valorOrden(td) {
+    const $td = $(td);
 
-    let tdValorFisico = document.querySelectorAll('#tdValorFisico');
-
-    tdValorFisico.forEach(element => {
-
-    let valor = element.textContent;
-    let td = element; 
-    td.innerHTML = "";
-
-    var input = document.createElement("input");
-    input.type = "text";
-    input.id="valorFisico";
-    input.value = valor,
-    input.style.textAlign = "center";
-    input.style.width = "100%";
-
-    input.setAttribute("onchange", "calcularDiferecias(this)");
-
-
-    td.appendChild(input);
-
-
-
-    });
-
-    let tdObservacion = document.querySelectorAll('#tdObservacion');
-
-    tdObservacion.forEach(element => {
-
-    let valor = element.textContent;
-    let td = element; 
-    td.innerHTML = "";
-
-    var input = document.createElement("input");
-    input.type = "text";
-    input.id="observacion";
-    input.value = valor,
-    input.style.textAlign = "center";
-    input.style.width = "100%";
-
-    td.appendChild(input)
-    });
-});
-
-document.ready = calcularTotales ();
-
-
-const cambiarEntorno = (t) =>{
-
-    let entorno = 0;
-  
-    if(t.getAttribute("data-off") == "ARG" ){
-      entorno = 0;
-    }else{
-      entorno = 1;
+    if ($td.attr('data-sort') !== undefined) {
+        return $td.attr('data-sort');
     }
-  
-  
-    $.ajax({
-      url: "Controller/cambiarEntornoTasky.php",
-      method: "POST",
-      data : {entorno: entorno},
-      success: function (data) {
-        window.location.href = "controlMasivoCaja.php";
-      }
+
+    const texto = $td.find('input').length ? $td.find('input').val() : $td.text().trim();
+
+    // $ CONTROL y DIFERENCIA se ordenan por número
+    if ($td.hasClass('td-num')) {
+        const numero = aNumero(texto);
+        return isNaN(numero) ? '' : String(numero);
+    }
+    return texto;
+}
+
+function sortTable(columnIndex) {
+    const tbody = $('#tablaControl tbody');
+    const rows = tbody.find('tr').toArray();
+
+    if (sortColumn === columnIndex) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = columnIndex;
+        sortDirection = 'asc';
+    }
+
+    rows.sort(function(a, b) {
+        const aVal = valorOrden($(a).find('td')[columnIndex]);
+        const bVal = valorOrden($(b).find('td')[columnIndex]);
+
+        const aNum = Number(aVal);
+        const bNum = Number(bVal);
+
+        let resultado;
+        if (aVal !== '' && bVal !== '' && !isNaN(aNum) && !isNaN(bNum)) {
+            resultado = aNum - bNum;
+        } else {
+            resultado = aVal.localeCompare(bVal, 'es', { numeric: true });
+        }
+
+        return sortDirection === 'asc' ? resultado : -resultado;
     });
-  
+
+    $('#tablaControl thead th').removeClass('sorting_asc sorting_desc');
+    $('#tablaControl thead th').eq(columnIndex).addClass(sortDirection === 'asc' ? 'sorting_asc' : 'sorting_desc');
+
+    tbody.append(rows);
+}
+
+/* ===================================
+   ENTORNO
+   =================================== */
+
+/**
+ * Cambia el entorno (Argentina/Uruguay).
+ * Esta pantalla usa cambiarEntornoTasky.php ('uy' -> tabla RO_T_VENTA_DIARIA_SUCURSALES_UY),
+ * no cambiarEntorno.php ('suc_uy'), que no cambia la tabla que se consulta acá.
+ * Igual que el toggle anterior: desde 'uy' vuelve a Argentina; desde cualquier otro entorno pasa a 'uy'.
+ */
+function cambiarEntornoCustom(container) {
+    const nuevoEntorno = ($(container).data('entorno-actual') === 'uy') ? 0 : 1;
+
+    $("#boxLoading").addClass("loading");
+
+    $.ajax({
+        url: "Controller/cambiarEntornoTasky.php",
+        method: "POST",
+        data: { entorno: nuevoEntorno },
+        success: function () {
+            location.reload();
+        },
+        error: function() {
+            $("#boxLoading").removeClass("loading");
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo cambiar el entorno. Por favor intentá nuevamente.'
+            });
+        }
+    });
 }

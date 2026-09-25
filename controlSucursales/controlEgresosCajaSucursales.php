@@ -1,422 +1,340 @@
 <?php
-    require_once "Class/sucursal.php";
-    $selectSucursal = isset($_GET['selectSucursal']) ?  $_GET['selectSucursal'] : '2-UNICENTER';
-        
-    $selectSucursal = explode("-",$selectSucursal);
-
-    $fecha_actual = date("Y-m-d");
- 
-    if(isset($_GET['desde']) && $_GET['desde'] != "" ){
-        $desde = $_GET['desde'];
-    }else{
-        $desde = date("Y-m-d",strtotime($fecha_actual."- 1 week"));
-    }
-
-    if(isset($_GET['hasta']) && $_GET['hasta'] != "" ){
-        $hasta = $_GET['hasta'];
-    }else{
-        $hasta = date("Y-m-d",strtotime($fecha_actual."- 1 day"));
-    }
-
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
     }
-  
-    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
-        $checked = 'checked';
-    }else{
-        $checked = '';
+
+    // Los filtros viajan por POST y se guardan en sesión (patrón POST-Redirect-GET)
+    // para que no queden variables en la URL y un F5 no pida reenviar el formulario.
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['desde'], $_POST['hasta'], $_POST['selectSucursal'])) {
+        $esFecha = function ($valor) {
+            $d = DateTime::createFromFormat('Y-m-d', $valor);
+            return $d && $d->format('Y-m-d') === $valor;
+        };
+
+        if ($esFecha($_POST['desde']) && $esFecha($_POST['hasta'])) {
+            $_SESSION['controlEgresosCaja'] = [
+                'desde'          => $_POST['desde'],
+                'hasta'          => $_POST['hasta'],
+                'selectSucursal' => $_POST['selectSucursal']
+            ];
+        }
+
+        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+        exit;
     }
-        
+
+    require_once "Class/sucursal.php";
+
+    $fecha_actual = date("Y-m-d");
+    $filtros = isset($_SESSION['controlEgresosCaja']) ? $_SESSION['controlEgresosCaja'] : [];
+
+    $desde = isset($filtros['desde']) ? $filtros['desde'] : date("Y-m-d", strtotime($fecha_actual . "- 1 week"));
+    $hasta = isset($filtros['hasta']) ? $filtros['hasta'] : date("Y-m-d", strtotime($fecha_actual . "- 1 day"));
+    $selectSucursal = explode("-", isset($filtros['selectSucursal']) ? $filtros['selectSucursal'] : '2-UNICENTER', 2);
+
     $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
-    $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
-    $imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
-    $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
-    
 
     $sucursal = new Sucursal();
-    $todosLosLocales= $sucursal->traerLocales(true);
+    $todosLosLocales = $sucursal->traerLocales(true);
 
-    $data = null;
-
-    if($desde != null && $hasta != null){
-        
-        $data = $sucursal->traerGastosCajaSucursales($desde,$hasta,$selectSucursal[0]);
-    
+    $data = $sucursal->traerGastosCajaSucursales($desde, $hasta, $selectSucursal[0]);
+    if (!is_array($data)) {
+        $data = [];
     }
 
+    // Resumen
+    $cantidadComprobantes = count($data);
+    $totalMonto = 0;
+    $cantidadAutorizados = 0;
+    $cantidadFactura = 0;
+    $cantidadControlados = 0;
+    foreach ($data as $gasto) {
+        $totalMonto += (float)$gasto['MONTO'];
+        if ($gasto['AUTORIZADO'] == 1) $cantidadAutorizados++;
+        if ($gasto['FACTURA'] == 1) $cantidadFactura++;
+        if ($gasto['CONTROL'] == 1) $cantidadControlados++;
+    }
+
+    // Mismo formato de monto que se enviaba al controlador leyendo el texto de la celda
+    $montoParaEnviar = function ($monto) {
+        $sinPuntos = str_replace('.', '', number_format(abs($monto), 0, '.', '.'));
+        return ($monto < 0) ? "- " . $sinPuntos : $sinPuntos;
+    };
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Control Egresos de Caja Sucursales</title>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Egresos de Caja</title>
 
-        <!-- INCLUDE CSS FILES -->
-        <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
-        ?>
-        
-        <!-- CSS específico para Control Egresos -->
-        <link rel="stylesheet" href="css/controlEgresosCaja.css">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
-        
-        <style>
-            .toggle-on {
-                background-image: url('<?= $imageOn ?>');
-                background-size: contain;
-                background-repeat: no-repeat;
-                height: 40px;
-                width: 40px;
-            }
+    <?php
+        require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+    ?>
 
-            .toggle-off {
-                background-image: url('<?= $imageOff ?>');
-                background-size: contain;
-                background-repeat: no-repeat;
-                height: 40px;
-                width: 40px;
-            }
-        </style>
-    </head>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <body>
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-        <div class="controlEgresos_wrapper">
-            <div class="container-fluid">
-                <div class="controlEgresos_main-card">
-                    
-                    <!-- Header -->
-                    <div class="controlEgresos_header">
-                        <div class="controlEgresos_header-content">
-                            <div class="controlEgresos_title-section">
-                                <h3>
-                                    <i class="bi bi-cash-stack"></i>
-                                    Control Egresos de Caja - <?= $selectSucursal[1] ?>
-                                </h3>
-                            </div>
-                            <div class="controlEgresos_country-selector">
-                                <div class="controlEgresos_country-info">
-                                    <span class="controlEgresos_country-label">País actual:</span>
-                                    <div class="controlEgresos_country-display">
-                                        <img src="<?= ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png' ?>" 
-                                             alt="<?= ($checkedValue === 'central') ? 'Argentina' : 'Uruguay' ?>" 
-                                             class="controlEgresos_flag">
-                                        <span class="controlEgresos_country-name"><?= ($checkedValue === 'central') ? 'ARGENTINA' : 'URUGUAY' ?></span>
-                                    </div>
-                                </div>
-                                <select class="controlEgresos_country-select" onchange="cambiarEntorno(this)">
-                                    <option value="ARG" <?= ($checkedValue === 'central') ? 'selected' : '' ?>>🇦🇷 Argentina</option>
-                                    <option value="URY" <?= ($checkedValue === 'suc_uy') ? 'selected' : '' ?>>🇺🇾 Uruguay</option>
-                                </select>
-                            </div>
+    <!-- Estilos base compartidos con Resumen de Ventas -->
+    <link rel="stylesheet" href="css/resumenVentas.css">
+    <!-- Layout compacto compartido -->
+    <link rel="stylesheet" href="css/pantallaCompacta.css">
+    <!-- Estilos propios de la pantalla -->
+    <link rel="stylesheet" href="css/controlEgresosCajaSucursales.css">
+</head>
+
+<body class="pantalla-compacta">
+    <div class="container-fluid">
+        <div class="modern-card">
+            <div class="page-title">
+                <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
+                    <img src="../image/home-button.png" alt="Home">
+                </a>
+                <i class="bi bi-cash-stack"></i>
+                <span>Control Egresos de Caja</span>
+                <span class="date-range">
+                    <?= htmlspecialchars($selectSucursal[1] ?? '') ?> · <?= date('d/m/Y', strtotime($desde)) ?> a <?= date('d/m/Y', strtotime($hasta)) ?>
+                </span>
+
+                <div class="title-actions ml-auto">
+                    <button type="button" class="btn-info-toggle" data-toggle="collapse" data-target="#panelInfo" aria-expanded="false" aria-controls="panelInfo">
+                        <i class="bi bi-info-circle"></i> ¿Qué muestra esta pantalla?
+                    </button>
+
+                    <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)" title="Cambiar entorno">
+                        <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
+                            <img src="../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
+                            <span>ARG</span>
                         </div>
-                    </div>
-
-                    <!-- Filtros -->
-                    <div class="controlEgresos_filters">
-                        <form class="form-inline" action="#" method="get">
-
-                            <div class="controlEgresos_filter-row">
-
-                                <div class="controlEgresos_filter-group">
-                                    <label class="controlEgresos_filter-label">Desde:</label>
-                                    <input type="date" class="controlEgresos_filter-input" id="desde" name="desde" value="<?= $desde ?>">
-                                </div>
-
-                                <div class="controlEgresos_filter-group">
-                                    <label class="controlEgresos_filter-label">Hasta:</label>
-                                    <input type="date" class="controlEgresos_filter-input" id="hasta" name="hasta" value="<?= $hasta ?>">
-                                </div>
-                                
-                                <div class="controlEgresos_filter-group controlEgresos_filter-select">
-                                    <label class="controlEgresos_filter-label">Sucursal:</label>
-                                    <select name="selectSucursal" id="selectSucursal" class="controlEgresos_filter-input controlEgresos_select2">
-                                        <?php foreach ($todosLosLocales as $key => $value) { ?>
-                                            <option value="<?php echo ($value['NRO_SUCURSAL']."-".$value['DESC_SUCURSAL']) ?>" 
-                                                    <?php if ($selectSucursal[0] == $value['NRO_SUCURSAL']) echo "selected"; ?>>
-                                                <?= $value['DESC_SUCURSAL'] ?>
-                                            </option>
-                                        <?php } ?>
-                                    </select>
-                                </div>
-
-                                <div class="controlEgresos_filter-group">
-                                    <button class="controlEgresos_filter-btn" id="btnSubmit" type="submit">
-                                        <i class="bi bi-funnel-fill"></i>
-                                        Filtrar
-                                    </button>
-                                </div>
-
-
-
-                            </div>
-
-                            <div class="controlEgresos_filter-summary">
-                                <i class="bi bi-funnel"></i>
-                                <strong>Filtros aplicados:</strong> 
-                                Desde <?= date('d/m/Y', strtotime($desde)) ?> hasta <?= date('d/m/Y', strtotime($hasta)) ?> 
-                                - Sucursal: <?= $selectSucursal[1] ?>
-                            </div>
-
-                        </form>
-                    </div>
-                    
-                    <!-- Modal de imágenes -->
-                    <div id="carruselImagenes" class="modal fade controlEgresos_modal" tabindex="-1" aria-hidden="true"></div>
-
-                    <!-- Contenedor de tabla -->
-                    <div class="controlEgresos_table-container">
-                        <?php if($data != null && count($data) > 0) { ?>
-                            <table class="controlEgresos_table" id="myTable" cellspacing="0" data-page-length="100">
-                                <thead>
-                                    <tr>
-                                        <th>FECHA</th>
-                                        <th>SUCURSAL</th>
-                                        <th>TIPO COMP.</th>
-                                        <th>COMPROBANTE</th>
-                                        <th>COD.CUENTA</th>
-                                        <th>CUENTA</th>
-                                        <th>MONTO</th>
-                                        <th>LEYENDA</th>
-                                        <th>VER</th>
-                                        <th data-toggle="tooltip" data-placement="top" title="AUTORIZADO"><i class="bi bi-shield-check"></i></th>
-                                        <th data-toggle="tooltip" data-placement="top" title="RECIBIDO"><i class="bi bi-inbox"></i></th>
-                                        <th data-toggle="tooltip" data-placement="top" title="FACTURA"><i class="bi bi-receipt"></i></th>
-                                        <th data-toggle="tooltip" data-placement="top" title="CONTROL"><i class="bi bi-clipboard-check"></i></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    foreach ($data as $key => $gasto) {
-                                        $fecha = ( $gasto['FECHA_RECIBIDO'] != null ) ? $gasto['FECHA_RECIBIDO']->format("Y-m-d") : "";
-                                        $fechaRecibido = "";
-                                        if($gasto['RECIBIDO'] == 1){
-                                            $fechaRecibido = "data-toggle='tooltip' data-placement='top' title='FECHA RECIBIDO: $fecha'";
-                                        }
-                                        
-                                        // Clases dinámicas para el estado de la fila
-                                        $rowClass = "";
-                                        if($gasto['AUTORIZADO'] == 1) $rowClass .= " row-autorizado";
-                                        if($gasto['RECIBIDO'] != 1) $rowClass .= " row-pendiente";
-                                    ?>
-                
-                                        <tr class="<?= $rowClass ?>">
-                                            <td class="controlEgresos_fecha"><?= $gasto['FECHA']->format("d/m/Y") ?></td>
-                                            
-                                            <td>
-                                                <span class="controlEgresos_sucursal"><?= $gasto['NRO_SUCURS'] ?></span>
-                                            </td>
-                                            
-                                            <td><?= $gasto['COD_COMP'] ?></td>
-                                            
-                                            <td class="controlEgresos_comprobante" 
-                                                data-toggle="tooltip" data-placement="top" 
-                                                title="USUARIO: <?= $gasto['USUARIO'] ?? 'N/A' ?>">
-                                                <?= $gasto['N_COMP'] ?>
-                                            </td>
-                                            
-                                            <td>
-                                                <span class="controlEgresos_cuenta-codigo"><?= $gasto['COD_CTA'] ?></span>
-                                            </td>
-                                            
-                                            <td><?= $gasto['DESC_CUENTA'] ?></td>
-                                            
-                                            <td>
-                                                <?php 
-                                                if($gasto['MONTO'] < 0){
-                                                    $monto = $gasto['MONTO'] * -1;
-                                                    $valor = "- $". number_format($monto, 0, '.','.');
-                                                    echo "<span class='controlEgresos_monto-negativo'>$valor</span>";
-                                                } else {
-                                                    $valor = "$". number_format($gasto['MONTO'], 0, '.','.');
-                                                    echo "<span class='controlEgresos_monto-positivo'>$valor</span>";
-                                                }
-                                                ?>
-                                            </td>
-                                            
-                                            <td>
-                                                <span class="controlEgresos_leyenda" 
-                                                      data-toggle="tooltip" data-placement="top" 
-                                                      title="<?= htmlspecialchars($gasto['LEYENDA']) ?>">
-                                                    <?= $gasto['LEYENDA'] ?>
-                                                </span>
-                                            </td>
-
-                                            <td>
-                                                <?php if($gasto['guardado'] == 1) { ?>
-                                                    <button class="controlEgresos_btn-ver" onclick="mostrarImagen(this)">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-                                                <?php } ?>
-                                            </td>
-                                 
-                                            <td>
-                                                <?php if($gasto['AUTORIZADO'] == 1) { ?>
-                                                    <i class="bi bi-check-circle-fill controlEgresos_icon-autorizado" 
-                                                       data-toggle="tooltip" data-placement="top" 
-                                                       title="AUTORIZADO: <?= $gasto['FECHA_AUTORIZADO']->format('d/m/Y') ?>"></i>
-                                                <?php } ?>
-                                            </td>
-                                     
-                                            <td <?= $fechaRecibido ?>>
-                                                <?php if($gasto['RECIBIDO'] == 1) { ?>
-                                                    <i class="bi bi-check-circle-fill" style="color: #198754 !important; font-size: 1.3rem;"></i>
-                                                <?php } ?>
-                                            </td>
-                                            
-                                            <td>
-                                                <input type="checkbox" class="controlEgresos_checkbox" 
-                                                       id="checkFactura" onchange="checkFactura(this)" 
-                                                       <?= ($gasto['FACTURA'] == 1) ? "checked" : "" ?>>
-                                            </td>
-                                            
-                                            <td>
-                                                <input type="checkbox" class="controlEgresos_checkbox" 
-                                                       id="checkControl" onchange="checkControl(this)" 
-                                                       <?= ($gasto['CONTROL'] == 1) ? "checked" : "" ?>>
-                                            </td>
-                                        </tr>
-                                        
-                                    <?php 
-                                    }
-                                ?>   
-                                </tbody>
-                            </table>
-                        <?php } else { ?>
-                            <div class="controlEgresos_no-data">
-                                <i class="bi bi-inbox" style="font-size: 3rem; color: #dee2e6; margin-bottom: 1rem;"></i>
-                                <h5>No hay datos para mostrar</h5>
-                                <p>No se encontraron registros para los filtros seleccionados.</p>
-                                <small>Intenta cambiar los parámetros de búsqueda o el rango de fechas.</small>
-                            </div>
-                        <?php } ?>
+                        <div class="toggle-flag <?= ($checkedValue === 'suc_uy') ? 'active' : '' ?>" data-entorno="suc_uy">
+                            <img src="../assets/images/UY.png" alt="Uruguay">
+                            <span>UY</span>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Panel informativo -->
+            <div class="collapse" id="panelInfo">
+                <div class="info-panel">
+                    <div class="info-grid">
+                        <div class="info-block">
+                            <h6><i class="bi bi-database"></i> ¿Qué datos trae?</h6>
+                            <p>
+                                Lista, comprobante por comprobante, los <strong>egresos de caja de una sucursal</strong> entre las fechas elegidas:
+                                movimientos al debe en cuentas de gasto <code>5xxxxx</code> (se excluye la <code>522400</code>).
+                            </p>
+                            <p>
+                                En Argentina los datos se leen directo de la base de la sucursal, así se ven también los egresos del día que todavía no se replicaron.
+                                Se completan con el histórico ya replicado en central.
+                            </p>
+                        </div>
+
+                        <div class="info-block">
+                            <h6><i class="bi bi-list-check"></i> ¿Qué significa cada columna?</h6>
+                            <ul class="info-legend">
+                                <li><i class="bi bi-eye"></i> <strong>Ver:</strong> fotos del comprobante que subió la sucursal.</li>
+                                <li><i class="bi bi-shield-check"></i> <strong>Autorizado:</strong> marca histórica de la pantalla Autorizar Egresos de Caja, que ya no se usa. Solo se ve en gastos autorizados antes de darla de baja.</li>
+                                <li><i class="bi bi-inbox"></i> <strong>Recibido:</strong> el comprobante físico llegó a tesorería central.</li>
+                                <li><i class="bi bi-receipt"></i> <strong>Factura:</strong> el gasto tiene factura, o sea que <strong>lleva IVA</strong>. Se marca acá.</li>
+                                <li><i class="bi bi-clipboard-check"></i> <strong>Control:</strong> el comprobante fue revisado. Se marca acá.</li>
+                            </ul>
+                        </div>
+
+                        <div class="info-block info-block-wide">
+                            <h6><i class="bi bi-diagram-3"></i> Relación con otras pantallas de Control Sucursales</h6>
+                            <ol class="info-flow">
+                                <li><strong>Control Egresos de Caja (esta pantalla):</strong> se controla cada comprobante y se indica si tiene factura.</li>
+                                <li>
+                                    La marca de <strong>Factura</strong> define cómo sigue el gasto:
+                                    <ul>
+                                        <li><strong>Con factura (con IVA)</strong> → aparece en <strong>Carga Factura Sucursales</strong>, donde se contabiliza comprobante por comprobante.</li>
+                                        <li><strong>Sin factura (sin IVA)</strong> → se carga como total mensual por sucursal y cuenta en <strong>Carga Gastos Tesorería</strong>.</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                            <p class="info-note">
+                                <i class="bi bi-lightbulb"></i>
+                                Carga Factura Sucursales muestra únicamente los gastos que tienen tildada la columna Factura en esta pantalla.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form class="filters-form" method="POST" id="formFiltros">
+                <div>
+                    <label for="desde">Desde:</label>
+                    <input type="date" class="form-control" id="desde" name="desde" value="<?= $desde ?>">
+                </div>
+
+                <div>
+                    <label for="hasta">Hasta:</label>
+                    <input type="date" class="form-control" id="hasta" name="hasta" value="<?= $hasta ?>">
+                </div>
+
+                <div class="filter-sucursal">
+                    <label for="selectSucursal">Sucursal:</label>
+                    <select name="selectSucursal" id="selectSucursal" class="form-control">
+                        <?php foreach ($todosLosLocales as $value) { ?>
+                            <option value="<?= htmlspecialchars($value['NRO_SUCURSAL'] . "-" . $value['DESC_SUCURSAL']) ?>"
+                                <?= ($selectSucursal[0] == $value['NRO_SUCURSAL']) ? "selected" : "" ?>>
+                                <?= htmlspecialchars($value['DESC_SUCURSAL']) ?>
+                            </option>
+                        <?php } ?>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-modern btn-search" id="search">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </form>
         </div>
 
-    </body>
+        <!-- spinner -->
+        <div id="boxLoading"></div>
+
+        <!-- Modal de imágenes -->
+        <div id="carruselImagenes" class="modal fade" tabindex="-1" aria-hidden="true"></div>
+
+        <?php if ($cantidadComprobantes > 0) { ?>
+
+        <div class="table-wrapper">
+            <!-- Resumen + buscador -->
+            <div class="table-toolbar">
+                <div class="stats-row">
+                    <div class="stat-chip">
+                        <span class="stat-label">Comprobantes</span>
+                        <span class="stat-value"><?= $cantidadComprobantes ?></span>
+                    </div>
+                    <div class="stat-chip stat-chip-accent">
+                        <span class="stat-label">Total</span>
+                        <span class="stat-value">$<?= number_format($totalMonto, 0, ',', '.') ?></span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-label">Autorizados</span>
+                        <span class="stat-value"><?= $cantidadAutorizados ?> / <?= $cantidadComprobantes ?></span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-label">Con factura</span>
+                        <span class="stat-value"><span id="statFactura"><?= $cantidadFactura ?></span> / <?= $cantidadComprobantes ?></span>
+                    </div>
+                    <div class="stat-chip">
+                        <span class="stat-label">Controlados</span>
+                        <span class="stat-value"><span id="statControl"><?= $cantidadControlados ?></span> / <?= $cantidadComprobantes ?></span>
+                    </div>
+                </div>
+                <div class="table-search">
+                    <i class="bi bi-search"></i>
+                    <input type="search" id="searchInput" placeholder="Buscar comprobante, cuenta, leyenda...">
+                </div>
+            </div>
+
+            <table class="display" id="tablaEgresos">
+                <thead>
+                    <tr>
+                        <th>FECHA</th>
+                        <th>SUC.</th>
+                        <th>TIPO</th>
+                        <th>COMPROBANTE</th>
+                        <th>COD. CTA</th>
+                        <th>CUENTA</th>
+                        <th class="th-num">MONTO</th>
+                        <th>LEYENDA</th>
+                        <th class="th-icon no-sort">VER</th>
+                        <th class="th-icon" title="Autorizado"><i class="bi bi-shield-check"></i></th>
+                        <th class="th-icon" title="Recibido"><i class="bi bi-inbox"></i></th>
+                        <th class="th-icon" title="Factura (lleva IVA)"><i class="bi bi-receipt"></i></th>
+                        <th class="th-icon" title="Control"><i class="bi bi-clipboard-check"></i></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <?php foreach ($data as $gasto) {
+                        $monto = (float)$gasto['MONTO'];
+                        $fechaRecibido = ($gasto['FECHA_RECIBIDO'] != null) ? $gasto['FECHA_RECIBIDO']->format("d/m/Y") : "";
+                        $fechaAutorizado = ($gasto['FECHA_AUTORIZADO'] != null) ? $gasto['FECHA_AUTORIZADO']->format("d/m/Y") : "";
+                        $rowClass = ($gasto['CONTROL'] == 1) ? "row-controlada" : "";
+                    ?>
+                        <tr class="<?= $rowClass ?>"
+                            data-fecha="<?= $gasto['FECHA']->format("d/m/Y") ?>"
+                            data-sucursal="<?= htmlspecialchars(trim($gasto['NRO_SUCURS'])) ?>"
+                            data-tipo="<?= htmlspecialchars(trim($gasto['COD_COMP'])) ?>"
+                            data-comprobante="<?= htmlspecialchars(trim($gasto['N_COMP'])) ?>"
+                            data-cod-cuenta="<?= htmlspecialchars(trim($gasto['COD_CTA'])) ?>"
+                            data-cuenta="<?= htmlspecialchars(trim($gasto['DESC_CUENTA'])) ?>"
+                            data-monto="<?= $montoParaEnviar($monto) ?>"
+                            data-leyenda="<?= htmlspecialchars(trim((string)$gasto['LEYENDA'])) ?>">
+
+                            <td data-sort="<?= $gasto['FECHA']->format("Y-m-d") ?>" class="td-fecha"><?= $gasto['FECHA']->format("d/m/Y") ?></td>
+                            <td><?= $gasto['NRO_SUCURS'] ?></td>
+                            <td><?= $gasto['COD_COMP'] ?></td>
+                            <td class="td-comprobante" title="Usuario: <?= htmlspecialchars($gasto['USUARIO'] ?? 'N/A') ?>"><?= $gasto['N_COMP'] ?></td>
+                            <td><span class="cuenta-codigo"><?= $gasto['COD_CTA'] ?></span></td>
+                            <td><?= $gasto['DESC_CUENTA'] ?></td>
+                            <td class="td-num <?= ($monto < 0) ? 'monto-negativo' : '' ?>" data-sort="<?= $monto ?>">
+                                <?= ($monto < 0) ? "- " : "" ?>$<?= number_format(abs($monto), 0, ',', '.') ?>
+                            </td>
+                            <td class="td-leyenda" title="<?= htmlspecialchars((string)$gasto['LEYENDA']) ?>"><?= htmlspecialchars((string)$gasto['LEYENDA']) ?></td>
+                            <td class="td-icon">
+                                <?php if ($gasto['guardado'] == 1) { ?>
+                                    <button type="button" class="btn-ver" onclick="mostrarImagen(this)" title="Ver comprobante">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                <?php } ?>
+                            </td>
+                            <td class="td-icon" data-sort="<?= ($gasto['AUTORIZADO'] == 1) ? 1 : 0 ?>">
+                                <?php if ($gasto['AUTORIZADO'] == 1) { ?>
+                                    <i class="bi bi-check-circle-fill icon-ok" title="Autorizado: <?= $fechaAutorizado ?>"></i>
+                                <?php } else { ?>
+                                    <span class="icon-pendiente" title="Sin autorizar">—</span>
+                                <?php } ?>
+                            </td>
+                            <td class="td-icon" data-sort="<?= ($gasto['RECIBIDO'] == 1) ? 1 : 0 ?>">
+                                <?php if ($gasto['RECIBIDO'] == 1) { ?>
+                                    <i class="bi bi-check-circle-fill icon-ok" title="Recibido: <?= $fechaRecibido ?>"></i>
+                                <?php } else { ?>
+                                    <span class="icon-pendiente" title="No recibido">—</span>
+                                <?php } ?>
+                            </td>
+                            <td class="td-icon" data-sort="<?= ($gasto['FACTURA'] == 1) ? 1 : 0 ?>">
+                                <input type="checkbox" class="check-tabla checkFactura" onchange="checkFactura(this)" <?= ($gasto['FACTURA'] == 1) ? "checked" : "" ?>>
+                            </td>
+                            <td class="td-icon" data-sort="<?= ($gasto['CONTROL'] == 1) ? 1 : 0 ?>">
+                                <input type="checkbox" class="check-tabla checkControl" onchange="checkControl(this)" <?= ($gasto['CONTROL'] == 1) ? "checked" : "" ?>>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php } else { ?>
+
+        <div class="table-wrapper empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>No hay egresos para mostrar</h5>
+            <p>No se encontraron egresos de <?= htmlspecialchars($selectSucursal[1] ?? '') ?> entre el <?= date('d/m/Y', strtotime($desde)) ?> y el <?= date('d/m/Y', strtotime($hasta)) ?>. Probá con otro rango de fechas o sucursal.</p>
+        </div>
+
+        <?php } ?>
+    </div>
+
+    <!-- jQuery (usar versión completa, no slim) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script src="js/controlEgresosSucursales.js" charset="utf-8"></script>
+
+</body>
 
 </html>
-
-<!-- INCLUDE JS FILES -->
-<?php
-    require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
-?>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
-<script src="js/controlEgresosSucursales.js"></script> 
-<script>
-    $(document).ready(function() {
-        // Inicializar Select2 con estilos personalizados
-        $("#selectSucursal").select2({
-            theme: 'bootstrap4',
-            width: '100%'
-        });
-        
-        // Ajustar estilos del Select2
-        setTimeout(function() {
-            $(".select2-selection.select2-selection--single").css({
-                'height': '44px',
-                'border': '2px solid #dee2e6',
-                'border-radius': '8px'
-            });
-            $("#select2-selectSucursal-container").css('margin-top', '8px');
-        }, 100);
-
-        // Configurar toggle con estilos personalizados
-        setTimeout(function() {
-            if (document.querySelector(".toggle")) {
-                const toggle = document.querySelector(".toggle");
-                const toggleOn = document.querySelector(".toggle-on");
-                const toggleOff = document.querySelector(".toggle-off");
-                
-                toggle.style.width = "80px";
-                toggle.style.height = "40px";
-                toggle.style.borderRadius = "20px";
-                
-                if (toggleOn) {
-                    toggleOn.style.fontSize = "0";
-                    toggleOn.style.width = "35px";
-                    toggleOn.style.height = "35px";
-                    toggleOn.style.borderRadius = "50%";
-                }
-                
-                if (toggleOff) {
-                    toggleOff.style.fontSize = "0";
-                    toggleOff.style.width = "35px";
-                    toggleOff.style.height = "35px";
-                    toggleOff.style.borderRadius = "50%";
-                }
-            }
-        }, 200);
-
-        // Inicializar DataTable con configuración personalizada
-        if ($("#myTable").length) {
-            // Verificar si DataTable ya está inicializada y destruirla si es necesario
-            if ($.fn.DataTable.isDataTable('#myTable')) {
-                $('#myTable').DataTable().destroy();
-            }
-            
-            $('#myTable').DataTable({
-                "bLengthChange": false,
-                "bInfo": true,
-                "aaSorting": [[0, "desc"]], // Ordenar por fecha descendente
-                "pageLength": 50,
-                "responsive": false, // Deshabilitado para mostrar todas las columnas
-                "scrollX": true, // Scroll horizontal si es necesario
-                "autoWidth": false, // Control manual del ancho
-                "dom": 'rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                "columnDefs": [
-                    {
-                        "targets": "_all", 
-                        "className": "text-center",
-                    },
-                    {
-                        "targets": [7], // Columna de leyenda
-                        "className": "text-left",
-                    }
-                ],
-                "language": {
-                    "search": "Buscar:",
-                    "searchPlaceholder": "Filtrar registros...",
-                    "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                    "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-                    "infoFiltered": "(filtrado de _MAX_ registros totales)",
-                    "paginate": {
-                        "first": "Primero",
-                        "last": "Último",
-                        "next": "Siguiente",
-                        "previous": "Anterior"
-                    },
-                    "emptyTable": "No hay datos disponibles en la tabla",
-                    "zeroRecords": "No se encontraron registros coincidentes"
-                }
-            });
-        }
-
-        // Inicializar tooltips
-        $('[data-toggle="tooltip"]').tooltip({
-            container: 'body',
-            html: true
-        });
-
-        // Añadir efecto de loading al enviar formulario
-        $('form').on('submit', function() {
-            var btn = $(this).find('button[type="submit"]');
-            btn.html('<i class="bi bi-hourglass-split"></i> Cargando...');
-            btn.prop('disabled', true);
-        });
-    });
-
-
-</script>

@@ -1,13 +1,17 @@
+/* ===================================
+   CONTROL RECEPCIÓN EFECTIVO - JAVASCRIPT
+   =================================== */
+
+let sortColumn = null;
+let sortDirection = 'asc';
+
+const ICONO_OK = '<i class="bi bi-check-circle-fill icon-ok"></i>';
+
+const estaMarcado = (row, columna) => row.querySelector(`.${columna} .bi-check-circle-fill`) !== null;
 
 const validarFlujo = (row, accion) => {
-    const cells = row.querySelectorAll('td');
-    const recibidoCell = cells[9];
-    const controladoCell = cells[10];
-    const cargadoCell = cells[11];
-
-    const estaRecibido = recibidoCell.querySelector('.bi-check-circle-fill') !== null;
-    const estaControlado = controladoCell.querySelector('.bi-check-circle-fill') !== null;
-    const estaCargado = cargadoCell.querySelector('.bi-check-circle-fill') !== null;
+    const estaRecibido = estaMarcado(row, 'col-recibido');
+    const estaControlado = estaMarcado(row, 'col-controlado');
 
     switch(accion) {
         case 'recibido':
@@ -38,223 +42,197 @@ const validarFlujo = (row, accion) => {
     }
 };
 
-const marcarRecibido = async (e) => {
-    try {
-        // Desmarcar el checkbox si la validación falla
-        if (!validarFlujo(e.closest('tr'), 'recibido')) {
-            e.checked = false;
-            return;
-        }
+/**
+ * Datos del comprobante tomados de los atributos data-* de la fila
+ */
+const datosComprobante = (row) => {
+    const d = row.dataset;
+    return {
+        fecha: d.fechaIso,
+        nroSucursal: d.sucursal,
+        tipoComprobante: d.tipo,
+        nroComprobante: d.ncomp,
+        monto: d.monto,
+        codCuenta: d.codCuenta,
+        descripcionCuenta: d.descCuenta,
+        observaciones: row.querySelector('.obs-input')?.value || ''
+    };
+}
 
-        const row = e.closest('tr');
-        const cells = row.querySelectorAll('td');
+/**
+ * Reemplaza el checkbox por el ícono de OK y actualiza el resumen
+ */
+const marcarCelda = (row, columna, contador) => {
+    const celda = row.querySelector(`.${columna}`);
+    celda.innerHTML = ICONO_OK;
+    celda.setAttribute('data-sort', '1');
+    actualizarContador(contador, columna);
+}
 
-        // Convertir fecha de dd/mm/yyyy a yyyy-mm-dd
-        const fechaParts = cells[0].textContent.trim().split('/');
-        const fechaFormateada = `${fechaParts[2]}-${fechaParts[1]}-${fechaParts[0]}`;
-        
-        const data = {
-            fecha: fechaFormateada,
-            nroSucursal: cells[1].textContent.trim(),
-            tipoComprobante: cells[3].textContent.trim(),
-            nroComprobante: cells[4].getAttribute('data-ncomp-original') || cells[4].textContent.trim(),
-            monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
-            codCuenta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
-            descripcionCuenta: row.querySelector('[data-desc-cuenta]').getAttribute('data-desc-cuenta'),
-            observaciones: cells[12].querySelector('textarea')?.value || ''
-        };
-
-        console.log('Datos enviados para marcar como recibido:', data);
-
-        $.ajax({
-            type: 'POST',
-            url: 'Controller/ControlEgresosController.php?accion=marcarRecibido',
-            data: data,
-            success: function(response) {
-                console.log('Respuesta del servidor:', response);
-                cells[9].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: 'Marcado como recibido correctamente',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-            },
-            error: function(xhr, status, error) {
-                e.checked = false; // Desmarcar el checkbox si hay error
-                console.error('Error completo:', {xhr, status, error, responseText: xhr.responseText});
-                Swal.fire({ 
-                    icon: 'error', 
-                    title: 'Error', 
-                    text: 'Error al marcar como recibido',
-                    footer: xhr.responseText || ''
-                });
-            }
-        });
-    } catch (error) {
-        e.checked = false; // Desmarcar el checkbox si hay error
-        console.error('Error al marcar como recibido:', error);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al marcar como recibido' });
+const actualizarContador = (idContador, columna) => {
+    const contador = document.getElementById(idContador);
+    if (contador) {
+        contador.textContent = document.querySelectorAll(`#tablaControlRecepcion .${columna} .bi-check-circle-fill`).length;
     }
-};
+}
 
-const marcarControlado = (e) => {
-    // Validar el flujo antes de proceder
-    if (!validarFlujo(e.closest('tr'), 'controlado')) {
+const marcarRecibido = (e) => {
+    const row = e.closest('tr');
+
+    if (!validarFlujo(row, 'recibido')) {
         e.checked = false;
         return;
     }
 
-    const row = e.closest('tr');
-    const cells = row.querySelectorAll('td');
-    
-    // Convertir fecha de dd/mm/yyyy a yyyy-mm-dd
-    const fechaParts = cells[0].textContent.trim().split('/');
-    const fechaFormateada = `${fechaParts[2]}-${fechaParts[1]}-${fechaParts[0]}`;
-    
-    const data = {
-        fecha: fechaFormateada,
-        nroSucursal: cells[1].textContent.trim(),
-        tipoComprobante: cells[3].textContent.trim(),
-        nroComprobante: cells[4].getAttribute('data-ncomp-original') || cells[4].textContent.trim(),
-        codCuenta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
-        descripcionCuenta: row.querySelector('[data-desc-cuenta]').getAttribute('data-desc-cuenta'),
-        monto: cells[5].textContent.replace(/[$.]/g, '').trim(),
-        observaciones: cells[12].querySelector('textarea')?.value || ''
-    };
+    e.disabled = true;
 
-    console.log('Datos enviados:', data);
+    $.ajax({
+        type: 'POST',
+        url: 'Controller/ControlEgresosController.php?accion=marcarRecibido',
+        data: datosComprobante(row),
+        success: function() {
+            marcarCelda(row, 'col-recibido', 'statRecibidos');
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Marcado como recibido correctamente',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        },
+        error: function(xhr) {
+            e.checked = false;
+            e.disabled = false;
+            console.error('Error al marcar como recibido:', xhr.responseText);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al marcar como recibido',
+                footer: xhr.responseText || ''
+            });
+        }
+    });
+};
+
+const marcarControlado = (e) => {
+    const row = e.closest('tr');
+
+    if (!validarFlujo(row, 'controlado')) {
+        e.checked = false;
+        return;
+    }
+
+    e.disabled = true;
 
     $.ajax({
         type: 'POST',
         url: 'Controller/ControlEgresosController.php?accion=controlTesoreria',
-        data: data,
+        data: datosComprobante(row),
         success: function(response) {
-            console.log('Respuesta completa del servidor:', response);
-
-            if(response.success) {
-                cells[10].innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
-                Swal.fire({ icon: 'success', title: 'Éxito', text: 'Marcado como controlado correctamente' });
+            if (response.success) {
+                marcarCelda(row, 'col-controlado', 'statControlados');
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Marcado como controlado correctamente',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
             } else {
-                Swal.fire({ 
-                    icon: 'error', 
-                    title: 'Error', 
+                e.checked = false;
+                e.disabled = false;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
                     text: response.message,
                     footer: response.debug ? JSON.stringify(response.debug) : ''
                 });
             }
         },
-        error: function(xhr, status, error) {
-            console.error('Error completo:', {xhr, status, error, responseText: xhr.responseText});
+        error: function(xhr) {
+            e.checked = false;
+            e.disabled = false;
+            console.error('Error al marcar como controlado:', xhr.responseText);
             Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'Error al comunicarse con el servidor' });
         }
     });
 };
 
-const guardarObservaciones = async (btn) => {
-    try {
-        const row = btn.closest('tr');
-        const cells = row.querySelectorAll('td');
-        const textarea = cells[12].querySelector('textarea');
-        
-        if (!textarea.value.trim()) {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: 'warning',
-                title: 'Por favor, ingrese una observación',
-                showConfirmButton: false,
-                timer: 3000
-            });
-            return;
-        }
+const guardarObservaciones = (btn) => {
+    const row = btn.closest('tr');
+    const textarea = row.querySelector('.obs-input');
 
-        const data = {
-            nroSucursal: cells[1].textContent,
-            nroComprobante: cells[4].textContent,
-            observaciones: textarea.value
-        };
-
-        $.ajax({
-            type: 'POST',
-            url: 'Controller/ControlEgresosController.php?accion=guardarObservaciones',
-            data: data,
-            success: function(response) {
-                btn.style.display = 'none';
-                textarea.disabled = true;
-            },
-            error: function(xhr, status, error) {
-                console.error('Error:', error);
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Error al guardar las observaciones' });
-            }
+    if (!textarea.value.trim()) {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'warning',
+            title: 'Por favor, ingrese una observación',
+            showConfirmButton: false,
+            timer: 3000
         });
-    } catch (error) {
-        console.error('Error al guardar observaciones:', error);
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al guardar las observaciones' });
-    }
-};
-
-// Event listener para el botón de filtrar
-document.getElementById('btnFiltrarControlRecepcion').addEventListener('click', (e) => {
-    e.preventDefault();
-    const desde = document.getElementById('desde').value;
-    const hasta = document.getElementById('hasta').value;
-    const estado = document.getElementById('selectEstado').value;
-
-    if (!desde || !hasta) {
-        Swal.fire({ icon: 'warning', title: 'Atención', text: 'Por favor, seleccione fechas válidas' });
         return;
     }
 
-    window.location.href = `?desde=${desde}&hasta=${hasta}&selectEstado=${estado}`;
-});
+    btn.disabled = true;
+
+    $.ajax({
+        type: 'POST',
+        url: 'Controller/ControlEgresosController.php?accion=guardarObservaciones',
+        data: {
+            nroSucursal: row.dataset.sucursal,
+            nroComprobante: row.dataset.ncomp,
+            observaciones: textarea.value
+        },
+        success: function() {
+            btn.remove();
+            textarea.disabled = true;
+        },
+        error: function(xhr, status, error) {
+            btn.disabled = false;
+            console.error('Error:', error);
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Error al guardar las observaciones' });
+        }
+    });
+};
+
+/* ===================================
+   VINCULAR RECIBO
+   =================================== */
 
 let currentRowData = null;
 let debounceTimer;
 
 const vincularRecibo = (btn) => {
     const row = btn.closest('tr');
-    const cells = row.querySelectorAll('td');
+    const d = row.dataset;
+
     currentRowData = {
         row: row,
-        fecha: cells[0].textContent.trim(),
-        nroSucursal: cells[1].textContent.trim(),
-        codComp: cells[3].textContent.trim(),
-        nComp: cells[4].dataset.ncomp,
-        monto: parseFloat(cells[5].textContent.replace(/[$.]/g, '').replace(',', '.')),
-        codCta: row.querySelector('[data-cod-cuenta]').getAttribute('data-cod-cuenta'),
-        montoFormateado: cells[5].textContent.trim()
+        fecha: d.fecha,
+        nroSucursal: d.sucursal,
+        codComp: d.tipo,
+        nComp: d.ncomp,
+        monto: parseFloat(d.monto),
+        codCta: d.codCuenta,
+        montoFormateado: d.montoFormateado
     };
-
-    // Obtener el nombre de la sucursal desde la tercera columna de la fila
-    const nombreSucursal = cells[2].textContent.trim();
 
     const infoDiv = document.getElementById('infoComprobanteSeleccionado');
     infoDiv.innerHTML = `
         <strong>Comprobante a vincular:</strong><br>
-        Sucursal: ${currentRowData.nroSucursal} - ${nombreSucursal}<br>
+        Sucursal: ${currentRowData.nroSucursal} - ${d.descSucursal}<br>
         Fecha: ${currentRowData.fecha} | Comp: ${currentRowData.codComp}-${currentRowData.nComp} | Monto: ${currentRowData.montoFormateado}
     `;
-    
     infoDiv.style.display = 'block';
 
-    const modal = new bootstrap.Modal(document.getElementById('modalVincularRecibo'));
-    modal.show();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalVincularRecibo')).show();
 
-    const searchInput = document.getElementById('searchInput');
-    searchInput.value = ''; // Limpiar búsqueda anterior
-
-    // Cargar resultados iniciales (sin término de búsqueda)
+    // Limpiar búsqueda anterior y cargar resultados iniciales
+    document.getElementById('searchInput').value = '';
     buscarRecibos();
-
-    searchInput.addEventListener('keyup', () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            buscarRecibos(searchInput.value);
-        }, 500); // Espera 500ms después de que el usuario deja de escribir
-    });
 };
 
 const buscarRecibos = async (searchTerm = '') => {
@@ -306,7 +284,7 @@ const buscarRecibos = async (searchTerm = '') => {
     } catch (error) {
         console.error('Error al buscar recibos:', error);
         const tablaBody = document.querySelector('#tablaRecibosVincular tbody');
-        tablaBody.innerHTML = '<tr><td colspan="6" class="text-center">Error al cargar los recibos.</td></tr>';
+        tablaBody.innerHTML = '<tr><td colspan="7" class="text-center">Error al cargar los recibos.</td></tr>';
     }
 };
 
@@ -366,11 +344,9 @@ const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculad
                     // Actualizar UI
                     const rowElement = currentRowData.row;
                     if (rowElement) {
-                        const vincularBtn = rowElement.querySelector('.btn-info');
-                        if(vincularBtn) vincularBtn.style.display = 'none';
-
-                        const cargadoCell = rowElement.children[11]; // columna CARGADO (pos 11 tras agregar MONEDA)
-                        cargadoCell.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-4"></i>';
+                        rowElement.querySelector('.btn-vincular')?.remove();
+                        rowElement.classList.add('row-completa');
+                        marcarCelda(rowElement, 'col-cargado', 'statCargados');
                     }
                 } else {
                     Swal.fire('Error', result.message || 'Ocurrió un error al vincular.', 'error');
@@ -379,9 +355,103 @@ const seleccionarRecibo = async (codCompVinculado, nCompVinculado, montoVinculad
                 console.error('Error al vincular el recibo:', error);
                 Swal.fire('Error', 'Ocurrió un error de comunicación al intentar vincular el recibo.', 'error');
             } finally {
-                const modal = bootstrap.Modal.getInstance(document.getElementById('modalVincularRecibo'));
-                modal.hide();
+                bootstrap.Modal.getInstance(document.getElementById('modalVincularRecibo'))?.hide();
             }
         }
     });
 };
+
+/* ===================================
+   INICIALIZACIÓN
+   =================================== */
+
+$(document).ready(function () {
+    $('#formFiltros').on('submit', function() {
+        $("#boxLoading").addClass("loading");
+    });
+
+    // Búsqueda del modal de vincular (se registra una sola vez)
+    $('#searchInput').on('keyup', function() {
+        clearTimeout(debounceTimer);
+        const termino = this.value;
+        debounceTimer = setTimeout(() => buscarRecibos(termino), 500);
+    });
+
+    if ($('#tablaControlRecepcion').length === 0) {
+        return;
+    }
+
+    document.querySelectorAll('#tablaControlRecepcion [title]').forEach(el => {
+        new bootstrap.Tooltip(el, { container: 'body' });
+    });
+
+    setupSearch();
+    setupSorting();
+});
+
+/**
+ * Buscador sobre las filas de la tabla
+ */
+function setupSearch() {
+    $('#buscarTabla').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+
+        $('#tablaControlRecepcion tbody tr').each(function() {
+            const rowText = $(this).text().toLowerCase();
+            $(this).toggle(rowText.indexOf(searchTerm) !== -1);
+        });
+    });
+}
+
+/**
+ * Ordenamiento al hacer click en los encabezados
+ */
+function setupSorting() {
+    $('#tablaControlRecepcion thead th').each(function(index) {
+        if ($(this).hasClass('no-sort')) {
+            return;
+        }
+        $(this).on('click', function() {
+            sortTable(index);
+        });
+    });
+}
+
+function valorOrden(td) {
+    const $td = $(td);
+    return $td.attr('data-sort') !== undefined ? $td.attr('data-sort') : $td.text().trim();
+}
+
+function sortTable(columnIndex) {
+    const tbody = $('#tablaControlRecepcion tbody');
+    const rows = tbody.find('tr').toArray();
+
+    if (sortColumn === columnIndex) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = columnIndex;
+        sortDirection = 'asc';
+    }
+
+    rows.sort(function(a, b) {
+        const aVal = valorOrden($(a).find('td')[columnIndex]);
+        const bVal = valorOrden($(b).find('td')[columnIndex]);
+
+        const aNum = Number(aVal);
+        const bNum = Number(bVal);
+
+        let resultado;
+        if (aVal !== '' && bVal !== '' && !isNaN(aNum) && !isNaN(bNum)) {
+            resultado = aNum - bNum;
+        } else {
+            resultado = aVal.localeCompare(bVal, 'es', { numeric: true });
+        }
+
+        return sortDirection === 'asc' ? resultado : -resultado;
+    });
+
+    $('#tablaControlRecepcion thead th').removeClass('sorting_asc sorting_desc');
+    $('#tablaControlRecepcion thead th').eq(columnIndex).addClass(sortDirection === 'asc' ? 'sorting_asc' : 'sorting_desc');
+
+    tbody.append(rows);
+}

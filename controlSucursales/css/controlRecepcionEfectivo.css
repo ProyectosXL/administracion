@@ -1,345 +1,281 @@
+/* ===================================
+   CONTROL RECEPCIÓN EFECTIVO
+   Base: resumenVentas.css + pantallaCompacta.css
+   =================================== */
 
-/* ===== ESTILOS PARA CONTROL RECEPCIÓN EFECTIVO ===== */
-
-/* Modal de Ayuda */
-.controlRecepcion_modal-header {
-    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-    color: white;
-    border-radius: 15px 15px 0 0;
+/* Bootstrap 5 le quita la flecha a los select con .form-control */
+.pantalla-compacta .filters-form select.form-control {
+    appearance: auto;
+    -webkit-appearance: auto;
+    min-width: 170px;
 }
 
-.controlRecepcion_modal-body {
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-.controlRecepcion_modal-footer {
-    border-top: 1px solid #e9ecef;
-    background-color: #f8f9fa;
-}
-
-/* Secciones de Ayuda */
-.controlRecepcion_help-section {
-    padding: 1rem 0;
-}
-
-.controlRecepcion_section-title {
-    color: #495057;
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-
-.controlRecepcion_help-text {
-    color: #6c757d;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-}
-
-/* Cajas de Información */
-.controlRecepcion_info-box {
-    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-    border: 1px solid #bbdefb;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin: 1rem 0;
-}
-
-.controlRecepcion_info-box h6 {
-    color: #1565c0;
-    margin-bottom: 0.8rem;
-    font-weight: 600;
-}
-
-/* Listas de Proceso */
-.controlRecepcion_process-list {
-    margin: 0;
-    padding-left: 1.2rem;
-}
-
-.controlRecepcion_process-list li {
-    margin-bottom: 0.6rem;
-    line-height: 1.5;
-}
-
-.controlRecepcion_process-list li strong {
-    color: #0d6efd;
-}
-
-/* Grid de Filtros */
-.controlRecepcion_filter-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.controlRecepcion_filter-item {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
+.aviso-anulados {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #92400e;
     border-radius: 8px;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    margin-bottom: 0.6rem;
 }
 
-.controlRecepcion_filter-label {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.3rem;
+/* ===================================
+   TABLA
+   =================================== */
+
+#tablaControlRecepcion {
+    width: 100% !important;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
-.controlRecepcion_filter-desc {
-    color: #6c757d;
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-/* Flujo de Trabajo */
-.controlRecepcion_workflow {
-    margin-top: 1rem;
-}
-
-.controlRecepcion_workflow-step {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 1.5rem;
-    position: relative;
-}
-
-.controlRecepcion_workflow-step:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    left: 22px;
-    top: 50px;
-    width: 2px;
-    height: 30px;
-    background: #dee2e6;
-}
-
-.controlRecepcion_step-number {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+#tablaControlRecepcion thead th {
+    background: #1e293b;
     color: white;
-    display: flex;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.55rem 22px 0.55rem 0.6rem;
+    border: none;
+    white-space: nowrap;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+#tablaControlRecepcion thead th::before {
+    content: '⇅';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: bold;
+}
+
+#tablaControlRecepcion thead th.no-sort {
+    cursor: default;
+    padding-right: 0.6rem;
+}
+
+#tablaControlRecepcion thead th.no-sort::before {
+    content: none;
+}
+
+#tablaControlRecepcion thead th.sorting_asc::before,
+#tablaControlRecepcion thead th.sorting_desc::before {
+    color: #ffffff;
+    font-size: 16px;
+}
+
+#tablaControlRecepcion thead th.sorting_asc::before {
+    content: '↑';
+}
+
+#tablaControlRecepcion thead th.sorting_desc::before {
+    content: '↓';
+}
+
+#tablaControlRecepcion thead th:first-child {
+    border-top-left-radius: var(--radius-md);
+}
+
+#tablaControlRecepcion thead th:last-child {
+    border-top-right-radius: var(--radius-md);
+}
+
+#tablaControlRecepcion thead th.th-icon {
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+#tablaControlRecepcion thead th.th-num {
+    text-align: right;
+}
+
+#tablaControlRecepcion tbody td {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+#tablaControlRecepcion tbody tr {
+    transition: background-color 0.15s;
+}
+
+#tablaControlRecepcion tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+#tablaControlRecepcion tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* Filas con el circuito completo (vinculadas) */
+#tablaControlRecepcion tbody tr.row-completa td:first-child {
+    box-shadow: inset 3px 0 0 var(--success-color);
+}
+
+.td-fecha,
+.td-comprobante {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+#tablaControlRecepcion .td-num {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+#tablaControlRecepcion .td-icon {
+    text-align: center;
+    width: 1%;
+    white-space: nowrap;
+}
+
+.icon-ok {
+    color: var(--success-color);
+    font-size: 1.05rem;
+}
+
+.icon-pendiente {
+    color: #cbd5e1;
+}
+
+.badge-moneda {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    background: rgba(100, 116, 139, 0.12);
+    color: var(--text-secondary);
+}
+
+.badge-moneda.moneda-usd {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success-color);
+}
+
+.badge-anulado {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger-color);
+}
+
+.check-tabla {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--success-color);
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.check-tabla:disabled {
+    cursor: wait;
+    opacity: 0.5;
+}
+
+/* Observaciones */
+.td-observaciones {
+    min-width: 160px;
+}
+
+.obs-input {
+    width: 100%;
+    min-height: 30px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    resize: vertical;
+    background: white;
+    display: block;
+}
+
+.obs-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.obs-input:disabled {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-secondary);
+    resize: none;
+}
+
+/* Acciones */
+.acciones {
+    display: inline-flex;
+    gap: 0.3rem;
+}
+
+.btn-accion {
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 26px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    margin-right: 1rem;
-    flex-shrink: 0;
+    transition: all 0.2s;
 }
 
-.controlRecepcion_step-content {
-    flex: 1;
+.btn-guardar {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--primary-color);
 }
 
-.controlRecepcion_step-content h6 {
-    color: #495057;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.controlRecepcion_step-content p {
-    color: #6c757d;
-    margin-bottom: 0.5rem;
-    line-height: 1.5;
-}
-
-.controlRecepcion_step-indicator {
-    background: #e8f4fd;
-    color: #0d6efd;
-    padding: 0.3rem 0.6rem;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-/* Grid de Acciones */
-.controlRecepcion_action-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    margin-top: 1rem;
-}
-
-.controlRecepcion_action-item {
-    display: flex;
-    align-items: flex-start;
-    background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 10px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
-}
-
-.controlRecepcion_action-item:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
-}
-
-.controlRecepcion_action-icon {
-    margin-right: 1rem;
-    flex-shrink: 0;
-}
-
-.controlRecepcion_action-icon i {
-    font-size: 2rem;
-}
-
-.controlRecepcion_action-content h6 {
-    color: #495057;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.controlRecepcion_action-content p {
-    color: #6c757d;
-    margin-bottom: 0.5rem;
-    line-height: 1.5;
-}
-
-.controlRecepcion_action-content small {
-    font-style: italic;
-}
-
-/* Grid de Iconos */
-.controlRecepcion_icon-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.controlRecepcion_icon-item {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-}
-
-.controlRecepcion_icon-item i {
-    flex-shrink: 0;
-}
-
-.controlRecepcion_icon-item span {
-    flex: 1;
-    font-size: 0.9rem;
-    line-height: 1.4;
-}
-
-/* Lista de Tips */
-.controlRecepcion_tips-list {
-    margin: 0;
-    padding-left: 1.2rem;
-}
-
-.controlRecepcion_tips-list li {
-    margin-bottom: 0.5rem;
-    color: #6c757d;
-    line-height: 1.5;
-}
-
-/* Tabs personalizados */
-#controlRecepcion_tabsAyuda .nav-link {
-    border: none;
-    border-radius: 8px 8px 0 0;
-    color: #6c757d;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-#controlRecepcion_tabsAyuda .nav-link:hover {
-    background-color: #f8f9fa;
-    color: #0d6efd;
-}
-
-#controlRecepcion_tabsAyuda .nav-link.active {
-    background-color: #0d6efd;
+.btn-guardar:hover {
+    background: var(--primary-color);
     color: white;
-    border-color: #0d6efd;
 }
 
-/* Responsive */
+.btn-vincular {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0284c7;
+}
+
+.btn-vincular:hover {
+    background: #0284c7;
+    color: white;
+}
+
+.btn-accion:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+/* ===================================
+   RESPONSIVE
+   =================================== */
+
 @media (max-width: 768px) {
-    .controlRecepcion_filter-grid {
-        grid-template-columns: 1fr;
+    #tablaControlRecepcion {
+        font-size: 0.75rem;
     }
-    
-    .controlRecepcion_action-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .controlRecepcion_icon-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .controlRecepcion_workflow-step {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .controlRecepcion_workflow-step::after {
-        display: none;
-    }
-    
-    .controlRecepcion_step-number {
-        margin: 0 auto 1rem auto;
-    }
-    
-    .controlRecepcion_action-item {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .controlRecepcion_action-icon {
-        margin: 0 0 1rem 0;
+
+    #tablaControlRecepcion thead th,
+    #tablaControlRecepcion tbody td {
+        padding: 0.35rem 0.4rem;
     }
 }
-
-@media (min-width: 992px) {
-    .controlRecepcion_filter-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .controlRecepcion_action-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-        #tablaControlRecepcion {
-            table-layout: fixed;
-            width: 100% !important;
-        }
-
-        #tablaControlRecepcion th,
-        #tablaControlRecepcion td {
-            padding-left: 0.45rem;
-            padding-right: 0.45rem;
-            vertical-align: middle;
-        }
-
-        #tablaControlRecepcion .columna-compacta,
-        #tablaControlRecepcion .columna-estado,
-        #tablaControlRecepcion .columna-acciones {
-            white-space: nowrap;
-        }
-
-        #tablaControlRecepcion .columna-media {
-            word-break: break-word;
-        }
-
-        #tablaControlRecepcion textarea {
-            min-width: 120px;
-            resize: vertical;
-        }
-
-        .icon{
-            font-size:1.2rem;
-        }

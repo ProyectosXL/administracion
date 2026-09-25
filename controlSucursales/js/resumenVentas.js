@@ -251,7 +251,12 @@ function calcularTotales() {
     $('#totalDolares').html(formatearMoneda(totales.dolares));
     $('#totalEuros').html(formatearMoneda(totales.euros));
     $('#totalVentas').html(formatearMoneda(totales.totalVentas));
-    
+
+    // Indicadores de la barra de la tabla
+    $('#statSucursales').text(filas.length);
+    $('#statTotalTarjetas').text(formatearMonedaCorta(totales.totalTarjetas));
+    $('#statTotalVentas').text(formatearMonedaCorta(totales.totalVentas));
+
     console.log('=== TOTALES ACTUALIZADOS EN DOM ===');
 }
 
@@ -261,6 +266,14 @@ function calcularTotales() {
 function formatearMoneda(valor) {
     if (isNaN(valor)) valor = 0;
     return '$' + formatNumber(Math.abs(valor));
+}
+
+/**
+ * Formatea un valor como moneda sin decimales (para los indicadores)
+ */
+function formatearMonedaCorta(valor) {
+    if (isNaN(valor)) valor = 0;
+    return '$' + Math.round(valor).toLocaleString('de-DE');
 }
 
 /**

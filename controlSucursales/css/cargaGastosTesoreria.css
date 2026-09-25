@@ -1,0 +1,206 @@
+/* ===================================
+   CARGA GASTOS TESORERÍA
+   Base: resumenVentas.css + pantallaCompacta.css
+   =================================== */
+
+/* ===================================
+   BOTONES PROPIOS
+   =================================== */
+
+.btn-check-all {
+    background: var(--bg-light);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-check-all:hover {
+    background: white;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* ===================================
+   TABLA
+   =================================== */
+
+#tablaGastosTesoreria {
+    width: 100% !important;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#tablaGastosTesoreria thead th {
+    background: #1e293b;
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.55rem 26px 0.55rem 0.6rem;
+    border: none;
+    white-space: nowrap;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+#tablaGastosTesoreria thead th::before {
+    content: '⇅';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: bold;
+}
+
+#tablaGastosTesoreria thead th.sorting_asc::before,
+#tablaGastosTesoreria thead th.sorting_desc::before {
+    color: #ffffff;
+    font-size: 18px;
+}
+
+#tablaGastosTesoreria thead th.sorting_asc::before {
+    content: '↑';
+}
+
+#tablaGastosTesoreria thead th.sorting_desc::before {
+    content: '↓';
+}
+
+#tablaGastosTesoreria thead th:first-child {
+    border-top-left-radius: var(--radius-md);
+}
+
+#tablaGastosTesoreria thead th:last-child {
+    border-top-right-radius: var(--radius-md);
+}
+
+#tablaGastosTesoreria tbody td {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+#tablaGastosTesoreria tbody tr {
+    transition: background-color 0.15s;
+}
+
+#tablaGastosTesoreria tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+#tablaGastosTesoreria tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* Columnas numéricas alineadas a la derecha */
+#tablaGastosTesoreria td:not(:nth-child(1)):not(:nth-child(2)),
+#tablaGastosTesoreria th:not(:nth-child(1)):not(:nth-child(2)) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+#tablaGastosTesoreria .col-cargado {
+    text-align: center !important;
+}
+
+#tablaGastosTesoreria .valor-cero {
+    color: #cbd5e1;
+}
+
+/* Columna total destacada */
+#tablaGastosTesoreria .col-total {
+    background-color: rgba(245, 158, 11, 0.08) !important;
+    font-weight: 600;
+    color: var(--warning-color) !important;
+}
+
+#tablaGastosTesoreria thead th.col-total {
+    background-color: #1e293b !important;
+    color: white !important;
+}
+
+/* Filas ya cargadas */
+#tablaGastosTesoreria tbody tr.row-cargada td:first-child {
+    box-shadow: inset 3px 0 0 var(--success-color);
+}
+
+/* Check de cargado */
+.check-cargado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.1rem 0.55rem;
+    border-radius: 50px;
+    background: rgba(100, 116, 139, 0.1);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.check-cargado input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--success-color);
+    cursor: pointer;
+}
+
+.row-cargada .check-cargado {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success-color);
+    cursor: default;
+}
+
+.row-cargada .check-cargado input {
+    cursor: default;
+}
+
+/* Footer de totales */
+#tablaGastosTesoreria tfoot {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+#tablaGastosTesoreria tfoot td {
+    padding: 0.6rem 0.6rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    border-top: 2px solid var(--primary-color);
+    text-align: right;
+    white-space: nowrap;
+}
+
+#tablaGastosTesoreria tfoot td:first-child {
+    text-align: left;
+    border-bottom-left-radius: var(--radius-md);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    color: var(--primary-color);
+}
+
+#tablaGastosTesoreria tfoot td:last-child {
+    border-bottom-right-radius: var(--radius-md);
+}
+
+/* ===================================
+   RESPONSIVE
+   =================================== */
+
+@media (max-width: 768px) {
+    #tablaGastosTesoreria {
+        font-size: 0.75rem;
+    }
+
+    #tablaGastosTesoreria thead th,
+    #tablaGastosTesoreria tbody td,
+    #tablaGastosTesoreria tfoot td {
+        padding: 0.35rem 0.4rem;
+    }
+}
