@@ -10,6 +10,20 @@ const inputAmortiza = document.querySelectorAll(".amortiza");
 const selectCentroCosto = document.querySelector("#selectCentroCosto");
 const btnEjecutar = document.querySelector("#btnEjecutar");
 
+// Fila de #myTable a la que pertenece un elemento (contempla la fila hija que arma Responsive).
+const filaGasto = (elemento) => {
+  let tr = elemento.closest("tr");
+  if (tr && tr.classList.contains("child")) tr = tr.previousElementSibling;
+  return tr;
+};
+
+// ID (RO_T_INTEGRAL_TANGO_2.ID) de la fila; no depende de que la columna ID esté visible.
+const idGasto = (elemento) => filaGasto(elemento).dataset.id;
+
+// Celda de una columna identificada por su clase en el <th> (funciona aunque la columna esté oculta).
+const celdaGasto = (elemento, claseColumna) =>
+  window.tablaGastos.cell(filaGasto(elemento), "th." + claseColumna).node();
+
 const validarModulos = () => {
     let periodo = document.querySelector("#periodo").getAttribute("attr-periodo");
     
@@ -103,9 +117,7 @@ function guardarExcluir(datoMasivo = 0, e) {
   } else {
     excluir = 0;
   }
-  let ID = dato.parentElement.parentElement.children[20].textContent;
-  /*   let codRubro = Dato.value;
-  let rubroDesc = Dato.parentElement.parentElement.children[11]; */
+  let ID = idGasto(dato);
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
@@ -129,7 +141,7 @@ function guardarExcluir(datoMasivo = 0, e) {
 function guardarAmortizar(e) {
   let dato = e.target;
   let amortizar = dato.value;
-  let ID = dato.parentElement.parentElement.children[20].textContent;
+  let ID = idGasto(dato);
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
@@ -160,14 +172,8 @@ function guardarControlado(datoMasivo = 0, e) {
 
   /* let dato = e.target; */
   let dato = datoMasivo != 0 ? datoMasivo : e.target;
-  let codRubro =
-    datoMasivo != 0
-      ? datoMasivo.parentElement.parentElement.children[10].children[0].value
-      : e.target.parentElement.parentElement.children[10].children[0].value;
-  let codProrrateo =
-    datoMasivo != 0
-      ? datoMasivo.parentElement.parentElement.children[12].children[0].value
-      : e.target.parentElement.parentElement.children[12].children[0].value;
+  let codRubro = celdaGasto(dato, "col-cod-rubro").querySelector("select").value;
+  let codProrrateo = celdaGasto(dato, "col-cod-prorrateo").querySelector("select").value;
   if (dato.checked == true && codRubro !== "" && codProrrateo !== "") {
     controlado = 1;
   } else {
@@ -197,9 +203,7 @@ function guardarControlado(datoMasivo = 0, e) {
     controlado = 0;
     dato.checked = false;
   }
-  let ID = dato.parentElement.parentElement.children[20].textContent;
-  /*   let codRubro = Dato.value;
-  let rubroDesc = Dato.parentElement.parentElement.children[11]; */
+  let ID = idGasto(dato);
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
@@ -225,9 +229,9 @@ function guardarControlado(datoMasivo = 0, e) {
 
 function completarCampoRubro(e) {
   // 5 - al evento change de un codRubro se llama a la funcion completarCampoRubro, e , es el evento con la información de cual elemnto del dom fue clickeado
-  let ID = e.parentElement.parentElement.children[20].textContent;
+  let ID = idGasto(e);
   let codRubro = e.value;
-  let rubroDesc = e.parentElement.parentElement.children[11];
+  let rubroDesc = celdaGasto(e, "col-rubro-contable");
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
     if (conexion.readyState == 4 && conexion.status == 200) {
@@ -242,9 +246,9 @@ function completarCampoRubro(e) {
 function completarCampoProrrateo(e) {
   let Dato = e.target;
   /*  let cuenta = Dato.parentElement.parentElement.children[4].textContent; */
-  let ID = Dato.parentElement.parentElement.children[20].textContent;
+  let ID = idGasto(Dato);
   let codProrrateo = Dato.value;
-  let prorrateoDesc = Dato.parentElement.parentElement.children[13];
+  let prorrateoDesc = celdaGasto(Dato, "col-desc-prorrateo");
   /* let txtDescProrrateo = e.target; */
   conexion = new XMLHttpRequest();
   conexion.onreadystatechange = () => {
@@ -475,7 +479,7 @@ function revisar() {
   if (inputAmortizaSelect.length > 0) {
     inputAmortizaSelect.forEach((ele) => {
       let checkControlado =
-        ele.parentElement.parentElement.children[16].children[0].checked; //guarda el valor del check del campo amortiza de la fila correspondiente
+        celdaGasto(ele, "col-controlado").querySelector("input").checked; //guarda el valor del check del campo controlado de la fila correspondiente
       if (
         (ele.value == "" && checkAmortizado == true) ||
         checkControlado == false
@@ -1117,9 +1121,9 @@ const cambiarCentroCosto = (e) => {
   let numSucursal = e[e.selectedIndex].getAttribute("attr-numSucursal");
   let codAuxiliar = e[e.selectedIndex].getAttribute("attr-codAuxiliar");
   let descAuxiliar = e[e.selectedIndex].text;
-  let id = e.parentElement.parentElement.children[20].textContent;
-  e.parentElement.parentElement.children[2].textContent = sector;
-  e.parentElement.parentElement.children[19].textContent = numSucursal;
+  let id = idGasto(e);
+  celdaGasto(e, "col-sector").textContent = sector;
+  celdaGasto(e, "col-num-suc").textContent = numSucursal;
 
   $.ajax({
     url: "Controller/updateGasto.php",
@@ -1139,7 +1143,7 @@ const actualizarSaldo = (saldo) => {
   let saldoParseado = parseNumber(parseFloat(saldo.value));
   let nuevoSaldo = convertToNumber(saldoParseado);
 
-  let id = saldo.parentElement.parentElement.children[20].textContent;
+  let id = idGasto(saldo);
 
   saldo.value = saldoParseado;
 
@@ -1455,30 +1459,29 @@ const exportarGastosExcluidos = () => {
     let anio = $('#selectAño').val();
     
     // Crear una tabla temporal solo con los gastos excluidos
-    let tablaOriginal = $('#myTable').DataTable();
+    let tablaOriginal = window.tablaGastos || $('#myTable').DataTable();
+    // Todas las columnas (visibles u ocultas) salvo las de checks
+    let columnasExportar = tablaOriginal.columns(':not(.col-check)').indexes().toArray();
     let datosExcluidos = [];
-    
-    // Obtener todas las filas de la tabla
-    $('#myTable tbody tr').each(function() {
-        let checkbox = $(this).find('.checkExcluir');
+
+    // Recorre todas las filas de la tabla (todas las páginas); cell().node() devuelve la celda aunque la columna esté oculta
+    tablaOriginal.rows().nodes().each(function(tr) {
+        let checkbox = $(tablaOriginal.cell(tr, 'th.col-excluir').node()).find('.checkExcluir');
         if (checkbox.is(':checked')) {
-            let fila = [];
-            $(this).find('td').each(function(index) {
-                // Excluir las columnas de checkbox (columnas 15, 16, 17)
-                if (index < 15 || index > 17) {
-                    let texto = $(this).text().trim();
-                    // Para el select, obtener el texto seleccionado
-                    let select = $(this).find('select');
-                    if (select.length > 0) {
-                        texto = select.find('option:selected').text();
-                    }
-                    // Para el input, obtener el valor
-                    let input = $(this).find('input[type="text"], input[type="number"]');
-                    if (input.length > 0 && !input.hasClass('checkExcluir') && !input.hasClass('checkControlado') && !input.hasClass('checkAmortizado')) {
-                        texto = input.val();
-                    }
-                    fila.push(texto);
+            let fila = columnasExportar.map(function(indice) {
+                let celda = $(tablaOriginal.cell(tr, indice).node());
+                let texto = celda.text().trim();
+                // Para el select, obtener el texto seleccionado
+                let select = celda.find('select');
+                if (select.length > 0) {
+                    texto = select.find('option:selected').text();
                 }
+                // Para el input, obtener el valor
+                let input = celda.find('input[type="text"], input[type="number"]');
+                if (input.length > 0) {
+                    texto = input.val();
+                }
+                return texto;
             });
             datosExcluidos.push(fila);
         }
@@ -1496,26 +1499,11 @@ const exportarGastosExcluidos = () => {
     
     // Crear tabla temporal
     let tablaTemp = $('<table id="tablaExcluidos" style="display:none;">');
-    let thead = $('<thead><tr>' +
-        '<th>FECHA / PERIODO</th>' +
-        '<th>AUXILIAR</th>' +
-        '<th>SECTOR</th>' +
-        '<th>COD. CUENTA</th>' +
-        '<th>DESC. CUENTA</th>' +
-        '<th>SALDO</th>' +
-        '<th>LEYENDA</th>' +
-        '<th>TIPO COMP.</th>' +
-        '<th>RAZON SOCIAL</th>' +
-        '<th>NRO. COMP.</th>' +
-        '<th>COD. RUBRO</th>' +
-        '<th>RUBRO CONTABLE</th>' +
-        '<th>COD. PRORRATEO</th>' +
-        '<th>DESC. PRORRATEO</th>' +
-        '<th>AMORT.</th>' +
-        '<th>MODULO</th>' +
-        '<th>NRO. SUC.</th>' +
-        '<th>ID</th>' +
-        '</tr></thead>');
+    let thead = $('<thead><tr></tr></thead>');
+    columnasExportar.forEach(function(indice) {
+        let header = $(tablaOriginal.column(indice).header());
+        thead.find('tr').append($('<th>').text(header.data('titulo') || header.text().trim()));
+    });
     
     let tbody = $('<tbody>');
     datosExcluidos.forEach(function(fila) {
@@ -2510,13 +2498,20 @@ function renderizarTablaGastos() {
 
     gastos.forEach(function(g) {
                 const tr = document.createElement('tr');
+                const idGastoFila = (g.ID !== null && g.ID !== undefined) ? g.ID : '';
+                tr.dataset.id = idGastoFila;
 
-                // Col 0: FECHA
+                // Col 0: ID (RO_T_INTEGRAL_TANGO_2.ID)
+                const tdId = document.createElement('td');
+                tdId.textContent = idGastoFila;
+                tr.appendChild(tdId);
+
+                // Col 1: FECHA
                 const tdFecha = document.createElement('td');
                 tdFecha.textContent = (g.FECHA && g.FECHA.date) ? g.FECHA.date.substring(0, 10) : '';
                 tr.appendChild(tdFecha);
 
-                // Col 1: AUXILIAR (select centro de costo)
+                // Col 2: AUXILIAR (select centro de costo)
                 const tdAux = document.createElement('td');
                 const selAux = document.createElement('select');
                 selAux.className = 'auxiliar';
@@ -2546,23 +2541,23 @@ function renderizarTablaGastos() {
                 tdAux.appendChild(selAux);
                 tr.appendChild(tdAux);
 
-                // Col 2: SECTOR
+                // Col 3: SECTOR
                 const tdSector = document.createElement('td');
                 tdSector.textContent = g.SECTOR || '';
                 tr.appendChild(tdSector);
 
-                // Col 3: COD_CUENTA
+                // Col 4: COD_CUENTA
                 const tdCodCuenta = document.createElement('td');
                 tdCodCuenta.textContent = g.COD_CUENTA || '';
                 tr.appendChild(tdCodCuenta);
 
-                // Col 4: DESC_CUENTA
+                // Col 5: DESC_CUENTA
                 const tdDescCuenta = document.createElement('td');
                 tdDescCuenta.style.width = '20rem';
                 tdDescCuenta.textContent = g.DESC_CUENTA || '';
                 tr.appendChild(tdDescCuenta);
 
-                // Col 5: SALDO
+                // Col 6: SALDO
                 const tdSaldo = document.createElement('td');
                 const inputSaldo = document.createElement('input');
                 inputSaldo.type = 'text';
@@ -2571,27 +2566,27 @@ function renderizarTablaGastos() {
                 tdSaldo.appendChild(inputSaldo);
                 tr.appendChild(tdSaldo);
 
-                // Col 6: LEYENDA
+                // Col 7: LEYENDA
                 const tdLeyenda = document.createElement('td');
                 tdLeyenda.textContent = g.DESC_LEYENDA || '';
                 tr.appendChild(tdLeyenda);
 
-                // Col 7: TIPO COMP
+                // Col 8: TIPO COMP
                 const tdTComp = document.createElement('td');
                 tdTComp.textContent = g.T_COMP || '';
                 tr.appendChild(tdTComp);
 
-                // Col 8: RAZON SOCIAL
+                // Col 9: RAZON SOCIAL
                 const tdRS = document.createElement('td');
                 tdRS.textContent = g.RAZON_SOCIAL || '';
                 tr.appendChild(tdRS);
 
-                // Col 9: NRO COMP
+                // Col 10: NRO COMP
                 const tdNComp = document.createElement('td');
                 tdNComp.textContent = g.N_COMP || '';
                 tr.appendChild(tdNComp);
 
-                // Col 10: COD_RUBRO (select)
+                // Col 11: COD_RUBRO (select)
                 const tdCodRubro = document.createElement('td');
                 const selRubro = document.createElement('select');
                 selRubro.className = 'codRubro';
@@ -2607,16 +2602,18 @@ function renderizarTablaGastos() {
                     opt.textContent = r.COD_RUBRO + '-' + r.RUBRO_CONTABLE;
                     selRubro.appendChild(opt);
                 });
-                selRubro.addEventListener('change', function() { completarCampoRubro(this); });
+                // Con jQuery y no addEventListener: select2 notifica el cambio con $.trigger('change'),
+                // que no dispara los listeners nativos del <select>.
+                $(selRubro).on('change', function() { completarCampoRubro(this); });
                 tdCodRubro.appendChild(selRubro);
                 tr.appendChild(tdCodRubro);
 
-                // Col 11: RUBRO_CONTABLE
+                // Col 12: RUBRO_CONTABLE
                 const tdRubroContable = document.createElement('td');
                 tdRubroContable.textContent = g.RUBRO_CONTABLE || '';
                 tr.appendChild(tdRubroContable);
 
-                // Col 12: COD_PRORRATEO (select)
+                // Col 13: COD_PRORRATEO (select)
                 const tdCodProrrateo = document.createElement('td');
                 const selProrrateo = document.createElement('select');
                 selProrrateo.className = 'codProrrateo';
@@ -2636,12 +2633,12 @@ function renderizarTablaGastos() {
                 tdCodProrrateo.appendChild(selProrrateo);
                 tr.appendChild(tdCodProrrateo);
 
-                // Col 13: DESC_PRORRATEO
+                // Col 14: DESC_PRORRATEO
                 const tdDescProrrateo = document.createElement('td');
                 tdDescProrrateo.textContent = g.DESC_PRORRATEO || '';
                 tr.appendChild(tdDescProrrateo);
 
-                // Col 14: AMORT
+                // Col 15: AMORT
                 const tdAmort = document.createElement('td');
                 const inputAmort = document.createElement('input');
                 inputAmort.className = 'amortiza';
@@ -2659,7 +2656,7 @@ function renderizarTablaGastos() {
                 tdAmort.appendChild(inputAmort);
                 tr.appendChild(tdAmort);
 
-                // Col 15: EXCLUIR
+                // Col 16: EXCLUIR
                 const tdExcluir = document.createElement('td');
                 const chkExcluir = document.createElement('input');
                 chkExcluir.className = 'checkExcluir';
@@ -2669,7 +2666,7 @@ function renderizarTablaGastos() {
                 tdExcluir.appendChild(chkExcluir);
                 tr.appendChild(tdExcluir);
 
-                // Col 16: CONTROLADO
+                // Col 17: CONTROLADO
                 const tdControlado = document.createElement('td');
                 const chkControlado = document.createElement('input');
                 chkControlado.className = 'checkControlado';
@@ -2679,7 +2676,7 @@ function renderizarTablaGastos() {
                 tdControlado.appendChild(chkControlado);
                 tr.appendChild(tdControlado);
 
-                // Col 17: AMORTIZADO (disabled)
+                // Col 18: AMORTIZADO (disabled)
                 const tdAmortizado = document.createElement('td');
                 const chkAmortizado = document.createElement('input');
                 chkAmortizado.className = 'checkAmortizado';
@@ -2689,25 +2686,20 @@ function renderizarTablaGastos() {
                 tdAmortizado.appendChild(chkAmortizado);
                 tr.appendChild(tdAmortizado);
 
-                // Col 18: MODULO
+                // Col 19: MODULO
                 const tdModulo = document.createElement('td');
                 tdModulo.textContent = g.MODULO || '';
                 tr.appendChild(tdModulo);
 
-                // Col 19: NUM_SUCURSAL
+                // Col 20: NUM_SUCURSAL
                 const tdNumSuc = document.createElement('td');
                 tdNumSuc.textContent = (g.NUM_SUCURSAL !== null && g.NUM_SUCURSAL !== undefined) ? g.NUM_SUCURSAL : '';
                 tr.appendChild(tdNumSuc);
 
-                // Col 20: ID
-                const tdId = document.createElement('td');
-                tdId.textContent = (g.ID !== null && g.ID !== undefined) ? g.ID : '';
-                tr.appendChild(tdId);
-
                 tbody.appendChild(tr);
             });
 
-    // La búsqueda rápida sólo consulta estas columnas: 6 LEYENDA, 8 RAZÓN SOCIAL y 9 NRO. COMP.
+    // La búsqueda rápida sólo consulta estas columnas: 7 LEYENDA, 9 RAZÓN SOCIAL y 10 NRO. COMP.
     if (!window.filtroBusquedaRapidaRegistrado) {
         $.fn.dataTable.ext.search.push(function(settings, data) {
             if (settings.nTable.id !== 'myTable') return true;
@@ -2715,7 +2707,7 @@ function renderizarTablaGastos() {
             const texto = normalizarBusquedaRapida($('#busquedaRapida').val() || '');
             if (!texto) return true;
 
-            return [data[6], data[8], data[9]].some(function(valor) {
+            return [data[7], data[9], data[10]].some(function(valor) {
                 return normalizarBusquedaRapida(valor || '').indexOf(texto) !== -1;
             });
         });
@@ -2725,19 +2717,107 @@ function renderizarTablaGastos() {
     // Sin "f" se oculta el buscador global, que también inspecciona los select de las celdas.
     window.tablaGastos = $('#myTable').DataTable({
         responsive: true,
-        dom: 'lrtip'
+        dom: 'lrtip',
+        order: [[1, 'asc']], // FECHA; la columna 0 es el ID
+        columnDefs: [
+            { targets: indicesColumnasOcultas(), visible: false },
+            { targets: 'col-check', className: 'col-check' }
+        ]
     });
 
-    // La búsqueda rápida comparte la fila del selector "Show entries" para no ocupar altura del encabezado.
+    // La búsqueda rápida y el selector de columnas comparten la fila del selector "Show entries" para no ocupar altura del encabezado.
     const contenedorBusqueda = $('#contenedorBusquedaRapida');
+    const contenedorColumnas = $('#contenedorColumnas');
     const selectorCantidad = $('#myTable_wrapper .dataTables_length');
     if (contenedorBusqueda.length && selectorCantidad.length) {
         contenedorBusqueda.appendTo(selectorCantidad);
     }
+    if (contenedorColumnas.length && selectorCantidad.length) {
+        contenedorColumnas.appendTo(selectorCantidad);
+    }
+    inicializarSelectorColumnas();
     window.tablaGastos.draw();
 
     // Inicializar select2 en COD_RUBRO
     $('.codRubro').select2();
+}
+
+// ==================== MOSTRAR / OCULTAR COLUMNAS ====================
+// Cada <th> de #myTable declara data-columna (clave) y, si corresponde, data-oculta-default="1".
+// La elección del usuario se recuerda por navegador.
+
+const CLAVE_COLUMNAS_OCULTAS = 'cgm.columnasOcultas';
+
+function columnasOcultasGuardadas() {
+    try {
+        const guardado = JSON.parse(localStorage.getItem(CLAVE_COLUMNAS_OCULTAS));
+        if (Array.isArray(guardado)) return guardado;
+    } catch (e) {}
+    return $('#myTable thead th[data-oculta-default="1"]').map(function() {
+        return $(this).data('columna');
+    }).get();
+}
+
+function guardarColumnasOcultas() {
+    const ocultas = [];
+    window.tablaGastos.columns().every(function() {
+        if (!this.visible()) ocultas.push($(this.header()).data('columna'));
+    });
+    try { localStorage.setItem(CLAVE_COLUMNAS_OCULTAS, JSON.stringify(ocultas)); } catch (e) {}
+}
+
+function indicesColumnasOcultas() {
+    const ocultas = columnasOcultasGuardadas();
+    const indices = [];
+    $('#myTable thead th').each(function(indice) {
+        if (ocultas.indexOf($(this).data('columna')) !== -1) indices.push(indice);
+    });
+    return indices;
+}
+
+function inicializarSelectorColumnas() {
+    const menu = $('#menuColumnas');
+    if (!menu.length) return;
+
+    const tabla = window.tablaGastos;
+    const lista = $('<div class="cgm-columnas-lista"></div>');
+
+    tabla.columns().every(function(indice) {
+        const columna = this;
+        const titulo = $(columna.header()).data('titulo') || $(columna.header()).text().trim();
+        const idCheck = 'colVis' + indice;
+        const item = $('<div class="form-check"></div>');
+        $('<input class="form-check-input" type="checkbox">')
+            .attr('id', idCheck)
+            .prop('checked', columna.visible())
+            .on('change', function() {
+                columna.visible(this.checked, false);
+                tabla.columns.adjust();
+                if (tabla.responsive) tabla.responsive.recalc();
+                guardarColumnasOcultas();
+            })
+            .appendTo(item);
+        $('<label class="form-check-label"></label>').attr('for', idCheck).text(titulo).appendTo(item);
+        lista.append(item);
+    });
+
+    const restablecer = $('<button type="button" class="btn btn-link btn-sm cgm-columnas-reset">Restablecer</button>')
+        .on('click', function() {
+            try { localStorage.removeItem(CLAVE_COLUMNAS_OCULTAS); } catch (e) {}
+            const ocultas = columnasOcultasGuardadas();
+            tabla.columns().every(function(indice) {
+                const visible = ocultas.indexOf($(this.header()).data('columna')) === -1;
+                this.visible(visible, false);
+                $('#colVis' + indice).prop('checked', visible);
+            });
+            tabla.columns.adjust();
+            if (tabla.responsive) tabla.responsive.recalc();
+        });
+
+    menu.empty().append(lista, $('<div class="dropdown-divider"></div>'), restablecer);
+
+    // Evita que el dropdown se cierre al tildar/destildar columnas.
+    menu.on('click', function(e) { e.stopPropagation(); });
 }
 
 function normalizarBusquedaRapida(valor) {
