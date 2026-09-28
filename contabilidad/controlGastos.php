@@ -394,30 +394,39 @@ $imageOff = ($checkedValue === 'central') ? 'images/UY.png' : 'images/bandera_co
     var gastosData           = <?= $todosLosGastos ?>;
     </script>
 
+        <!-- Selector de columnas: renderizarTablaGastos() lo mueve a la fila de "Show entries" -->
+        <div class="cgm-columnas dropdown" id="contenedorColumnas">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="btnColumnas" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Mostrar / ocultar columnas">
+                <i class="bi bi-layout-three-columns"></i> Columnas
+            </button>
+            <div class="dropdown-menu dropdown-menu-right cgm-columnas-menu" id="menuColumnas" aria-labelledby="btnColumnas"></div>
+        </div>
+
+        <!-- data-columna identifica cada columna para el selector de columnas y para functions.js (no depender de la posición) -->
         <table class="table table-striped table-bordered" id="myTable" style="width: 99%;" cellspacing="0" data-page-length="100">
             <thead class="thead-dark">
                 <tr>
-                    <th style="position: sticky; top: 0; z-index: 10; width: 200px;" class="col-1">FECHA / PERIODO</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">AUXILIAR</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">SECTOR</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">COD. CUENTA</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">DESC. CUENTA</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">SALDO</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">LEYENDA</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">TIPO COMP.</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">RAZON SOCIAL</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">NRO. COMP.</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">COD. RUBRO</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">RUBRO CONTABLE</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">COD. PRORRATEO</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">DESC. PRORRATEO</th>
-                    <th style="position: sticky; top: 0; z-index: 10;" title="Colocar plazo de amortización">AMORT.</th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-x-square biHeader" data-toggle="tooltip" data-placement="top" title="Excluir gasto"></i></th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-check2-square biHeader" data-toggle="tooltip" data-placement="top" title="Gasto controlado"></i></th>
-                    <th style="position: sticky; top: 0; z-index: 10;"><i class="bi bi-graph-up biHeader" data-toggle="tooltip" data-placement="top" title="Gasto amortizado"></i></th>
-                    <th style="position: sticky; top: 0; z-index: 10;">MODULO</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">NRO. SUC.</th>
-                    <th style="position: sticky; top: 0; z-index: 10;">ID</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-id" data-columna="id" data-titulo="ID" data-oculta-default="1">ID</th>
+                    <th style="position: sticky; top: 0; z-index: 10; width: 200px;" class="col-1 col-fecha" data-columna="fecha" data-titulo="Fecha / Periodo">FECHA / PERIODO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-auxiliar" data-columna="auxiliar" data-titulo="Auxiliar">AUXILIAR</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-sector" data-columna="sector" data-titulo="Sector">SECTOR</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-cod-cuenta" data-columna="codCuenta" data-titulo="Cód. cuenta">COD. CUENTA</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-desc-cuenta" data-columna="descCuenta" data-titulo="Desc. cuenta">DESC. CUENTA</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-saldo" data-columna="saldo" data-titulo="Saldo">SALDO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-leyenda" data-columna="leyenda" data-titulo="Leyenda">LEYENDA</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-tipo-comp" data-columna="tipoComp" data-titulo="Tipo comp.">TIPO COMP.</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-razon-social" data-columna="razonSocial" data-titulo="Razón social">RAZON SOCIAL</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-nro-comp" data-columna="nroComp" data-titulo="Nro. comp.">NRO. COMP.</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-cod-rubro" data-columna="codRubro" data-titulo="Cód. rubro">COD. RUBRO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-rubro-contable" data-columna="rubroContable" data-titulo="Rubro contable">RUBRO CONTABLE</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-cod-prorrateo" data-columna="codProrrateo" data-titulo="Cód. prorrateo">COD. PRORRATEO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-desc-prorrateo" data-columna="descProrrateo" data-titulo="Desc. prorrateo">DESC. PRORRATEO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-amort" data-columna="amort" data-titulo="Amort." title="Colocar plazo de amortización">AMORT.</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-check col-excluir" data-priority="1" data-columna="excluir" data-titulo="Excluir" title="Excluir gasto"><i class="bi bi-x-square biHeader"></i> EXCLUIR</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-check col-controlado" data-priority="1" data-columna="controlado" data-titulo="Controlado" title="Gasto controlado"><i class="bi bi-check2-square biHeader"></i> CONTROLADO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-check col-amortizado" data-priority="1" data-columna="amortizado" data-titulo="Amortizado" title="Gasto amortizado"><i class="bi bi-graph-up biHeader"></i> AMORTIZADO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-modulo" data-columna="modulo" data-titulo="Módulo" data-oculta-default="1">MODULO</th>
+                    <th style="position: sticky; top: 0; z-index: 10;" class="col-num-suc" data-columna="numSuc" data-titulo="Nro. suc.">NRO. SUC.</th>
                 </tr>
             </thead>
             <tbody id="gastos-tbody"></tbody>

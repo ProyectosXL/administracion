@@ -1,251 +1,305 @@
 <?php
-    session_start();
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // Los filtros viajan por POST y se guardan en sesión (patrón POST-Redirect-GET)
+    // para que no queden variables en la URL y un F5 no pida reenviar el formulario.
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['desde'], $_POST['hasta'], $_POST['selectSucursal'])) {
+        $esFecha = function ($valor) {
+            $d = DateTime::createFromFormat('Y-m-d', $valor);
+            return $d && $d->format('Y-m-d') === $valor;
+        };
+
+        if ($esFecha($_POST['desde']) && $esFecha($_POST['hasta'])) {
+            $_SESSION['cargaFacturaSucursales'] = [
+                'desde'          => $_POST['desde'],
+                'hasta'          => $_POST['hasta'],
+                'selectSucursal' => $_POST['selectSucursal']
+            ];
+        }
+
+        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+        exit;
+    }
+
     require_once "Class/sucursal.php";
-    $selectSucursal = isset($_GET['selectSucursal']) ?  $_GET['selectSucursal'] : '2-UNICENTER';
-        
-    $selectSucursal = explode("-",$selectSucursal);
 
     $fecha_actual = date("Y-m-d");
- 
-    if(isset($_GET['desde']) && $_GET['desde'] != "" ){
-        $desde = $_GET['desde'];
-    }else{
-        $desde = date("Y-m-d",strtotime($fecha_actual."- 1 week"));
-    }
+    $filtros = isset($_SESSION['cargaFacturaSucursales']) ? $_SESSION['cargaFacturaSucursales'] : [];
 
-    if(isset($_GET['hasta']) && $_GET['hasta'] != "" ){
-        $hasta = $_GET['hasta'];
-    }else{
-        $hasta = date("Y-m-d",strtotime($fecha_actual."- 1 day"));
-    }
+    $desde = isset($filtros['desde']) ? $filtros['desde'] : date("Y-m-d", strtotime($fecha_actual . "- 1 week"));
+    $hasta = isset($filtros['hasta']) ? $filtros['hasta'] : date("Y-m-d", strtotime($fecha_actual . "- 1 day"));
+    $selectSucursal = explode("-", isset($filtros['selectSucursal']) ? $filtros['selectSucursal'] : '2-UNICENTER', 2);
+
+    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
 
     $sucursal = new Sucursal();
-    $todosLosLocales= $sucursal->traerLocales(true);
+    $todosLosLocales = $sucursal->traerLocales(true);
 
-    $data = null;
-
-    if($desde != null && $hasta != null){
-        
-        $data = $sucursal->traerGastosCajaSucursales($desde,$hasta,$selectSucursal[0],true);
-    
+    // Solo los gastos marcados con factura en Control Egresos de Caja
+    $data = $sucursal->traerGastosCajaSucursales($desde, $hasta, $selectSucursal[0], true);
+    if (!is_array($data)) {
+        $data = [];
     }
 
-    if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
-        $checked = 'checked';
-    }else{
-        $checked = '';
+    // Resumen
+    $cantidadComprobantes = count($data);
+    $totalMonto = 0;
+    $cantidadContabilizadas = 0;
+    foreach ($data as $gasto) {
+        $totalMonto += (float)$gasto['MONTO'];
+        if ($gasto['CONTABILIZADA'] == 1) $cantidadContabilizadas++;
     }
-        
-    $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-    $dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
-    $dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
-    $imageOn = ($checkedValue === 'central') ? '../contabilidad/images/bandera_con_sol__55757_std.jpg' : '../contabilidad/images/UY.png';
-    $imageOff = ($checkedValue === 'central') ? '../contabilidad/images/UY.png' : '../contabilidad/images/bandera_con_sol__55757_std.jpg';
+
+    // Mismo formato de monto que se enviaba al controlador leyendo el texto de la celda
+    $montoParaEnviar = function ($monto) {
+        $sinPuntos = str_replace('.', '', number_format(abs($monto), 0, '.', '.'));
+        return ($monto < 0) ? "- " . $sinPuntos : $sinPuntos;
+    };
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Carga Factura Sucursales</title>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carga Factura Sucursales</title>
 
-        <?php
-            require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
-        ?>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+    <?php
+        require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
+    ?>
 
-        <style>
-                    .toggle-on {
-                    background-image: url('<?= $imageOn ?>');
-                    background-size: contain;
-                    background-repeat: no-repeat;
-                    height: 60px;
-                    width: 60px;
-                }
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-                .toggle-off {
-                    background-image: url('<?= $imageOff ?>');
-                    background-size: contain;
-                    background-repeat: no-repeat;
-                    height: 60px;
-                    width: 60px;
-                }
-        </style>
-   
+    <!-- Select2 y Fancybox (visor de comprobantes) -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
 
-    </head>
+    <!-- Estilos base compartidos con Resumen de Ventas -->
+    <link rel="stylesheet" href="css/resumenVentas.css">
+    <!-- Layout compacto compartido -->
+    <link rel="stylesheet" href="css/pantallaCompacta.css">
+    <!-- Estilos propios de la pantalla -->
+    <link rel="stylesheet" href="css/cargaFacturaSucursales.css">
+</head>
 
-    <body>
+<body class="pantalla-compacta">
+    <div class="container-fluid">
+        <div class="modern-card">
+            <div class="page-title">
+                <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
+                    <img src="../image/home-button.png" alt="Home">
+                </a>
+                <i class="bi bi-receipt"></i>
+                <span>Carga Factura Sucursales</span>
+                <span class="date-range">
+                    <?= htmlspecialchars($selectSucursal[1] ?? '') ?> · <?= date('d/m/Y', strtotime($desde)) ?> a <?= date('d/m/Y', strtotime($hasta)) ?>
+                </span>
 
-        <div class="alert alert-secondary">
-            <div class="page-wrapper bg-secondary p-b-100 pt-2 font-robo">
-                <div class="wrapper wrapper--w680"><div style="color:white; text-align:center"><h6>Carga Factura Sucursales</h6></div>
-                    <div class="card card-1">
-                        
-                        <div class="row" style="margin-left:50px; margin-top:20px">
-                            <h3 style="margin-right:50%"><strong><i class="bi bi-cash-stack" style="margin-right:20px;font-size:40px;"></i>Carga Factura Sucursales- <?= $selectSucursal[1] ?></strong></h3>
-                            <input type="checkbox" checked data-toggle="toggle" data-on="<?= $dataOnValue ?>" data-off="<?= $dataOffValue ?>" class="custom-toggle" style="color:black; font-size: 0;margin-top:10px" onchange="cambiarEntorno(this)" id="checkEntorno" >
-                        
+                <div class="title-actions ml-auto">
+                    <button type="button" class="btn-info-toggle" data-toggle="collapse" data-target="#panelInfo" aria-expanded="false" aria-controls="panelInfo">
+                        <i class="bi bi-info-circle"></i> ¿Qué muestra esta pantalla?
+                    </button>
+
+                    <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)" title="Cambiar entorno">
+                        <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
+                            <img src="../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
+                            <span>ARG</span>
                         </div>
-
-                        <form class="form-inline" action="#" method="get" style="margin-bottom:20px">
-
-                            <div class="row" style="margin-top:10px">
-
-                                <div style="margin-left:90px">Desde : <input type="date" class="form-control" id="desde" name="desde" value="<?=  $desde ?>"></div>
-                                <div style="margin-left:30px">Hasta : <input type="date" class="form-control" id="hasta"  name="hasta" value="<?=  $hasta ?>"></div>
-                                
-                                <div style="margin-left:30px">Sucursal :  
-
-                                    <select name="selectSucursal" id="selectSucursal" class="form-control">
-
-                                    <?php 
-                                        foreach ($todosLosLocales as $key => $value) {
-                                    ?>
-                                            <option value="<?php echo ($value['NRO_SUCURSAL']."-".$value['DESC_SUCURSAL']   ) ?>" <?php if ($selectSucursal[0] == $value['NRO_SUCURSAL']){ echo "selected";} ?> ><?= $value['DESC_SUCURSAL'] ?></option>
-
-                                    <?php 
-                                        } 
-                                    ?>
-            
-                                    </select>
-
-                                </div>
-
-                                <div>   
-                                    <button class="btn btn-primary btn-submit" id="btnSubmit" value="" >filtrar <i class="bi bi-funnel-fill" style="color:white"></i></button>
-                                </div>
-
-                            </div>
-
-                        </form>
-                        
-                        <div id="carruselImagenes" class="modal fade" tabindex="-1" aria-hidden="true" style="margin-left:10%;max-width:70%"></div>
-
-            
-                        <table class="table table-striped table-bordered" id="myTable" cellspacing="0" data-page-length="100">
-                            <thead class="thead-dark" >
-                                <tr style="text-align:center">
-
-                                    <th > FECHA </th>
-                                    <th > NRO.SUCURSAL</th>
-                                    <th > TIPO COMP. </th>
-                                    <th > COMPROBANTE </th>
-                                    <th > COD.CUENTA </th>
-                                    <th > CUENTA </th>
-                                    <th > MONTO </th>
-                                    <th > LEYENDA </th>
-                                    <th > VER </th>
-                                    <th > CONTABILIZADA </th>
-
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php 
-                                if($data != null){
-                                    foreach ($data as $key => $gasto) {
-                     
-                                        $fecha = ( $gasto['FECHA_RECIBIDO'] != null ) ? $gasto['FECHA_RECIBIDO']->format("Y-m-d") : "";
-                                        $fechaRecibido = "";
-                                        if($gasto['RECIBIDO'] == 1){
-                                            $fechaRecibido = "data-toggle='tooltip' data-placement='top' title='FECHA RECIBIDO: $fecha'";
-                                        }
-                                ?>
-            
-                                        <tr>
-                                            <td id="td_myTable" ><?= $gasto['FECHA']->format("Y-m-d") ?></td>
-                                            <td id="td_myTable" ><?= $gasto['NRO_SUCURS'] ?></td>
-                                            <td id="td_myTable" ><?= $gasto['COD_COMP'] ?></td>
-                                            <td id="td_myTable"   data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" ><?= $gasto['N_COMP'] ?></td>
-                                            <td id="td_myTable" ><?= $gasto['COD_CTA'] ?></td>
-                                            <td id="td_myTable" ><?= $gasto['DESC_CUENTA'] ?></td>
-                                            <?php 
-                                                if($gasto['MONTO'] < 0){
-
-                                                    $monto = $gasto['MONTO'] * -1;
-                                                    $valor = "- $". number_format($monto, 0, '.','.');
-                                                    echo "<td style='text-align:center'>$valor</td>";
-
-                                                }else{
-
-                                                    $valor = "$". number_format($gasto['MONTO'], 0, '.','.');
-                                                    echo "<td style='text-align:center'>$valor</td>";
-
-                                                }
-                                            ?>
-                                            <td id="td_myTable" ><?= $gasto['LEYENDA'] ?></td>
-
-                                            <td id="td_myTable" >
-                                                <?php if($gasto['guardado'] == 1) { ?>
-
-                                                <button class="btn btn-warning" style="margin-left:5px; padding:.3rem .5rem;"  onclick="mostrarImagen(this)">
-                                                    <i class="bi bi-eye" style="color:white"></i>
-                                                </button>
-
-                                                <?php } ?>
-                                            </td>
-                                          
-                                            <td id="td_myTable" ><input type='checkbox' class='form-check-input' id="checkFactura" onchange='checkContabilizar(this)'  <?= ($gasto['CONTABILIZADA'] == 1) ? "checked=true " : "" ?> ></td>
-                                         
-                                        </tr>
-                                        
-                                <?php 
-                                    }
-                                }
-                                ?>   
-                            </tbody>
-            
-                        </table>
+                        <div class="toggle-flag <?= ($checkedValue === 'suc_uy') ? 'active' : '' ?>" data-entorno="suc_uy">
+                            <img src="../assets/images/UY.png" alt="Uruguay">
+                            <span>UY</span>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Panel informativo -->
+            <div class="collapse" id="panelInfo">
+                <div class="info-panel">
+                    <div class="info-grid">
+                        <div class="info-block">
+                            <h6><i class="bi bi-database"></i> ¿Qué datos trae?</h6>
+                            <p>
+                                Lista los <strong>gastos de caja de una sucursal que tienen factura</strong> (llevan IVA) entre las fechas elegidas.
+                                Son los mismos egresos de <em>Control Egresos de Caja</em> (cuentas <code>5xxxxx</code>), pero solo los que
+                                tienen tildada la columna <strong>Factura</strong> en esa pantalla.
+                            </p>
+                            <p>
+                                En Argentina los datos se leen directo de la base de la sucursal y se completan con el histórico ya replicado en central.
+                            </p>
+                        </div>
+
+                        <div class="info-block">
+                            <h6><i class="bi bi-check2-square"></i> ¿Qué significa "Contabilizada"?</h6>
+                            <p>
+                                Al tildarla se registra que la factura del gasto <strong>ya se cargó en contabilidad</strong>. Se puede destildar
+                                si se marcó por error.
+                            </p>
+                            <p>
+                                <i class="bi bi-eye"></i> <strong>Ver:</strong> abre las fotos del comprobante que subió la sucursal
+                                (se pueden rotar desde el visor).
+                            </p>
+                        </div>
+
+                        <div class="info-block info-block-wide">
+                            <h6><i class="bi bi-diagram-3"></i> Relación con otras pantallas de Control Sucursales</h6>
+                            <ol class="info-flow">
+                                <li><strong>Control Egresos de Caja:</strong> se controla cada comprobante y se indica si tiene factura (lleva IVA).</li>
+                                <li>
+                                    Según esa marca, el gasto sigue uno de dos caminos:
+                                    <ul>
+                                        <li><strong>Con factura (con IVA)</strong> → <strong>esta pantalla</strong>, donde se contabiliza comprobante por comprobante.</li>
+                                        <li><strong>Sin factura (sin IVA)</strong> → <strong>Carga Gastos Tesorería</strong>, donde se carga el total mensual por sucursal y cuenta.</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                            <p class="info-note">
+                                <i class="bi bi-lightbulb"></i>
+                                Si un gasto con factura no aparece acá, revisá que tenga tildada la columna Factura en Control Egresos de Caja.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form class="filters-form" method="POST" id="formFiltros">
+                <div>
+                    <label for="desde">Desde:</label>
+                    <input type="date" class="form-control" id="desde" name="desde" value="<?= $desde ?>" required>
+                </div>
+
+                <div>
+                    <label for="hasta">Hasta:</label>
+                    <input type="date" class="form-control" id="hasta" name="hasta" value="<?= $hasta ?>" required>
+                </div>
+
+                <div>
+                    <label for="selectSucursal">Sucursal:</label>
+                    <select name="selectSucursal" id="selectSucursal" class="form-control">
+                        <?php foreach ((array)$todosLosLocales as $value) { ?>
+                            <option value="<?= htmlspecialchars($value['NRO_SUCURSAL'] . "-" . $value['DESC_SUCURSAL']) ?>"
+                                <?= ($selectSucursal[0] == $value['NRO_SUCURSAL']) ? "selected" : "" ?>>
+                                <?= htmlspecialchars($value['DESC_SUCURSAL']) ?>
+                            </option>
+                        <?php } ?>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-modern btn-search" id="search">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </form>
         </div>
 
-    </body>
+        <!-- spinner -->
+        <div id="boxLoading"></div>
+
+        <?php if ($cantidadComprobantes > 0) { ?>
+
+        <div class="table-wrapper">
+            <!-- Resumen + buscador -->
+            <div class="table-toolbar">
+                <div class="stats-row">
+                    <div class="stat-chip">
+                        <span class="stat-label">Comprobantes</span>
+                        <span class="stat-value"><?= $cantidadComprobantes ?></span>
+                    </div>
+                    <div class="stat-chip stat-chip-accent">
+                        <span class="stat-label">Total</span>
+                        <span class="stat-value">$<?= number_format($totalMonto, 0, ',', '.') ?></span>
+                    </div>
+                    <div class="stat-chip stat-chip-success">
+                        <span class="stat-label">Contabilizadas</span>
+                        <span class="stat-value"><span id="statContabilizadas"><?= $cantidadContabilizadas ?></span> / <?= $cantidadComprobantes ?></span>
+                    </div>
+                </div>
+                <div class="table-search">
+                    <i class="bi bi-search"></i>
+                    <input type="search" id="searchInput" placeholder="Buscar comprobante, cuenta, leyenda...">
+                </div>
+            </div>
+
+            <table class="display" id="tablaFacturas">
+                <thead>
+                    <tr>
+                        <th>FECHA</th>
+                        <th>SUC.</th>
+                        <th>TIPO</th>
+                        <th>COMPROBANTE</th>
+                        <th>COD. CTA</th>
+                        <th>CUENTA</th>
+                        <th class="th-num">MONTO</th>
+                        <th>LEYENDA</th>
+                        <th class="th-icon no-sort">VER</th>
+                        <th class="th-icon">CONTABILIZADA</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <?php foreach ($data as $gasto) {
+                        $monto = (float)$gasto['MONTO'];
+                        $contabilizada = ($gasto['CONTABILIZADA'] == 1);
+                    ?>
+                        <tr class="<?= $contabilizada ? 'row-contabilizada' : '' ?>"
+                            data-fecha="<?= $gasto['FECHA']->format("Y-m-d") ?>"
+                            data-sucursal="<?= htmlspecialchars($gasto['NRO_SUCURS']) ?>"
+                            data-tipo="<?= htmlspecialchars($gasto['COD_COMP']) ?>"
+                            data-comprobante="<?= htmlspecialchars($gasto['N_COMP']) ?>"
+                            data-cod-cuenta="<?= htmlspecialchars($gasto['COD_CTA']) ?>"
+                            data-monto="<?= $montoParaEnviar($monto) ?>">
+
+                            <td class="td-fecha" data-sort="<?= $gasto['FECHA']->format("Y-m-d") ?>"><?= $gasto['FECHA']->format("d/m/Y") ?></td>
+                            <td><?= $gasto['NRO_SUCURS'] ?></td>
+                            <td><?= $gasto['COD_COMP'] ?></td>
+                            <td class="td-comprobante" title="Usuario: <?= htmlspecialchars($gasto['USUARIO'] ?? 'N/A') ?>"><?= $gasto['N_COMP'] ?></td>
+                            <td><span class="cuenta-codigo"><?= $gasto['COD_CTA'] ?></span></td>
+                            <td><?= $gasto['DESC_CUENTA'] ?></td>
+                            <td class="td-num <?= ($monto < 0) ? 'monto-negativo' : '' ?>" data-sort="<?= $monto ?>">
+                                <?= ($monto < 0) ? "- " : "" ?>$<?= number_format(abs($monto), 0, ',', '.') ?>
+                            </td>
+                            <td class="td-leyenda" title="<?= htmlspecialchars((string)$gasto['LEYENDA']) ?>"><?= htmlspecialchars((string)$gasto['LEYENDA']) ?></td>
+                            <td class="td-icon">
+                                <?php if ($gasto['guardado'] == 1) { ?>
+                                    <button type="button" class="btn-ver" onclick="mostrarImagen(this)" title="Ver comprobante">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                <?php } ?>
+                            </td>
+                            <td class="td-icon" data-sort="<?= $contabilizada ? 1 : 0 ?>">
+                                <input type="checkbox" class="check-tabla checkContabilizar" onchange="checkContabilizar(this)" <?= $contabilizada ? "checked" : "" ?>>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php } else { ?>
+
+        <div class="table-wrapper empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>No hay gastos con factura para mostrar</h5>
+            <p>No se encontraron gastos con factura de <?= htmlspecialchars($selectSucursal[1] ?? '') ?> entre el <?= date('d/m/Y', strtotime($desde)) ?> y el <?= date('d/m/Y', strtotime($hasta)) ?>. Probá con otro rango de fechas o sucursal.</p>
+        </div>
+
+        <?php } ?>
+    </div>
+
+    <!-- jQuery (usar versión completa, no slim) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+    <script src="js/cargaFacturaSucursales.js" charset="utf-8"></script>
+
+</body>
 
 </html>
-
-<!-- INCLUDE JS FILES -->
-<?php
-    require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php';
-?>
-<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-
-<link rel="stylesheet" type="text/css" href="../comercioExterior/assets/select2/select2.min.css">
-
-<script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
-<script src="js/cargaFacturaSucursales.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-        <!-- Bootstrap Toggle CSS -->
-<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
-
-
-<script>
-
-    $("#selectSucursal").select2();
-    document.querySelector(".select2-selection.select2-selection--single").style.height = "44px"
-    document.querySelector("#select2-selectSucursal-container").style.marginTop = "8px"
-
-    $(document).ready( function () {
-    
-    document.querySelector(".toggle").style.width="40px"
-    document.querySelector(".toggle-on").style.fontSize="0"
-    document.querySelector(".toggle-off").style.fontSize="0"
-    document.querySelector('.toggle.btn.btn-primary').style.height = '38px'
-    document.querySelector('.toggle.btn.btn-primary').style.marginTop = '25px'
-
-    })
-
-</script>

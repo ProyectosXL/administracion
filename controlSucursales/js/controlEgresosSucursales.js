@@ -1,121 +1,105 @@
+/* ===================================
+   CONTROL EGRESOS DE CAJA - JAVASCRIPT
+   =================================== */
 
-const checkFactura = (div) => {
-    let allTd = div.parentElement.parentElement.querySelectorAll("td");
-    let fecha = allTd[0].textContent;
-    let nro_sucursal = allTd[1].textContent.trim();
-    let tipoComprobante = allTd[2].textContent.trim();
-    let nroComprobante = allTd[3].textContent.trim();
-    if(nroComprobante.length === 13){
-        nroComprobante = ' '+nroComprobante;
-    }
-    let codCuenta = allTd[4].textContent.trim();
-    let descripcionCuenta = allTd[5].textContent.trim();
-    let monto = allTd[6].textContent.replace(/[$.]/g, "").trim();
-    let leyenda = allTd[7].textContent.trim();
-    let accion = "";
-    let factura = 0;
-    let control = 0;
+let sortColumn = null;
+let sortDirection = 'asc';
 
-    if(div.checked == true){
-        accion = "checkFactura";
-        factura = 1;
-    }else{
-        accion = "uncheckFactura";
-        factura = 0;
+/**
+ * Datos del comprobante tomados de los atributos data-* de la fila
+ */
+const datosFila = (elemento) => {
+    const d = elemento.closest('tr').dataset;
+
+    let nroComprobante = d.comprobante;
+    if (nroComprobante.length === 13) {
+        nroComprobante = ' ' + nroComprobante;
     }
+
+    return {
+        fecha: d.fecha,
+        nro_sucursal: d.sucursal,
+        tipoComprobante: d.tipo,
+        nroComprobante: nroComprobante,
+        codCuenta: d.codCuenta,
+        descripcionCuenta: d.cuenta,
+        monto: d.monto,
+        leyenda: d.leyenda
+    };
+}
+
+/**
+ * Envía el cambio de un check; si falla, lo vuelve atrás y avisa
+ */
+const enviarCheck = (input, accion, extra, alTerminar) => {
+    input.disabled = true;
 
     $.ajax({
         type: "POST",
-        url: "Controller/ControlEgresosController.php?accion="+accion,
-        data: {
-            fecha: fecha,
-            nro_sucursal: nro_sucursal,
-            tipoComprobante: tipoComprobante,
-            nroComprobante: nroComprobante,
-            codCuenta: codCuenta,
-            descripcionCuenta: descripcionCuenta,
-            monto: monto,
-            leyenda: leyenda,
-            factura: factura,
-            control: control
-        },
-        success: function (response) {
-            console.log("Factura actualizada correctamente");
-        },
-        error: function(xhr, status, error) {
-            console.error('Error al actualizar factura:', error);
-        }
+        url: "Controller/ControlEgresosController.php?accion=" + accion,
+        data: Object.assign(datosFila(input), extra)
+    }).done(function() {
+        alTerminar();
+    }).fail(function() {
+        input.checked = !input.checked;
+        Swal.fire({
+            icon: 'error',
+            title: 'No se pudo guardar',
+            text: 'Ocurrió un error al actualizar el comprobante. Intentá nuevamente.'
+        });
+    }).always(function() {
+        input.disabled = false;
     });
 }
 
-const checkControl = (div) => {
-    let allTd = div.parentElement.parentElement.querySelectorAll("td");
-    let fecha = allTd[0].textContent;
-    let nro_sucursal = allTd[1].textContent.trim();
-    let tipoComprobante = allTd[2].textContent.trim();
-    let nroComprobante = allTd[3].textContent.trim();
-    if(nroComprobante.length === 13){
-        nroComprobante = ' '+nroComprobante;
-    }
-    let codCuenta = allTd[4].textContent.trim();
-    let descripcionCuenta = allTd[5].textContent.trim();
-    let monto = allTd[6].textContent.replace(/[$.]/g, "").trim();
-    let leyenda = allTd[7].textContent.trim();
+const checkFactura = (input) => {
+    const factura = input.checked ? 1 : 0;
 
-    let accion = "";
-    let factura = 0;
-    let control = 0;
-    let observaciones = "";
-
-    if(div.checked == true){
-        accion = "checkControl";
-        control = 1;
-    }else{
-        accion = "uncheckControl";
-        control = 0;
-    }
-
-    $.ajax({
-        type: "POST",
-        url: "Controller/ControlEgresosController.php?accion="+accion,
-        data: {
-            fecha: fecha,
-            nro_sucursal: nro_sucursal,
-            tipoComprobante: tipoComprobante,
-            nroComprobante: nroComprobante,
-            codCuenta: codCuenta,
-            descripcionCuenta: descripcionCuenta,
-            monto: monto,
-            leyenda: leyenda,
-            factura: factura,
-            control: control,
-            observaciones: observaciones
-        },
-        success: function (response) {
-            console.log("Control actualizado correctamente");
-        },
-        error: function(xhr, status, error) {
-            console.error('Error al actualizar control:', error);
-        }
+    enviarCheck(input, input.checked ? "checkFactura" : "uncheckFactura", {
+        factura: factura,
+        control: 0
+    }, function() {
+        $(input).closest('td').attr('data-sort', factura);
+        actualizarContadores();
     });
+}
+
+const checkControl = (input) => {
+    const control = input.checked ? 1 : 0;
+
+    enviarCheck(input, input.checked ? "checkControl" : "uncheckControl", {
+        factura: 0,
+        control: control,
+        observaciones: ""
+    }, function() {
+        $(input).closest('td').attr('data-sort', control);
+        $(input).closest('tr').toggleClass('row-controlada', control === 1);
+        actualizarContadores();
+    });
+}
+
+const actualizarContadores = () => {
+    $('#statFactura').text($('#tablaEgresos .checkFactura:checked').length);
+    $('#statControl').text($('#tablaEgresos .checkControl:checked').length);
 }
 
 // Función para mostrar imágenes con lógica de compatibilidad
 const mostrarImagen = (divImagen, startIndex = 0) => {
-    let nComp = divImagen.parentElement.parentElement.querySelectorAll("td")[3].textContent.trim();
-    let codCta = divImagen.parentElement.parentElement.querySelectorAll("td")[4].textContent.trim();
-    let codComp = divImagen.parentElement.parentElement.querySelectorAll("td")[2].textContent; // COD_COMP
-    let nroSucursal = divImagen.parentElement.parentElement.querySelectorAll("td")[1].textContent;
-    let fechaComprobante = divImagen.parentElement.parentElement.querySelectorAll("td")[0].textContent; // FECHA
-    
-    let carouselElement = document.querySelector('#carruselImagenes'); 
-    carouselElement.innerHTML = ''; 
+    const d = divImagen.closest('tr').dataset;
+    let nComp = d.comprobante;
+    let codCta = d.codCuenta;
+    let codComp = d.tipo;
+    let nroSucursal = d.sucursal;
+    let fechaComprobante = d.fecha;
+
+    let carouselElement = document.querySelector('#carruselImagenes');
+    carouselElement.innerHTML = '';
 
     // Buscar primero con nueva nomenclatura (incluye COD_COMP)
     $.ajax({
         url: "Controller/ControlEgresosController.php?accion=contarImagenes",
         type: "POST",
-        data: { 
+        data: {
             nComp: nComp,
             codCta: codCta,
             codComp: codComp,
@@ -124,7 +108,7 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
         },
         success: function (response) {
             response = JSON.parse(response);
-            
+
             if (response['cantidad'] === 0) {
                 // Si no encuentra con nueva nomenclatura, buscar con la vieja
                 // PERO solo si es del mismo año que cuando se guardó
@@ -132,7 +116,7 @@ const mostrarImagen = (divImagen, startIndex = 0) => {
                 $.ajax({
                     url: "Controller/ControlEgresosController.php?accion=contarImagenes",
                     type: "POST",
-                    data: { 
+                    data: {
                         nComp: nombreViejo,
                         codCta: codCta,
                         nroSucursal: nroSucursal,
@@ -310,80 +294,118 @@ function mostrarSinImagenes() {
     }
 }
 
-$(document).ready(function () {
-    // Inicializar tooltips
-    $(function() {
-        $('[data-toggle="tooltip"]').tooltip()
-    })
 
-    // Inicializar DataTable
-    $('#myTable').DataTable({
-        "bLengthChange": false,
-        "bInfo": false,
-        "aaSorting": false,
-        'columnDefs': [
-            {
-                "targets": "_all", 
-                "className": "text-center",
-                "sortable": false,
-            },
-        ],
-        "oLanguage": {
-            "sSearch": "Busqueda rapida:",
-            "sSearchPlaceholder": "Sobre cualquier campo"
-        },
+/* ===================================
+   INICIALIZACIÓN
+   =================================== */
+
+$(document).ready(function () {
+    $("#selectSucursal").select2({ width: '240px' });
+
+    $('#formFiltros').on('submit', function() {
+        $("#boxLoading").addClass("loading");
     });
 
-    // Inicializar el toggle de banderas
-    if (typeof $.fn.bootstrapToggle !== 'undefined') {
-        $('#checkEntorno').bootstrapToggle();
+    if ($('#tablaEgresos').length === 0) {
+        return;
     }
+
+    $('#tablaEgresos [title]').tooltip({ container: 'body' });
+
+    setupSearch();
+    setupSorting();
 });
 
-// --- Cambio de entorno (ARG/UY) ---
-const cambiarEntorno = (element) => {
-    // Mostrar indicador de carga
-    $('body').append(`
-        <div class="controlEgresos_loading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-             background: rgba(255,255,255,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-            <div style="text-align: center;">
-                <i class="bi bi-arrow-repeat" style="font-size: 2rem; animation: spin 1s linear infinite;"></i>
-                <p style="margin-top: 1rem;">Cambiando entorno...</p>
-            </div>
-        </div>
-        <style>
-            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        </style>
-    `);
+/**
+ * Buscador sobre las filas de la tabla
+ */
+function setupSearch() {
+    $('#searchInput').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
 
-    // Obtener el valor seleccionado del select
-    let entorno = element.value === "ARG" ? 0 : 1;
-    
-    // Actualizar la información de país mostrada
-    const countryName = document.querySelector('.controlEgresos_country-name');
-    const countryFlag = document.querySelector('.controlEgresos_flag');
-    
-    if (element.value === "ARG") {
-        countryName.textContent = "ARGENTINA";
-        countryFlag.src = "../assets/images/bandera_con_sol__55757_std.jpg";
-        countryFlag.alt = "Argentina";
+        $('#tablaEgresos tbody tr').each(function() {
+            const rowText = $(this).text().toLowerCase();
+            $(this).toggle(rowText.indexOf(searchTerm) !== -1);
+        });
+    });
+}
+
+/**
+ * Ordenamiento al hacer click en los encabezados
+ */
+function setupSorting() {
+    $('#tablaEgresos thead th').each(function(index) {
+        if ($(this).hasClass('no-sort')) {
+            return;
+        }
+        $(this).on('click', function() {
+            sortTable(index);
+        });
+    });
+}
+
+function valorOrden(td) {
+    const $td = $(td);
+    return $td.attr('data-sort') !== undefined ? $td.attr('data-sort') : $td.text().trim();
+}
+
+function sortTable(columnIndex) {
+    const tbody = $('#tablaEgresos tbody');
+    const rows = tbody.find('tr').toArray();
+
+    if (sortColumn === columnIndex) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
-        countryName.textContent = "URUGUAY";
-        countryFlag.src = "../assets/images/UY.png";
-        countryFlag.alt = "Uruguay";
+        sortColumn = columnIndex;
+        sortDirection = 'asc';
     }
-    
+
+    rows.sort(function(a, b) {
+        const aVal = valorOrden($(a).find('td')[columnIndex]);
+        const bVal = valorOrden($(b).find('td')[columnIndex]);
+
+        const aNum = Number(aVal);
+        const bNum = Number(bVal);
+
+        let resultado;
+        if (aVal !== '' && bVal !== '' && !isNaN(aNum) && !isNaN(bNum)) {
+            resultado = aNum - bNum;
+        } else {
+            resultado = aVal.localeCompare(bVal, 'es', { numeric: true });
+        }
+
+        return sortDirection === 'asc' ? resultado : -resultado;
+    });
+
+    $('#tablaEgresos thead th').removeClass('sorting_asc sorting_desc');
+    $('#tablaEgresos thead th').eq(columnIndex).addClass(sortDirection === 'asc' ? 'sorting_asc' : 'sorting_desc');
+
+    tbody.append(rows);
+}
+
+/**
+ * Cambia el entorno (Argentina/Uruguay)
+ */
+function cambiarEntornoCustom(container) {
+    const activeFlag = $(container).find('.toggle-flag.active');
+    const nuevoEntorno = (activeFlag.data('entorno') === 'central') ? 1 : 0;
+
+    $("#boxLoading").addClass("loading");
+
     $.ajax({
         url: "Controller/cambiarEntorno.php",
         method: "POST",
-        data: { entorno: entorno },
-        success: function (data) {
-            setTimeout(() => location.reload(), 500);
+        data: { entorno: nuevoEntorno },
+        success: function () {
+            location.reload();
         },
-        error: function(xhr, status, error) {
-            console.error('Error al cambiar entorno:', error);
-            $('.controlEgresos_loading').remove();
-            alert('Error al cambiar el entorno. Por favor, intente nuevamente.');
+        error: function() {
+            $("#boxLoading").removeClass("loading");
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo cambiar el entorno. Por favor intente nuevamente.'
+            });
         }
     });
 }

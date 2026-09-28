@@ -1,0 +1,210 @@
+/* ===================================
+   CARGA FACTURA SUCURSALES
+   Base: resumenVentas.css + pantallaCompacta.css
+   =================================== */
+
+/* ===================================
+   TABLA
+   =================================== */
+
+#tablaFacturas {
+    width: 100% !important;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#tablaFacturas thead th {
+    background: #1e293b;
+    color: white;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.55rem 22px 0.55rem 0.6rem;
+    border: none;
+    white-space: nowrap;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+
+#tablaFacturas thead th::before {
+    content: '⇅';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: bold;
+}
+
+#tablaFacturas thead th.no-sort {
+    cursor: default;
+    padding-right: 0.6rem;
+}
+
+#tablaFacturas thead th.no-sort::before {
+    content: none;
+}
+
+#tablaFacturas thead th.sorting_asc::before,
+#tablaFacturas thead th.sorting_desc::before {
+    color: #ffffff;
+    font-size: 16px;
+}
+
+#tablaFacturas thead th.sorting_asc::before {
+    content: '↑';
+}
+
+#tablaFacturas thead th.sorting_desc::before {
+    content: '↓';
+}
+
+#tablaFacturas thead th:first-child {
+    border-top-left-radius: var(--radius-md);
+}
+
+#tablaFacturas thead th:last-child {
+    border-top-right-radius: var(--radius-md);
+}
+
+#tablaFacturas thead th.th-icon {
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+#tablaFacturas thead th.th-num {
+    text-align: right;
+}
+
+#tablaFacturas tbody td {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+#tablaFacturas tbody tr {
+    transition: background-color 0.15s;
+}
+
+#tablaFacturas tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+#tablaFacturas tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* Filas ya contabilizadas */
+#tablaFacturas tbody tr.row-contabilizada td:first-child {
+    box-shadow: inset 3px 0 0 var(--success-color);
+}
+
+.td-fecha {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.td-comprobante {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.cuenta-codigo {
+    display: inline-block;
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 0.78rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 4px;
+}
+
+#tablaFacturas .td-num {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+#tablaFacturas .monto-negativo {
+    color: var(--danger-color);
+}
+
+/* Leyenda: una sola línea, el texto completo queda en el tooltip */
+.td-leyenda {
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-secondary) !important;
+}
+
+#tablaFacturas .td-icon {
+    text-align: center;
+    width: 1%;
+    white-space: nowrap;
+}
+
+.icon-ok {
+    color: var(--success-color);
+    font-size: 1.05rem;
+}
+
+.icon-pendiente {
+    color: #cbd5e1;
+}
+
+.btn-ver {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--warning-color);
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-ver:hover {
+    background: var(--warning-color);
+    color: white;
+}
+
+.check-tabla {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--success-color);
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.check-tabla:disabled {
+    cursor: wait;
+    opacity: 0.5;
+}
+
+/* ===================================
+   RESPONSIVE
+   =================================== */
+
+@media (max-width: 768px) {
+    #tablaFacturas {
+        font-size: 0.75rem;
+    }
+
+    #tablaFacturas thead th,
+    #tablaFacturas tbody td {
+        padding: 0.35rem 0.4rem;
+    }
+
+    .td-leyenda {
+        max-width: 160px;
+    }
+}

@@ -1,53 +1,75 @@
 <?php
 
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Los filtros viajan por POST y se guardan en sesión (patrón POST-Redirect-GET)
+// para que no queden variables en la URL y un F5 no pida reenviar el formulario.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['desde'], $_POST['hasta'])) {
+    $esFecha = function ($valor) {
+        $d = DateTime::createFromFormat('Y-m-d', $valor);
+        return $d && $d->format('Y-m-d') === $valor;
+    };
+
+    if ($esFecha($_POST['desde']) && $esFecha($_POST['hasta'])) {
+        $_SESSION['resumenVentas'] = [
+            'desde' => $_POST['desde'],
+            'hasta' => $_POST['hasta']
+        ];
+    }
+
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+    exit;
+}
+
 include 'Class/ventas.php';
 
-$ventas= new Ventas();
+$ventas = new Ventas();
 
-$desde = isset($_GET['desde']) ? $_GET['desde'] : date("Y-m-d");
-$hasta = isset($_GET['hasta']) ? $_GET['hasta'] : date("Y-m-d");
+// Como antes, la consulta (que ejecuta un SP pesado) solo corre después de buscar
+$filtros = isset($_SESSION['resumenVentas']) ? $_SESSION['resumenVentas'] : null;
+$buscado = ($filtros !== null);
 
+$desde = $buscado ? $filtros['desde'] : date("Y-m-d");
+$hasta = $buscado ? $filtros['hasta'] : date("Y-m-d");
 
-if(isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'central'){
-    $checked = 'checked';
-}else{
-    $checked = '';
-}
-    
 $checkedValue = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
-$dataOnValue = ($checkedValue === 'suc_uy') ? 'UY' : 'ARG';
-$dataOffValue = ($checkedValue === 'suc_uy') ? 'ARG' : 'UY';
-$imageOn = ($checkedValue === 'central') ? '../assets/images/bandera_con_sol__55757_std.jpg' : '../assets/images/UY.png';
-$imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../assets/images/bandera_con_sol__55757_std.jpg';
 
+$todasLasVentas = [];
+if ($buscado) {
+    $todasLasVentas = json_decode($ventas->traerVentas($desde, $hasta));
+    if (!is_array($todasLasVentas)) {
+        $todasLasVentas = [];
+    }
+}
 
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resumen de ventas </title>
+    <title>Resumen de ventas</title>
 
     <?php
         require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php';
     ?>
-    
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
-    
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="css/resumenVentas.css">
+    <!-- Layout compacto compartido -->
+    <link rel="stylesheet" href="css/pantallaCompacta.css">
 
 </head>
 
-<body>
+<body class="pantalla-compacta">
     <div class="container-fluid">
         <div class="modern-card">
             <div class="page-title">
@@ -56,33 +78,16 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                 </a>
                 <i class="bi bi-credit-card"></i>
                 <span>Ventas por medio de pago</span>
-                <?php if (isset($_GET['desde'])): ?>
-                    <span class="date-range"> (<?= $desde ?> a <?= $hasta ?>)</span>
+                <?php if ($buscado): ?>
+                    <span class="date-range"><?= date('d/m/Y', strtotime($desde)) ?> a <?= date('d/m/Y', strtotime($hasta)) ?></span>
                 <?php endif; ?>
-            </div>
-            
-            <form class="filters-form" method="GET">
-                <div>
-                    <label>Desde:</label>
-                    <input type="date" class="form-control" name="desde" value="<?= $desde ?>">
-                </div>
-                
-                <div>
-                    <label>Hasta:</label>
-                    <input type="date" class="form-control" name="hasta" value="<?= $hasta ?>">
-                </div>
-                
-                <button type="submit" name="submit" class="btn-modern btn-search" id="search">
-                    <i class="bi bi-search"></i> Buscar
-                </button>
-                
-                <button type="button" class="btn-modern btn-export" id="btnExport">
-                    <i class="bi bi-file-earmark-excel"></i> Exportar
-                </button>
-                
-                <div class="toggle-wrapper ml-auto">
-                    <label style="margin-right: 10px; font-weight: 500; align-self: center;">Cambiar entorno:</label>
-                    <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)">
+
+                <div class="title-actions ml-auto">
+                    <button type="button" class="btn-info-toggle" data-toggle="collapse" data-target="#panelInfo" aria-expanded="false" aria-controls="panelInfo">
+                        <i class="bi bi-info-circle"></i> ¿Qué muestra esta pantalla?
+                    </button>
+
+                    <div class="custom-toggle-container" onclick="cambiarEntornoCustom(this)" title="Cambiar entorno">
                         <div class="toggle-flag <?= ($checkedValue === 'central') ? 'active' : '' ?>" data-entorno="central">
                             <img src="../assets/images/bandera_con_sol__55757_std.jpg" alt="Argentina">
                             <span>ARG</span>
@@ -93,20 +98,106 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Panel informativo -->
+            <div class="collapse" id="panelInfo">
+                <div class="info-panel">
+                    <div class="info-grid">
+                        <div class="info-block">
+                            <h6><i class="bi bi-database"></i> ¿Qué datos trae?</h6>
+                            <p>
+                                Muestra, por sucursal, el <strong>total vendido en el rango de fechas</strong> abierto por <strong>medio de pago</strong>.
+                                Cada vez que buscás se ejecuta el proceso <code>RO_RESUMEN_VENTA_SUCURSALES</code> sobre la base de locales
+                                (o la de sucursales de Uruguay si el entorno es UY), así que la búsqueda puede demorar unos segundos.
+                            </p>
+                            <p>
+                                Si el proceso no informa el total de ventas de una sucursal, se calcula sumando todos los medios de pago.
+                            </p>
+                        </div>
+
+                        <div class="info-block">
+                            <h6><i class="bi bi-list-check"></i> Columnas</h6>
+                            <ul class="info-flow">
+                                <li><strong>Total tarjetas</strong> (columna verde): Tarjeta + Cuenta DNI.</li>
+                                <li><strong>Promo banco:</strong> descuentos bancarios. Los valores negativos se muestran en rojo y entre paréntesis.</li>
+                                <li><strong>Dólares / Euros:</strong> ventas cobradas en moneda extranjera.</li>
+                                <li><strong>Total ventas</strong> (columna naranja): total de la sucursal en el período.</li>
+                            </ul>
+                            <p>Los totales del pie suman solo las filas visibles, así que respetan el buscador.</p>
+                        </div>
+
+                        <div class="info-block info-block-wide">
+                            <h6><i class="bi bi-diagram-3"></i> Relación con otras pantallas de Control Sucursales</h6>
+                            <ul class="info-flow">
+                                <li>
+                                    <strong>Control Masivo de Cobranza:</strong> controla día por día, para una sucursal y un medio de pago,
+                                    el importe del sistema contra el importe controlado. Lee otra fuente (la venta diaria por sucursal), no el resumen de esta pantalla.
+                                </li>
+                                <li>
+                                    <strong>Integridad de Ventas:</strong> audita las ventas (central vs. local, IVA ventas, venta vs. cobranza y arqueo de caja).
+                                    Esta pantalla es solo un resumen de consulta y no marca nada.
+                                </li>
+                                <li>
+                                    <strong>Control Recepción de Efectivo:</strong> sigue el efectivo que cada sucursal envía a tesorería (RAF).
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form class="filters-form" method="POST" id="formFiltros">
+                <div>
+                    <label for="desde">Desde:</label>
+                    <input type="date" class="form-control" id="desde" name="desde" value="<?= $desde ?>" required>
+                </div>
+
+                <div>
+                    <label for="hasta">Hasta:</label>
+                    <input type="date" class="form-control" id="hasta" name="hasta" value="<?= $hasta ?>" required>
+                </div>
+
+                <button type="submit" class="btn-modern btn-search" id="search">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+
+                <?php if (count($todasLasVentas) > 0): ?>
+                    <button type="button" class="btn-modern btn-export" id="btnExport">
+                        <i class="bi bi-file-earmark-excel"></i> Exportar
+                    </button>
+                <?php endif; ?>
             </form>
         </div>
 
         <!-- spinner -->
         <div id="boxLoading"></div>
-           
-    <?php
 
-    if (isset($_GET['desde'])) {
-        $todasLasVentas = json_decode($ventas->traerVentas($desde,$hasta));
-
-    ?>
+    <?php if (count($todasLasVentas) > 0): ?>
 
         <div class="table-wrapper">
+            <!-- Resumen + buscador -->
+            <div class="table-toolbar">
+                <div class="stats-row">
+                    <div class="stat-chip">
+                        <span class="stat-label">Sucursales</span>
+                        <span class="stat-value" id="statSucursales"><?= count($todasLasVentas) ?></span>
+                    </div>
+                    <div class="stat-chip stat-chip-success">
+                        <span class="stat-label">Total tarjetas</span>
+                        <span class="stat-value" id="statTotalTarjetas">$0</span>
+                    </div>
+                    <div class="stat-chip stat-chip-accent">
+                        <span class="stat-label">Total ventas</span>
+                        <span class="stat-value" id="statTotalVentas">$0</span>
+                    </div>
+                </div>
+                <div class="table-search">
+                    <i class="bi bi-search"></i>
+                    <input type="search" id="searchInput" placeholder="Buscar sucursal o número...">
+                </div>
+            </div>
+
             <table class="display" id="tableVentas">
                 <thead>
                     <tr>
@@ -157,7 +248,7 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                     }
                     ?>
                 </tbody>
-                
+
                 <tfoot>
                     <tr>
                         <td colspan="2">TOTALES</td>
@@ -177,22 +268,34 @@ $imageOff = ($checkedValue === 'central') ? '../assets/images/UY.png' : '../asse
                 </tfoot>
             </table>
         </div>
-    <?php
-    }
-    ?>
+
+    <?php elseif ($buscado): ?>
+
+        <div class="table-wrapper empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>No hay ventas para mostrar</h5>
+            <p>No se encontraron ventas entre el <?= date('d/m/Y', strtotime($desde)) ?> y el <?= date('d/m/Y', strtotime($hasta)) ?>. Probá con otro rango de fechas.</p>
+        </div>
+
+    <?php else: ?>
+
+        <div class="table-wrapper empty-state">
+            <i class="bi bi-calendar-range"></i>
+            <h5>Elegí un rango de fechas</h5>
+            <p>Seleccioná Desde y Hasta y tocá <strong>Buscar</strong> para ver las ventas por medio de pago.</p>
+        </div>
+
+    <?php endif; ?>
     </div>
-    
+
     <!-- jQuery (usar versión completa, no slim) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-    
-    <!-- DataTables -->
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    
+
     <!-- Plugin to export Excel -->
     <script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
-    
+
     <!-- Script específico de resumen de ventas -->
     <script src="js/resumenVentas.js" charset="utf-8"></script>
 

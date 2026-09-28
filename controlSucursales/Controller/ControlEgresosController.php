@@ -36,10 +36,6 @@ switch ($accion) {
         contabilizar(0);
         break;
     
-    case 'autorizarEgreso':
-        autorizarEgreso();
-        break;
-    
     case 'controlTesoreria':
         controlTesoreria($sucursal);
         break;
@@ -359,23 +355,6 @@ function contabilizar ($contabilizado) {
     $sucursal = new Sucursal();
     $result = $sucursal->contabilizar($fecha, $nroSucursal, $tipoComprobante, $nroComprobante, $codCuenta, $monto,$contabilizado);
     
-    echo $result;
-}
-
-function autorizarEgreso (){
-    $fecha= $_POST['fecha'];
-    $nroSucursal= $_POST['nroSucursal'];
-    $tipoComp= $_POST['tipoComp'];
-    $comprobante= $_POST['comprobante'];
-    $codCuenta= $_POST['codCuenta'];
-    $descCuenta= $_POST['descCuenta'];
-    $monto= $_POST['monto'];
-    $leyenda= $_POST['leyenda'];
-    $fechaDeHoy = date('Y-m-d');
-
-    $sucursal = new Sucursal();
-    $result = $sucursal->autorizarEgreso ($fecha, $nroSucursal, $tipoComp, $comprobante, $codCuenta, $descCuenta, $monto, $leyenda, $fechaDeHoy);
-  
     echo $result;
 }
 

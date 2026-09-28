@@ -201,7 +201,7 @@ body {
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 1rem 30px 1rem 0.75rem;
+    padding: 0.55rem 26px 0.55rem 0.6rem;
     border: none;
     white-space: nowrap;
     position: relative;
@@ -244,7 +244,7 @@ body {
 
 /* Body de tabla */
 #tableVentas tbody td {
-    padding: 0.875rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     font-size: 0.875rem;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
@@ -301,7 +301,7 @@ body {
 }
 
 #tableVentas tfoot td {
-    padding: 1rem 0.75rem;
+    padding: 0.6rem 0.6rem;
     font-weight: 700;
     font-size: 0.9rem;
     color: var(--text-primary);

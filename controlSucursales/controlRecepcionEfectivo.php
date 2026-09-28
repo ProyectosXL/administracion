@@ -1,274 +1,367 @@
-
 <?php
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+$estadosValidos = [
+    'todos'             => 'Todos',
+    'pendiente_recibir' => 'Pendiente recibir',
+    'pendiente_control' => 'Pendiente control',
+    'pendiente_cargar'  => 'Pendiente cargar',
+    'anulados'          => 'Anulados'
+];
+
+// Los filtros viajan por POST y se guardan en sesión (patrón POST-Redirect-GET)
+// para que no queden variables en la URL y un F5 no pida reenviar el formulario.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['desde'], $_POST['hasta'], $_POST['selectEstado'])) {
+    $esFecha = function ($valor) {
+        $d = DateTime::createFromFormat('Y-m-d', $valor);
+        return $d && $d->format('Y-m-d') === $valor;
+    };
+
+    if ($esFecha($_POST['desde']) && $esFecha($_POST['hasta']) && isset($estadosValidos[$_POST['selectEstado']])) {
+        $_SESSION['controlRecepcionEfectivo'] = [
+            'desde'  => $_POST['desde'],
+            'hasta'  => $_POST['hasta'],
+            'estado' => $_POST['selectEstado']
+        ];
+    }
+
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+    exit;
+}
+
 require_once "Class/sucursal.php";
 
 $fecha_actual = date("Y-m-d");
-$estado = (isset($_GET['selectEstado']) && $_GET['selectEstado'] != "") ? $_GET['selectEstado'] : "todos";
+$filtros = isset($_SESSION['controlRecepcionEfectivo']) ? $_SESSION['controlRecepcionEfectivo'] : [];
 
-if(isset($_GET['desde']) && $_GET['desde'] != "" ){
-    $desde = $_GET['desde'];
-}else{
-    $desde = date("Y-m-d",strtotime($fecha_actual."- 1 week"));
-}
-
-if(isset($_GET['hasta']) && $_GET['hasta'] != "" ){
-    $hasta = $_GET['hasta'];
-}else{
-    $hasta = date("Y-m-d",strtotime($fecha_actual."- 1 day"));
-}
+$desde  = isset($filtros['desde'])  ? $filtros['desde']  : date("Y-m-d", strtotime($fecha_actual . "- 1 week"));
+$hasta  = isset($filtros['hasta'])  ? $filtros['hasta']  : date("Y-m-d", strtotime($fecha_actual . "- 1 day"));
+$estado = isset($filtros['estado']) ? $filtros['estado'] : "todos";
 
 $sucursal = new Sucursal();
 $data = $sucursal->traerDatosControlRecepcion($desde, $hasta, $estado);
+if (!is_array($data)) {
+    $data = [];
+}
 $locales = $sucursal->traerLocales();
+
+$nombresSucursales = [];
+foreach ((array)$locales as $local) {
+    $nombresSucursales[$local['NRO_SUCURSAL']] = $local['DESC_SUCURSAL'];
+}
+
+$esAnulados = ($estado == 'anulados');
+
+// Resumen
+$cantidad = count($data);
+$totalesPorMoneda = [];
+$cantidadRecibidos = 0;
+$cantidadControlados = 0;
+$cantidadCargados = 0;
+foreach ($data as $gasto) {
+    $moneda = ($gasto['MONEDA'] ?? '') !== '' ? $gasto['MONEDA'] : 'S/M';
+    $totalesPorMoneda[$moneda] = ($totalesPorMoneda[$moneda] ?? 0) + (float)$gasto['MONTO'];
+    if ($gasto['RECIBIDO'] == 1) $cantidadRecibidos++;
+    if ($gasto['CTROL_TESORERIA'] == 1) $cantidadControlados++;
+    if ($gasto['VINCULADO'] == 1) $cantidadCargados++;
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control recepción efectivo de sucursales</title>
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php'; ?>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/v/bs5/dt-1.13.8/r-2.5.0/datatables.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/controlRecepcionEfectivo.css" class="rel">
+    <title>Control Recepción Efectivo</title>
 
+    <?php require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/css/css.php'; ?>
+
+    <!-- Bootstrap 5 (lo requiere el modal de vincular recibo) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Estilos base compartidos con Resumen de Ventas -->
+    <link rel="stylesheet" href="css/resumenVentas.css">
+    <!-- Layout compacto compartido -->
+    <link rel="stylesheet" href="css/pantallaCompacta.css">
+    <!-- Estilos propios de la pantalla -->
+    <link rel="stylesheet" href="css/controlRecepcionEfectivo.css">
 </head>
-<body>
-    <div class="container-fluid py-4">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center p-2">
-                    <h4 class="mb-0">
-                        <i class="bi bi-cash me-2"></i>
-                        Control recepción efectivo de sucursales
-                    </h4>
-                    <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#controlRecepcion_modalAyuda">
-                        <i class="bi bi-question-circle-fill me-1"></i> Ayuda
+
+<body class="pantalla-compacta">
+    <div class="container-fluid">
+        <div class="modern-card">
+            <div class="page-title">
+                <a href="http://192.168.0.13:8000/" class="btn-home" title="Volver al menú">
+                    <img src="../image/home-button.png" alt="Home">
+                </a>
+                <i class="bi bi-cash"></i>
+                <span>Control Recepción de Efectivo</span>
+                <span class="date-range">
+                    <?= date('d/m/Y', strtotime($desde)) ?> a <?= date('d/m/Y', strtotime($hasta)) ?> · <?= $estadosValidos[$estado] ?>
+                </span>
+
+                <div class="title-actions ms-auto">
+                    <button type="button" class="btn-info-toggle" data-bs-toggle="collapse" data-bs-target="#panelInfo" aria-expanded="false" aria-controls="panelInfo">
+                        <i class="bi bi-info-circle"></i> ¿Qué muestra esta pantalla?
                     </button>
                 </div>
             </div>
-            
-            <div class="card-body">
-                <div class="filters-section">
-                    <form id="filterForm" class="row g-3 align-items-end">
-                        <div class="col-md-3">
-                            <label for="desde" class="form-label">Desde</label>
-                            <input type="date" class="form-control" id="desde" name="desde" value="<?= $desde ?>">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="hasta" class="form-label">Hasta</label>
-                            <input type="date" class="form-control" id="hasta" name="hasta" value="<?= $hasta ?>">
-                        </div>
-                        <div class="col-md-3">
-                            <select class="form-select" name="selectEstado" id="selectEstado">
-                                <option value="todos" <?= ($estado == "todos") ? "selected" : "" ?>>Todos</option>
-                                <option value="pendiente_recibir" <?= ($estado == "pendiente_recibir") ? "selected" : "" ?>>Pendiente Recibir</option>
-                                <option value="pendiente_control" <?= ($estado == "pendiente_control") ? "selected" : "" ?>>Pendiente Control</option>
-                                <option value="pendiente_cargar" <?= ($estado == "pendiente_cargar") ? "selected" : "" ?>>Pendiente Cargar</option>
-                                <option value="anulados" <?= ($estado == "anulados") ? "selected" : "" ?>>Anulados</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-primary w-100" id="btnFiltrarControlRecepcion">
-                                <i class="bi bi-funnel-fill me-2"></i>Filtrar
-                            </button>
-                        </div>
-                    </form>
-                </div>
 
-                <div class="table-container mt-4">
-                    <?php if($estado == 'anulados'): ?>
-                    <div class="alert alert-warning mb-3">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        Mostrando movimientos anulados en Tango (CTA28.SITUACION='A'). Estos comprobantes están neteados contablemente con su REV correspondiente.
+            <!-- Panel informativo -->
+            <div class="collapse" id="panelInfo">
+                <div class="info-panel">
+                    <div class="info-grid">
+                        <div class="info-block">
+                            <h6><i class="bi bi-database"></i> ¿Qué datos trae?</h6>
+                            <p>
+                                Lista los <strong>retiros de efectivo (RAF)</strong> que las sucursales envían a tesorería central
+                                (cuenta de caja <code>100100</code>) entre las fechas elegidas, con el despacho y el precinto de la guía de retiro.
+                            </p>
+                            <p>
+                                El filtro <em>Anulados</em> muestra los RAF anulados en Tango. Esos comprobantes ya están compensados contablemente
+                                con su REV: no se pueden vincular ni agregarles observaciones.
+                            </p>
+                        </div>
+
+                        <div class="info-block">
+                            <h6><i class="bi bi-arrow-right-circle"></i> Flujo de estados</h6>
+                            <ol class="info-flow">
+                                <li><strong>Despachado:</strong> la sucursal envió el efectivo con precinto. Se ve la fecha y hora del despacho.</li>
+                                <li><i class="bi bi-box-arrow-in-down"></i> <strong>Recibido:</strong> el efectivo llegó a tesorería.</li>
+                                <li><i class="bi bi-check-square"></i> <strong>Controlado:</strong> el monto contado coincide con el declarado. Primero tiene que estar recibido.</li>
+                                <li><i class="bi bi-cloud-arrow-up-fill"></i> <strong>Cargado:</strong> el RAF se vinculó con el recibo contable. Primero tiene que estar recibido y controlado.</li>
+                            </ol>
+                            <p>Recibido y Controlado <strong>no se pueden destildar</strong> una vez marcados.</p>
+                        </div>
+
+                        <div class="info-block">
+                            <h6><i class="bi bi-hand-index"></i> Acciones</h6>
+                            <ul class="info-flow">
+                                <li><i class="bi bi-save"></i> <strong>Guardar observación:</strong> una vez guardada no se puede modificar.</li>
+                                <li>
+                                    <i class="bi bi-link-45deg"></i> <strong>Vincular recibo:</strong> muestra los recibos de caja de los últimos 30 días
+                                    (<code>100101</code> ARS, <code>100901</code> USD) que todavía no están vinculados. El monto tiene que coincidir exactamente.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="info-block">
+                            <h6><i class="bi bi-diagram-3"></i> Relación con otras pantallas</h6>
+                            <p>
+                                Esta pantalla sigue el <strong>efectivo</strong> que sale de la sucursal, no los gastos. Comparte la tabla de seguimiento
+                                con Control Egresos de Caja, Carga Factura Sucursales y Carga Gastos Tesorería, pero sus registros son de la cuenta de caja
+                                y no se mezclan con los gastos (<code>5xxxxx</code>) de esas pantallas.
+                            </p>
+                        </div>
                     </div>
-                    <?php endif; ?>
-                    <table class="table table-striped table-hover" id="tablaControlRecepcion">
-                        <thead>
-                            <tr>
-                                <th>FECHA RAF</th>
-                                <th>NRO.SUCURSAL</th>
-                                <th>DESC.SUCURSAL</th>
-                                <th>TIPO COMP.</th>
-                                <th>COMPROBANTE</th>
-                                <th>MONTO</th>
-                                <th>MONEDA</th>
-                                <th>DESPACHADO</th>
-                                <th>PRECINTO</th>
-                                <th data-toggle="tooltip" data-placement="top" title="Recibido"><i class="bi bi-box-arrow-in-down icon"></i></th>
-                                <th data-toggle="tooltip" data-placement="top" title="Controlado"><i class="bi bi-check-square icon"></i></th>
-                                <th data-toggle="tooltip" data-placement="top" title="Cargado"><i class="bi bi-cloud-arrow-up-fill icon"></i></th>
-                                <th>OBSERVACIONES</th>
-                                <th>ACCIONES</th>
-                                <th hidden>COD_CUENTA</th>  <!-- Columna oculta -->
-                                <th hidden>DESC_CUENTA</th> <!-- Columna oculta -->
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if($data != null): ?>
-                                <?php foreach ($data as $gasto): ?>
-                                    <?php
-                                    $sucursal = "";
-                                    foreach ($locales as $local) {
-                                        if ($gasto['NRO_SUCURS'] == $local['NRO_SUCURSAL']) {
-                                            $sucursal = $local['DESC_SUCURSAL'];
-                                        }
-                                    }
-                                    ?>
-                                    <tr>
-                                        <td><?= $gasto['FECHA']->format("d/m/Y") ?></td>
-                                        <td><?= $gasto['NRO_SUCURS'] ?></td>
-                                        <td><?= $sucursal ?></td>
-                                        <td><?= $gasto['COD_COMP'] ?></td>
-                                        <td data-toggle="tooltip" data-placement="top" title="USUARIO: <?= $gasto['USUARIO']?>" data-ncomp="<?= $gasto['N_COMP'] ?>" data-ncomp-original="<?= htmlspecialchars($gasto['N_COMP']) ?>">
-                                            <?= $gasto['N_COMP'] ?>
-                                            <?php if($estado == 'anulados'): ?>
-                                                <span class="badge bg-danger ms-2">Anulado</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?= number_format($gasto['MONTO'], 0, ',', '.') ?></td>
-                                        <td>
-                                            <?php
-                                            $moneda = $gasto['MONEDA'] ?? '';
-                                            if ($moneda === 'ARS') {
-                                                echo '<span class="badge bg-secondary">ARS</span>';
-                                            } elseif ($moneda === 'USD') {
-                                                echo '<span class="badge bg-success">USD</span>';
-                                            } else {
-                                                echo '<span class="badge bg-light text-dark border">' . htmlspecialchars($moneda) . '</span>';
-                                            }
-                                            ?>
-                                        </td>
-                                        <td><?= $gasto['DESPACHADO'] == 1 ? ($gasto['FECHA_DESP'])->format("d/m/Y H:i") : '' ?></td>
-                                        <td><?= $gasto['PRECINTO'] > 1 ? $gasto['PRECINTO'] : '' ?></td>
-                                        <td class="text-center">
-                                            <?php if($gasto['RECIBIDO'] == '1' || $gasto['RECIBIDO'] === 1): ?>
-                                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
-                                            <?php else: ?>
-                                                <input type="checkbox" class="form-check-input checkbox-lg" onclick="marcarRecibido(this)">
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <?php if($gasto['CTROL_TESORERIA'] == '1' || $gasto['CTROL_TESORERIA'] === 1): ?>
-                                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
-                                            <?php else: ?>
-                                                <input type="checkbox" class="form-check-input checkbox-lg" onclick="marcarControlado(this)">
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <?php if($gasto['VINCULADO'] == 1): ?>
-                                                <i class="bi bi-check-circle-fill text-success fs-4"></i>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <textarea class="form-control" rows="1" <?= $gasto['OBSERVACIONES'] ? 'disabled' : '' ?>><?= $gasto['OBSERVACIONES'] ?></textarea>
-                                        </td>
-                                        <td>
-                                            <?php if($estado != 'anulados'): ?>
-                                            <div class="btn-group" role="group" aria-label="Acciones">
-                                                <?php if($gasto['OBSERVACIONES'] == NULL): ?>
-                                                    <button class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" onclick="guardarObservaciones(this)" title="Guardar Observaciones">
-                                                        <i class="bi bi-save"></i>
-                                                    </button>
-                                                <?php endif; ?>
-                                                <?php if($gasto['VINCULADO'] == 0): ?>
-                                                <button class="btn btn-info btn-sm" data-toggle="tooltip" data-placement="top" onclick="vincularRecibo(this)" title="Vincular Recibo">
-                                                    <i class="bi bi-link-45deg"></i>
-                                                </button>
-                                                <?php endif; ?>
-                                            </div>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td hidden data-cod-cuenta="<?= htmlspecialchars($gasto['COD_CTA']) ?>"><?= $gasto['COD_CTA'] ?></td>
-                                        <td hidden data-desc-cuenta="<?= htmlspecialchars($gasto['DESC_CUENTA']) ?>"><?= $gasto['DESC_CUENTA'] ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
                 </div>
             </div>
+
+            <form class="filters-form" method="POST" id="formFiltros">
+                <div>
+                    <label for="desde">Desde:</label>
+                    <input type="date" class="form-control" id="desde" name="desde" value="<?= $desde ?>" required>
+                </div>
+
+                <div>
+                    <label for="hasta">Hasta:</label>
+                    <input type="date" class="form-control" id="hasta" name="hasta" value="<?= $hasta ?>" required>
+                </div>
+
+                <div>
+                    <label for="selectEstado">Estado:</label>
+                    <select class="form-control" name="selectEstado" id="selectEstado">
+                        <?php foreach ($estadosValidos as $valor => $texto) { ?>
+                            <option value="<?= $valor ?>" <?= ($estado == $valor) ? "selected" : "" ?>><?= $texto ?></option>
+                        <?php } ?>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-modern btn-search" id="search">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </form>
         </div>
+
+        <!-- spinner -->
+        <div id="boxLoading"></div>
+
+        <?php if ($cantidad > 0) { ?>
+
+        <div class="table-wrapper">
+            <?php if ($esAnulados) { ?>
+                <div class="aviso-anulados">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    Movimientos anulados en Tango (CTA28.SITUACION = 'A'). Están compensados contablemente con su REV correspondiente.
+                </div>
+            <?php } ?>
+
+            <!-- Resumen + buscador -->
+            <div class="table-toolbar">
+                <div class="stats-row">
+                    <div class="stat-chip">
+                        <span class="stat-label">Comprobantes</span>
+                        <span class="stat-value"><?= $cantidad ?></span>
+                    </div>
+                    <?php foreach ($totalesPorMoneda as $moneda => $total) { ?>
+                        <div class="stat-chip stat-chip-accent">
+                            <span class="stat-label">Total <?= htmlspecialchars($moneda) ?></span>
+                            <span class="stat-value"><?= number_format($total, 0, ',', '.') ?></span>
+                        </div>
+                    <?php } ?>
+                    <?php if (!$esAnulados) { ?>
+                        <div class="stat-chip">
+                            <span class="stat-label">Recibidos</span>
+                            <span class="stat-value"><span id="statRecibidos"><?= $cantidadRecibidos ?></span> / <?= $cantidad ?></span>
+                        </div>
+                        <div class="stat-chip">
+                            <span class="stat-label">Controlados</span>
+                            <span class="stat-value"><span id="statControlados"><?= $cantidadControlados ?></span> / <?= $cantidad ?></span>
+                        </div>
+                        <div class="stat-chip">
+                            <span class="stat-label">Cargados</span>
+                            <span class="stat-value"><span id="statCargados"><?= $cantidadCargados ?></span> / <?= $cantidad ?></span>
+                        </div>
+                    <?php } ?>
+                </div>
+                <div class="table-search">
+                    <i class="bi bi-search"></i>
+                    <input type="search" id="buscarTabla" placeholder="Buscar sucursal, comprobante, precinto...">
+                </div>
+            </div>
+
+            <table class="display" id="tablaControlRecepcion">
+                <thead>
+                    <tr>
+                        <th>FECHA RAF</th>
+                        <th>SUC.</th>
+                        <th>SUCURSAL</th>
+                        <th>TIPO</th>
+                        <th>COMPROBANTE</th>
+                        <th class="th-num">MONTO</th>
+                        <th>MONEDA</th>
+                        <th>DESPACHADO</th>
+                        <th>PRECINTO</th>
+                        <th class="th-icon" title="Recibido"><i class="bi bi-box-arrow-in-down"></i></th>
+                        <th class="th-icon" title="Controlado"><i class="bi bi-check-square"></i></th>
+                        <th class="th-icon" title="Cargado (vinculado a recibo)"><i class="bi bi-cloud-arrow-up-fill"></i></th>
+                        <th class="no-sort">OBSERVACIONES</th>
+                        <th class="th-icon no-sort">ACCIONES</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <?php foreach ($data as $gasto) {
+                        $nroSucursal = $gasto['NRO_SUCURS'];
+                        $monto = (float)$gasto['MONTO'];
+                        $montoFormateado = number_format($monto, 0, ',', '.');
+                        $moneda = $gasto['MONEDA'] ?? '';
+                        $recibido = ($gasto['RECIBIDO'] == 1);
+                        $controlado = ($gasto['CTROL_TESORERIA'] == 1);
+                        $vinculado = ($gasto['VINCULADO'] == 1);
+                        $tieneObservacion = !empty($gasto['OBSERVACIONES']);
+                        $despachado = ($gasto['DESPACHADO'] == 1 && $gasto['FECHA_DESP'] != null);
+                    ?>
+                        <tr class="<?= $vinculado ? 'row-completa' : '' ?>"
+                            data-fecha="<?= $gasto['FECHA']->format("d/m/Y") ?>"
+                            data-fecha-iso="<?= $gasto['FECHA']->format("Y-m-d") ?>"
+                            data-sucursal="<?= htmlspecialchars(trim($nroSucursal)) ?>"
+                            data-desc-sucursal="<?= htmlspecialchars($nombresSucursales[$nroSucursal] ?? '') ?>"
+                            data-tipo="<?= htmlspecialchars(trim($gasto['COD_COMP'])) ?>"
+                            data-ncomp="<?= htmlspecialchars($gasto['N_COMP']) ?>"
+                            data-monto="<?= str_replace('.', '', $montoFormateado) ?>"
+                            data-monto-formateado="<?= $montoFormateado ?>"
+                            data-cod-cuenta="<?= htmlspecialchars($gasto['COD_CTA']) ?>"
+                            data-desc-cuenta="<?= htmlspecialchars($gasto['DESC_CUENTA']) ?>">
+
+                            <td class="td-fecha" data-sort="<?= $gasto['FECHA']->format("Y-m-d") ?>"><?= $gasto['FECHA']->format("d/m/Y") ?></td>
+                            <td><?= $nroSucursal ?></td>
+                            <td><?= htmlspecialchars($nombresSucursales[$nroSucursal] ?? '') ?></td>
+                            <td><?= $gasto['COD_COMP'] ?></td>
+                            <td class="td-comprobante" title="Usuario: <?= htmlspecialchars($gasto['USUARIO'] ?? '') ?>">
+                                <?= $gasto['N_COMP'] ?>
+                                <?php if ($esAnulados) { ?>
+                                    <span class="badge-anulado">Anulado</span>
+                                <?php } ?>
+                            </td>
+                            <td class="td-num" data-sort="<?= $monto ?>"><?= $montoFormateado ?></td>
+                            <td>
+                                <span class="badge-moneda <?= ($moneda === 'USD') ? 'moneda-usd' : '' ?>"><?= htmlspecialchars($moneda) ?></span>
+                            </td>
+                            <td class="td-fecha" data-sort="<?= $despachado ? $gasto['FECHA_DESP']->format("Y-m-d H:i") : '' ?>">
+                                <?= $despachado ? $gasto['FECHA_DESP']->format("d/m/Y H:i") : '<span class="icon-pendiente">—</span>' ?>
+                            </td>
+                            <td><?= $gasto['PRECINTO'] > 1 ? $gasto['PRECINTO'] : '' ?></td>
+                            <td class="td-icon col-recibido" data-sort="<?= $recibido ? 1 : 0 ?>">
+                                <?php if ($recibido) { ?>
+                                    <i class="bi bi-check-circle-fill icon-ok"></i>
+                                <?php } else { ?>
+                                    <input type="checkbox" class="check-tabla" onclick="marcarRecibido(this)" title="Marcar como recibido">
+                                <?php } ?>
+                            </td>
+                            <td class="td-icon col-controlado" data-sort="<?= $controlado ? 1 : 0 ?>">
+                                <?php if ($controlado) { ?>
+                                    <i class="bi bi-check-circle-fill icon-ok"></i>
+                                <?php } else { ?>
+                                    <input type="checkbox" class="check-tabla" onclick="marcarControlado(this)" title="Marcar como controlado">
+                                <?php } ?>
+                            </td>
+                            <td class="td-icon col-cargado" data-sort="<?= $vinculado ? 1 : 0 ?>">
+                                <?php if ($vinculado) { ?>
+                                    <i class="bi bi-check-circle-fill icon-ok"></i>
+                                <?php } ?>
+                            </td>
+                            <td class="td-observaciones">
+                                <textarea class="obs-input" rows="1" placeholder="<?= ($tieneObservacion || $esAnulados) ? '' : 'Agregar observación...' ?>" <?= ($tieneObservacion || $esAnulados) ? 'disabled' : '' ?>><?= htmlspecialchars((string)$gasto['OBSERVACIONES']) ?></textarea>
+                            </td>
+                            <td class="td-icon">
+                                <?php if (!$esAnulados) { ?>
+                                    <div class="acciones">
+                                        <?php if (!$tieneObservacion) { ?>
+                                            <button type="button" class="btn-accion btn-guardar" onclick="guardarObservaciones(this)" title="Guardar observación">
+                                                <i class="bi bi-save"></i>
+                                            </button>
+                                        <?php } ?>
+                                        <?php if (!$vinculado) { ?>
+                                            <button type="button" class="btn-accion btn-vincular" onclick="vincularRecibo(this)" title="Vincular recibo">
+                                                <i class="bi bi-link-45deg"></i>
+                                            </button>
+                                        <?php } ?>
+                                    </div>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php } else { ?>
+
+        <div class="table-wrapper empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>No hay retiros de efectivo para mostrar</h5>
+            <p>No se encontraron RAF <?= $estado != 'todos' ? 'en estado "' . $estadosValidos[$estado] . '" ' : '' ?>entre el <?= date('d/m/Y', strtotime($desde)) ?> y el <?= date('d/m/Y', strtotime($hasta)) ?>. Probá con otro rango de fechas o estado.</p>
+        </div>
+
+        <?php } ?>
     </div>
 
-    <?php require_once $_SERVER['DOCUMENT_ROOT'] .'/administracion/assets/js/js.php'; ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/v/bs5/dt-1.13.8/r-2.5.0/datatables.min.js"></script>
-    <script src="js/controlRecepcion.js"></script>
-
-    <?php include_once 'components/controlRecepcion_modalAyuda.php'; ?>
     <?php include_once 'components/controlRecepcion_modalVincular.php'; ?>
 
-    <script>
-        $(document).ready(function() {
-            $('#tablaControlRecepcion').DataTable({
-                responsive: true,
-                language: {
-                    lengthMenu: "Mostrar _MENU_ registros por página",
-                    zeroRecords: "No se encontraron registros",
-                    info: "Mostrando página _PAGE_ de _PAGES_",
-                    infoEmpty: "No hay registros disponibles",
-                    infoFiltered: "(filtrado de _MAX_ registros totales)",
-                    search: "Buscar:",
-                    paginate: {
-                        first: "Primero",
-                        last: "Último",
-                        next: "Siguiente",
-                        previous: "Anterior"
-                    }
-                },
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
-                order: [],
-                autoWidth: false,
-                columnDefs: [
-                    {
-                        targets: '_all',
-                        className: 'text-center'
-                    },
-                    {
-                        targets: [0, 1, 3, 6, 8],
-                        className: 'text-center columna-compacta'
-                    },
-                    {
-                        targets: [9, 10, 11],
-                        className: 'text-center columna-estado'
-                    },
-                    {
-                        targets: [13],
-                        className: 'text-center columna-acciones'
-                    },
-                    {
-                        targets: [2, 4, 7, 12],
-                        className: 'text-center columna-media'
-                    }
-                ],
-                columns: [
-                    { width: '7%' },
-                    { width: '5%' },
-                    { width: '13%' },
-                    { width: '6%' },
-                    { width: '12%' },
-                    { width: '8%' },
-                    { width: '5%' },
-                    { width: '10%' },
-                    { width: '6%' },
-                    { width: '4%' },
-                    { width: '4%' },
-                    { width: '4%' },
-                    { width: '12%' },
-                    { width: '4%' },
-                    null,
-                    null
-                ]
-            });
+    <!-- jQuery (usar versión completa, no slim) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-            // Initialize tooltips
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-        });
-    </script>
+    <script src="js/controlRecepcion.js" charset="utf-8"></script>
 </body>
+
 </html>
