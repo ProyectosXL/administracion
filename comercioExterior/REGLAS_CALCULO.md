@@ -683,6 +683,25 @@ en PHP. `tests/test_visibilidad.php` compara los dos fila por fila contra la bas
 Sin la tabla de pagos, todo contenedor con FOB se trata como pendiente y la
 grilla lo avisa.
 
+### El filtro por fecha de carga
+
+Arriba de la grilla hay un filtro **desde / hasta** sobre `FECHA_MOV` (la
+columna *Fecha*), que **arranca en los últimos 360 días**, con botones para
+volver a ese rango o ver todas las fechas.
+
+- **Es un filtro de pantalla, no la regla.** El servidor sigue mandando todo lo
+  que dice `VisibilidadContenedor`; el filtro esconde filas en el navegador y se
+  combina con el buscador y el paginado de DataTables.
+- **Dice siempre cuántos deja afuera**, y cuántos de ésos tienen los costos ya
+  cargados, o sea que están en la grilla por saldo pendiente. Al 01/10/2026, con
+  el rango por defecto, quedan afuera **231 de 347** despachos en central —**227**
+  con costos cargados— y 51 de 57 en uy. Para verlos hay que tocar *Todas las
+  fechas*.
+- La columna *Fecha* mostraba un día menos: `new Date('2026-09-30')` es medianoche
+  UTC. Se corrigió junto con el filtro, porque hacía que una fila pareciera fuera
+  de un rango que sí cumple. De paso la columna ordena por fecha y no por el
+  texto dd/mm/aaaa.
+
 ---
 
 ## 🗑️ Eliminar un despacho

@@ -72,6 +72,28 @@ $proveedorClass = new Proveedor();
         <!-- Content Card -->
         <div class="content-card">
             <div id="avisosGestion" class="alert alert-warning py-2 px-3 mb-3" style="display: none;"></div>
+
+            <!-- Filtro por fecha de carga (FECHA_MOV). Filtra en el navegador
+                 sobre lo que ya trajo el servidor: ver filtrarPorFechaCarga()
+                 en js/gestionDespachos.js. -->
+            <div id="filtroFechaCarga" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+                <div>
+                    <label for="fechaCargaDesde" class="form-label small mb-1">Cargados desde</label>
+                    <input type="date" id="fechaCargaDesde" class="form-control form-control-sm">
+                </div>
+                <div>
+                    <label for="fechaCargaHasta" class="form-label small mb-1">hasta</label>
+                    <input type="date" id="fechaCargaHasta" class="form-control form-control-sm">
+                </div>
+                <button type="button" id="btnFechaCargaDefault" class="btn btn-sm btn-outline-secondary">
+                    Últimos 360 días
+                </button>
+                <button type="button" id="btnFechaCargaTodas" class="btn btn-sm btn-outline-secondary">
+                    Todas las fechas
+                </button>
+                <small id="filtroFechaCargaInfo" class="text-muted ms-1 mb-1"></small>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-hover" id="tablaDespachos">
                     <thead>

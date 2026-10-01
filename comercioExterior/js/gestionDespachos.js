@@ -1,7 +1,21 @@
 let tablaDespachos = null;
 let tablaOcPendientes = null;
 
+/**
+ * Cuántos días hacia atrás muestra la grilla al abrir, por fecha de carga.
+ *
+ * ES UN FILTRO DE PANTALLA, NO LA REGLA DE QUÉ SE VE. El servidor sigue
+ * mandando todo lo que dice VisibilidadContenedor -incluidos los contenedores
+ * viejos con saldo pendiente- y esto sólo esconde filas en el navegador. Por
+ * eso al lado del filtro se dice siempre cuántas quedan afuera: un contenedor
+ * con deuda cargado hace más de un año no puede desaparecer sin que la
+ * pantalla lo diga.
+ */
+const DIAS_FECHA_CARGA_DEFAULT = 360;
+
 $(document).ready(function() {
+    inicializarFiltroFechaCarga();
+
     // Cargar despachos
     cargarDespachos();
     
@@ -114,10 +128,13 @@ function mostrarDespachos(despachos) {
                 </a>`;
         }
 
+        // data-fecha-mov: la fecha cruda 'Y-m-d' para el filtro por fecha de
+        // carga. data-order: para que la columna ordene por fecha y no por el
+        // texto dd/mm/aaaa.
         const row = `
-            <tr>
+            <tr data-fecha-mov="${despacho.FECHA_MOV || ''}" data-tiene-costos="${despacho.TIENE_COSTOS ? 1 : 0}">
                 <td><strong>#${despacho.ID}</strong></td>
-                <td>${formatearFecha(despacho.FECHA_MOV)}</td>
+                <td data-order="${despacho.FECHA_MOV || ''}">${formatearFecha(despacho.FECHA_MOV)}</td>
                 <td>${despacho.PROVEEDOR || '-'}</td>
                 <td>${celdaContenedor(despacho)}</td>
                 <td>${despacho.MATERIAL || '-'}</td>
@@ -167,6 +184,113 @@ function mostrarDespachos(despachos) {
         autoWidth: false,
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
     });
+
+    actualizarInfoFechaCarga();
+}
+
+/* ==========================================================================
+   FILTRO POR FECHA DE CARGA
+
+   Mira FECHA_MOV -la fecha en que se cargó el despacho, la columna "Fecha"
+   de la grilla- y arranca en los últimos DIAS_FECHA_CARGA_DEFAULT días.
+
+   SE FILTRA EN EL NAVEGADOR, con una búsqueda propia de DataTables, y no en
+   el servidor: el listado ya está entero en la página y la regla de qué
+   contenedores existen para esta pantalla es del servidor
+   (VisibilidadContenedor). Así el filtro se combina solo con el buscador y
+   el paginado, y cambiar las fechas no es un pedido nuevo.
+   ========================================================================== */
+
+/** 'Y-m-d' de una fecha, en hora local (toISOString() daría la de UTC). */
+function fechaIso(d) {
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+function rangoFechaCargaDefault() {
+    const hoy = new Date();
+    const desde = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - DIAS_FECHA_CARGA_DEFAULT);
+    $('#fechaCargaDesde').val(fechaIso(desde));
+    $('#fechaCargaHasta').val(fechaIso(hoy));
+}
+
+/**
+ * Si una fecha 'Y-m-d' cae en el rango elegido. Un extremo vacío es abierto.
+ * Una fila sin FECHA_MOV sólo se ve con el rango entero abierto: no hay cómo
+ * afirmar que esté adentro.
+ */
+function dentroDeFechaCarga(fechaMov) {
+    const desde = $('#fechaCargaDesde').val();
+    const hasta = $('#fechaCargaHasta').val();
+
+    if (!desde && !hasta) return true;
+    if (!fechaMov) return false;
+    if (desde && fechaMov < desde) return false;
+    if (hasta && fechaMov > hasta) return false;
+    return true;
+}
+
+function inicializarFiltroFechaCarga() {
+    rangoFechaCargaDefault();
+
+    // Sólo para esta tabla: el modal de OC pendientes también es un DataTable
+    // y esta búsqueda es global a todas.
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (settings.nTable.id !== 'tablaDespachos') return true;
+        const tr = settings.aoData[dataIndex].nTr;
+        return dentroDeFechaCarga(tr ? tr.dataset.fechaMov : '');
+    });
+
+    const redibujar = function() {
+        if (tablaDespachos) tablaDespachos.draw();
+        actualizarInfoFechaCarga();
+    };
+
+    $('#fechaCargaDesde, #fechaCargaHasta').on('change', redibujar);
+    $('#btnFechaCargaDefault').on('click', function() {
+        rangoFechaCargaDefault();
+        redibujar();
+    });
+    $('#btnFechaCargaTodas').on('click', function() {
+        $('#fechaCargaDesde, #fechaCargaHasta').val('');
+        redibujar();
+    });
+}
+
+/**
+ * Cuántos despachos deja afuera el filtro de fechas, y cuántos de ésos tienen
+ * los costos cargados -o sea, están en la grilla por saldo pendiente-. Se dice
+ * siempre: una tabla que esconde filas sin decirlo se lee como que no existen.
+ */
+function actualizarInfoFechaCarga() {
+    const $info = $('#filtroFechaCargaInfo');
+    if (!tablaDespachos) {
+        $info.text('');
+        return;
+    }
+
+    let total = 0;
+    let afuera = 0;
+    let afueraConCostos = 0;
+
+    tablaDespachos.rows().every(function() {
+        const tr = this.node();
+        total++;
+        if (!dentroDeFechaCarga(tr.dataset.fechaMov)) {
+            afuera++;
+            if (tr.dataset.tieneCostos === '1') afueraConCostos++;
+        }
+    });
+
+    if (afuera === 0) {
+        $info.text(`Se ven los ${total} despachos.`);
+    } else {
+        $info.text(`${afuera} de ${total} despachos fuera del rango de fechas` +
+            (afueraConCostos > 0
+                ? ` (${afueraConCostos} con los costos ya cargados).`
+                : '.'));
+    }
 }
 
 /**
@@ -226,6 +350,14 @@ function mostrarAvisos(avisos) {
 
 function formatearFecha(fecha) {
     if (!fecha) return '-';
+
+    /* 'Y-m-d' se arma a mano: new Date('2026-09-30') la toma como medianoche
+       UTC y en Argentina se mostraba como 29/09. Con el filtro por fecha de
+       carga, ese día de diferencia hacía que una fila pareciera fuera del
+       rango que sí cumple. */
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fecha));
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+
     const d = new Date(fecha);
     return d.toLocaleDateString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }

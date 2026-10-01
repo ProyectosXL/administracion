@@ -104,6 +104,22 @@ $js = codigoSinComentarios($base . '/js/gestionDespachos.js');
 chequear('la grilla dibuja la etiqueta Costos cargados', true,
     strpos($js, 'despacho.TIENE_COSTOS') !== false && strpos($js, 'Costos cargados') !== false);
 
+seccion('el filtro por fecha de carga');
+
+chequear('arranca en los últimos 360 días', true,
+    strpos($js, 'const DIAS_FECHA_CARGA_DEFAULT = 360;') !== false);
+chequear('filtra por FECHA_MOV, la fecha cruda de la fila', true,
+    strpos($js, 'data-fecha-mov="${despacho.FECHA_MOV') !== false
+    && strpos($js, 'dentroDeFechaCarga(tr ? tr.dataset.fechaMov') !== false);
+chequear('la búsqueda sólo aplica a la tabla de despachos', true,
+    strpos($js, "settings.nTable.id !== 'tablaDespachos'") !== false);
+chequear('dice cuántos deja afuera', true, strpos($js, 'fuera del rango de fechas') !== false);
+chequear('la pantalla tiene los dos campos y los dos botones', 4,
+    preg_match_all('/id="(fechaCargaDesde|fechaCargaHasta|btnFechaCargaDefault|btnFechaCargaTodas)"/',
+        file_get_contents($base . '/tabs/gestionDespachos.php')));
+chequear('el servidor no filtra por esa fecha: la regla sigue siendo la de VisibilidadContenedor', false,
+    stripos($gestion, '360') !== false);
+
 seccion('el borrado');
 
 $orden = codigoSinComentarios($base . '/class/Orden.php');
