@@ -71,6 +71,7 @@ $proveedorClass = new Proveedor();
 
         <!-- Content Card -->
         <div class="content-card">
+            <div id="avisosGestion" class="alert alert-warning py-2 px-3 mb-3" style="display: none;"></div>
             <div class="table-responsive">
                 <table class="table table-hover" id="tablaDespachos">
                     <thead>

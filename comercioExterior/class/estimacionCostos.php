@@ -6,17 +6,48 @@ class EstimacionCostos
 
     private $encabezado;
 
-    function __construct() {
+    /** 'central' o 'uy': decide la base y qué columnas tiene el padrón de conceptos */
+    private $entorno;
+
+    /** @var string[] Lo que el último listado no pudo leer y la pantalla tiene que decir */
+    private $avisos = [];
+
+    /**
+     * @param string|null $entorno 'central' o 'uy'. Sin él, el de la sesión,
+     *                             que es lo que la aplicación hizo siempre.
+     *
+     * Con él, la clase no mira la sesión para nada. Lo necesita el
+     * recálculo que dispara el cashflow de Finanzas: las dos aplicaciones
+     * comparten origen y cookie, así que la sesión de ese pedido dice en qué
+     * entorno estuvo alguien por última vez en Comex, no a qué base pertenece
+     * el contenedor.
+     */
+    function __construct($entorno = null) {
         require_once __DIR__.'/../../class/conexion.php';
         require_once __DIR__.'/encabezado.php';
         require_once __DIR__.'/AlicuotasVigencia.php';
+        require_once __DIR__.'/CalculoEstimacion.php';
+        require_once __DIR__.'/VisibilidadContenedor.php';
         $cid = new Conexion();
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
-        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
-        $this->cid_central = $cid->conectar($db);
-        $this->encabezado  = new Encabezado();
+        if ($entorno === null) {
+            $entorno = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        }
+        $this->entorno     = ($entorno === 'uy') ? 'uy' : 'central';
+        $this->cid_central = $cid->conectar($this->entorno);
+        $this->encabezado  = new Encabezado($this->entorno);
+    }
+
+    /** El entorno con el que se construyó: 'central' o 'uy' */
+    public function entorno() {
+        return $this->entorno;
+    }
+
+    /** Lo que el último listado no pudo leer, para que la pantalla lo diga */
+    public function avisos() {
+        return $this->avisos;
     }
 
     /**
@@ -87,33 +118,76 @@ class EstimacionCostos
      * Listado de despachos para Gestión de Despachos.
      * Retorna TODAS las OCs (principales e hijas). Las hijas incluyen
      * ID_PADRE, OCS_VINCULADAS (para principales) y ORDEN_COMPRA_PADRE.
+     *
+     * QUÉ CONTENEDORES SE VEN cambió con feature/comex-visibilidad-saldo: un
+     * contenedor ya no sale de la grilla por tener los costos cargados, sino
+     * por tener los costos cargados Y el FOB pagado. Y la ventana de 6 meses
+     * deja de esconder lo que todavía se le debe al proveedor. La regla
+     * completa, y por qué, está en VisibilidadContenedor.
+     *
+     * TIENE_COSTOS viaja en cada fila para la etiqueta "Costos cargados": un
+     * contenedor que sigue en la grilla con los costos ya cargados está ahí
+     * por el saldo, y sin la marca se confunde con uno al que le faltan.
+     * ESTADO_PAGO viaja por lo mismo, aunque hoy la pantalla no lo muestre.
+     *
+     * La regla se evalúa en una tabla derivada para escribir cada expresión
+     * una vez: el WHERE de afuera filtra por columnas ya calculadas.
      */
     public function listarDespachosTodosConPadre() {
-        $sql = "SELECT
-                    E.ID,
-                    E.FECHA_MOV,
-                    E.PROVEEDOR,
-                    E.CONTENEDOR,
-                    E.MATERIAL,
-                    E.ORDEN_COMPRA,
-                    E.VALOR_FOB_DOLAR,
-                    E.ID_PADRE,
-                    CASE WHEN E.ID_PADRE IS NULL THEN
-                        STUFF((
-                            SELECT ', ' + LTRIM(RTRIM(H.ORDEN_COMPRA))
-                            FROM RO_T_IMPORTACIONES_ENCABEZADO H
-                            WHERE H.ID_PADRE = E.ID
-                            FOR XML PATH(''), TYPE
-                        ).value('.', 'NVARCHAR(MAX)'), 1, 2, '')
-                    END AS OCS_VINCULADAS,
-                    (SELECT P.ORDEN_COMPRA
-                     FROM RO_T_IMPORTACIONES_ENCABEZADO P
-                     WHERE P.ID = E.ID_PADRE) AS ORDEN_COMPRA_PADRE
-                FROM RO_T_IMPORTACIONES_ENCABEZADO E
-                LEFT JOIN RO_T_IMPORTACIONES_DETALLE F ON E.ID = F.ID_MG
-                WHERE E.FECHA_MOV >= DATEADD(MONTH, -6, GETDATE())
-                  AND F.ID_MG IS NULL
-                ORDER BY E.FECHA_MOV DESC";
+        $this->avisos = [];
+
+        $hayPagos = VisibilidadContenedor::hayTablaPagos($this->cid_central);
+        $aviso = VisibilidadContenedor::avisoSinPagos($hayPagos);
+        if ($aviso !== null) {
+            $this->avisos[] = $aviso;
+        }
+
+        $grupo = 'COALESCE(E.ID_PADRE, E.ID)';
+
+        /* Sin la tabla de pagos no hay nada pagado: cero, y el aviso de arriba
+           lo dice. Mismo recurso que Comex::saldoSelect() en el cashflow. */
+        $applyPagos = $hayPagos
+            ? "OUTER APPLY (SELECT ISNULL(SUM(PG0.MONTO), 0) MONTO
+                            FROM " . VisibilidadContenedor::TABLA_PAGOS . " PG0
+                            WHERE PG0.ID_ENCABEZADO = " . $grupo . ") PG"
+            : "OUTER APPLY (SELECT CAST(0 AS DECIMAL(18,2)) MONTO) PG";
+
+        $sql = "SELECT T.*
+                FROM (
+                    SELECT
+                        E.ID,
+                        E.FECHA_MOV,
+                        E.PROVEEDOR,
+                        E.CONTENEDOR,
+                        E.MATERIAL,
+                        E.ORDEN_COMPRA,
+                        E.VALOR_FOB_DOLAR,
+                        E.ID_PADRE,
+                        CASE WHEN E.ID_PADRE IS NULL THEN
+                            STUFF((
+                                SELECT ', ' + LTRIM(RTRIM(H.ORDEN_COMPRA))
+                                FROM RO_T_IMPORTACIONES_ENCABEZADO H
+                                WHERE H.ID_PADRE = E.ID
+                                FOR XML PATH(''), TYPE
+                            ).value('.', 'NVARCHAR(MAX)'), 1, 2, '')
+                        END AS OCS_VINCULADAS,
+                        (SELECT P.ORDEN_COMPRA
+                         FROM RO_T_IMPORTACIONES_ENCABEZADO P
+                         WHERE P.ID = E.ID_PADRE) AS ORDEN_COMPRA_PADRE,
+                        CASE WHEN " . VisibilidadContenedor::sqlTieneCostos($grupo) . "
+                             THEN 1 ELSE 0 END AS TIENE_COSTOS,
+                        " . VisibilidadContenedor::sqlEstadoPago(
+                                'ISNULL(PR.VALOR_FOB_DOLAR, E.VALOR_FOB_DOLAR)', 'PG.MONTO') . " AS ESTADO_PAGO,
+                        ISNULL(PR.FECHA_MOV, E.FECHA_MOV) AS FECHA_MOV_GRUPO
+                    FROM RO_T_IMPORTACIONES_ENCABEZADO E
+                    OUTER APPLY (SELECT PR0.VALOR_FOB_DOLAR, PR0.FECHA_MOV
+                                 FROM RO_T_IMPORTACIONES_ENCABEZADO PR0
+                                 WHERE PR0.ID = " . $grupo . ") PR
+                    " . $applyPagos . "
+                ) T
+                WHERE " . VisibilidadContenedor::sqlVisibleEnGestion(
+                        'T.TIENE_COSTOS', 'T.ESTADO_PAGO', 'T.FECHA_MOV_GRUPO') . "
+                ORDER BY T.FECHA_MOV DESC";
 
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -125,9 +199,14 @@ class EstimacionCostos
 
             $despachos = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                if (isset($row['FECHA_MOV']) && is_object($row['FECHA_MOV'])) {
-                    $row['FECHA_MOV'] = $row['FECHA_MOV']->format('Y-m-d');
+                foreach (['FECHA_MOV', 'FECHA_MOV_GRUPO'] as $campo) {
+                    if (isset($row[$campo]) && is_object($row[$campo])) {
+                        $row[$campo] = $row[$campo]->format('Y-m-d');
+                    }
                 }
+                // Un 0/1 de SQL Server puede llegar como string: el JS lo
+                // necesita booleano, y "0" sería verdadero.
+                $row['TIENE_COSTOS'] = intval($row['TIENE_COSTOS']) === 1;
                 $despachos[] = $row;
             }
 
@@ -153,7 +232,7 @@ class EstimacionCostos
      * @param string|null $fechaNacionalizacion FECHA_DESP_ADU del contenedor
      */
     public function obtenerConceptos($fechaNacionalizacion = null) {
-        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        $db = $this->entorno;
         if ($db === 'uy') {
             $sql = "SELECT 
                         ID_CE,
@@ -317,7 +396,7 @@ class EstimacionCostos
      */
     public function obtenerEstimacion($idMg) {
         $idMg = $this->encabezado->resolverIdPrincipal($idMg);
-        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        $db = $this->entorno;
         
         if ($db === 'uy') {
             $sql = "SELECT

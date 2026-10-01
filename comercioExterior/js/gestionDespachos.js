@@ -30,6 +30,7 @@ function cargarDespachos() {
         method: 'GET',
         dataType: 'json',
         success: function(response) {
+            mostrarAvisos(response.avisos || []);
             if (response.success && response.data) {
                 mostrarDespachos(response.data);
             } else {
@@ -118,7 +119,7 @@ function mostrarDespachos(despachos) {
                 <td><strong>#${despacho.ID}</strong></td>
                 <td>${formatearFecha(despacho.FECHA_MOV)}</td>
                 <td>${despacho.PROVEEDOR || '-'}</td>
-                <td>${despacho.CONTENEDOR || '-'}</td>
+                <td>${celdaContenedor(despacho)}</td>
                 <td>${despacho.MATERIAL || '-'}</td>
                 <td>${ocDisplay}</td>
                 <td>
@@ -166,6 +167,61 @@ function mostrarDespachos(despachos) {
         autoWidth: false,
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip'
     });
+}
+
+/**
+ * El contenedor, con la etiqueta "Costos cargados" si corresponde.
+ *
+ * POR QUÉ HACE FALTA LA ETIQUETA. Hasta feature/comex-visibilidad-saldo,
+ * cargar los costos de nacionalización sacaba el contenedor de esta grilla.
+ * Ahora sale cuando tiene los costos Y el FOB pagado -ver
+ * class/VisibilidadContenedor.php-, así que un contenedor con los costos ya
+ * cargados puede seguir acá por el saldo. Sin la marca se confunde con uno al
+ * que todavía le faltan los costos, y alguien los cargaría dos veces.
+ *
+ * TIENE_COSTOS lo decide el servidor, a nivel grupo: una hija lleva la
+ * etiqueta si el detalle está cargado en cualquier OC del contenedor.
+ */
+function celdaContenedor(despacho) {
+    const contenedor = despacho.CONTENEDOR || '-';
+    if (!despacho.TIENE_COSTOS) {
+        return contenedor;
+    }
+
+    const motivo = despacho.ESTADO_PAGO === 'SIN_FOB'
+        ? 'no tiene FOB cargado, así que no hay contra qué medir los pagos'
+        : 'al proveedor del exterior todavía le falta cobrar parte del FOB';
+
+    return `
+        <div class="d-flex align-items-center gap-2">
+            <span>${contenedor}</span>
+            <span class="badge bg-success text-white"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="Ya tiene los costos de nacionalización cargados. Sigue en la grilla porque ${motivo}.">
+                <i class="bi bi-receipt"></i> Costos cargados
+            </span>
+        </div>`;
+}
+
+/**
+ * Lo que el servidor no pudo leer y cambia qué contenedores se ven.
+ * Se pinta arriba de la tabla y no se cierra: es un aviso sobre los datos.
+ */
+function mostrarAvisos(avisos) {
+    const $destino = $('#avisosGestion');
+    if (!$destino.length) return;
+
+    if (!avisos.length) {
+        $destino.hide().empty();
+        return;
+    }
+
+    const html = avisos.map(a =>
+        `<div><i class="bi bi-exclamation-triangle-fill"></i> ${$('<div>').text(a).html()}</div>`
+    ).join('');
+
+    $destino.html(html).show();
 }
 
 function formatearFecha(fecha) {

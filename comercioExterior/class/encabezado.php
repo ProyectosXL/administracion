@@ -45,7 +45,16 @@ class Encabezado
         return round($fob * $tc, 2);
     }
 
-    function __construct()
+    /**
+     * @param string|null $entorno 'central' o 'uy'. Sin él, el de la sesión.
+     *
+     * EL ENTORNO EXPLÍCITO es para controller/recalcularEstimacion.php, al que
+     * llama el cashflow de Finanzas: las dos aplicaciones están en el mismo
+     * origen y comparten la cookie de sesión, así que el $_SESSION['entorno']
+     * de ese pedido es el de la última pestaña de Comex que alguien abrió, no
+     * el del contenedor. Ver EstimacionCostos::__construct().
+     */
+    function __construct($entorno = null)
     {
 
         require_once __DIR__ . '/../../class/conexion.php';
@@ -53,7 +62,10 @@ class Encabezado
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
         }
-        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        if ($entorno === null) {
+            $entorno = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        }
+        $db = ($entorno === 'uy') ? 'uy' : 'central';
         $this->cid_central = $cid->conectar($db);
 
     }
