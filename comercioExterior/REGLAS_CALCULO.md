@@ -441,26 +441,33 @@ porque el flete no es un importe menor.
 
 ### 📝 Lógica de Aplicación de Parámetros
 
-> **REGLA FUNDAMENTAL:** Los cambios en parámetros **SOLO** afectan a **nuevas estimaciones** que se creen después de modificar los valores.
+> **REGLA FUNDAMENTAL:** Editar un parámetro desde Parámetros **no** toca
+> ninguna estimación existente. Lo que sí mueve una estimación existente es que
+> cambien **su** FOB o **su** fecha de nacionalización: ver *La estimación sin
+> pantalla*, más abajo.
+
+> ⚠️ **Esta sección decía que una estimación CONFIRMADA "NUNCA se modifica".**
+> Dejó de ser cierto dos veces: primero cuando PCI permitió seguir editando lo
+> confirmado (`marcarConfirmadoEditable()`), y después con
+> `feature/comex-visibilidad-saldo`, que la **recalcula sola** si cambian el FOB
+> o la fecha de nacionalización. Confirmar ya no congela los números: dice que
+> la estimación está lista para que el cashflow la use.
 
 #### ✅ Cuándo se aplican los parámetros:
 
 1. **Nueva Estimación:**
-   - Al crear una nueva estimación desde cero
-   - Los valores `VALOR_DEFAULT_1` y `VALOR_DEFAULT_2` se copian de `RO_T_CONCEPTOS_ESTIMACION_COMEX`
+   - Al dar de alta el despacho (se genera y confirma sola), o al guardar desde PCI uno que no tenía
+   - Los valores salen de la **vigencia** que rige a `FECHA_DESP_ADU` (`AlicuotasVigencia`), con `RO_T_CONCEPTOS_ESTIMACION_COMEX` como respaldo
    - Se insertan en `RO_T_IMPORTACIONES_ESTIMACION_DETALLE` como valores iniciales
+
+2. **Cambio de FOB o de fecha de nacionalización de un contenedor con estimación:**
+   - Se re-resuelven las alícuotas con la fecha nueva y se recalculan los importes, **esté confirmada o no**
 
 #### ❌ Cuándo NO se modifican automáticamente:
 
-1. **Estimaciones existentes en estado BORRADOR:**
-   - NO se actualizan automáticamente cuando cambian los parámetros
-   - Mantienen los valores con los que fueron creadas
-   - Solo si el usuario manualmente re-confirma con nuevos valores
-
-2. **Estimaciones en estado CONFIRMADO:**
-   - NUNCA se modifican
-   - Son valores históricos congelados
-   - Reflejan las condiciones del momento de confirmación
+1. **Cuando cambia un parámetro desde Parámetros:** ninguna estimación existente se toca. PCI marca la diferencia (`desviosDeAlicuota()`) y ofrece recalcular.
+2. **Cuando cambia el despachante:** no dispara el recálculo.
+3. **Cuando el contenedor ya tiene costos reales** (`RO_T_IMPORTACIONES_DETALLE`): la estimación queda como está.
 
 ### 🔄 Flujo de Datos
 
@@ -472,8 +479,8 @@ porque el flete no es un importe menor.
 │  - VALOR_DEFAULT_2                  │
 └─────────────────┬───────────────────┘
                   │
-                  │ SOLO al crear
-                  │ nueva estimación
+                  │ al crear la estimación, y al
+                  │ recalcularla por FOB o fecha
                   ↓
 ┌─────────────────────────────────────────┐
 │  RO_T_IMPORTACIONES_ESTIMACION_DETALLE │
@@ -505,10 +512,9 @@ porque el flete no es un importe menor.
 
 ### 📌 Consideraciones Importantes
 
-1. **Historial Inmutable:**
-   - Las estimaciones confirmadas son registros históricos
-   - Reflejan las condiciones económicas del momento
-   - No deben alterarse automáticamente
+1. **Las alícuotas son las de la fecha de nacionalización:**
+   - Una estimación se calcula con lo que regía a su `FECHA_DESP_ADU`, no con lo de hoy
+   - Por eso mover esa fecha la recalcula, y editar un parámetro no
 
 2. **Estimaciones en Borrador:**
    - Se crean con los parámetros vigentes en ese momento
@@ -521,4 +527,214 @@ porque el flete no es un importe menor.
 
 ---
 
-**Última actualización:** 22/09/2026 — rama `feature/comex-fechas-parametros`
+## 🧾 La estimación sin pantalla: se genera en el alta y se recalcula sola
+
+Rama: `feature/comex-visibilidad-saldo`
+
+### Por qué
+
+El cashflow de Finanzas —pestaña **Crono Nacionalización**— proyecta los gastos
+de nacionalización desde `RO_T_IMPORTACIONES_ESTIMACION_DETALLE` y **no mira
+`CONFIRMADO`**: lo que necesita es que la estimación **exista**. Hasta esta rama
+sólo existía si alguien entraba a PCI y guardaba, así que un contenedor recién
+dado de alta no tenía gastos de nacionalización en el tablero hasta que alguien
+se acordaba.
+
+### La cuenta vive dos veces
+
+| | |
+| --- | --- |
+| `js/editar-estimacion.js` → `calcularTodosLosConceptos()` | La pantalla de PCI |
+| `class/CalculoEstimacion.php` → `calcular()` | El alta y el recálculo, sin pantalla |
+
+**Son dos implementaciones de la misma cuenta y tienen que moverse juntas.** La
+de PHP es una copia fiel: mismas fórmulas, mismo orden de las sumas (en punto
+flotante el orden cambia el centavo), mismos conceptos dentro y fuera de cada
+total, las dos ramas, el despachante, la suma asegurada y los conceptos nuevos
+con `ID_REF_CONCEPTO`. `tests/test_estimacion_calculo.php` fija los números con
+casos escritos a mano, y `tests/test_estimacion_base.php` rehace las
+estimaciones guardadas: **102 de 112 coinciden al centavo** en central; las 10
+que no tienen overrides manuales visibles.
+
+#### Rarezas del front que se copiaron sin corregir
+
+Son posibles errores que se revisan aparte. Corregirlas de un solo lado haría
+que el alta y PCI den números distintos para el mismo contenedor:
+
+1. **En central, cualquier concepto con `ID_CE > 13` manda el cálculo a la rama
+   de Uruguay**, porque así se detecta `esUruguay`. Ahí Derechos, IVA y el resto
+   se calculan sobre el CIF y no sobre la base imponible, y el despachante pierde
+   su fórmula. Por eso la parte de "conceptos nuevos" de la rama argentina no se
+   ejecuta nunca. Hoy central llega hasta el 13.
+2. **`getConceptoParam2()` devuelve 0, no 1, con el parámetro 2 en null**: el
+   input escondido se dibuja con `param2 || 0` y el string `"0"` es verdadero.
+3. **`ID_REF_CONCEPTO` lee el valor que la fila referenciada tiene en ese
+   momento**: si todavía no se calculó, lee su parámetro crudo. El resultado
+   depende del orden de los conceptos.
+
+### En el alta
+
+Al dar de alta un despacho —**Nuevo Despacho** o **Crear despacho** desde OC
+Pendientes, que terminan los dos en `controller/insertarEncabezado.php`—, el
+servidor genera la estimación con los importes que mostraría `editar-estimacion`
+si se abriera ese contenedor sin tocar nada y se guardara, y la deja
+**confirmada**. Después se edita desde PCI como siempre.
+
+- Una sola por grupo, en la **OC principal**.
+- En los **dos entornos**.
+- **Sólo para despachos nuevos**: no hay backfill.
+- **Si falla, el alta no se revierte**: la respuesta trae `avisoEstimacion`, la
+  pantalla lo muestra como advertencia y el contenedor queda PENDIENTE en PCI.
+
+### El recálculo
+
+`EstimacionCostos::recalcularEstimacion()`. Si cambia `VALOR_FOB_DOLAR` o
+`FECHA_DESP_ADU` de un contenedor que **ya tiene** estimación:
+
+| | |
+| --- | --- |
+| **Alícuotas** | Se re-resuelven con la fecha de nacionalización nueva |
+| **Conceptos calculados** | Se recalculan. **Los overrides manuales se pisan** |
+| **Importes editables** | Conservan su valor guardado; su parámetro sí se actualiza. Argentina: Flete, SIM, Antidumping y Terminal. Uruguay: sólo Flete |
+| **Qué se graba** | Sólo las filas que cambian (un cambio de parámetro cuenta), con su `FECHA_MOD`. `CONFIRMADO` queda como está. Un concepto sin fila se inserta |
+| **Cuándo no hace nada** | Si el grupo ya tiene costos reales, si el contenedor no tiene estimación, o si la cuenta da lo mismo |
+| **Hijas** | Siempre sobre la principal, con la fecha de la principal |
+
+> **Un centavo que no es una diferencia.** La base guarda el double de la cuenta
+> redondeando el valor binario exacto, y `round()` de PHP pre-redondea a 15
+> dígitos: `26,754999…` queda en la base como `26,75` y `round()` lo lleva a
+> `26,76`. Por eso `diferencias()` compara el importe **crudo** contra lo guardado
+> con medio centavo de tolerancia. Comparando con `round()`, una de cada diez
+> estimaciones habría "cambiado" en cada recálculo.
+
+### Quién dispara el recálculo
+
+Los cuatro lugares que escriben esas dos columnas fuera de los scripts SQL, y
+**sólo si el valor cambió de verdad** (`cambioDisparaRecalculo()`): reabrir y
+guardar un despacho sin tocar nada no aplica de rebote un cambio de vigencia.
+
+| Dónde | Qué |
+| --- | --- |
+| `controller/insertarEncabezado.php`, edición | FOB o fecha editados, incluido el ETD que recalcula la cadena |
+| `cronogramaDespachos/controller/actualizarFechaCronograma.php` | Sólo con `campo = FECHA_DESP_ADU` |
+| `controller/revertirFechaAuto.php` | Sólo con `tipo = NACIONALIZACION` |
+| `Comex::guardarFecha('NAC')`, en ProyectosXL/finanzas | Desde el navegador, vía `controller/recalcularEstimacion.php` |
+
+- **Mover la ETA no arrastra la nacionalización** (sólo recalcula
+  `FECHA_DISTRI`), así que tampoco recalcula la estimación. Es una decisión.
+- **Cambiar el despachante no dispara.**
+- Un recálculo que falla **no deshace** lo que se guardó: se informa.
+
+### El endpoint para el cashflow
+
+`controller/recalcularEstimacion.php` recibe `{id, entorno}` por POST.
+
+- **El entorno viaja explícito.** Las dos aplicaciones están en el mismo origen y
+  comparten la cookie: el `$_SESSION['entorno']` de ese pedido es el de la última
+  pestaña de Comex que alguien abrió, no el del contenedor. Con el entorno
+  explícito, `EstimacionCostos` y `Encabezado` no abren la sesión.
+- Valida que el ID sea numérico y exista, y que el entorno sea `central` o `uy`.
+  Comex no tiene autenticación, así que **no hace nada más que recalcular**.
+- Devuelve si recalculó, qué cambió (`cambios`) o por qué no (`motivo`).
+
+---
+
+## 👁️ Cuándo un contenedor deja de verse en Gestión de Despachos
+
+Rama: `feature/comex-visibilidad-saldo`
+
+Hasta esta rama, cargar los costos de nacionalización sacaba el contenedor de
+la grilla aunque al proveedor del exterior todavía se le debiera plata, y la
+única pantalla donde se cargan esos pagos es justamente ésta.
+
+Ahora un contenedor **deja de mostrarse sólo cuando cumple las dos**:
+
+| | Condición |
+| --- | --- |
+| **(A)** | Tiene **costos de nacionalización confirmados**: filas en `RO_T_IMPORTACIONES_DETALLE` para cualquier OC del grupo. La estimación de PCI **no** cuenta |
+| **(B)** | **Los pagos cubren el FOB**: `Pagos::estadoSaldo()` da `CANCELADO` o `SOBREPAGO`. `SIN_FOB` no cuenta como cubierto |
+
+```
+visible = NOT (A AND B) AND (estado = PENDIENTE OR FECHA_MOV de la principal en los últimos 6 meses)
+```
+
+- **Por grupo** (`COALESCE(ID_PADRE, ID)`): la principal y sus hijas aparecen o
+  desaparecen juntas. La ventana usa el `FECHA_MOV` de la principal.
+- **Un contenedor con saldo pendiente se ve sin importar su antigüedad.** Al
+  01/10/2026 eso trae a la grilla los **278 contenedores** de central con costos
+  y saldo pendiente —250 sin fecha estimada de pago— y los 54 de uy. Se sabe y se
+  acepta: los pagos se van a cargar desde la app.
+- La grilla los marca con la etiqueta **Costos cargados**, para que no se
+  confundan con uno al que le faltan los costos.
+- **PCI no cambia su criterio.**
+
+**Dónde vive:** `class/VisibilidadContenedor.php`, con la función pura y el mismo
+criterio en SQL. El SQL usa `EXISTS` y no el `LEFT JOIN ... WHERE ID_MG IS NULL`
+de antes: con contenedores con detalle en la lista, ese JOIN daría una fila por
+línea de costo. Y castea a `FLOAT` antes de restar, porque `estadoSaldo()` resta
+en double: con `DECIMAL`, 100,01 contra 100,00 sería CANCELADO en SQL y PENDIENTE
+en PHP. `tests/test_visibilidad.php` compara los dos fila por fila contra la base.
+
+> **La regla está duplicada en ProyectosXL/finanzas** (Proveedores del Exterior y
+> `ComprasProyectadasDatos::cargado()`), sin la ventana de tiempo. El encabezado
+> de `class/Pagos.php` y el de `cashflow/Class/Comex.php` son las dos mitades del
+> pacto: si cambia de un lado, se cambia del otro.
+
+Sin la tabla de pagos, todo contenedor con FOB se trata como pendiente y la
+grilla lo avisa.
+
+---
+
+## 🗑️ Eliminar un despacho
+
+Rama: `feature/comex-visibilidad-saldo`
+
+### Cómo fallaba
+
+El borrado iba sin transacción: estimación, detalle, encabezado. En central el
+historial de fechas y las hijas son FK `NO ACTION`, así que con cualquiera de
+las dos el `DELETE` del encabezado fallaba **después** de haber borrado la
+estimación y los costos. Los pagos, en cambio, se iban sin aviso (`ON DELETE
+CASCADE` en central) o quedaban huérfanos (uy, sin FK).
+
+### Cómo es ahora
+
+1. La pantalla pregunta al servidor qué se va a borrar
+   (`controller/consultarEliminacionDespacho.php` → `Orden::infoEliminacion()`).
+2. Si es una **OC principal con hijas**, se rechaza con un mensaje y no se borra
+   nada. Hoy no hay hijas en ninguna base, así que no vale la pena resolver el
+   borrado del grupo.
+3. Si tiene **costos cargados, estimación, pagos o historial de fechas**, se
+   muestra qué se borra —con la cantidad de pagos y su total en U$S— y se pide
+   **Continuar / Cancelar**. Si no tiene nada, la confirmación de siempre.
+4. Se borra **todo en una transacción**, explícitamente y en orden: historial,
+   pagos (también en uy), estimación, detalle, encabezado. Si un paso falla,
+   rollback completo.
+
+**Una hija** borra su copia del detalle, su historial y su fila. La estimación y
+los pagos son del contenedor, viven en la principal y no se tocan; el aviso lo
+dice.
+
+Las tablas del cashflow (`RO_T_CASHFLOW_COMEX_*`) apuntan al `ID_MG` sin FK, a
+propósito: sus filas quedan huérfanas y no aparecen en ningún JOIN.
+
+---
+
+## 🧪 Pruebas
+
+```bash
+php comercioExterior/tests/run.php
+```
+
+| Archivo | Qué fija |
+| --- | --- |
+| `test_estimacion_calculo.php` | La cuenta, con casos de paridad escritos a mano (Argentina con Laffitte y con Farre, Uruguay, `ID_REF_CONCEPTO`) y las tres rarezas fijadas como rarezas. Qué cuenta como diferencia y qué dispara un recálculo |
+| `test_visibilidad.php` | La regla pura caso por caso y, contra la base, que el SQL liste exactamente lo que dice la función |
+| `test_cableado.php` | Que cada disparador llame al recálculo, que el endpoint use el entorno explícito, que el borrado sea transaccional y que la cuenta del JS no se haya tocado |
+| `test_estimacion_base.php` | Rehace las estimaciones guardadas con sus propios parámetros y **reporta** las diferencias, sin corregirlas |
+
+Las que usan la base son de **sólo lectura** y se saltean sin conexión.
+
+---
+
+**Última actualización:** 01/10/2026 — rama `feature/comex-visibilidad-saldo`
