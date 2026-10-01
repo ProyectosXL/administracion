@@ -245,54 +245,176 @@ function mostrarEstadoVacio() {
     `);
 }
 
+/**
+ * Borra un despacho, avisando antes qué más se va a borrar.
+ *
+ * PRIMERO SE PREGUNTA AL SERVIDOR qué cuelga del despacho: costos cargados,
+ * estimación, pagos e historial de fechas. La pantalla no tiene esos datos, y
+ * un aviso armado con lo que sí tiene diría de menos justo antes de un borrado
+ * que no se puede deshacer. Ver Orden::infoEliminacion().
+ *
+ * TRES CAMINOS:
+ *  - principal con OCs vinculadas: se rechaza y no se borra nada;
+ *  - con algo más que el despacho: aviso con el detalle, Continuar / Cancelar;
+ *  - sin nada colgado: la confirmación de siempre.
+ *
+ * El borrado en sí va en una transacción del lado del servidor: o se borra
+ * todo, o no se borra nada.
+ */
 function eliminarDespacho(id, contenedor) {
+    $.ajax({
+        url: '../controller/consultarEliminacionDespacho.php',
+        method: 'GET',
+        data: { id: id },
+        dataType: 'json',
+        success: function(response) {
+            if (!response.success) {
+                Swal.fire({
+                    title: 'No se puede eliminar',
+                    text: response.message || 'No se pudo leer el despacho',
+                    icon: 'error',
+                    confirmButtonColor: '#7066e0'
+                });
+                return;
+            }
+
+            const info = response.data;
+
+            if (info.bloqueado) {
+                Swal.fire({
+                    title: 'No se puede eliminar este despacho',
+                    text: info.motivoBloqueo,
+                    icon: 'error',
+                    confirmButtonColor: '#7066e0'
+                });
+                return;
+            }
+
+            confirmarEliminacion(id, contenedor, info);
+        },
+        error: function() {
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudo consultar qué se borraría con el despacho. No se borró nada.',
+                icon: 'error',
+                confirmButtonColor: '#7066e0'
+            });
+        }
+    });
+}
+
+/** Escapa texto para meterlo en el html de un SweetAlert */
+function escaparHtml(texto) {
+    return $('<div>').text(texto === null || texto === undefined ? '' : String(texto)).html();
+}
+
+/**
+ * El aviso previo, armado con lo que informó el servidor.
+ */
+function confirmarEliminacion(id, contenedor, info) {
+    const titulo = `<strong>${escaparHtml(contenedor || ('ID: ' + id))}</strong>`;
+
+    if (!info.requiereAviso) {
+        Swal.fire({
+            title: '¿Eliminar despacho?',
+            html: `<p>Estás a punto de eliminar el despacho:</p>${titulo}` +
+                  `<p class="mt-2">Esta acción no se puede deshacer.</p>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) enviarEliminacion(id);
+        });
+        return;
+    }
+
+    const items = [];
+    if (info.costos.filas > 0) {
+        items.push('Los <strong>costos de nacionalización</strong> cargados');
+    }
+    if (info.estimacion.filas > 0) {
+        items.push('La <strong>estimación de PCI</strong>' +
+                   (info.estimacion.confirmada ? ' (confirmada)' : ' (en borrador)'));
+    }
+    if (info.pagos.cantidad > 0) {
+        const monto = Number(info.pagos.totalUsd).toLocaleString('es-AR',
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        items.push(`<strong>${info.pagos.cantidad} ${info.pagos.cantidad === 1 ? 'pago' : 'pagos'}</strong>` +
+                   ` al proveedor del exterior, por <strong>U$S ${monto}</strong>`);
+    }
+    if (info.historial.filas > 0) {
+        items.push(`El <strong>historial de fechas</strong> (${info.historial.filas} ` +
+                   `${info.historial.filas === 1 ? 'cambio' : 'cambios'})`);
+    }
+
+    let html = `<p>Junto con el despacho ${titulo} se va a borrar:</p>` +
+               `<ul class="text-start">${items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+
+    if (info.esHija) {
+        html += `<p class="text-start small">Es una OC vinculada: la estimación y los pagos ` +
+                `del contenedor están en la OC principal <strong>${escaparHtml(info.ordenPrincipal)}</strong> ` +
+                `y <strong>no</strong> se borran.</p>`;
+    }
+
+    (info.avisos || []).forEach(a => {
+        html += `<p class="text-start small text-muted">${escaparHtml(a)}</p>`;
+    });
+
+    html += '<p class="mt-2">Esta acción no se puede deshacer.</p>';
+
     Swal.fire({
-        title: '¿Eliminar despacho?',
-        html: `<p>Estás a punto de eliminar el despacho:</p><strong>${contenedor || 'ID: ' + id}</strong><p class="mt-2">Esta acción no se puede deshacer.</p>`,
+        title: 'Este despacho tiene datos cargados',
+        html: html,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc3545',
         cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Sí, eliminar',
+        confirmButtonText: 'Continuar',
         cancelButtonText: 'Cancelar'
     }).then((result) => {
-        if (result.isConfirmed) {
-            $.ajax({
-                url: '../controller/eliminarDespacho.php',
-                method: 'POST',
-                data: { id: id },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire({
-                            title: '¡Eliminado!',
-                            text: 'El despacho ha sido eliminado correctamente.',
-                            icon: 'success',
-                            timer: 1500,
-                            showConfirmButton: false,
-                            willClose: () => {
-                                // Recargar la página para actualizar la tabla
-                                location.reload();
-                            }
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Error',
-                            text: response.message || 'No se pudo eliminar el despacho',
-                            icon: 'error',
-                            confirmButtonColor: '#7066e0'
-                        });
+        if (result.isConfirmed) enviarEliminacion(id);
+    });
+}
+
+function enviarEliminacion(id) {
+    $.ajax({
+        url: '../controller/eliminarDespacho.php',
+        method: 'POST',
+        data: { id: id },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                Swal.fire({
+                    title: '¡Eliminado!',
+                    text: response.message || 'El despacho ha sido eliminado correctamente.',
+                    icon: 'success',
+                    timer: 2500,
+                    showConfirmButton: false,
+                    willClose: () => {
+                        // Recargar la página para actualizar la tabla
+                        location.reload();
                     }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'Ocurrió un error al eliminar el despacho',
-                        icon: 'error',
-                        confirmButtonColor: '#7066e0'
-                    });
-                }
+                });
+            } else {
+                Swal.fire({
+                    title: response.bloqueado ? 'No se puede eliminar este despacho' : 'No se pudo eliminar',
+                    text: response.message || 'No se pudo eliminar el despacho',
+                    icon: 'error',
+                    confirmButtonColor: '#7066e0'
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Ocurrió un error al eliminar el despacho. Si el servidor no respondió, ' +
+                      'el borrado se hace en una transacción: o se borró todo, o nada.',
+                icon: 'error',
+                confirmButtonColor: '#7066e0'
             });
         }
     });
