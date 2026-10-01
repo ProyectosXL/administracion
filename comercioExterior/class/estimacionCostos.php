@@ -6,17 +6,52 @@ class EstimacionCostos
 
     private $encabezado;
 
-    function __construct() {
+    /** 'central' o 'uy': decide la base y qué columnas tiene el padrón de conceptos */
+    private $entorno;
+
+    /** @var string[] Lo que el último listado no pudo leer y la pantalla tiene que decir */
+    private $avisos = [];
+
+    /**
+     * @param string|null $entorno 'central' o 'uy'. Sin él, el de la sesión,
+     *                             que es lo que la aplicación hizo siempre.
+     *
+     * Con él, la clase no mira la sesión para nada. Lo necesita el
+     * recálculo que dispara el cashflow de Finanzas: las dos aplicaciones
+     * comparten origen y cookie, así que la sesión de ese pedido dice en qué
+     * entorno estuvo alguien por última vez en Comex, no a qué base pertenece
+     * el contenedor.
+     */
+    function __construct($entorno = null) {
         require_once __DIR__.'/../../class/conexion.php';
         require_once __DIR__.'/encabezado.php';
         require_once __DIR__.'/AlicuotasVigencia.php';
+        require_once __DIR__.'/CalculoEstimacion.php';
+        require_once __DIR__.'/VisibilidadContenedor.php';
         $cid = new Conexion();
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
+        /* La sesión se abre SÓLO si hace falta leerla. Con el entorno
+           explícito no se toca: además de no necesitarla, abrirla bloquearía
+           el archivo de sesión que el cashflow comparte por la cookie mientras
+           dura el recálculo. */
+        if ($entorno === null) {
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+            $entorno = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
         }
-        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
-        $this->cid_central = $cid->conectar($db);
-        $this->encabezado  = new Encabezado();
+        $this->entorno     = ($entorno === 'uy') ? 'uy' : 'central';
+        $this->cid_central = $cid->conectar($this->entorno);
+        $this->encabezado  = new Encabezado($this->entorno);
+    }
+
+    /** El entorno con el que se construyó: 'central' o 'uy' */
+    public function entorno() {
+        return $this->entorno;
+    }
+
+    /** Lo que el último listado no pudo leer, para que la pantalla lo diga */
+    public function avisos() {
+        return $this->avisos;
     }
 
     /**
@@ -87,33 +122,76 @@ class EstimacionCostos
      * Listado de despachos para Gestión de Despachos.
      * Retorna TODAS las OCs (principales e hijas). Las hijas incluyen
      * ID_PADRE, OCS_VINCULADAS (para principales) y ORDEN_COMPRA_PADRE.
+     *
+     * QUÉ CONTENEDORES SE VEN cambió con feature/comex-visibilidad-saldo: un
+     * contenedor ya no sale de la grilla por tener los costos cargados, sino
+     * por tener los costos cargados Y el FOB pagado. Y la ventana de 6 meses
+     * deja de esconder lo que todavía se le debe al proveedor. La regla
+     * completa, y por qué, está en VisibilidadContenedor.
+     *
+     * TIENE_COSTOS viaja en cada fila para la etiqueta "Costos cargados": un
+     * contenedor que sigue en la grilla con los costos ya cargados está ahí
+     * por el saldo, y sin la marca se confunde con uno al que le faltan.
+     * ESTADO_PAGO viaja por lo mismo, aunque hoy la pantalla no lo muestre.
+     *
+     * La regla se evalúa en una tabla derivada para escribir cada expresión
+     * una vez: el WHERE de afuera filtra por columnas ya calculadas.
      */
     public function listarDespachosTodosConPadre() {
-        $sql = "SELECT
-                    E.ID,
-                    E.FECHA_MOV,
-                    E.PROVEEDOR,
-                    E.CONTENEDOR,
-                    E.MATERIAL,
-                    E.ORDEN_COMPRA,
-                    E.VALOR_FOB_DOLAR,
-                    E.ID_PADRE,
-                    CASE WHEN E.ID_PADRE IS NULL THEN
-                        STUFF((
-                            SELECT ', ' + LTRIM(RTRIM(H.ORDEN_COMPRA))
-                            FROM RO_T_IMPORTACIONES_ENCABEZADO H
-                            WHERE H.ID_PADRE = E.ID
-                            FOR XML PATH(''), TYPE
-                        ).value('.', 'NVARCHAR(MAX)'), 1, 2, '')
-                    END AS OCS_VINCULADAS,
-                    (SELECT P.ORDEN_COMPRA
-                     FROM RO_T_IMPORTACIONES_ENCABEZADO P
-                     WHERE P.ID = E.ID_PADRE) AS ORDEN_COMPRA_PADRE
-                FROM RO_T_IMPORTACIONES_ENCABEZADO E
-                LEFT JOIN RO_T_IMPORTACIONES_DETALLE F ON E.ID = F.ID_MG
-                WHERE E.FECHA_MOV >= DATEADD(MONTH, -6, GETDATE())
-                  AND F.ID_MG IS NULL
-                ORDER BY E.FECHA_MOV DESC";
+        $this->avisos = [];
+
+        $hayPagos = VisibilidadContenedor::hayTablaPagos($this->cid_central);
+        $aviso = VisibilidadContenedor::avisoSinPagos($hayPagos);
+        if ($aviso !== null) {
+            $this->avisos[] = $aviso;
+        }
+
+        $grupo = 'COALESCE(E.ID_PADRE, E.ID)';
+
+        /* Sin la tabla de pagos no hay nada pagado: cero, y el aviso de arriba
+           lo dice. Mismo recurso que Comex::saldoSelect() en el cashflow. */
+        $applyPagos = $hayPagos
+            ? "OUTER APPLY (SELECT ISNULL(SUM(PG0.MONTO), 0) MONTO
+                            FROM " . VisibilidadContenedor::TABLA_PAGOS . " PG0
+                            WHERE PG0.ID_ENCABEZADO = " . $grupo . ") PG"
+            : "OUTER APPLY (SELECT CAST(0 AS DECIMAL(18,2)) MONTO) PG";
+
+        $sql = "SELECT T.*
+                FROM (
+                    SELECT
+                        E.ID,
+                        E.FECHA_MOV,
+                        E.PROVEEDOR,
+                        E.CONTENEDOR,
+                        E.MATERIAL,
+                        E.ORDEN_COMPRA,
+                        E.VALOR_FOB_DOLAR,
+                        E.ID_PADRE,
+                        CASE WHEN E.ID_PADRE IS NULL THEN
+                            STUFF((
+                                SELECT ', ' + LTRIM(RTRIM(H.ORDEN_COMPRA))
+                                FROM RO_T_IMPORTACIONES_ENCABEZADO H
+                                WHERE H.ID_PADRE = E.ID
+                                FOR XML PATH(''), TYPE
+                            ).value('.', 'NVARCHAR(MAX)'), 1, 2, '')
+                        END AS OCS_VINCULADAS,
+                        (SELECT P.ORDEN_COMPRA
+                         FROM RO_T_IMPORTACIONES_ENCABEZADO P
+                         WHERE P.ID = E.ID_PADRE) AS ORDEN_COMPRA_PADRE,
+                        CASE WHEN " . VisibilidadContenedor::sqlTieneCostos($grupo) . "
+                             THEN 1 ELSE 0 END AS TIENE_COSTOS,
+                        " . VisibilidadContenedor::sqlEstadoPago(
+                                'ISNULL(PR.VALOR_FOB_DOLAR, E.VALOR_FOB_DOLAR)', 'PG.MONTO') . " AS ESTADO_PAGO,
+                        ISNULL(PR.FECHA_MOV, E.FECHA_MOV) AS FECHA_MOV_GRUPO
+                    FROM RO_T_IMPORTACIONES_ENCABEZADO E
+                    OUTER APPLY (SELECT PR0.VALOR_FOB_DOLAR, PR0.FECHA_MOV
+                                 FROM RO_T_IMPORTACIONES_ENCABEZADO PR0
+                                 WHERE PR0.ID = " . $grupo . ") PR
+                    " . $applyPagos . "
+                ) T
+                WHERE " . VisibilidadContenedor::sqlVisibleEnGestion(
+                        'T.TIENE_COSTOS', 'T.ESTADO_PAGO', 'T.FECHA_MOV_GRUPO') . "
+                ORDER BY T.FECHA_MOV DESC";
 
         try {
             $stmt = sqlsrv_query($this->cid_central, $sql);
@@ -125,9 +203,14 @@ class EstimacionCostos
 
             $despachos = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                if (isset($row['FECHA_MOV']) && is_object($row['FECHA_MOV'])) {
-                    $row['FECHA_MOV'] = $row['FECHA_MOV']->format('Y-m-d');
+                foreach (['FECHA_MOV', 'FECHA_MOV_GRUPO'] as $campo) {
+                    if (isset($row[$campo]) && is_object($row[$campo])) {
+                        $row[$campo] = $row[$campo]->format('Y-m-d');
+                    }
                 }
+                // Un 0/1 de SQL Server puede llegar como string: el JS lo
+                // necesita booleano, y "0" sería verdadero.
+                $row['TIENE_COSTOS'] = intval($row['TIENE_COSTOS']) === 1;
                 $despachos[] = $row;
             }
 
@@ -153,7 +236,7 @@ class EstimacionCostos
      * @param string|null $fechaNacionalizacion FECHA_DESP_ADU del contenedor
      */
     public function obtenerConceptos($fechaNacionalizacion = null) {
-        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        $db = $this->entorno;
         if ($db === 'uy') {
             $sql = "SELECT 
                         ID_CE,
@@ -317,7 +400,7 @@ class EstimacionCostos
      */
     public function obtenerEstimacion($idMg) {
         $idMg = $this->encabezado->resolverIdPrincipal($idMg);
-        $db = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+        $db = $this->entorno;
         
         if ($db === 'uy') {
             $sql = "SELECT
@@ -714,10 +797,542 @@ class EstimacionCostos
             $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
             
             return $row && $row['CONFIRMADO'] == 1;
-            
+
         } catch (Exception $e) {
             error_log('Error en estaConfirmada: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /* ======================================================================
+       LA ESTIMACIÓN SIN PANTALLA: GENERARLA EN EL ALTA Y RECALCULARLA
+
+       POR QUÉ. El cashflow de Finanzas -Crono Nacionalización- proyecta los
+       gastos de nacionalización desde RO_T_IMPORTACIONES_ESTIMACION_DETALLE y
+       no mira CONFIRMADO: lo que necesita es que la estimación EXISTA. Hasta
+       feature/comex-visibilidad-saldo sólo existía si alguien entraba a PCI y
+       guardaba, así que un contenedor recién dado de alta no tenía gastos de
+       nacionalización en el tablero hasta que alguien se acordaba.
+
+       LA CUENTA ES LA DE LA PANTALLA, portada a CalculoEstimacion. Lo que se
+       graba es lo que grabaría editar-estimacion si se abriera el contenedor
+       sin tocar nada y se apretara Guardar.
+       ====================================================================== */
+
+    /**
+     * El ajuste de despachante de cargarEstimacion.php, como función.
+     *
+     * Los dos honorarios viven en las dos columnas del mismo concepto: Farre
+     * usa VALOR_DEFAULT_2 y cualquier otro -Laffitte, o NULL en los
+     * contenedores viejos- VALOR_DEFAULT_1. El parámetro 2 queda siempre en
+     * NULL. Es la misma regla que obtenerParametrosDespachante() aplica al
+     * grabar; está escrita acá para que la pantalla y el servidor partan de los
+     * mismos conceptos.
+     *
+     * @param array       $conceptos   Lo que devuelve obtenerConceptos()
+     * @param string|null $despachante RO_T_IMPORTACIONES_ENCABEZADO.DESPACHANTE
+     * @return array
+     */
+    public static function ajustarDespachante(array $conceptos, $despachante)
+    {
+        foreach ($conceptos as &$concepto) {
+            if (strcasecmp((string) $concepto['CONCEPTO'], 'DESPACHANTE') === 0) {
+                if ($despachante === 'Farre') {
+                    $concepto['VALOR_DEFAULT_1'] = $concepto['VALOR_DEFAULT_2'];
+                }
+                $concepto['VALOR_DEFAULT_2'] = null;
+                break;
+            }
+        }
+        unset($concepto);
+
+        return $conceptos;
+    }
+
+    /**
+     * Las filas que se graban, a partir del resultado de la cuenta.
+     *
+     * Es enviarEstimacion() más obtenerParametrosDespachante(): el navegador
+     * manda `parseFloat(param) || null` y el servidor, al grabar, pisa los dos
+     * parámetros del concepto DESPACHANTE con el honorario que corresponde al
+     * despachante del contenedor. Hacer las dos cosas acá deja en la base lo
+     * mismo que el guardado de siempre.
+     *
+     * @param array $resultado CalculoEstimacion::calcular()
+     * @param array $conceptos Los mismos conceptos ajustados que entraron a la cuenta
+     * @return array [['id_ce','concepto','valor_default_1','valor_default_2','importe','editable']]
+     */
+    public static function filasParaGrabar(array $resultado, array $conceptos)
+    {
+        $honorario = null;
+        $idDespachante = null;
+        foreach ($conceptos as $c) {
+            if (strcasecmp((string) $c['CONCEPTO'], 'DESPACHANTE') === 0) {
+                $idDespachante = intval($c['ID_CE']);
+                $honorario = $c['VALOR_DEFAULT_1'];
+                break;
+            }
+        }
+
+        $filas = [];
+        foreach ($resultado['filas'] as $f) {
+            if ($idDespachante !== null && $f['id_ce'] === $idDespachante) {
+                $f['valor_default_1'] = $honorario;
+                $f['valor_default_2'] = null;
+            }
+            $filas[] = $f;
+        }
+
+        return $filas;
+    }
+
+    /**
+     * Qué filas cambian entre lo calculado y lo guardado.
+     *
+     * UN CAMBIO DE PARÁMETRO TAMBIÉN ES UNA DIFERENCIA, aunque el importe dé
+     * igual: es la alícuota con la que quedó calculada la estimación, y es lo
+     * que desviosDeAlicuota() compara al abrir PCI.
+     *
+     * CON TOLERANCIA, y por motivos distintos en cada columna:
+     *  - los parámetros, medio millonésimo: es la escala de DECIMAL(18,6) y la
+     *    misma tolerancia de desviosDeAlicuota(). NULL contra un valor SÍ es
+     *    una diferencia; NULL contra NULL no.
+     *  - el importe, al centavo: IMPORTE es DECIMAL(18,2) y lo que se graba es
+     *    el double de la cuenta, que la base redondea. Comparar el double
+     *    contra el guardado daría diferencia siempre.
+     *
+     * Un concepto sin fila guardada se INSERTA: es uno que se creó después de
+     * que esta estimación naciera, y es lo mismo que hace actualizarEstimacion()
+     * al guardar desde PCI.
+     *
+     * Es pura: la prueban tests/test_estimacion_calculo.php sin base.
+     *
+     * @param array      $calculadas filasParaGrabar()
+     * @param array|null $guardadas  obtenerEstimacion()
+     * @return array [['id_ce','concepto','accion'=>'UPDATE'|'INSERT',
+     *                 'campos'=>[columna=>['antes'=>, 'despues'=>]], 'fila'=>calculada]]
+     */
+    public static function diferencias(array $calculadas, $guardadas)
+    {
+        $porId = [];
+        foreach ((array) $guardadas as $g) {
+            $porId[intval($g['ID_CE'])] = $g;
+        }
+
+        $num = function ($v) {
+            return ($v === null || $v === '') ? null : (float) $v;
+        };
+
+        $out = [];
+
+        foreach ($calculadas as $c) {
+            $id = intval($c['id_ce']);
+
+            if (!isset($porId[$id])) {
+                $out[] = [
+                    'id_ce'    => $id,
+                    'concepto' => $c['concepto'],
+                    'accion'   => 'INSERT',
+                    'campos'   => [
+                        'VALOR_DEFAULT_1' => ['antes' => null, 'despues' => $num($c['valor_default_1'])],
+                        'VALOR_DEFAULT_2' => ['antes' => null, 'despues' => $num($c['valor_default_2'])],
+                        'IMPORTE'         => ['antes' => null, 'despues' => round((float) $c['importe'], 2)],
+                    ],
+                    'fila'     => $c,
+                ];
+                continue;
+            }
+
+            $g = $porId[$id];
+            $campos = [];
+
+            foreach (['VALOR_DEFAULT_1' => 'valor_default_1', 'VALOR_DEFAULT_2' => 'valor_default_2'] as $col => $clave) {
+                $antes = $num($g[$col]);
+                $despues = $num($c[$clave]);
+
+                $distintos = ($antes === null) !== ($despues === null)
+                    || ($antes !== null && abs($antes - $despues) >= 0.0000005);
+
+                if ($distintos) {
+                    $campos[$col] = ['antes' => $antes, 'despues' => $despues];
+                }
+            }
+
+            /* CONTRA EL DOUBLE CRUDO, NO CONTRA round(). La base guarda lo que
+               le manda el navegador -el double de la cuenta- redondeando el
+               valor binario exacto, y round() de PHP pre-redondea a 15
+               dígitos: 26,754999… lo guarda la base como 26,75 y round() lo
+               lleva a 26,76. Comparar round() contra lo guardado inventaría
+               una diferencia de un centavo en una de cada diez estimaciones
+               (medido contra central el 01/10/2026). Medio centavo de
+               distancia al crudo es "lo mismo redondeado", sin depender de
+               cómo redondea cada lado. */
+            $antes = $num($g['IMPORTE']);
+            $crudo = (float) $c['importe'];
+            if ($antes === null || abs($antes - $crudo) > 0.005 + 1e-9) {
+                $campos['IMPORTE'] = ['antes' => $antes, 'despues' => round($crudo, 2)];
+            }
+
+            if (!empty($campos)) {
+                $out[] = [
+                    'id_ce'    => $id,
+                    'concepto' => $c['concepto'],
+                    'accion'   => 'UPDATE',
+                    'campos'   => $campos,
+                    'fila'     => $c,
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Si el grupo del contenedor ya tiene costos REALES cargados (A de la
+     * regla de visibilidad), mirando el detalle de cualquier OC del grupo.
+     */
+    public function tieneCostosReales($idMg)
+    {
+        $idPrincipal = $this->encabezado->resolverIdPrincipal($idMg);
+
+        $stmt = sqlsrv_query($this->cid_central,
+            "SELECT CASE WHEN " . VisibilidadContenedor::sqlTieneCostos('?') . " THEN 1 ELSE 0 END AS T",
+            [$idPrincipal]);
+
+        if ($stmt === false) {
+            throw new Exception('No se pudo leer si el contenedor tiene costos cargados: '
+                . print_r(sqlsrv_errors(), true));
+        }
+
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+
+        return $row && intval($row['T']) === 1;
+    }
+
+    /**
+     * Los conceptos con los que la pantalla abriría este contenedor sin
+     * estimación guardada: la vigencia a su FECHA_DESP_ADU -con el padrón como
+     * respaldo- y el ajuste de despachante. Es lo que hace cargarEstimacion.php.
+     */
+    private function conceptosPara(array $despacho)
+    {
+        $fecha = isset($despacho['FECHA_DESP_ADU']) ? $despacho['FECHA_DESP_ADU'] : null;
+
+        $conceptos = $this->obtenerConceptos($fecha);
+        if (empty($conceptos)) {
+            throw new Exception('No se pudieron leer los conceptos de estimación (RO_T_CONCEPTOS_ESTIMACION_COMEX).');
+        }
+
+        return self::ajustarDespachante($conceptos, $despacho['DESPACHANTE']);
+    }
+
+    /**
+     * Arma la cuenta para un contenedor, leyendo lo que la pantalla leería.
+     *
+     * @param array $despacho  obtenerDespacho() de la principal
+     * @param array $editables [ID_CE => importe] de los editables que se conservan
+     * @return array ['conceptos' => ajustados, 'filas' => filasParaGrabar()]
+     */
+    private function calcularPara(array $despacho, array $editables = [], $conceptos = null)
+    {
+        if ($conceptos === null) {
+            $conceptos = $this->conceptosPara($despacho);
+        }
+
+        $resultado = CalculoEstimacion::calcular([
+            'entorno'   => $this->entorno,
+            'fob'       => $despacho['VALOR_FOB_DOLAR'],
+            'conceptos' => $conceptos,
+            'editables' => $editables,
+        ]);
+
+        return [
+            'conceptos' => $conceptos,
+            'filas'     => self::filasParaGrabar($resultado, $conceptos),
+            'totales'   => $resultado['totales'],
+        ];
+    }
+
+    /**
+     * Genera y confirma la estimación de un despacho recién dado de alta.
+     *
+     * Va en la OC PRINCIPAL -una sola por grupo-, nace CONFIRMADA y después se
+     * edita desde PCI como cualquier otra.
+     *
+     * NO REVIERTE EL ALTA SI FALLA: el despacho ya existe y es lo que el
+     * usuario vino a cargar. Devuelve el motivo para que el alta lo informe;
+     * el contenedor queda PENDIENTE en PCI, que es como quedaba siempre.
+     *
+     * Las filas se insertan en UNA transacción: una estimación a medias se
+     * vería en PCI como un borrador al que le faltan conceptos y el cashflow
+     * sumaría sólo algunos.
+     *
+     * @return array ['generada' => bool, 'idPrincipal' => int, 'mensaje' => string]
+     */
+    public function generarEstimacionAlta($idMg)
+    {
+        $idPrincipal = $this->encabezado->resolverIdPrincipal($idMg);
+
+        try {
+            $despacho = $this->obtenerDespacho($idPrincipal);
+            if (!$despacho) {
+                throw new Exception('No se encontró el despacho ' . intval($idMg) . '.');
+            }
+
+            if ($this->obtenerEstimacion($idPrincipal)) {
+                return [
+                    'generada'    => false,
+                    'idPrincipal' => $idPrincipal,
+                    'mensaje'     => 'El despacho ya tenía estimación: no se generó otra.',
+                ];
+            }
+
+            $calculo = $this->calcularPara($despacho);
+
+            if (sqlsrv_begin_transaction($this->cid_central) === false) {
+                throw new Exception('No se pudo abrir la transacción.');
+            }
+
+            try {
+                foreach ($calculo['filas'] as $f) {
+                    $stmt = sqlsrv_query($this->cid_central,
+                        "INSERT INTO RO_T_IMPORTACIONES_ESTIMACION_DETALLE
+                            (ID_MG, ID_CE, VALOR_DEFAULT_1, VALOR_DEFAULT_2, IMPORTE, CONFIRMADO, FECHA_MOD)
+                         VALUES (?, ?, ?, ?, ?, 1, GETDATE())",
+                        [$idPrincipal, $f['id_ce'], $f['valor_default_1'], $f['valor_default_2'],
+                         (float) $f['importe']]);
+
+                    if ($stmt === false) {
+                        throw new Exception('Error al grabar el concepto ' . $f['concepto'] . ': '
+                            . print_r(sqlsrv_errors(), true));
+                    }
+                }
+
+                sqlsrv_commit($this->cid_central);
+            } catch (Throwable $e) {
+                sqlsrv_rollback($this->cid_central);
+                throw $e;
+            }
+
+            return [
+                'generada'    => true,
+                'idPrincipal' => $idPrincipal,
+                'mensaje'     => 'Se generó y confirmó la estimación de costos de importación.',
+            ];
+
+        } catch (Throwable $e) {
+            error_log('[generarEstimacionAlta] ' . $e->getMessage());
+
+            return [
+                'generada'    => false,
+                'idPrincipal' => $idPrincipal,
+                'mensaje'     => 'No se pudo generar la estimación de costos de importación: '
+                    . $e->getMessage() . ' El contenedor queda pendiente en PCI.',
+            ];
+        }
+    }
+
+    /**
+     * Si entre dos lecturas de obtenerDespacho() cambió algo que mueve la
+     * estimación: VALOR_FOB_DOLAR o FECHA_DESP_ADU de la principal.
+     *
+     * EL DESPACHANTE NO ESTÁ, y es una decisión: cambiar el despachante no
+     * dispara el recálculo. Si cambia junto con el FOB o la fecha, el
+     * recálculo lo toma, porque calcula con lo que hay.
+     *
+     * Comparar el valor -y no "se escribió la columna"- es lo que evita que
+     * reabrir y guardar un despacho sin tocar nada aplique de rebote un cambio
+     * de vigencia o de despachante.
+     */
+    public static function cambioDisparaRecalculo($antes, $despues)
+    {
+        if (!$antes || !$despues) {
+            return false;
+        }
+
+        $fobAntes = ($antes['VALOR_FOB_DOLAR'] === null) ? null : (float) $antes['VALOR_FOB_DOLAR'];
+        $fobDespues = ($despues['VALOR_FOB_DOLAR'] === null) ? null : (float) $despues['VALOR_FOB_DOLAR'];
+
+        $cambioFob = ($fobAntes === null) !== ($fobDespues === null)
+            || ($fobAntes !== null && abs($fobAntes - $fobDespues) >= 0.005);
+
+        $cambioFecha = AlicuotasVigencia::normalizarFecha($antes['FECHA_DESP_ADU'])
+            !== AlicuotasVigencia::normalizarFecha($despues['FECHA_DESP_ADU']);
+
+        return $cambioFob || $cambioFecha;
+    }
+
+    /**
+     * El disparador que usan las pantallas de Comercio Exterior: recalcula si
+     * entre $antes -leído con obtenerDespacho() ANTES de grabar- y lo que hay
+     * ahora cambió el FOB o la fecha de nacionalización.
+     *
+     * NUNCA LANZA. Lo llaman después de que la escritura principal ya se
+     * grabó, y un recálculo fallido no puede convertir en error un guardado
+     * que salió bien: devuelve el motivo para que la respuesta lo informe.
+     *
+     * @param int        $idMg  Cualquier OC del grupo
+     * @param array|null $antes obtenerDespacho() antes de grabar
+     * @return array|null null si no cambió nada que lo dispare
+     */
+    public function recalcularSiCambio($idMg, $antes)
+    {
+        try {
+            $despues = $this->obtenerDespacho($idMg);
+
+            if (!self::cambioDisparaRecalculo($antes, $despues)) {
+                return null;
+            }
+
+            return $this->recalcularEstimacion($idMg);
+
+        } catch (Throwable $e) {
+            error_log('[recalcularSiCambio] ' . $e->getMessage());
+
+            return [
+                'recalculo'   => false,
+                'motivo'      => 'ERROR',
+                'idPrincipal' => null,
+                'mensaje'     => 'El cambio se guardó, pero no se pudo recalcular la estimación de '
+                    . 'costos de importación: ' . $e->getMessage(),
+                'cambios'     => [],
+            ];
+        }
+    }
+
+    /**
+     * Recalcula la estimación de un contenedor cuando cambian su FOB o su
+     * fecha de nacionalización.
+     *
+     * QUÉ SE RECALCULA. Todo como si la pantalla se abriera sin estimación:
+     * las alícuotas se re-resuelven con la fecha de nacionalización vigente y
+     * los overrides manuales de los conceptos calculados SE PISAN. Lo único
+     * que se conserva es el importe guardado de los conceptos editables
+     * -CalculoEstimacion::EDITABLES-; su parámetro sí se actualiza.
+     *
+     * CUÁNDO NO HACE NADA, y lo dice:
+     *  - TIENE_COSTOS: el grupo ya tiene costos reales. Una estimación es una
+     *    proyección, y ahí ya no hay nada que proyectar.
+     *  - SIN_ESTIMACION: los contenedores viejos. No se crea una: eso es del
+     *    alta, y no hay backfill.
+     *  - SIN_DIFERENCIAS: la cuenta da lo mismo que lo guardado.
+     *
+     * Graba SÓLO las filas que cambian, con su FECHA_MOD, y CONFIRMADO queda
+     * como está. Todo en una transacción.
+     *
+     * SIEMPRE LA PRINCIPAL. Si se movió la fecha de una hija, el recálculo usa
+     * la de la principal: la estimación es del contenedor, no de la OC.
+     *
+     * LO LLAMAN los cuatro lugares que escriben VALOR_FOB_DOLAR o
+     * FECHA_DESP_ADU -ver REGLAS_CALCULO.md- y sólo cuando el valor cambió.
+     * Cambiar el despachante NO lo dispara.
+     *
+     * @return array ['recalculo' => bool, 'motivo' => string, 'idPrincipal' => int,
+     *                'mensaje' => string, 'cambios' => array]
+     * @throws Exception si no se puede leer o grabar
+     */
+    public function recalcularEstimacion($idMg)
+    {
+        $idPrincipal = $this->encabezado->resolverIdPrincipal($idMg);
+
+        $r = [
+            'recalculo'   => false,
+            'motivo'      => null,
+            'idPrincipal' => $idPrincipal,
+            'mensaje'     => '',
+            'cambios'     => [],
+        ];
+
+        $despacho = $this->obtenerDespacho($idPrincipal);
+        if (!$despacho) {
+            throw new Exception('No se encontró el despacho ' . intval($idMg) . '.');
+        }
+
+        if ($this->tieneCostosReales($idPrincipal)) {
+            $r['motivo'] = 'TIENE_COSTOS';
+            $r['mensaje'] = 'El contenedor ya tiene costos de nacionalización cargados: la estimación no se recalcula.';
+            return $r;
+        }
+
+        $guardadas = $this->obtenerEstimacion($idPrincipal);
+        if (!$guardadas) {
+            $r['motivo'] = 'SIN_ESTIMACION';
+            $r['mensaje'] = 'El contenedor no tiene estimación: no hay nada que recalcular.';
+            return $r;
+        }
+
+        $conceptos = $this->conceptosPara($despacho);
+
+        $editables = [];
+        foreach (CalculoEstimacion::idsEditables($conceptos, $this->entorno) as $idEditable) {
+            foreach ($guardadas as $g) {
+                if (intval($g['ID_CE']) === $idEditable && $g['IMPORTE'] !== null) {
+                    $editables[$idEditable] = $g['IMPORTE'];
+                }
+            }
+        }
+
+        $calculo = $this->calcularPara($despacho, $editables, $conceptos);
+        $cambios = self::diferencias($calculo['filas'], $guardadas);
+
+        if (empty($cambios)) {
+            $r['motivo'] = 'SIN_DIFERENCIAS';
+            $r['mensaje'] = 'La estimación ya estaba al día: no cambió ningún importe ni alícuota.';
+            return $r;
+        }
+
+        if (sqlsrv_begin_transaction($this->cid_central) === false) {
+            throw new Exception('No se pudo abrir la transacción para recalcular la estimación.');
+        }
+
+        try {
+            foreach ($cambios as $cambio) {
+                $f = $cambio['fila'];
+
+                if ($cambio['accion'] === 'UPDATE') {
+                    $stmt = sqlsrv_query($this->cid_central,
+                        "UPDATE RO_T_IMPORTACIONES_ESTIMACION_DETALLE
+                            SET VALOR_DEFAULT_1 = ?, VALOR_DEFAULT_2 = ?, IMPORTE = ?, FECHA_MOD = GETDATE()
+                          WHERE ID_MG = ? AND ID_CE = ?",
+                        [$f['valor_default_1'], $f['valor_default_2'], (float) $f['importe'],
+                         $idPrincipal, $f['id_ce']]);
+                } else {
+                    // Hereda el CONFIRMADO del resto, como actualizarEstimacion().
+                    $stmt = sqlsrv_query($this->cid_central,
+                        "INSERT INTO RO_T_IMPORTACIONES_ESTIMACION_DETALLE
+                            (ID_MG, ID_CE, VALOR_DEFAULT_1, VALOR_DEFAULT_2, IMPORTE, CONFIRMADO, FECHA_MOD)
+                         SELECT ?, ?, ?, ?, ?,
+                                ISNULL((SELECT TOP 1 CONFIRMADO
+                                        FROM RO_T_IMPORTACIONES_ESTIMACION_DETALLE
+                                        WHERE ID_MG = ?), 0),
+                                GETDATE()",
+                        [$idPrincipal, $f['id_ce'], $f['valor_default_1'], $f['valor_default_2'],
+                         (float) $f['importe'], $idPrincipal]);
+                }
+
+                if ($stmt === false) {
+                    throw new Exception('Error al grabar el concepto ' . $f['concepto'] . ': '
+                        . print_r(sqlsrv_errors(), true));
+                }
+            }
+
+            sqlsrv_commit($this->cid_central);
+        } catch (Throwable $e) {
+            sqlsrv_rollback($this->cid_central);
+            throw $e;
+        }
+
+        foreach ($cambios as &$cambio) {
+            unset($cambio['fila']);
+        }
+        unset($cambio);
+
+        $r['recalculo'] = true;
+        $r['motivo'] = 'RECALCULADA';
+        $r['cambios'] = $cambios;
+        $r['mensaje'] = 'Se recalculó la estimación: ' . count($cambios)
+            . (count($cambios) === 1 ? ' concepto cambió.' : ' conceptos cambiaron.');
+
+        return $r;
     }
 }

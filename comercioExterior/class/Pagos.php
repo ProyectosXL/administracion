@@ -49,6 +49,24 @@
  * resuelve la OC principal, allá hay que moverlo también. Esta nota y la del
  * encabezado de cashflow/Class/Comex.php —en ProyectosXL/finanzas— son las dos
  * mitades del pacto.
+ *
+ * Y EL PACTO TIENE UNA SEGUNDA CLÁUSULA: CUÁNDO UN CONTENEDOR DEJA DE VERSE.
+ * Desde feature/comex-visibilidad-saldo, Gestión de Despachos (acá) y
+ * Proveedores del Exterior (allá) dejan de mostrar un contenedor sólo cuando
+ * cumple LAS DOS cosas:
+ *
+ *   (A) tiene costos de nacionalización confirmados: filas en
+ *       RO_T_IMPORTACIONES_DETALLE para cualquier OC del grupo. La estimación
+ *       de PCI no cuenta;
+ *   (B) los pagos cubren el FOB: estadoSaldo() da CANCELADO o SOBREPAGO.
+ *       SIN_FOB no cuenta como cubierto.
+ *
+ * Se evalúa por GRUPO -COALESCE(ID_PADRE, ID)-: la principal y sus hijas
+ * aparecen o desaparecen juntas. Acá vive en VisibilidadContenedor y allá en
+ * Comex::sigueEnProveedores() / Comex::sqlSigueVisible(). Si la regla cambia
+ * de un lado, se cambia del otro: si no, Gestión y el cashflow muestran
+ * padrones distintos y nadie puede explicar por qué un contenedor está en una
+ * pantalla y no en la otra.
  */
 class Pagos {
     private $cid_central;
@@ -186,24 +204,51 @@ class Pagos {
         $resumen['totalPagado'] = floatval($row['PAGADO_USD']);
         $resumen['cantidad']    = intval($row['CANTIDAD']);
         $resumen['saldoPendiente'] = $resumen['fobUsd'] - $resumen['totalPagado'];
-
-        /* Un centavo de tolerancia. Los pagos se cargan redondeados a dos
-           decimales y la suma de varios parciales casi nunca da exacto: sin
-           esta tolerancia, un contenedor efectivamente cancelado quedaría
-           mostrando "faltan U$S 0,01" para siempre. */
-        $tolerancia = 0.01;
-
-        if ($resumen['fobUsd'] <= 0) {
-            $resumen['estado'] = 'SIN_FOB';
-        } elseif ($resumen['saldoPendiente'] < -$tolerancia) {
-            $resumen['estado'] = 'SOBREPAGO';
-        } elseif (abs($resumen['saldoPendiente']) <= $tolerancia) {
-            $resumen['estado'] = 'CANCELADO';
-        } else {
-            $resumen['estado'] = 'PENDIENTE';
-        }
+        $resumen['estado'] = self::estadoSaldo($resumen['fobUsd'], $resumen['totalPagado']);
 
         return $resumen;
+    }
+
+    /**
+     * Un centavo de tolerancia. Los pagos se cargan redondeados a dos
+     * decimales y la suma de varios parciales casi nunca da exacto: sin esta
+     * tolerancia, un contenedor efectivamente cancelado quedaría mostrando
+     * "faltan U$S 0,01" para siempre. Es la misma constante que
+     * Comex::TOLERANCIA_SALDO en ProyectosXL/finanzas.
+     */
+    const TOLERANCIA = 0.01;
+
+    /**
+     * Los cuatro estados del saldo, como función pura.
+     *
+     * Es la cuenta que obtenerResumen() hacía en línea, sacada a una función
+     * sin cambiarle una coma, por dos motivos: la regla de visibilidad de
+     * Gestión de Despachos la necesita para miles de filas sin una consulta
+     * por fila -ver VisibilidadContenedor-, y las pruebas la necesitan sin
+     * base. Que siga habiendo UNA sola cuenta en este repo es lo que permite
+     * compararla línea por línea con Comex::saldoPendiente() del otro.
+     *
+     * EN PUNTO FLOTANTE, a propósito: es lo que hacía obtenerResumen(), y el
+     * fragmento SQL de VisibilidadContenedor castea a FLOAT por eso mismo. Con
+     * DECIMAL, 100,01 - 100,00 da 0,01 exacto y es CANCELADO; con double da
+     * 0,010000000000005 y es PENDIENTE. Las dos implementaciones tienen que
+     * caer del mismo lado del borde.
+     *
+     * @return string SIN_FOB | SOBREPAGO | CANCELADO | PENDIENTE
+     */
+    public static function estadoSaldo($fobUsd, $pagadoUsd) {
+        $fob = floatval($fobUsd);
+        $saldo = $fob - floatval($pagadoUsd);
+
+        if ($fob <= 0) {
+            return 'SIN_FOB';
+        } elseif ($saldo < -self::TOLERANCIA) {
+            return 'SOBREPAGO';
+        } elseif (abs($saldo) <= self::TOLERANCIA) {
+            return 'CANCELADO';
+        }
+
+        return 'PENDIENTE';
     }
 
     /**

@@ -115,6 +115,19 @@ try {
 
     $usuario = isset($_SESSION['usuario_dns']) ? $_SESSION['usuario_dns'] : null;
 
+    /* MOVER LA NACIONALIZACIÓN RECALCULA LA ESTIMACIÓN DE PCI: las alícuotas
+       se resuelven contra FECHA_DESP_ADU. Se lee el estado previo ANTES de
+       grabar para recalcular sólo si la fecha cambió de verdad. Ningún otro
+       campo del cronograma lo dispara: mover la ETA no arrastra la
+       nacionalización, y es una decisión (ver REGLAS_CALCULO.md). */
+    $estimacionCostos = null;
+    $antesEstimacion = null;
+    if ($campo === 'FECHA_DESP_ADU') {
+        require_once __DIR__ . '/../../class/estimacionCostos.php';
+        $estimacionCostos = new EstimacionCostos();
+        $antesEstimacion = $estimacionCostos->obtenerDespacho($idEncabezado);
+    }
+
     if (sqlsrv_begin_transaction($conn) === false) {
         throw new Exception('No se pudo iniciar la transacción');
     }
@@ -203,6 +216,11 @@ try {
     }
     $enTransaccion = false;
 
+    // Después del commit: un recálculo fallido no deshace la fecha, se informa.
+    $recalculo = ($estimacionCostos !== null)
+        ? $estimacionCostos->recalcularSiCambio($idEncabezado, $antesEstimacion)
+        : null;
+
     // 11. Devolver los despachos actualizados, para que el front repinte sin
     //     recargar toda la página.
     $cronograma = new CronogramaDespachos();
@@ -226,6 +244,9 @@ try {
         'recalculadas' => $recalculadas,
         'advertencias' => $coherencia['advertencias'],
         'data'         => $actualizados,
+        'recalculoEstimacion' => $recalculo,
+        'avisoEstimacion'     => ($recalculo !== null && $recalculo['motivo'] === 'ERROR')
+            ? $recalculo['mensaje'] : null,
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {

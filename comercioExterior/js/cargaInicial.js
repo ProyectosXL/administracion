@@ -2519,10 +2519,22 @@ function guardarCabecera() {
                 console.log('Respuesta del servidor:', response);
                 
                 if (response.success) {
+                    /* EL DESPACHO SE GUARDÓ AUNQUE LA ESTIMACIÓN FALLE. En el
+                       alta el servidor genera y confirma la estimación de PCI,
+                       y al editar la recalcula si cambió el FOB o la fecha de
+                       nacionalización; si eso falla no revierte el guardado,
+                       lo informa en avisoEstimacion. Va como advertencia y no
+                       como éxito porque el cashflow de Finanzas no va a ver
+                       los gastos de nacionalización de este contenedor hasta
+                       que alguien lo resuelva en PCI. */
+                    const avisoEstimacion = response.avisoEstimacion || null;
                     Swal.fire({
-                        title: '¡Despacho guardado correctamente!',
-                        text: response.message || 'Los datos han sido guardados exitosamente',
-                        icon: 'success',
+                        title: avisoEstimacion
+                            ? 'Despacho guardado, con un aviso'
+                            : '¡Despacho guardado correctamente!',
+                        text: (response.message || 'Los datos han sido guardados exitosamente')
+                            + (avisoEstimacion ? ' ' + avisoEstimacion : ''),
+                        icon: avisoEstimacion ? 'warning' : 'success',
                         confirmButtonText: 'Aceptar',
                         confirmButtonColor: '#7066e0'
                     }).then(function () {

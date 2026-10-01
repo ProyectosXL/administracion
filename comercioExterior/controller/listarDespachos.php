@@ -25,7 +25,9 @@ try {
 
     echo json_encode([
         'success' => true,
-        'data'    => $despachos
+        'data'    => $despachos,
+        // Lo que no se pudo leer -hoy, la tabla de pagos- y cambia qué se ve.
+        'avisos'  => $estimacion->avisos()
     ]);
 
 } catch (Exception $e) {

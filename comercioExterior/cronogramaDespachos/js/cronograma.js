@@ -1031,12 +1031,22 @@ function mostrarAvisoMovimiento(respuesta, campo, idEncabezado) {
     const recalculadas = Object.keys(respuesta.recalculadas || {}).length;
     const avisos = (respuesta.advertencias || []).length;
 
+    /* Mover la nacionalización recalcula la estimación de PCI en el servidor.
+       Si se recalculó se cuenta acá; si falló, la fecha quedó grabada igual y
+       el motivo va como advertencia, que es lo único que lo hace visible. */
+    const recalculo = respuesta.recalculoEstimacion || null;
+    const estimacionRecalculada = recalculo && recalculo.recalculo;
+
     const detalle = [
         `${respuesta.ocsAfectadas} ${respuesta.ocsAfectadas === 1 ? 'orden de compra' : 'órdenes de compra'}`,
         recalculadas > 0
             ? `${recalculadas} distribución${recalculadas === 1 ? '' : 'es'} recalculada${recalculadas === 1 ? '' : 's'}`
-            : null
+            : null,
+        estimacionRecalculada ? 'estimación de PCI recalculada' : null
     ].filter(Boolean).join(' · ');
+
+    const advertencia = respuesta.avisoEstimacion
+        || (avisos > 0 ? respuesta.advertencias[0] : null);
 
     const $aviso = $(`
         <div class="aviso-movimiento">
@@ -1044,9 +1054,9 @@ function mostrarAvisoMovimiento(respuesta, campo, idEncabezado) {
             <div class="aviso-cuerpo">
                 <div class="aviso-titulo">${escaparHtml(ETIQUETAS_CAMPOS[campo] || campo)} actualizado</div>
                 <div class="aviso-detalle">${escaparHtml(detalle)}</div>
-                ${avisos > 0
+                ${advertencia
                     ? `<div class="aviso-advertencia"><i class="bi bi-exclamation-triangle"></i>
-                           ${escaparHtml(respuesta.advertencias[0])}</div>`
+                           ${escaparHtml(advertencia)}</div>`
                     : ''}
                 <button type="button" class="aviso-link" data-id="${idEncabezado}">
                     Ver historial de cambios

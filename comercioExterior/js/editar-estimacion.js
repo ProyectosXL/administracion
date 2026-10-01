@@ -441,6 +441,20 @@ function resetearOverride(btn) {
 /**
  * Calcular todos los conceptos según la lógica de negocio.
  * Para conceptos tipo P con override manual, se usa el valor guardado en lugar del calculado.
+ *
+ * ESTA CUENTA TIENE UNA COPIA EN EL SERVIDOR: class/CalculoEstimacion.php.
+ * El alta de un despacho genera y confirma la estimación sin pasar por esta
+ * pantalla, y un cambio de FOB o de fecha de nacionalización la recalcula
+ * también sin pantalla -ver EstimacionCostos::generarEstimacionAlta() y
+ * recalcularEstimacion()-. Son DOS IMPLEMENTACIONES DE LA MISMA CUENTA y tienen
+ * que moverse juntas: una fórmula, un total o el orden de una suma que cambie
+ * acá hay que cambiarlo allá, o el contenedor recién dado de alta y el abierto
+ * en PCI darían números distintos. tests/test_estimacion_calculo.php fija los
+ * números esperados con casos escritos a mano.
+ *
+ * Las rarezas de esta función -esUruguay con ID_CE > 13, getConceptoParam2()
+ * que da 0 con el parámetro en null, ID_REF_CONCEPTO que lee el valor del
+ * momento- están copiadas allá a propósito y documentadas en ese archivo.
  */
 function calcularTodosLosConceptos() {
     const fob = parseFloat($('#valorFOB').val()) || 0;

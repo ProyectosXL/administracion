@@ -35,25 +35,13 @@ try {
 
     $conceptos = $estimacion->obtenerConceptos($fechaNacionalizacion);
     
-    // Aplicar lógica dinámica para concepto DESPACHANTE en los conceptos base
+    /* Ajuste del concepto DESPACHANTE: Farre usa VALOR_DEFAULT_2 como param1,
+       cualquier otro VALOR_DEFAULT_1, y param2 queda en null. Vive en
+       EstimacionCostos::ajustarDespachante() porque la generación y el
+       recálculo automáticos de la estimación tienen que partir de los MISMOS
+       conceptos que esta pantalla. */
     $despachante = $despacho['DESPACHANTE'];
-    foreach ($conceptos as &$concepto) {
-        if (strcasecmp($concepto['CONCEPTO'], 'DESPACHANTE') === 0 || strcasecmp($concepto['CONCEPTO'], 'Despachante') === 0) {
-            // Determinar parámetros según despachante
-            if ($despachante === 'Farre') {
-                // Farre: mostrar VALOR_DEFAULT_2 como param1, param2 = null
-                $valorTemp = $concepto['VALOR_DEFAULT_2'];
-                $concepto['VALOR_DEFAULT_1'] = $valorTemp;
-                $concepto['VALOR_DEFAULT_2'] = null;
-            } else {
-                // Laffitte o cualquier otro caso: VALOR_DEFAULT_1 como param1, param2 = null
-                // Ya está correcto en BD, solo asegurar que param2 sea null
-                $concepto['VALOR_DEFAULT_2'] = null;
-            }
-            break;
-        }
-    }
-    unset($concepto); // Romper referencia
+    $conceptos = EstimacionCostos::ajustarDespachante($conceptos, $despachante);
     
     // Obtener estimación existente (si existe)
     $estimacionExistente = $estimacion->obtenerEstimacion($idMg);
