@@ -217,8 +217,22 @@ try {
     $arrayResult = [];
     $idPrincipal = null;
 
+    /* LA ESTIMACIÓN DE PCI SE MUEVE CON EL DESPACHO. En el alta se genera y
+       se confirma sola; al editar, se recalcula si cambió el FOB o la fecha de
+       nacionalización. Ver EstimacionCostos::generarEstimacionAlta() y
+       recalcularEstimacion(). Ninguna de las dos revierte el guardado del
+       despacho si falla: lo informan en avisoEstimacion. */
+    require_once __DIR__ . '/../class/estimacionCostos.php';
+    $estimacionCostos = new EstimacionCostos();
+    $avisoEstimacion = null;
+
     if ($modoEdicion) {
         // === UPDATE ===
+
+        // Antes de grabar, para saber después si cambió algo que mueva la
+        // estimación. Se lee la PRINCIPAL: el FOB y la fecha se replican al
+        // grupo, y la estimación es del contenedor.
+        $antesEstimacion = $estimacionCostos->obtenerDespacho($idDespacho);
         $ordenesFormateadas = array_map(function ($orden) {
             $ordenTrim = trim($orden);
             return (strlen($ordenTrim) == 13) ? ' ' . $ordenTrim : $ordenTrim;
@@ -264,13 +278,27 @@ try {
                 );
             }
 
+            // Después de las dos escrituras: el FOB y la fecha de la
+            // principal recién quedan firmes cuando terminó la del grupo.
+            $recalculo = $estimacionCostos->recalcularSiCambio($idDespacho, $antesEstimacion);
+
+            $mensaje = $avisoFobPeso === null
+                ? 'Despacho actualizado correctamente'
+                : 'Despacho actualizado. ' . $avisoFobPeso;
+
+            if ($recalculo !== null && $recalculo['motivo'] === 'ERROR') {
+                $avisoEstimacion = $recalculo['mensaje'];
+            } elseif ($recalculo !== null && $recalculo['recalculo']) {
+                $mensaje .= '. ' . $recalculo['mensaje'];
+            }
+
             echo json_encode([
                 'success' => true,
                 'ids' => [$result],
                 'avisoFobPeso' => $avisoFobPeso,
-                'message' => $avisoFobPeso === null
-                    ? 'Despacho actualizado correctamente'
-                    : 'Despacho actualizado. ' . $avisoFobPeso
+                'recalculoEstimacion' => $recalculo,
+                'avisoEstimacion' => $avisoEstimacion,
+                'message' => $mensaje
             ]);
         } else {
             $errors = sqlsrv_errors();
@@ -311,9 +339,22 @@ try {
         }
         error_log("[insertarEncabezado] INSERT completo. IDs generados: " . implode(', ', $arrayResult));
 
+        /* Una sola estimación por grupo, en la principal, y sólo si el alta
+           llegó a crearla. Es la misma vía para Nuevo Despacho y para "Crear
+           despacho" desde OC Pendientes: las dos terminan acá. */
+        $estimacionAlta = null;
+        if ($idPrincipal !== null) {
+            $estimacionAlta = $estimacionCostos->generarEstimacionAlta($idPrincipal);
+            if (!$estimacionAlta['generada']) {
+                $avisoEstimacion = $estimacionAlta['mensaje'];
+            }
+        }
+
         echo json_encode([
             'success' => true,
             'ids' => $arrayResult,
+            'estimacion' => $estimacionAlta,
+            'avisoEstimacion' => $avisoEstimacion,
             'message' => 'Despacho(s) guardado(s) correctamente'
         ]);
     }

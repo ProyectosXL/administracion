@@ -54,8 +54,25 @@ try {
         throw new Exception('Tipo de fecha no reconocido: ' . $tipo);
     }
 
+    /* Volver la NACIONALIZACIÓN a automático la reescribe, y las alícuotas de
+       la estimación de PCI se resuelven contra esa fecha: se recalcula si
+       cambió. Las otras dos fechas no la mueven. */
+    $estimacionCostos = null;
+    $antesEstimacion = null;
+    if ($tipo === 'NACIONALIZACION') {
+        require_once __DIR__ . '/../class/estimacionCostos.php';
+        $estimacionCostos = new EstimacionCostos();
+        $antesEstimacion = $estimacionCostos->obtenerDespacho($id);
+    }
+
     $encabezado = new Encabezado();
     $resultado  = $encabezado->revertirFechaAuto($id, $tipo);
+
+    $recalculo = ($estimacionCostos !== null)
+        ? $estimacionCostos->recalcularSiCambio($id, $antesEstimacion)
+        : null;
+    $avisoEstimacion = ($recalculo !== null && $recalculo['motivo'] === 'ERROR')
+        ? $recalculo['mensaje'] : null;
 
     /* La fecha vuelve en los dos formatos: 'Y-m-d' es lo que guardó la base y
        'd/m/Y' es lo que el input de la pantalla muestra. Convertirla en el JS
@@ -76,10 +93,15 @@ try {
         'fecha'         => $fechaISO,
         'fechaPantalla' => $fechaPantalla,
         'ocs'           => $resultado['ocs'],
-        'aviso'         => $resultado['aviso'],
+        'aviso'         => $resultado['aviso'] !== null ? $resultado['aviso'] : $avisoEstimacion,
+        'recalculoEstimacion' => $recalculo,
+        'avisoEstimacion'     => $avisoEstimacion,
         'message'       => $resultado['aviso'] !== null
             ? $resultado['aviso']
-            : 'La ' . $etiqueta . ' volvió al cálculo automático',
+            : ($avisoEstimacion !== null
+                ? $avisoEstimacion
+                : 'La ' . $etiqueta . ' volvió al cálculo automático'
+                  . (($recalculo !== null && $recalculo['recalculo']) ? '. ' . $recalculo['mensaje'] : '')),
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $e) {
