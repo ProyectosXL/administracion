@@ -29,10 +29,14 @@ class EstimacionCostos
         require_once __DIR__.'/CalculoEstimacion.php';
         require_once __DIR__.'/VisibilidadContenedor.php';
         $cid = new Conexion();
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
+        /* La sesión se abre SÓLO si hace falta leerla. Con el entorno
+           explícito no se toca: además de no necesitarla, abrirla bloquearía
+           el archivo de sesión que el cashflow comparte por la cookie mientras
+           dura el recálculo. */
         if ($entorno === null) {
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
             $entorno = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
         }
         $this->entorno     = ($entorno === 'uy') ? 'uy' : 'central';

@@ -59,10 +59,11 @@ class Encabezado
 
         require_once __DIR__ . '/../../class/conexion.php';
         $cid = new Conexion();
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
+        // La sesión se abre sólo si hay que leer el entorno de ella.
         if ($entorno === null) {
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
             $entorno = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
         }
         $db = ($entorno === 'uy') ? 'uy' : 'central';
