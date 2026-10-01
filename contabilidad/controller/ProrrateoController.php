@@ -40,11 +40,13 @@ class ProrrateoController {
             $conexion = new Conexion();
             
             // Intentar conectar con el entorno de la sesión
-            $entorno = $_SESSION['entorno'] ?? 'central';
+            $entorno = self::entornoDb();
             $this->conn = $conexion->conectar($entorno);
-            
+
             if (!$this->conn) {
-                throw new Exception('No se pudo establecer conexión con la base de datos');
+                $errors = sqlsrv_errors();
+                $detalle = isset($errors[0]['message']) ? ' (' . $errors[0]['message'] . ')' : '';
+                throw new Exception("No se pudo establecer conexión con la base de datos [$entorno]$detalle");
             }
         } catch (Exception $e) {
             echo json_encode([
@@ -55,6 +57,15 @@ class ProrrateoController {
         }
     }
     
+    /**
+     * Base a usar según el entorno de sesión. La sesión es compartida con otros
+     * sistemas (ej. el login de "sistemas" setea entorno = 'sistemas'), así que
+     * igual que el resto de contabilidad: 'uy' => uy, cualquier otro => central.
+     */
+    private static function entornoDb() {
+        return (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'uy') ? 'uy' : 'central';
+    }
+
     /**
      * Inicia el proceso de prorrateo de forma asíncrona
      */
@@ -151,8 +162,8 @@ class ProrrateoController {
         $phpPath = 'php'; // Por defecto asumir que está en PATH
         
         // Obtener entorno actual de la sesión
-        $entorno = $_SESSION['entorno'] ?? 'central';
-        
+        $entorno = self::entornoDb();
+
         // Construir comando (ahora incluye el entorno como 4to parámetro)
         $cmd = "\"$phpPath\" \"$scriptPath\" $idProceso \"$desde\" \"$hasta\" \"$entorno\"";
         

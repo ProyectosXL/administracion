@@ -151,6 +151,49 @@ function traerFilas($conn, $sql, $params = [])
     return $filas;
 }
 
+/**
+ * Periodo que REALMENTE liquida un lote, como ['Y-m-d', 'Y-m-d'].
+ *
+ * La cabecera del lote guarda el rango con el que se genero, y un lote manual
+ * puede haberse generado con un rango mas ancho que la semana (el boton toma
+ * los filtros de la pantalla). Caso real: el lote 5 quedo grabado 07/09 al
+ * 27/09 aunque del 14/09 al 20/09 ya lo habia liquidado el lote 1, y el mail
+ * informaba ese rango. Lo que ya estaba en un lote anterior no puede volver a
+ * entrar (indice unico del detalle), asi que el periodo efectivo arranca el
+ * dia siguiente al cierre del ultimo lote anterior no anulado, nunca antes
+ * del PERIODO_DESDE grabado. El hasta es siempre el del lote.
+ */
+function periodoEfectivoLote($conn, $idLote)
+{
+    $filas = traerFilas($conn, "
+        SELECT  L.PERIODO_DESDE,
+                L.PERIODO_HASTA,
+                (SELECT MAX(P.PERIODO_HASTA)
+                   FROM RO_T_FRANQ_GA_LOTE P
+                  WHERE P.ID_LOTE       < L.ID_LOTE
+                    AND P.ESTADO       <> 'ANULADO'
+                    AND P.PERIODO_HASTA < L.PERIODO_HASTA) AS HASTA_ANTERIOR
+        FROM    RO_T_FRANQ_GA_LOTE L
+        WHERE   L.ID_LOTE = ?", [$idLote]);
+
+    if (empty($filas)) {
+        throw new Exception("No existe el lote #$idLote.");
+    }
+
+    $desde    = fechaISO($filas[0]['PERIODO_DESDE']);
+    $hasta    = fechaISO($filas[0]['PERIODO_HASTA']);
+    $anterior = fechaISO($filas[0]['HASTA_ANTERIOR']);
+
+    if ($anterior !== null) {
+        $siguiente = (new DateTime($anterior))->modify('+1 day')->format('Y-m-d');
+        if ($siguiente > $desde && $siguiente <= $hasta) {
+            $desde = $siguiente;
+        }
+    }
+
+    return [$desde, $hasta];
+}
+
 /* -------------------------------------------------------------------------
    Mail de liquidacion
 ------------------------------------------------------------------------- */
@@ -222,6 +265,10 @@ function armarMailLiquidacion($conn, $idLote, $nroSucursal)
         mensaje crudo, sin htmlspecialchars, asi que se escapa aca.          */
     $franquicia   = htmlspecialchars(trim((string) $resumen['DESC_SUCURSAL']), ENT_QUOTES, 'UTF-8');
     $nroSuc       = (int) $resumen['NRO_SUCURS'];
+    /*  Periodo efectivo, no el de la cabecera: ver periodoEfectivoLote().
+        Se deja en el resumen para que preview_mail y el nombre del adjunto
+        usen las mismas fechas que el cuerpo.                                */
+    list($resumen['PERIODO_DESDE'], $resumen['PERIODO_HASTA']) = periodoEfectivoLote($conn, $idLote);
     $desde        = fechaAR($resumen['PERIODO_DESDE']);
     $hasta        = fechaAR($resumen['PERIODO_HASTA']);
     /*  $importe es el total REDONDEADO a pesos enteros (nota 6 del SP): es el
@@ -396,12 +443,19 @@ try {
                 $estado === '' ? null : $estado,
             ];
 
-            $data = [];
+            $data     = [];
+            $periodos = [];   // ID_LOTE => periodo efectivo; el SP repite el lote por franquicia
             foreach (traerFilas($conn, $sql, $params) as $row) {
+                $idLoteFila = (int) $row['ID_LOTE'];
+                if (!isset($periodos[$idLoteFila])) {
+                    $periodos[$idLoteFila] = periodoEfectivoLote($conn, $idLoteFila);
+                }
+
                 $data[] = [
-                    'ID_LOTE'           => (int) $row['ID_LOTE'],
-                    'PERIODO_DESDE'     => fechaISO($row['PERIODO_DESDE']),
-                    'PERIODO_HASTA'     => fechaISO($row['PERIODO_HASTA']),
+                    'ID_LOTE'           => $idLoteFila,
+                    /*  Periodo efectivo, igual que el mail (periodoEfectivoLote). */
+                    'PERIODO_DESDE'     => $periodos[$idLoteFila][0],
+                    'PERIODO_HASTA'     => $periodos[$idLoteFila][1],
                     'FECHA_EJECUCION'   => fechaHoraISO($row['FECHA_EJECUCION']),
                     'NRO_LISTA'         => (int) $row['NRO_LISTA'],
                     'ESTADO_LOTE'       => trim((string) $row['ESTADO_LOTE']),
@@ -517,6 +571,12 @@ try {
                 mismo que la columna Importe de la grilla, que sale del SP.
                 PHP_ROUND_HALF_UP replica el ROUND de T-SQL, que redondea
                 alejandose del cero en los dos signos.                        */
+            /*  La cabecera arma el titulo del modal y el bloque "Período" del
+                Excel que se adjunta al mail: tiene que coincidir con el cuerpo. */
+            if ($cabecera !== null) {
+                list($cabecera['PERIODO_DESDE'], $cabecera['PERIODO_HASTA']) = periodoEfectivoLote($conn, $idLote);
+            }
+
             foreach ($porSucursal as $sumaSucursal) {
                 $tot['importe'] += round($sumaSucursal, 0, PHP_ROUND_HALF_UP);
             }
@@ -726,6 +786,27 @@ try {
 
             if (($desde === null) !== ($hasta === null)) {
                 throw new Exception('Indique las dos fechas del periodo, o ninguna para tomar la semana cerrada anterior.');
+            }
+
+            /*  Un lote es UNA semana de lunes a domingo, igual que los del job.
+                Un rango mas ancho queda grabado en la cabecera y termina en el
+                mail a la franquicia (paso con el lote 5: 07/09 al 27/09).
+                format('N') es 1 = lunes, sin depender del locale.            */
+            if ($desde !== null) {
+                $dDesde = DateTime::createFromFormat('!Y-m-d', $desde);
+                $dHasta = DateTime::createFromFormat('!Y-m-d', $hasta);
+                if (!$dDesde || !$dHasta || $dDesde->format('Y-m-d') !== $desde || $dHasta->format('Y-m-d') !== $hasta) {
+                    throw new Exception('Las fechas del periodo no son validas.');
+                }
+                if ($dDesde->format('N') !== '1') {
+                    throw new Exception('El periodo tiene que empezar un lunes.');
+                }
+                if ((clone $dDesde)->modify('+6 days')->format('Y-m-d') !== $hasta) {
+                    throw new Exception('El periodo tiene que ser una sola semana, de lunes a domingo.');
+                }
+                if ($hasta >= (new DateTime('today'))->format('Y-m-d')) {
+                    throw new Exception('La semana todavia no cerro: solo se puede liquidar una semana ya terminada.');
+                }
             }
 
             $sql = "EXEC RO_SP_FRANQ_GA_GENERAR_LOTE

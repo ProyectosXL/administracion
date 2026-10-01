@@ -248,6 +248,26 @@ function fgaNombreArchivoDetalle(datos) {
     return 'Liquidacion_Franquicias_GA_Lote' + (c.ID_LOTE || '') + '_Suc' + suc + '_' + (c.PERIODO_DESDE || '') + '.xlsx';
 }
 
+/**
+ * Devuelve el motivo por el que desde/hasta ('YYYY-MM-DD') no es una semana
+ * cerrada de lunes a domingo, o null si es valida. Se arma la fecha con
+ * Date.UTC para que la zona horaria del navegador no corra el dia.
+ */
+function fgaValidarSemanaLote(desde, hasta) {
+    if (!desde || !hasta) return 'Indique las dos fechas del período.';
+    const aUTC = function (s) {
+        const p = s.split('-');
+        return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+    };
+    const d = aUTC(desde), h = aUTC(hasta);
+    if (d.getUTCDay() !== 1) return 'El período tiene que empezar un lunes.';
+    if ((h - d) / 86400000 !== 6) return 'El período tiene que ser una sola semana, de lunes a domingo.';
+    const hoy = new Date();
+    const hoyISO = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+    if (hasta >= hoyISO) return 'La semana todavía no cerró: solo se puede liquidar una semana ya terminada.';
+    return null;
+}
+
 function fgaExportarDetalleExcel() {
     if (!fgaDatosDetalle.filas || fgaDatosDetalle.filas.length === 0) {
         Swal.fire('Sin datos', 'El lote no tiene renglones para exportar.', 'info');
@@ -965,6 +985,14 @@ $(function () {
     $('#fga-btn-generar').on('click', function () {
         const desde = $('#fga-desde').val();
         const hasta = $('#fga-hasta').val();
+
+        // Un lote es una sola semana cerrada de lunes a domingo. El controller
+        // valida lo mismo; esto es para avisar antes de pedir confirmacion.
+        const errorSemana = fgaValidarSemanaLote(desde, hasta);
+        if (errorSemana) {
+            Swal.fire('Período inválido', errorSemana, 'warning');
+            return;
+        }
 
         Swal.fire({
             title: 'Generar lote manual',

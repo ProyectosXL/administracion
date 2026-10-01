@@ -6,19 +6,37 @@ let sortColumn = null;
 let sortDirection = 'asc';
 
 /**
- * Marca / desmarca un gasto como contabilizado.
- * Envía los mismos valores que antes se leían del texto de las celdas.
+ * Marca un gasto como contabilizado. Una vez contabilizado no se puede destildar:
+ * el checkbox se reemplaza por un ícono.
  */
 const checkContabilizar = (input) => {
+    if (!input.checked) return;
+
+    Swal.fire({
+        icon: 'question',
+        title: '¿Marcar como contabilizada?',
+        text: 'Una vez contabilizada no se podrá destildar.',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, contabilizar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (!result.isConfirmed) {
+            input.checked = false;
+            return;
+        }
+        guardarContabilizada(input);
+    });
+}
+
+const guardarContabilizada = (input) => {
     const tr = input.closest('tr');
     const d = tr.dataset;
-    const contabilizada = input.checked;
 
     input.disabled = true;
 
     $.ajax({
         type: "POST",
-        url: "Controller/ControlEgresosController.php?accion=" + (contabilizada ? "checkContabilizar" : "uncheckContabilizar"),
+        url: "Controller/ControlEgresosController.php?accion=checkContabilizar",
         data: {
             fecha: d.fecha,
             nro_sucursal: d.sucursal,
@@ -33,18 +51,18 @@ const checkContabilizar = (input) => {
             revertirCheck(input);
             return;
         }
-        $(input).closest('td').attr('data-sort', contabilizada ? 1 : 0);
-        tr.classList.toggle('row-contabilizada', contabilizada);
-        $('#statContabilizadas').text($('#tablaFacturas .checkContabilizar:checked').length);
+        $(input).closest('td').attr('data-sort', 1);
+        $(input).replaceWith('<i class="bi bi-check-circle-fill icon-ok icono-contabilizada" title="Contabilizada"></i>');
+        tr.classList.add('row-contabilizada');
+        $('#statContabilizadas').text($('#tablaFacturas .icono-contabilizada').length);
     }).fail(function () {
         revertirCheck(input);
-    }).always(function () {
-        input.disabled = false;
     });
 }
 
 const revertirCheck = (input) => {
-    input.checked = !input.checked;
+    input.checked = false;
+    input.disabled = false;
     Swal.fire({
         icon: 'error',
         title: 'No se pudo guardar',

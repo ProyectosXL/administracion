@@ -164,7 +164,7 @@ $(document).ready(function() {
                 },
                 {
                     data: 'ULTIMO_ENVIO',
-                    title: 'Estado Cobranza',
+                    title: 'Estado Última Cobranza',
                     render: function(data) {
                         if (data && data.ESTADO) {
                             if (data.ESTADO === 'ABONADO') {

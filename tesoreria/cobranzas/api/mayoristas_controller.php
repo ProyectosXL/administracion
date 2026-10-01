@@ -337,14 +337,10 @@ try {
                 }
             }
 
-            // 1.5 Filtrar clientes: Si ya tienen una cobranza enviada pendiente de pago, no mostrarlos como pendientes
+            // 1.5 Listado final de clientes con pendientes
             $lista = [];
             foreach ($clientes as $c) {
                 if ($c['COD_CLIENT'] === 'FRCOBO') continue;
-                // Si el cliente tiene un envío en estado 'ENVIADO' (aún no abonado), se oculta de la bandeja de pendientes
-                if (isset($c['ULTIMO_ENVIO']) && $c['ULTIMO_ENVIO'] !== null && $c['ULTIMO_ENVIO']['ESTADO'] === 'ENVIADO') {
-                    continue;
-                }
                 $c['TOTAL_GENERAL'] = $c['TOTAL_FACTURA'] + $c['TOTAL_REMITO'];
                 $lista[] = $c;
             }

@@ -137,8 +137,8 @@
                         <div class="info-block">
                             <h6><i class="bi bi-check2-square"></i> ¿Qué significa "Contabilizada"?</h6>
                             <p>
-                                Al tildarla se registra que la factura del gasto <strong>ya se cargó en contabilidad</strong>. Se puede destildar
-                                si se marcó por error.
+                                Al tildarla se registra que la factura del gasto <strong>ya se cargó en contabilidad</strong>. Una vez contabilizada
+                                se muestra con el ícono <i class="bi bi-check-circle-fill icon-ok"></i> y ya no se puede destildar.
                             </p>
                             <p>
                                 <i class="bi bi-eye"></i> <strong>Ver:</strong> abre las fotos del comprobante que subió la sucursal
@@ -271,7 +271,11 @@
                                 <?php } ?>
                             </td>
                             <td class="td-icon" data-sort="<?= $contabilizada ? 1 : 0 ?>">
-                                <input type="checkbox" class="check-tabla checkContabilizar" onchange="checkContabilizar(this)" <?= $contabilizada ? "checked" : "" ?>>
+                                <?php if ($contabilizada) { ?>
+                                    <i class="bi bi-check-circle-fill icon-ok icono-contabilizada" title="Contabilizada"></i>
+                                <?php } else { ?>
+                                    <input type="checkbox" class="check-tabla checkContabilizar" onchange="checkContabilizar(this)">
+                                <?php } ?>
                             </td>
                         </tr>
                     <?php } ?>
