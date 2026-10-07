@@ -1201,23 +1201,61 @@ $(document).ready(function () {
                 { data: 'razon_social', title: 'Razón Social' },
                 { data: 'total_propuesto', title: 'Monto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end fw-bold' },
                 {
-                    data: 'dias_plazo',
-                    title: 'Plazo',
+                    data: 'plazo_inicial',
+                    title: 'Plazo Inicial Solicitado',
                     type: 'num',
                     className: 'text-center',
                     render: function (data, type, row) {
-                        if (data === null || data === undefined) {
+                        const val = (data !== null && data !== undefined) ? data : row.dias_plazo;
+                        if (val === null || val === undefined) {
                             return type === 'sort' ? -1 : '-';
                         }
-                        const diffDays = parseInt(data);
+                        const diffDays = parseInt(val);
                         if (type === 'sort') return diffDays;
 
                         let colorClass = 'text-muted';
                         if (diffDays > 30) colorClass = 'text-danger fw-bold';
                         else if (diffDays > 15) colorClass = 'text-warning fw-bold';
-                        else if (diffDays > 0) colorClass = 'text-success fw-bold';
+                        else if (diffDays >= 0) colorClass = 'text-primary fw-bold';
 
                         return `<span class="${colorClass}">${diffDays} días</span>`;
+                    }
+                },
+                {
+                    data: 'plazo_contrapropuesta',
+                    title: 'Plazo Contrapropuesto',
+                    type: 'num',
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        if (data === null || data === undefined) {
+                            return type === 'sort' ? -1 : '<span class="text-muted small">-</span>';
+                        }
+                        const diffDays = parseInt(data);
+                        if (type === 'sort') return diffDays;
+
+                        let colorClass = 'text-warning fw-bold';
+                        if (diffDays > 30) colorClass = 'text-danger fw-bold';
+
+                        return `<span class="${colorClass}">${diffDays} días</span>`;
+                    }
+                },
+                {
+                    data: 'plazo_abonado',
+                    title: 'Plazo Final Abonado',
+                    type: 'num',
+                    className: 'text-center',
+                    render: function (data, type, row) {
+                        if (data === null || data === undefined) {
+                            return type === 'sort' ? -1 : '<span class="text-muted small">-</span>';
+                        }
+                        const diffDays = parseInt(data);
+                        if (type === 'sort') return diffDays;
+
+                        let colorClass = 'text-success fw-bold';
+                        if (diffDays > 30) colorClass = 'text-danger fw-bold';
+                        else if (diffDays > 15) colorClass = 'text-warning fw-bold';
+
+                        return `<span class="${colorClass}"><i class="fa-solid fa-check-circle me-1"></i>${diffDays} días</span>`;
                     }
                 },
                 {
@@ -1255,7 +1293,7 @@ $(document).ready(function () {
                 }
             ],
             language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-            order: [[4, 'desc']], // Por defecto, ordenamos por la columna 'Plazo' (índice 4) Descendente
+            order: [[0, 'desc']], // Por defecto, ordenamos por ID descendente
             responsive: true,
             drawCallback: function (settings) {
                 const api = this.api();
@@ -1267,8 +1305,14 @@ $(document).ready(function () {
                 const estadosValidos = ['ACEPTADA', 'PAGADO'];
 
                 filteredData.forEach(row => {
-                    if (row.dias_plazo !== null && row.dias_plazo !== undefined && estadosValidos.includes(row.estado)) {
-                        totalDias += parseInt(row.dias_plazo);
+                    const valDias = (row.plazo_abonado !== null && row.plazo_abonado !== undefined)
+                        ? parseInt(row.plazo_abonado)
+                        : ((row.plazo_inicial !== null && row.plazo_inicial !== undefined)
+                            ? parseInt(row.plazo_inicial)
+                            : (row.dias_plazo !== null && row.dias_plazo !== undefined ? parseInt(row.dias_plazo) : null));
+
+                    if (valDias !== null && !isNaN(valDias) && estadosValidos.includes(row.estado)) {
+                        totalDias += valDias;
                         count++;
                     }
                 });

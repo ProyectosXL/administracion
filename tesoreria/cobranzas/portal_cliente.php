@@ -134,7 +134,7 @@ include 'templates/layout/header.php';
 <?php include 'templates/layout/footer.php'; ?>
 
 <!-- Script específico para esta página -->
-<script src="assets/js/portal_cliente.js?v=1.1"></script>
+<script src="assets/js/portal_cliente.js?v=<?= filemtime(__DIR__ . '/assets/js/portal_cliente.js') ?>"></script>
 
 </body>
 

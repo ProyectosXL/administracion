@@ -545,7 +545,7 @@ $(document).ready(function () {
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="negociacion-fecha-pago" class="form-label fw-bold">Nueva Fecha Límite:</label>
-                            <input type="date" class="form-control" id="negociacion-fecha-pago" value="${fechaActual}">
+                            <input type="date" class="form-control" id="negociacion-fecha-pago" value="${fechaActual}" data-fecha-original="${fechaActual}">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="negociacion-cantidad-cuotas" class="form-label fw-bold">Cantidad de Pagos:</label>
@@ -714,10 +714,18 @@ $(document).ready(function () {
 
         } else {
             // Flujo de ENVIAR CONTRAPROPUESTA
-            const comentario = $('#comentario-contrapropuesta').val();
-            const nuevaFecha = $('#negociacion-fecha-pago').val();
-            const nuevoMedio = $('#negociacion-medio-pago').val();
-            const cantCuotas = parseInt($('#negociacion-cantidad-cuotas').val());
+            const comentario = ($('#comentario-contrapropuesta').val() || '').trim();
+            const nuevaFecha = ($('#negociacion-fecha-pago').val() || '').trim();
+            const fechaOriginal = ($('#negociacion-fecha-pago').data('fecha-original') || $('#negociacion-fecha-pago').attr('data-fecha-original') || '').toString().trim().substring(0, 10);
+
+            if (!nuevaFecha || (fechaOriginal && nuevaFecha === fechaOriginal)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha Límite Requerida',
+                    text: 'Para enviar una contrapropuesta debe modificar la fecha límite de pago.',
+                });
+                return;
+            }
 
             if (!comentario) {
                 Swal.fire({

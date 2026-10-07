@@ -733,9 +733,9 @@ include 'templates/layout/footer.php';
     const globalUsuarioNombre = "<?php echo isset($_SESSION['usuario_nombre']) ? addslashes($_SESSION['usuario_nombre']) : ''; ?>";
 </script>
 <!-- Scripts específicos para el panel admin -->
-<script src="assets/js/sugerencias.js"></script>
-<script src="assets/js/franquicias_ga.js?v=1.3"></script>
-<script src="assets/js/app.js?v=1.5"></script>
+<script src="assets/js/sugerencias.js?v=<?= filemtime(__DIR__ . '/assets/js/sugerencias.js') ?>"></script>
+<script src="assets/js/franquicias_ga.js?v=<?= filemtime(__DIR__ . '/assets/js/franquicias_ga.js') ?>"></script>
+<script src="assets/js/app.js?v=<?= filemtime(__DIR__ . '/assets/js/app.js') ?>"></script>
 
 </body>
 

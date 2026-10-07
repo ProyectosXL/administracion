@@ -756,13 +756,96 @@ try {
                     FROM FP_propuestas_pago" . $where . " ORDER BY id DESC";
             $stmt = sqlsrv_query($conn_apps, $sql, $params);
 
+            $parseFecha = function($f) {
+                if ($f instanceof DateTime) return $f;
+                if (empty($f)) return null;
+                try { return new DateTime($f); } catch (Exception $e) { return null; }
+            };
+
             $propuestas = [];
             $codigos = [];
+            $ids_propuestas = [];
             if ($stmt) {
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $propuestas[] = $row;
+                    $ids_propuestas[] = (int)$row['id'];
                     if (!empty($row['cod_cliente'])) {
                         $codigos[] = "'" . trim($row['cod_cliente']) . "'";
+                    }
+                }
+            }
+
+            // Obtener fechas iniciales, contrapropuestas y fechas reales de pago
+            $fechas_iniciales = [];
+            $fechas_contrapropuesta = [];
+            $fechas_pago_real = [];
+
+            if (!empty($ids_propuestas)) {
+                $ids_str = implode(',', $ids_propuestas);
+
+                // 1. Fechas iniciales del snapshot de creación
+                $sql_init = "SELECT id_propuesta, json_data 
+                             FROM FP_propuestas_pago_historial 
+                             WHERE id_propuesta IN ($ids_str) 
+                               AND (tipo_usuario = 'ADMIN' OR CAST(descripcion AS varchar(max)) LIKE 'Propuesta de pago creada%') 
+                               AND json_data IS NOT NULL";
+                $stmt_init = sqlsrv_query($conn_apps, $sql_init);
+                if ($stmt_init) {
+                    while ($ri = sqlsrv_fetch_array($stmt_init, SQLSRV_FETCH_ASSOC)) {
+                        $id_p = $ri['id_propuesta'];
+                        if (!isset($fechas_iniciales[$id_p]) && !empty($ri['json_data'])) {
+                            $snap = json_decode($ri['json_data'], true);
+                            if (!empty($snap['fecha'])) {
+                                $fechas_iniciales[$id_p] = $parseFecha($snap['fecha']);
+                            }
+                        }
+                    }
+                }
+
+                // 2. Fechas de contrapropuesta del cliente (del snapshot o historial)
+                $sql_cp = "SELECT id_propuesta, json_data 
+                           FROM FP_propuestas_pago_historial 
+                           WHERE id_propuesta IN ($ids_str) 
+                             AND (tipo_usuario = 'CLIENTE' OR CAST(descripcion AS varchar(max)) LIKE '%Contrapropuesta%') 
+                             AND json_data IS NOT NULL 
+                           ORDER BY id DESC";
+                $stmt_cp = sqlsrv_query($conn_apps, $sql_cp);
+                if ($stmt_cp) {
+                    while ($rcp = sqlsrv_fetch_array($stmt_cp, SQLSRV_FETCH_ASSOC)) {
+                        $id_p = $rcp['id_propuesta'];
+                        if (!isset($fechas_contrapropuesta[$id_p]) && !empty($rcp['json_data'])) {
+                            $snap_cp = json_decode($rcp['json_data'], true);
+                            if (!empty($snap_cp['fecha'])) {
+                                $fechas_contrapropuesta[$id_p] = $parseFecha($snap_cp['fecha']);
+                            }
+                        }
+                    }
+                }
+
+                // 3. Fechas de subida de comprobantes (Prioridad A para pago)
+                $sql_adj = "SELECT id_propuesta, MAX(fecha_subida) as f_adjunto 
+                            FROM FP_propuestas_adjuntos 
+                            WHERE id_propuesta IN ($ids_str) 
+                            GROUP BY id_propuesta";
+                $stmt_adj = sqlsrv_query($conn_apps, $sql_adj);
+                if ($stmt_adj) {
+                    while ($ra = sqlsrv_fetch_array($stmt_adj, SQLSRV_FETCH_ASSOC)) {
+                        $fechas_pago_real[$ra['id_propuesta']] = $parseFecha($ra['f_adjunto']);
+                    }
+                }
+
+                // 4. Fechas de paso a PAGADO en historial (Prioridad B)
+                $sql_h = "SELECT id_propuesta, MAX(fecha_evento) as f_pago 
+                          FROM FP_propuestas_pago_historial 
+                          WHERE id_propuesta IN ($ids_str) 
+                            AND CAST(descripcion AS varchar(max)) LIKE '%PAGADO%'
+                          GROUP BY id_propuesta";
+                $stmt_h = sqlsrv_query($conn_apps, $sql_h);
+                if ($stmt_h) {
+                    while ($rh = sqlsrv_fetch_array($stmt_h, SQLSRV_FETCH_ASSOC)) {
+                        if (!isset($fechas_pago_real[$rh['id_propuesta']])) {
+                            $fechas_pago_real[$rh['id_propuesta']] = $parseFecha($rh['f_pago']);
+                        }
                     }
                 }
             }
@@ -781,7 +864,48 @@ try {
             }
 
             foreach ($propuestas as &$p) {
+                $id_p = $p['id'];
                 $p['razon_social'] = $nombres[trim($p['cod_cliente'])] ?? 'Desconocido';
+
+                $f_crea = $parseFecha($p['fecha_creacion']);
+
+                // Plazo Inicial Solicitado
+                $f_inicial = $fechas_iniciales[$id_p] ?? $parseFecha($p['fecha_propuesta_pago']);
+                if ($f_crea && $f_inicial) {
+                    $p['plazo_inicial'] = (int)floor(($f_inicial->getTimestamp() - $f_crea->getTimestamp()) / 86400);
+                    if ($p['plazo_inicial'] < 0) $p['plazo_inicial'] = 0;
+                } else {
+                    $p['plazo_inicial'] = isset($p['dias_plazo']) ? (int)$p['dias_plazo'] : null;
+                }
+
+                // Plazo Contrapropuesto (Intermedio)
+                $f_cp = $fechas_contrapropuesta[$id_p] ?? null;
+                if (!$f_cp && trim($p['estado']) === 'CONTRAPROPUESTA_CLIENTE') {
+                    $f_cp = $parseFecha($p['fecha_propuesta_pago']);
+                }
+                if ($f_cp && $f_crea) {
+                    $p['plazo_contrapropuesta'] = (int)floor(($f_cp->getTimestamp() - $f_crea->getTimestamp()) / 86400);
+                    if ($p['plazo_contrapropuesta'] < 0) $p['plazo_contrapropuesta'] = 0;
+                } else {
+                    $p['plazo_contrapropuesta'] = null;
+                }
+
+                // Plazo Final Abonado
+                $f_pago = $fechas_pago_real[$id_p] ?? null;
+                if ($f_pago && $f_crea) {
+                    $p['plazo_abonado'] = (int)floor(($f_pago->getTimestamp() - $f_crea->getTimestamp()) / 86400);
+                    if ($p['plazo_abonado'] < 0) $p['plazo_abonado'] = 0;
+                } else if (trim($p['estado']) === 'PAGADO' && $f_crea) {
+                    $f_fallback = $parseFecha($p['fecha_ultima_modificacion']);
+                    if ($f_fallback) {
+                        $p['plazo_abonado'] = (int)floor(($f_fallback->getTimestamp() - $f_crea->getTimestamp()) / 86400);
+                        if ($p['plazo_abonado'] < 0) $p['plazo_abonado'] = 0;
+                    } else {
+                        $p['plazo_abonado'] = null;
+                    }
+                } else {
+                    $p['plazo_abonado'] = null;
+                }
             }
 
             echo json_encode(['data' => $propuestas]);
@@ -1381,13 +1505,33 @@ try {
                     // Pero PHP a veces no parsea arrays anidados de FormData automáticamente si no tienen índices explícitos
                     // En JS se envió como contrapropuesta[nuevo_total], etc.
                     $cp = $_POST['contrapropuesta'] ?? [];
+                    $nueva_fecha = !empty($cp['nueva_fecha']) ? trim($cp['nueva_fecha']) : null;
+
+                    if (empty($nueva_fecha)) {
+                        echo json_encode(['success' => false, 'message' => 'Para enviar una contrapropuesta debe modificar la fecha límite de pago.']);
+                        exit;
+                    }
+
+                    // Validar contra la fecha actual en BD para impedir contrapropuestas sin cambio de fecha
+                    $sql_fecha_actual = "SELECT fecha_propuesta_pago FROM FP_propuestas_pago WHERE id = ?";
+                    $stmt_fa = sqlsrv_query($conn_apps, $sql_fecha_actual, [$id]);
+                    if ($stmt_fa && $row_fa = sqlsrv_fetch_array($stmt_fa, SQLSRV_FETCH_ASSOC)) {
+                        $f_act = $row_fa['fecha_propuesta_pago'];
+                        $f_act_str = ($f_act instanceof DateTime) ? $f_act->format('Y-m-d') : substr(trim((string)$f_act), 0, 10);
+                        $nueva_f_str = substr(trim((string)$nueva_fecha), 0, 10);
+
+                        if ($f_act_str === $nueva_f_str) {
+                            echo json_encode(['success' => false, 'message' => 'Para enviar una contrapropuesta debe modificar la fecha límite de pago.']);
+                            exit;
+                        }
+                    }
 
                     if (!empty($cp['nuevo_total'])) {
                         $sql_update = "UPDATE FP_propuestas_pago SET estado = ?, fecha_ultima_modificacion = GETDATE(), total_propuesto = ?, fecha_propuesta_pago = ?, medio_de_pago = ? WHERE id = ?";
                         $params = [
                             $estado,
                             $cp['nuevo_total'],
-                            $cp['nueva_fecha'] ?? null,
+                            $nueva_fecha,
                             $cp['nuevo_medio_pago'] ?? null,
                             $id
                         ];
