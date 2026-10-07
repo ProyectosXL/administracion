@@ -1168,3 +1168,55 @@
 [2026-09-01 14:59:20] Marcando proceso como COMPLETADO...
 [2026-09-01 14:59:20] Proceso marcado como COMPLETADO exitosamente
 [2026-09-01 14:59:20] === FIN EXITOSO DEL PROCESO ===
+[2026-10-01 23:15:18] === INICIO PROCESO DE PRORRATEO ===
+[2026-10-01 23:15:18] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 45
+    [2] => 2026-07-01
+    [3] => 2026-07-31
+    [4] => central
+)
+
+[2026-10-01 23:15:18] ID Proceso: 45
+[2026-10-01 23:15:18] Desde: 2026-07-01
+[2026-10-01 23:15:18] Hasta: 2026-07-31
+[2026-10-01 23:15:18] Entorno: central
+[2026-10-01 23:15:18] Incluyendo archivo de conexión...
+[2026-10-01 23:15:18] Creando conexión a base de datos (entorno: central)...
+[2026-10-01 23:15:18] Conexión establecida exitosamente
+[2026-10-01 23:15:18] Actualizando estado a EN_PROCESO (10%)...
+[2026-10-01 23:15:18] Estado actualizado a EN_PROCESO
+[2026-10-01 23:15:18] Actualizando progreso a 30%...
+[2026-10-01 23:15:18] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-10-01 23:16:33] Resultado de ejecución SP V2: OK
+[2026-10-01 23:16:33] SP V2 ejecutado exitosamente
+[2026-10-01 23:16:33] Marcando proceso como COMPLETADO...
+[2026-10-01 23:16:33] Proceso marcado como COMPLETADO exitosamente
+[2026-10-01 23:16:33] === FIN EXITOSO DEL PROCESO ===
+[2026-10-02 04:45:52] === INICIO PROCESO DE PRORRATEO ===
+[2026-10-02 04:45:52] Argumentos recibidos: Array
+(
+    [0] => D:\htdocs\administracion\contabilidad\controller/ejecutar_prorrateo.php
+    [1] => 46
+    [2] => 2026-08-01
+    [3] => 2026-08-31
+    [4] => central
+)
+
+[2026-10-02 04:45:52] ID Proceso: 46
+[2026-10-02 04:45:52] Desde: 2026-08-01
+[2026-10-02 04:45:52] Hasta: 2026-08-31
+[2026-10-02 04:45:52] Entorno: central
+[2026-10-02 04:45:52] Incluyendo archivo de conexión...
+[2026-10-02 04:45:52] Creando conexión a base de datos (entorno: central)...
+[2026-10-02 04:45:52] Conexión establecida exitosamente
+[2026-10-02 04:45:52] Actualizando estado a EN_PROCESO (10%)...
+[2026-10-02 04:45:52] Estado actualizado a EN_PROCESO
+[2026-10-02 04:45:52] Actualizando progreso a 30%...
+[2026-10-02 04:45:52] Ejecutando RO_SP_PRORRATEAR_INTEGRAL_V2...
+[2026-10-02 04:47:13] Resultado de ejecución SP V2: OK
+[2026-10-02 04:47:13] SP V2 ejecutado exitosamente
+[2026-10-02 04:47:13] Marcando proceso como COMPLETADO...
+[2026-10-02 04:47:13] Proceso marcado como COMPLETADO exitosamente
+[2026-10-02 04:47:13] === FIN EXITOSO DEL PROCESO ===

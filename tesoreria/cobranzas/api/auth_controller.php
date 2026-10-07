@@ -6,22 +6,75 @@ require_once '../config/database.php';
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 if ($action === 'login_externo') {
-    $nombre = $_GET['user'] ?? '';
+    // Si ya existe sesión activa desde el Hub central (FP_SOF_USUARIOS)
+    $authCentralUser = $_SESSION['fp_auth_user'] ?? null;
+    $nombre = $_GET['user'] ?? ($authCentralUser['username'] ?? '');
+
     if (empty($nombre)) {
         header('Location: ../login.php');
         exit;
     }
 
     try {
-        $conn = Database::getConnection('central');
-        $sql_usuario = "SELECT ID, NOMBRE, COD_CLIENT, TIPO FROM SOF_USUARIOS WHERE NOMBRE = ?";
-        $stmt_usuario = sqlsrv_query($conn, $sql_usuario, [$nombre]);
+        $usuario = null;
+        $esFpSof = false;
+        
+        // 1. Intentar buscar primero en la base central de aplicaciones (FP_SOF_USUARIOS)
+        try {
+            $connApps = Database::getConnection('apps');
+            if ($connApps) {
+                $sqlFp = "SELECT u.id, u.username, u.nombre_completo, u.categoria_usuario, u.tipo, 
+                                 u.cod_client, u.rol_id, r.codigo as rol_codigo, r.es_admin
+                          FROM FP_SOF_USUARIOS u
+                          LEFT JOIN FP_ROLES_PERMISOS_MAP r ON r.id = u.rol_id
+                          WHERE (u.username = ? OR CAST(u.id AS VARCHAR) = ?) AND u.activo = 1";
+                $stmtFp = sqlsrv_query($connApps, $sqlFp, [$nombre, $nombre]);
+                if ($stmtFp && ($rowFp = sqlsrv_fetch_array($stmtFp, SQLSRV_FETCH_ASSOC))) {
+                    $esAdminFp = !empty($rowFp['es_admin']) 
+                        || (int)($rowFp['rol_id'] ?? 0) === 1
+                        || (int)($rowFp['rol_id'] ?? 0) === 6 // Dirección
+                        || (int)($rowFp['rol_id'] ?? 0) === 23 // Director de Operaciones
+                        || strtoupper(trim($rowFp['rol_codigo'] ?? '')) === 'CONTROLTOTAL'
+                        || strtoupper(trim($rowFp['rol_codigo'] ?? '')) === 'DIRECCION';
 
-        if ($stmt_usuario && $usuario = sqlsrv_fetch_array($stmt_usuario, SQLSRV_FETCH_ASSOC)) {
-            if (in_array(strtolower(trim($usuario['NOMBRE'])), ['valeria', 'vvillarreal'])) {
+                    $tipoStr = strtoupper(trim($rowFp['tipo'] ?? ''));
+                    $catStr = strtoupper(trim($rowFp['categoria_usuario'] ?? ''));
+
+                    $usuario = [
+                        'ID' => $rowFp['id'],
+                        'NOMBRE' => $rowFp['username'],
+                        'NOMBRE_COMPLETO' => $rowFp['nombre_completo'],
+                        'COD_CLIENT' => trim($rowFp['cod_client'] ?? ''),
+                        'TIPO' => $tipoStr ?: ($esAdminFp ? 'SUPERVISION' : 'PERSONAL'),
+                        'ES_ADMIN' => $esAdminFp,
+                        'CATEGORIA' => $catStr
+                    ];
+                    $esFpSof = true;
+                }
+            }
+        } catch (\Throwable $thApps) {
+            // Silently fallback a SOF_USUARIOS
+        }
+
+        // 2. Si no se encontró en FP_SOF_USUARIOS, buscar en la tabla histórica SOF_USUARIOS (central)
+        $conn = Database::getConnection('central');
+        if (!$usuario) {
+            $sql_usuario = "SELECT ID, NOMBRE, COD_CLIENT, TIPO FROM SOF_USUARIOS WHERE NOMBRE = ?";
+            $stmt_usuario = sqlsrv_query($conn, $sql_usuario, [$nombre]);
+
+            if ($stmt_usuario && ($uHist = sqlsrv_fetch_array($stmt_usuario, SQLSRV_FETCH_ASSOC))) {
+                $usuario = $uHist;
+            }
+        }
+
+        if ($usuario) {
+            $nombreLower = strtolower(trim($usuario['NOMBRE']));
+            if (in_array($nombreLower, ['valeria', 'vvillarreal']) || (!empty($usuario['CATEGORIA']) && $usuario['CATEGORIA'] === 'MAYORISTA')) {
                 $rol = 'mayoristas';
+            } elseif (!empty($usuario['ES_ADMIN']) || strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) {
+                $rol = 'admin';
             } else {
-                $rol = (strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) ? 'admin' : 'cliente';
+                $rol = 'cliente';
             }
             
             $_SESSION['usuario_id'] = $usuario['ID'];
@@ -86,23 +139,73 @@ if ($action === 'login') {
     }
 
     try {
-        $conn = Database::getConnection('central');
-        
-        // 1. Buscamos el usuario en SOF_USUARIOS
-        $sql_usuario = "SELECT ID, NOMBRE, COD_CLIENT, TIPO FROM SOF_USUARIOS WHERE NOMBRE = ? AND PASS = ?";
-        $params_usuario = [$nombre, $pass];
-        $stmt_usuario = sqlsrv_query($conn, $sql_usuario, $params_usuario);
+        $usuario = null;
+        $esFpSof = false;
 
-        if ($stmt_usuario === false) {
-            throw new Exception("Error al consultar el usuario.");
+        // 1. Intentar validar primero contra la base central (FP_SOF_USUARIOS)
+        try {
+            $connApps = Database::getConnection('apps');
+            if ($connApps) {
+                $sqlFp = "SELECT u.id, u.username, u.password_plain, u.password, u.nombre_completo, 
+                                 u.categoria_usuario, u.tipo, u.cod_client, u.rol_id, 
+                                 r.codigo as rol_codigo, r.es_admin
+                          FROM FP_SOF_USUARIOS u
+                          LEFT JOIN FP_ROLES_PERMISOS_MAP r ON r.id = u.rol_id
+                          WHERE u.username = ? AND u.activo = 1";
+                $stmtFp = sqlsrv_query($connApps, $sqlFp, [$nombre]);
+                if ($stmtFp && ($rowFp = sqlsrv_fetch_array($stmtFp, SQLSRV_FETCH_ASSOC))) {
+                    $passSql = trim($rowFp['password_plain'] ?? $rowFp['password'] ?? '');
+                    if ($passSql !== '' && $passSql === $pass) {
+                        $esAdminFp = !empty($rowFp['es_admin']) 
+                            || (int)($rowFp['rol_id'] ?? 0) === 1
+                            || (int)($rowFp['rol_id'] ?? 0) === 6
+                            || (int)($rowFp['rol_id'] ?? 0) === 23
+                            || strtoupper(trim($rowFp['rol_codigo'] ?? '')) === 'CONTROLTOTAL'
+                            || strtoupper(trim($rowFp['rol_codigo'] ?? '')) === 'DIRECCION';
+
+                        $tipoStr = strtoupper(trim($rowFp['tipo'] ?? ''));
+                        $catStr = strtoupper(trim($rowFp['categoria_usuario'] ?? ''));
+
+                        $usuario = [
+                            'ID' => $rowFp['id'],
+                            'NOMBRE' => $rowFp['username'],
+                            'NOMBRE_COMPLETO' => $rowFp['nombre_completo'],
+                            'COD_CLIENT' => trim($rowFp['cod_client'] ?? ''),
+                            'TIPO' => $tipoStr ?: ($esAdminFp ? 'SUPERVISION' : 'PERSONAL'),
+                            'ES_ADMIN' => $esAdminFp,
+                            'CATEGORIA' => $catStr
+                        ];
+                        $esFpSof = true;
+                    }
+                }
+            }
+        } catch (\Throwable $thApps) {
+            // Silently fallback
         }
-        $usuario = sqlsrv_fetch_array($stmt_usuario, SQLSRV_FETCH_ASSOC);
+
+        // 2. Si no se validó con FP_SOF_USUARIOS, consultar SOF_USUARIOS histórica
+        $conn = Database::getConnection('central');
+        if (!$usuario) {
+            $sql_usuario = "SELECT ID, NOMBRE, COD_CLIENT, TIPO FROM SOF_USUARIOS WHERE NOMBRE = ? AND PASS = ?";
+            $params_usuario = [$nombre, $pass];
+            $stmt_usuario = sqlsrv_query($conn, $sql_usuario, $params_usuario);
+
+            if ($stmt_usuario === false) {
+                throw new Exception("Error al consultar el usuario.");
+            }
+            if ($uHist = sqlsrv_fetch_array($stmt_usuario, SQLSRV_FETCH_ASSOC)) {
+                $usuario = $uHist;
+            }
+        }
 
         if ($usuario) {
-            if (in_array(strtolower(trim($usuario['NOMBRE'])), ['valeria', 'vvillarreal'])) {
+            $nombreLower = strtolower(trim($usuario['NOMBRE']));
+            if (in_array($nombreLower, ['valeria', 'vvillarreal']) || (!empty($usuario['CATEGORIA']) && $usuario['CATEGORIA'] === 'MAYORISTA')) {
                 $rol = 'mayoristas';
+            } elseif (!empty($usuario['ES_ADMIN']) || strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) {
+                $rol = 'admin';
             } else {
-                $rol = (strtoupper($usuario['TIPO']) === 'SUPERVISION' || empty($usuario['COD_CLIENT'])) ? 'admin' : 'cliente';
+                $rol = 'cliente';
             }
 
             $_SESSION['usuario_id'] = $usuario['ID'];

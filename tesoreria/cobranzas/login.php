@@ -1,3 +1,27 @@
+<?php
+session_start();
+
+// Si ya tiene sesión activa dentro de Cobranzas, redirigir directo
+if (!empty($_SESSION['usuario_id']) && !empty($_SESSION['usuario_rol'])) {
+    if ($_SESSION['usuario_rol'] === 'mayoristas') {
+        header('Location: mayoristas.php');
+        exit;
+    } elseif ($_SESSION['usuario_rol'] === 'admin') {
+        header('Location: index.php');
+        exit;
+    } else {
+        header('Location: portal_cliente.php');
+        exit;
+    }
+}
+
+// Si viene con sesión corporativa del Hub/Dirección, auto-loguear transparente
+if (!empty($_SESSION['fp_auth_user']) && !empty($_SESSION['fp_auth_user']['username'])) {
+    $uName = $_SESSION['fp_auth_user']['username'];
+    header("Location: api/auth_controller.php?action=login_externo&user=" . urlencode($uName));
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
