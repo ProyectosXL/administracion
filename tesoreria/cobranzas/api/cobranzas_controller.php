@@ -198,10 +198,15 @@ try {
             LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
             WHERE v.COD_CLIENT = ? 
               $estado_cond
+              AND (? <> 'LALOMA' OR EXISTS (
+                  SELECT 1 FROM GVA53 g
+                  JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m ON g.COD_ARTICU = m.COD_ARTICU
+                  WHERE g.T_COMP = v.T_COMP AND g.N_COMP = v.N_COMP AND m.RUBRO = 'PACKAGING'
+              ))
             ORDER BY v.FECHA_EMIS DESC
         ";
 
-        $stmt_facturas = sqlsrv_query($conn_central, $sql_facturas, [$cod_cliente]);
+        $stmt_facturas = sqlsrv_query($conn_central, $sql_facturas, [$cod_cliente, $cod_cliente]);
         if ($stmt_facturas === false) {
             throw new Exception("Error en la consulta de detalle de facturas: " . print_r(sqlsrv_errors(), true));
         }
@@ -243,7 +248,12 @@ try {
                     FROM RO_T_PARAMETROS_DESC_CLIENTES
                     GROUP BY COD_CLIENT
                 ) p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
-                $estado_cond";
+                $estado_cond
+                AND (v.COD_CLIENT <> 'LALOMA' OR EXISTS (
+                    SELECT 1 FROM GVA53 g
+                    JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m ON g.COD_ARTICU = m.COD_ARTICU
+                    WHERE g.T_COMP = v.T_COMP AND g.N_COMP = v.N_COMP AND m.RUBRO = 'PACKAGING'
+                ))";
 
         $stmt = sqlsrv_query($conn_central, $sql);
         if ($stmt === false) {
@@ -277,7 +287,12 @@ try {
                              ) s ON v.T_COMP = s.T_COMP AND v.N_COMP = s.N_COMP
                              WHERE v.COD_CLIENT = ? 
                              AND v.ESTADO <> 'IMP'
-                             AND (v.T_COMP IN ('FAC','NCR','NCP','NDP') OR (v.T_COMP = 'REC' AND v.IMPORTE < 0))";
+                             AND (v.T_COMP IN ('FAC','NCR','NCP','NDP') OR (v.T_COMP = 'REC' AND v.IMPORTE < 0))
+                             AND (v.COD_CLIENT <> 'LALOMA' OR EXISTS (
+                                 SELECT 1 FROM GVA53 g
+                                 JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m ON g.COD_ARTICU = m.COD_ARTICU
+                                 WHERE g.T_COMP = v.T_COMP AND g.N_COMP = v.N_COMP AND m.RUBRO = 'PACKAGING'
+                             ))";
                 
                 $stmt_live = sqlsrv_query($conn_central, $sql_live, [$cod_c]);
                 if ($stmt_live === false) {

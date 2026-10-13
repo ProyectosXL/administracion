@@ -267,7 +267,7 @@ if ($action === 'login') {
     $origen = $_SESSION['origen'] ?? '';
     session_destroy();
     if ($origen === 'grupo') {
-        header('Location: https://app.xl.com.ar/sistemas/login.php');
+        header('Location: /sistemas/login.php');
     } else {
         header('Location: ../login.php');
     }
