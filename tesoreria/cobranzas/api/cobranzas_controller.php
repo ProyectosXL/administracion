@@ -198,7 +198,7 @@ try {
             LEFT JOIN RO_T_PARAMETROS_DESC_CLIENTES p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
             WHERE v.COD_CLIENT = ? 
               $estado_cond
-              AND (? <> 'LALOMA' OR EXISTS (
+              AND (? <> 'LALOMA' OR v.N_COMP LIKE '%A00115%' OR EXISTS (
                   SELECT 1 FROM GVA53 g
                   JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m ON g.COD_ARTICU = m.COD_ARTICU
                   WHERE g.T_COMP = v.T_COMP AND g.N_COMP = v.N_COMP AND m.RUBRO = 'PACKAGING'
@@ -249,7 +249,7 @@ try {
                     GROUP BY COD_CLIENT
                 ) p ON v.COD_CLIENT = p.COD_CLIENT COLLATE Modern_Spanish_CI_AI
                 $estado_cond
-                AND (v.COD_CLIENT <> 'LALOMA' OR EXISTS (
+                AND (v.COD_CLIENT <> 'LALOMA' OR v.N_COMP LIKE '%A00115%' OR EXISTS (
                     SELECT 1 FROM GVA53 g
                     JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m ON g.COD_ARTICU = m.COD_ARTICU
                     WHERE g.T_COMP = v.T_COMP AND g.N_COMP = v.N_COMP AND m.RUBRO = 'PACKAGING'
@@ -288,7 +288,7 @@ try {
                              WHERE v.COD_CLIENT = ? 
                              AND v.ESTADO <> 'IMP'
                              AND (v.T_COMP IN ('FAC','NCR','NCP','NDP') OR (v.T_COMP = 'REC' AND v.IMPORTE < 0))
-                             AND (v.COD_CLIENT <> 'LALOMA' OR EXISTS (
+                             AND (v.COD_CLIENT <> 'LALOMA' OR v.N_COMP LIKE '%A00115%' OR EXISTS (
                                  SELECT 1 FROM GVA53 g
                                  JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m ON g.COD_ARTICU = m.COD_ARTICU
                                  WHERE g.T_COMP = v.T_COMP AND g.N_COMP = v.N_COMP AND m.RUBRO = 'PACKAGING'
