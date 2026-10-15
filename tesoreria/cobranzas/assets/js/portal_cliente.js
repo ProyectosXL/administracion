@@ -717,6 +717,8 @@ $(document).ready(function () {
             const comentario = ($('#comentario-contrapropuesta').val() || '').trim();
             const nuevaFecha = ($('#negociacion-fecha-pago').val() || '').trim();
             const fechaOriginal = ($('#negociacion-fecha-pago').data('fecha-original') || $('#negociacion-fecha-pago').attr('data-fecha-original') || '').toString().trim().substring(0, 10);
+            const nuevoMedio = $('#negociacion-medio-pago').val();
+            const cantCuotas = parseInt($('#negociacion-cantidad-cuotas').val()) || 1;
 
             if (!nuevaFecha || (fechaOriginal && nuevaFecha === fechaOriginal)) {
                 Swal.fire({
