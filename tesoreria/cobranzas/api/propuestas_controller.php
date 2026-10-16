@@ -701,6 +701,11 @@ try {
             $razon = $_GET['razon'] ?? '';
             $estado = $_GET['estado'] ?? '';
 
+            // Por defecto, filtrar a los últimos 60 días para máxima velocidad y eficiencia
+            if (empty($f_desde) && !isset($_GET['sin_limite_fecha'])) {
+                $f_desde = date('Y-m-d', strtotime('-60 days'));
+            }
+
             $clientes_permitidos = getFiltroClientesPermitidos($conn_central);
             if (empty($clientes_permitidos)) {
                 echo json_encode(['data' => []]);
@@ -1326,6 +1331,379 @@ try {
                 'success' => true, 
                 'reporte_franquicias' => $resp_franquicia, 
                 'reporte_razon_social' => $resp_razon
+            ]);
+            break;
+
+        case 'obtener_reporte_gerencial':
+            if (!$es_admin) {
+                http_response_code(403);
+                exit;
+            }
+            $conn_apps = Database::getConnection('apps');
+            $conn_central = Database::getConnection('central');
+
+            if (!$conn_apps) {
+                echo json_encode(['success' => false, 'message' => 'No hay conexión a la base de aplicaciones.']);
+                exit;
+            }
+
+            $clientes_permitidos = getFiltroClientesPermitidos($conn_central);
+            if (empty($clientes_permitidos)) {
+                echo json_encode([
+                    'success' => true,
+                    'kpis' => [
+                        'total_recaudado' => 0,
+                        'total_propuestas' => 0,
+                        'tasa_contrapropuesta' => 0,
+                        'promedio_plazo_inicial' => 0,
+                        'promedio_plazo_real' => 0
+                    ],
+                    'clientes' => []
+                ]);
+                exit;
+            }
+
+            // Filtro de fecha para el reporte (por defecto últimos 90 días o lo que envíe el usuario)
+            $rep_desde = $_GET['f_desde'] ?? '';
+            $rep_hasta = $_GET['f_hasta'] ?? '';
+
+            $where_rep = " WHERE 1=1";
+            $params_rep = [];
+
+            if (!empty($rep_desde)) {
+                $where_rep .= " AND p.fecha_creacion >= ?";
+                $params_rep[] = $rep_desde . ' 00:00:00';
+            }
+            if (!empty($rep_hasta)) {
+                $where_rep .= " AND p.fecha_creacion <= ?";
+                $params_rep[] = $rep_hasta . ' 23:59:59';
+            }
+
+            $placeholders = implode(',', array_fill(0, count($clientes_permitidos), '?'));
+            $where_rep .= " AND p.cod_cliente IN ($placeholders)";
+            $params_rep = array_merge($params_rep, $clientes_permitidos);
+
+            // Consulta de todas las propuestas en el período
+            $sql_rep = "SELECT p.id, p.cod_cliente, p.fecha_creacion, p.fecha_propuesta_pago, p.fecha_ultima_modificacion, 
+                               p.total_propuesto, p.estado, p.medio_de_pago,
+                               (SELECT COUNT(*) FROM FP_propuestas_pago_historial h 
+                                WHERE h.id_propuesta = p.id 
+                                  AND (CAST(h.descripcion AS varchar(max)) LIKE '%Contrapropuesta%' 
+                                       OR h.tipo_usuario = 'CLIENTE' AND CAST(h.descripcion AS varchar(max)) LIKE '%envió una contrapropuesta%')) AS cant_contrapropuestas
+                        FROM FP_propuestas_pago p" . $where_rep . " ORDER BY p.id DESC";
+
+            $stmt_rep = sqlsrv_query($conn_apps, $sql_rep, $params_rep);
+            $propuestas_rep = [];
+            $ids_rep = [];
+            $codigos_rep = [];
+
+            if ($stmt_rep) {
+                while ($r = sqlsrv_fetch_array($stmt_rep, SQLSRV_FETCH_ASSOC)) {
+                    $propuestas_rep[] = $r;
+                    $ids_rep[] = (int)$r['id'];
+                    $codigos_rep[] = "'" . trim($r['cod_cliente']) . "'";
+                }
+            }
+
+            $parseFecha = function($f) {
+                if ($f instanceof DateTime) return $f;
+                if (empty($f)) return null;
+                try { return new DateTime($f); } catch (Exception $e) { return null; }
+            };
+
+            // Recolectar datos adicionales de snapshots y fechas de pago
+            $fechas_iniciales = [];
+            $fechas_cp_map = [];
+            $fechas_pago_real = [];
+
+            if (!empty($ids_rep)) {
+                $ids_str = implode(',', $ids_rep);
+
+                // Fechas iniciales
+                $sql_init = "SELECT id_propuesta, json_data 
+                             FROM FP_propuestas_pago_historial 
+                             WHERE id_propuesta IN ($ids_str) 
+                               AND (tipo_usuario = 'ADMIN' OR CAST(descripcion AS varchar(max)) LIKE 'Propuesta de pago creada%') 
+                               AND json_data IS NOT NULL";
+                $stmt_init = sqlsrv_query($conn_apps, $sql_init);
+                if ($stmt_init) {
+                    while ($ri = sqlsrv_fetch_array($stmt_init, SQLSRV_FETCH_ASSOC)) {
+                        $id_p = $ri['id_propuesta'];
+                        if (!isset($fechas_iniciales[$id_p]) && !empty($ri['json_data'])) {
+                            $snap = json_decode($ri['json_data'], true);
+                            if (!empty($snap['fecha'])) {
+                                $fechas_iniciales[$id_p] = $parseFecha($snap['fecha']);
+                            }
+                        }
+                    }
+                }
+
+                // Fechas de contrapropuesta
+                $sql_cp = "SELECT id_propuesta, json_data 
+                           FROM FP_propuestas_pago_historial 
+                           WHERE id_propuesta IN ($ids_str) 
+                             AND (tipo_usuario = 'CLIENTE' OR CAST(descripcion AS varchar(max)) LIKE '%Contrapropuesta%') 
+                             AND json_data IS NOT NULL 
+                           ORDER BY id DESC";
+                $stmt_cp = sqlsrv_query($conn_apps, $sql_cp);
+                if ($stmt_cp) {
+                    while ($rcp = sqlsrv_fetch_array($stmt_cp, SQLSRV_FETCH_ASSOC)) {
+                        $id_p = $rcp['id_propuesta'];
+                        if (!isset($fechas_cp_map[$id_p]) && !empty($rcp['json_data'])) {
+                            $snap_cp = json_decode($rcp['json_data'], true);
+                            if (!empty($snap_cp['fecha'])) {
+                                $fechas_cp_map[$id_p] = $parseFecha($snap_cp['fecha']);
+                            }
+                        }
+                    }
+                }
+
+                // Fechas de subida de comprobantes
+                $sql_adj = "SELECT id_propuesta, MAX(fecha_subida) as f_adjunto 
+                            FROM FP_propuestas_adjuntos 
+                            WHERE id_propuesta IN ($ids_str) 
+                            GROUP BY id_propuesta";
+                $stmt_adj = sqlsrv_query($conn_apps, $sql_adj);
+                if ($stmt_adj) {
+                    while ($ra = sqlsrv_fetch_array($stmt_adj, SQLSRV_FETCH_ASSOC)) {
+                        $fechas_pago_real[$ra['id_propuesta']] = $parseFecha($ra['f_adjunto']);
+                    }
+                }
+
+                // Fechas de estado PAGADO
+                $sql_h = "SELECT id_propuesta, MAX(fecha_evento) as f_pago 
+                          FROM FP_propuestas_pago_historial 
+                          WHERE id_propuesta IN ($ids_str) 
+                            AND CAST(descripcion AS varchar(max)) LIKE '%PAGADO%'
+                          GROUP BY id_propuesta";
+                $stmt_h = sqlsrv_query($conn_apps, $sql_h);
+                if ($stmt_h) {
+                    while ($rh = sqlsrv_fetch_array($stmt_h, SQLSRV_FETCH_ASSOC)) {
+                        if (!isset($fechas_pago_real[$rh['id_propuesta']])) {
+                            $fechas_pago_real[$rh['id_propuesta']] = $parseFecha($rh['f_pago']);
+                        }
+                    }
+                }
+            }
+
+            // Nombres de clientes
+            $nombres = [];
+            if (!empty($codigos_rep) && $conn_central) {
+                $codigos_str = implode(',', array_unique($codigos_rep));
+                $sql_n = "SELECT COD_CLIENT, RAZON_SOCI FROM GVA14 WHERE COD_CLIENT IN ($codigos_str)";
+                $stmt_n = sqlsrv_query($conn_central, $sql_n);
+                if ($stmt_n) {
+                    while ($rn = sqlsrv_fetch_array($stmt_n, SQLSRV_FETCH_ASSOC)) {
+                        $nombres[trim($rn['COD_CLIENT'])] = trim($rn['RAZON_SOCI']);
+                    }
+                }
+            }
+
+            // Agregación consolidada por cliente
+            $resumen_clientes = [];
+            $kpi_total_recaudado = 0;
+            $kpi_total_propuestas = count($propuestas_rep);
+            $kpi_con_contrapropuesta = 0;
+            $kpi_suma_plazo_inicial = 0;
+            $kpi_count_plazo_inicial = 0;
+            $kpi_suma_plazo_real = 0;
+            $kpi_count_plazo_real = 0;
+
+            foreach ($propuestas_rep as $p) {
+                $cod = trim($p['cod_cliente']);
+                $id_p = (int)$p['id'];
+                $razon = $nombres[$cod] ?? "Cliente $cod";
+                $estado = trim($p['estado']);
+                $monto = (float)$p['total_propuesto'];
+                $f_crea = $parseFecha($p['fecha_creacion']);
+
+                if (!isset($resumen_clientes[$cod])) {
+                    $resumen_clientes[$cod] = [
+                        'codigo' => $cod,
+                        'razon_social' => $razon,
+                        'total_propuestas' => 0,
+                        'pagadas' => 0,
+                        'en_negociacion' => 0,
+                        'vencidas' => 0,
+                        'directas' => 0,
+                        'con_contrapropuesta' => 0,
+                        'monto_total_pagado' => 0,
+                        'monto_total_propuesto' => 0,
+                        'suma_plazo_inicial' => 0,
+                        'count_plazo_inicial' => 0,
+                        'suma_plazo_cp' => 0,
+                        'count_plazo_cp' => 0,
+                        'suma_plazo_real' => 0,
+                        'count_plazo_real' => 0,
+                        'medios_pago' => [],
+                        'propuestas_detalle' => []
+                    ];
+                }
+
+                $resumen_clientes[$cod]['total_propuestas']++;
+                $resumen_clientes[$cod]['monto_total_propuesto'] += $monto;
+
+                // Estado
+                if ($estado === 'PAGADO') {
+                    $resumen_clientes[$cod]['pagadas']++;
+                    $resumen_clientes[$cod]['monto_total_pagado'] += $monto;
+                    $kpi_total_recaudado += $monto;
+                } elseif ($estado === 'VENCIDA' || $estado === 'RECHAZADA') {
+                    $resumen_clientes[$cod]['vencidas']++;
+                } else {
+                    $resumen_clientes[$cod]['en_negociacion']++;
+                }
+
+                // Contrapropuestas vs Directas
+                $hubo_cp = ((int)$p['cant_contrapropuestas'] > 0) || isset($fechas_cp_map[$id_p]) || ($estado === 'CONTRAPROPUESTA_CLIENTE');
+                if ($hubo_cp) {
+                    $resumen_clientes[$cod]['con_contrapropuesta']++;
+                    $kpi_con_contrapropuesta++;
+                } else {
+                    $resumen_clientes[$cod]['directas']++;
+                }
+
+                // Plazo inicial
+                $f_init = $fechas_iniciales[$id_p] ?? $parseFecha($p['fecha_propuesta_pago']);
+                if ($f_crea && $f_init) {
+                    $dias_init = (int)floor(($f_init->getTimestamp() - $f_crea->getTimestamp()) / 86400);
+                    if ($dias_init >= 0) {
+                        $resumen_clientes[$cod]['suma_plazo_inicial'] += $dias_init;
+                        $resumen_clientes[$cod]['count_plazo_inicial']++;
+                        $kpi_suma_plazo_inicial += $dias_init;
+                        $kpi_count_plazo_inicial++;
+                    }
+                }
+
+                // Plazo contrapropuesta
+                $f_cp = $fechas_cp_map[$id_p] ?? null;
+                if ($f_cp && $f_crea) {
+                    $dias_cp = (int)floor(($f_cp->getTimestamp() - $f_crea->getTimestamp()) / 86400);
+                    if ($dias_cp >= 0) {
+                        $resumen_clientes[$cod]['suma_plazo_cp'] += $dias_cp;
+                        $resumen_clientes[$cod]['count_plazo_cp']++;
+                    }
+                }
+
+                // Plazo real de pago
+                $f_pago = $fechas_pago_real[$id_p] ?? null;
+                if (!$f_pago && $estado === 'PAGADO') {
+                    $f_pago = $parseFecha($p['fecha_ultima_modificacion']);
+                }
+                if ($f_pago && $f_crea) {
+                    $dias_pago = (int)floor(($f_pago->getTimestamp() - $f_crea->getTimestamp()) / 86400);
+                    if ($dias_pago >= 0) {
+                        $resumen_clientes[$cod]['suma_plazo_real'] += $dias_pago;
+                        $resumen_clientes[$cod]['count_plazo_real']++;
+                        $kpi_suma_plazo_real += $dias_pago;
+                        $kpi_count_plazo_real++;
+                    }
+                }
+
+                // Medio de pago preferido
+                $medio = trim($p['medio_de_pago'] ?? '');
+                if (!empty($medio)) {
+                    $resumen_clientes[$cod]['medios_pago'][$medio] = ($resumen_clientes[$cod]['medios_pago'][$medio] ?? 0) + 1;
+                }
+
+                // Preparar detalle individual de la propuesta para auditoría
+                $p_info = [
+                    'id' => $id_p,
+                    'fecha_creacion' => $f_crea ? $f_crea->format('d/m/Y') : '-',
+                    'total' => $monto,
+                    'estado' => $estado,
+                    'medio_pago' => !empty($medio) ? $medio : 'N/D',
+                    'fecha_solicitada' => $f_init ? $f_init->format('d/m/Y') : '-',
+                    'dias_solicitado' => (isset($dias_init) && $dias_init >= 0) ? $dias_init : '-',
+                    'hubo_contrapropuesta' => $hubo_cp,
+                    'fecha_contrapropuesta' => $f_cp ? $f_cp->format('d/m/Y') : '-',
+                    'dias_contrapropuesta' => (isset($dias_cp) && $dias_cp >= 0) ? $dias_cp : '-',
+                    'fecha_pago' => $f_pago ? $f_pago->format('d/m/Y') : '-',
+                    'dias_efectivo' => (isset($dias_pago) && $dias_pago >= 0) ? $dias_pago : '-',
+                    'origen_fecha_pago' => isset($fechas_pago_real[$id_p]) ? 'Comprobante / Cancelación' : ($estado === 'PAGADO' ? 'Fecha Modificación' : '-')
+                ];
+                $resumen_clientes[$cod]['propuestas_detalle'][] = $p_info;
+            }
+
+            // Preparar salida de clientes formateada
+            $clientes_data = [];
+            foreach ($resumen_clientes as $c) {
+                $tot = $c['total_propuestas'];
+                $pct_cp = $tot > 0 ? round(($c['con_contrapropuesta'] / $tot) * 100, 1) : 0;
+                $pct_directas = $tot > 0 ? round(($c['directas'] / $tot) * 100, 1) : 0;
+                $avg_init = $c['count_plazo_inicial'] > 0 ? round($c['suma_plazo_inicial'] / $c['count_plazo_inicial'], 1) : null;
+                $avg_cp = $c['count_plazo_cp'] > 0 ? round($c['suma_plazo_cp'] / $c['count_plazo_cp'], 1) : null;
+                $avg_real = $c['count_plazo_real'] > 0 ? round($c['suma_plazo_real'] / $c['count_plazo_real'], 1) : null;
+
+                // Determinar perfil de pago
+                $perfil = 'Estándar';
+                $badge_perfil = 'secondary';
+                if ($c['pagadas'] > 0 && $c['vencidas'] == 0 && $pct_cp <= 20) {
+                    $perfil = 'Excelente / Cumplidor';
+                    $badge_perfil = 'success';
+                } elseif ($pct_cp > 50) {
+                    $perfil = 'Negociador Habitual';
+                    $badge_perfil = 'warning';
+                } elseif ($c['vencidas'] > 0 && ($c['vencidas'] / $tot) > 0.25) {
+                    $perfil = 'Atención / Demorado';
+                    $badge_perfil = 'danger';
+                } elseif ($c['pagadas'] > 0) {
+                    $perfil = 'Regular';
+                    $badge_perfil = 'info';
+                }
+
+                // Medio más usado
+                $medio_top = 'N/D';
+                if (!empty($c['medios_pago'])) {
+                    arsort($c['medios_pago']);
+                    $medio_top = array_key_first($c['medios_pago']);
+                }
+
+                $clientes_data[] = [
+                    'codigo' => $c['codigo'],
+                    'razon_social' => $c['razon_social'],
+                    'total_propuestas' => $tot,
+                    'pagadas' => $c['pagadas'],
+                    'en_negociacion' => $c['en_negociacion'],
+                    'vencidas' => $c['vencidas'],
+                    'directas' => $c['directas'],
+                    'con_contrapropuesta' => $c['con_contrapropuesta'],
+                    'pct_contrapropuesta' => $pct_cp,
+                    'pct_directas' => $pct_directas,
+                    'avg_plazo_inicial' => $avg_init,
+                    'avg_plazo_contrapropuesta' => $avg_cp,
+                    'avg_plazo_real' => $avg_real,
+                    'monto_total_pagado' => round($c['monto_total_pagado'], 2),
+                    'monto_total_propuesto' => round($c['monto_total_propuesto'], 2),
+                    'perfil' => $perfil,
+                    'badge_perfil' => $badge_perfil,
+                    'medio_preferido' => $medio_top,
+                    'propuestas' => $c['propuestas_detalle'] ?? []
+                ];
+            }
+
+            // Ordenar por mayor porcentaje de contrapropuestas descendente por defecto
+            usort($clientes_data, function($a, $b) {
+                if ($b['pct_contrapropuesta'] == $a['pct_contrapropuesta']) {
+                    return $b['monto_total_pagado'] <=> $a['monto_total_pagado'];
+                }
+                return ($b['pct_contrapropuesta'] > $a['pct_contrapropuesta']) ? 1 : -1;
+            });
+
+            $tasa_cp_global = $kpi_total_propuestas > 0 ? round(($kpi_con_contrapropuesta / $kpi_total_propuestas) * 100, 1) : 0;
+            $avg_plazo_init_global = $kpi_count_plazo_inicial > 0 ? round($kpi_suma_plazo_inicial / $kpi_count_plazo_inicial, 1) : 0;
+            $avg_plazo_real_global = $kpi_count_plazo_real > 0 ? round($kpi_suma_plazo_real / $kpi_count_plazo_real, 1) : 0;
+
+            echo json_encode([
+                'success' => true,
+                'kpis' => [
+                    'total_recaudado' => round($kpi_total_recaudado, 2),
+                    'total_propuestas' => $kpi_total_propuestas,
+                    'tasa_contrapropuesta' => $tasa_cp_global,
+                    'promedio_plazo_inicial' => $avg_plazo_init_global,
+                    'promedio_plazo_real' => $avg_plazo_real_global
+                ],
+                'clientes' => $clientes_data
             ]);
             break;
 

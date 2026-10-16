@@ -425,9 +425,9 @@ $(document).ready(function () {
             // --- VISTA CRONOGRAMA ---
             // No mostramos ningún dashboard de KPIs aquí, solo el calendario
             initializeCronogramaAdmin();
-        } else if (targetId === 'indicadores-tab') {
-            // --- VISTA INDICADORES ---
-            cargarIndicadoresPro();
+        } else if (targetId === 'reporte-gerencial-tab' || targetId === 'indicadores-tab') {
+            // --- VISTA REPORTE GERENCIAL CONSOLIDADO ---
+            cargarReporteGerencial();
         } else if (targetId === 'sugerencias-tab') {
             // --- VISTA SUGERENCIAS ---
             initializeSugerenciasDataTable();
@@ -1178,6 +1178,15 @@ $(document).ready(function () {
         $('#gestion-dashboard').show();
         $('#btn-abrir-parametros').hide();
 
+        // Inicializar filtros de fecha por defecto a los últimos 60 días si están vacíos
+        if (!$('#filter-fecha-desde').val()) {
+            const hoy = new Date();
+            const d60 = new Date();
+            d60.setDate(hoy.getDate() - 60);
+            $('#filter-fecha-desde').val(d60.toISOString().split('T')[0]);
+            $('#filter-fecha-hasta').val(hoy.toISOString().split('T')[0]);
+        }
+
         cargarDashboardGestion();
         sincronizarEstados();
 
@@ -1329,6 +1338,8 @@ $(document).ready(function () {
 
     $('#btn-limpiar-filtros').on('click', function () {
         $('#filter-form-gestion')[0].reset();
+        $('#filter-fecha-desde').val('');
+        $('#filter-fecha-hasta').val('');
         if (tablaGestion) tablaGestion.ajax.reload();
     });
 
@@ -2950,51 +2961,214 @@ $(document).ready(function () {
         </style>
     `;
 
-    function cargarReportes() {
-        console.log("Iniciando carga de reportes plazos...");
-        
-        // Bloquear tablas con mensaje de carga (Vaciando previos si existen)
-        if ($.fn.DataTable.isDataTable('#tabla-reporte-franquicias')) {
-            $('#tabla-reporte-franquicias').DataTable().destroy();
-        }
-        if ($.fn.DataTable.isDataTable('#tabla-reporte-razon-social')) {
-            $('#tabla-reporte-razon-social').DataTable().destroy();
+    // =========================================================================================================
+    // LÓGICA DE REPORTE GERENCIAL (NUEVA SOLAPA CONSOLIDADA)
+    // =========================================================================================================
+    let tablaReporteGerencialInstance = null;
+
+    function cargarReporteGerencial() {
+        // Inicializar fechas por defecto a los últimos 90 días si están vacías
+        if (!$('#rep-gerencial-desde').val()) {
+            const hoy = new Date();
+            const d90 = new Date();
+            d90.setDate(hoy.getDate() - 90);
+            $('#rep-gerencial-desde').val(d90.toISOString().split('T')[0]);
+            $('#rep-gerencial-hasta').val(hoy.toISOString().split('T')[0]);
         }
 
-        const loadingHtml = '<tr><td colspan="4" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando datos estratégicos...</p></td></tr>';
-        $('#tabla-reporte-franquicias, #tabla-reporte-razon-social').html('<tbody>' + loadingHtml + '</tbody>');
+        const fDesde = $('#rep-gerencial-desde').val();
+        const fHasta = $('#rep-gerencial-hasta').val();
+
+        if ($.fn.DataTable.isDataTable('#tabla-reporte-gerencial')) {
+            $('#tabla-reporte-gerencial').DataTable().destroy();
+        }
+
+        $('#tabla-reporte-gerencial').html('<tbody><tr><td colspan="9" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Generando reporte gerencial consolidado...</p></td></tr></tbody>');
 
         $.ajax({
-            url: 'api/propuestas_controller.php?action=obtener_reporte_plazos',
+            url: 'api/propuestas_controller.php?action=obtener_reporte_gerencial',
             type: 'GET',
+            data: { f_desde: fDesde, f_hasta: fHasta },
             dataType: 'json',
             success: function (response) {
-                console.log("Respuesta recibida:", response);
-                
-                // Limpiar HTML de carga para que DataTables tome el control limpio
-                $('#tabla-reporte-franquicias, #tabla-reporte-razon-social').empty();
+                $('#tabla-reporte-gerencial').empty();
 
                 if (response.success) {
-                    // Inicializar Tabla por Franquicia 
-                    $('#tabla-reporte-franquicias').DataTable({
-                        data: response.reporte_franquicias,
+                    const kpis = response.kpis || {};
+                    const fARS = (v) => parseFloat(v || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+
+                    // Actualizar KPIs de tarjetas ejecutivas
+                    $('#rep-kpi-total-recaudado').text(fARS(kpis.total_recaudado));
+                    $('#rep-kpi-total-propuestas').text((kpis.total_propuestas || 0).toLocaleString('es-AR'));
+                    $('#rep-kpi-tasa-contrapropuesta').text((kpis.tasa_contrapropuesta || 0) + ' %');
+                    $('#rep-kpi-plazo-real').text((kpis.promedio_plazo_real || 0) + ' d');
+                    $('#rep-kpi-plazo-inicial').text((kpis.promedio_plazo_inicial || 0) + ' d');
+
+                    // Inicializar DataTable con destroy: true
+                    if ($.fn.DataTable.isDataTable('#tabla-reporte-gerencial')) {
+                        $('#tabla-reporte-gerencial').DataTable().destroy();
+                    }
+                    $('#tabla-reporte-gerencial').empty();
+
+                    tablaReporteGerencialInstance = $('#tabla-reporte-gerencial').DataTable({
+                        destroy: true,
+                        data: response.clientes || [],
                         columns: [
-                            { data: 'codigo', title: 'Código' },
-                            { data: 'razon_social', title: 'Razón Social' },
                             { 
-                                data: 'avg_propuesto', 
-                                title: 'Promedio Plazo Propuesto Final (Días)', 
-                                className: 'text-center fw-bold',
-                                render: (data) => `<span class="badge bg-light text-dark border">${data} días</span>`
+                                data: 'codigo', 
+                                title: 'Código', 
+                                className: 'text-center fw-bold align-middle',
+                                render: function (data) {
+                                    return `<span class="badge bg-light text-dark border px-2 py-1 font-monospace" style="font-size:0.85rem;">${data}</span>`;
+                                }
                             },
                             { 
-                                data: 'avg_real', 
-                                title: 'Promedio Plazo Pago Final (Días)', 
-                                className: 'text-center fw-bold',
-                                render: (data) => `<span class="badge bg-soft-success text-success border-success">${data} días</span>`
+                                data: 'razon_social', 
+                                title: 'Cliente / Franquicia',
+                                className: 'align-middle',
+                                render: function (data, type, row) {
+                                    const medioBadge = row.medio_preferido !== 'N/D' 
+                                        ? `<span class="badge bg-light text-secondary border ms-1" style="font-size:0.7rem;"><i class="fa-regular fa-credit-card me-1"></i>${row.medio_preferido}</span>`
+                                        : '';
+                                    return `<div>
+                                                <div class="fw-bold text-dark text-truncate" style="max-width: 260px;" title="${data}">${data}</div>
+                                                <div class="small text-muted d-flex align-items-center mt-1">
+                                                    <span>Medio habitual:</span> ${medioBadge || '<span class="text-muted ms-1">ECHECK</span>'}
+                                                </div>
+                                            </div>`;
+                                }
+                            },
+                            { 
+                                data: 'total_propuestas', 
+                                title: 'Propuestas', 
+                                type: 'num',
+                                className: 'text-center align-middle',
+                                render: function (data, type, row) {
+                                    if (type === 'sort') return parseInt(data) || 0;
+                                    return `<div>
+                                                <span class="fw-bold fs-6 text-dark">${data}</span>
+                                                <div class="small text-muted" style="font-size: 0.72rem;">
+                                                    <span class="text-success fw-semibold">${row.pagadas} pag</span> · <span class="text-danger fw-semibold">${row.vencidas} venc</span>
+                                                </div>
+                                            </div>`;
+                                }
+                            },
+                            { 
+                                data: 'pct_contrapropuesta', 
+                                title: '% Contraprop.', 
+                                type: 'num',
+                                className: 'text-center align-middle',
+                                render: function (data, type, row) {
+                                    const val = parseFloat(data) || 0;
+                                    if (type === 'sort') return val;
+
+                                    let badgeColor = '#10b981';
+                                    let badgeBg = '#ecfdf5';
+                                    let badgeBorder = '#a7f3d0';
+
+                                    if (val > 50) {
+                                        badgeColor = '#ef4444';
+                                        badgeBg = '#fef2f2';
+                                        badgeBorder = '#fecaca';
+                                    } else if (val > 20) {
+                                        badgeColor = '#f59e0b';
+                                        badgeBg = '#fffbeb';
+                                        badgeBorder = '#fde68a';
+                                    }
+
+                                    return `<div style="min-width: 110px;">
+                                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                                    <span class="badge fw-bold px-2 py-1" style="background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder}; font-size:0.8rem;">
+                                                        ${val.toFixed(1)}%
+                                                    </span>
+                                                    <span class="small text-muted" style="font-size:0.72rem;">${row.con_contrapropuesta}/${row.total_propuestas}</span>
+                                                </div>
+                                                <div class="matrix-progress-bar">
+                                                    <div style="width: ${Math.min(val, 100)}%; height: 100%; background-color: ${badgeColor}; border-radius: 3px;"></div>
+                                                </div>
+                                            </div>`;
+                                }
+                            },
+                            { 
+                                data: 'avg_plazo_inicial', 
+                                title: 'Plazo Solicitado', 
+                                type: 'num',
+                                className: 'text-center align-middle',
+                                render: function (data, type) {
+                                    const val = data !== null ? parseFloat(data) : -1;
+                                    if (type === 'sort') return val;
+                                    return val >= 0 
+                                        ? `<span class="fw-semibold text-secondary" style="font-size:0.86rem;">${val} <small class="text-muted">días</small></span>` 
+                                        : '<span class="text-muted">-</span>';
+                                }
+                            },
+                            { 
+                                data: 'avg_plazo_contrapropuesta', 
+                                title: 'Plazo Contraprop.', 
+                                type: 'num',
+                                className: 'text-center align-middle',
+                                render: function (data, type) {
+                                    const val = data !== null ? parseFloat(data) : -1;
+                                    if (type === 'sort') return val;
+                                    return val >= 0 
+                                        ? `<span class="badge bg-warning bg-opacity-10 text-dark border border-warning px-2 py-1" style="font-size:0.82rem;">${val} días</span>` 
+                                        : '<span class="text-muted">-</span>';
+                                }
+                            },
+                            { 
+                                data: 'avg_plazo_real', 
+                                title: 'Plazo Efectivo Pago', 
+                                type: 'num',
+                                className: 'text-center align-middle',
+                                render: function (data, type) {
+                                    const val = data !== null ? parseFloat(data) : -1;
+                                    if (type === 'sort') return val;
+                                    return val >= 0 
+                                        ? `<span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1 fw-bold" style="font-size:0.82rem;">${val} días</span>` 
+                                        : '<span class="text-muted">-</span>';
+                                }
+                            },
+                            { 
+                                data: 'monto_total_pagado', 
+                                title: 'Monto Recaudado', 
+                                type: 'num',
+                                className: 'text-end fw-bold align-middle text-dark',
+                                render: function (data, type) {
+                                    const val = parseFloat(data) || 0;
+                                    if (type === 'sort') return val;
+                                    return `<span class="text-success fw-bold" style="font-size:0.92rem;">${val.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</span>`;
+                                }
+                            },
+                            { 
+                                data: 'perfil', 
+                                title: 'Perfil de Pago', 
+                                className: 'text-center align-middle',
+                                render: function (data, type, row) {
+                                    let badgeClass = 'bg-secondary';
+                                    let icon = 'fa-user-check';
+                                    if (row.badge_perfil === 'success') { badgeClass = 'bg-success'; icon = 'fa-circle-check'; }
+                                    else if (row.badge_perfil === 'warning') { badgeClass = 'bg-warning text-dark'; icon = 'fa-handshake'; }
+                                    else if (row.badge_perfil === 'danger') { badgeClass = 'bg-danger'; icon = 'fa-triangle-exclamation'; }
+                                    else if (row.badge_perfil === 'info') { badgeClass = 'bg-info text-dark'; icon = 'fa-user-clock'; }
+
+                                    return `<span class="badge ${badgeClass} bg-opacity-75 px-2 py-1" style="font-size:0.75rem;">
+                                                <i class="fa-solid ${icon} me-1"></i>${data}
+                                            </span>`;
+                                }
+                            },
+                            {
+                                data: null,
+                                title: 'Auditoría',
+                                orderable: false,
+                                className: 'text-center align-middle',
+                                render: function (data, type, row) {
+                                    return `<button type="button" class="btn btn-outline-primary btn-sm px-2 py-1 shadow-xs btn-ver-desglose-cliente" data-codigo="${row.codigo}" style="font-size:0.78rem; font-weight:600;">
+                                                <i class="fa-solid fa-chart-simple me-1"></i> Desglose
+                                            </button>`;
+                                }
                             }
                         ],
-                        order: [[3, 'desc']],
+                        order: [[3, 'desc']], // Ordenar por defecto por columna 3 (% Contrapropuesta) de MAYOR a MENOR
                         language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
                         dom: 'Bfrtip',
                         buttons: [
@@ -3004,48 +3178,140 @@ $(document).ready(function () {
                         ]
                     });
 
-                    // Inicializar Tabla por Razón Social
-                    $('#tabla-reporte-razon-social').DataTable({
-                        data: response.reporte_razon_social,
-                        columns: [
-                            { data: 'razon_social', title: 'Razón Social' },
-                            { 
-                                data: 'avg_propuesto', 
-                                title: 'Promedio Plazo Propuesto Final (Días)', 
-                                className: 'text-center fw-bold',
-                                render: (data) => `<span class="badge bg-light text-dark border">${data} días</span>`
-                            },
-                            { 
-                                data: 'avg_real', 
-                                title: 'Promedio Plazo Pago Final (Días)', 
-                                className: 'text-center fw-bold',
-                                render: (data) => `<span class="badge bg-soft-success text-success border-success">${data} días</span>`
-                            }
-                        ],
-                        order: [[2, 'desc']],
-                        language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-                        dom: 'Bfrtip',
-                        buttons: [
-                            { extend: 'excel', text: '<i class="fa-solid fa-file-excel me-1"></i> Excel', className: 'btn btn-success btn-sm' },
-                            { extend: 'pdf', text: '<i class="fa-solid fa-file-pdf me-1"></i> PDF', className: 'btn btn-danger btn-sm' }
-                        ]
-                    });
+                    // Guardar lista completa en memoria para abrir desgloses
+                    window._clientesReporteGerencial = response.clientes || [];
                 } else {
-                    Swal.fire('Atención', 'El servidor no pudo procesar el reporte: ' + (response.message || 'Error desconocido'), 'warning');
-                    $('#tabla-reporte-franquicias, #tabla-reporte-razon-social').html('<tr><td colspan="4" class="text-center text-danger py-5">No se pudieron cargar los datos del reporte.</td></tr>');
+                    Swal.fire('Atención', 'No se pudo generar el reporte gerencial: ' + (response.message || 'Error desconocido'), 'warning');
+                    $('#tabla-reporte-gerencial').html('<tr><td colspan="10" class="text-center text-danger py-5">No se pudieron cargar los datos del reporte.</td></tr>');
                 }
             },
             error: function (xhr, status, error) {
-                console.error("Error AJAX reporte:", error);
-                $('#tabla-reporte-franquicias, #tabla-reporte-razon-social').html('<tr><td colspan="4" class="text-center text-danger py-5">Error de conexión con el servidor.</td></tr>');
-                Swal.fire('Error de Conexión', 'No se pudo conectar con el servidor para obtener el reporte.', 'error');
+                console.error("Error AJAX reporte gerencial:", error);
+                $('#tabla-reporte-gerencial').html('<tr><td colspan="10" class="text-center text-danger py-5">Error de conexión al cargar el reporte gerencial.</td></tr>');
             }
         });
     }
 
-    // Listener para cuando se activa la pestaña de reportes
-    $(document).on('shown.bs.tab', '#reportes-tab', function () {
-        cargarReportes();
+    // Modal de Auditoría y Desglose por Cliente
+    $(document).on('click', '.btn-ver-desglose-cliente', function () {
+        const cod = $(this).data('codigo');
+        const lista = window._clientesReporteGerencial || [];
+        const cli = lista.find(c => c.codigo === cod);
+
+        if (!cli) {
+            Swal.fire('Error', 'No se encontraron datos para el cliente seleccionado.', 'error');
+            return;
+        }
+
+        const fARS = (v) => parseFloat(v || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+
+        $('#modalDetalleClienteReporteLabel').html(`<i class="fa-solid fa-magnifying-glass-chart me-2"></i> Auditoría: ${cli.razon_social} (${cli.codigo})`);
+        $('#modalDetalleClienteSubtitulo').text(`Medio habitual: ${cli.medio_preferido} | Total Pagado: ${fARS(cli.monto_total_pagado)}`);
+
+        let html = `
+            <!-- Resumen Explicativo de Métricas -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-light border-0 p-3 text-center rounded-3">
+                        <small class="text-muted fw-bold text-uppercase">Plazo Solicitado Promedio</small>
+                        <h4 class="fw-bold text-secondary mb-0 mt-1">${cli.avg_plazo_inicial !== null ? cli.avg_plazo_inicial + ' días' : 'N/A'}</h4>
+                        <small class="text-muted" style="font-size: 0.75rem;">Fecha pago propuesta - Creación</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light border-0 p-3 text-center rounded-3">
+                        <small class="text-muted fw-bold text-uppercase">Plazo Contraprop. Promedio</small>
+                        <h4 class="fw-bold text-warning mb-0 mt-1">${cli.avg_plazo_contrapropuesta !== null ? cli.avg_plazo_contrapropuesta + ' días' : 'Sin Contraprop.'}</h4>
+                        <small class="text-muted" style="font-size: 0.75rem;">Fecha renegociada - Creación</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light border-0 p-3 text-center rounded-3 border-start border-4 border-success">
+                        <small class="text-muted fw-bold text-uppercase">Plazo Efectivo Pago</small>
+                        <h4 class="fw-bold text-success mb-0 mt-1">${cli.avg_plazo_real !== null ? cli.avg_plazo_real + ' días' : 'Sin Pagos'}</h4>
+                        <small class="text-muted" style="font-size: 0.75rem;">Fecha de pago / comprobante - Creación</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light border-0 p-3 text-center rounded-3">
+                        <small class="text-muted fw-bold text-uppercase">Tasa de Negociación</small>
+                        <h4 class="fw-bold text-primary mb-0 mt-1">${cli.pct_contrapropuesta}%</h4>
+                        <small class="text-muted" style="font-size: 0.75rem;">${cli.con_contrapropuesta} contraprop. de ${cli.total_propuestas}</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explicación de Metodología -->
+            <div class="alert alert-info py-2 px-3 small mb-4">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                <strong>¿Cómo se calcula el Plazo Efectivo de Pago?</strong> Se calcula como los días corridos transcurridos desde que se <strong>crea la propuesta</strong> hasta que el cliente  <strong>Tango registra la cancelación de la factura</strong>. Si una propuesta se creó y se pagó pocos días después, el plazo efectivo será de esos pocos días. A continuación se desglosan una por una las propuestas que componen este promedio:
+            </div>
+
+            <!-- Tabla Desglose Propuesta por Propuesta -->
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle border" id="tabla-desglose-propuestas-modal">
+                    <thead class="table-light">
+                        <tr class="text-muted small">
+                            <th class="text-center">Propuesta #</th>
+                            <th class="text-center">F. Creación</th>
+                            <th class="text-end">Monto Total</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">F. Solicitada (Plazo)</th>
+                            <th class="text-center">F. Contraprop. (Plazo)</th>
+                            <th class="text-center bg-soft-success">F. Pago Efectivo (Días)</th>
+                            <th class="text-center">Origen Fecha Pago</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        if (!cli.propuestas || cli.propuestas.length === 0) {
+            html += `<tr><td colspan="8" class="text-center text-muted py-4">No hay propuestas registradas para este cliente en el período.</td></tr>`;
+        } else {
+            cli.propuestas.forEach(p => {
+                let badgeEstado = 'bg-secondary';
+                if (p.estado === 'PAGADO') badgeEstado = 'bg-success';
+                else if (p.estado === 'VENCIDA' || p.estado === 'RECHAZADA') badgeEstado = 'bg-danger';
+                else if (p.estado === 'CONTRAPROPUESTA_CLIENTE') badgeEstado = 'bg-warning text-dark';
+                else if (p.estado.startsWith('PENDIENTE')) badgeEstado = 'bg-info text-dark';
+
+                html += `
+                    <tr>
+                        <td class="text-center fw-bold text-primary">#${p.id}</td>
+                        <td class="text-center small">${p.fecha_creacion}</td>
+                        <td class="text-end fw-bold">${fARS(p.total)}</td>
+                        <td class="text-center"><span class="badge ${badgeEstado} small">${p.estado}</span></td>
+                        <td class="text-center small">${p.fecha_solicitada} <br><strong class="text-secondary">${p.dias_solicitado !== '-' ? p.dias_solicitado + ' d' : '-'}</strong></td>
+                        <td class="text-center small">${p.fecha_contrapropuesta !== '-' ? `${p.fecha_contrapropuesta} <br><strong class="text-warning">${p.dias_contrapropuesta} d</strong>` : '<span class="text-muted">-</span>'}</td>
+                        <td class="text-center bg-soft-success small">${p.fecha_pago !== '-' ? `<strong class="text-success">${p.fecha_pago}</strong><br><span class="badge bg-success">${p.dias_efectivo} días</span>` : '<span class="text-muted">-</span>'}</td>
+                        <td class="text-center small text-muted">${p.origen_fecha_pago}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        $('#modalDetalleClienteBody').html(html);
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalleClienteReporte'));
+        modal.show();
+    });
+
+    // Listeners del Reporte Gerencial
+    $('#btn-filtrar-reporte-gerencial').on('click', function () {
+        cargarReporteGerencial();
+    });
+
+    $('#btn-reset-reporte-gerencial').on('click', function () {
+        const hoy = new Date();
+        const d90 = new Date();
+        d90.setDate(hoy.getDate() - 90);
+        $('#rep-gerencial-desde').val(d90.toISOString().split('T')[0]);
+        $('#rep-gerencial-hasta').val(hoy.toISOString().split('T')[0]);
+        cargarReporteGerencial();
     });
 
     // Evento para eliminar adjuntos (Administración)

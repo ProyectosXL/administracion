@@ -194,15 +194,9 @@ include 'templates/layout/header.php';
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="indicadores-tab" data-bs-toggle="tab" data-bs-target="#indicadores"
+                    <button class="nav-link" id="reporte-gerencial-tab" data-bs-toggle="tab" data-bs-target="#reporte-gerencial"
                         type="button" role="tab">
-                        <i class="fa-solid fa-gauge-high me-1"></i> Indicadores
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="reportes-tab" data-bs-toggle="tab" data-bs-target="#reportes"
-                        type="button" role="tab">
-                        <i class="fa-solid fa-chart-line me-1"></i> Reportes
+                        <i class="fa-solid fa-chart-pie me-1"></i> Reporte Gerencial
                     </button>
                 </li>
                 <?php if (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) !== 'vvillarreal'): ?>
@@ -465,31 +459,178 @@ include 'templates/layout/header.php';
                     </div>
                 </div>
                 <?php endif; ?>
-                <div class="tab-pane fade" id="indicadores" role="tabpanel">
-                    <div class="row" id="container-indicadores">
-                        <div class="col-12 text-center p-5">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <p class="mt-2 text-muted">Calculando indicadores estratégicos...</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="reportes" role="tabpanel">
-                    <div class="p-4">
-                        <div class="row mb-5">
-                            <div class="col-12">
-                                <h5 class="mb-4 text-primary fw-bold"><i class="fa-solid fa-store me-2"></i> Reporte Promedio Plazos Fin de Mes por <?php echo (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) === 'vvillarreal') ? 'Mayorista' : 'Franquicia'; ?></h5>
-                                <div class="table-responsive">
-                                    <table id="tabla-reporte-franquicias" class="table table-striped table-hover align-middle border shadow-sm" style="width:100%">
-                                    </table>
+                <!-- ======================= REPORTE GERENCIAL CONSOLIDADO ======================= -->
+                <div class="tab-pane fade" id="reporte-gerencial" role="tabpanel">
+                    <div class="p-3">
+                        <!-- Filtros del Reporte Gerencial -->
+                        <div class="card border-0 bg-light mb-4 shadow-sm">
+                            <div class="card-body p-3">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold text-muted mb-1"><i class="fa-solid fa-calendar-day me-1"></i> Período Desde</label>
+                                        <input type="date" class="form-control form-control-sm" id="rep-gerencial-desde">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold text-muted mb-1"><i class="fa-solid fa-calendar-day me-1"></i> Período Hasta</label>
+                                        <input type="date" class="form-control form-control-sm" id="rep-gerencial-hasta">
+                                    </div>
+                                    <div class="col-md-3 d-flex gap-2">
+                                        <button type="button" class="btn btn-primary btn-sm px-3" id="btn-filtrar-reporte-gerencial">
+                                            <i class="fa-solid fa-filter me-1"></i> Aplicar Filtro
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-reset-reporte-gerencial" title="Últimos 90 días">
+                                            <i class="fa-solid fa-rotate-left"></i>
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <span class="badge bg-white text-dark border px-3 py-2 small shadow-xs">
+                                            <i class="fa-solid fa-chart-line text-primary me-1"></i> Vista Estratégica Gerencial
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-12">
-                                <hr class="my-5 opacity-25">
-                                <h5 class="mb-4 text-secondary fw-bold"><i class="fa-solid fa-users me-2"></i> Reporte Agrupado por Razón Social</h5>
+
+                        <!-- KPIs Ejecutivos Principales -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-xl-3 col-md-6">
+                                <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-4 border-success bg-white">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase small fw-bold text-muted">Total Recaudado</span>
+                                            <div class="rounded-circle bg-soft-success p-2">
+                                                <i class="fa-solid fa-sack-dollar text-success fs-5"></i>
+                                            </div>
+                                        </div>
+                                        <h4 class="fw-bold mb-0 text-success" id="rep-kpi-total-recaudado">$ 0</h4>
+                                        <small class="text-muted">Propuestas canceladas en el período</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-md-6">
+                                <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-4 border-primary bg-white">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase small fw-bold text-muted">Propuestas Totales</span>
+                                            <div class="rounded-circle bg-soft-primary p-2">
+                                                <i class="fa-solid fa-file-invoice-dollar text-primary fs-5"></i>
+                                            </div>
+                                        </div>
+                                        <h4 class="fw-bold mb-0 text-primary" id="rep-kpi-total-propuestas">0</h4>
+                                        <small class="text-muted">Gestionadas en el período</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-md-6">
+                                <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-4 border-warning bg-white">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase small fw-bold text-muted">Tasa de Negociación</span>
+                                            <div class="rounded-circle bg-soft-warning p-2">
+                                                <i class="fa-solid fa-comments-dollar text-warning fs-5"></i>
+                                            </div>
+                                        </div>
+                                        <h4 class="fw-bold mb-0 text-warning" id="rep-kpi-tasa-contrapropuesta">0 %</h4>
+                                        <small class="text-muted">% con Contrapropuesta generada</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-md-6">
+                                <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-4 border-info bg-white">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-uppercase small fw-bold text-muted">Plazo Real vs Solicitado</span>
+                                            <div class="rounded-circle bg-soft-info p-2">
+                                                <i class="fa-solid fa-stopwatch text-info fs-5"></i>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-baseline gap-2">
+                                            <h4 class="fw-bold mb-0 text-dark" id="rep-kpi-plazo-real">0 d</h4>
+                                            <span class="text-muted small">vs solic. <strong id="rep-kpi-plazo-inicial">0 d</strong></span>
+                                        </div>
+                                        <small class="text-muted">Promedio efectivo de pago</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabla Detallada por Cliente / Franquicia -->
+                        <style>
+                            /* ==================== ESTILOS PREMIUM REPORTE GERENCIAL ==================== */
+                            #tabla-reporte-gerencial_wrapper .dt-buttons {
+                                margin-bottom: 12px;
+                            }
+                            #tabla-reporte-gerencial_wrapper .dt-buttons .btn {
+                                border-radius: 6px;
+                                font-size: 0.82rem;
+                                font-weight: 600;
+                                padding: 6px 14px;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+                            }
+                            #tabla-reporte-gerencial {
+                                border-collapse: separate !important;
+                                border-spacing: 0 !important;
+                                font-size: 0.88rem;
+                            }
+                            #tabla-reporte-gerencial thead th {
+                                background-color: #f1f5f9 !important;
+                                color: #334155 !important;
+                                font-weight: 700 !important;
+                                font-size: 0.8rem !important;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                                padding: 12px 10px !important;
+                                border-bottom: 2px solid #cbd5e1 !important;
+                                vertical-align: middle;
+                            }
+                            #tabla-reporte-gerencial tbody tr {
+                                transition: all 0.2s ease;
+                            }
+                            #tabla-reporte-gerencial tbody tr:hover {
+                                background-color: #f8fafc !important;
+                                transform: scale(1.001);
+                                box-shadow: inset 0 0 0 1px #e2e8f0;
+                            }
+                            #tabla-reporte-gerencial tbody td {
+                                padding: 12px 10px !important;
+                                vertical-align: middle;
+                                border-bottom: 1px solid #f1f5f9;
+                            }
+                            .matrix-progress-bar {
+                                height: 5px;
+                                border-radius: 3px;
+                                background-color: #e2e8f0;
+                                overflow: hidden;
+                                margin-top: 4px;
+                            }
+                            .matrix-chip {
+                                display: inline-flex;
+                                align-items: center;
+                                font-weight: 600;
+                                padding: 3px 10px;
+                                border-radius: 20px;
+                                font-size: 0.78rem;
+                            }
+                        </style>
+
+                        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+                            <div class="card-header bg-white py-3 px-4 border-bottom border-light d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark fs-6">
+                                        <i class="fa-solid fa-layer-group me-2 text-primary"></i> Matriz de Hábitos de Pago y Negociación por <?php echo (trim(strtolower($_SESSION['usuario_nombre'] ?? '')) === 'vvillarreal') ? 'Mayorista' : 'Franquicia'; ?>
+                                    </h6>
+                                    <small class="text-muted">Ordenado de mayor a menor tasa de contrapropuestas</small>
+                                </div>
+                                <span class="badge bg-light text-primary border px-3 py-2 fw-semibold">
+                                    <i class="fa-solid fa-bolt me-1"></i> Análisis de Riesgo y Flexibilidad
+                                </span>
+                            </div>
+                            <div class="card-body p-4 pt-3">
                                 <div class="table-responsive">
-                                    <table id="tabla-reporte-razon-social" class="table table-striped table-hover align-middle border shadow-sm" style="width:100%">
+                                    <table id="tabla-reporte-gerencial" class="table table-hover align-middle w-100">
                                     </table>
                                 </div>
                             </div>
@@ -500,6 +641,29 @@ include 'templates/layout/header.php';
         </div>
     </div>
 </main>
+
+<!-- ======================= MODAL DETALLE DE PROPUESTAS POR CLIENTE (REPORTE GERENCIAL) ======================= -->
+<div class="modal fade" id="modalDetalleClienteReporte" tabindex="-1" aria-labelledby="modalDetalleClienteReporteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <div>
+                    <h5 class="modal-title fw-bold" id="modalDetalleClienteReporteLabel">
+                        <i class="fa-solid fa-list-check me-2"></i> Auditoría de Propuestas y Plazos Efectivos
+                    </h5>
+                    <small class="opacity-75" id="modalDetalleClienteSubtitulo">Detalle exhaustivo de cómo se calculan los plazos</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="modalDetalleClienteBody">
+                <!-- Se llena con JS -->
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ======================= NUEVO MODAL DE CONFIRMACIÓN DE ELIMINACIÓN ======================= -->
 <div class="modal fade" id="confirmDeletePropuestaModal" tabindex="-1"
