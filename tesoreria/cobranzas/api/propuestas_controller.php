@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 header('Content-Type: application/json');
 require_once '../config/database.php';
@@ -12,51 +14,87 @@ if (!isset($_SESSION['usuario_id'])) {
 }
 
 $action = $_GET['action'] ?? '';
+$es_admin = (isset($_SESSION['usuario_rol']) && $_SESSION['usuario_rol'] === 'admin');
+$usuario_id = $_SESSION['usuario_id'] ?? null;
+$usuario_nombre = $_SESSION['usuario_nombre'] ?? '';
+$codigos_cliente_agrupados = $_SESSION['codigos_cliente_agrupados'] ?? [];
 
-function getWholesalerClientCodes($conn_central) {
-    static $codes = null;
-    if ($codes !== null) return $codes;
-    $codes = [];
-    if (!$conn_central) return $codes;
-    $sql = "SELECT DISTINCT COD_CLIENT FROM RO_V_COBRANZA_PEND_MAYORISTAS";
-    $stmt = sqlsrv_query($conn_central, $sql);
-    if ($stmt) {
-        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            $codes[] = trim($row['COD_CLIENT']);
-        }
-    }
-    return $codes;
+// Liberar lock de sesión en acciones de lectura para permitir concurrencia total entre solapas
+if (in_array($action, ['listar_admin', 'listar_cliente', 'ver_detalle', 'obtener_dashboard_admin', 'obtener_indicadores_pro', 'obtener_cronograma_admin', 'reporte_gerencial_consolidado', 'detalle_cliente_reporte'])) {
+    session_write_close();
 }
 
-function getFranchiseClientCodes($conn_central) {
-    static $codes = null;
-    if ($codes !== null) return $codes;
-    $codes = [];
-    if (!$conn_central) return $codes;
-    $sql = "SELECT DISTINCT COD_CLIENT FROM RO_V_COBRANZA_PEND_FRANQUICIAS";
-    $stmt = sqlsrv_query($conn_central, $sql);
-    if ($stmt) {
-        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            $codes[] = trim($row['COD_CLIENT']);
+if (!function_exists('getWholesalerClientCodes')) {
+    function getWholesalerClientCodes($conn_central) {
+        static $codes = null;
+        if ($codes !== null) return $codes;
+        $codes = [];
+        if (!$conn_central) return $codes;
+        $sql = "SELECT DISTINCT COD_CLIENT FROM RO_V_COBRANZA_PEND_MAYORISTAS";
+        $stmt = sqlsrv_query($conn_central, $sql);
+        if ($stmt) {
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $codes[] = trim($row['COD_CLIENT']);
+            }
         }
+        return $codes;
     }
-    return $codes;
 }
 
-function getFiltroClientesPermitidos($conn_central) {
-    if (isset($_SESSION['usuario_nombre']) && trim(strtolower($_SESSION['usuario_nombre'])) === 'vvillarreal') {
-        return getWholesalerClientCodes($conn_central);
-    } else {
-        return getFranchiseClientCodes($conn_central);
+if (!function_exists('getFranchiseClientCodes')) {
+    function getFranchiseClientCodes($conn_central) {
+        static $codes = null;
+        if ($codes !== null) return $codes;
+        $codes = [];
+        if (!$conn_central) return $codes;
+        
+        // 1. Clientes con deuda pendiente en la vista de franquicias
+        $sql = "SELECT DISTINCT COD_CLIENT FROM RO_V_COBRANZA_PEND_FRANQUICIAS";
+        $stmt = sqlsrv_query($conn_central, $sql);
+        if ($stmt) {
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $codes[trim($row['COD_CLIENT'])] = true;
+            }
+        }
+        
+        // 2. Clientes con propuestas activas/históricas (evita que desaparezcan cuando saldan deuda)
+        $conn_apps = Database::getConnection('apps');
+        if ($conn_apps) {
+            $may_codes = array_flip(getWholesalerClientCodes($conn_central));
+            $sql_hist = "SELECT DISTINCT cod_cliente FROM FP_propuestas_pago";
+            $stmt_hist = sqlsrv_query($conn_apps, $sql_hist);
+            if ($stmt_hist) {
+                while ($rh = sqlsrv_fetch_array($stmt_hist, SQLSRV_FETCH_ASSOC)) {
+                    $c = trim($rh['cod_cliente']);
+                    if (!isset($may_codes[$c])) {
+                        $codes[$c] = true;
+                    }
+                }
+            }
+        }
+        
+        $codes = array_keys($codes);
+        return $codes;
+    }
+}
+
+if (!function_exists('getFiltroClientesPermitidos')) {
+    function getFiltroClientesPermitidos($conn_central) {
+        global $usuario_nombre;
+        if (!empty($usuario_nombre) && trim(strtolower($usuario_nombre)) === 'vvillarreal') {
+            return getWholesalerClientCodes($conn_central);
+        } else {
+            return getFranchiseClientCodes($conn_central);
+        }
     }
 }
 
 try {
-    $es_admin = (isset($_SESSION['usuario_rol']) && $_SESSION['usuario_rol'] === 'admin');
 
     switch ($action) {
         case 'listar_cliente':
-            $codigos_cliente = $_SESSION['codigos_cliente_agrupados'] ?? [];
+            global $codigos_cliente_agrupados;
+            $codigos_cliente = $codigos_cliente_agrupados ?? [];
             if (empty($codigos_cliente)) {
                 echo json_encode(['data' => []]);
                 exit;
@@ -81,7 +119,8 @@ try {
             $params = [$id_propuesta];
 
             if (!$es_admin) {
-                $codigos_cliente_permitidos = $_SESSION['codigos_cliente_agrupados'] ?? [];
+                global $codigos_cliente_agrupados;
+                $codigos_cliente_permitidos = $codigos_cliente_agrupados ?? [];
                 if (empty($codigos_cliente_permitidos)) {
                     http_response_code(403);
                     echo json_encode(['success' => false, 'message' => 'Acceso denegado.']);
@@ -164,10 +203,7 @@ try {
             $conn_apps = Database::getConnection('apps');
             $conn_central = Database::getConnection('central');
 
-            // --- AUTO-VENCIMIENTO GLOBAL ---
-            // Revisamos vencimientos de todos los clientes antes de mostrar los KPIs
-            require_once __DIR__ . '/vencimientos_controller.php';
-            verificarYActualizarVencimientosCliente($conn_apps, null);
+            // Vencimientos globales se procesan en listar_admin para evitar bloqueos concurrentes
 
             $clientes_permitidos = getFiltroClientesPermitidos($conn_central);
             if (empty($clientes_permitidos)) {

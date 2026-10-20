@@ -37,44 +37,50 @@ let isSugerenciasLoading = false;
 function initializeSugerenciasDataTable() {
     if (typeof $ === 'undefined' || isSugerenciasLoading) return;
     isSugerenciasLoading = true;
-    const url = 'api/cobranzas_controller.php?tipo=sugerencias&recalcular=true';
-        $('#summary-cards').hide();
-        $('#gestion-dashboard').hide();
-        $('#btn-abrir-parametros').hide();
-        
-        if ($.fn.DataTable.isDataTable('#tabla-sugerencias')) {
-            window.tablaSugerencias.ajax.url(url).load(() => { isSugerenciasLoading = false; });
-        } else {
-            window.tablaSugerencias = $('#tabla-sugerencias').DataTable({
-                ajax: { 
-                    url: 'api/cobranzas_controller.php?action=get_resumen_cobranzas&tipo=sugerencias' + (window.forzarRecalculoSugerencias ? '&recalcular=true' : ''), 
-                    dataSrc: 'data',
-                    complete: () => { isSugerenciasLoading = false; window.forzarRecalculoSugerencias = false; }
+    const url = 'api/cobranzas_controller.php?tipo=sugerencias' + (window.forzarRecalculoSugerencias ? '&recalcular=true' : '');
+    $('#summary-cards').hide();
+    $('#gestion-dashboard').hide();
+    $('#btn-abrir-parametros').hide();
+    
+    if ($.fn.DataTable.isDataTable('#tabla-sugerencias')) {
+        window.tablaSugerencias.ajax.url(url).load(() => { 
+            isSugerenciasLoading = false; 
+            window.forzarRecalculoSugerencias = false;
+        });
+    } else {
+        window.tablaSugerencias = $('#tabla-sugerencias').DataTable({
+            ajax: { 
+                url: url, 
+                dataSrc: 'data',
+                complete: () => { 
+                    isSugerenciasLoading = false; 
+                    window.forzarRecalculoSugerencias = false; 
+                }
+            },
+            columns: [
+                { data: 'COD_CLIENT', title: 'Código', className: 'font-weight-bold text-gray-800' },
+                { data: 'RAZON_SOCI', title: 'Razón Social' },
+                { data: null, title: 'Segmento', className: 'text-center', render: (d) => `${d.COMPROBANTES ? d.COMPROBANTES.length : 0} ítems` },
+                { data: 'TOTAL_BRUTO_SUG', title: 'Monto Bruto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end' },
+                { data: 'TOTAL_NETO_SUG', title: 'Monto Neto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end font-weight-bold text-gray-800' },
+                { 
+                    data: 'FECHA_SUGERIDA', 
+                    title: 'F. Límite Propuesta', 
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            return `<span class="badge bg-light text-dark border">${data}</span>`;
+                        }
+                        return data;
+                    }, 
+                    className: 'text-center' 
                 },
-                columns: [
-                    { data: 'COD_CLIENT', title: 'Código', className: 'font-weight-bold text-gray-800' },
-                    { data: 'RAZON_SOCI', title: 'Razón Social' },
-                    { data: null, title: 'Segmento', className: 'text-center', render: (d) => `${d.COMPROBANTES.length} ítems` },
-                    { data: 'TOTAL_BRUTO_SUG', title: 'Monto Bruto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end' },
-                    { data: 'TOTAL_NETO_SUG', title: 'Monto Neto', render: $.fn.dataTable.render.number('.', ',', 2, '$ '), className: 'text-end font-weight-bold text-gray-800' },
-                    { 
-                        data: 'FECHA_SUGERIDA', 
-                        title: 'F. Límite Propuesta', 
-                        render: function(data, type, row) {
-                            if (type === 'display') {
-                                return `<span class="badge bg-light text-dark border">${data}</span>`;
-                            }
-                            return data;
-                        }, 
-                        className: 'text-center' 
-                    },
-                    { data: null, title: 'Acciones', orderable: false, className: 'text-center', render: (d) => `<button class="btn btn-outline-info btn-sm btn-revisar-sugerencia" data-cod="${d.COD_CLIENT}" data-idx="${d.IDX}"><i class="fa-solid fa-eye me-1"></i> Revisar Sugerencia</button>` }
-                ],
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
-                responsive: true, order: [[5, 'asc']], scrollY: '55vh', scrollCollapse: true, paging: true,
-                destroy: true
-            });
-        }
+                { data: null, title: 'Acciones', orderable: false, className: 'text-center', render: (d) => `<button class="btn btn-outline-info btn-sm btn-revisar-sugerencia" data-cod="${d.COD_CLIENT}" data-idx="${d.IDX}"><i class="fa-solid fa-eye me-1"></i> Revisar Sugerencia</button>` }
+            ],
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+            responsive: true, order: [[5, 'asc']], scrollY: '55vh', scrollCollapse: true, paging: true,
+            destroy: true
+        });
+    }
 }
 
 $(document).ready(function() {
@@ -84,17 +90,23 @@ $(document).ready(function() {
         btn.html('<i class="fa-solid fa-sync fa-spin me-1"></i> Recalculando...').prop('disabled', true);
         
         window.forzarRecalculoSugerencias = true;
+        const recalcUrl = 'api/cobranzas_controller.php?tipo=sugerencias&recalcular=true';
         if ($.fn.DataTable.isDataTable('#tabla-sugerencias')) {
-            window.tablaSugerencias.ajax.reload(function() {
+            window.tablaSugerencias.ajax.url(recalcUrl).load(function() {
                 btn.html(originalHtml).prop('disabled', false);
-            }, false);
+                window.forzarRecalculoSugerencias = false;
+                isSugerenciasLoading = false;
+            });
         } else {
             initializeSugerenciasDataTable();
-            setTimeout(() => { btn.html(originalHtml).prop('disabled', false); }, 1500);
+            setTimeout(() => { 
+                btn.html(originalHtml).prop('disabled', false); 
+                window.forzarRecalculoSugerencias = false;
+            }, 1500);
         }
     });
 
-    // RECALCULO AUTOMÁTICO AL ENTRAR A LA PESTAÑA
+    // Carga de sugerencias (desde caché rápida) al entrar a la pestaña
     $(document).on('shown.bs.tab', '#sugerencias-tab', function () {
         initializeSugerenciasDataTable();
     });

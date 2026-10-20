@@ -1188,7 +1188,7 @@ $(document).ready(function () {
         }
 
         cargarDashboardGestion();
-        sincronizarEstados();
+        sincronizarEstados(true);
 
         // Siempre (re)creamos la tabla para asegurar que las nuevas definiciones de columnas se apliquen
         tablaGestion = $('#tabla-gestion-propuestas').DataTable({
@@ -1956,44 +1956,45 @@ $(document).ready(function () {
         });
     });
     // ======================= EVENTO DE SINCRONIZACIÓN CORREGIDO Y EN SU LUGAR =======================
-    function sincronizarEstados() {
-        // 1. Mostramos un modal de "Cargando..." no intrusivo
-        Swal.fire({
-            title: 'Sincronizando Estados',
-            html: 'Buscando propuestas pagadas para actualizar...',
-            timer: 2000, // Se cierra solo después de 2 segundos como máximo
-            timerProgressBar: true,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
+    function sincronizarEstados(silent = true) {
+        if (!silent) {
+            Swal.fire({
+                title: 'Sincronizando Estados',
+                html: 'Buscando propuestas pagadas para actualizar...',
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
 
         $.ajax({
             url: 'api/propuestas_controller.php?action=sincronizar_estados_pagados',
             type: 'POST',
             dataType: 'json',
             success: function (response) {
-                // Cerramos el modal de "cargando"
-                Swal.close();
+                if (!silent) {
+                    Swal.close();
+                }
 
                 if (response.success) {
-                    // 2. Si hubo cambios, mostramos un modal de éxito
+                    // Si hubo cambios, mostramos un modal de aviso
                     if (response.message.includes("Se actualizaron") && !response.message.includes("Se actualizaron 0")) {
                         Swal.fire({
                             icon: 'success',
                             title: '¡Sincronización Exitosa!',
                             text: response.message,
-                            timer: 9000, // Se cierra solo
+                            timer: 3000,
                             showConfirmButton: false
                         });
 
                         // Recargamos los datos para reflejar los cambios
                         if (tablaGestion) {
-                            tablaGestion.ajax.reload();
+                            tablaGestion.ajax.reload(null, false);
                         }
                         cargarDashboardGestion();
                     } else {
-                        // 3. Si no hubo cambios, lo informamos en la consola (sin molestar al usuario)
                         console.log('Sincronización finalizada, sin cambios detectados.');
                     }
                 } else {
@@ -2001,13 +2002,14 @@ $(document).ready(function () {
                 }
             },
             error: function () {
-                Swal.close();
+                if (!silent) Swal.close();
                 console.error('Error de conexión durante la sincronización automática.');
             }
         });
     }
 
-    // ===== NUEVA FUNCIÓN DE RECÁLCULO PARA EL MODAL ADMIN =====
+    
+// ===== NUEVA FUNCIÓN DE RECÁLCULO PARA EL MODAL ADMIN =====
     function recalcularTotalesAdmin() {
         let totalBruto = 0;
         let totalNeto = 0;
