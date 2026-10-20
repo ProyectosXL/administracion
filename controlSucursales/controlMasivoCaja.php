@@ -39,6 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mes'], $_POST['anio']
 $entornoActual = isset($_SESSION['entorno']) ? $_SESSION['entorno'] : 'central';
 $esEntornoUy   = ($entornoActual === 'uy');
 $flagUyActiva  = in_array($entornoActual, ['uy', 'suc_uy']);
+// Detalle del día y Reprocesar usan la lógica / SP de Argentina
+$permiteDetalle = !$flagUyActiva;
 
 $sucursal = new Sucursal();
 $todosLosLocales = $sucursal->traerLocales(true);
@@ -173,6 +175,7 @@ $textoMonto = function ($valor) {
                             <p>
                                 Esta pantalla no crea filas: solo actualiza el <strong>$ control</strong>, las <strong>observaciones</strong>
                                 y la marca de <strong>verificado</strong> de las que ya existen.
+                                <strong>Reprocesar</strong> además recalcula el <strong>$ sistema</strong>.
                             </p>
                         </div>
 
@@ -200,6 +203,16 @@ $textoMonto = function ($valor) {
                                     Solo aparece si queda algún día sin verificar.
                                 </li>
                                 <li><i class="bi bi-file-earmark-excel"></i> <strong>Exportar:</strong> descarga la tabla en Excel.</li>
+                                <?php if ($permiteDetalle) { ?>
+                                    <li>
+                                        <i class="bi bi-list-ul"></i> <strong>Detalle del día:</strong> al tocar la fecha se abre el detalle de la cobranza
+                                        de ese día: el total por medio de pago (calculado ahora contra lo grabado), por cuenta de tesorería y por comprobante.
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-arrow-repeat"></i> <strong>Reprocesar:</strong> recalcula el $ sistema del mes para la sucursal, en todos los medios de pago,
+                                        con <code>RO_SP_VENTA_DIARIA_SUCURSALES_ACTUALIZAR</code>. No toca los días verificados y no crea días que falten.
+                                    </li>
+                                <?php } ?>
                             </ul>
                             <p class="info-note">
                                 <i class="bi bi-exclamation-triangle"></i>
@@ -279,6 +292,11 @@ $textoMonto = function ($valor) {
                                 <i class="bi bi-check-circle"></i> Controlar
                             </button>
                         <?php } ?>
+                        <?php if ($permiteDetalle) { ?>
+                            <button type="button" class="btn-modern btn-guardar-todo" id="btnReprocesar" onclick="reprocesar()" title="Recalcula el $ sistema del mes con el SP de actualización">
+                                <i class="bi bi-arrow-repeat"></i> Reprocesar
+                            </button>
+                        <?php } ?>
                         <button type="button" class="btn-modern btn-export" id="btnExport">
                             <i class="bi bi-file-earmark-excel"></i> Exportar
                         </button>
@@ -323,7 +341,12 @@ $textoMonto = function ($valor) {
                 </div>
             </div>
 
-            <table class="display" id="tablaControl">
+            <table class="display" id="tablaControl"
+                data-sucursal="<?= htmlspecialchars($nroSucursal) ?>"
+                data-desc-sucursal="<?= htmlspecialchars($descSucursal) ?>"
+                data-medio-pago="<?= htmlspecialchars($medioPagoSelected) ?>"
+                data-desde="<?= $primerDia ?>"
+                data-hasta="<?= $ultimoDia ?>">
                 <thead>
                     <tr>
                         <th>FECHA</th>
@@ -353,7 +376,13 @@ $textoMonto = function ($valor) {
                             data-sistema="<?= $textoMonto($valorEnSistema) ?>">
 
                             <td class="td-fecha" data-sort="<?= $importe['FECHA']->format("Y-m-d") ?>">
-                                <?= $importe['FECHA']->format("d/m/Y") ?>
+                                <?php if ($permiteDetalle) { ?>
+                                    <button type="button" class="btn-detalle-dia" onclick="verDetalleDia('<?= $importe['FECHA']->format("Y-m-d") ?>')" title="Ver detalle del día">
+                                        <?= $importe['FECHA']->format("d/m/Y") ?> <i class="bi bi-list-ul"></i>
+                                    </button>
+                                <?php } else { ?>
+                                    <?= $importe['FECHA']->format("d/m/Y") ?>
+                                <?php } ?>
                                 <?php if ($estaVerificado) { ?>
                                     <i class="bi bi-check-circle-fill icon-ok" title="Verificado"></i>
                                 <?php } ?>
@@ -396,6 +425,8 @@ $textoMonto = function ($valor) {
 
         <?php } ?>
     </div>
+
+    <?php if ($permiteDetalle) { include_once 'components/controlMasivo_modalDetalle.php'; } ?>
 
     <!-- jQuery (usar versión completa, no slim) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

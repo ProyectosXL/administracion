@@ -804,4 +804,167 @@ class Sucursal
             return false;
         }
     }
+
+    /**
+     * Detalle por comprobante de la cobranza de un día, con la misma lógica que
+     * RO_SP_VENTA_DIARIA_SUCURSALES (CTA29 por cuenta de tesorería + EFECTIVO / PROMO BANCO de las NC con VISA/ICBC).
+     * Los movimientos cuya cuenta no cae en ningún medio de pago vuelven con MEDIO_PAGO NULL:
+     * el SP los calcula pero nunca los graba, así que se muestran para detectarlos.
+     */
+    public function traerDetalleCobranzaDia($nroSucursal, $fecha)
+    {
+        $p = $this->cid->prefix;
+        $sucursalEmpresa = "LEFT JOIN {$p}SUCURSAL S
+                ON (A.NRO_SUCURS = 0 AND S.ID_SUCURSAL = (SELECT EMPRESA.ID_SUCURSAL FROM {$p}EMPRESA EMPRESA))
+                OR A.NRO_SUCURS = S.NRO_SUCURSAL";
+
+        $sql = "
+            SELECT X.MEDIO_PAGO, X.COD_CTA, X.T_COMP, X.N_COMP, X.IMPORTE, X.COTIZACION_TC
+            FROM (
+                SELECT S.NRO_SUCURSAL, A.T_COMP, A.N_COMP,
+                    CASE
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100190' THEN 'GO CUOTAS'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100193' THEN 'MODO QR'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100194' THEN 'CUENTA DNI'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100198' THEN 'MERCADO PAGO QR'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100195' THEN 'MERCADO PAGO'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100199' THEN 'MERCADO PAGO'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100900' THEN 'DOLARES'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100910' THEN 'EUROS'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100800' THEN 'BONUS SHOPPING'
+                        WHEN CT.COD_CTA_CUENTA_TESORERIA = '100850' THEN 'BONUS SHOPPING'
+                        WHEN CT.TIPO = 'T' THEN 'TARJETA'
+                        WHEN CT.TIPO = 'O' THEN 'EFECTIVO'
+                    END AS MEDIO_PAGO,
+                    ISNULL(B.COD_CTA, C.COD_CTA) AS COD_CTA,
+                    CASE WHEN A.T_COMP LIKE 'NC%' THEN C.MONTO * -1 ELSE B.MONTO END AS IMPORTE,
+                    CASE WHEN A.T_COMP LIKE 'NC%' THEN C.COTIZACION_TC ELSE B.COTIZACION_TC END AS COTIZACION_TC
+                FROM {$p}CTA02 A
+                LEFT JOIN (
+                    SELECT COD_COMP, N_COMP, NRO_SUCURS, COD_CTA,
+                        CASE WHEN COD_CTA IN ('100900','100910') THEN CANT_MONE ELSE MONTO END AS MONTO,
+                        CASE WHEN COD_CTA IN ('100900','100910') THEN COTIZ_MONE ELSE NULL END AS COTIZACION_TC
+                    FROM {$p}CTA29
+                    WHERE D_H = 'D' AND COD_COMP = 'FAC' AND CONCILIADO != 1
+                ) B ON A.T_COMP = B.COD_COMP AND A.N_COMP = B.N_COMP AND A.NRO_SUCURS = B.NRO_SUCURS
+                LEFT JOIN (
+                    SELECT COD_COMP, N_COMP, NRO_SUCURS, COD_CTA,
+                        CASE WHEN COD_CTA IN ('100900','100910') THEN CANT_MONE ELSE MONTO END AS MONTO,
+                        CASE WHEN COD_CTA IN ('100900','100910') THEN COTIZ_MONE ELSE NULL END AS COTIZACION_TC
+                    FROM {$p}CTA29
+                    WHERE D_H = 'H' AND COD_COMP = 'NCR' AND NRO_SUCURS != 1
+                ) C ON A.T_COMP = C.COD_COMP AND A.N_COMP = C.N_COMP AND A.NRO_SUCURS = C.NRO_SUCURS
+                LEFT JOIN {$p}CTA_CUENTA_TESORERIA CT
+                    ON CT.COD_CTA_CUENTA_TESORERIA = B.COD_CTA OR CT.COD_CTA_CUENTA_TESORERIA = C.COD_CTA
+                {$sucursalEmpresa}
+                WHERE A.FECHA_EMIS >= ? AND A.FECHA_EMIS < DATEADD(DAY, 1, ?) AND A.ESTADO <> 'ANU'
+
+                UNION ALL
+
+                SELECT A.NRO_SUCURS, A.T_COMP, A.N_COMP, 'EFECTIVO', NULL, A.IMPORTE, NULL
+                FROM {$p}CTA02 A
+                INNER JOIN (
+                    SELECT T_COMP, N_COMP, NRO_SUCURS FROM {$p}CTA03
+                    WHERE COD_ARTICU LIKE '%VISA%' OR COD_ARTICU LIKE '%ICBC%'
+                    GROUP BY T_COMP, N_COMP, NRO_SUCURS
+                ) V ON A.NRO_SUCURS = V.NRO_SUCURS AND A.N_COMP = V.N_COMP AND A.T_COMP = V.T_COMP
+                WHERE A.FECHA_EMIS >= ? AND A.FECHA_EMIS < DATEADD(DAY, 1, ?) AND A.T_COMP LIKE 'N%'
+
+                UNION ALL
+
+                SELECT A.NRO_SUCURS, A.T_COMP, A.N_COMP, 'PROMO BANCO', '250800', -A.IMPORTE, NULL
+                FROM {$p}CTA02 A
+                INNER JOIN (
+                    SELECT COD_COMP, N_COMP, NRO_SUCURS FROM {$p}CTA29
+                    WHERE COD_CTA = '250800'
+                    GROUP BY COD_COMP, N_COMP, NRO_SUCURS
+                ) P ON A.NRO_SUCURS = P.NRO_SUCURS AND A.N_COMP = P.N_COMP AND A.T_COMP = P.COD_COMP
+                WHERE A.FECHA_EMIS >= ? AND A.FECHA_EMIS < DATEADD(DAY, 1, ?) AND A.T_COMP LIKE 'N%' AND A.N_COMP_IMPUTADO = ''
+            ) X
+            WHERE X.IMPORTE IS NOT NULL AND X.NRO_SUCURSAL = ?
+            ORDER BY X.MEDIO_PAGO, X.COD_CTA, X.T_COMP, X.N_COMP";
+
+        $params = [$fecha, $fecha, $fecha, $fecha, $fecha, $fecha, (int)$nroSucursal];
+        $stmt = sqlsrv_query($this->cid_locales, $sql, $params);
+        if ($stmt === false) {
+            throw new Exception('Error al traer el detalle de cobranza: ' . print_r(sqlsrv_errors(), true));
+        }
+
+        $rows = [];
+        while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $rows[] = $v;
+        }
+        return $rows;
+    }
+
+    /**
+     * Descripción de las cuentas de tesorería (cod => descripción).
+     * Se toma la primera columna DESC* del maestro para no depender del nombre exacto.
+     */
+    public function traerDescripcionCuentasTesoreria(array $codigos)
+    {
+        $codigos = array_values(array_unique(array_filter($codigos)));
+        if (empty($codigos)) {
+            return [];
+        }
+
+        $marcas = implode(',', array_fill(0, count($codigos), '?'));
+        $sql = "SELECT * FROM {$this->cid->prefix}CTA_CUENTA_TESORERIA WHERE COD_CTA_CUENTA_TESORERIA IN ($marcas)";
+        $stmt = sqlsrv_query($this->cid_locales, $sql, $codigos);
+        if ($stmt === false) {
+            error_log('Error al traer cuentas de tesorería: ' . print_r(sqlsrv_errors(), true));
+            return [];
+        }
+
+        $descripciones = [];
+        while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $desc = '';
+            foreach ($v as $columna => $valor) {
+                if (stripos($columna, 'DESC') === 0) {
+                    $desc = trim((string)$valor);
+                    break;
+                }
+            }
+            $descripciones[trim($v['COD_CTA_CUENTA_TESORERIA'])] = $desc;
+        }
+        return $descripciones;
+    }
+
+    /**
+     * Filas de RO_T_VENTA_DIARIA_SUCURSALES de una sucursal en un rango (todos los medios de pago)
+     */
+    public function traerVentaDiariaRango($nroSucursal, $desde, $hasta)
+    {
+        $sql = "SELECT ID, FECHA, MEDIO_PAGO, IMPORTE_\$_SISTEMA AS IMPORTE_SISTEMA, COTIZACION_TC, VERIFICADO
+                FROM {$this->cid->prefix}RO_T_VENTA_DIARIA_SUCURSALES
+                WHERE NRO_SUCURSAL = ? AND FECHA BETWEEN ? AND ?
+                ORDER BY FECHA, MEDIO_PAGO";
+        $stmt = sqlsrv_query($this->cid_locales, $sql, [(int)$nroSucursal, $desde, $hasta]);
+        if ($stmt === false) {
+            throw new Exception('Error al traer la venta diaria: ' . print_r(sqlsrv_errors(), true));
+        }
+
+        $rows = [];
+        while ($v = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $rows[] = $v;
+        }
+        return $rows;
+    }
+
+    /**
+     * Recalcula el $ SISTEMA con RO_SP_VENTA_DIARIA_SUCURSALES_ACTUALIZAR.
+     * El SP solo actualiza filas existentes y no toca las verificadas.
+     */
+    public function reprocesarVentaDiaria($nroSucursal, $desde, $hasta)
+    {
+        $sql = "EXEC {$this->cid->prefix}RO_SP_VENTA_DIARIA_SUCURSALES_ACTUALIZAR @FECHA_DESDE = ?, @FECHA_HASTA = ?, @NRO_SUCURSAL = ?";
+        $stmt = sqlsrv_query($this->cid_locales, $sql, [$desde, $hasta, (int)$nroSucursal], ['QueryTimeout' => 300]);
+        if ($stmt === false) {
+            throw new Exception('Error al reprocesar: ' . print_r(sqlsrv_errors(), true));
+        }
+        // Consumir todos los resultados para que el SP termine antes de seguir
+        while (sqlsrv_next_result($stmt)) {
+        }
+        return true;
+    }
 }

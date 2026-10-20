@@ -237,6 +237,148 @@
 }
 
 /* ===================================
+   DETALLE DEL DÍA (MODAL)
+   =================================== */
+
+.btn-detalle-dia {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--primary-color);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+}
+
+.btn-detalle-dia:hover {
+    text-decoration: underline;
+}
+
+.btn-detalle-dia .bi {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.detalle-cargando {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem 0;
+    color: var(--text-secondary);
+}
+
+.detalle-titulo {
+    margin: 1.25rem 0 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+#detalleContenido > .detalle-titulo:first-of-type {
+    margin-top: 0;
+}
+
+.detalle-titulo-filtro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.detalle-titulo-filtro h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.detalle-titulo-filtro select {
+    width: auto;
+    min-width: 200px;
+}
+
+.detalle-ayuda {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.tabla-detalle {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.tabla-detalle th {
+    background: #1e293b;
+    color: white;
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.45rem 0.6rem;
+    white-space: nowrap;
+}
+
+.tabla-detalle td {
+    padding: 0.35rem 0.6rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tabla-detalle .th-num,
+.tabla-detalle .td-num {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.tabla-detalle .con-diferencia {
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
+.tabla-detalle .fila-seleccionada {
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.tabla-detalle .fila-total td,
+.tabla-detalle tfoot td {
+    font-weight: 700;
+    border-top: 2px solid var(--primary-color);
+}
+
+.tabla-detalle tfoot td:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.badge-estado {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-ok {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success-color);
+}
+
+.badge-warn {
+    background: rgba(245, 158, 11, 0.15);
+    color: #b45309;
+}
+
+.badge-error {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger-color);
+}
+
+.tabla-cambios {
+    text-align: left;
+}
+
+/* ===================================
    RESPONSIVE
    =================================== */
 
