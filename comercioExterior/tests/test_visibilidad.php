@@ -52,20 +52,16 @@ foreach ($casos as $c) {
     chequear($c[3], $c[2], VisibilidadContenedor::sigueVisible($c[0], $c[1]));
 }
 
-seccion('la ventana de 6 meses sólo aplica a lo que no tiene saldo');
+seccion('Gestión no tiene ventana de tiempo');
 
-chequear('viejo y con saldo: se ve igual', true,
-    VisibilidadContenedor::visibleEnGestion(true, 'PENDIENTE', false));
-chequear('viejo, sin costos y con saldo: se ve igual', true,
-    VisibilidadContenedor::visibleEnGestion(false, 'PENDIENTE', false));
-chequear('viejo y pagado sin costos: la ventana lo esconde, como antes', false,
-    VisibilidadContenedor::visibleEnGestion(false, 'CANCELADO', false));
-chequear('viejo y sin FOB: la ventana lo esconde', false,
-    VisibilidadContenedor::visibleEnGestion(true, 'SIN_FOB', false));
-chequear('reciente y pagado sin costos: se ve', true,
-    VisibilidadContenedor::visibleEnGestion(false, 'CANCELADO', true));
-chequear('reciente con costos y pagado: no se ve, ni dentro de la ventana', false,
-    VisibilidadContenedor::visibleEnGestion(true, 'CANCELADO', true));
+chequear('pagado sin costos: se ve (OC 14380, la ventana lo escondía)', true,
+    VisibilidadContenedor::visibleEnGestion(false, 'CANCELADO'));
+chequear('sin FOB: se ve', true,
+    VisibilidadContenedor::visibleEnGestion(true, 'SIN_FOB'));
+chequear('con costos y pagado: no se ve', false,
+    VisibilidadContenedor::visibleEnGestion(true, 'CANCELADO'));
+chequear('el SQL no filtra por fecha', false,
+    stripos(VisibilidadContenedor::sqlVisibleEnGestion('C', 'E'), 'DATEADD') !== false);
 
 seccion('el SQL no se escribe con el corte viejo');
 
@@ -129,9 +125,7 @@ if (!Pruebas::hayBase()) {
                     CASE WHEN " . VisibilidadContenedor::sqlTieneCostos('COALESCE(E.ID_PADRE, E.ID)')
                     . " THEN 1 ELSE 0 END AS TIENE_COSTOS,
                     ISNULL(P.VALOR_FOB_DOLAR, E.VALOR_FOB_DOLAR) AS FOB,
-                    " . $pagado . " AS PAGADO,
-                    CASE WHEN ISNULL(P.FECHA_MOV, E.FECHA_MOV) >= DATEADD(MONTH, -6, GETDATE())
-                         THEN 1 ELSE 0 END AS EN_VENTANA
+                    " . $pagado . " AS PAGADO
              FROM RO_T_IMPORTACIONES_ENCABEZADO E
              LEFT JOIN RO_T_IMPORTACIONES_ENCABEZADO P ON P.ID = COALESCE(E.ID_PADRE, E.ID)");
 
@@ -141,8 +135,7 @@ if (!Pruebas::hayBase()) {
             $todas++;
             if (VisibilidadContenedor::visibleEnGestion(
                     intval($r['TIENE_COSTOS']) === 1,
-                    Pagos::estadoSaldo($r['FOB'], $r['PAGADO']),
-                    intval($r['EN_VENTANA']) === 1)) {
+                    Pagos::estadoSaldo($r['FOB'], $r['PAGADO']))) {
                 $esperados[] = intval($r['ID']);
             }
         }

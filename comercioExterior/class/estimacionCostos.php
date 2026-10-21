@@ -125,9 +125,8 @@ class EstimacionCostos
      *
      * QUÉ CONTENEDORES SE VEN cambió con feature/comex-visibilidad-saldo: un
      * contenedor ya no sale de la grilla por tener los costos cargados, sino
-     * por tener los costos cargados Y el FOB pagado. Y la ventana de 6 meses
-     * deja de esconder lo que todavía se le debe al proveedor. La regla
-     * completa, y por qué, está en VisibilidadContenedor.
+     * por tener los costos cargados Y el FOB pagado, sin ventana de tiempo. La
+     * regla completa, y por qué, está en VisibilidadContenedor.
      *
      * TIENE_COSTOS viaja en cada fila para la etiqueta "Costos cargados": un
      * contenedor que sigue en la grilla con los costos ya cargados está ahí
@@ -181,16 +180,15 @@ class EstimacionCostos
                         CASE WHEN " . VisibilidadContenedor::sqlTieneCostos($grupo) . "
                              THEN 1 ELSE 0 END AS TIENE_COSTOS,
                         " . VisibilidadContenedor::sqlEstadoPago(
-                                'ISNULL(PR.VALOR_FOB_DOLAR, E.VALOR_FOB_DOLAR)', 'PG.MONTO') . " AS ESTADO_PAGO,
-                        ISNULL(PR.FECHA_MOV, E.FECHA_MOV) AS FECHA_MOV_GRUPO
+                                'ISNULL(PR.VALOR_FOB_DOLAR, E.VALOR_FOB_DOLAR)', 'PG.MONTO') . " AS ESTADO_PAGO
                     FROM RO_T_IMPORTACIONES_ENCABEZADO E
-                    OUTER APPLY (SELECT PR0.VALOR_FOB_DOLAR, PR0.FECHA_MOV
+                    OUTER APPLY (SELECT PR0.VALOR_FOB_DOLAR
                                  FROM RO_T_IMPORTACIONES_ENCABEZADO PR0
                                  WHERE PR0.ID = " . $grupo . ") PR
                     " . $applyPagos . "
                 ) T
                 WHERE " . VisibilidadContenedor::sqlVisibleEnGestion(
-                        'T.TIENE_COSTOS', 'T.ESTADO_PAGO', 'T.FECHA_MOV_GRUPO') . "
+                        'T.TIENE_COSTOS', 'T.ESTADO_PAGO') . "
                 ORDER BY T.FECHA_MOV DESC";
 
         try {
@@ -203,10 +201,8 @@ class EstimacionCostos
 
             $despachos = [];
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                foreach (['FECHA_MOV', 'FECHA_MOV_GRUPO'] as $campo) {
-                    if (isset($row[$campo]) && is_object($row[$campo])) {
-                        $row[$campo] = $row[$campo]->format('Y-m-d');
-                    }
+                if (isset($row['FECHA_MOV']) && is_object($row['FECHA_MOV'])) {
+                    $row['FECHA_MOV'] = $row['FECHA_MOV']->format('Y-m-d');
                 }
                 // Un 0/1 de SQL Server puede llegar como string: el JS lo
                 // necesita booleano, y "0" sería verdadero.

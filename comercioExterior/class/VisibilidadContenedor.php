@@ -26,12 +26,14 @@ require_once __DIR__ . '/Pagos.php';
  * OrdenDeCompra::insertDetalleReplicado()- y (B) usa el FOB y los pagos de la
  * principal, como Pagos::obtenerResumen().
  *
- * LA VENTANA DE 6 MESES DE GESTIÓN se aplica sólo a lo que no tiene saldo
- * pendiente: un contenedor con plata por pagar se muestra sin importar su
- * antigüedad, porque esconderlo es esconder la deuda. También va por grupo:
- * la fecha que cuenta es el FECHA_MOV de la principal.
+ * SIN VENTANA DE TIEMPO. Hubo una ventana de 6 meses para lo que no tenía
+ * saldo pendiente, y escondía justo a los que había que terminar: un
+ * contenedor viejo sin costos desaparecía en cuanto se le cargaba el pago al
+ * exterior, y no quedaba dónde cargarle los costos (OC 14380, 21/10/2026). Un
+ * contenedor se ve hasta que tenga las dos cosas, sin importar su antigüedad.
+ * Para no ver lo viejo está el filtro por fecha de carga de la pantalla.
  *
- *     visible = NOT (A AND B) AND (estado = PENDIENTE OR dentro de 6 meses)
+ *     visible = NOT (A AND B)
  *
  * UNA FUNCIÓN PURA Y UN FRAGMENTO SQL, Y LOS DOS ACÁ
  * --------------------------------------------------
@@ -48,16 +50,14 @@ require_once __DIR__ . '/Pagos.php';
  * Comex::sigueEnProveedores() y Comex::sqlSigueVisible(), para la pestaña
  * Proveedores del Exterior y para ComprasProyectadasDatos::cargado(). El
  * encabezado de Pagos.php y el de Comex.php son las dos mitades del pacto: si
- * cambia de un lado, se cambia del otro. Allá no hay ventana de tiempo.
+ * cambia de un lado, se cambia del otro. Ninguno de los dos tiene ventana de
+ * tiempo.
  */
 class VisibilidadContenedor
 {
     const TABLA_DETALLE = 'RO_T_IMPORTACIONES_DETALLE';
     const TABLA_MAESTRO = 'RO_T_IMPORTACIONES_ENCABEZADO';
     const TABLA_PAGOS   = 'RO_T_IMPORTACIONES_ENCABEZADO_PAGOS';
-
-    /** Los meses de la ventana de Gestión, para lo que ya no tiene saldo */
-    const MESES_VENTANA = 6;
 
     /* ======================================================================
        LA REGLA, PURA
@@ -78,14 +78,15 @@ class VisibilidadContenedor
     /**
      * La regla completa de Gestión de Despachos.
      *
-     * @param bool   $tieneCostos     (A), a nivel grupo
-     * @param string $estado          Pagos::estadoSaldo() de la principal
-     * @param bool   $dentroDeVentana FECHA_MOV de la principal en los últimos 6 meses
+     * Hoy es sigueVisible() a secas: sin ventana de tiempo, ver el
+     * encabezado. Queda como punto de entrada propio de la pantalla.
+     *
+     * @param bool   $tieneCostos (A), a nivel grupo
+     * @param string $estado      Pagos::estadoSaldo() de la principal
      */
-    public static function visibleEnGestion($tieneCostos, $estado, $dentroDeVentana)
+    public static function visibleEnGestion($tieneCostos, $estado)
     {
-        return self::sigueVisible($tieneCostos, $estado)
-            && ($estado === 'PENDIENTE' || $dentroDeVentana);
+        return self::sigueVisible($tieneCostos, $estado);
     }
 
     /* ======================================================================
@@ -133,13 +134,10 @@ class VisibilidadContenedor
      *
      * @param string $tieneCostosCol columna BIT/INT con (A)
      * @param string $estadoCol      columna con el estado de sqlEstadoPago()
-     * @param string $fechaMovCol    FECHA_MOV de la principal
      */
-    public static function sqlVisibleEnGestion($tieneCostosCol, $estadoCol, $fechaMovCol)
+    public static function sqlVisibleEnGestion($tieneCostosCol, $estadoCol)
     {
-        return "NOT (" . $tieneCostosCol . " = 1 AND " . $estadoCol . " IN ('CANCELADO', 'SOBREPAGO'))
-                AND (" . $estadoCol . " = 'PENDIENTE'
-                     OR " . $fechaMovCol . " >= DATEADD(MONTH, -" . self::MESES_VENTANA . ", GETDATE()))";
+        return "NOT (" . $tieneCostosCol . " = 1 AND " . $estadoCol . " IN ('CANCELADO', 'SOBREPAGO'))";
     }
 
     /**

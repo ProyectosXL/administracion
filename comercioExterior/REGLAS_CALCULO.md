@@ -655,11 +655,16 @@ Ahora un contenedor **deja de mostrarse sólo cuando cumple las dos**:
 | **(B)** | **Los pagos cubren el FOB**: `Pagos::estadoSaldo()` da `CANCELADO` o `SOBREPAGO`. `SIN_FOB` no cuenta como cubierto |
 
 ```
-visible = NOT (A AND B) AND (estado = PENDIENTE OR FECHA_MOV de la principal en los últimos 6 meses)
+visible = NOT (A AND B)
 ```
 
 - **Por grupo** (`COALESCE(ID_PADRE, ID)`): la principal y sus hijas aparecen o
-  desaparecen juntas. La ventana usa el `FECHA_MOV` de la principal.
+  desaparecen juntas.
+- **Sin ventana de tiempo.** Hubo una de 6 meses para lo que no tenía saldo
+  pendiente, y escondía contenedores viejos sin costos en cuanto se les cargaba
+  el pago al exterior (OC 14380, 21/10/2026). Se sacó: un contenedor se ve hasta
+  tener costos y FOB cubierto. Para no ver lo viejo está el filtro por fecha de
+  carga.
 - **Un contenedor con saldo pendiente se ve sin importar su antigüedad.** Al
   01/10/2026 eso trae a la grilla los **278 contenedores** de central con costos
   y saldo pendiente —250 sin fecha estimada de pago— y los 54 de uy. Se sabe y se
@@ -676,7 +681,7 @@ en double: con `DECIMAL`, 100,01 contra 100,00 sería CANCELADO en SQL y PENDIEN
 en PHP. `tests/test_visibilidad.php` compara los dos fila por fila contra la base.
 
 > **La regla está duplicada en ProyectosXL/finanzas** (Proveedores del Exterior y
-> `ComprasProyectadasDatos::cargado()`), sin la ventana de tiempo. El encabezado
+> `ComprasProyectadasDatos::cargado()`), también sin ventana de tiempo. El encabezado
 > de `class/Pagos.php` y el de `cashflow/Class/Comex.php` son las dos mitades del
 > pacto: si cambia de un lado, se cambia del otro.
 
