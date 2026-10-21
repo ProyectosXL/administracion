@@ -807,7 +807,7 @@ class Sucursal
 
     /**
      * Detalle por comprobante de la cobranza de un día, con la misma lógica que
-     * RO_SP_VENTA_DIARIA_SUCURSALES (CTA29 por cuenta de tesorería + EFECTIVO / PROMO BANCO de las NC con VISA/ICBC).
+     * RO_SP_VENTA_DIARIA_SUCURSALES_ACTUALIZAR (CTA29 por cuenta de tesorería + EFECTIVO / PROMO BANCO de las NC con VISA/ICBC).
      * Los movimientos cuya cuenta no cae en ningún medio de pago vuelven con MEDIO_PAGO NULL:
      * el SP los calcula pero nunca los graba, así que se muestran para detectarlos.
      */
@@ -861,25 +861,27 @@ class Sucursal
 
                 UNION ALL
 
-                SELECT A.NRO_SUCURS, A.T_COMP, A.N_COMP, 'EFECTIVO', NULL, A.IMPORTE, NULL
+                SELECT S.NRO_SUCURSAL, A.T_COMP, A.N_COMP, 'EFECTIVO', NULL, A.IMPORTE, NULL
                 FROM {$p}CTA02 A
                 INNER JOIN (
                     SELECT T_COMP, N_COMP, NRO_SUCURS FROM {$p}CTA03
                     WHERE COD_ARTICU LIKE '%VISA%' OR COD_ARTICU LIKE '%ICBC%'
                     GROUP BY T_COMP, N_COMP, NRO_SUCURS
                 ) V ON A.NRO_SUCURS = V.NRO_SUCURS AND A.N_COMP = V.N_COMP AND A.T_COMP = V.T_COMP
+                {$sucursalEmpresa}
                 WHERE A.FECHA_EMIS >= ? AND A.FECHA_EMIS < DATEADD(DAY, 1, ?) AND A.T_COMP LIKE 'N%'
 
                 UNION ALL
 
-                SELECT A.NRO_SUCURS, A.T_COMP, A.N_COMP, 'PROMO BANCO', '250800', -A.IMPORTE, NULL
+                SELECT S.NRO_SUCURSAL, A.T_COMP, A.N_COMP, 'PROMO BANCO', NULL, -A.IMPORTE, NULL
                 FROM {$p}CTA02 A
                 INNER JOIN (
-                    SELECT COD_COMP, N_COMP, NRO_SUCURS FROM {$p}CTA29
-                    WHERE COD_CTA = '250800'
-                    GROUP BY COD_COMP, N_COMP, NRO_SUCURS
-                ) P ON A.NRO_SUCURS = P.NRO_SUCURS AND A.N_COMP = P.N_COMP AND A.T_COMP = P.COD_COMP
-                WHERE A.FECHA_EMIS >= ? AND A.FECHA_EMIS < DATEADD(DAY, 1, ?) AND A.T_COMP LIKE 'N%' AND A.N_COMP_IMPUTADO = ''
+                    SELECT T_COMP, N_COMP, NRO_SUCURS FROM {$p}CTA03
+                    WHERE COD_ARTICU LIKE '%VISA%' OR COD_ARTICU LIKE '%ICBC%'
+                    GROUP BY T_COMP, N_COMP, NRO_SUCURS
+                ) V ON A.NRO_SUCURS = V.NRO_SUCURS AND A.N_COMP = V.N_COMP AND A.T_COMP = V.T_COMP
+                {$sucursalEmpresa}
+                WHERE A.FECHA_EMIS >= ? AND A.FECHA_EMIS < DATEADD(DAY, 1, ?) AND A.T_COMP LIKE 'N%'
             ) X
             WHERE X.IMPORTE IS NOT NULL AND X.NRO_SUCURSAL = ?
             ORDER BY X.MEDIO_PAGO, X.COD_CTA, X.T_COMP, X.N_COMP";

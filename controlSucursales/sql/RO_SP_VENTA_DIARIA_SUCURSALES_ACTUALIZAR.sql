@@ -2,9 +2,9 @@
 -- Recalcula IMPORTE_$_SISTEMA de RO_T_VENTA_DIARIA_SUCURSALES (solo filas existentes y no verificadas).
 -- Lo usa el botón "Reprocesar" de controlSucursales/controlMasivoCaja.php.
 --
--- Fix 2026-10: el bloque PROMO BANCO estaba copiado del de EFECTIVO (CTA03 VISA/ICBC) y pisaba el
--- PROMO BANCO con un valor distinto al que graba RO_SP_VENTA_DIARIA_SUCURSALES. Ahora usa la misma
--- lógica que el SP original: CTA29 cuenta 250800 y N_COMP_IMPUTADO = ''.
+-- Versión vigente en la base (2026-10). EFECTIVO y PROMO BANCO salen de las NC con artículos VISA/ICBC (CTA03)
+-- y toman la sucursal de SUCURSAL (NRO_SUCURS = 0 -> sucursal de EMPRESA).
+-- El detalle del día de la pantalla (Sucursal::traerDetalleCobranzaDia) replica esta lógica: si se cambia acá, cambiarlo también allá.
 
 ALTER PROCEDURE RO_SP_VENTA_DIARIA_SUCURSALES_ACTUALIZAR
     @FECHA_DESDE  DATE = NULL,   -- Si no se pasa: hoy - 60 días
@@ -139,7 +139,7 @@ BEGIN
 
         SELECT
             A.FECHA_EMIS,
-            A.NRO_SUCURS,
+            SUCURSAL.NRO_SUCURSAL,
             SUCURSAL.DESC_SUCURSAL,
             'EFECTIVO' AS MEDIO_PAGO,
             CAST(IMPORTE AS FLOAT) AS IMPORTE,
@@ -160,38 +160,36 @@ BEGIN
         WHERE FECHA_EMIS >= @FECHA_DESDE
           AND FECHA_EMIS <  @FECHA_HASTA_EXCL
           AND A.T_COMP LIKE 'N%'
-          AND A.NRO_SUCURS != '1'
-          AND (@NRO_SUCURSAL IS NULL OR A.NRO_SUCURS = @NRO_SUCURSAL)
+          AND SUCURSAL.NRO_SUCURSAL != 1
+          AND (@NRO_SUCURSAL IS NULL OR SUCURSAL.NRO_SUCURSAL = @NRO_SUCURSAL)
 
         UNION ALL
 
-        -- PROMO BANCO: misma lógica que RO_SP_VENTA_DIARIA_SUCURSALES (cuenta 250800, NC sin imputar)
         SELECT
             A.FECHA_EMIS,
-            A.NRO_SUCURS,
+            SUCURSAL.NRO_SUCURSAL,
             SUCURSAL.DESC_SUCURSAL,
             'PROMO BANCO' AS MEDIO_PAGO,
             CAST(-IMPORTE AS FLOAT) AS IMPORTE,
             NULL
         FROM CTA02 A
         INNER JOIN (
-            SELECT COD_COMP, N_COMP, NRO_SUCURS
-            FROM CTA29
-            WHERE COD_CTA = '250800'
-            GROUP BY COD_COMP, N_COMP, NRO_SUCURS
+            SELECT T_COMP, N_COMP, NRO_SUCURS
+            FROM CTA03
+            WHERE (COD_ARTICU LIKE '%VISA%' OR COD_ARTICU LIKE '%ICBC%')
+            GROUP BY T_COMP, N_COMP, NRO_SUCURS
         ) B
             ON A.NRO_SUCURS = B.NRO_SUCURS
            AND A.N_COMP    = B.N_COMP
-           AND A.T_COMP    = B.COD_COMP
+           AND A.T_COMP    = B.T_COMP
         LEFT JOIN SUCURSAL
             ON (A.NRO_SUCURS = 0 AND SUCURSAL.ID_SUCURSAL = (SELECT EMPRESA.ID_SUCURSAL FROM EMPRESA))
             OR A.NRO_SUCURS = SUCURSAL.NRO_SUCURSAL
         WHERE FECHA_EMIS >= @FECHA_DESDE
           AND FECHA_EMIS <  @FECHA_HASTA_EXCL
           AND A.T_COMP LIKE 'N%'
-          AND A.NRO_SUCURS != '1'
-          AND A.N_COMP_IMPUTADO = ''
-          AND (@NRO_SUCURSAL IS NULL OR A.NRO_SUCURS = @NRO_SUCURSAL)
+          AND SUCURSAL.NRO_SUCURSAL != 1
+          AND (@NRO_SUCURSAL IS NULL OR SUCURSAL.NRO_SUCURSAL = @NRO_SUCURSAL)
     ) A
     GROUP BY
         NRO_SUCURSAL,
