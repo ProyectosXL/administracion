@@ -114,7 +114,9 @@ function chequear($nombre, $esperado, $obtenido) {
  * la nota que dice que el patrón ya no está.
  */
 function codigoSinComentarios($ruta) {
-    $src = file_get_contents($ruta);
+    // Con core.autocrlf, un checkout de Windows trae CRLF y una búsqueda de
+    // varias líneas con "\n" no encontraría nada
+    $src = str_replace("\r\n", "\n", file_get_contents($ruta));
     $src = preg_replace('#/\*.*?\*/#s', '', $src);
 
     return preg_replace('#(^|\s)//[^\n]*#m', '$1', $src);
