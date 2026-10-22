@@ -24,7 +24,7 @@ bases distintas.
 | # | Script | Base | Qué hace | Si no se corre |
 | --- | --- | --- | --- | --- |
 | 1 | `sql/reportes_parametros.sql` | central (LAKER_SA) | Verifica que esté en la base correcta (la tabla histórica, `STA11`, `STA12`, `SJ_VIEW_STA11` y `RO_ORDEN_COMPRA_IMPORT_COSTO_NAC`); crea `RO_T_REPORTES_ADM_PARAMETROS` y su historial `RO_T_REPORTES_ADM_PARAMETROS_HIST`; siembra `FACTOR_NAC_ESTIMADO = 1.65` | Parámetros no muestra nada y el **modo actual** de la valorización no se puede consultar: avisa que falta el factor. El modo histórico funciona igual |
-| 2 | `sql/reportes_permisos.sql` | apps (Gestionusuarios) | Alta del módulo `REPORTES_ADMINISTRACION` en `FP_MODULOS` y de sus cuatro permisos. **No asigna roles** | El módulo no aparece en el HUB y solo entra el administrador |
+| 2 | `sql/reportes_permisos.sql` | apps (Gestionusuarios) | Alta del módulo `REPORTES_ADMINISTRACION` en `FP_MODULOS` y de sus cinco permisos. **No asigna roles**. Donde ya se corrió, volver a correrlo agrega solo las claves nuevas | El módulo no aparece en el HUB y solo entra el administrador |
 
 El 1 va **antes** de publicar el código. El 2, cuando el código ya esté
 publicado: apenas corre, la tarjeta aparece para quien tenga el permiso.
@@ -137,6 +137,7 @@ Las pruebas avisan si falta algo de los puntos 1, 3 y 4.
 | --- | --- |
 | `hub.app.reportes_administracion` | Hace aparecer la tarjeta en el HUB |
 | `ra.tab.valorizacion_stock` | Ver la pestaña de valorización y descargar el Excel |
+| `ra.tab.remitos_pendientes` | Ver los remitos pendientes de facturar y descargar el Excel. La pestaña no escribe: no tiene clave de edición |
 | `ra.tab.parametros` | Ver la pestaña Parámetros y su historial |
 | `ra.editar.parametros` | Modificar parámetros (exige también `ra.tab.parametros`) |
 
