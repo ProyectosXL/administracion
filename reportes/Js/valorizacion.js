@@ -140,8 +140,12 @@
         });
     }
 
-    function unidades(v) {
-        return Reportes.numero(v, Number.isInteger(v) ? 0 : 2);
+    /**
+     * Stock e importes se MUESTRAN sin decimales, redondeados. El valor no se
+     * toca: los totales siguen siendo la suma exacta de las filas.
+     */
+    function entero(v) {
+        return Reportes.numero(v, 0);
     }
 
     function dibujar(r) {
@@ -161,8 +165,8 @@
             + '<br>' + r.filtrosTexto.slice(2).map(Reportes.esc).join(' · '));
 
         var kpis = [
-            kpi('Stock total (unidades)', unidades(r.kpis.stock)),
-            kpi('Valorización total', '$ ' + Reportes.numero(r.kpis.valorizacion)),
+            kpi('Stock total (unidades)', entero(r.kpis.stock)),
+            kpi('Valorización total', '$ ' + entero(r.kpis.valorizacion)),
             kpi('Cantidad de artículos', Reportes.numero(r.kpis.articulos, 0),
                 Reportes.numero(r.kpis.filas, 0) + ' filas por sucursal')
         ];
@@ -192,18 +196,18 @@
         sectores.forEach(function (s) {
             s.sucursales.forEach(function (x) {
                 html += '<tr><td>' + Reportes.esc(s.sector) + '</td><td>' + Reportes.esc(x.sucursal) + '</td>'
-                    + '<td class="num">' + unidades(x.stock) + '</td>'
-                    + '<td class="num">' + Reportes.numero(x.valorizacion) + '</td></tr>';
+                    + '<td class="num">' + entero(x.stock) + '</td>'
+                    + '<td class="num">' + entero(x.valorizacion) + '</td></tr>';
             });
 
             html += '<tr class="subtotal"><td colspan="2">Subtotal ' + Reportes.esc(s.sector) + '</td>'
-                + '<td class="num">' + unidades(s.stock) + '</td>'
-                + '<td class="num">' + Reportes.numero(s.valorizacion) + '</td></tr>';
+                + '<td class="num">' + entero(s.stock) + '</td>'
+                + '<td class="num">' + entero(s.valorizacion) + '</td></tr>';
         });
 
         return html + '<tr class="total"><td colspan="2">Total general</td>'
-            + '<td class="num">' + unidades(total.stock) + '</td>'
-            + '<td class="num">' + Reportes.numero(total.valorizacion) + '</td></tr>';
+            + '<td class="num">' + entero(total.stock) + '</td>'
+            + '<td class="num">' + entero(total.valorizacion) + '</td></tr>';
     }
 
     /* ---------------------------------------------------------------- */
@@ -269,19 +273,22 @@
         return filas;
     }
 
+    /**
+     * El formato de stock, costo unitario y valorización en el Excel: miles y
+     * sin decimales. Es FORMATO, no redondeo: la celda conserva el valor con
+     * centavos, así una suma en Excel da lo mismo que el total del reporte.
+     */
+    var FORMATO_NUMERO = '#,##0';
+
     /** Formato numérico a un rango de celdas de una columna */
     function formatear(ws, col, desde, hasta, formato) {
         for (var f = desde; f <= hasta; f++) {
             var celda = ws[XLSX.utils.encode_cell({ r: f, c: col })];
 
             if (celda && celda.t === 'n') {
-                celda.z = typeof formato === 'function' ? formato(celda.v) : formato;
+                celda.z = formato;
             }
         }
-    }
-
-    function formatoStock(v) {
-        return Number.isInteger(v) ? '#,##0' : '#,##0.00';
     }
 
     function hojaDetalle(r) {
@@ -304,9 +311,9 @@
         var ultimaFila = aoa.length - 1;
 
         formatear(ws, 0, fila0 + 1, ultimaFila, 'dd/mm/yyyy');
-        formatear(ws, 5, fila0 + 1, ultimaFila, formatoStock);
-        formatear(ws, 6, fila0 + 1, ultimaFila, '#,##0.00');
-        formatear(ws, 7, fila0 + 1, ultimaFila, '#,##0.00');
+        formatear(ws, 5, fila0 + 1, ultimaFila, FORMATO_NUMERO);
+        formatear(ws, 6, fila0 + 1, ultimaFila, FORMATO_NUMERO);
+        formatear(ws, 7, fila0 + 1, ultimaFila, FORMATO_NUMERO);
 
         ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: fila0, c: 0 }, e: { r: ultimaFila, c: 8 } }) };
         ws['!cols'] = [{ wch: 13 }, { wch: 10 }, { wch: 24 }, { wch: 18 }, { wch: 40 }, { wch: 10 }, { wch: 15 },
@@ -332,8 +339,8 @@
 
         var ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        formatear(ws, 2, fila0 + 1, aoa.length - 1, formatoStock);
-        formatear(ws, 3, fila0 + 1, aoa.length - 1, '#,##0.00');
+        formatear(ws, 2, fila0 + 1, aoa.length - 1, FORMATO_NUMERO);
+        formatear(ws, 3, fila0 + 1, aoa.length - 1, FORMATO_NUMERO);
         ws['!cols'] = [{ wch: 20 }, { wch: 26 }, { wch: 12 }, { wch: 20 }];
 
         return ws;

@@ -175,7 +175,11 @@ chequear('las dos hojas', true,
 chequear('las columnas del detalle', true, strpos($js, "['Fecha de cierre', 'Sector', 'Sucursal', 'Artículo', "
     . "'Descripción', 'Stock', 'Costo unitario',\n            'Valorización', 'Origen del costo']") !== false);
 chequear('autofiltro en la fila de títulos', true, strpos($js, "ws['!autofilter']") !== false);
-chequear('importes con miles y 2 decimales', 3, substr_count($js, "'#,##0.00');"));
+chequear('stock e importes con miles y sin decimales', true, strpos($js, "var FORMATO_NUMERO = '#,##0';") !== false);
+chequear('en las cinco columnas numéricas de las dos hojas', 5, substr_count($js, ', FORMATO_NUMERO);'));
+chequear('ninguna con decimales', false, strpos($js, '#,##0.00') !== false);
+chequear('en pantalla también sin decimales', true,
+    strpos($js, "return Reportes.numero(v, 0);") !== false && strpos($js, 'Reportes.numero(r.kpis.valorizacion)') === false);
 chequear('el encabezado lleva factor, usuario y hora', true,
     strpos($js, "'Factor de nacionalización estimado: '") !== false
     && strpos($js, "'Generado por ' + r.usuario + ' el ' + fechaHora(r.generado)") !== false);
