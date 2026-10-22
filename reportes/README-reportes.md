@@ -3,10 +3,12 @@
 Reportes a medida para el personal de Administración, uno por pestaña. Lo que
 el usuario se lleva es un **Excel**: el SQL no se ve en ningún lado.
 
-Hoy hay dos pestañas:
+Hoy hay tres pestañas:
 
 - **Valorización de stock**: el stock de LAKERS SA (Argentina) en una fecha de
   cierre, valorizado como se grabó o al costo de hoy.
+- **Remitos pendientes de facturar**: los remitos de un período que seguían
+  sin facturar a la fecha Hasta, y con qué factura se resolvieron después.
 - **Parámetros**: los valores que usan los reportes. Por ahora, el factor de
   nacionalización estimado.
 
@@ -56,17 +58,21 @@ reportes/
     Menu.php                las pestañas, como dato
     Parametros.php          los parámetros, su validación y su historial
     ValorizacionStock.php   la consulta y las reglas puras de la valorización
+    RemitosPendientes.php   las consultas y la clasificación de los remitos pendientes
   Controller/
     autorizacion.php        autorizar(): 401 / 403
     TabController.php       sirve el HTML de cada pestaña
     ParametrosController.php
     ValorizacionController.php
+    RemitosController.php
   Tabs/                     el HTML de cada pestaña
   Js/
     reportes.js             solapas, carga por AJAX y Reportes.post()
     permisos.js             el de cashflow: data-puede-editar
+    excel.js                lo común de los Excel: fechas, formatos, autofiltro, encabezado
     parametros.js
     valorizacion.js         filtros, resumen y armado del Excel
+    remitos.js              filtros, resumen y armado del Excel
   Css/reportes.css
   sql/                      los dos scripts de arriba
   tests/                    el arnés de comercioExterior/tests y las pruebas
@@ -89,7 +95,9 @@ Sumar una pestaña, una clase y un permiso, sin tocar lo demás:
    `js` y, si hace falta, `libs`), su HTML en `Tabs/<tab>.php` con
    `AuthReportes::atributoEdicion('<tab>')` en la raíz, y su JS en `Js/`, que se
    registra con `Reportes.registrar('<tab>', { init: function (raiz) {...} })`.
-   `index.php` dibuja la solapa y carga el JS solo si el usuario la puede ver.
+   `js` es una lista: si la pestaña arma un Excel, lleva `excel.js` antes del
+   propio y SheetJS en `libs`. `index.php` dibuja la solapa y carga cada JS una
+   sola vez, solo si el usuario puede ver alguna pestaña que lo pida.
 2. **La clase.** La lógica en `Class/`, con las reglas puras como métodos
    estáticos, y un `Controller/<Nombre>Controller.php` que llama a
    `autorizar('<Nombre>', $action)` **antes** del `switch`.
@@ -332,6 +340,186 @@ objetos, y el `.xlsx` pesa unos 4 MB.
 
 ---
 
+## Remitos pendientes de facturar
+
+Para un rango de fechas de remito, qué remitos **seguían sin facturar a la
+fecha Hasta** (la fecha de corte). Un remito que se facturó después del Hasta
+cuenta como pendiente, y el reporte dice con qué factura y cuándo se resolvió.
+Solo Argentina: base central (LAKER_SA).
+
+La referencia es el SP `RO_BUSCA_REMITOS_SIN_FACTURA`, que manda por mail los
+remitos de los últimos 60 días sin factura. **El SP no se modifica**: el
+reporte toma de él el universo y los importes, y lo mejora (ver *Mejoras
+respecto del SP*).
+
+### Fuente y universo
+
+**Remitos:** `STA14` con `TCOMP_IN_S = 'RE'`, `N_COMP LIKE 'R%'`, clientes
+`COD_PRO_CL LIKE '[FML]%'` salvo `FRUSH`, y `ESTADO_MOV <> 'A'`. Los anulados
+se excluyen siempre, aunque en el Hasta todavía estuvieran vigentes: Tango no
+guarda cuándo se anuló.
+
+- **Fecha del remito:** `GVA106.FECHA_REM`, unido por `TCOMP_IN_S` +
+  `NCOMP_IN_S`. `GVA106` tiene una fila por renglón, pero una sola fecha por
+  remito (verificado en toda la base). Si el remito no tiene `GVA106`, se usa
+  `STA14.FECHA_MOV`: en los 241.659 remitos que tienen las dos, coinciden
+  siempre. Los que no tienen `GVA106` son casi todos de 2010–2014; desde 2024
+  hay 10.
+- **Importe:** `SUM(STA20.CANTIDAD * STA20.PRECIO_REM)` de los renglones con
+  `PROMOCION = 0`, como `DECIMAL(18,2)`. Neto y sin promociones.
+- **Razón social:** `GVA14.RAZON_SOCI`, o "Sin datos".
+
+**Facturas:** `GVA12` + `GVA53` (por `T_COMP` + `N_COMP`), solo
+`T_COMP = 'FAC'`. Importe: `SUM(IMPORTE_GRAVADO)` de los renglones con
+`PROMOCION = 0`, como `DECIMAL(18,2)`. Fecha: `FECHA_EMIS`.
+
+**Vínculo de Tango:** `GVA54` une el remito (`TCOMP_IN_S` + `NCOMP_IN_S`) con
+la factura (`T_COMP_V` + `N_COMP` → `GVA12`). Es por renglón, así que se toma
+una fila por factura. Solo cuentan las `FAC`: hoy `GVA54` no vincula estos
+remitos con otra cosa.
+
+### Filtros
+
+| Período (por fecha de remito) | Desde | Hasta |
+| --- | --- | --- |
+| Año contable actual (por defecto) | 01/08 del año contable en curso | hoy |
+| Año contable anterior | 01/08 | 31/07 |
+| Año calendario | 01/01 del año en curso | hoy |
+| Personalizado | se elige | se elige |
+
+- El año contable va del 01/08 al 31/07. El 22/10/2026, el actual es 01/08/2026
+  → hoy y el anterior 01/08/2025 → 31/07/2026.
+- Los rangos los calcula el servidor (`RemitosPendientes::rangoPeriodo()`, con
+  prueba) con el "hoy" de Argentina, y el front los pide con la acción
+  `periodos`. Elegir una opción completa Desde y Hasta; tocar una fecha a mano
+  pasa el selector a "Personalizado".
+- El Hasta no puede ser posterior a hoy y el Desde no puede ser posterior al
+  Hasta. Lo valida el servidor; la pantalla lo avisa antes.
+- **Tipo de cliente:** Todos, Franquicias (F), Gestión asistida (L) o
+  Mayoristas (M).
+- **Cliente:** varios, con búsqueda por código o razón social, entre los que
+  tienen remitos en el período y el tipo elegidos. Ninguno es todos. El
+  servidor rechaza un cliente que no está en esa lista.
+
+Cambiar un filtro **no consulta**: se consulta con el botón, como en la
+valorización.
+
+### La clasificación
+
+La base trae los remitos del período con sus facturas vinculadas, y el **pozo**:
+las `FAC` de esos clientes emitidas desde el Desde hasta **hoy** que **no
+están vinculadas en `GVA54` a ningún remito**. La clasificación la hace PHP
+(`RemitosPendientes::clasificar()`, regla pura con prueba), porque el
+emparejamiento uno a uno es secuencial. En este orden:
+
+1. **Vinculado en Tango.** Si el remito tiene factura vinculada, manda la
+   **última** (la de fecha más nueva): el remito queda facturado recién cuando
+   se emitió su última factura.
+   - Del Hasta o antes: facturado, no aparece.
+   - Posterior: pendiente, con "Facturado después" = esa factura y "Cómo se
+     identificó" = "Vinculado en Tango".
+2. **Por importe, uno a uno.** Los no vinculados, por cliente + importe exacto
+   al centavo:
+   - dentro de cada grupo, los remitos se recorren por fecha y número;
+   - cada uno se lleva la **primera factura del pozo todavía libre** con el
+     mismo cliente, el mismo importe y `FECHA_EMIS` igual o posterior a la del
+     remito (primero se hace el remito y después la factura);
+   - cada factura cubre un solo remito;
+   - del Hasta o antes: facturado. Posterior: pendiente, "Por importe".
+   - Un remito con **importe 0** (solo renglones de promoción) no se empareja:
+     que dos cosas valgan 0 no prueba que una facture a la otra.
+3. **Sin factura:** pendiente, sin datos de factura, con su importe (0 si es
+   solo de promociones).
+
+| Cómo se identificó | Cuándo |
+| --- | --- |
+| Vinculado en Tango | La última factura vinculada en `GVA54` es posterior al Hasta |
+| Por importe | Sin vínculo; la factura libre del mismo cliente e importe que le tocó es posterior al Hasta |
+| (vacío) | Sin vínculo y sin factura que le toque: sigue sin factura hoy |
+
+### Mejoras respecto del SP
+
+| # | El SP | El reporte |
+| --- | --- | --- |
+| 1 | Filtra por `STA14.FECHA_MOV` y deja afuera los remitos sin `GVA106` | Filtra por la fecha del remito, y sin `GVA106` usa `FECHA_MOV` |
+| 2 | Compara contra **todas** las facturas del período, también las que Tango ya vinculó a otro remito | Las facturas vinculadas en `GVA54` **no entran al pozo**: una factura que Tango asignó no da por facturado a otro remito |
+| 3 | Cualquier factura del mismo cliente e importe tapa a **todos** los remitos de ese importe, sea anterior o posterior | **Uno a uno**: cada factura cubre un solo remito, y tiene que ser del mismo día o posterior |
+| 4 | Toma cualquier comprobante de `GVA12`: notas de crédito y débito, recibos, `ZC1`/`ZD1` | **Solo `FAC`**: una nota de crédito por el mismo importe no factura un remito |
+| 5 | Une `GVA54` con `GVA12` solo por `N_COMP`; un remito en 0 se empareja con cualquier comprobante en 0 | Une por `T_COMP_V` + `N_COMP`; un importe 0 no se empareja |
+
+**Paridad.** `tests/test_remitos_pendientes.php` replica el `SELECT` del SP
+(sin el mail) para los últimos 60 días con Hasta = hoy, y compara sus
+pendientes con los "sin factura" del reporte. Cada diferencia tiene que tener
+uno de estos motivos, y la prueba informa cuántas hay de cada uno. El 21/10/2026
+el SP daba 2 y el reporte 3. La diferencia era un remito sin `GVA106` (mejora
+1).
+
+### Límites conocidos
+
+- **Remitos anteriores al Desde.** Un remito anterior al Desde que siga
+  pendiente no entra al emparejamiento, y su factura podría quedar asignada a
+  un remito del período con el mismo cliente e importe. Es raro (mismo
+  cliente, mismo importe exacto, remitos de distintos períodos), solo cambia el
+  detalle de un remito, y el reporte lo muestra como "Por importe", nunca como
+  seguro.
+- **Importes exactos.** La comparación es exacta, como en el SP. Pero la
+  factura a veces se emite a otro precio unitario que el remito (por ejemplo,
+  14.089,44 en el remito y 14.089,50 en la factura): de los remitos vinculados
+  1 a 1 con su factura desde el 01/08/2024, el 41% no coincide al centavo. Por
+  eso un remito **sin vínculo** que se facturó a otro precio sale "Sin
+  factura". Los vinculados no tienen el problema.
+- **Facturas anteriores al remito.** Hay remitos vinculados en Tango a una
+  factura con fecha **anterior** al remito (121 vínculos desde el 01/08/2024).
+  En los vinculados la regla los cubre igual: si la factura es del Hasta o
+  antes, el remito está facturado. En el emparejamiento por importe se
+  mantiene que la factura sea del mismo día o posterior al remito.
+- **Remitos con varias facturas.** 155 remitos desde el 01/08/2024 tienen 2 o 3
+  facturas vinculadas, en 40 con fechas distintas (hasta 119 días entre la
+  primera y la última). Manda la última.
+- **Por importe no es seguro.** Una factura libre del mismo cliente e importe
+  puede ser de mucho después: en el contable anterior, el único "Por importe"
+  empareja un remito de enero con una factura de septiembre. Por eso se marca
+  distinto que "Vinculado en Tango".
+
+### Lo que se ve en pantalla
+
+- **Tarjetas:** remitos pendientes al Hasta (cantidad e importe), de esos
+  cuántos ya se facturaron después (cantidad e importe), cuántos siguen sin
+  factura hoy (cantidad e importe) y clientes con pendientes.
+- **Resumen por tipo de cliente:** tipo, cantidad de remitos e importe, con
+  total.
+- **Resumen por cliente:** código, razón social, tipo, cantidad, importe
+  pendiente, cuántos ya se facturaron después y la fecha del remito más viejo,
+  de mayor a menor importe.
+- **Leyenda:** "Remitos del DD/MM/AAAA al DD/MM/AAAA, pendientes de facturar al
+  DD/MM/AAAA". Si el Hasta es hoy, aclara que el resultado es al día de hoy.
+- Sin pendientes: un mensaje que lo dice.
+
+Importes con miles y 2 decimales, en pantalla y en el Excel.
+
+Una consulta de un año contable tarda unos 10 s: unos 8 s para traer los
+remitos y unos 2 s para validar los clientes. Las uniones con `GVA106` y `STA20`
+se agrupan de una vez: buscarlas remito por remito tardaba más de dos minutos.
+
+### El Excel
+
+Botón "Descargar Excel", habilitado después de consultar si hay pendientes.
+Usa **los filtros de la última consulta**, los que devolvió el servidor ya
+validados. Se arma con SheetJS desde `RemitosController?action=detalle`, con
+las funciones comunes de `Js/excel.js`.
+
+- Nombre: `Remitos_Pendientes_AAAAMMDD_AAAAMMDD.xlsx` (desde y hasta).
+- **Encabezado:** la leyenda, el período y la fecha de corte, el tipo y los
+  clientes, el usuario del padrón y la fecha y hora de generación.
+- **Hoja "Detalle",** una fila por remito pendiente: Fecha remito, Tipo de
+  cliente, Código cliente, Razón social, Remito, Importe neto, Días al corte
+  (Hasta − fecha del remito), Facturado después: Nº factura, Facturado
+  después: fecha, y Cómo se identificó. Las fechas son fechas de Excel, el
+  importe un número con `#,##0.00`, y hay autofiltro en la fila de títulos.
+- **Hoja "Resumen":** las dos tablas de la pantalla.
+
+---
+
 ## Pruebas
 
 ```
@@ -347,12 +535,18 @@ En XAMPP, `php` es `C:\xampp\php\php.exe`. El arnés es el de
 | `test_auth_reportes.php` | Falla cerrada sin usuario; la regla pura (escribir implica leer, el administrador entra a todo); que todo `case` de los controllers esté declarado como lectura o escritura y que cada uno llame a `autorizar()` antes del `switch`; que las claves de `sql/reportes_permisos.sql` sean **exactamente** las de `AuthReportes::claves()`; que cada pestaña tenga su HTML y su JS |
 | `test_parametros.php` | La validación del factor (0,8 y 7 se rechazan con un mensaje que lo explica, hasta 4 decimales, coma o punto, sin miles); el formato con coma; que la escritura use transacción, auditoría e historial; el script de parámetros |
 | `test_valorizacion.php` | La clasificación de "Origen del costo" y el costo unitario (sin `PRECIO_U_L` da 0, salvo los `OU` con lista 20, que van a lista 20 / 3 sin nacionalización); los filtros; el resumen; la forma de la consulta; la pantalla y el Excel, leyendo el JS |
+| `test_remitos_pendientes.php` | Los rangos del período (31/07, 01/08 y 01/01); los filtros; la clasificación caso por caso (vinculado antes y después del corte, varias vinculadas, por importe antes y después, dos remitos y una factura, factura anterior al remito, otro cliente, un centavo, importe 0); que las vinculadas no entren al pozo; el resumen y la leyenda; la forma de las consultas; los permisos; la pantalla y el Excel, leyendo el JS |
+| `test_readme.php` | Que este README nombre lo que existe: claves, orígenes del costo, valores de "Cómo se identificó", scripts y parámetros |
 
 **Contra la base, solo lectura y opcional:** si hay conexión, las pruebas
 comparan el total histórico del último cierre con `SUM(VALORIZACION)`, exigen
 una fila por sector + sucursal + artículo y recalculan en PHP cada fila del
 modo actual con los insumos que devolvió el SQL, exigiendo el mismo origen y la
-misma valorización. Sin conexión se saltean solas. Ninguna escribe.
+misma valorización. En remitos, revisan el contable anterior (fechas dentro
+del período, ninguna factura del pozo vinculada, los "facturado después"
+posteriores al corte, el filtro de tipo) y hacen la **paridad con el SP** (ver
+*Remitos pendientes de facturar*). Sin conexión se saltean solas. Ninguna
+escribe.
 
 ---
 
@@ -361,5 +555,6 @@ misma valorización. Sin conexión se saltean solas. Ninguna escribe.
 - `AuthReportes` es una copia de la lógica de `AuthCashflow` y
   `AuthInformeEconomico`. Lo que comparten (padrón, regla de administrador)
   podría ir a una clase común, en otra rama.
-- El reporte es solo de Argentina (LAKERS SA): la tabla histórica no tiene
-  equivalente en Uruguay.
+- La valorización es solo de Argentina (LAKERS SA): la tabla histórica no tiene
+  equivalente en Uruguay. Los remitos pendientes también son solo de la base
+  central.

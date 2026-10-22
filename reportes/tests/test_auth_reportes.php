@@ -184,3 +184,11 @@ foreach (Menu::todas() as $p) {
         strpos(file_get_contents($base . '/Tabs/' . $p['tab'] . '.php'),
             "AuthReportes::atributoEdicion('" . $p['tab'] . "')") !== false);
 }
+
+seccion('los JS se cargan una vez y en orden');
+
+chequear('excel.js va una sola vez, antes que las pestañas que lo usan', ['excel.js', 'valorizacion.js', 'remitos.js', 'parametros.js'],
+    Menu::scripts(Menu::todas()));
+chequear('una pestaña sola trae su compartido', ['excel.js', 'remitos.js'], Menu::scripts([Menu::buscar('remitos_pendientes')]));
+chequear('index.php carga los JS de Menu::scripts()', true,
+    strpos(file_get_contents($base . '/index.php'), 'foreach (Menu::scripts($pestanas) as $js)') !== false);

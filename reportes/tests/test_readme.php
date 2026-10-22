@@ -48,3 +48,25 @@ chequear('la versión de SheetJS es la del Menu', true,
     strpos($readme, 'xlsx@0.18.5') !== false
     && strpos(Menu::buscar('valorizacion_stock')['libs'][0], 'xlsx@0.18.5') !== false);
 chequear('el código del módulo', true, strpos($readme, '`' . AuthReportes::MODULO_CODIGO . '`') !== false);
+
+seccion('remitos pendientes');
+
+require_once __DIR__ . '/../Class/RemitosPendientes.php';
+
+chequear('los valores de "Cómo se identificó", en la tabla', [], array_values(array_filter(
+    [RemitosPendientes::COMO_VINCULADO, RemitosPendientes::COMO_IMPORTE], function ($c) use ($readme) {
+        return strpos($readme, '| ' . $c . ' |') === false;
+    })));
+chequear('nombra el SP de referencia y dice que no se modifica', true,
+    strpos($readme, '`RO_BUSCA_REMITOS_SIN_FACTURA`') !== false && strpos($readme, '**El SP no se modifica**') !== false);
+chequear('la regla de clasificación, con el orden de los pasos', true,
+    strpos($readme, '### La clasificación') !== false && strpos($readme, '1. **Vinculado en Tango.**') !== false
+    && strpos($readme, '2. **Por importe, uno a uno.**') !== false && strpos($readme, '3. **Sin factura:**') !== false);
+chequear('las mejoras respecto del SP: vinculadas fuera del pozo, uno a uno y solo FAC', true,
+    strpos($readme, '### Mejoras respecto del SP') !== false && strpos($readme, '**no entran al pozo**') !== false
+    && strpos($readme, '**Uno a uno**') !== false && strpos($readme, '**Solo `FAC`**') !== false);
+chequear('los límites conocidos: remitos anteriores al Desde, importes exactos y facturas anteriores', true,
+    strpos($readme, '### Límites conocidos') !== false && strpos($readme, '**Remitos anteriores al Desde.**') !== false
+    && strpos($readme, '**Importes exactos.**') !== false && strpos($readme, '**Facturas anteriores al remito.**') !== false);
+chequear('el nombre del Excel', true, strpos($readme, '`Remitos_Pendientes_AAAAMMDD_AAAAMMDD.xlsx`') !== false);
+chequear('las cuatro opciones del período', 4, preg_match_all('/^\| (Año contable actual \(por defecto\)|Año contable anterior|Año calendario|Personalizado) \|/m', $readme));
