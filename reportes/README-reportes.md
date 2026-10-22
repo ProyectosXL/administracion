@@ -222,37 +222,57 @@ valorizó con la lista 20 dividida por 3, queda así: es lo que dijo el cierre.
 ### Modo actual
 
 El `STOCK` es el grabado en la fecha elegida (sumado por artículo). Lo que se
-recalcula es el costo, con los datos **de hoy** y la misma lógica de la vista,
-**sin el /3**:
+recalcula es el costo, con los datos **de hoy** y la lógica de la vista, salvo
+en los artículos sin costo:
 
-1. **Costo base:** `STA12.PRECIO_U_L`, en pesos. Si es `NULL` o `0`, el costo
-   base es **0**: no se usa la lista 20 ni se divide por 3.
-2. **Artículo con partida** (`SJ_VIEW_STA11.USA_PARTID = 1`):
+1. **Costo base:** `STA12.PRECIO_U_L`, en pesos.
+2. **Sin costo base** (`PRECIO_U_L` en `NULL` o `0`):
+   - **artículos que empiezan con `OU`:** precio de venta de la **lista 20**
+     (`GVA17.PRECIO` con `NRO_DE_LIS = 20`) **dividido por 3**, **sin
+     nacionalización**. Si no tienen precio en lista 20 (o es 0), quedan sin
+     costo;
+   - **cualquier otro artículo:** el costo es **0**. No se usa la lista 20 ni
+     se divide por 3.
+3. **Artículo con partida** (`SJ_VIEW_STA11.USA_PARTID = 1`), con costo base:
    - con `RO_ORDEN_COMPRA_IMPORT_COSTO_NAC.COSTO_NAC`: costo base × (1 + `COSTO_NAC`);
    - sin `COSTO_NAC`: costo base × el factor de nacionalización estimado de
      Parámetros.
-3. **Sin partida:** el costo base.
-4. **Valorización:** stock × costo unitario, redondeada a 2 decimales.
+4. **Sin partida:** el costo base.
+5. **Valorización:** stock × costo unitario, redondeada a 2 decimales.
 
 | Origen del costo | Cuándo |
 | --- | --- |
 | Última compra | Sin partida, con costo base |
 | Última compra + nacionalización | Con partida y `COSTO_NAC` cargado |
 | Última compra + nacionalización estimada | Con partida, sin `COSTO_NAC`: se aplica el factor de Parámetros |
-| Sin costo | `PRECIO_U_L` en `NULL` o `0`: la valorización da 0 |
+| Precio de venta lista 20 / 3 | Artículo `OU` sin costo base, con precio en lista 20: lista 20 / 3, sin nacionalización |
+| Sin costo | `PRECIO_U_L` en `NULL` o `0` y no es un `OU` con lista 20: la valorización da 0 |
 
-"Sin costo" le gana a la partida: sin costo de última compra no hay nada que
-nacionalizar.
+La falta de costo se resuelve antes que la partida: sin costo de última compra
+no hay nada que nacionalizar. Por eso un `OU` por lista 20 nunca lleva
+nacionalización. Hoy ningún `OU` usa partida, y la regla no se la sumaría
+aunque alguno llegara a usarla.
 
-Las tres fuentes tienen **una sola fila por `COD_ARTICU`**, así que las uniones
-no duplican: `STA12` y `STA11` (de la que `SJ_VIEW_STA11` es una vista directa)
-tienen índice único sobre `COD_ARTICU`, y `RO_ORDEN_COMPRA_IMPORT_COSTO_NAC` es
-una vista que filtra `ROW_NUMBER() OVER (PARTITION BY COD_ARTICU ...) = 1`.
+Las cuatro fuentes tienen **una sola fila por `COD_ARTICU`**, así que las
+uniones no duplican:
+- `STA12` y `STA11` (de la que `SJ_VIEW_STA11` es una vista directa) tienen
+  índice único sobre `COD_ARTICU`;
+- `GVA17` tiene índice único sobre `COD_ARTICU, NRO_DE_LIS`, y se une solo con
+  la lista 20 y solo para los `OU`;
+- `RO_ORDEN_COMPRA_IMPORT_COSTO_NAC` es una vista que filtra
+  `ROW_NUMBER() OVER (PARTITION BY COD_ARTICU ...) = 1`.
 
-**"Sin costo" en 0 es un pedido explícito de Administración.** Pesa: en el
-cierre del 18/10/2026 fueron 6.240 filas (1.447 artículos, 1.440 de ellos sin
-ninguna fila en `STA12`), que en el histórico valían 1.725 millones, el 35% del
-total. La pantalla muestra cuántas filas quedaron sin costo.
+**"Sin costo" en 0 y la lista 20 / 3 solo para los `OU` son pedidos
+explícitos de Administración.** En el cierre del 18/10/2026:
+
+| Origen | Filas | Histórico | Actual |
+| --- | ---: | ---: | ---: |
+| Precio de venta lista 20 / 3 (540 artículos `OU`) | 1.020 | 64.821.293 | 64.821.293 |
+| Sin costo (907 artículos) | 5.220 | 1.660.561.339 | 0 |
+
+Los `OU` dan lo mismo que en el histórico porque es la misma cuenta que hacía
+la vista. Los "Sin costo" valían en el histórico el 34% del total. La pantalla
+muestra cuántas filas quedaron sin costo y cuántas fueron por lista 20.
 
 ### Una sola consulta
 
@@ -267,15 +287,15 @@ Las mismas reglas están en PHP (`origenCosto()`, `costoUnitarioActual()`,
 base fila por fila (ver *Pruebas*).
 
 `OPTION (RECOMPILE)`: con el modo como parámetro, recompilar deja que SQL Server
-vea el valor de `@MODO` y en histórico no toque `STA12` ni la vista de
-nacionalización, que es lo caro. Un cierre completo tarda unos 3 s en histórico
+vea el valor de `@MODO` y en histórico no toque `STA12`, `GVA17` ni la vista
+de nacionalización, que es lo caro. Un cierre completo tarda unos 3 s en histórico
 y 6,5 s en actual.
 
 ### Lo que se ve en pantalla
 
 - **Tarjetas:** stock total, valorización total, cantidad de artículos y, en
-  modo actual, las filas "Sin costo" y las de "nacionalización estimada", con
-  el factor aplicado.
+  modo actual, las filas "Sin costo", las de "nacionalización estimada" (con
+  el factor aplicado) y las de "lista 20 / 3".
 - **Resumen por sector y sucursal,** con subtotal por sector y total general.
 - **Leyenda** con la fecha y el modo ("Stock al AAAA-MM-DD valorizado al costo
   de hoy") y los filtros.
@@ -325,7 +345,7 @@ En XAMPP, `php` es `C:\xampp\php\php.exe`. El arnés es el de
 | --- | --- |
 | `test_auth_reportes.php` | Falla cerrada sin usuario; la regla pura (escribir implica leer, el administrador entra a todo); que todo `case` de los controllers esté declarado como lectura o escritura y que cada uno llame a `autorizar()` antes del `switch`; que las claves de `sql/reportes_permisos.sql` sean **exactamente** las de `AuthReportes::claves()`; que cada pestaña tenga su HTML y su JS |
 | `test_parametros.php` | La validación del factor (0,8 y 7 se rechazan con un mensaje que lo explica, hasta 4 decimales, coma o punto, sin miles); el formato con coma; que la escritura use transacción, auditoría e historial; el script de parámetros |
-| `test_valorizacion.php` | La clasificación de "Origen del costo" y el costo unitario (sin `PRECIO_U_L` da 0, nunca /3); los filtros; el resumen; la forma de la consulta; la pantalla y el Excel, leyendo el JS |
+| `test_valorizacion.php` | La clasificación de "Origen del costo" y el costo unitario (sin `PRECIO_U_L` da 0, salvo los `OU` con lista 20, que van a lista 20 / 3 sin nacionalización); los filtros; el resumen; la forma de la consulta; la pantalla y el Excel, leyendo el JS |
 
 **Contra la base, solo lectura y opcional:** si hay conexión, las pruebas
 comparan el total histórico del último cierre con `SUM(VALORIZACION)`, exigen

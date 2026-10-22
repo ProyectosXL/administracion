@@ -14,9 +14,10 @@
  *              vista valorizó con la lista 20 dividida por 3, queda así: es lo
  *              que dijo el cierre.
  *   actual     el STOCK grabado en la fecha elegida, valorizado con el costo de
- *              HOY y la misma lógica de la vista, SIN el /3: un artículo sin
- *              costo de última compra vale 0 y se ve como "Sin costo". Ver
- *              origenCosto() y costoUnitarioActual().
+ *              HOY y la misma lógica de la vista. Un artículo sin costo de
+ *              última compra vale 0 y se ve como "Sin costo", SALVO los OU:
+ *              esos toman el precio de venta de la lista 20 dividido por 3,
+ *              sin nacionalización. Ver origenCosto() y costoUnitarioActual().
  *
  * SE AGRUPA POR SECTOR + SUCURSAL + ARTÍCULO. En CENTRAL la vista une STA19
  * por depósito sin agrupar y la tabla no guarda el depósito, así que un mismo
@@ -49,7 +50,18 @@ class ValorizacionStock {
     const ORIGEN_ULTIMA_COMPRA = 'Última compra';
     const ORIGEN_NACIONALIZACION = 'Última compra + nacionalización';
     const ORIGEN_NAC_ESTIMADA = 'Última compra + nacionalización estimada';
+    const ORIGEN_LISTA20 = 'Precio de venta lista 20 / 3';
     const ORIGEN_SIN_COSTO = 'Sin costo';
+
+    /**
+     * Los artículos sin costo de última compra que se valorizan con el precio
+     * de venta: los que empiezan con OU, a la lista 20 de GVA17 dividida por 3.
+     * Es un pedido de Administración. No llevan nacionalización: hoy ningún OU
+     * usa partida, y la regla no se la suma aunque alguno llegara a usarla.
+     */
+    const PREFIJO_LISTA20 = 'OU';
+    const LISTA_VENTA = 20;
+    const DIVISOR_LISTA = 3;
 
     /** Las columnas del detalle, en el orden en que viaja cada fila al front */
     const COLUMNAS = ['sector', 'sucursal', 'articulo', 'descripcion', 'stock', 'costoUnitario',
@@ -80,15 +92,23 @@ class ValorizacionStock {
      * El origen del costo en modo actual. Pura.
      *
      * El orden importa: sin costo de última compra no hay nada que
-     * nacionalizar, así que "Sin costo" le gana a la partida.
+     * nacionalizar, así que la falta de costo se resuelve antes que la
+     * partida. Ahí un OU con precio de lista 20 toma ese precio / 3, y
+     * cualquier otro queda "Sin costo".
      *
      * @param float|null $precioUltimaCompra STA12.PRECIO_U_L
      * @param bool|int|null $usaPartida SJ_VIEW_STA11.USA_PARTID
      * @param float|null $costoNac RO_ORDEN_COMPRA_IMPORT_COSTO_NAC.COSTO_NAC
+     * @param string $articulo COD_ARTICU
+     * @param float|null $precioLista20 GVA17.PRECIO de la lista 20
      * @return string Una de las constantes ORIGEN_*
      */
-    public static function origenCosto($precioUltimaCompra, $usaPartida, $costoNac) {
+    public static function origenCosto($precioUltimaCompra, $usaPartida, $costoNac, $articulo, $precioLista20) {
         if ($precioUltimaCompra === null || (float) $precioUltimaCompra == 0) {
+            if (self::usaLista20($articulo) && $precioLista20 !== null && (float) $precioLista20 > 0) {
+                return self::ORIGEN_LISTA20;
+            }
+
             return self::ORIGEN_SIN_COSTO;
         }
 
@@ -99,21 +119,32 @@ class ValorizacionStock {
         return self::ORIGEN_ULTIMA_COMPRA;
     }
 
+    /** Si el artículo, sin costo de última compra, se valoriza con la lista 20. Pura. */
+    public static function usaLista20($articulo) {
+        return strncmp(trim((string) $articulo), self::PREFIJO_LISTA20, strlen(self::PREFIJO_LISTA20)) === 0;
+    }
+
     /**
      * El costo unitario de hoy. Pura.
      *
-     * Es la cuenta de la vista sin el /3 de la lista 20: sin costo base, 0.
+     * Es la cuenta de la vista, con una diferencia: la lista 20 / 3 sólo la
+     * toman los OU sin costo. Cualquier otro artículo sin costo base vale 0.
      *
      * @param float|null $precioUltimaCompra
      * @param bool|int|null $usaPartida
      * @param float|null $costoNac
+     * @param string $articulo
+     * @param float|null $precioLista20
      * @param float $factor El factor de nacionalización estimado de Parámetros
      * @return float
      */
-    public static function costoUnitarioActual($precioUltimaCompra, $usaPartida, $costoNac, $factor) {
-        switch (self::origenCosto($precioUltimaCompra, $usaPartida, $costoNac)) {
+    public static function costoUnitarioActual($precioUltimaCompra, $usaPartida, $costoNac, $articulo, $precioLista20,
+                                               $factor) {
+        switch (self::origenCosto($precioUltimaCompra, $usaPartida, $costoNac, $articulo, $precioLista20)) {
             case self::ORIGEN_SIN_COSTO:
                 return 0.0;
+            case self::ORIGEN_LISTA20:
+                return (float) $precioLista20 / self::DIVISOR_LISTA;
             case self::ORIGEN_NACIONALIZACION:
                 return (float) $precioUltimaCompra * (1 + (float) $costoNac);
             case self::ORIGEN_NAC_ESTIMADA:
@@ -262,6 +293,7 @@ class ValorizacionStock {
         $articulos = [];
         $sinCosto = 0;
         $estimada = 0;
+        $lista20 = 0;
         $total = ['stock' => 0.0, 'valorizacion' => 0.0];
 
         foreach ($filas as $f) {
@@ -289,6 +321,8 @@ class ValorizacionStock {
                 $sinCosto++;
             } elseif ($f['origen'] === self::ORIGEN_NAC_ESTIMADA) {
                 $estimada++;
+            } elseif ($f['origen'] === self::ORIGEN_LISTA20) {
+                $lista20++;
             }
         }
 
@@ -311,7 +345,8 @@ class ValorizacionStock {
                 'articulos' => count($articulos),
                 'filas' => count($filas),
                 'sinCosto' => $sinCosto,
-                'nacEstimada' => $estimada
+                'nacEstimada' => $estimada,
+                'lista20' => $lista20
             ]
         ];
     }
@@ -388,8 +423,9 @@ class ValorizacionStock {
      * @param array $filtros Ya validados
      * @param float|null $factor El factor de Parámetros; obligatorio en modo actual
      * @param bool $conInsumos Agrega lo que usó el costo actual (precioUltimaCompra,
-     *                         usaPartida, costoNac): lo usa la prueba de paridad
-     *                         para recalcular cada fila con las reglas puras
+     *                         usaPartida, costoNac, precioLista20): lo usa la
+     *                         prueba de paridad para recalcular cada fila con
+     *                         las reglas puras
      * @return array Filas con las claves de COLUMNAS
      */
     public function detalle(array $filtros, $factor, $conInsumos = false) {
@@ -417,6 +453,7 @@ class ValorizacionStock {
                 $fila['precioUltimaCompra'] = $r['PRECIO_U_L'] === null ? null : (float) $r['PRECIO_U_L'];
                 $fila['usaPartida'] = $r['USA_PARTID'] === null ? null : (int) $r['USA_PARTID'];
                 $fila['costoNac'] = $r['COSTO_NAC'] === null ? null : (float) $r['COSTO_NAC'];
+                $fila['precioLista20'] = $r['PRECIO_LISTA20'] === null ? null : (float) $r['PRECIO_LISTA20'];
             }
 
             $filas[] = $fila;
@@ -457,7 +494,10 @@ class ValorizacionStock {
      * OPTION (RECOMPILE): con el modo como parámetro, un plan único tendría
      * que contemplar las uniones del costo actual también en modo histórico.
      * Recompilando, SQL Server ve el valor de @MODO y en histórico ni toca
-     * STA12 ni la vista de nacionalización, que es lo caro.
+     * STA12, GVA17 ni la vista de nacionalización, que es lo caro.
+     *
+     * El prefijo OU, la lista 20 y el divisor 3 también se escriben desde
+     * constantes: son la regla, no un filtro del usuario.
      *
      * @param int $cantSucursales
      * @return string
@@ -471,7 +511,11 @@ class ValorizacionStock {
         $ult = "N'" . self::ORIGEN_ULTIMA_COMPRA . "'";
         $nac = "N'" . self::ORIGEN_NACIONALIZACION . "'";
         $est = "N'" . self::ORIGEN_NAC_ESTIMADA . "'";
+        $l20 = "N'" . self::ORIGEN_LISTA20 . "'";
         $sin = "N'" . self::ORIGEN_SIN_COSTO . "'";
+        $prefijo = "'" . self::PREFIJO_LISTA20 . "%'";
+        $lista = (int) self::LISTA_VENTA;
+        $divisor = (int) self::DIVISOR_LISTA;
 
         return "
 SET NOCOUNT ON;
@@ -496,22 +540,30 @@ WITH B AS (
     GROUP BY T.SECTOR, T.SUCURSAL, T.COD_ARTICU
 ),
 C AS (
-    -- El costo de hoy, sólo en modo actual. Las tres fuentes tienen una fila
-    -- por COD_ARTICU (índice único en STA12 y STA11; ROW_NUMBER = 1 en la
-    -- vista de nacionalización), así que las uniones no duplican.
+    -- El costo de hoy, sólo en modo actual. Las cuatro fuentes tienen una
+    -- fila por COD_ARTICU (índice único en STA12, STA11 y GVA17 por artículo
+    -- y lista; ROW_NUMBER = 1 en la vista de nacionalización), así que las
+    -- uniones no duplican. La lista 20 sólo se busca para los OU.
     SELECT B.*,
            CAST(P.PRECIO_U_L AS FLOAT) AS PRECIO_U_L,
            CAST(A.USA_PARTID AS INT) AS USA_PARTID,
-           CAST(N.COSTO_NAC AS FLOAT) AS COSTO_NAC
+           CAST(N.COSTO_NAC AS FLOAT) AS COSTO_NAC,
+           CAST(L.PRECIO AS FLOAT) AS PRECIO_LISTA20
     FROM B
     LEFT JOIN STA12 P ON @MODO = '" . self::MODO_ACTUAL . "' AND P.COD_ARTICU = B.COD_ARTICU
     LEFT JOIN SJ_VIEW_STA11 A ON @MODO = '" . self::MODO_ACTUAL . "' AND A.COD_ARTICU = B.COD_ARTICU
     LEFT JOIN RO_ORDEN_COMPRA_IMPORT_COSTO_NAC N ON @MODO = '" . self::MODO_ACTUAL . "' AND N.COD_ARTICU = B.COD_ARTICU
+    LEFT JOIN GVA17 L ON @MODO = '" . self::MODO_ACTUAL . "' AND B.COD_ARTICU LIKE $prefijo
+                     AND L.NRO_DE_LIS = $lista AND L.COD_ARTICU = B.COD_ARTICU
 ),
 O AS (
     SELECT C.*,
            CASE
                WHEN @MODO = '" . self::MODO_HISTORICO . "' THEN $hist
+               -- Sin costo de última compra: los OU con precio de lista 20
+               -- van a lista 20 / 3, sin nacionalización; el resto, a 0
+               WHEN (C.PRECIO_U_L IS NULL OR C.PRECIO_U_L = 0)
+                    AND C.COD_ARTICU LIKE $prefijo AND C.PRECIO_LISTA20 > 0 THEN $l20
                WHEN C.PRECIO_U_L IS NULL OR C.PRECIO_U_L = 0 THEN $sin
                WHEN C.USA_PARTID = 1 AND C.COSTO_NAC IS NOT NULL THEN $nac
                WHEN C.USA_PARTID = 1 THEN $est
@@ -525,6 +577,7 @@ U AS (
                WHEN @MODO = '" . self::MODO_HISTORICO . "'
                    THEN CASE WHEN O.STOCK = 0 THEN 0 ELSE O.VALORIZACION / O.STOCK END
                WHEN O.ORIGEN = $sin THEN 0
+               WHEN O.ORIGEN = $l20 THEN O.PRECIO_LISTA20 / $divisor
                WHEN O.ORIGEN = $nac THEN O.PRECIO_U_L * (1 + O.COSTO_NAC)
                WHEN O.ORIGEN = $est THEN O.PRECIO_U_L * @FACTOR
                ELSE O.PRECIO_U_L
@@ -537,7 +590,7 @@ SELECT U.SECTOR, U.SUCURSAL, U.COD_ARTICU, U.DESCRIPCIO, U.STOCK, U.COSTO_UNITAR
             ELSE ROUND(U.STOCK * U.COSTO_UNITARIO, 2)
        END AS VALORIZACION,
        U.ORIGEN,
-       U.PRECIO_U_L, U.USA_PARTID, U.COSTO_NAC
+       U.PRECIO_U_L, U.USA_PARTID, U.COSTO_NAC, U.PRECIO_LISTA20
 FROM U
 ORDER BY U.SECTOR, U.SUCURSAL, U.COD_ARTICU
 OPTION (RECOMPILE);";

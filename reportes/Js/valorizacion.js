@@ -176,6 +176,8 @@
                 'filas sin costo de última compra: valorizadas en 0', r.kpis.sinCosto > 0));
             kpis.push(kpi('Nacionalización estimada', Reportes.numero(r.kpis.nacEstimada, 0),
                 'filas con el factor ' + r.factorTexto, r.kpis.nacEstimada > 0));
+            kpis.push(kpi('Lista 20 / 3', Reportes.numero(r.kpis.lista20, 0),
+                'filas OU sin costo: precio de venta de la lista 20 dividido por 3', r.kpis.lista20 > 0));
         }
 
         $('#raValKpis').html(kpis.join(''));

@@ -18,26 +18,46 @@ $V = 'ValorizacionStock';
 
 seccion('origen del costo (modo actual)');
 
-chequear('sin PRECIO_U_L: Sin costo', $V::ORIGEN_SIN_COSTO, $V::origenCosto(null, 0, null));
-chequear('PRECIO_U_L en 0: Sin costo', $V::ORIGEN_SIN_COSTO, $V::origenCosto(0, 0, null));
-chequear('sin costo le gana a la partida', $V::ORIGEN_SIN_COSTO, $V::origenCosto(null, 1, 0.35));
-chequear('con partida y COSTO_NAC: nacionalización', $V::ORIGEN_NACIONALIZACION, $V::origenCosto(100, 1, 0.35));
+// Un artículo cualquiera (X...) y uno OU, con y sin precio de lista 20
+$X = 'XV5SST06Z100139';
+$OU = 'OUA12345';
+
+chequear('sin PRECIO_U_L: Sin costo', $V::ORIGEN_SIN_COSTO, $V::origenCosto(null, 0, null, $X, 300));
+chequear('PRECIO_U_L en 0: Sin costo', $V::ORIGEN_SIN_COSTO, $V::origenCosto(0, 0, null, $X, 300));
+chequear('sin costo le gana a la partida', $V::ORIGEN_SIN_COSTO, $V::origenCosto(null, 1, 0.35, $X, 300));
+chequear('con partida y COSTO_NAC: nacionalización', $V::ORIGEN_NACIONALIZACION, $V::origenCosto(100, 1, 0.35, $X, null));
 chequear('con partida y COSTO_NAC en 0: sigue siendo nacionalización cargada', $V::ORIGEN_NACIONALIZACION,
-    $V::origenCosto(100, 1, 0.0));
-chequear('con partida sin COSTO_NAC: nacionalización estimada', $V::ORIGEN_NAC_ESTIMADA, $V::origenCosto(100, 1, null));
-chequear('sin partida: última compra', $V::ORIGEN_ULTIMA_COMPRA, $V::origenCosto(100, 0, null));
-chequear('sin partida, aunque tenga COSTO_NAC: última compra', $V::ORIGEN_ULTIMA_COMPRA, $V::origenCosto(100, 0, 0.35));
-chequear('sin fila en STA11 (USA_PARTID null): última compra', $V::ORIGEN_ULTIMA_COMPRA, $V::origenCosto(100, null, null));
-chequear('USA_PARTID como bit de la base (true)', $V::ORIGEN_NAC_ESTIMADA, $V::origenCosto(100, true, null));
+    $V::origenCosto(100, 1, 0.0, $X, null));
+chequear('con partida sin COSTO_NAC: nacionalización estimada', $V::ORIGEN_NAC_ESTIMADA, $V::origenCosto(100, 1, null, $X, null));
+chequear('sin partida: última compra', $V::ORIGEN_ULTIMA_COMPRA, $V::origenCosto(100, 0, null, $X, null));
+chequear('sin partida, aunque tenga COSTO_NAC: última compra', $V::ORIGEN_ULTIMA_COMPRA, $V::origenCosto(100, 0, 0.35, $X, null));
+chequear('sin fila en STA11 (USA_PARTID null): última compra', $V::ORIGEN_ULTIMA_COMPRA, $V::origenCosto(100, null, null, $X, null));
+chequear('USA_PARTID como bit de la base (true)', $V::ORIGEN_NAC_ESTIMADA, $V::origenCosto(100, true, null, $X, null));
+
+seccion('los OU sin costo: lista 20 / 3');
+
+chequear('OU sin PRECIO_U_L y con lista 20: lista 20 / 3', $V::ORIGEN_LISTA20, $V::origenCosto(null, 0, null, $OU, 300));
+chequear('OU con PRECIO_U_L en 0: lista 20 / 3', $V::ORIGEN_LISTA20, $V::origenCosto(0, 0, null, $OU, 300));
+chequear('OU sin lista 20: Sin costo', $V::ORIGEN_SIN_COSTO, $V::origenCosto(null, 0, null, $OU, null));
+chequear('OU con lista 20 en 0: Sin costo', $V::ORIGEN_SIN_COSTO, $V::origenCosto(null, 0, null, $OU, 0));
+chequear('OU con costo de última compra: la regla de siempre', $V::ORIGEN_ULTIMA_COMPRA, $V::origenCosto(100, 0, null, $OU, 300));
+chequear('OU sin costo con partida: lista 20 / 3 igual, sin nacionalización', $V::ORIGEN_LISTA20,
+    $V::origenCosto(null, 1, 0.35, $OU, 300));
+chequear('el prefijo es al principio: "XOU..." no es OU', $V::ORIGEN_SIN_COSTO, $V::origenCosto(null, 0, null, 'XOU1', 300));
+chequear('y distingue mayúsculas, como los códigos de Tango', $V::ORIGEN_SIN_COSTO, $V::origenCosto(null, 0, null, 'ou1', 300));
+chequear('usaLista20() recorta espacios', true, $V::usaLista20('  OUX '));
 
 seccion('costo unitario y valorización (modo actual)');
 
-chequear('nacionalización: base × (1 + COSTO_NAC)', 135.0, $V::costoUnitarioActual(100, 1, 0.35, 1.65));
-chequear('estimada: base × factor', 165.0, $V::costoUnitarioActual(100, 1, null, 1.65));
-chequear('estimada con otro factor', 150.0, $V::costoUnitarioActual(100, 1, null, 1.5));
-chequear('sin partida: el costo base', 100.0, $V::costoUnitarioActual(100, 0, null, 1.65));
-chequear('sin PRECIO_U_L: 0, nunca la lista 20 / 3', 0.0, $V::costoUnitarioActual(null, 0, null, 1.65));
-chequear('PRECIO_U_L en 0 con partida: 0, sin factor', 0.0, $V::costoUnitarioActual(0, 1, null, 1.65));
+chequear('nacionalización: base × (1 + COSTO_NAC)', 135.0, $V::costoUnitarioActual(100, 1, 0.35, $X, null, 1.65));
+chequear('estimada: base × factor', 165.0, $V::costoUnitarioActual(100, 1, null, $X, null, 1.65));
+chequear('estimada con otro factor', 150.0, $V::costoUnitarioActual(100, 1, null, $X, null, 1.5));
+chequear('sin partida: el costo base', 100.0, $V::costoUnitarioActual(100, 0, null, $X, null, 1.65));
+chequear('sin PRECIO_U_L y no OU: 0, aunque tenga lista 20', 0.0, $V::costoUnitarioActual(null, 0, null, $X, 300, 1.65));
+chequear('PRECIO_U_L en 0 con partida: 0, sin factor', 0.0, $V::costoUnitarioActual(0, 1, null, $X, null, 1.65));
+chequear('OU sin costo: lista 20 / 3', 100.0, $V::costoUnitarioActual(null, 0, null, $OU, 300, 1.65));
+chequear('OU sin costo con partida: sin factor ni COSTO_NAC', 100.0, $V::costoUnitarioActual(null, 1, 0.35, $OU, 300, 1.65));
+chequear('OU sin costo ni lista 20: 0', 0.0, $V::costoUnitarioActual(null, 0, null, $OU, null, 1.65));
 chequear('valorización a 2 decimales', 100.0, $V::valorizar(3, 33.3333));
 chequear('valorización redondea medio centavo hacia arriba', 0.13, $V::valorizar(1, 0.125));
 chequear('histórico: valorización / stock', 25.0, $V::costoUnitarioHistorico(4, 100));
@@ -115,8 +135,11 @@ chequear('el total es la suma de los subtotales', $res['total']['valorizacion'],
 chequear('artículos distintos (A está en dos sucursales)', 3, $res['kpis']['articulos']);
 chequear('filas sin costo', 1, $res['kpis']['sinCosto']);
 chequear('filas con nacionalización estimada', 1, $res['kpis']['nacEstimada']);
+chequear('filas OU por lista 20 / 3', 1, $V::resumir([
+    $fila('LOCALES', 'UNICENTER', 'OU1', 1, 100.0, $V::ORIGEN_LISTA20)
+])['kpis']['lista20']);
 chequear('sin filas, todo en cero', ['stock' => 0.0, 'valorizacion' => 0.0, 'articulos' => 0, 'filas' => 0,
-    'sinCosto' => 0, 'nacEstimada' => 0], $V::resumir([])['kpis']);
+    'sinCosto' => 0, 'nacEstimada' => 0, 'lista20' => 0], $V::resumir([])['kpis']);
 
 seccion('la consulta');
 
@@ -129,14 +152,25 @@ chequear('un "?" por parámetro, con tres sucursales', count($V::parametrosConsu
 chequear('compara la fecha contra CAST(FECHA AS DATE)', true, strpos($sql0, 'CAST(T.FECHA AS DATE) = @FECHA') !== false);
 chequear('agrupa por sector + sucursal + artículo', true,
     strpos($sql0, 'GROUP BY T.SECTOR, T.SUCURSAL, T.COD_ARTICU') !== false);
-chequear('no divide por 3 en ningún lado', false, (bool) preg_match('#/\s*3\b#', $sql0));
-chequear('no usa la lista 20', false, stripos($sql0, 'GVA17') !== false);
+// Sin las etiquetas N'...' ni los comentarios, que dicen "lista 20 / 3" en prosa
+$sqlCuentas = preg_replace(["#N'[^']*'#", '#--[^\n]*#'], '', $sql0);
+chequear('divide por 3 en un solo lugar: la lista 20 de los OU', 1, preg_match_all('#/\s*3\b#', $sqlCuentas));
+chequear('y ese lugar es el costo del origen lista 20', true,
+    (bool) preg_match("#WHEN O\.ORIGEN = N'" . preg_quote($V::ORIGEN_LISTA20, '#') . "' THEN O\.PRECIO_LISTA20 / 3#", $sql0));
+chequear('la lista 20 se busca sólo para los OU, en modo actual', true,
+    (bool) preg_match("#LEFT JOIN GVA17 L ON @MODO = 'actual' AND B\.COD_ARTICU LIKE 'OU%'\s+AND L\.NRO_DE_LIS = 20#", $sql0));
+chequear('el origen lista 20 exige no tener costo, ser OU y tener precio de lista', true,
+    (bool) preg_match("#WHEN \(C\.PRECIO_U_L IS NULL OR C\.PRECIO_U_L = 0\)\s+AND C\.COD_ARTICU LIKE 'OU%' AND C\.PRECIO_LISTA20 > 0#", $sql0));
+chequear('y va antes que "Sin costo" y que la partida', true,
+    strpos($sql0, 'C.PRECIO_LISTA20 > 0 THEN') < strpos($sql0, "THEN N'" . $V::ORIGEN_SIN_COSTO . "'")
+    && strpos($sql0, 'C.PRECIO_LISTA20 > 0 THEN') < strpos($sql0, 'WHEN C.USA_PARTID = 1'));
 chequear('el factor es un parámetro, no un número escrito', true,
     strpos($sql0, '* @FACTOR') !== false && strpos($sql0, '1.65') === false);
 chequear('el código se busca sin distinguir mayúsculas', true,
     strpos($sql0, 'T.COD_ARTICU COLLATE Modern_Spanish_CI_AI LIKE @ARTICULO') !== false);
-chequear('los cinco orígenes salen de las constantes', 5, count(array_filter([
-    $V::ORIGEN_HISTORICO, $V::ORIGEN_ULTIMA_COMPRA, $V::ORIGEN_NACIONALIZACION, $V::ORIGEN_NAC_ESTIMADA, $V::ORIGEN_SIN_COSTO
+chequear('los seis orígenes salen de las constantes', 6, count(array_filter([
+    $V::ORIGEN_HISTORICO, $V::ORIGEN_ULTIMA_COMPRA, $V::ORIGEN_NACIONALIZACION, $V::ORIGEN_NAC_ESTIMADA,
+    $V::ORIGEN_LISTA20, $V::ORIGEN_SIN_COSTO
 ], function ($o) use ($sql0) {
     return strpos($sql0, "N'" . $o . "'") !== false;
 })));
@@ -229,9 +263,11 @@ if (!Pruebas::hayBase()) {
     $distintas = [];
 
     foreach ($actual as $x) {
-        $origen = ValorizacionStock::origenCosto($x['precioUltimaCompra'], $x['usaPartida'], $x['costoNac']);
+        $origen = ValorizacionStock::origenCosto($x['precioUltimaCompra'], $x['usaPartida'], $x['costoNac'],
+            $x['articulo'], $x['precioLista20']);
         $val = ValorizacionStock::valorizar($x['stock'],
-            ValorizacionStock::costoUnitarioActual($x['precioUltimaCompra'], $x['usaPartida'], $x['costoNac'], 1.65));
+            ValorizacionStock::costoUnitarioActual($x['precioUltimaCompra'], $x['usaPartida'], $x['costoNac'],
+                $x['articulo'], $x['precioLista20'], 1.65));
 
         if ($origen !== $x['origen'] || abs($val - $x['valorizacion']) > 0.011) {
             $distintas[] = $x['articulo'] . ' ' . $x['sucursal'] . ': SQL ' . $x['origen'] . ' ' . $x['valorizacion']
@@ -246,10 +282,25 @@ if (!Pruebas::hayBase()) {
     });
     chequear('actual: "Sin costo" vale 0', 0.0, (float) array_sum(array_column($sinCosto, 'valorizacion')));
 
+    $l20 = array_filter($actual, function ($x) {
+        return $x['origen'] === ValorizacionStock::ORIGEN_LISTA20;
+    });
+    chequear('actual: sólo los OU van a lista 20 / 3', [], array_values(array_filter(array_column($l20, 'articulo'),
+        function ($a) {
+            return !ValorizacionStock::usaLista20($a);
+        })));
+    chequear('actual: ningún OU con precio de lista 20 queda sin costo', [], array_values(array_map(function ($x) {
+        return $x['articulo'];
+    }, array_filter($sinCosto, function ($x) {
+        return ValorizacionStock::usaLista20($x['articulo']) && $x['precioLista20'] > 0;
+    }))));
+
     $resA = ValorizacionStock::resumir($actual);
     Pruebas::informar('histórico ' . number_format($res['total']['valorizacion'], 2, ',', '.')
         . ' / actual ' . number_format($resA['total']['valorizacion'], 2, ',', '.')
-        . ' / sin costo ' . $resA['kpis']['sinCosto'] . ' filas / estimada ' . $resA['kpis']['nacEstimada'] . ' filas');
+        . ' / sin costo ' . $resA['kpis']['sinCosto'] . ' filas / lista 20 ' . $resA['kpis']['lista20']
+        . ' filas (' . number_format(array_sum(array_column($l20, 'valorizacion')), 2, ',', '.') . ')'
+        . ' / estimada ' . $resA['kpis']['nacEstimada'] . ' filas');
 
     $loc = $v->sucursales($ultima);
     $unaLocal = null;

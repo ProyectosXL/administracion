@@ -22,8 +22,8 @@ $faltan = array_values(array_filter(AuthReportes::claves(), function ($c) use ($
 chequear('todas las claves de permiso', [], $faltan);
 
 $origenes = [ValorizacionStock::ORIGEN_ULTIMA_COMPRA, ValorizacionStock::ORIGEN_NACIONALIZACION,
-    ValorizacionStock::ORIGEN_NAC_ESTIMADA, ValorizacionStock::ORIGEN_SIN_COSTO];
-chequear('los cuatro orígenes del modo actual, en la tabla', [],
+    ValorizacionStock::ORIGEN_NAC_ESTIMADA, ValorizacionStock::ORIGEN_LISTA20, ValorizacionStock::ORIGEN_SIN_COSTO];
+chequear('los cinco orígenes del modo actual, en la tabla', [],
     array_values(array_filter($origenes, function ($o) use ($readme) {
         return strpos($readme, '| ' . $o . ' |') === false;
     })));
