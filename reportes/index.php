@@ -107,6 +107,9 @@ if (!$pestanas) {
 <script src="../assets/js/libs/1jquery-3.5.1.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<?php foreach (Menu::libs($pestanas) as $lib): ?>
+<script src="<?php echo htmlspecialchars($lib); ?>"></script>
+<?php endforeach; ?>
 <script src="Js/permisos.js?v=<?php echo raVersion('Js/permisos.js'); ?>"></script>
 <script src="Js/reportes.js?v=<?php echo raVersion('Js/reportes.js'); ?>"></script>
 <?php foreach ($pestanas as $p): ?>

@@ -11,6 +11,7 @@
  */
 
 require_once __DIR__ . '/../Class/ValorizacionStock.php';
+require_once __DIR__ . '/../Class/Menu.php';
 
 $base = __DIR__ . '/..';
 $V = 'ValorizacionStock';
@@ -152,6 +153,37 @@ chequear('el factor lo lee el servidor de Parámetros', true,
     strpos($ctrl, '->valor(Parametros::FACTOR_NAC_ESTIMADO)') !== false);
 chequear('consultar y detalle validan con la misma función', 2, substr_count($ctrl, 'filtrosYFactor($v)'));
 chequear('el usuario del Excel es el del padrón', true, strpos($ctrl, "'usuario' => \$usuario") !== false);
+
+seccion('la pantalla y el Excel');
+
+$js = codigoSinComentarios($base . '/Js/valorizacion.js');
+$tab = file_get_contents($base . '/Tabs/valorizacion_stock.php');
+$menu = Menu::buscar('valorizacion_stock');
+
+chequear('SheetJS es la versión de novedades, xlsx@0.18.5',
+    ['https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'], $menu['libs']);
+chequear('cambiar un filtro no consulta: sólo el botón y Enter llaman a consultar()', 2,
+    substr_count($js, 'consultar)') + substr_count($js, 'consultar();'));
+chequear('la descarga usa los filtros de la última consulta, no los de la pantalla', true,
+    strpos($js, "Reportes.post('Valorizacion', 'detalle', ultima.filtros)") !== false);
+chequear('el front no manda el factor', false, (bool) preg_match('/factor\s*:/', $js));
+chequear('el nombre del archivo', true,
+    strpos($js, "'Valorizacion_Stock_' + r.filtros.fecha.replace(/-/g, '') + '_'") !== false
+    && strpos($js, "'Actual' : 'Historico') + '.xlsx'") !== false);
+chequear('las dos hojas', true,
+    strpos($js, "hojaDetalle(r), 'Detalle')") !== false && strpos($js, "hojaResumen(r), 'Resumen')") !== false);
+chequear('las columnas del detalle', true, strpos($js, "['Fecha de cierre', 'Sector', 'Sucursal', 'Artículo', "
+    . "'Descripción', 'Stock', 'Costo unitario',\n            'Valorización', 'Origen del costo']") !== false);
+chequear('autofiltro en la fila de títulos', true, strpos($js, "ws['!autofilter']") !== false);
+chequear('importes con miles y 2 decimales', 3, substr_count($js, "'#,##0.00');"));
+chequear('el encabezado lleva factor, usuario y hora', true,
+    strpos($js, "'Factor de nacionalización estimado: '") !== false
+    && strpos($js, "'Generado por ' + r.usuario + ' el ' + fechaHora(r.generado)") !== false);
+chequear('la fecha va como número de serie, no como texto', true, strpos($js, 'var serie = serieExcel(r.filtros.fecha)') !== false);
+chequear('la pantalla tiene los cinco filtros y los dos botones', 7,
+    preg_match_all('/id="(raValFecha|raValModoHist|raValSector|raValSucursalBtn|raValArticulo|raValConsultar|raValExcel)"/', $tab));
+chequear('el Excel arranca deshabilitado', true, (bool) preg_match('/id="raValExcel" disabled/', $tab));
+chequear('el histórico es el modo por defecto', true, (bool) preg_match('/id="raValModoHist" value="historico" checked/', $tab));
 
 seccion('contra la base (sólo lectura)');
 
