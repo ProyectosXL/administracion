@@ -168,6 +168,10 @@ chequear('las claves del script son las de AuthReportes::claves()', AuthReportes
 chequear('el script da de alta el módulo por su código', true,
     strpos($sql, "codigo = '" . AuthReportes::MODULO_CODIGO . "'") !== false);
 chequear('el script no asigna roles', false, stripos($sql, 'INSERT INTO dbo.FP_ROL_PERMISO') !== false);
+// El HUB (sistemas/hub/index.php) muestra la tarjeta a quien tenga
+// 'hub.app.' . strtolower(codigo): si no coinciden, la tarjeta no aparece
+chequear('la clave del HUB es la que el HUB deriva del código del módulo',
+    'hub.app.' . strtolower(AuthReportes::MODULO_CODIGO), AuthReportes::CLAVE_HUB);
 
 seccion('cada pestaña del Menu tiene su archivo y su JS');
 
