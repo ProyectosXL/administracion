@@ -207,7 +207,7 @@ body {
 
 .ra-kpis {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 0.75rem;
     margin-bottom: 1rem;
 }
@@ -228,6 +228,8 @@ body {
     font-size: 1.25rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    /* Un importe no se parte: el "$" y el número van siempre juntos */
+    white-space: nowrap;
 }
 
 .ra-kpi-nota {

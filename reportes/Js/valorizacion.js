@@ -166,7 +166,7 @@
 
         var kpis = [
             kpi('Stock total (unidades)', entero(r.kpis.stock)),
-            kpi('Valorización total', '$ ' + entero(r.kpis.valorizacion)),
+            kpi('Valorización total', '$ ' + entero(r.kpis.valorizacion)),
             kpi('Cantidad de artículos', Reportes.numero(r.kpis.articulos, 0),
                 Reportes.numero(r.kpis.filas, 0) + ' filas por sucursal')
         ];
