@@ -112,8 +112,8 @@ if (!$pestanas) {
 <?php endforeach; ?>
 <script src="Js/permisos.js?v=<?php echo raVersion('Js/permisos.js'); ?>"></script>
 <script src="Js/reportes.js?v=<?php echo raVersion('Js/reportes.js'); ?>"></script>
-<?php foreach ($pestanas as $p): ?>
-<script src="Js/<?php echo $p['js']; ?>?v=<?php echo raVersion('Js/' . $p['js']); ?>"></script>
+<?php foreach (Menu::scripts($pestanas) as $js): ?>
+<script src="Js/<?php echo $js; ?>?v=<?php echo raVersion('Js/' . $js); ?>"></script>
 <?php endforeach; ?>
 <?php endif; ?>
 </body>

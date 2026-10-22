@@ -177,7 +177,9 @@ seccion('cada pestaña del Menu tiene su archivo y su JS');
 
 foreach (Menu::todas() as $p) {
     chequear('Tabs/' . $p['tab'] . '.php existe', true, file_exists($base . '/Tabs/' . $p['tab'] . '.php'));
-    chequear('Js/' . $p['js'] . ' existe', true, file_exists($base . '/Js/' . $p['js']));
+    foreach ($p['js'] as $js) {
+        chequear('Js/' . $js . ' existe', true, file_exists($base . '/Js/' . $js));
+    }
     chequear('la pestaña ' . $p['tab'] . ' marca data-puede-editar', true,
         strpos(file_get_contents($base . '/Tabs/' . $p['tab'] . '.php'),
             "AuthReportes::atributoEdicion('" . $p['tab'] . "')") !== false);
