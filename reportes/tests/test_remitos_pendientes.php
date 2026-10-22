@@ -471,3 +471,29 @@ GROUP BY A.T_COMP, A.N_COMP, A.COD_CLIENT, CAST(A.FECHA_EMIS AS DATE);";
             . (count($remitos) > 5 ? '…' : ''));
     }
 }
+
+seccion('la pantalla');
+
+$js = codigoSinComentarios($base . '/Js/remitos.js');
+$tab = file_get_contents($base . '/Tabs/remitos_pendientes.php');
+
+chequear('los filtros y el botón', 6,
+    preg_match_all('/id="(raRemPeriodo|raRemDesde|raRemHasta|raRemTipo|raRemClienteBtn|raRemConsultar)"/', $tab));
+chequear('el Hasta es la fecha de corte', true, strpos($tab, 'Hasta (fecha de corte)') !== false);
+chequear('los tipos de cliente', 3, preg_match_all('/<option value="[FLM]">/', $tab));
+chequear('cambiar un filtro no consulta: sólo el botón llama a consultar()', 1, substr_count($js, 'consultar)'));
+chequear('los rangos los da el servidor: el JS no calcula fechas', false,
+    (bool) preg_match('/getMonth|getFullYear|new Date\(/', $js));
+chequear('las opciones salen de la acción periodos', true, strpos($js, "Reportes.post('Remitos', 'periodos')") !== false);
+chequear('tocar una fecha a mano pasa a Personalizado', true,
+    (bool) preg_match("/'change', '#raRemDesde, #raRemHasta', function \(\) \{\s*\\$\('#raRemPeriodo'\)\.val\(PERSONALIZADO\)/", $js));
+chequear('Personalizado es el mismo código que en PHP', true,
+    strpos($js, "var PERSONALIZADO = '" . RemitosPendientes::PERIODO_PERSONALIZADO . "';") !== false);
+chequear('el Hasta no puede pasar de hoy', true, strpos($js, "attr('max', hoy)") !== false);
+chequear('los clientes salen del período y el tipo', true,
+    strpos($js, "Reportes.post('Remitos', 'clientes', { desde: f.desde, hasta: f.hasta, tipo: f.tipo })") !== false);
+chequear('las tarjetas: pendientes, facturados después, sin factura y clientes', 4,
+    preg_match_all("/kpi\('(Pendientes al |Ya facturados después|Siguen sin factura hoy|Clientes con pendientes)/", $js));
+chequear('las dos tablas del resumen', true,
+    strpos($tab, 'id="raRemTipos"') !== false && strpos($tab, 'id="raRemClientes"') !== false);
+chequear('un mensaje si no hay pendientes', true, strpos($tab, 'No hay remitos pendientes') !== false);

@@ -302,3 +302,15 @@ body {
     overflow-y: auto;
     font-size: 0.85rem;
 }
+
+/* Clientes de remitos pendientes: la razón social es larga y la búsqueda
+   queda arriba mientras se recorre la lista */
+.ra-clientes {
+    min-width: 340px;
+}
+
+.ra-clientes #raRemClienteBuscar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
