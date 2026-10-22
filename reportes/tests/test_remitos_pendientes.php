@@ -497,3 +497,30 @@ chequear('las tarjetas: pendientes, facturados después, sin factura y clientes'
 chequear('las dos tablas del resumen', true,
     strpos($tab, 'id="raRemTipos"') !== false && strpos($tab, 'id="raRemClientes"') !== false);
 chequear('un mensaje si no hay pendientes', true, strpos($tab, 'No hay remitos pendientes') !== false);
+
+seccion('el Excel');
+
+$menu = Menu::buscar('remitos_pendientes');
+chequear('SheetJS, la misma versión que la valorización', Menu::buscar('valorizacion_stock')['libs'], $menu['libs']);
+chequear('usa las funciones compartidas de excel.js, cargado antes', ['excel.js', 'remitos.js'], $menu['js']);
+chequear('el botón arranca deshabilitado', true, (bool) preg_match('/id="raRemExcel" disabled/', $tab));
+chequear('se habilita al consultar, si hay pendientes', true, strpos($js, "\$('#raRemExcel').prop('disabled', !hay)") !== false);
+chequear('la descarga usa los filtros de la última consulta', true,
+    strpos($js, "Reportes.post('Remitos', 'detalle', ultima.filtros)") !== false);
+chequear('el nombre: Remitos_Pendientes_AAAAMMDD_AAAAMMDD.xlsx', true,
+    strpos($js, "'Remitos_Pendientes_' + r.filtros.desde.replace(/-/g, '') + '_'\n            + r.filtros.hasta.replace(/-/g, '') + '.xlsx'") !== false);
+chequear('las dos hojas', true,
+    strpos($js, "hojaDetalle(r), 'Detalle')") !== false && strpos($js, "hojaResumen(r), 'Resumen')") !== false);
+chequear('las columnas del detalle', true, strpos($js, "['Fecha remito', 'Tipo de cliente', 'Código cliente', "
+    . "'Razón social', 'Remito', 'Importe neto',\n            'Días al corte', 'Facturado después: Nº factura', "
+    . "'Facturado después: fecha', 'Cómo se identificó']") !== false);
+chequear('el detalle sigue el orden de COLUMNAS', true, strpos($js, 'aoa.push([serie(f[c.fecha]), f[c.tipo], f[c.cliente], '
+    . 'f[c.razonSocial], f[c.remito], f[c.importe],' . "\n" . '                f[c.diasAlCorte], f[c.facturaNro], '
+    . 'serie(f[c.facturaFecha]), f[c.como]]);') !== false);
+chequear('importes con miles y 2 decimales', true, strpos($js, "var FORMATO_IMPORTE = '#,##0.00';") !== false);
+chequear('fechas como fechas: remito, factura y remito más viejo', 3, substr_count($js, ', FORMATO_FECHA);'));
+chequear('autofiltro en la fila de títulos, las diez columnas', true, strpos($js, 'Excel.autofiltro(ws, fila0, ultimaFila, 9)') !== false);
+chequear('el encabezado: período, corte, filtros, usuario y hora', true,
+    strpos($js, "Excel.encabezado('Remitos pendientes de facturar — LAKERS SA', [r.leyenda].concat(r.filtrosTexto),\n            r.usuario, r.generado)") !== false);
+chequear('la hoja Resumen tiene las dos tablas', true,
+    strpos($js, "aoa.push(['Resumen por tipo de cliente'])") !== false && strpos($js, "aoa.push(['Resumen por cliente'])") !== false);

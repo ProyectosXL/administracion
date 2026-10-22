@@ -58,9 +58,13 @@
                 </div>
             </div>
 
-            <div class="col-12 col-md-4 col-xl-2 d-flex gap-2 justify-content-xl-end">
+            <div class="col-12 col-md-8 col-xl-12 d-flex gap-2 justify-content-xl-end">
                 <button type="button" class="btn btn-sm btn-ra" id="raRemConsultar" disabled>
                     <i class="bi bi-search"></i> Consultar
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-success" id="raRemExcel" disabled
+                        title="Consultá primero: la descarga usa los filtros de la última consulta">
+                    <i class="bi bi-file-earmark-excel"></i> Descargar Excel
                 </button>
             </div>
         </div>
@@ -69,7 +73,7 @@
 
         <div class="small text-muted mt-2" id="raRemCambio" hidden>
             <i class="bi bi-exclamation-circle"></i> Cambiaste los filtros. Tocá <strong>Consultar</strong> para
-            actualizar: la pantalla sigue mostrando la última consulta.
+            actualizar: la pantalla y la descarga siguen mostrando la última consulta.
         </div>
     </div>
 

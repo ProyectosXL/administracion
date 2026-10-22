@@ -31,7 +31,8 @@ class Menu {
          // SheetJS, la misma versión que novedades y el Informe Económico
          'libs' => ['https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js']],
         ['tab' => 'remitos_pendientes', 'nombre' => 'Remitos pendientes de facturar', 'icono' => 'bi-receipt',
-         'js' => ['remitos.js'], 'libs' => []],
+         'js' => ['excel.js', 'remitos.js'],
+         'libs' => ['https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js']],
         ['tab' => 'parametros', 'nombre' => 'Parámetros', 'icono' => 'bi-sliders',
          'js' => ['parametros.js'], 'libs' => []]
     ];

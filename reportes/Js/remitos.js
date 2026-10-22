@@ -208,7 +208,7 @@
 
     /** "1 remito", "3 remitos" */
     function remitos(n) {
-        return cantidad(n) + (n === 1 ? " remito" : " remitos");
+        return cantidad(n) + (n === 1 ? ' remito' : ' remitos');
     }
 
     /** 'AAAA-MM-DD' a 'DD/MM/AAAA' */
@@ -225,6 +225,7 @@
         $('#raRemInicio').prop('hidden', true);
         $('#raRemVacio').prop('hidden', hay);
         $('#raRemResultado').prop('hidden', !hay);
+        $('#raRemExcel').prop('disabled', !hay);
         $('#raRemVacioTexto').text(r.leyenda + ': ninguno. ' + r.filtrosTexto.slice(2).join(' · '));
 
         if (!hay) {
@@ -279,6 +280,143 @@
     }
 
     /* ---------------------------------------------------------------- */
+    /* Excel                                                             */
+    /* ---------------------------------------------------------------- */
+
+    var Excel = window.ExcelReportes;
+
+    /** Importes con miles y 2 decimales. Es formato: la celda es el número. */
+    var FORMATO_IMPORTE = '#,##0.00';
+    var FORMATO_FECHA = 'dd/mm/yyyy';
+
+    /**
+     * La descarga usa los filtros de la última consulta, los que devolvió el
+     * servidor ya validados: el Excel es el detalle de lo que se está viendo.
+     */
+    function descargar() {
+        if (!ultima) {
+            return;
+        }
+
+        if (typeof XLSX === 'undefined') {
+            Reportes.error('No se puede generar el Excel', 'No se cargó la librería SheetJS (xlsx).');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Generando el Excel…',
+            text: 'Se trae el detalle por remito con los filtros de la consulta.',
+            allowOutsideClick: false,
+            didOpen: function () { Swal.showLoading(); }
+        });
+
+        Reportes.post('Remitos', 'detalle', ultima.filtros).then(function (r) {
+            var nombre = generarExcel(r);
+
+            Swal.fire({ icon: 'success', title: 'Excel generado', text: nombre + ' (' + remitos(r.filas.length) + ')',
+                confirmButtonColor: '#7066e0' });
+        }).catch(function (err) {
+            Reportes.error('No se pudo generar el Excel', err);
+        });
+    }
+
+    /** Las filas de encabezado de las dos hojas: período, corte, filtros, usuario y hora */
+    function encabezado(r) {
+        return Excel.encabezado('Remitos pendientes de facturar — LAKERS SA', [r.leyenda].concat(r.filtrosTexto),
+            r.usuario, r.generado);
+    }
+
+    /** Una fecha 'AAAA-MM-DD' como fecha de Excel, o la celda vacía */
+    function serie(iso) {
+        return iso ? Excel.serie(iso) : null;
+    }
+
+    function hojaDetalle(r) {
+        var aoa = encabezado(r);
+        var fila0 = aoa.length;
+        var c = {};
+
+        r.columnas.forEach(function (nombre, i) { c[nombre] = i; });
+
+        aoa.push(['Fecha remito', 'Tipo de cliente', 'Código cliente', 'Razón social', 'Remito', 'Importe neto',
+            'Días al corte', 'Facturado después: Nº factura', 'Facturado después: fecha', 'Cómo se identificó']);
+
+        r.filas.forEach(function (f) {
+            aoa.push([serie(f[c.fecha]), f[c.tipo], f[c.cliente], f[c.razonSocial], f[c.remito], f[c.importe],
+                f[c.diasAlCorte], f[c.facturaNro], serie(f[c.facturaFecha]), f[c.como]]);
+        });
+
+        var ws = XLSX.utils.aoa_to_sheet(aoa);
+        var ultimaFila = aoa.length - 1;
+
+        Excel.formatear(ws, 0, fila0 + 1, ultimaFila, FORMATO_FECHA);
+        Excel.formatear(ws, 5, fila0 + 1, ultimaFila, FORMATO_IMPORTE);
+        Excel.formatear(ws, 6, fila0 + 1, ultimaFila, '0');
+        Excel.formatear(ws, 8, fila0 + 1, ultimaFila, FORMATO_FECHA);
+
+        Excel.autofiltro(ws, fila0, ultimaFila, 9);
+        ws['!cols'] = [{ wch: 12 }, { wch: 17 }, { wch: 10 }, { wch: 40 }, { wch: 16 }, { wch: 16 }, { wch: 9 },
+            { wch: 18 }, { wch: 13 }, { wch: 20 }];
+
+        return ws;
+    }
+
+    /** Las dos tablas de la pantalla, una debajo de la otra */
+    function hojaResumen(r) {
+        var aoa = encabezado(r);
+        var res = r.resumen;
+
+        aoa.push(['Resumen por tipo de cliente']);
+        aoa.push(['Tipo de cliente', 'Remitos', 'Importe neto']);
+
+        var tipos0 = aoa.length;
+
+        res.tipos.forEach(function (t) {
+            aoa.push([t.tipo, t.cantidad, t.importe]);
+        });
+
+        aoa.push(['Total', res.total.cantidad, res.total.importe]);
+
+        var tiposN = aoa.length - 1;
+
+        aoa.push([]);
+        aoa.push(['Resumen por cliente']);
+        aoa.push(['Código', 'Razón social', 'Tipo', 'Remitos', 'Importe pendiente', 'Ya facturados después',
+            'Remito más viejo']);
+
+        var clientes0 = aoa.length;
+
+        res.clientes.forEach(function (x) {
+            aoa.push([x.cliente, x.razonSocial, x.tipo, x.cantidad, x.importe, x.facturadosDespues, serie(x.masViejo)]);
+        });
+
+        var ws = XLSX.utils.aoa_to_sheet(aoa);
+        var ultimaFila = aoa.length - 1;
+
+        Excel.formatear(ws, 2, tipos0, tiposN, FORMATO_IMPORTE);
+        Excel.formatear(ws, 4, clientes0, ultimaFila, FORMATO_IMPORTE);
+        Excel.formatear(ws, 6, clientes0, ultimaFila, FORMATO_FECHA);
+        ws['!cols'] = [{ wch: 18 }, { wch: 40 }, { wch: 17 }, { wch: 9 }, { wch: 18 }, { wch: 12 }, { wch: 14 }];
+
+        return ws;
+    }
+
+    /** Arma y descarga el libro. Devuelve el nombre del archivo. */
+    function generarExcel(r) {
+        var wb = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(wb, hojaDetalle(r), 'Detalle');
+        XLSX.utils.book_append_sheet(wb, hojaResumen(r), 'Resumen');
+
+        var nombre = 'Remitos_Pendientes_' + r.filtros.desde.replace(/-/g, '') + '_'
+            + r.filtros.hasta.replace(/-/g, '') + '.xlsx';
+
+        XLSX.writeFile(wb, nombre, { compression: true });
+
+        return nombre;
+    }
+
+    /* ---------------------------------------------------------------- */
 
     Reportes.registrar('remitos_pendientes', {
         init: function (el) {
@@ -317,7 +455,8 @@
                     dibujarClientes();
                     marcarCambio();
                 })
-                .on('click', '#raRemConsultar', consultar);
+                .on('click', '#raRemConsultar', consultar)
+                .on('click', '#raRemExcel', descargar);
 
             cargarPeriodos();
         }
