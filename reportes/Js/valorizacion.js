@@ -243,36 +243,17 @@
         });
     }
 
-    /** 'AAAA-MM-DD' al número de serie de Excel, sin pasar por la zona horaria */
-    function serieExcel(iso) {
-        var p = iso.split('-');
-
-        return (Date.UTC(+p[0], +p[1] - 1, +p[2]) - Date.UTC(1899, 11, 30)) / 86400000;
-    }
-
-    /** 'AAAA-MM-DD HH:MM:SS' a 'DD/MM/AAAA HH:MM' */
-    function fechaHora(s) {
-        var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
-
-        return m ? m[3] + '/' + m[2] + '/' + m[1] + ' ' + m[4] + ':' + m[5] : s;
-    }
+    var Excel = window.ExcelReportes;
 
     /** Las filas de encabezado de las dos hojas */
     function encabezado(r) {
-        var filas = [['Valorización de stock — LAKERS SA'], [r.leyenda]];
-
-        r.filtrosTexto.forEach(function (t) {
-            filas.push([t]);
-        });
+        var lineas = [r.leyenda].concat(r.filtrosTexto);
 
         if (r.filtros.modo === 'actual') {
-            filas.push(['Factor de nacionalización estimado: ' + r.factorTexto]);
+            lineas.push('Factor de nacionalización estimado: ' + r.factorTexto);
         }
 
-        filas.push(['Generado por ' + r.usuario + ' el ' + fechaHora(r.generado)]);
-        filas.push([]);
-
-        return filas;
+        return Excel.encabezado('Valorización de stock — LAKERS SA', lineas, r.usuario, r.generado);
     }
 
     /**
@@ -282,22 +263,11 @@
      */
     var FORMATO_NUMERO = '#,##0';
 
-    /** Formato numérico a un rango de celdas de una columna */
-    function formatear(ws, col, desde, hasta, formato) {
-        for (var f = desde; f <= hasta; f++) {
-            var celda = ws[XLSX.utils.encode_cell({ r: f, c: col })];
-
-            if (celda && celda.t === 'n') {
-                celda.z = formato;
-            }
-        }
-    }
-
     function hojaDetalle(r) {
         var aoa = encabezado(r);
         var fila0 = aoa.length;
         var c = {};
-        var serie = serieExcel(r.filtros.fecha);
+        var serie = Excel.serie(r.filtros.fecha);
 
         r.columnas.forEach(function (nombre, i) { c[nombre] = i; });
 
@@ -312,12 +282,12 @@
         var ws = XLSX.utils.aoa_to_sheet(aoa);
         var ultimaFila = aoa.length - 1;
 
-        formatear(ws, 0, fila0 + 1, ultimaFila, 'dd/mm/yyyy');
-        formatear(ws, 5, fila0 + 1, ultimaFila, FORMATO_NUMERO);
-        formatear(ws, 6, fila0 + 1, ultimaFila, FORMATO_NUMERO);
-        formatear(ws, 7, fila0 + 1, ultimaFila, FORMATO_NUMERO);
+        Excel.formatear(ws, 0, fila0 + 1, ultimaFila, 'dd/mm/yyyy');
+        Excel.formatear(ws, 5, fila0 + 1, ultimaFila, FORMATO_NUMERO);
+        Excel.formatear(ws, 6, fila0 + 1, ultimaFila, FORMATO_NUMERO);
+        Excel.formatear(ws, 7, fila0 + 1, ultimaFila, FORMATO_NUMERO);
 
-        ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: fila0, c: 0 }, e: { r: ultimaFila, c: 8 } }) };
+        Excel.autofiltro(ws, fila0, ultimaFila, 8);
         ws['!cols'] = [{ wch: 13 }, { wch: 10 }, { wch: 24 }, { wch: 18 }, { wch: 40 }, { wch: 10 }, { wch: 15 },
             { wch: 18 }, { wch: 40 }];
 
@@ -341,8 +311,8 @@
 
         var ws = XLSX.utils.aoa_to_sheet(aoa);
 
-        formatear(ws, 2, fila0 + 1, aoa.length - 1, FORMATO_NUMERO);
-        formatear(ws, 3, fila0 + 1, aoa.length - 1, FORMATO_NUMERO);
+        Excel.formatear(ws, 2, fila0 + 1, aoa.length - 1, FORMATO_NUMERO);
+        Excel.formatear(ws, 3, fila0 + 1, aoa.length - 1, FORMATO_NUMERO);
         ws['!cols'] = [{ wch: 20 }, { wch: 26 }, { wch: 12 }, { wch: 20 }];
 
         return ws;

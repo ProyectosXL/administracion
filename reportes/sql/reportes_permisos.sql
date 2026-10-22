@@ -15,7 +15,10 @@
       aparecer la tarjeta en el HUB.
    3. Los permisos internos, con descripcion "[Seccion] ...":
         ra.tab.valorizacion_stock   ver la pestaña y descargar el Excel
-        ra.tab.parametros           ver los parametros
+        ra.tab.remitos_pendientes   ver los remitos pendientes de facturar y
+                                    descargar el Excel (no escribe: no lleva
+                                    clave de edicion)
+        ra.tab.parametros          ver los parametros
         ra.editar.parametros        modificarlos (exige tambien ra.tab.parametros)
       Son exactamente los de AuthReportes::claves(); tests/test_auth_reportes.php
       falla si las dos listas no coinciden.
@@ -24,6 +27,8 @@
    (sector Proyectos + es_admin / CONTROLTOTAL) entra a todo sin asignarle nada.
 
    Reejecutable: todo va con IF NOT EXISTS. No borra ni modifica nada existente.
+   Donde ya se corrio, volver a correrlo solo agrega las claves nuevas (como
+   ra.tab.remitos_pendientes) y deja las que estaban como estan.
 
    SI NO SE CORRE: el modulo no aparece en el HUB y solo entra el
    administrador.
@@ -70,6 +75,8 @@ INSERT INTO @PERMISOS VALUES
  N'[Hub] Reportes a medida para Administración: valorización de stock y los que se vayan sumando.'),
 ('ra.tab.valorizacion_stock', N'Solapa Valorización de stock',
  N'[Reportes] Valorización de stock de LAKERS SA por fecha de cierre, a costo histórico o actual, con descarga en Excel'),
+('ra.tab.remitos_pendientes', N'Solapa Remitos pendientes de facturar',
+ N'[Reportes] Remitos de LAKERS SA que seguían sin facturar a una fecha de corte, con la factura que los resolvió después y descarga en Excel'),
 ('ra.tab.parametros',         N'Solapa Parámetros',
  N'[Configuración] Ver los parámetros de los reportes y su historial de cambios'),
 ('ra.editar.parametros',      N'Editar parámetros',

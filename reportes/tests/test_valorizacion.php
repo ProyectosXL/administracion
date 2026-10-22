@@ -208,7 +208,11 @@ chequear('las dos hojas', true,
     strpos($js, "hojaDetalle(r), 'Detalle')") !== false && strpos($js, "hojaResumen(r), 'Resumen')") !== false);
 chequear('las columnas del detalle', true, strpos($js, "['Fecha de cierre', 'Sector', 'Sucursal', 'Artículo', "
     . "'Descripción', 'Stock', 'Costo unitario',\n            'Valorización', 'Origen del costo']") !== false);
-chequear('autofiltro en la fila de títulos', true, strpos($js, "ws['!autofilter']") !== false);
+$excel = codigoSinComentarios($base . '/Js/excel.js');
+chequear('las funciones de Excel son las compartidas de excel.js, cargado antes', ['excel.js', 'valorizacion.js'],
+    $menu['js']);
+chequear('autofiltro en la fila de títulos', true, strpos($js, 'Excel.autofiltro(ws, fila0, ultimaFila, 8)') !== false
+    && strpos($excel, "ws['!autofilter']") !== false);
 chequear('stock e importes con miles y sin decimales', true, strpos($js, "var FORMATO_NUMERO = '#,##0';") !== false);
 chequear('en las cinco columnas numéricas de las dos hojas', 5, substr_count($js, ', FORMATO_NUMERO);'));
 chequear('ninguna con decimales', false, strpos($js, '#,##0.00') !== false);
@@ -216,8 +220,9 @@ chequear('en pantalla también sin decimales', true,
     strpos($js, "return Reportes.numero(v, 0);") !== false && strpos($js, 'Reportes.numero(r.kpis.valorizacion)') === false);
 chequear('el encabezado lleva factor, usuario y hora', true,
     strpos($js, "'Factor de nacionalización estimado: '") !== false
-    && strpos($js, "'Generado por ' + r.usuario + ' el ' + fechaHora(r.generado)") !== false);
-chequear('la fecha va como número de serie, no como texto', true, strpos($js, 'var serie = serieExcel(r.filtros.fecha)') !== false);
+    && strpos($js, "Excel.encabezado('Valorización de stock — LAKERS SA', lineas, r.usuario, r.generado)") !== false
+    && strpos($excel, "'Generado por ' + usuario + ' el ' + Excel.fechaHora(generado)") !== false);
+chequear('la fecha va como número de serie, no como texto', true, strpos($js, 'var serie = Excel.serie(r.filtros.fecha)') !== false);
 chequear('la pantalla tiene los cinco filtros y los dos botones', 7,
     preg_match_all('/id="(raValFecha|raValModoHist|raValSector|raValSucursalBtn|raValArticulo|raValConsultar|raValExcel)"/', $tab));
 chequear('el Excel arranca deshabilitado', true, (bool) preg_match('/id="raValExcel" disabled/', $tab));

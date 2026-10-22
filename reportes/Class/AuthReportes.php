@@ -93,6 +93,12 @@ class AuthReportes {
             'sucursales' => ['valorizacion_stock'],
             'consultar' => ['valorizacion_stock'],
             'detalle' => ['valorizacion_stock']
+        ],
+        'Remitos' => [
+            'periodos' => ['remitos_pendientes'],
+            'clientes' => ['remitos_pendientes'],
+            'consultar' => ['remitos_pendientes'],
+            'detalle' => ['remitos_pendientes']
         ]
     ];
 
