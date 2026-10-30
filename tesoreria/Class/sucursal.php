@@ -1,4 +1,3 @@
-
 <?php
 class Sucursal {
     private $cid_central;
@@ -56,11 +55,11 @@ class Sucursal {
 
             return $row['count'] > 0;
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error en checkExistingRetiro: " . $e->getMessage());
             // En caso de error, asumimos que no hay duplicado para no bloquear la operación,
             // pero registramos el error. Podrías querer manejar esto de otra manera.
-            return false;
+            throw $e;
         }
     }
 
@@ -85,14 +84,20 @@ class Sucursal {
     
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             if ($stmt === false) {
-                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+                $diag = [];
+                $colNames = ["NRO_REGISTRO", "NRO_SUCURS", "ENTREGO", "RECIBIO", "ENVIA_VALORES", "PRECINTO", "OBSERVACIONES", "FIRMA", "ESTADO"];
+                foreach ($params as $idx => $val) {
+                    $cName = $colNames[$idx] ?? "Col$idx";
+                    $diag[] = "$cName (tipo=" . gettype($val) . ", len=" . (is_string($val) ? strlen($val) : 0) . "): " . var_export($val, true);
+                }
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true) . "\nDETALLE PARAMS: " . implode(" | ", $diag));
             }
        
             return ['success' => true, 'data' => $datos['numeroRegistro']];
             
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error en insertarEncabezadoGuiaRetiro: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
 
@@ -127,13 +132,19 @@ class Sucursal {
 
             $stmt = sqlsrv_query($this->cid_central, $sql, $params);
             if ($stmt === false) {
-                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+                $diag = [];
+                $colNames = ["NRO_REGISTRO", "NRO_SUCURS", "ENTREGO", "RECIBIO", "ENVIA_VALORES", "PRECINTO", "OBSERVACIONES", "FIRMA", "ESTADO"];
+                foreach ($params as $idx => $val) {
+                    $cName = $colNames[$idx] ?? "Col$idx";
+                    $diag[] = "$cName (tipo=" . gettype($val) . ", len=" . (is_string($val) ? strlen($val) : 0) . "): " . var_export($val, true);
+                }
+                throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true) . "\nDETALLE PARAMS: " . implode(" | ", $diag));
             }
             
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error en insertarRemitos: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
     
@@ -202,7 +213,7 @@ class Sucursal {
     
             return $resultados;
     
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error en listarUsuarios: " . $e->getMessage());
             return [];
         }
@@ -230,7 +241,7 @@ class Sucursal {
 
             return $resultados;
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error en listarFleteros: " . $e->getMessage());
             return [];
         }
@@ -350,7 +361,7 @@ class Sucursal {
                 return $resultados;
 
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error en listarRemitos: " . $e->getMessage());
             return [];
         }
@@ -415,7 +426,7 @@ class Sucursal {
 
             return $resultados;
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error en listarGuiasRetiro: " . $e->getMessage());
             throw new Exception("Error al obtener las guías: " . $e->getMessage());
         }
@@ -467,7 +478,7 @@ public function traerDatosGuiaRetiro($id, $nroSucurs) {
         // Devolvemos un único array que contiene el encabezado y los subarrays de detalles
         return [$resultado];
 
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         error_log("Error en traerDatosGuiaRetiro: " . $e->getMessage());
         throw new Exception("Error al obtener los datos de la guía: " . $e->getMessage());
     }
@@ -527,7 +538,7 @@ public function listarRemitosPorGuia($id, $nroSucurs) {
         }
 
         return $resultados;
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         error_log("Error en listarRemitosPorGuia: " . $e->getMessage());
         return [];
     }
@@ -556,7 +567,7 @@ public function listarRemitosPorGuia($id, $nroSucurs) {
             if ($stmt === false) {
                 throw new Exception(print_r(sqlsrv_errors(), true));
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error al actualizar la guía: " . $e->getMessage());
             throw $e;
         }
@@ -623,7 +634,7 @@ public function listarRemitosPorGuia($id, $nroSucurs) {
             }
 
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("Error en insertarMultiplesRemitos: " . $e->getMessage());
             // Relanzamos la excepción para que el controlador la capture.
             throw $e;
