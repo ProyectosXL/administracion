@@ -213,7 +213,7 @@ try {
                         $nComp = strtoupper(trim($row['N_COMP']));
                         
                         if ($cod === 'LALOMA') {
-                            if (strpos($nComp, 'A00115') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
+                            if (strpos($nComp, 'A00115') === false && strpos($nComp, 'A00126') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
                                 continue;
                             }
                         }
@@ -325,7 +325,7 @@ try {
             if ($cod_cliente === 'LALOMA') {
                 $nComp = strtoupper(trim($row['N_COMP']));
                 $tComp = strtoupper(trim($row['T_COMP']));
-                if (strpos($nComp, 'A00115') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
+                if (strpos($nComp, 'A00115') === false && strpos($nComp, 'A00126') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
                     continue;
                 }
             }
@@ -421,7 +421,7 @@ try {
 
             // Filtro LALOMA en PHP
             if ($cod === 'LALOMA') {
-                if (strpos($nComp, 'A00115') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
+                if (strpos($nComp, 'A00115') === false && strpos($nComp, 'A00126') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
                     continue;
                 }
             }
