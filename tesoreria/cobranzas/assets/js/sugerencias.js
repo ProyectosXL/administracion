@@ -148,7 +148,12 @@ $(document).ready(function() {
                     <td class="text-center"><button class="btn btn-xs btn-outline-danger btn-quitar-item-sug border-0" title="Quitar de la propuesta"><i class="fa-solid fa-trash-can"></i></button></td>
                     <td class="text-center">${item.fecha_emision || '-'}</td>
                     <td class="text-center">${item.t_comp}</td>
-                    <td>${item.n_comp}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none font-weight-bold text-primary btn-ver-detalle-comp" 
+                                data-tcomp="${item.t_comp}" data-ncomp="${item.n_comp}" title="Tocar para ver detalle de artículos">
+                            <i class="fa-solid fa-magnifying-glass me-1 text-info"></i>${item.n_comp}
+                        </button>
+                    </td>
                     <td class="text-end ${bruto < 0 ? 'text-danger' : ''}">${bruto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>
                     <td class="text-center"><input type="number" class="form-control form-control-sm mx-auto sug-dcto-input text-center" value="${item.porcentaje_descuento.toFixed(2)}" min="0" max="100" step="0.01" style="width: 60px; height: 22px; padding: 0;"></td>
                     <td class="text-end font-weight-bold text-primary sug-neto-cell ${bruto < 0 ? 'text-danger' : ''}">${parseFloat(item.importe_neto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>
@@ -280,5 +285,272 @@ $(document).ready(function() {
             error: () => Swal.fire('Error', 'Servidor no responde.', 'error'),
             complete: () => btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-1"></i> Generar y Enviar Propuesta')
         });
+    });
+
+    // =========================================================================
+    // DETALLE DE ARTÍCULOS DE UN COMPROBANTE (MODAL ANIDADO)
+    // =========================================================================
+
+    // Click sobre cualquier botón de comprobante
+    $(document).on('click', '.btn-ver-detalle-comp', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const tComp = $(this).data('tcomp');
+        const nComp = $(this).data('ncomp');
+        abrirModalDetalleComprobante(tComp, nComp);
+    });
+
+    // Cerrar al hacer clic fuera del diálogo (emula backdrop seguro sin ensuciar el DOM)
+    $('#modalDetalleComprobanteArticulos').on('click', function(e) {
+        if ($(e.target).is('#modalDetalleComprobanteArticulos')) {
+            const inst = bootstrap.Modal.getInstance(this);
+            if (inst) inst.hide();
+        }
+    });
+
+    $('#modalDetalleComprobanteArticulos').on('hidden.bs.modal', function () {
+        // Si hay otro modal abierto detrás (ej: modalSugerenciaDetalle), mantener el scroll activo
+        if ($('.modal.show').length > 0) {
+            $('body').addClass('modal-open');
+        }
+    });
+
+    window.abrirModalDetalleComprobante = function(tComp, nComp) {
+        if (!tComp || !nComp) return;
+
+        tComp = tComp.toString().trim().toUpperCase();
+        nComp = nComp.toString().trim().toUpperCase();
+
+        const modalEl = document.getElementById('modalDetalleComprobanteArticulos');
+        if (!modalEl) return;
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        
+        $('#detalle-comp-titulo').text(`${tComp} ${nComp}`);
+        $('#btn-exportar-comp-articulos-excel').hide();
+        $('#detalle-comp-body').html(`
+            <div class="text-center p-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted mt-2 mb-0">Consultando artículos del comprobante...</p>
+            </div>
+        `);
+
+        modal.show();
+        window.ultimoDetalleComprobanteData = null;
+
+        $.ajax({
+            url: 'api/cobranzas_controller.php?action=detalle_comprobante',
+            type: 'GET',
+            data: { t_comp: tComp, n_comp: nComp },
+            dataType: 'json',
+            success: function(res) {
+                if (!res.success) {
+                    $('#detalle-comp-body').html(`
+                        <div class="alert alert-danger mb-0">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>${res.message || 'Error al cargar detalle del comprobante.'}
+                        </div>
+                    `);
+                    return;
+                }
+
+                window.ultimoDetalleComprobanteData = res.data;
+                const cab = res.data.cabecera || {};
+                const items = res.data.items || [];
+
+                let estadoBadge = '';
+                if (cab.estado === 'PEN') {
+                    estadoBadge = '<span class="badge bg-warning text-dark">PENDIENTE</span>';
+                } else if (cab.estado === 'CAN') {
+                    estadoBadge = '<span class="badge bg-success">CANCELADO</span>';
+                } else if (cab.estado === 'IMP') {
+                    estadoBadge = '<span class="badge bg-secondary">IMPUTADO</span>';
+                } else if (cab.estado) {
+                    estadoBadge = `<span class="badge bg-info">${cab.estado}</span>`;
+                }
+
+                let html = `
+                    <div class="card bg-light border-0 shadow-sm mb-3">
+                        <div class="card-body py-2 px-3">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block text-uppercase" style="font-size:0.75rem;">Cliente</small>
+                                    <span class="fw-bold text-dark">${cab.cod_client || '-'} &mdash; ${cab.razon_soci || '-'}</span>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <small class="text-muted d-block text-uppercase" style="font-size:0.75rem;">Fecha Emisión</small>
+                                    <span class="fw-bold">${cab.fecha_emision || '-'}</span>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <small class="text-muted d-block text-uppercase" style="font-size:0.75rem;">Estado</small>
+                                    ${estadoBadge || '-'}
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <small class="text-muted d-block text-uppercase" style="font-size:0.75rem;">Total Unidades</small>
+                                    <span class="badge bg-primary fs-6 px-3 py-1">${res.data.total_unidades}</span>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <small class="text-muted d-block text-uppercase" style="font-size:0.75rem;">Total Comprobante</small>
+                                    <span class="fw-bold text-success fs-6">${(cab.importe_total || res.data.total_neto).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (items.length === 0) {
+                    html += `
+                        <div class="alert alert-info py-4 text-center mb-0">
+                            <i class="fa-solid fa-circle-info fa-2x mb-2 text-info d-block"></i>
+                            No se registraron renglones de artículos para este comprobante (o es un comprobante de ajuste / pago directo).
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                            <table class="table table-sm table-striped table-hover table-bordered align-middle mb-0" id="tabla-articulos-comp-modal">
+                                <thead class="table-dark small text-uppercase text-center sticky-top" style="z-index: 1;">
+                                    <tr>
+                                        <th style="width: 50px;">#</th>
+                                        <th style="width: 170px;">Código</th>
+                                        <th>Descripción del Artículo</th>
+                                        <th style="width: 100px;" class="text-end">Cantidad</th>
+                                        <th style="width: 140px;" class="text-end">Precio Unit.</th>
+                                        <th style="width: 90px;" class="text-center">% Dcto</th>
+                                        <th style="width: 150px;" class="text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    items.forEach(it => {
+                        html += `
+                            <tr class="small">
+                                <td class="text-center text-muted">${it.renglon}</td>
+                                <td><span class="badge bg-light text-dark font-monospace border">${it.cod_articu}</span></td>
+                                <td class="fw-semibold text-gray-800">${it.descripcion || '<span class="text-muted fst-italic">Sin descripción</span>'}</td>
+                                <td class="text-end fw-bold">${it.cantidad.toLocaleString('es-AR')}</td>
+                                <td class="text-end">${it.precio_unitario.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>
+                                <td class="text-center">${it.porc_descuento > 0 ? it.porc_descuento.toFixed(2) + '%' : '-'}</td>
+                                <td class="text-end fw-bold text-dark">${it.importe_neto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                                </tbody>
+                                <tfoot class="table-light fw-bold sticky-bottom" style="z-index: 1;">
+                                    <tr>
+                                        <td colspan="3" class="text-end">Totales (${items.length} artículos):</td>
+                                        <td class="text-end text-primary">${res.data.total_unidades.toLocaleString('es-AR')}</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td class="text-end text-success fs-6">${res.data.total_neto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    `;
+
+                    $('#btn-exportar-comp-articulos-excel').show();
+                }
+
+                $('#detalle-comp-body').html(html);
+            },
+            error: function() {
+                $('#detalle-comp-body').html(`
+                    <div class="alert alert-danger mb-0">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>Error de conexión al obtener los artículos del comprobante.
+                    </div>
+                `);
+            }
+        });
+    };
+
+    // Exportar Artículos de Comprobante a Excel
+    $(document).on('click', '#btn-exportar-comp-articulos-excel', function() {
+        const data = window.ultimoDetalleComprobanteData;
+        if (!data || !data.items || data.items.length === 0) {
+            Swal.fire('Atención', 'No hay artículos para exportar.', 'info');
+            return;
+        }
+
+        const cab = data.cabecera || {};
+        const tComp = cab.t_comp || 'COMP';
+        const nComp = cab.n_comp || '0';
+
+        let excelData = [
+            ['Detalle de Comprobante'],
+            [],
+            ['Comprobante:', `${tComp} ${nComp}`, '', 'Cliente:', `${cab.cod_client || ''} - ${cab.razon_soci || ''}`],
+            ['Fecha Emisión:', cab.fecha_emision || '', '', 'Estado:', cab.estado || ''],
+            ['Total Unidades:', data.total_unidades, '', 'Total Comprobante:', cab.importe_total || data.total_neto],
+            [],
+            ['Renglón', 'Código Artículo', 'Descripción', 'Cantidad', 'Precio Unitario', '% Descuento', 'Importe Neto']
+        ];
+
+        data.items.forEach(it => {
+            excelData.push([
+                it.renglon,
+                it.cod_articu,
+                it.descripcion,
+                it.cantidad,
+                it.precio_unitario,
+                it.porc_descuento > 0 ? it.porc_descuento / 100 : 0,
+                it.importe_neto
+            ]);
+        });
+
+        excelData.push([]);
+        excelData.push(['', '', 'Totales:', data.total_unidades, '', '', data.total_neto]);
+
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Artículos');
+        XLSX.writeFile(wb, `Comprobante_${tComp}_${nComp}.xlsx`);
+    });
+
+    // Exportar Sugerencia Completa a Excel
+    $(document).on('click', '#btn-exportar-sugerencia-excel', function() {
+        if (!sugerenciaSeleccionada || !sugerenciaSeleccionada.COMPROBANTES) {
+            Swal.fire('Atención', 'No hay datos para exportar.', 'info');
+            return;
+        }
+        const data = sugerenciaSeleccionada;
+        let excelData = [
+            ['Sugerencia de Propuesta de Pago'],
+            [],
+            ['Cliente:', `${data.COD_CLIENT} - ${data.RAZON_SOCI}`],
+            ['Fecha Límite:', $('#fecha-propuesta-sug-modal').val() || data.FECHA_SUGERIDA],
+            ['Medio de Pago:', $('#medio-pago-sug-modal').val() || 'ECHECK'],
+            [],
+            ['Facturas Incluidas'],
+            ['Fecha', 'Tipo', 'Comprobante', 'Importe Bruto', '% Descuento', 'Importe Neto']
+        ];
+
+        let totalBruto = 0;
+        let totalNeto = 0;
+        $('#tabla-items-sugerencia tbody tr').each(function() {
+            const tr = $(this);
+            const fecha = tr.find('td:eq(1)').text().trim();
+            const tipo = tr.data('tcomp') || tr.find('td:eq(2)').text().trim();
+            const ncomp = tr.data('ncomp') || tr.find('td:eq(3)').text().trim();
+            const bruto = parseFloat(tr.data('bruto')) || 0;
+            const dcto = parseFloat(tr.find('.sug-dcto-input').val()) || 0;
+            const netoText = tr.find('.sug-neto-cell').text().replace(/\$\s*/, '').replace(/\./g, '').replace(',', '.').trim();
+            const neto = parseFloat(netoText) || (bruto * (1 - dcto/100));
+
+            totalBruto += bruto;
+            totalNeto += neto;
+
+            excelData.push([fecha, tipo, ncomp, bruto, dcto > 0 ? dcto / 100 : 0, neto]);
+        });
+
+        excelData.push([]);
+        excelData.push(['', '', 'Totales:', totalBruto, '', totalNeto]);
+
+        const ws = XLSX.utils.aoa_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Propuesta_Sugerida');
+        XLSX.writeFile(wb, Sugerencia_.xlsx);
     });
 });

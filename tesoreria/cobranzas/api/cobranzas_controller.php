@@ -128,6 +128,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     exit;
 }
 
+// SEGUNDO: Verificamos si la acción es ver detalle de comprobante (artículos)
+if (isset($_GET['action']) && $_GET['action'] === 'detalle_comprobante') {
+    header('Content-Type: application/json');
+    require_once '../config/database.php';
+
+    $t_comp = strtoupper(trim($_GET['t_comp'] ?? ''));
+    $n_comp = strtoupper(trim($_GET['n_comp'] ?? ''));
+
+    if (empty($t_comp) || empty($n_comp)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Faltan parámetros t_comp y n_comp.']);
+        exit;
+    }
+
+    try {
+        $conn_central = Database::getConnection('central');
+
+        // Consultamos la cabecera básica del comprobante en GVA12
+        $sql_cabecera = "SELECT TOP 1 g.T_COMP, g.N_COMP, g.COD_CLIENT, c.RAZON_SOCI, g.FECHA_EMIS, g.IMPORTE, g.ESTADO 
+                         FROM GVA12 g WITH (NOLOCK)
+                         LEFT JOIN GVA14 c WITH (NOLOCK) ON g.COD_CLIENT = c.COD_CLIENT
+                         WHERE g.T_COMP = ? AND g.N_COMP = ?";
+        $stmt_cab = sqlsrv_query($conn_central, $sql_cabecera, [$t_comp, $n_comp]);
+        $cabecera = null;
+        if ($stmt_cab && $row_cab = sqlsrv_fetch_array($stmt_cab, SQLSRV_FETCH_ASSOC)) {
+            $fEmisRaw = $row_cab['FECHA_EMIS'];
+            $fEmisFmt = ($fEmisRaw instanceof DateTime) ? $fEmisRaw->format('Y-m-d') : (is_string($fEmisRaw) ? substr($fEmisRaw, 0, 10) : '-');
+            $cabecera = [
+                't_comp' => trim($row_cab['T_COMP']),
+                'n_comp' => trim($row_cab['N_COMP']),
+                'cod_client' => trim($row_cab['COD_CLIENT']),
+                'razon_soci' => trim($row_cab['RAZON_SOCI'] ?? ''),
+                'fecha_emision' => $fEmisFmt,
+                'importe_total' => (float)$row_cab['IMPORTE'],
+                'estado' => trim($row_cab['ESTADO'])
+            ];
+        }
+
+        // Consultamos los renglones / artículos en GVA53 optimizado con índice IX_0
+        $sql_items = "SELECT g.N_RENGL_V, 
+                             g.COD_ARTICU, 
+                             ISNULL(s.DESCRIPCIO, '') AS DESCRIPCION, 
+                             CAST(g.CANTIDAD AS FLOAT) AS CANTIDAD, 
+                             CAST(g.PRECIO_PAN AS FLOAT) AS PRECIO_UNITARIO, 
+                             CAST(g.PORC_DTO AS FLOAT) AS PORC_DESCUENTO, 
+                             CAST(g.IMP_NETO_P AS FLOAT) AS IMPORTE_NETO
+                      FROM GVA53 g WITH (INDEX(IX_0), NOLOCK)
+                      LEFT JOIN STA11 s WITH (NOLOCK) ON g.COD_ARTICU = s.COD_ARTICU
+                      WHERE g.T_COMP = ? AND g.N_COMP = ?
+                      ORDER BY g.N_RENGL_V";
+
+        $stmt_items = sqlsrv_query($conn_central, $sql_items, [$t_comp, $n_comp]);
+        if ($stmt_items === false) {
+            throw new Exception("Error al consultar artículos del comprobante: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $items = [];
+        $total_unidades = 0;
+        $total_neto = 0;
+        while ($row = sqlsrv_fetch_array($stmt_items, SQLSRV_FETCH_ASSOC)) {
+            $cant = (float)$row['CANTIDAD'];
+            $neto = (float)$row['IMPORTE_NETO'];
+            $total_unidades += $cant;
+            $total_neto += $neto;
+
+            $items[] = [
+                'renglon' => (int)$row['N_RENGL_V'],
+                'cod_articu' => trim($row['COD_ARTICU']),
+                'descripcion' => trim($row['DESCRIPCION']),
+                'cantidad' => $cant,
+                'precio_unitario' => (float)$row['PRECIO_UNITARIO'],
+                'porc_descuento' => (float)$row['PORC_DESCUENTO'],
+                'importe_neto' => $neto
+            ];
+        }
+
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'cabecera' => $cabecera,
+                'items' => $items,
+                'total_articulos' => count($items),
+                'total_unidades' => $total_unidades,
+                'total_neto' => $total_neto
+            ]
+        ]);
+        exit;
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
+}
+
 // LÓGICA PARA LISTAR COBRANZAS
 header('Content-Type: application/json');
 require_once '../config/database.php';
@@ -179,12 +274,33 @@ try {
             }
 
             if (!empty($raw_cache)) {
-                // Comprobantes Packaging de LALOMA (muy rápido, ~0.05s)
+                // Comprobantes elegibles de LALOMA (Packaging, Testers, articulos con *) - excluye mercaderia regular
                 $sql_laloma_pack = "SELECT DISTINCT g.T_COMP, g.N_COMP 
-                                    FROM GVA53 g WITH (NOLOCK)
-                                    JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m WITH (NOLOCK) ON g.COD_ARTICU = m.COD_ARTICU
-                                    WHERE m.RUBRO = 'PACKAGING'
-                                      AND EXISTS (SELECT 1 FROM RO_V_COBRANZA_PEND_FRANQUICIAS v WHERE v.COD_CLIENT = 'LALOMA' AND v.T_COMP = g.T_COMP AND v.N_COMP = g.N_COMP)";
+                                    FROM GVA53 g WITH (INDEX(IX_0), NOLOCK)
+                                    LEFT JOIN STA11 s WITH (NOLOCK) ON g.COD_ARTICU = s.COD_ARTICU
+                                    LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m WITH (NOLOCK) ON g.COD_ARTICU = m.COD_ARTICU
+                                    WHERE EXISTS (SELECT 1 FROM RO_V_COBRANZA_PEND_FRANQUICIAS v WHERE v.COD_CLIENT = 'LALOMA' AND v.T_COMP = g.T_COMP AND v.N_COMP = g.N_COMP)
+                                      AND (
+                                          m.RUBRO = 'PACKAGING' 
+                                          OR g.COD_ARTICU LIKE 'XPAK%' 
+                                          OR s.DESCRIPCIO LIKE '%TESTER%' 
+                                          OR g.COD_ARTICU LIKE '%TESTER%' 
+                                          OR g.COD_ARTICU LIKE '%[*]%'
+                                      )
+                                      AND NOT EXISTS (
+                                          SELECT 1 
+                                          FROM GVA53 g2 WITH (INDEX(IX_0), NOLOCK)
+                                          LEFT JOIN STA11 s2 WITH (NOLOCK) ON g2.COD_ARTICU = s2.COD_ARTICU
+                                          LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m2 WITH (NOLOCK) ON g2.COD_ARTICU = m2.COD_ARTICU
+                                          WHERE g2.T_COMP = g.T_COMP AND g2.N_COMP = g.N_COMP
+                                            AND NOT (
+                                                m2.RUBRO = 'PACKAGING' 
+                                                OR g2.COD_ARTICU LIKE 'XPAK%' 
+                                                OR s2.DESCRIPCIO LIKE '%TESTER%' 
+                                                OR g2.COD_ARTICU LIKE '%TESTER%' 
+                                                OR g2.COD_ARTICU LIKE '%[*]%'
+                                            )
+                                      )";
                 $stmt_l = sqlsrv_query($conn_central, $sql_laloma_pack);
                 $lalomaPackaging = [];
                 if ($stmt_l !== false) {
@@ -213,7 +329,7 @@ try {
                         $nComp = strtoupper(trim($row['N_COMP']));
                         
                         if ($cod === 'LALOMA') {
-                            if (strpos($nComp, 'A00115') === false && strpos($nComp, 'A00126') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
+                            if (strpos($nComp, 'A00115') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
                                 continue;
                             }
                         }
@@ -283,10 +399,31 @@ try {
         $lalomaPackaging = [];
         if ($cod_cliente === 'LALOMA') {
             $sql_laloma_pack = "SELECT DISTINCT g.T_COMP, g.N_COMP 
-                                FROM GVA53 g WITH (NOLOCK)
-                                JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m WITH (NOLOCK) ON g.COD_ARTICU = m.COD_ARTICU
-                                WHERE m.RUBRO = 'PACKAGING'
-                                  AND EXISTS (SELECT 1 FROM RO_V_COBRANZA_PEND_FRANQUICIAS v WHERE v.COD_CLIENT = 'LALOMA' AND v.T_COMP = g.T_COMP AND v.N_COMP = g.N_COMP)";
+                                FROM GVA53 g WITH (INDEX(IX_0), NOLOCK)
+                                LEFT JOIN STA11 s WITH (NOLOCK) ON g.COD_ARTICU = s.COD_ARTICU
+                                LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m WITH (NOLOCK) ON g.COD_ARTICU = m.COD_ARTICU
+                                WHERE EXISTS (SELECT 1 FROM RO_V_COBRANZA_PEND_FRANQUICIAS v WHERE v.COD_CLIENT = 'LALOMA' AND v.T_COMP = g.T_COMP AND v.N_COMP = g.N_COMP)
+                                  AND (
+                                      m.RUBRO = 'PACKAGING' 
+                                      OR g.COD_ARTICU LIKE 'XPAK%' 
+                                      OR s.DESCRIPCIO LIKE '%TESTER%' 
+                                      OR g.COD_ARTICU LIKE '%TESTER%' 
+                                      OR g.COD_ARTICU LIKE '%[*]%'
+                                  )
+                                  AND NOT EXISTS (
+                                      SELECT 1 
+                                      FROM GVA53 g2 WITH (INDEX(IX_0), NOLOCK)
+                                      LEFT JOIN STA11 s2 WITH (NOLOCK) ON g2.COD_ARTICU = s2.COD_ARTICU
+                                      LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m2 WITH (NOLOCK) ON g2.COD_ARTICU = m2.COD_ARTICU
+                                      WHERE g2.T_COMP = g.T_COMP AND g2.N_COMP = g.N_COMP
+                                        AND NOT (
+                                            m2.RUBRO = 'PACKAGING' 
+                                            OR g2.COD_ARTICU LIKE 'XPAK%' 
+                                            OR s2.DESCRIPCIO LIKE '%TESTER%' 
+                                            OR g2.COD_ARTICU LIKE '%TESTER%' 
+                                            OR g2.COD_ARTICU LIKE '%[*]%'
+                                        )
+                                  )";
             $stmt_l = sqlsrv_query($conn_central, $sql_laloma_pack);
             if ($stmt_l !== false) {
                 while($r = sqlsrv_fetch_array($stmt_l, SQLSRV_FETCH_ASSOC)) {
@@ -325,7 +462,7 @@ try {
             if ($cod_cliente === 'LALOMA') {
                 $nComp = strtoupper(trim($row['N_COMP']));
                 $tComp = strtoupper(trim($row['T_COMP']));
-                if (strpos($nComp, 'A00115') === false && strpos($nComp, 'A00126') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
+                if (strpos($nComp, 'A00115') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
                     continue;
                 }
             }
@@ -340,12 +477,33 @@ try {
         $estado_col = ($tipo === 'mayoristas') ? "'PEN' as ESTADO" : "v.ESTADO";
         $estado_cond = ($tipo === 'mayoristas') ? "" : "WHERE v.ESTADO <> 'IMP'";
 
-        // 1. Precargar Packaging de LALOMA (muy rápido, ~0.05s)
+        // 1. Precargar Packaging / Testers / * de LALOMA (excluye mercaderia regular)
         $sql_laloma_pack = "SELECT DISTINCT g.T_COMP, g.N_COMP 
-                            FROM GVA53 g WITH (NOLOCK)
-                            JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m WITH (NOLOCK) ON g.COD_ARTICU = m.COD_ARTICU
-                            WHERE m.RUBRO = 'PACKAGING'
-                              AND EXISTS (SELECT 1 FROM RO_V_COBRANZA_PEND_FRANQUICIAS v WHERE v.COD_CLIENT = 'LALOMA' AND v.T_COMP = g.T_COMP AND v.N_COMP = g.N_COMP)";
+                            FROM GVA53 g WITH (INDEX(IX_0), NOLOCK)
+                            LEFT JOIN STA11 s WITH (NOLOCK) ON g.COD_ARTICU = s.COD_ARTICU
+                            LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m WITH (NOLOCK) ON g.COD_ARTICU = m.COD_ARTICU
+                            WHERE EXISTS (SELECT 1 FROM RO_V_COBRANZA_PEND_FRANQUICIAS v WHERE v.COD_CLIENT = 'LALOMA' AND v.T_COMP = g.T_COMP AND v.N_COMP = g.N_COMP)
+                              AND (
+                                  m.RUBRO = 'PACKAGING' 
+                                  OR g.COD_ARTICU LIKE 'XPAK%' 
+                                  OR s.DESCRIPCIO LIKE '%TESTER%' 
+                                  OR g.COD_ARTICU LIKE '%TESTER%' 
+                                  OR g.COD_ARTICU LIKE '%[*]%'
+                              )
+                              AND NOT EXISTS (
+                                  SELECT 1 
+                                  FROM GVA53 g2 WITH (INDEX(IX_0), NOLOCK)
+                                  LEFT JOIN STA11 s2 WITH (NOLOCK) ON g2.COD_ARTICU = s2.COD_ARTICU
+                                  LEFT JOIN SOF_MAESTRO_ARTICULOS_RUBRO_CATEGORIA m2 WITH (NOLOCK) ON g2.COD_ARTICU = m2.COD_ARTICU
+                                  WHERE g2.T_COMP = g.T_COMP AND g2.N_COMP = g.N_COMP
+                                    AND NOT (
+                                        m2.RUBRO = 'PACKAGING' 
+                                        OR g2.COD_ARTICU LIKE 'XPAK%' 
+                                        OR s2.DESCRIPCIO LIKE '%TESTER%' 
+                                        OR g2.COD_ARTICU LIKE '%TESTER%' 
+                                        OR g2.COD_ARTICU LIKE '%[*]%'
+                                    )
+                              )";
         $stmt_l = sqlsrv_query($conn_central, $sql_laloma_pack);
         $lalomaPackaging = [];
         if ($stmt_l !== false) {
@@ -421,7 +579,7 @@ try {
 
             // Filtro LALOMA en PHP
             if ($cod === 'LALOMA') {
-                if (strpos($nComp, 'A00115') === false && strpos($nComp, 'A00126') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
+                if (strpos($nComp, 'A00115') === false && !isset($lalomaPackaging[$tComp . '|' . $nComp])) {
                     continue;
                 }
             }

@@ -323,3 +323,17 @@ table.dataTable.fixedHeader-floating {
 .reporte-detalle-scroll::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+
+/* --- MODAL DETALLE DE COMPROBANTE (ANIDADO SOBRE OTROS MODALES) --- */
+#modalDetalleComprobanteArticulos {
+    z-index: 1070 !important;
+}
+.btn-ver-detalle-comp {
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.15s ease-in-out;
+}
+.btn-ver-detalle-comp:hover {
+    text-decoration: underline !important;
+    filter: brightness(0.85);
+}

@@ -229,7 +229,19 @@ $(document).ready(function () {
             className: 'text-center'
         },
         // =====================================================================
-        { data: 'N_COMP', title: 'Comprobante' },
+        {
+            data: 'N_COMP',
+            title: 'Comprobante',
+            render: function (data, type, row) {
+                if (!data) return '-';
+                const tComp = (row.T_COMP || '').trim();
+                const nComp = data.trim();
+                return `<button type="button" class="btn btn-sm btn-link p-0 text-decoration-none font-weight-bold text-primary btn-ver-detalle-comp" 
+                            data-tcomp="${tComp}" data-ncomp="${nComp}" title="Tocar para ver detalle de artículos">
+                            <i class="fa-solid fa-magnifying-glass me-1 text-info"></i>${nComp}
+                        </button>`;
+            }
+        },
         {
             data: 'ESTADO',
             title: 'Estado',
@@ -1569,7 +1581,7 @@ $(document).ready(function () {
             const descuentoHtml = puedeEditarDescuento ? `<input type="number" class="form-control form-control-sm descuento-input-admin" value="${descuento.toFixed(2)}" min="0" max="100" step="0.01" style="width: 80px;" ${inputDisabled}>` : `<span class="descuento-texto-admin">${descuento.toFixed(2)} %</span><input type="hidden" class="descuento-input-admin" value="${descuento.toFixed(2)}">`;
             const accionesHtml = esEditable ? `<td class="text-center"><button class="btn btn-danger btn-sm btn-eliminar-factura-propuesta" title="Quitar factura"><i class="fa-solid fa-trash"></i></button></td>` : '';
 
-            itemsHtml += `<tr data-importe-bruto="${brutoReal}" data-ncomp="${nComp}" data-tcomp="${tComp}"><td class="text-center">${item.fecha_emision || 'N/A'}</td><td class="text-center">${tComp || 'N/A'}</td><td>${nComp}</td><td class="text-end ${esNegativo ? 'text-danger' : ''}">${brutoReal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center">${descuentoHtml}</td><td class="text-end fw-bold importe-neto-cell-admin ${esNegativo ? 'text-danger' : ''}">${netoReal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${accionesHtml}</tr>`;
+            itemsHtml += `<tr data-importe-bruto="${brutoReal}" data-ncomp="${nComp}" data-tcomp="${tComp}"><td class="text-center">${item.fecha_emision || 'N/A'}</td><td class="text-center">${tComp || 'N/A'}</td><td><button type="button" class="btn btn-sm btn-link p-0 text-decoration-none font-weight-bold text-primary btn-ver-detalle-comp" data-tcomp="${tComp}" data-ncomp="${nComp}" title="Tocar para ver detalle de artículos"><i class="fa-solid fa-magnifying-glass me-1 text-info"></i>${nComp}</button></td><td class="text-end ${esNegativo ? 'text-danger' : ''}">${brutoReal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td class="text-center">${descuentoHtml}</td><td class="text-end fw-bold importe-neto-cell-admin ${esNegativo ? 'text-danger' : ''}">${netoReal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${accionesHtml}</tr>`;
         });
 
         itemsHtml += `</tbody><tfoot class="table-light"><tr><td colspan="3" class="text-end"><strong>Totales:</strong></td><td class="text-end fw-bolder" id="total-bruto-tabla">${totalBrutoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td><td></td><td class="text-end fw-bolder" id="total-neto-tabla">${totalNetoTabla.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</td>${esEditable ? '<td></td>' : ''}</tr></tfoot></table>`;

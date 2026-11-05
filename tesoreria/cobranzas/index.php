@@ -742,6 +742,36 @@ include 'templates/layout/header.php';
 </div>
 <!-- ======================================================================================== -->
 
+<!-- ======================= MODAL DETALLE DE ARTÍCULOS DEL COMPROBANTE ======================= -->
+<div class="modal fade" id="modalDetalleComprobanteArticulos" tabindex="-1" aria-labelledby="modalDetalleComprobanteArticulosLabel" aria-hidden="true" data-bs-backdrop="false" style="z-index: 1070; background-color: rgba(0, 0, 0, 0.5);">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-dark text-white py-2">
+                <h5 class="modal-title" id="modalDetalleComprobanteArticulosLabel">
+                    <i class="fa-solid fa-file-invoice text-info me-2"></i>
+                    Detalle del Comprobante &mdash; <span id="detalle-comp-titulo" class="font-monospace text-warning fw-bold"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3" id="detalle-comp-body">
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-2 mb-0">Cargando artículos del comprobante...</p>
+                </div>
+            </div>
+            <div class="modal-footer py-2 bg-light">
+                <button type="button" class="btn btn-outline-success btn-sm me-auto" id="btn-exportar-comp-articulos-excel" style="display: none;">
+                    <i class="fa-solid fa-file-excel me-1"></i> Exportar Artículos
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark me-1"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ======================================================================================== -->
+
 <!-- ======================= MODAL DETALLE DEL LOTE (FRANQUICIAS GA) ======================= -->
 <div class="modal fade" id="modalFranqGaDetalle" tabindex="-1" aria-labelledby="modalFranqGaDetalleLabel"
     aria-hidden="true">
