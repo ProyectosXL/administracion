@@ -2642,12 +2642,7 @@ function inicializarConfiguracionGlobal() {
     // Configurar fecha de vigencia por defecto
     const fechaVigenciaGlobal = document.getElementById('fecha_vigencia_global');
     if (fechaVigenciaGlobal) {
-<<<<<<< Updated upstream
-        // Establecer fecha mínima como hoy
-        const hoy = new Date().toISOString().split('T')[0];
-        fechaVigenciaGlobal.min = hoy;
-=======
-        // Establecer fecha mínima como hoy - Formatear manualmente
+        // Establecer fecha minima como hoy - Formatear manualmente
         const hoy = new Date();
         const year = hoy.getFullYear();
         const month = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -2661,7 +2656,6 @@ function inicializarConfiguracionGlobal() {
         
         // Actualizar display inicial
         actualizarDisplayFechaGlobal();
->>>>>>> Stashed changes
     }
 }
 
@@ -3061,7 +3055,7 @@ async function cargarTiposNovedadEnSelect(selectId) {
             console.warn('⚠️ NovedadesApp no disponible, usando fetch directo');
             
             // Fallback usando fetch directo
-            const response = await fetch('controller/novedades_controller.php?accion=get_tipos_novedad');
+            const response = await fetch('controller/novedades_controller.php?action=get_tipos_novedad');
             const data = await response.json();
             
             if (data.success && data.data) {

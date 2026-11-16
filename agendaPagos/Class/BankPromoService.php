@@ -1,22 +1,261 @@
 <?php
 // Class/BankPromoService.php
 require_once __DIR__ . '/../../class/conexion.php';
-require_once __DIR__ . '/../../controlSucursales/Class/sucursal.php';
 
 class BankPromoService
 {
     private $conexion;
-    private $sucursalModel;
     private $sucursalesConfig = [];
+    private $entorno = '';
+    private $usuario = 'AUDITORIA';
 
     public function __construct()
     {
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+            @session_start();
+        }
+        $this->entorno = $_SESSION['entorno'] ?? '';
+        $this->usuario = $_SESSION['usuario'] ?? 'AUDITORIA';
+
         $this->conexion = new Conexion();
-        $this->sucursalModel = new Sucursal();
         $configFile = __DIR__ . '/../config/gocuotas_sucursales.php';
         if (file_exists($configFile)) {
             $this->sucursalesConfig = require $configFile;
         }
+    }
+
+    /**
+     * Devuelve una conexión a la base donde reside RO_T_VENTA_DIARIA_SUCURSALES según el entorno.
+     */
+    private function getLocalesConnection()
+    {
+        if ($this->entorno === 'uy') {
+            return $this->conexion->conectar('suc_uy');
+        }
+        if ($this->conexion->env === 'DEV') {
+            return $this->conexion->conectar('central');
+        }
+        return $this->conexion->conectar('locales');
+    }
+
+    /**
+     * Obtiene en una sola consulta la configuración de conexión de todas las sucursales solicitadas.
+     */
+    private function getBranchConfigsMap(array $nroSucursales): array
+    {
+        $map = [];
+        $ids = array_values(array_unique(array_filter(array_map('intval', $nroSucursales), function ($v) {
+            return $v > 0;
+        })));
+
+        if (empty($ids)) {
+            return $map;
+        }
+
+        $connCentral = $this->conexion->conectar('central');
+        if (!$connCentral) {
+            return $map;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT NRO_SUCURSAL, CONEXION_DNS, BASE_NOMBRE, USUARIO_DNS, CLAVE_DNS, HABILITADO
+                FROM [XL-LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS
+                WHERE NRO_SUC_MADRE IS NULL
+                  AND NRO_SUCURSAL IN ($placeholders)";
+
+        $stmt = sqlsrv_query($connCentral, $sql, $ids, ['QueryTimeout' => 10]);
+        if ($stmt !== false) {
+            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $nro = strval($row['NRO_SUCURSAL']);
+                $map[$nro] = $row;
+            }
+            sqlsrv_free_stmt($stmt);
+        } else {
+            error_log("Error al consultar SUCURSALES_LAKERS en BankPromoService: " . print_r(sqlsrv_errors(), true));
+        }
+
+        sqlsrv_close($connCentral);
+        return $map;
+    }
+
+    /**
+     * Obtiene en una sola consulta los importes de RO_T_VENTA_DIARIA_SUCURSALES para todas las sucursales.
+     */
+    private function getSistemaSalesMap(array $nroSucursales, string $desde, string $hasta): array
+    {
+        $salesByBranch = [];
+        $ids = array_values(array_unique(array_filter(array_map('intval', $nroSucursales), function ($v) {
+            return $v > 0;
+        })));
+
+        if (empty($ids)) {
+            return $salesByBranch;
+        }
+
+        $connLocales = $this->getLocalesConnection();
+        if (!$connLocales) {
+            error_log("No se pudo conectar a la base locales/central en getSistemaSalesMap.");
+            return $salesByBranch;
+        }
+
+        $tabla = ($this->entorno === 'uy') ? 'RO_T_VENTA_DIARIA_SUCURSALES_UY' : 'RO_T_VENTA_DIARIA_SUCURSALES';
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT ID, FECHA, NRO_SUCURSAL, IMPORTE_\$_SISTEMA, VERIFICADO, OBSERVACIONES, USUARIO
+                FROM {$this->conexion->prefix}{$tabla}
+                WHERE NRO_SUCURSAL IN ($placeholders)
+                  AND FECHA BETWEEN ? AND ?
+                  AND MEDIO_PAGO = 'PROMO BANCO'
+                ORDER BY FECHA";
+
+        $params = array_merge($ids, [$desde, $hasta]);
+        $stmt = sqlsrv_query($connLocales, $sql, $params, ['QueryTimeout' => 15]);
+
+        if ($stmt !== false) {
+            while ($s = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                $nro = strval($s['NRO_SUCURSAL']);
+                $fechaRaw = $s['FECHA'];
+                $fecha = is_a($fechaRaw, 'DateTime') ? $fechaRaw->format('Y-m-d') : substr(strval($fechaRaw), 0, 10);
+                $salesByBranch[$nro][$fecha] = [
+                    'monto' => floatval($s['IMPORTE_$_SISTEMA'] ?? 0),
+                    'id_registro' => $s['ID'] ?? null,
+                    'verificado' => intval($s['VERIFICADO'] ?? 0),
+                    'observaciones' => trim($s['OBSERVACIONES'] ?? ''),
+                    'usuario' => trim($s['USUARIO'] ?? '')
+                ];
+            }
+            sqlsrv_free_stmt($stmt);
+        } else {
+            error_log("Error en getSistemaSalesMap: " . print_r(sqlsrv_errors(), true));
+        }
+
+        sqlsrv_close($connLocales);
+        return $salesByBranch;
+    }
+
+    /**
+     * Verifica en paralelo qué servidores locales responden por TCP antes de intentar sqlsrv_connect.
+     * Evita acumular esperas secuenciales de 15s por cada sucursal offline.
+     */
+    private function probeBranchesTcp(array $branchConfigs, float $timeoutSec = 1.5): array
+    {
+        $sockets = [];
+        $meta = [];
+        $results = [];
+
+        foreach ($branchConfigs as $nroSuc => $conf) {
+            $dns = trim($conf['CONEXION_DNS'] ?? '');
+            $base = trim($conf['BASE_NOMBRE'] ?? '');
+            if ($dns === '' || $base === '') {
+                $results[$nroSuc] = false;
+                continue;
+            }
+
+            // Instancias nombradas (host\instancia) no usan puerto fijo TCP directo
+            if (strpos($dns, '\\') !== false) {
+                $results[$nroSuc] = true;
+                continue;
+            }
+
+            $parts = explode(',', $dns);
+            $host = trim($parts[0]);
+            $port = isset($parts[1]) ? intval(trim($parts[1])) : 1433;
+            if ($host === '' || $port <= 0) {
+                $results[$nroSuc] = false;
+                continue;
+            }
+
+            $errno = 0;
+            $errstr = '';
+            $sock = @stream_socket_client(
+                "tcp://{$host}:{$port}",
+                $errno,
+                $errstr,
+                $timeoutSec,
+                STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT
+            );
+
+            if ($sock === false) {
+                $results[$nroSuc] = false;
+            } else {
+                stream_set_blocking($sock, false);
+                $sockets[(int)$sock] = $sock;
+                $meta[(int)$sock] = $nroSuc;
+            }
+        }
+
+        $deadline = microtime(true) + $timeoutSec;
+        while (!empty($sockets)) {
+            $remaining = $deadline - microtime(true);
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $sec = (int)floor($remaining);
+            $usec = (int)(($remaining - $sec) * 1000000);
+
+            $read = null;
+            $write = $sockets;
+            $except = $sockets;
+
+            $ready = @stream_select($read, $write, $except, $sec, $usec);
+            if ($ready === false || $ready === 0) {
+                break;
+            }
+
+            $readySockets = [];
+            if (is_array($write)) {
+                foreach ($write as $s) {
+                    $readySockets[(int)$s] = $s;
+                }
+            }
+            if (is_array($except)) {
+                foreach ($except as $s) {
+                    $readySockets[(int)$s] = $s;
+                }
+            }
+
+            foreach ($readySockets as $id => $s) {
+                $nroSuc = $meta[$id];
+                $peer = @stream_socket_get_name($s, true);
+                $results[$nroSuc] = ($peer !== false);
+                @fclose($s);
+                unset($sockets[$id]);
+            }
+        }
+
+        foreach ($sockets as $id => $s) {
+            $nroSuc = $meta[$id];
+            $results[$nroSuc] = false;
+            @fclose($s);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Conecta directamente a la base de una sucursal con LoginTimeout acotado, sin depender de $_SESSION.
+     */
+    private function connectToBranch(array $branchConfig, int $loginTimeout = 3)
+    {
+        $dns = trim($branchConfig['CONEXION_DNS'] ?? '');
+        $base = trim($branchConfig['BASE_NOMBRE'] ?? '');
+        if ($dns === '' || $base === '') {
+            return false;
+        }
+
+        $user = !empty($branchConfig['USUARIO_DNS']) ? $branchConfig['USUARIO_DNS'] : $this->conexion->user;
+        $pass = !empty($branchConfig['CLAVE_DNS']) ? $branchConfig['CLAVE_DNS'] : $this->conexion->pass;
+
+        $params = [
+            'Database' => $base,
+            'UID' => $user,
+            'PWD' => $pass,
+            'CharacterSet' => $this->conexion->character,
+            'LoginTimeout' => $loginTimeout,
+            'ConnectRetryCount' => 0
+        ];
+
+        return @sqlsrv_connect($dns, $params);
     }
 
     /**
@@ -31,7 +270,19 @@ class BankPromoService
             $sucursalesToFetch = $this->sucursalesConfig;
         }
 
+        $nroSucursales = [];
+        foreach ($sucursalesToFetch as $conf) {
+            if (!empty($conf['nro_sucursal'])) {
+                $nroSucursales[] = strval($conf['nro_sucursal']);
+            }
+        }
+
+        $branchConfigs = $this->getBranchConfigsMap($nroSucursales);
+        $sistemaSalesByBranch = $this->getSistemaSalesMap($nroSucursales, $desde, $hasta);
+        $tcpReachable = $this->probeBranchesTcp($branchConfigs, 1.5);
+
         $allRows = [];
+        $offlineBranches = [];
         $kpis = [
             'total_sistema' => 0,
             'total_control' => 0,
@@ -41,44 +292,38 @@ class BankPromoService
             'count_total' => 0
         ];
 
+        $desdeDt = $desde . ' 00:00:00';
+        $hastaDt = $hasta . ' 23:59:59';
+
         foreach ($sucursalesToFetch as $keySuc => $conf) {
-            $nroSuc = $conf['nro_sucursal'] ?? null;
+            $nroSuc = isset($conf['nro_sucursal']) ? strval($conf['nro_sucursal']) : null;
             $nombreSuc = $conf['nombre'] ?? $keySuc;
             if (!$nroSuc) continue;
 
             // 1. Obtener $ SISTEMA de RO_T_VENTA_DIARIA_SUCURSALES
-            $sistemaSales = $this->sucursalModel->traerImportesTotalesPorPeriodo($nroSuc, $desde, $hasta, 'PROMO BANCO');
-            $sistemaMap = [];
-            if (is_array($sistemaSales)) {
-                foreach ($sistemaSales as $s) {
-                    $fechaRaw = $s['FECHA'];
-                    $fecha = is_a($fechaRaw, 'DateTime') ? $fechaRaw->format('Y-m-d') : substr(strval($fechaRaw), 0, 10);
-                    $monto = floatval($s['IMPORTE_$_SISTEMA'] ?? 0);
-                    $sistemaMap[$fecha] = [
-                        'monto' => $monto,
-                        'id_registro' => $s['ID'] ?? null,
-                        'verificado' => intval($s['VERIFICADO'] ?? 0),
-                        'observaciones' => trim($s['OBSERVACIONES'] ?? ''),
-                        'usuario' => trim($s['USUARIO'] ?? '')
-                    ];
-                }
-            }
+            $sistemaMap = $sistemaSalesByBranch[$nroSuc] ?? [];
 
             // 2. Obtener $ CONTROL de V_creditospromosbancarias en la BD local de la sucursal
             $controlMap = [];
             $promoDetailsMap = [];
 
-            if ($this->conexion->setearDnsBaseName($nroSuc)) {
-                $connLocal = $this->conexion->conectar();
+            $branchCfg = $branchConfigs[$nroSuc] ?? null;
+            $isEnabled = $branchCfg ? (intval($branchCfg['HABILITADO'] ?? 1) === 1) : true;
+            $isReachable = $branchCfg && !empty($tcpReachable[$nroSuc]);
+            $localConnected = false;
+
+            if ($isReachable) {
+                $connLocal = $this->connectToBranch($branchCfg, 3);
                 if ($connLocal) {
+                    $localConnected = true;
                     $sql = "SELECT CONVERT(VARCHAR(10), Fecha, 120) AS FechaOnly, 
                                    Promocion, 
                                    SUM(importe) AS TotalControl 
                             FROM V_creditospromosbancarias 
-                            WHERE Fecha BETWEEN '$desde 00:00:00' AND '$hasta 23:59:59' 
+                            WHERE Fecha BETWEEN ? AND ? 
                             GROUP BY CONVERT(VARCHAR(10), Fecha, 120), Promocion";
 
-                    $stmt = sqlsrv_query($connLocal, $sql);
+                    $stmt = sqlsrv_query($connLocal, $sql, [$desdeDt, $hastaDt], ['QueryTimeout' => 10]);
                     if ($stmt !== false) {
                         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                             $fOnly = $row['FechaOnly'];
@@ -94,8 +339,19 @@ class BankPromoService
                                 $promoDetailsMap[$fOnly][] = $promoName;
                             }
                         }
+                        sqlsrv_free_stmt($stmt);
+                    } else {
+                        error_log("Error en V_creditospromosbancarias sucursal {$nroSuc}: " . print_r(sqlsrv_errors(), true));
                     }
+                    sqlsrv_close($connLocal);
                 }
+            }
+
+            if (!$localConnected && ($isEnabled || $sucursalTarget !== 'todos')) {
+                $offlineBranches[] = [
+                    'nro_sucursal' => $nroSuc,
+                    'nombre' => $nombreSuc
+                ];
             }
 
             // Combine all dates from both $ SISTEMA and $ CONTROL
@@ -185,7 +441,8 @@ class BankPromoService
 
         return [
             'rows' => $allRows,
-            'kpis' => $kpis
+            'kpis' => $kpis,
+            'offline_branches' => $offlineBranches
         ];
     }
 
@@ -210,11 +467,19 @@ class BankPromoService
         $totalReintegroCalculado = 0;
         $totalReintegroActivo = 0;
         $totalDevuelto = 0;
+        $localOnline = false;
 
-        // 1. Consultar Base Local
-        if ($this->conexion->setearDnsBaseName($nroSucursal)) {
-            $connLocal = $this->conexion->conectar();
+        $desdeDt = $fecha . ' 00:00:00';
+        $hastaDt = $fecha . ' 23:59:59';
+
+        // 1. Consultar Base Local con probe TCP rápido y LoginTimeout acotado
+        $branchConfigs = $this->getBranchConfigsMap([$nroSucursal]);
+        $branchCfg = $branchConfigs[strval($nroSucursal)] ?? null;
+        if ($branchCfg) {
+            $tcpReachable = $this->probeBranchesTcp([$nroSucursal => $branchCfg], 1.5);
+            $connLocal = !empty($tcpReachable[$nroSucursal]) ? $this->connectToBranch($branchCfg, 3) : false;
             if ($connLocal) {
+                $localOnline = true;
                 // A. Facturas con cupones
                 $sqlInvoices = "
                     SELECT 
@@ -237,10 +502,10 @@ class BankPromoService
                     FROM sba20 s
                     JOIN promocion_tarjeta p ON s.id_promocion_tarjeta = p.id_promocion_tarjeta
                     JOIN gva12 g ON g.n_comp = s.n_comp_rec AND g.t_comp = s.t_comp_rec
-                    WHERE g.fecha_emis >= '$fecha 00:00:00' AND g.fecha_emis <= '$fecha 23:59:59'
+                    WHERE g.fecha_emis >= ? AND g.fecha_emis <= ?
                     ORDER BY g.n_comp, s.n_cupon";
 
-                $stmt = sqlsrv_query($connLocal, $sqlInvoices);
+                $stmt = sqlsrv_query($connLocal, $sqlInvoices, [$desdeDt, $hastaDt], ['QueryTimeout' => 10]);
                 if ($stmt !== false) {
                     while ($r = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                         $reintegro = floatval($r['reintegro_calculado']);
@@ -271,6 +536,7 @@ class BankPromoService
                             'reintegro' => $reintegro
                         ];
                     }
+                    sqlsrv_free_stmt($stmt);
                 }
 
                 // B. Cupones de devolucion (Tipo D)
@@ -287,10 +553,10 @@ class BankPromoService
                         ROUND(s.importe_to * (p.porc_reintegro / 100.0), 2) AS reintegro_devuelto
                     FROM sba20 s
                     JOIN promocion_tarjeta p ON s.id_promocion_tarjeta = p.id_promocion_tarjeta
-                    WHERE s.fecha_rec >= '$fecha 00:00:00' AND s.fecha_rec <= '$fecha 23:59:59'
+                    WHERE s.fecha_rec >= ? AND s.fecha_rec <= ?
                       AND s.tipo_cupon = 'D'";
 
-                $stmtDev = sqlsrv_query($connLocal, $sqlDev);
+                $stmtDev = sqlsrv_query($connLocal, $sqlDev, [$desdeDt, $hastaDt], ['QueryTimeout' => 10]);
                 if ($stmtDev !== false) {
                     while ($r = sqlsrv_fetch_array($stmtDev, SQLSRV_FETCH_ASSOC)) {
                         $reintDev = floatval($r['reintegro_devuelto']);
@@ -307,6 +573,7 @@ class BankPromoService
                             'reintegro_devuelto' => $reintDev
                         ];
                     }
+                    sqlsrv_free_stmt($stmtDev);
                 }
 
                 // C. Notas de Credito emitidas en el local (NCR en gva12 / gva53)
@@ -323,11 +590,11 @@ class BankPromoService
                         d.imp_re_pan
                     FROM gva12 g
                     LEFT JOIN gva53 d ON g.n_comp = d.n_comp AND g.t_comp = d.t_comp
-                    WHERE g.fecha_emis >= '$fecha 00:00:00' AND g.fecha_emis <= '$fecha 23:59:59'
+                    WHERE g.fecha_emis >= ? AND g.fecha_emis <= ?
                       AND g.t_comp LIKE 'NC%'
                     ORDER BY g.n_comp, d.n_rengl_v";
 
-                $stmtNc = sqlsrv_query($connLocal, $sqlNc);
+                $stmtNc = sqlsrv_query($connLocal, $sqlNc, [$desdeDt, $hastaDt], ['QueryTimeout' => 10]);
                 if ($stmtNc !== false) {
                     while ($r = sqlsrv_fetch_array($stmtNc, SQLSRV_FETCH_ASSOC)) {
                         $localCreditNotes[] = [
@@ -342,7 +609,10 @@ class BankPromoService
                             'importe_renglon' => floatval($r['imp_re_pan'] ?? 0)
                         ];
                     }
+                    sqlsrv_free_stmt($stmtNc);
                 }
+
+                sqlsrv_close($connLocal);
             }
         }
 
@@ -351,7 +621,7 @@ class BankPromoService
         $centralResumen = null;
         $totalCentralImputado = 0;
 
-        $connCentral = $this->conexion->conectar('locales') ?: $this->conexion->conectar('central');
+        $connCentral = $this->getLocalesConnection() ?: $this->conexion->conectar('central');
         if ($connCentral) {
             $prefix = $this->conexion->prefix;
 
@@ -372,7 +642,7 @@ class BankPromoService
                   AND b.COD_CTA = '250800'
                 ORDER BY a.N_COMP";
 
-            $stmtC = sqlsrv_query($connCentral, $sqlCentral, [$nroSucursal, $fecha]);
+            $stmtC = sqlsrv_query($connCentral, $sqlCentral, [$nroSucursal, $fecha], ['QueryTimeout' => 10]);
             if ($stmtC !== false) {
                 while ($r = sqlsrv_fetch_array($stmtC, SQLSRV_FETCH_ASSOC)) {
                     $montoImp = floatval($r['MONTO']);
@@ -387,6 +657,7 @@ class BankPromoService
                         'cliente' => trim($r['COD_CLIENT'])
                     ];
                 }
+                sqlsrv_free_stmt($stmtC);
             }
 
             // B. Fila en RO_T_VENTA_DIARIA_SUCURSALES
@@ -394,7 +665,7 @@ class BankPromoService
                       FROM {$prefix}RO_T_VENTA_DIARIA_SUCURSALES
                       WHERE NRO_SUCURSAL = ? AND FECHA = ? AND MEDIO_PAGO = 'PROMO BANCO'";
 
-            $stmtRo = sqlsrv_query($connCentral, $sqlRo, [$nroSucursal, $fecha]);
+            $stmtRo = sqlsrv_query($connCentral, $sqlRo, [$nroSucursal, $fecha], ['QueryTimeout' => 10]);
             if ($stmtRo !== false && ($rowRo = sqlsrv_fetch_array($stmtRo, SQLSRV_FETCH_ASSOC))) {
                 $centralResumen = [
                     'id' => $rowRo['ID'],
@@ -406,12 +677,17 @@ class BankPromoService
                     'fecha_modif' => $rowRo['FECHA_MODIF'] instanceof DateTime ? $rowRo['FECHA_MODIF']->format('Y-m-d') : $rowRo['FECHA_MODIF']
                 ];
             }
+            if ($stmtRo !== false) {
+                sqlsrv_free_stmt($stmtRo);
+            }
+            sqlsrv_close($connCentral);
         }
 
         return [
             'fecha' => $fecha,
             'nro_sucursal' => $nroSucursal,
             'sucursal' => $nombreSucursal,
+            'local_online' => $localOnline,
             'totales' => [
                 'reintegro_activo_local' => round($totalReintegroActivo, 2),
                 'reintegro_bruto_local' => round($totalReintegroCalculado, 2),
@@ -440,9 +716,9 @@ class BankPromoService
             $verificado = 0;
         }
 
-        $usuario = $_SESSION['usuario'] ?? 'AUDITORIA';
+        $usuario = $this->usuario;
 
-        $connCentral = $this->conexion->conectar('locales') ?: $this->conexion->conectar('central');
+        $connCentral = $this->getLocalesConnection() ?: $this->conexion->conectar('central');
         if (!$connCentral) {
             throw new Exception("No se pudo conectar con la base de datos central.");
         }
@@ -453,6 +729,9 @@ class BankPromoService
         $sqlCheck = "SELECT ID FROM {$prefix}RO_T_VENTA_DIARIA_SUCURSALES WHERE NRO_SUCURSAL = ? AND FECHA = ? AND MEDIO_PAGO = 'PROMO BANCO'";
         $stmtCheck = sqlsrv_query($connCentral, $sqlCheck, [$nroSucursal, $fecha]);
         $exists = ($stmtCheck !== false && sqlsrv_has_rows($stmtCheck));
+        if ($stmtCheck !== false) {
+            sqlsrv_free_stmt($stmtCheck);
+        }
 
         if ($exists) {
             $sqlUpdate = "UPDATE {$prefix}RO_T_VENTA_DIARIA_SUCURSALES 
@@ -464,8 +743,12 @@ class BankPromoService
             $params = [$verificado, $observacion, $usuario, $nroSucursal, $fecha];
             $stmt = sqlsrv_query($connCentral, $sqlUpdate, $params);
             if ($stmt === false) {
-                throw new Exception("Error al actualizar estado en la base de datos: " . print_r(sqlsrv_errors(), true));
+                $err = print_r(sqlsrv_errors(), true);
+                sqlsrv_close($connCentral);
+                throw new Exception("Error al actualizar estado en la base de datos: " . $err);
             }
+            sqlsrv_free_stmt($stmt);
+            sqlsrv_close($connCentral);
             return true;
         } else {
             // Si no existiera registro previo en RO_T_VENTA_DIARIA_SUCURSALES, insertarlo
@@ -475,6 +758,9 @@ class BankPromoService
             if ($stmtDesc && ($rDesc = sqlsrv_fetch_array($stmtDesc, SQLSRV_FETCH_ASSOC))) {
                 $descSuc = $rDesc['DESC_SUCURSAL'];
             }
+            if ($stmtDesc !== false) {
+                sqlsrv_free_stmt($stmtDesc);
+            }
 
             $sqlInsert = "INSERT INTO {$prefix}RO_T_VENTA_DIARIA_SUCURSALES 
                           (FECHA, NRO_SUCURSAL, DESC_SUCURSAL, MEDIO_PAGO, IMPORTE_\$_SISTEMA, VERIFICADO, OBSERVACIONES, USUARIO, FECHA_MODIF) 
@@ -482,8 +768,12 @@ class BankPromoService
             $params = [$fecha, $nroSucursal, $descSuc, $verificado, $observacion, $usuario];
             $stmt = sqlsrv_query($connCentral, $sqlInsert, $params);
             if ($stmt === false) {
-                throw new Exception("Error al insertar estado en la base de datos: " . print_r(sqlsrv_errors(), true));
+                $err = print_r(sqlsrv_errors(), true);
+                sqlsrv_close($connCentral);
+                throw new Exception("Error al insertar estado en la base de datos: " . $err);
             }
+            sqlsrv_free_stmt($stmt);
+            sqlsrv_close($connCentral);
             return true;
         }
     }

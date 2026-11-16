@@ -95,7 +95,7 @@ function configurarEmpleadoSelector() {
             placeholder: 'Buscar empleado por nombre o legajo...',
             allowClear: true,
             ajax: {
-                url: 'controller/novedades_controller.php?accion=buscar_empleados',
+                url: 'controller/novedades_controller.php?action=buscar_empleados_select2',
                 dataType: 'json',
                 delay: 250,
                 data: function (params) {
@@ -112,8 +112,8 @@ function configurarEmpleadoSelector() {
                                 text: `${emp.legajo} - ${emp.apellido}, ${emp.nombre}`,
                                 nombre: emp.nombre,
                                 apellido: emp.apellido,
-                                centro_costos: emp.codigo_centro_costos,
-                                descripcion_centro: emp.descripcion_centro_costos
+                                centro_costos: emp.cod_centro_costos || emp.codigo_centro_costos || '',
+                                descripcion_centro: emp.desc_centro_costos || emp.descripcion_centro_costos || ''
                             }))
                         };
                     }
@@ -167,7 +167,7 @@ function configurarEmpleadoSelector() {
  */
 async function cargarTiposNovedadOriginal() {
     try {
-        const response = await fetch('controller/novedades_controller.php?accion=get_tipos_novedad');
+        const response = await fetch('controller/novedades_controller.php?action=get_tipos_novedad');
         const data = await response.json();
         
         if (data.success) {

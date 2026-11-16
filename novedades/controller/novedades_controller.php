@@ -97,7 +97,7 @@ try {
     $novedades = new Novedades();
     
     // Obtener acción
-    $action = $_GET['action'] ?? $_POST['action'] ?? '';
+    $action = $_GET['action'] ?? $_GET['accion'] ?? $_POST['action'] ?? $_POST['accion'] ?? '';
     
     if (empty($action)) {
         handleError('No se especificó una acción válida');
@@ -186,6 +186,7 @@ try {
             }
             break;
 
+        case 'buscar_empleados':
         case 'buscar_empleados_select2':
             try {
                 $termino = $_GET['q'] ?? $_GET['term'] ?? '';

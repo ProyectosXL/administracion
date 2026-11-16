@@ -4,12 +4,11 @@ header('Content-Type: application/json');
 
 require_once __DIR__ . '/../Class/PaymentService.php';
 
-$service = new PaymentService();
-
 $action = $_REQUEST['action'] ?? '';
 
 switch ($action) {
     case 'get_payments':
+        $service = new PaymentService();
         $desde = $_GET['desde'] ?? date('Y-m-d');
         $hasta = $_GET['hasta'] ?? date('Y-m-d');
         $procesador = $_GET['procesador'] ?? 'todos';
@@ -38,6 +37,7 @@ switch ($action) {
         break;
 
     case 'create_link':
+        $service = new PaymentService();
         $procesador = $_POST['provider'] ?? '';
         $amount = floatval($_POST['amount'] ?? 0);
         $description = $_POST['description'] ?? '';
@@ -71,6 +71,9 @@ switch ($action) {
 
         require_once __DIR__ . '/../Class/BankPromoService.php';
         $promoService = new BankPromoService();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
 
         try {
             $res = $promoService->getBankPromos($desde, $hasta, $sucursal, $banco);
@@ -78,7 +81,7 @@ switch ($action) {
                 'success' => true,
                 'data' => $res
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Error al consultar promociones bancarias: ' . $e->getMessage()
@@ -100,6 +103,9 @@ switch ($action) {
 
         require_once __DIR__ . '/../Class/BankPromoService.php';
         $promoService = new BankPromoService();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
 
         try {
             $detail = $promoService->getPromoVouchersDetail($fecha, $nroSucursal);
@@ -107,7 +113,7 @@ switch ($action) {
                 'success' => true,
                 'data' => $detail
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Error al obtener detalle de comprobantes: ' . $e->getMessage()
@@ -131,6 +137,9 @@ switch ($action) {
 
         require_once __DIR__ . '/../Class/BankPromoService.php';
         $promoService = new BankPromoService();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
 
         try {
             $ok = $promoService->updatePromoStatus($fecha, $nroSucursal, $estado, $observacion);
@@ -138,7 +147,7 @@ switch ($action) {
                 'success' => $ok,
                 'message' => 'Estado de auditoría actualizado correctamente.'
             ]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Error al actualizar estado: ' . $e->getMessage()

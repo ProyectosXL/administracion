@@ -188,6 +188,15 @@ $sucursalesConfig = file_exists(__DIR__ . '/config/gocuotas_sucursales.php')
             </div>
         </div>
 
+        <!-- Alerta de sucursales sin conexión local -->
+        <div id="offline-branches-alert" class="alert alert-warning alert-dismissible fade show d-none shadow-sm mb-3" role="alert">
+            <i class="fa-solid fa-wifi me-2"></i>
+            <strong>Sucursales sin conexión local en este momento:</strong>
+            <span id="offline-branches-list"></span>.
+            <span class="small d-block text-muted mt-1">Se muestran igualmente los importes registrados en Central ($ CENTRAL).</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+
         <!-- Tabla de Control de Promociones Bancarias -->
         <div class="card border-0 shadow-sm rounded-3 bg-white">
             <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
@@ -378,6 +387,9 @@ $sucursalesConfig = file_exists(__DIR__ . '/config/gocuotas_sucursales.php')
                 const sucursal = $('#sucursal').val();
                 const banco = $('#banco').val();
 
+                $('#offline-branches-alert').addClass('d-none');
+                $('#offline-branches-list').text('');
+
                 $('#promo-tbody').html(`
                     <tr>
                         <td colspan="8" class="text-center py-5 text-muted">
@@ -391,6 +403,7 @@ $sucursalesConfig = file_exists(__DIR__ . '/config/gocuotas_sucursales.php')
                     url: 'Controller/PaymentController.php',
                     type: 'GET',
                     dataType: 'json',
+                    timeout: 55000,
                     data: {
                         action: 'get_bank_promos',
                         desde: desde,
@@ -402,6 +415,11 @@ $sucursalesConfig = file_exists(__DIR__ . '/config/gocuotas_sucursales.php')
                         if (res.success) {
                             currentRows = res.data.rows || [];
                             currentKpis = res.data.kpis || {};
+                            const offlineBranches = res.data.offline_branches || [];
+                            if (offlineBranches.length > 0) {
+                                $('#offline-branches-list').text(offlineBranches.map(b => b.nombre).join(', '));
+                                $('#offline-branches-alert').removeClass('d-none');
+                            }
                             renderPromos();
                         } else {
                             $('#promo-tbody').html(`
@@ -413,11 +431,12 @@ $sucursalesConfig = file_exists(__DIR__ . '/config/gocuotas_sucursales.php')
                             `);
                         }
                     },
-                    error: function () {
+                    error: function (xhr, status) {
+                        const detail = xhr.status ? `HTTP ${xhr.status}` : (status === 'timeout' ? 'Tiempo de espera agotado' : 'Error de red');
                         $('#promo-tbody').html(`
                                 <tr>
                                     <td colspan="8" class="text-center py-4 text-danger">
-                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Error al conectar con las bases de datos de las sucursales.
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> Error al conectar con las bases de datos de las sucursales (${detail}).
                                     </td>
                                 </tr>
                         `);
@@ -609,7 +628,9 @@ $sucursalesConfig = file_exists(__DIR__ . '/config/gocuotas_sucursales.php')
                         // 1. Facturas Local
                         const invoices = d.local_invoices || [];
                         $('#tab-count-invoices').text(invoices.length);
-                        if (invoices.length === 0) {
+                        if (d.local_online === false) {
+                            $('#modal-invoices-tbody').html('<tr><td colspan="9" class="text-center py-4 text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> No se pudo conectar con la base local de esta sucursal en este momento.</td></tr>');
+                        } else if (invoices.length === 0) {
                             $('#modal-invoices-tbody').html('<tr><td colspan="9" class="text-center py-4 text-muted">No se registraron facturas con cupones de promoción para esta fecha.</td></tr>');
                         } else {
                             let invHtml = '';
