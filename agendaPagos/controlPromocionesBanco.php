@@ -50,6 +50,19 @@ $sucursalesConfig = file_exists(__DIR__ . '/config/gocuotas_sucursales.php')
             border-radius: 20px;
             font-weight: 600;
         }
+
+        .col-promo {
+            max-width: 340px;
+            min-width: 200px;
+        }
+
+        .badge-promo-item {
+            white-space: normal;
+            text-align: left;
+            line-height: 1.25;
+            word-break: break-word;
+            font-size: 0.72rem;
+        }
     </style>
 </head>
 <body>
@@ -492,16 +505,23 @@ $sucursalesConfig = file_exists(__DIR__ . '/config/gocuotas_sucursales.php')
 
                     const diffVal = p.diferencia;
                     const diffTextClass = Math.abs(diffVal) < 0.01 ? 'text-success' : 'text-danger';
+                    const escapeHtml = (str) => String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+                    const promoBadges = String(p.promocion || 'PROMO BANCO')
+                        .split(',')
+                        .map(item => item.trim())
+                        .filter(Boolean)
+                        .map(item => `<span class="badge bg-light text-dark border fw-semibold badge-promo-item">${escapeHtml(item)}</span>`)
+                        .join('');
 
                     html += `
                         <tr>
-                            <td class="fw-semibold text-secondary">${formattedDate}</td>
-                            <td class="fw-bold text-dark">${p.sucursal}</td>
-                            <td><span class="badge bg-light text-dark border fw-semibold">${p.promocion}</span></td>
-                            <td class="text-end fw-bold text-dark">${formatMoney(p.monto_sistema)}</td>
-                            <td class="text-end fw-bold text-info">${formatMoney(p.monto_control)}</td>
-                            <td class="text-end fw-bold ${diffTextClass}">${formatMoney(diffVal)}</td>
-                            <td class="text-center">${statusBadge}</td>
+                            <td class="fw-semibold text-secondary text-nowrap">${formattedDate}</td>
+                            <td class="fw-bold text-dark">${escapeHtml(p.sucursal)}</td>
+                            <td class="col-promo"><div class="d-flex flex-wrap gap-1">${promoBadges}</div></td>
+                            <td class="text-end fw-bold text-dark text-nowrap">${formatMoney(p.monto_sistema)}</td>
+                            <td class="text-end fw-bold text-info text-nowrap">${formatMoney(p.monto_control)}</td>
+                            <td class="text-end fw-bold text-nowrap ${diffTextClass}">${formatMoney(diffVal)}</td>
+                            <td class="text-center text-nowrap">${statusBadge}</td>
                             <td class="text-center">
                                 <div class="d-inline-flex gap-1 align-items-center">
                                     <button class="btn btn-sm btn-outline-primary btn-ver-detalle px-2 py-1" 
