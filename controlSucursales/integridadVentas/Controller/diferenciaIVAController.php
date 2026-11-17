@@ -111,8 +111,8 @@ try {
             if (!$conexion_maestra) throw new Exception('No se pudo conectar a la base de datos maestra.');
 
             $condicion_canal = (isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy')
-                ? "CANAL = 'EXTERIOR' AND HABILITADO = 1"
-                : "CANAL = 'PROPIOS' AND HABILITADO = 1";
+                ? "CANAL = 'EXTERIOR' AND HABILITADO_CONT = 1"
+                : "CANAL = 'PROPIOS' AND HABILITADO_CONT = 1";
             
             $sql_maestra = "SELECT NRO_SUCURSAL, COD_CLIENT FROM dbo.SUCURSALES_LAKERS WHERE {$condicion_canal}";
             $stmt_maestra = sqlsrv_query($conexion_maestra, $sql_maestra);

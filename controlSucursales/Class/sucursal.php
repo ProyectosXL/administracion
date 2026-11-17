@@ -95,7 +95,8 @@ class Sucursal
         if((isset($_SESSION['entorno']) && $_SESSION['entorno'] == 'suc_uy') || (isset($_SESSION['entorno']) &&  $_SESSION['entorno'] == 'uy')){
             $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS  WHERE CANAL = 'EXTERIOR' ";
         }else{
-            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO = 1";
+            // HABILITADO_CONT: visible en contabilidad aunque el local esté deshabilitado (ej. pasó a franquicia)
+            $sql = "SELECT NRO_SUCURSAL, DESC_SUCURSAL FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS WHERE CANAL = 'PROPIOS' AND HABILITADO_CONT = 1 ";
         }
 
         if($orderByName == true){
@@ -591,7 +592,7 @@ class Sucursal
             $sqlSucursal = "SELECT TOP 1 BASE_NOMBRE, CONEXION_DNS
                             FROM LAKERBIS.LOCALES_LAKERS.DBO.SUCURSALES_LAKERS
                             WHERE NRO_SUCURSAL = $nroSucursalInt
-                              AND CANAL IN ('PROPIOS', 'EXTERIOR') AND HABILITADO = 1";
+                              AND CANAL IN ('PROPIOS', 'EXTERIOR') AND HABILITADO_CONT = 1";
 
             $stmtSuc = sqlsrv_query($this->cid_central, $sqlSucursal);
             if (!$stmtSuc) {

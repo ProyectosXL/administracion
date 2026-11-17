@@ -132,7 +132,7 @@ class Ventas
             return $rows;
         }
 
-        $sqlCfg = "SELECT CONEXION_DNS, BASE_NOMBRE, USUARIO_DNS, CLAVE_DNS, HABILITADO
+        $sqlCfg = "SELECT CONEXION_DNS, BASE_NOMBRE, USUARIO_DNS, CLAVE_DNS, HABILITADO_CONT
                    FROM [XL-LAKERBIS].locales_lakers.dbo.SUCURSALES_LAKERS
                    WHERE NRO_SUC_MADRE IS NULL AND NRO_SUCURSAL = ?";
         $stmtCfg = sqlsrv_query($connCentral, $sqlCfg, [$nroSucursal], ['QueryTimeout' => 5]);
@@ -142,7 +142,7 @@ class Ventas
         }
         sqlsrv_close($connCentral);
 
-        if (!$cfg || intval($cfg['HABILITADO'] ?? 0) !== 1) {
+        if (!$cfg || intval($cfg['HABILITADO_CONT'] ?? 0) !== 1) {
             return $rows;
         }
 
