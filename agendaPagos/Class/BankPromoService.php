@@ -79,7 +79,8 @@ class BankPromoService
     }
 
     /**
-     * Obtiene en una sola consulta los importes de RO_T_VENTA_DIARIA_SUCURSALES para todas las sucursales.
+     * Obtiene los importes de $ CENTRAL desde CTA02 + CTA29 (cuenta 250800, misma fuente que el Detalle)
+     * y los combina con los metadatos de auditoría manual (VERIFICADO, OBSERVACIONES, USUARIO) de RO_T_VENTA_DIARIA_SUCURSALES.
      */
     private function getSistemaSalesMap(array $nroSucursales, string $desde, string $hasta): array
     {
@@ -125,7 +126,49 @@ class BankPromoService
             }
             sqlsrv_free_stmt($stmt);
         } else {
-            error_log("Error en getSistemaSalesMap: " . print_r(sqlsrv_errors(), true));
+            error_log("Error en getSistemaSalesMap (RO_T): " . print_r(sqlsrv_errors(), true));
+        }
+
+        // Fuente contable real en Central: CTA02 + CTA29 (cuenta 250800), sin exclusión de entidades ni redondeo
+        if ($this->entorno !== 'uy') {
+            $sql250800 = "SELECT a.NRO_SUCURS,
+                                 CONVERT(VARCHAR(10), a.FECHA_EMIS, 120) AS FECHA_STR,
+                                 SUM(b.MONTO) AS TOTAL_250800
+                          FROM {$this->conexion->prefix}CTA02 a
+                          INNER JOIN {$this->conexion->prefix}CTA29 b
+                              ON a.NRO_SUCURS = b.NRO_SUCURS
+                             AND a.N_COMP = b.N_COMP
+                             AND a.T_COMP = b.COD_COMP
+                          WHERE a.NRO_SUCURS IN ($placeholders)
+                            AND a.FECHA_EMIS BETWEEN ? AND ?
+                            AND a.ESTADO <> 'ANU'
+                            AND b.COD_CTA = '250800'
+                          GROUP BY a.NRO_SUCURS, CONVERT(VARCHAR(10), a.FECHA_EMIS, 120)";
+
+            $stmtC = sqlsrv_query($connLocales, $sql250800, $params, ['QueryTimeout' => 15]);
+            if ($stmtC !== false) {
+                while ($r = sqlsrv_fetch_array($stmtC, SQLSRV_FETCH_ASSOC)) {
+                    $nro = strval($r['NRO_SUCURS']);
+                    $fecha = $r['FECHA_STR'];
+                    $totalReal = round(floatval($r['TOTAL_250800'] ?? 0), 2);
+                    $montoNeg = ($totalReal > 0) ? -$totalReal : $totalReal;
+
+                    if (isset($salesByBranch[$nro][$fecha])) {
+                        $salesByBranch[$nro][$fecha]['monto'] = $montoNeg;
+                    } else {
+                        $salesByBranch[$nro][$fecha] = [
+                            'monto' => $montoNeg,
+                            'id_registro' => null,
+                            'verificado' => 0,
+                            'observaciones' => '',
+                            'usuario' => ''
+                        ];
+                    }
+                }
+                sqlsrv_free_stmt($stmtC);
+            } else {
+                error_log("Error en getSistemaSalesMap (CTA29 250800): " . print_r(sqlsrv_errors(), true));
+            }
         }
 
         sqlsrv_close($connLocales);
@@ -639,6 +682,7 @@ class BankPromoService
                 INNER JOIN CTA29 b ON a.NRO_SUCURS = b.NRO_SUCURS AND a.N_COMP = b.N_COMP AND a.T_COMP = b.COD_COMP
                 WHERE a.NRO_SUCURS = ? 
                   AND a.FECHA_EMIS = ?
+                  AND a.ESTADO <> 'ANU'
                   AND b.COD_CTA = '250800'
                 ORDER BY a.N_COMP";
 
